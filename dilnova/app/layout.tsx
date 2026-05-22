@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
+import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton, OrganizationSwitcher } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 
@@ -37,7 +37,10 @@ export default function RootLayout({
               </SignUpButton>
             </Show>
             <Show when="signed-in">
-              <UserButton />
+              <div className="flex items-center gap-4">
+                <OrganizationSwitcher afterCreateOrganizationUrl="/" afterSelectOrganizationUrl="/" />
+                <UserButton />
+              </div>
             </Show>
           </header>
           {children}
