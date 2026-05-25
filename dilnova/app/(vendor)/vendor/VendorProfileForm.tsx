@@ -37,8 +37,8 @@ export default function VendorProfileForm({ orgId, initialMetadata }: VendorProf
         if (result.success) {
           setMessage({ type: 'success', text: 'Storefront profile updated successfully!' });
         }
-      } catch (err: any) {
-        setMessage({ type: 'error', text: err.message || 'Failed to update profile settings.' });
+      } catch (err) {
+        setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update profile settings.' });
       }
     });
   };

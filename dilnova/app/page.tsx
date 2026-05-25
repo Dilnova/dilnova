@@ -251,7 +251,7 @@ export default async function Home() {
               </div>
               <h3 className="text-base font-semibold">Clerk Native Engine</h3>
               <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Leverages Clerk’s built-in Organization API. Role permissions are fetched and verified securely via Clerk's session tokens.
+                Leverages Clerk’s built-in Organization API. Role permissions are fetched and verified securely via Clerk&apos;s session tokens.
               </p>
             </div>
 

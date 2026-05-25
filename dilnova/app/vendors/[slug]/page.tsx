@@ -16,7 +16,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
   let org;
   try {
     org = await client.organizations.getOrganization({ slug });
-  } catch (err) {
+  } catch {
     return notFound();
   }
 
@@ -136,7 +136,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
                   Tenant Metadata Feed
                 </h3>
                 <p className="text-[10px] text-zinc-500 leading-relaxed mb-3">
-                  Raw JSON attributes synced securely with Clerk's servers.
+                  Raw JSON attributes synced securely with Clerk&apos;s servers.
                 </p>
                 <pre className="text-[10px] font-mono text-zinc-400 overflow-x-auto bg-zinc-100 dark:bg-zinc-950 p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-900">
                   {JSON.stringify(org.publicMetadata, null, 2)}

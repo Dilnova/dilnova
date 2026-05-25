@@ -20,8 +20,8 @@ export default function RoleSelector({ orgId, userId, currentRole }: RoleSelecto
     startTransition(async () => {
       try {
         await updateOrganizationMemberRole(orgId, userId, newRole);
-      } catch (err: any) {
-        alert(err.message || 'Failed to update organization member role');
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Failed to update organization member role');
         setRole(currentRole || 'org:member');
       }
     });
