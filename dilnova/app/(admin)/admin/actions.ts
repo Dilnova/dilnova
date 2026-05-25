@@ -15,6 +15,12 @@ export async function updateOrganizationMemberRole(organizationId: string, userI
     throw new Error('Not authorized: Only administrators of this organization can change member roles.');
   }
 
+  // Validate the requested role against the allowed whitelist to prevent role escalation/injection
+  const ALLOWED_ROLES = ['org:member', 'org:admin', 'org:vendor', 'org:customer'];
+  if (!ALLOWED_ROLES.includes(newRole)) {
+    throw new Error(`Invalid role: Specified role "${newRole}" is not recognized.`);
+  }
+
   const client = await clerkClient();
   await client.organizations.updateOrganizationMembership({
     organizationId,

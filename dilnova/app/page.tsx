@@ -1,15 +1,27 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { OrganizationList } from '@clerk/nextjs';
 import Link from 'next/link';
+import RoleToggleButton from './RoleToggleButton';
 
 export default async function Home() {
   const { orgId, orgRole } = await auth();
   const user = await currentUser();
 
+  // Retrieve user-level metadata role for RBAC
+  const userRole = user?.publicMetadata?.role as string | undefined;
+  const isUserVendorOrAdmin = userRole === 'admin' || userRole === 'vendor';
+
+  let canCreateOrg = false;
+  if (orgId) {
+    canCreateOrg = orgRole === 'org:admin' || orgRole === 'org:vendor';
+  } else {
+    canCreateOrg = isUserVendorOrAdmin;
+  }
+
   // Determine permissions based on organization role
-  const hasAdminAccess = orgId && orgRole === 'org:admin';
-  const hasVendorAccess = orgId && (orgRole === 'org:vendor' || orgRole === 'org:member' || orgRole === 'org:admin');
-  const hasCustomerAccess = orgId && (orgRole === 'org:customer' || orgRole === 'org:member' || orgRole === 'org:admin');
+  const hasAdminAccess = !!orgId && orgRole === 'org:admin';
+  const hasVendorAccess = !!orgId && (orgRole === 'org:vendor' || orgRole === 'org:member' || orgRole === 'org:admin');
+  const hasCustomerAccess = !!user && (!orgId || orgRole === 'org:customer' || orgRole === 'org:member' || orgRole === 'org:admin');
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans flex flex-col antialiased selection:bg-purple-500 selection:text-white">
@@ -33,7 +45,7 @@ export default async function Home() {
           </span>
         </h1>
         
-        <p className="max-w-2xl mx-auto text-base sm:text-lg text-zinc-650 dark:text-zinc-400 leading-relaxed mb-8">
+        <p className="max-w-2xl mx-auto text-base sm:text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed mb-8">
           A secure multi-tenant commerce engine. Permissions, members, and portals are scoped entirely inside Clerk Organizations.
         </p>
       </header>
@@ -45,57 +57,55 @@ export default async function Home() {
           /* Signed Out View */
           <div className="max-w-md mx-auto text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 rounded-2xl shadow-sm">
             <h2 className="text-lg font-semibold mb-2">Authentication Required</h2>
-            <p className="text-sm text-zinc-550 dark:text-zinc-450 leading-relaxed mb-4">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-4">
               Please sign in or sign up using the header buttons to access the organization sandbox.
             </p>
           </div>
-        ) : !orgId ? (
-          /* Signed In but No Active Organization */
-          <div className="max-w-xl mx-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 rounded-2xl shadow-md text-center">
-            <h2 className="text-xl font-bold mb-2">Organization Required</h2>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-8 leading-relaxed">
-              This application requires an active organization context. Please select an existing organization, accept an invitation, or create a new test organization below.
-            </p>
-            
-            <div className="flex justify-center border-t border-zinc-100 dark:border-zinc-800 pt-6 overflow-hidden">
-              <OrganizationList 
-                hidePersonal={true} 
-                afterCreateOrganizationUrl="/" 
-                afterSelectOrganizationUrl="/" 
-              />
-            </div>
-          </div>
         ) : (
-          /* Active Organization Sandbox */
-          <section className="border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-xl">
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-4 border-b border-zinc-150 dark:border-zinc-850 pb-6">
-              <div>
-                <p className="text-xs text-zinc-400 font-mono uppercase tracking-wider">Active Workspace</p>
-                <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Active Organization Detected</h2>
-              </div>
+          /* Active Sandbox */
+          <section className="border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-xl">
+            {orgId ? (
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-6">
+                <div>
+                  <p className="text-xs text-zinc-400 font-mono uppercase tracking-wider">Active Workspace</p>
+                  <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Active Organization Detected</h2>
+                </div>
 
-              <div className="flex flex-col sm:items-end gap-1">
-                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 font-mono">
-                  Organization ID: <code className="text-[11px] bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded">{orgId}</code>
-                </span>
-                <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-350 font-mono">
-                  Your Role: <strong className="text-purple-600 dark:text-purple-400 uppercase">{orgRole}</strong>
-                </span>
+                <div className="flex flex-col sm:items-end gap-1">
+                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 font-mono">
+                    Organization ID: <code className="text-[11px] bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded">{orgId}</code>
+                  </span>
+                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 font-mono">
+                    Your Role: <strong className="text-purple-600 dark:text-purple-400 uppercase">{orgRole}</strong>
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-6">
+                <div>
+                  <p className="text-xs text-zinc-400 font-mono uppercase tracking-wider">Active Workspace</p>
+                  <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Individual Customer Session</h2>
+                </div>
+                <div className="flex flex-col sm:items-end gap-1">
+                  <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 font-mono">
+                    No active organization selected (Standard Consumer)
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               
               {/* Card 1: Admin Panel */}
               <div className={`p-6 rounded-xl border flex flex-col justify-between transition-all ${
                 hasAdminAccess 
-                  ? 'bg-zinc-50/50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-900/10 dark:border-zinc-850 dark:hover:border-zinc-750' 
+                  ? 'bg-zinc-50/50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-900/10 dark:border-zinc-800 dark:hover:border-zinc-700' 
                   : 'bg-zinc-100/20 border-zinc-200/50 opacity-50 dark:bg-zinc-900/5 dark:border-zinc-900/50'
               }`}>
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-sm tracking-tight">Organization Members</h3>
-                    <span className="text-[10px] bg-red-100/80 text-red-800 font-mono font-bold px-2 py-0.5 rounded dark:bg-red-950/30 dark:text-red-400">ORG:ADMIN</span>
+                    <span className="text-[10px] bg-red-100/80 text-red-800 font-mono font-bold px-2 py-0.5 rounded dark:bg-red-900/30 dark:text-red-400">ORG:ADMIN</span>
                   </div>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
                     Admin Console. Manage and change membership roles (`org:member`, `org:admin`, etc.) inside this active organization.
@@ -116,13 +126,13 @@ export default async function Home() {
               {/* Card 2: Vendor Portal */}
               <div className={`p-6 rounded-xl border flex flex-col justify-between transition-all ${
                 hasVendorAccess 
-                  ? 'bg-zinc-50/50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-900/10 dark:border-zinc-850 dark:hover:border-zinc-750' 
+                  ? 'bg-zinc-50/50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-900/10 dark:border-zinc-800 dark:hover:border-zinc-700' 
                   : 'bg-zinc-100/20 border-zinc-200/50 opacity-50 dark:bg-zinc-900/5 dark:border-zinc-900/50'
               }`}>
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-sm tracking-tight">Vendor Dashboard</h3>
-                    <span className="text-[10px] bg-amber-100/80 text-amber-800 font-mono font-bold px-2 py-0.5 rounded dark:bg-amber-950/30 dark:text-amber-400">ORG:VENDOR</span>
+                    <span className="text-[10px] bg-amber-100/80 text-amber-800 font-mono font-bold px-2 py-0.5 rounded dark:bg-amber-900/30 dark:text-amber-400">ORG:VENDOR</span>
                   </div>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
                     Simple plain text page showing order fulfillments and workspace feed for the current organization.
@@ -143,13 +153,13 @@ export default async function Home() {
               {/* Card 3: Customer Portal */}
               <div className={`p-6 rounded-xl border flex flex-col justify-between transition-all ${
                 hasCustomerAccess 
-                  ? 'bg-zinc-50/50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-900/10 dark:border-zinc-850 dark:hover:border-zinc-750' 
+                  ? 'bg-zinc-50/50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-900/10 dark:border-zinc-800 dark:hover:border-zinc-700' 
                   : 'bg-zinc-100/20 border-zinc-200/50 opacity-50 dark:bg-zinc-900/5 dark:border-zinc-900/50'
               }`}>
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-sm tracking-tight">Customer Area</h3>
-                    <span className="text-[10px] bg-blue-100/80 text-blue-800 font-mono font-bold px-2 py-0.5 rounded dark:bg-blue-950/30 dark:text-blue-400">ORG:CUSTOMER</span>
+                    <span className="text-[10px] bg-blue-100/80 text-blue-800 font-mono font-bold px-2 py-0.5 rounded dark:bg-blue-900/30 dark:text-blue-400">ORG:CUSTOMER</span>
                   </div>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
                     Simple buyer portal for account history and purchase details for the active organization.
@@ -169,15 +179,52 @@ export default async function Home() {
 
             </div>
 
+            {/* User Metadata Role Switching Console */}
+            <div className="mb-8">
+              <RoleToggleButton currentRole={userRole} />
+            </div>
+
             <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200 dark:bg-zinc-900/50 dark:border-zinc-800 text-xs font-mono leading-relaxed text-zinc-600 dark:text-zinc-400">
               <p className="font-bold mb-1 uppercase tracking-wider text-zinc-500">How to test org-scoped RBAC roles:</p>
               <ol className="list-decimal list-inside space-y-1">
-                <li>Because you created this organization, you are its <strong className="text-zinc-800 dark:text-zinc-200">org:admin</strong> and can enter all portals.</li>
-                <li>Go to the **Admin Console** above to view the active organization members list.</li>
-                <li>Use the Clerk **Organization Switcher** in the top header to invite another test user (or email) and assign them a specific role.</li>
-                <li>Once they accept and sign in, change their role from the Admin dropdown to verify restricted access.</li>
+                {orgId ? (
+                  <>
+                    <li>Because you created this organization, you are its <strong className="text-zinc-800 dark:text-zinc-200">org:admin</strong> and can enter all portals.</li>
+                    <li>Go to the **Admin Console** above to view the active organization members list.</li>
+                    <li>Use the Clerk **Organization Switcher** in the top header to invite another test user (or email) and assign them a specific role.</li>
+                    <li>Once they accept and sign in, change their role from the Admin dropdown to verify restricted access.</li>
+                  </>
+                ) : (
+                  <>
+                    <li>You are logged in as an individual buyer. You have full access to the **Customer Area**.</li>
+                    <li>To test **Admin** or **Vendor** workspace permissions, {canCreateOrg ? 'you can select or create a test business organization below.' : 'you must select a test business organization below (organization creation is restricted for customers).'}</li>
+                  </>
+                )}
               </ol>
             </div>
+
+            {!orgId && (
+              <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800 text-center">
+                <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mb-2">Are you a Business / Vendor?</h4>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6 max-w-md mx-auto">
+                  {canCreateOrg 
+                    ? "Select or create a business organization context below to unlock administrative console and vendor dashboard portals."
+                    : "Select a business organization context below to unlock administrative console and vendor dashboard portals."}
+                </p>
+                <div className="flex justify-center overflow-hidden">
+                  <OrganizationList 
+                    hidePersonal={true} 
+                    afterCreateOrganizationUrl="/" 
+                    afterSelectOrganizationUrl="/" 
+                    appearance={{
+                      elements: {
+                        organizationListCreateOrganizationButton: canCreateOrg ? 'flex' : 'hidden',
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </section>
         )}
 

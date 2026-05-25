@@ -6,12 +6,20 @@ export default async function CustomerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { orgId, orgRole } = await auth();
+  const { userId, orgId, orgRole } = await auth();
 
-  // Protect the entire route group: only customer, default member, or admin can pass
-  const isAuthorized = orgId && (orgRole === 'org:customer' || orgRole === 'org:member' || orgRole === 'org:admin');
-  if (!isAuthorized) {
+  // Guard 1: User must be authenticated
+  if (!userId) {
     redirect('/unauthorized');
+  }
+
+  // Guard 2: If user is acting under an active organization context,
+  // enforce that their role is allowed (customer, member, or admin)
+  if (orgId) {
+    const isAuthorized = orgRole === 'org:customer' || orgRole === 'org:member' || orgRole === 'org:admin';
+    if (!isAuthorized) {
+      redirect('/unauthorized');
+    }
   }
 
   return <>{children}</>;
