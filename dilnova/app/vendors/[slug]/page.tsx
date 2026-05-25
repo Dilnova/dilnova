@@ -24,7 +24,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
   const { slug } = await params;
   const client = await clerkClient();
 
-  const isDistarSubVendor = ['distar-hardware', 'distar-nursery', 'distar-tech'].includes(slug);
+  const isDistarSubVendor = ['distar-hardware', 'distar-nursery', 'distar-tech', 'dilstar-services'].includes(slug);
 
   // 1. Fetch organization from Clerk
   let clerkOrg;
@@ -86,6 +86,8 @@ export default async function VendorProfilePage({ params }: PageProps) {
     products = products.filter(p => p.categorySlug === 'plants');
   } else if (slug === 'distar-tech') {
     products = products.filter(p => p.categorySlug === 'tech');
+  } else if (slug === 'dilstar-services') {
+    products = products.filter(p => p.categorySlug === 'services');
   }
 
   // 4. Check registry for custom storefront

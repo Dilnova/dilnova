@@ -188,7 +188,7 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
             <div className="flex items-center gap-3 mb-10">
               <span className="text-xl">🧑‍🌾</span>
               <h2 className="text-xl font-bold text-emerald-900 tracking-tight">
-                Expert Services
+                Dilstar Services
               </h2>
             </div>
 

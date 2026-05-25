@@ -68,8 +68,9 @@ async function main() {
       const hardwareOrg = orgList.data.find((o: any) => o.slug === 'distar-hardware') || distarOrgFallback;
       const nurseryOrg = orgList.data.find((o: any) => o.slug === 'distar-nursery') || distarOrgFallback;
       const techOrg = orgList.data.find((o: any) => o.slug === 'distar-tech') || distarOrgFallback;
-      const servicesOrg = orgList.data.find((o: any) => o.slug === 'expert-services') ||
-                          orgList.data.find((o: any) => o.slug.startsWith('expert-services-') || o.name.toLowerCase() === 'expert services');
+      const servicesOrg = orgList.data.find((o: any) => o.slug === 'dilstar-services') ||
+                          orgList.data.find((o: any) => o.slug.startsWith('dilstar-services-') || o.name.toLowerCase() === 'dilstar services') ||
+                          distarOrgFallback;
 
       if (hardwareOrg) hardwareOrgId = hardwareOrg.id;
       if (nurseryOrg) nurseryOrgId = nurseryOrg.id;

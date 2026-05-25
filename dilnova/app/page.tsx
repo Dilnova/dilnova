@@ -22,13 +22,13 @@ export default async function Home() {
   const allOrganizations = orgListResponse.data;
 
   // Filter out the core four portals so we only show "other" custom vendors
-  const coreSlugs = ['distar-hardware', 'distar-nursery', 'distar-tech', 'expert-services'];
+  const coreSlugs = ['distar-hardware', 'distar-nursery', 'distar-tech', 'dilstar-services'];
   const otherVendors = allOrganizations.filter(
     (org) => {
       if (!org.slug) return false;
       const isCore = coreSlugs.includes(org.slug);
       const isMainDistar = org.slug === 'distar' || org.slug.startsWith('distar-') || org.name.toLowerCase() === 'distar';
-      const isMainServices = org.slug.startsWith('expert-services-') || org.name.toLowerCase() === 'expert services';
+      const isMainServices = org.slug === 'dilstar-services' || org.slug.startsWith('dilstar-services-') || org.name.toLowerCase() === 'dilstar services';
       return !isCore && !isMainDistar && !isMainServices;
     }
   );
@@ -144,7 +144,7 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* Division 4: Expert Services */}
+        {/* Division 4: Dilstar Services */}
         <div className="relative group overflow-hidden bg-slate-900 text-slate-100 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 last:border-r-0">
           <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
           <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-teal-500/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-teal-500/20" />
@@ -157,7 +157,7 @@ export default async function Home() {
 
           <div className="relative z-10 my-auto">
             <h2 className="text-3xl font-extrabold tracking-tight mb-3">
-              EXPERT <br />
+              DILSTAR <br />
               <span className="text-teal-400 bg-gradient-to-r from-teal-400 via-emerald-300 to-teal-500 bg-clip-text text-transparent">
                 SERVICES
               </span>
@@ -166,7 +166,7 @@ export default async function Home() {
               Connect with master gardeners, professional tool technicians, home builders, and enterprise tech architects.
             </p>
             <Link
-              href="/vendors/expert-services"
+              href="/vendors/dilstar-services"
               className="inline-block bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
             >
               Book Consultation
