@@ -67,10 +67,21 @@ export default async function VendorProfilePage({ params }: PageProps) {
     return notFound();
   }
 
-  // 2. Normalize org data into our StorefrontProps shape
+  // 2. Normalize org data into our StorefrontProps shape, overriding the name for specific sub-vendors sharing the 'distar' Clerk organization
+  let displayName = clerkOrg.name;
+  if (slug === 'distar-hardware') {
+    displayName = 'Distar Hardware';
+  } else if (slug === 'distar-nursery') {
+    displayName = 'Distar Nursery';
+  } else if (slug === 'distar-tech') {
+    displayName = 'Distar Tech Store';
+  } else if (slug === 'dilstar-services') {
+    displayName = 'Dilstar Services';
+  }
+
   const org: VendorOrg = {
     id: clerkOrg.id,
-    name: clerkOrg.name,
+    name: displayName,
     slug: clerkOrg.slug,
     imageUrl: clerkOrg.imageUrl,
     publicMetadata: (clerkOrg.publicMetadata || {}) as VendorOrg['publicMetadata'],
