@@ -65,9 +65,6 @@ export default async function VendorsDirectoryPage() {
                           src={metadata.bannerUrl}
                           alt={`${vendor.name} banner`}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10" />

@@ -1,0 +1,247 @@
+import { clerkClient } from '@clerk/nextjs/server';
+import { db } from '../../db';
+import * as schema from '../../db/schema';
+import { eq, and, ilike, or } from 'drizzle-orm';
+import Link from 'next/link';
+import CatalogFilters from './CatalogFilters';
+
+export const revalidate = 0; // Fresh load on each catalog query
+
+interface PageProps {
+  searchParams: Promise<{
+    search?: string;
+    category?: string;
+    type?: string;
+    page?: string;
+  }>;
+}
+
+export default async function ProductsCatalogPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const currentSearch = params.search || '';
+  const currentCategorySlug = params.category || '';
+  const currentType = params.type || 'all';
+  const currentPage = parseInt(params.page || '1', 10);
+  const itemsPerPage = 12;
+
+  // 1. Fetch categories
+  const categoriesList = await db.select().from(schema.categories);
+  const selectedCategory = categoriesList.find(c => c.slug === currentCategorySlug);
+
+  // 2. Fetch Organizations from Clerk to map vendor details
+  const client = await clerkClient();
+  const orgListResponse = await client.organizations.getOrganizationList({ limit: 100 });
+  const organizations = orgListResponse.data;
+
+  // 3. Build Drizzle query clauses dynamically
+  const whereClauses = [];
+
+  if (currentSearch) {
+    whereClauses.push(
+      or(
+        ilike(schema.products.name, `%${currentSearch}%`),
+        ilike(schema.products.description, `%${currentSearch}%`)
+      )
+    );
+  }
+
+  if (selectedCategory) {
+    whereClauses.push(eq(schema.products.categoryId, selectedCategory.id));
+  }
+
+  if (currentType !== 'all') {
+    whereClauses.push(eq(schema.products.type, currentType));
+  }
+
+  // Apply where conditions
+  const conditions = whereClauses.length > 0 ? and(...whereClauses) : undefined;
+  
+  // Calculate total count for pagination
+  const allMatchedProducts = await db
+    .select()
+    .from(schema.products)
+    .where(conditions);
+  const totalCount = allMatchedProducts.length;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // Retrieve paginated records
+  const results = await db
+    .select({
+      product: schema.products,
+      category: schema.categories,
+    })
+    .from(schema.products)
+    .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
+    .where(conditions)
+    .limit(itemsPerPage)
+    .offset((currentPage - 1) * itemsPerPage);
+
+  return (
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans pb-24">
+      <div className="pt-12"></div>
+      {/* Main Content Layout */}
+      <main className="max-w-6xl mx-auto px-6">
+        
+        {/* Filters */}
+        <CatalogFilters
+          categories={categoriesList}
+          currentCategory={currentCategorySlug}
+          currentSearch={currentSearch}
+          currentType={currentType}
+        />
+
+        {/* Results Grid */}
+        {results.length === 0 ? (
+          <div className="max-w-md mx-auto text-center border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-8 rounded-2xl shadow-sm">
+            <h3 className="text-sm font-bold mb-1">No Catalog Items Found</h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              No products or services matched your active search criteria. Clear your search or filters to see other listings.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {results.map(({ product, category }) => {
+                // Map the organization ID to its name and logo in Clerk
+                const orgMatch = organizations.find((o) => o.id === product.orgId);
+                const vendorName = orgMatch ? orgMatch.name : 'Unknown Vendor';
+                const vendorLogo = orgMatch ? orgMatch.imageUrl : null;
+                const vendorSlug = orgMatch ? orgMatch.slug : null;
+
+                const formattedPrice = (product.price / 100).toLocaleString('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                });
+
+                return (
+                  <div
+                    key={product.id}
+                    className="group flex flex-col justify-between border border-zinc-200/80 dark:border-zinc-850/80 bg-white dark:bg-zinc-950 rounded-2xl overflow-hidden hover:border-purple-500/40 dark:hover:border-purple-500/40 hover:shadow-lg transition-all duration-305"
+                  >
+                    <div>
+                      {/* Image Thumbnail */}
+                      <div className="h-44 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-r from-purple-500/5 via-indigo-500/5 to-blue-500/5 flex items-center justify-center text-2xl">
+                            📦
+                          </div>
+                        )}
+                        
+                        {/* Type Badge */}
+                        <span className={`absolute top-3 right-3 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow ${
+                          product.type === 'service'
+                            ? 'bg-teal-500 text-teal-950'
+                            : 'bg-indigo-500 text-indigo-50'
+                        }`}>
+                          {product.type}
+                        </span>
+                      </div>
+
+                      {/* Content Card Body */}
+                      <div className="p-4">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          {category && (
+                            <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">
+                              {category.name}
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50 leading-snug line-clamp-1 mb-1">
+                          {product.name}
+                        </h3>
+                        
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed min-h-[2.5rem]">
+                          {product.description || 'No description provided.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Price and Vendor Ownership Row */}
+                    <div className="p-4 border-t border-zinc-100 dark:border-zinc-900/60">
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
+                          {formattedPrice}
+                        </span>
+                      </div>
+
+                      {/* Vendor Owner Label */}
+                      <div className="flex items-center gap-2 border-t border-zinc-105/50 dark:border-zinc-900/40 pt-3">
+                        {vendorLogo ? (
+                          <img
+                            src={vendorLogo}
+                            alt={vendorName}
+                            className="w-5 h-5 rounded-md object-cover border border-zinc-100 dark:border-zinc-800"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-md bg-zinc-200 dark:bg-zinc-800 text-[10px] flex items-center justify-center">
+                            🏢
+                          </div>
+                        )}
+                        <div className="text-[10px] truncate flex-1 leading-none">
+                          <span className="text-zinc-400 block mb-0.5">Sold by</span>
+                          {vendorSlug ? (
+                            <Link
+                              href={`/vendors/${vendorSlug}`}
+                              className="font-bold text-zinc-700 dark:text-zinc-300 hover:text-purple-500 transition-colors"
+                            >
+                              {vendorName}
+                            </Link>
+                          ) : (
+                            <span className="font-bold text-zinc-600 dark:text-zinc-400">
+                              {vendorName}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-12">
+                {currentPage > 1 && (
+                  <Link
+                    href={`/products?${new URLSearchParams({
+                      ...Object.fromEntries(Object.entries(params)),
+                      page: (currentPage - 1).toString(),
+                    }).toString()}`}
+                    className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-xs font-mono"
+                  >
+                    &larr; Prev
+                  </Link>
+                )}
+                <span className="text-xs font-mono text-zinc-400">
+                  Page {currentPage} of {totalPages}
+                </span>
+                {currentPage < totalPages && (
+                  <Link
+                    href={`/products?${new URLSearchParams({
+                      ...Object.fromEntries(Object.entries(params)),
+                      page: (currentPage + 1).toString(),
+                    }).toString()}`}
+                    className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-xs font-mono"
+                  >
+                    Next &rarr;
+                  </Link>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+      </main>
+
+    </div>
+  );
+}

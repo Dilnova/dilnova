@@ -24,7 +24,13 @@ export default async function Home() {
   // Filter out the core four portals so we only show "other" custom vendors
   const coreSlugs = ['distar-hardware', 'distar-nursery', 'distar-tech', 'expert-services'];
   const otherVendors = allOrganizations.filter(
-    (org) => !org.slug || !coreSlugs.includes(org.slug)
+    (org) => {
+      if (!org.slug) return false;
+      const isCore = coreSlugs.includes(org.slug);
+      const isMainDistar = org.slug === 'distar' || org.slug.startsWith('distar-') || org.name.toLowerCase() === 'distar';
+      const isMainServices = org.slug.startsWith('expert-services-') || org.name.toLowerCase() === 'expert services';
+      return !isCore && !isMainDistar && !isMainServices;
+    }
   );
 
   return (

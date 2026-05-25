@@ -16,7 +16,7 @@ export default function ScrollRedirector() {
           setRedirecting(true);
           // Brief transition delay
           setTimeout(() => {
-            router.push('/vendors');
+            router.push('/products');
           }, 800);
         }
       },
@@ -42,14 +42,14 @@ export default function ScrollRedirector() {
           <div className="flex flex-col items-center gap-3">
             <span className="w-6 h-6 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
             <p className="text-xs font-mono text-purple-600 dark:text-purple-400 font-semibold uppercase tracking-wider animate-pulse">
-              Navigating to All Product Categories...
+              Navigating to All Products & Services...
             </p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
             <span className="text-xl animate-bounce">↓</span>
             <p className="text-xs font-mono text-zinc-400">
-              Scroll further to load all product categories
+              Scroll further to load all products & services
             </p>
           </div>
         )}
