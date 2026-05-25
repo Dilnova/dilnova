@@ -1,7 +1,8 @@
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import { OrganizationList } from '@clerk/nextjs';
 import Link from 'next/link';
 import RoleToggleButton from './RoleToggleButton';
+import ScrollRedirector from './ScrollRedirector';
 
 export default async function Home() {
   const { orgId, orgRole } = await auth();
@@ -9,269 +10,365 @@ export default async function Home() {
 
   // Retrieve user-level metadata role for RBAC
   const userRole = user?.publicMetadata?.role as string | undefined;
-  const isUserVendorOrAdmin = userRole === 'admin' || userRole === 'vendor';
-
-  let canCreateOrg = false;
-  if (orgId) {
-    canCreateOrg = orgRole === 'org:admin' || orgRole === 'org:vendor';
-  } else {
-    canCreateOrg = isUserVendorOrAdmin;
-  }
 
   // Determine permissions based on organization role
   const hasAdminAccess = !!orgId && orgRole === 'org:admin';
   const hasVendorAccess = !!orgId && (orgRole === 'org:vendor' || orgRole === 'org:member' || orgRole === 'org:admin');
   const hasCustomerAccess = !!user && (!orgId || orgRole === 'org:customer' || orgRole === 'org:member' || orgRole === 'org:admin');
 
+  // Fetch all registered organization vendors from Clerk
+  const client = await clerkClient();
+  const orgListResponse = await client.organizations.getOrganizationList({ limit: 100 });
+  const allOrganizations = orgListResponse.data;
+
+  // Filter out the core four portals so we only show "other" custom vendors
+  const coreSlugs = ['distar-hardware', 'distar-nursery', 'distar-tech', 'expert-services'];
+  const otherVendors = allOrganizations.filter(
+    (org) => !org.slug || !coreSlugs.includes(org.slug)
+  );
+
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans flex flex-col antialiased selection:bg-purple-500 selection:text-white">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans flex flex-col antialiased">
       
-      {/* Decorative background glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] pointer-events-none opacity-40 dark:opacity-20 z-0">
-        <div className="absolute top-[-10%] left-[10%] w-[40%] h-[60%] rounded-full bg-gradient-to-tr from-purple-400 to-indigo-500 blur-[120px]" />
-        <div className="absolute top-[-5%] right-[10%] w-[35%] h-[50%] rounded-full bg-gradient-to-tl from-pink-400 to-rose-400 blur-[100px]" />
-      </div>
-
-      {/* Hero Header */}
-      <header className="relative max-w-6xl mx-auto px-6 pt-20 pb-12 text-center z-10 w-full">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/50 mb-6">
-          Dilnova Organization-Scoped RBAC
-        </span>
+      {/* 1. Main Stage (4-Column Split-Screen Hero) */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 min-h-[80vh] w-full border-b border-zinc-200 dark:border-zinc-800">
         
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-none mb-6">
-          Multi-Vendor Commerce <br className="hidden sm:inline" />
-          <span className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-500 bg-clip-text text-transparent dark:from-purple-400 dark:via-indigo-300 dark:to-blue-400">
-            With Org-Scoped Roles
+        {/* Division 1: Distar Hardware */}
+        <div className="relative group overflow-hidden bg-zinc-900 text-zinc-100 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 border-r border-zinc-800 last:border-r-0">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
+          <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-amber-500/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-amber-500/20" />
+          
+          <div className="relative z-10">
+            <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-4 uppercase tracking-wider font-mono">
+              Industrial
+            </span>
+          </div>
+
+          <div className="relative z-10 my-auto">
+            <h2 className="text-3xl font-extrabold tracking-tight mb-3">
+              DISTAR <br />
+              <span className="text-amber-500 bg-gradient-to-r from-amber-500 via-orange-400 to-amber-600 bg-clip-text text-transparent">
+                HARDWARE
+              </span>
+            </h2>
+            <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+              Raw industrial power, heavy-duty machinery, and contractor-grade tools. Engineered for reliability in the field.
+            </p>
+            <Link
+              href="/vendors/distar-hardware"
+              className="inline-block bg-amber-600 hover:bg-amber-700 text-zinc-950 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+            >
+              Browse Hardware
+            </Link>
+          </div>
+
+          <div className="relative z-10 flex items-center justify-between border-t border-zinc-800/80 pt-4 mt-6 text-[10px] font-mono text-zinc-500">
+            <span>ENG_VER_1.4</span>
+            <span className="text-amber-500">HEAVY DUTY</span>
+          </div>
+        </div>
+
+        {/* Division 2: Distar Plant Nursery */}
+        <div className="relative group overflow-hidden bg-emerald-950 text-emerald-50 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 border-r border-emerald-900 last:border-r-0">
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+          <div className="absolute -bottom-40 -right-40 w-80 h-80 rounded-full bg-emerald-400/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-emerald-400/20" />
+
+          <div className="relative z-10">
+            <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/20 mb-4 uppercase tracking-wider font-mono">
+              Botanical
+            </span>
+          </div>
+
+          <div className="relative z-10 my-auto">
+            <h2 className="text-3xl font-extrabold tracking-tight mb-3">
+              DISTAR <br />
+              <span className="text-emerald-400 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 bg-clip-text text-transparent">
+                NURSERY
+              </span>
+            </h2>
+            <p className="text-xs text-emerald-300/70 leading-relaxed mb-6">
+              Curated organic flora, seeds, exotic indoor plants, and landscaping consulting. Grow your perfect bio-environment.
+            </p>
+            <Link
+              href="/vendors/distar-nursery"
+              className="inline-block bg-emerald-500 hover:bg-emerald-600 text-emerald-955 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+            >
+              Browse Nursery
+            </Link>
+          </div>
+
+          <div className="relative z-10 flex items-center justify-between border-t border-emerald-900/60 pt-4 mt-6 text-[10px] font-mono text-emerald-700">
+            <span>BOT_SYS_2.0</span>
+            <span className="text-emerald-400">ORGANIC</span>
+          </div>
+        </div>
+
+        {/* Division 3: Distar Tech Store */}
+        <div className="relative group overflow-hidden bg-indigo-950 text-indigo-50 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 border-r border-indigo-900 last:border-r-0">
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] [background-size:12px_12px] pointer-events-none" />
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-indigo-500/20" />
+
+          <div className="relative z-10">
+            <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-indigo-400/10 text-indigo-300 border border-indigo-400/20 mb-4 uppercase tracking-wider font-mono">
+              Tech / Cyber
+            </span>
+          </div>
+
+          <div className="relative z-10 my-auto">
+            <h2 className="text-3xl font-extrabold tracking-tight mb-3">
+              DISTAR <br />
+              <span className="text-indigo-400 bg-gradient-to-r from-indigo-400 via-purple-300 to-indigo-500 bg-clip-text text-transparent">
+                TECH STORE
+              </span>
+            </h2>
+            <p className="text-xs text-indigo-300/70 leading-relaxed mb-6">
+              Developer workstations, high-performance components, IoT configurations, and server accessories.
+            </p>
+            <Link
+              href="/vendors/distar-tech"
+              className="inline-block bg-indigo-500 hover:bg-indigo-600 text-indigo-955 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+            >
+              Browse Technology
+            </Link>
+          </div>
+
+          <div className="relative z-10 flex items-center justify-between border-t border-indigo-900/60 pt-4 mt-6 text-[10px] font-mono text-indigo-700">
+            <span>SYS_WORK_3.1</span>
+            <span className="text-indigo-400">ENTERPRISE</span>
+          </div>
+        </div>
+
+        {/* Division 4: Expert Services */}
+        <div className="relative group overflow-hidden bg-slate-900 text-slate-100 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 last:border-r-0">
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-teal-500/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-teal-500/20" />
+
+          <div className="relative z-10">
+            <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-teal-400/10 text-teal-400 border border-teal-400/20 mb-4 uppercase tracking-wider font-mono">
+              Consulting
+            </span>
+          </div>
+
+          <div className="relative z-10 my-auto">
+            <h2 className="text-3xl font-extrabold tracking-tight mb-3">
+              EXPERT <br />
+              <span className="text-teal-400 bg-gradient-to-r from-teal-400 via-emerald-300 to-teal-500 bg-clip-text text-transparent">
+                SERVICES
+              </span>
+            </h2>
+            <p className="text-xs text-slate-400 leading-relaxed mb-6">
+              Connect with master gardeners, professional tool technicians, home builders, and enterprise tech architects.
+            </p>
+            <Link
+              href="/vendors/expert-services"
+              className="inline-block bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+            >
+              Book Consultation
+            </Link>
+          </div>
+
+          <div className="relative z-10 flex items-center justify-between border-t border-slate-800/80 pt-4 mt-6 text-[10px] font-mono text-slate-500">
+            <span>SRV_CONS_4.5</span>
+            <span className="text-teal-400">EXPERT AGENTS</span>
+          </div>
+        </div>
+
+      </section>
+
+      {/* 2. Available Other Vendors Section */}
+      <section className="max-w-6xl mx-auto px-6 py-20 w-full border-b border-zinc-200/60 dark:border-zinc-800/60">
+        <div className="text-center mb-16">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/50 mb-3 font-mono">
+            Active Tenant Feeds
           </span>
-        </h1>
-        
-        <p className="max-w-2xl mx-auto text-base sm:text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed mb-8">
-          A secure multi-tenant commerce engine. Permissions, members, and portals are scoped entirely inside Clerk Organizations.
-        </p>
-      </header>
+          <h2 className="text-3xl font-extrabold tracking-tight mb-3">
+            Available Other Vendors
+          </h2>
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
+            Discover other custom storefronts and business entities registered in our sandbox database.
+          </p>
+        </div>
 
-      {/* Main Content */}
-      <main className="relative max-w-6xl mx-auto px-6 pb-24 z-10 w-full flex-1">
-        
-        {!user ? (
-          /* Signed Out View */
-          <div className="max-w-md mx-auto text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 rounded-2xl shadow-sm">
-            <h2 className="text-lg font-semibold mb-2">Authentication Required</h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-4">
-              Please sign in or sign up using the header buttons to access the organization sandbox.
+        {otherVendors.length === 0 ? (
+          <div className="max-w-md mx-auto text-center border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 p-8 rounded-2xl">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed font-mono">
+              No custom vendors created yet. Use the **Developer RBAC Sandbox Controls** below to register your own custom organization storefront!
             </p>
           </div>
         ) : (
-          /* Active Sandbox */
-          <section className="border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-xl">
-            {orgId ? (
-              <div className="flex items-center justify-between mb-6 flex-wrap gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-6">
-                <div>
-                  <p className="text-xs text-zinc-400 font-mono uppercase tracking-wider">Active Workspace</p>
-                  <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Active Organization Detected</h2>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {otherVendors.map((vendor) => {
+              const metadata = (vendor.publicMetadata || {}) as {
+                description?: string;
+                bannerUrl?: string;
+                address?: string;
+                phone?: string;
+              };
 
-                <div className="flex flex-col sm:items-end gap-1">
-                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 font-mono">
-                    Organization ID: <code className="text-[11px] bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded">{orgId}</code>
-                  </span>
-                  <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-300 font-mono">
-                    Your Role: <strong className="text-purple-600 dark:text-purple-400 uppercase">{orgRole}</strong>
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between mb-6 flex-wrap gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-6">
-                <div>
-                  <p className="text-xs text-zinc-400 font-mono uppercase tracking-wider">Active Workspace</p>
-                  <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">Individual Customer Session</h2>
-                </div>
-                <div className="flex flex-col sm:items-end gap-1">
-                  <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 font-mono">
-                    No active organization selected (Standard Consumer)
-                  </span>
-                </div>
-              </div>
-            )}
+              return (
+                <div
+                  key={vendor.id}
+                  className="group relative flex flex-col justify-between border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 rounded-2xl overflow-hidden hover:border-purple-500/40 dark:hover:border-purple-500/40 hover:shadow-lg transition-all duration-300"
+                >
+                  <div>
+                    {/* Header Banner */}
+                    <div className="h-24 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
+                      {metadata.bannerUrl ? (
+                        <img
+                          src={metadata.bannerUrl}
+                          alt={`${vendor.name} banner`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10" />
+                      )}
+                    </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              
-              {/* Card 1: Admin Panel */}
-              <div className={`p-6 rounded-xl border flex flex-col justify-between transition-all ${
-                hasAdminAccess 
-                  ? 'bg-zinc-50/50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-900/10 dark:border-zinc-800 dark:hover:border-zinc-700' 
-                  : 'bg-zinc-100/20 border-zinc-200/50 opacity-50 dark:bg-zinc-900/5 dark:border-zinc-900/50'
-              }`}>
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-sm tracking-tight">Organization Members</h3>
-                    <span className="text-[10px] bg-red-100/80 text-red-800 font-mono font-bold px-2 py-0.5 rounded dark:bg-red-900/30 dark:text-red-400">ORG:ADMIN</span>
+                    {/* Logo & Info */}
+                    <div className="px-6 pb-4 relative">
+                      <div className="absolute -top-6 left-6">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-white dark:border-zinc-950 bg-white shadow-sm flex items-center justify-center">
+                          <img
+                            src={vendor.imageUrl}
+                            alt={vendor.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-8">
+                        <h3 className="text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-50 group-hover:text-purple-500 transition-colors">
+                          {vendor.name}
+                        </h3>
+                        <span className="text-[9px] font-mono text-zinc-400 block mb-2">
+                          @{vendor.slug || 'no-slug'}
+                        </span>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed min-h-[2.5rem]">
+                          {metadata.description || 'No description published yet.'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
-                    Admin Console. Manage and change membership roles (`org:member`, `org:admin`, etc.) inside this active organization.
-                  </p>
+
+                  {/* Visit Action */}
+                  <div className="px-6 pb-6 pt-4 border-t border-zinc-100 dark:border-zinc-900/60 flex items-center justify-between">
+                    <span className="text-[9px] font-mono text-zinc-400">
+                      ID: {vendor.id.slice(0, 10)}...
+                    </span>
+                    <Link
+                      href={`/vendors/${vendor.slug || vendor.id}`}
+                      className="inline-flex h-8 items-center justify-center rounded-lg bg-zinc-900 hover:bg-zinc-800 px-3.5 text-[10px] font-semibold text-white dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 transition-colors cursor-pointer"
+                    >
+                      Visit Storefront &rarr;
+                    </Link>
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* 3. Collapsible Developer Sandbox Console (Clerk RBAC Controls) */}
+      {user && (
+        <section className="max-w-4xl mx-auto px-6 pt-16 pb-6 w-full">
+          <details className="group border border-purple-200/60 dark:border-purple-900/30 bg-purple-50/30 dark:bg-purple-950/10 rounded-2xl overflow-hidden shadow-sm">
+            <summary className="flex items-center justify-between p-5 cursor-pointer font-semibold text-xs text-purple-800 dark:text-purple-300 select-none font-mono">
+              <span className="flex items-center gap-2">
+                🛡️ Developer RBAC Sandbox Controls
+              </span>
+              <span className="transition-transform group-open:rotate-180">
+                ▼
+              </span>
+            </summary>
+            
+            <div className="p-6 border-t border-purple-200/60 dark:border-purple-900/20 space-y-6">
+              {orgId ? (
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200/40 dark:border-zinc-800/40 pb-4">
+                  <div>
+                    <h4 className="text-sm font-bold">Active Organization Context</h4>
+                    <p className="text-[10px] text-zinc-400 font-mono mt-0.5">Org ID: {orgId}</p>
+                  </div>
+                  <div className="text-right font-mono text-xs">
+                    <span className="text-zinc-400">Your Role:</span> <strong className="text-purple-650 dark:text-purple-400 uppercase">{orgRole}</strong>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200/40 dark:border-zinc-800/40 pb-4">
+                  <div>
+                    <h4 className="text-sm font-bold">Standard Customer Session</h4>
+                    <p className="text-[10px] text-zinc-400 font-mono mt-0.5">No active Organization selected</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Role Toggle Button */}
+              <RoleToggleButton currentRole={userRole} />
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 text-center">
                 <Link
                   href="/admin"
-                  className={`inline-flex items-center justify-center h-9 w-full rounded-lg text-xs font-semibold transition-all ${
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold border ${
                     hasAdminAccess
-                      ? 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 cursor-pointer'
-                      : 'bg-zinc-100 text-zinc-400 pointer-events-none dark:bg-zinc-900/40 dark:text-zinc-700'
+                      ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-950/40 dark:bg-red-950/20 dark:text-red-400'
+                      : 'opacity-40 border-zinc-200 text-zinc-400 pointer-events-none dark:border-zinc-800'
                   }`}
                 >
-                  {hasAdminAccess ? 'Open Admin Console' : 'Admin Access Only'}
+                  Admin Console
                 </Link>
-              </div>
-
-              {/* Card 2: Vendor Portal */}
-              <div className={`p-6 rounded-xl border flex flex-col justify-between transition-all ${
-                hasVendorAccess 
-                  ? 'bg-zinc-50/50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-900/10 dark:border-zinc-800 dark:hover:border-zinc-700' 
-                  : 'bg-zinc-100/20 border-zinc-200/50 opacity-50 dark:bg-zinc-900/5 dark:border-zinc-900/50'
-              }`}>
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-sm tracking-tight">Vendor Dashboard</h3>
-                    <span className="text-[10px] bg-amber-100/80 text-amber-800 font-mono font-bold px-2 py-0.5 rounded dark:bg-amber-900/30 dark:text-amber-400">ORG:VENDOR</span>
-                  </div>
-                  <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
-                    Simple plain text page showing order fulfillments and workspace feed for the current organization.
-                  </p>
-                </div>
                 <Link
                   href="/vendor"
-                  className={`inline-flex items-center justify-center h-9 w-full rounded-lg text-xs font-semibold transition-all ${
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold border ${
                     hasVendorAccess
-                      ? 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 cursor-pointer'
-                      : 'bg-zinc-100 text-zinc-400 pointer-events-none dark:bg-zinc-900/40 dark:text-zinc-700'
+                      ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-950/40 dark:bg-amber-950/20 dark:text-amber-400'
+                      : 'opacity-40 border-zinc-200 text-zinc-400 pointer-events-none dark:border-zinc-800'
                   }`}
                 >
-                  {hasVendorAccess ? 'Open Vendor Portal' : 'Vendor Access Only'}
+                  Vendor Portal
                 </Link>
-              </div>
-
-              {/* Card 3: Customer Portal */}
-              <div className={`p-6 rounded-xl border flex flex-col justify-between transition-all ${
-                hasCustomerAccess 
-                  ? 'bg-zinc-50/50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-900/10 dark:border-zinc-800 dark:hover:border-zinc-700' 
-                  : 'bg-zinc-100/20 border-zinc-200/50 opacity-50 dark:bg-zinc-900/5 dark:border-zinc-900/50'
-              }`}>
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-sm tracking-tight">Customer Area</h3>
-                    <span className="text-[10px] bg-blue-100/80 text-blue-800 font-mono font-bold px-2 py-0.5 rounded dark:bg-blue-900/30 dark:text-blue-400">ORG:CUSTOMER</span>
-                  </div>
-                  <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
-                    Simple buyer portal for account history and purchase details for the active organization.
-                  </p>
-                </div>
                 <Link
                   href="/customer"
-                  className={`inline-flex items-center justify-center h-9 w-full rounded-lg text-xs font-semibold transition-all ${
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold border ${
                     hasCustomerAccess
-                      ? 'bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 cursor-pointer'
-                      : 'bg-zinc-100 text-zinc-400 pointer-events-none dark:bg-zinc-900/40 dark:text-zinc-700'
+                      ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-950/40 dark:bg-blue-950/20 dark:text-blue-400'
+                      : 'opacity-40 border-zinc-200 text-zinc-400 pointer-events-none dark:border-zinc-800'
                   }`}
                 >
-                  {hasCustomerAccess ? 'Open Customer Area' : 'Customer Access Only'}
+                  Customer Area
                 </Link>
               </div>
 
-            </div>
-
-            {/* User Metadata Role Switching Console */}
-            <div className="mb-8">
-              <RoleToggleButton currentRole={userRole} />
-            </div>
-
-            <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200 dark:bg-zinc-900/50 dark:border-zinc-800 text-xs font-mono leading-relaxed text-zinc-600 dark:text-zinc-400">
-              <p className="font-bold mb-1 uppercase tracking-wider text-zinc-500">How to test org-scoped RBAC roles:</p>
-              <ol className="list-decimal list-inside space-y-1">
-                {orgId ? (
-                  <>
-                    <li>Because you created this organization, you are its <strong className="text-zinc-800 dark:text-zinc-200">org:admin</strong> and can enter all portals.</li>
-                    <li>Go to the **Admin Console** above to view the active organization members list.</li>
-                    <li>Use the Clerk **Organization Switcher** in the top header to invite another test user (or email) and assign them a specific role.</li>
-                    <li>Once they accept and sign in, change their role from the Admin dropdown to verify restricted access.</li>
-                  </>
-                ) : (
-                  <>
-                    <li>You are logged in as an individual buyer. You have full access to the **Customer Area**.</li>
-                    <li>To test **Admin** or **Vendor** workspace permissions, {canCreateOrg ? 'you can select or create a test business organization below.' : 'you must select a test business organization below (organization creation is restricted for customers).'}</li>
-                  </>
-                )}
-              </ol>
-            </div>
-
-            {!orgId && (
-              <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800 text-center">
-                <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mb-2">Are you a Business / Vendor?</h4>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6 max-w-md mx-auto">
-                  {canCreateOrg 
-                    ? "Select or create a business organization context below to unlock administrative console and vendor dashboard portals."
-                    : "Select a business organization context below to unlock administrative console and vendor dashboard portals."}
-                </p>
-                <div className="flex justify-center overflow-hidden">
-                  <OrganizationList 
-                    hidePersonal={true} 
-                    afterCreateOrganizationUrl="/" 
-                    afterSelectOrganizationUrl="/" 
-                    appearance={{
-                      elements: {
-                        organizationListCreateOrganizationButton: canCreateOrg ? 'flex' : 'hidden',
-                      }
-                    }}
-                  />
+              {!orgId && (
+                <div className="pt-4 border-t border-zinc-200/40 dark:border-zinc-800/40 text-center">
+                  <p className="text-[11px] text-zinc-500 mb-4">Select or Create a Business Organization to test Admin and Vendor controls:</p>
+                  <div className="flex justify-center overflow-hidden">
+                    <OrganizationList 
+                      hidePersonal={true} 
+                      afterCreateOrganizationUrl="/" 
+                      afterSelectOrganizationUrl="/" 
+                      appearance={{
+                        elements: {
+                          organizationListCreateOrganizationButton: 'flex',
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* Feature Cards */}
-        <section className="mt-16">
-          <h2 className="text-2xl font-bold tracking-tight text-center text-zinc-900 dark:text-zinc-50 mb-10">
-            Tenant-Isolated Access Architecture
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-650 dark:text-purple-400 font-bold font-mono text-sm">
-                01
-              </div>
-              <h3 className="text-base font-semibold">Tenant Isolation</h3>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Users can belong to multiple businesses or stores. Access control checks evaluate the active organization context.
-              </p>
+              )}
             </div>
-
-            <div className="space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-650 dark:text-indigo-400 font-bold font-mono text-sm">
-                02
-              </div>
-              <h3 className="text-base font-semibold">Clerk Native Engine</h3>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Leverages Clerk’s built-in Organization API. Role permissions are fetched and verified securely via Clerk&apos;s session tokens.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center text-pink-650 dark:text-pink-400 font-bold font-mono text-sm">
-                03
-              </div>
-              <h3 className="text-base font-semibold">Dynamic Actions</h3>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Membership lists and permissions update dynamically. Admins can update roles inside the active workspace instantly.
-              </p>
-            </div>
-          </div>
+          </details>
         </section>
+      )}
 
-      </main>
+      {/* 4. Automatic End-of-Scroll Redirector */}
+      <ScrollRedirector />
 
       {/* Footer */}
-      <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-600 w-full z-10 relative">
-        <p>&copy; {new Date().getFullYear()} Dilnova Commerce. All rights reserved.</p>
+      <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-650 bg-white dark:bg-zinc-950">
+        <p>&copy; {new Date().getFullYear()} Dilnova Marketplace. All rights reserved.</p>
       </footer>
     </div>
   );

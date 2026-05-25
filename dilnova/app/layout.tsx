@@ -54,6 +54,18 @@ export default async function RootLayout({
                 Browse Vendors
               </Link>
             </div>
+            
+            {/* Universal Search Input */}
+            <div className="flex-1 max-w-sm mx-6 hidden sm:block">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search Hardware, Plants, Tech..."
+                  className="w-full bg-zinc-100 dark:bg-zinc-900/60 text-[11px] text-zinc-800 dark:text-zinc-200 placeholder-zinc-400 border border-zinc-200/80 dark:border-zinc-800 rounded-lg py-1.5 pl-8 pr-3.5 focus:outline-none focus:ring-1 focus:ring-purple-500/40 transition-all font-sans"
+                />
+                <span className="absolute left-2.5 top-1.5 text-zinc-400 text-xs">🔍</span>
+              </div>
+            </div>
 
             <div className="flex items-center gap-4">
               <Show when="signed-out">
