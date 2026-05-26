@@ -37,7 +37,7 @@ export async function getCachedOrganizations(client: any): Promise<CachedOrg[]> 
     console.log('[Clerk Cache] Cache hit, reusing cached organizations list');
   }
 
-  return cachedOrgs;
+  return cachedOrgs || [];
 }
 
 /**
