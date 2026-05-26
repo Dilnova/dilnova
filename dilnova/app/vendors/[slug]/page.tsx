@@ -4,12 +4,23 @@ import { customStorefronts } from './custom/registry';
 import DefaultStorefront from './DefaultStorefront';
 import { getVendorProducts } from './getVendorProducts';
 import type { VendorOrg } from './custom/types';
+import { getCachedOrganizations } from '../../../utils/clerkCache';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export const revalidate = 0; // Fresh load on each request
+export const revalidate = 30; // Cache and regenerate page in background at most every 30 seconds (ISR)
+
+// Pre-render the core sub-vendor storefront paths at build-time for instant first load
+export async function generateStaticParams() {
+  return [
+    { slug: 'distar-hardware' },
+    { slug: 'distar-nursery' },
+    { slug: 'distar-tech' },
+    { slug: 'dilstar-services' },
+  ];
+}
 
 /**
  * Vendor Storefront Resolver
@@ -26,40 +37,39 @@ export default async function VendorProfilePage({ params }: PageProps) {
 
   const isDistarSubVendor = ['distar-hardware', 'distar-nursery', 'distar-tech', 'dilstar-services'].includes(slug);
 
-  // 1. Fetch organization from Clerk
-  let clerkOrg;
+  // 1. Fetch/resolve organization from Clerk using cache
+  let clerkOrg = null;
   try {
+    const orgs = await getCachedOrganizations(client);
     if (isDistarSubVendor) {
-      try {
-        clerkOrg = await client.organizations.getOrganization({ slug: 'distar' });
-      } catch {
-        // ignore and let fallback handle it
-      }
+      clerkOrg = orgs.find(
+        (o) => o.name.toLowerCase() === 'distar' || o.slug === 'distar' || (o.slug && o.slug.startsWith('distar-'))
+      );
     } else {
-      clerkOrg = await client.organizations.getOrganization({ slug });
+      clerkOrg = orgs.find(
+        (o) => o.slug === slug || o.id === slug
+      );
     }
-  } catch {
-    // ignore and let fallback handle it
-  }
 
-  if (!clerkOrg) {
-    // Fallback: search through org list
-    try {
-      const orgList = await client.organizations.getOrganizationList({ limit: 100 });
-      console.log(`[Vendor Page] Available orgs:`, orgList.data.map(o => ({ name: o.name, slug: o.slug, id: o.id })));
-      
-      if (isDistarSubVendor) {
-        clerkOrg = orgList.data.find(
-          (o) => o.name.toLowerCase() === 'distar' || o.slug === 'distar' || o.slug.startsWith('distar-')
-        );
-      } else {
-        clerkOrg = orgList.data.find(
-          (o) => o.slug === slug || o.id === slug
-        );
+    // Direct lookup fallback if not found in the cached list (for new orgs)
+    if (!clerkOrg) {
+      try {
+        const o = await client.organizations.getOrganization({ slug });
+        if (o) {
+          clerkOrg = {
+            id: o.id,
+            name: o.name,
+            slug: o.slug,
+            imageUrl: o.imageUrl,
+            publicMetadata: o.publicMetadata,
+          };
+        }
+      } catch {
+        // ignore
       }
-    } catch (e) {
-      console.error(`[Vendor Page] Failed to fetch orgs for slug: ${slug}`, e);
     }
+  } catch (e) {
+    console.error(`[Vendor Page] Failed to resolve org for slug: ${slug}`, e);
   }
 
   if (!clerkOrg) {

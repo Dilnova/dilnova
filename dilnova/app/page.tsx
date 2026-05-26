@@ -3,6 +3,7 @@ import { OrganizationList } from '@clerk/nextjs';
 import Link from 'next/link';
 import RoleToggleButton from './RoleToggleButton';
 import ScrollRedirector from './ScrollRedirector';
+import { getCachedOrganizations } from '../utils/clerkCache';
 
 export default async function Home() {
   const { orgId, orgRole } = await auth();
@@ -16,10 +17,9 @@ export default async function Home() {
   const hasVendorAccess = !!orgId && (orgRole === 'org:vendor' || orgRole === 'org:member' || orgRole === 'org:admin');
   const hasCustomerAccess = !!user && (!orgId || orgRole === 'org:customer' || orgRole === 'org:member' || orgRole === 'org:admin');
 
-  // Fetch all registered organization vendors from Clerk
+  // Fetch all registered organization vendors from Clerk (cached)
   const client = await clerkClient();
-  const orgListResponse = await client.organizations.getOrganizationList({ limit: 100 });
-  const allOrganizations = orgListResponse.data;
+  const allOrganizations = await getCachedOrganizations(client);
 
   // Filter out the core four portals so we only show "other" custom vendors
   const coreSlugs = ['distar-hardware', 'distar-nursery', 'distar-tech', 'dilstar-services'];
