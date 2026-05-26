@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import FollowButton from './FollowButton';
 import type { StorefrontProps } from './custom/types';
 
@@ -15,10 +16,13 @@ export default function DefaultStorefront({ org, products }: StorefrontProps) {
       {/* 1. Hero Banner */}
       <div className="relative h-60 md:h-80 w-full overflow-hidden border-b border-zinc-200 dark:border-zinc-800 bg-zinc-200 dark:bg-zinc-900">
         {metadata.bannerUrl ? (
-          <img
+          <Image
             src={metadata.bannerUrl}
             alt={`${org.name} banner`}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="100vw"
+            priority
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-r from-purple-500/20 via-indigo-500/20 to-blue-500/20" />
@@ -42,11 +46,14 @@ export default function DefaultStorefront({ org, products }: StorefrontProps) {
         <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 md:p-8 shadow-xl">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-zinc-100 dark:border-zinc-900">
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
-              <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden border-4 border-white dark:border-zinc-950 bg-white shadow-md flex-shrink-0">
-                <img
+              <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden border-4 border-white dark:border-zinc-950 bg-white shadow-md flex-shrink-0">
+                <Image
                   src={org.imageUrl}
                   alt={`${org.name} logo`}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 96px, 112px"
+                  priority
                 />
               </div>
               <div className="pt-2">
@@ -130,10 +137,12 @@ export default function DefaultStorefront({ org, products }: StorefrontProps) {
                     <div>
                       <div className="h-40 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
                         {product.imageUrl ? (
-                          <img
+                          <Image
                             src={product.imageUrl}
                             alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-r from-purple-500/5 via-indigo-500/5 to-blue-500/5 flex items-center justify-center text-2xl">

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { StorefrontProps } from './types';
 
 /**
@@ -56,11 +57,14 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
 
           <div className="flex flex-col md:flex-row md:items-end gap-8">
             {/* Logo */}
-            <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl overflow-hidden border-2 border-orange-500/30 bg-zinc-900 shadow-2xl shadow-orange-500/10 flex-shrink-0">
-              <img
+            <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-2xl overflow-hidden border-2 border-orange-500/30 bg-zinc-900 shadow-2xl shadow-orange-500/10 flex-shrink-0">
+              <Image
                 src={org.imageUrl}
                 alt={org.name}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 112px, 144px"
+                priority
               />
             </div>
 
@@ -173,10 +177,12 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
                     {/* Product Image */}
                     <div className="h-48 bg-zinc-800 relative overflow-hidden">
                       {product.imageUrl ? (
-                        <img
+                        <Image
                           src={product.imageUrl}
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-3xl bg-gradient-to-br from-zinc-800 to-zinc-900">
@@ -248,7 +254,7 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
       <section className="bg-zinc-950 border-t border-zinc-800">
         <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img src={org.imageUrl} alt={org.name} className="w-8 h-8 rounded-lg" />
+            <Image src={org.imageUrl} alt={org.name} width={32} height={32} className="rounded-lg" />
             <span className="text-xs font-bold text-zinc-400">{org.name}</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-zinc-600">

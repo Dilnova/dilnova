@@ -3,7 +3,9 @@ import { db } from '../../db';
 import * as schema from '../../db/schema';
 import { eq, and, ilike, or } from 'drizzle-orm';
 import Link from 'next/link';
+import Image from 'next/image';
 import CatalogFilters from './CatalogFilters';
+import { getCachedOrganizations } from '../../utils/clerkCache';
 
 export const revalidate = 0; // Fresh load on each catalog query
 
@@ -122,10 +124,12 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                       {/* Image Thumbnail */}
                       <div className="h-44 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
                         {product.imageUrl ? (
-                          <img
+                          <Image
                             src={product.imageUrl}
                             alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-r from-purple-500/5 via-indigo-500/5 to-blue-500/5 flex items-center justify-center text-2xl">
@@ -174,10 +178,12 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                       {/* Vendor Owner Label */}
                       <div className="flex items-center gap-2 border-t border-zinc-105/50 dark:border-zinc-900/40 pt-3">
                         {vendorLogo ? (
-                          <img
+                          <Image
                             src={vendorLogo}
                             alt={vendorName}
-                            className="w-5 h-5 rounded-md object-cover border border-zinc-100 dark:border-zinc-800"
+                            width={20}
+                            height={20}
+                            className="rounded-md object-cover border border-zinc-100 dark:border-zinc-800"
                           />
                         ) : (
                           <div className="w-5 h-5 rounded-md bg-zinc-200 dark:bg-zinc-800 text-[10px] flex items-center justify-center">

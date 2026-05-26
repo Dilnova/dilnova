@@ -1,16 +1,13 @@
 import { clerkClient } from '@clerk/nextjs/server';
 import Link from 'next/link';
+import Image from 'next/image';
+import { getCachedOrganizations } from '../../utils/clerkCache';
 
-export const revalidate = 0; // Ensure fresh directory data
+export const revalidate = 30; // ISR: cache and regenerate in background
 
 export default async function VendorsDirectoryPage() {
   const client = await clerkClient();
-  
-  // Fetch up to 100 organization entries from Clerk
-  const response = await client.organizations.getOrganizationList({
-    limit: 100,
-  });
-  const vendors = response.data;
+  const vendors = await getCachedOrganizations(client);
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans pb-24">
@@ -61,10 +58,12 @@ export default async function VendorsDirectoryPage() {
                     {/* Header Banner Background */}
                     <div className="h-28 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
                       {metadata.bannerUrl ? (
-                        <img
+                        <Image
                           src={metadata.bannerUrl}
                           alt={`${vendor.name} banner`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10" />
@@ -74,11 +73,13 @@ export default async function VendorsDirectoryPage() {
                     {/* Logo & Identity */}
                     <div className="px-6 pb-4 relative">
                       <div className="absolute -top-8 left-6">
-                        <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-white dark:border-zinc-950 bg-white shadow-sm flex items-center justify-center">
-                          <img
+                        <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-white dark:border-zinc-950 bg-white shadow-sm">
+                          <Image
                             src={vendor.imageUrl}
                             alt={vendor.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="64px"
                           />
                         </div>
                       </div>

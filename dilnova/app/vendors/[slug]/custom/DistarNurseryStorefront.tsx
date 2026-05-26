@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { StorefrontProps } from './types';
 
 /**
@@ -54,11 +55,14 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
 
           <div className="flex flex-col md:flex-row md:items-center gap-8">
             {/* Logo */}
-            <div className="w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-emerald-500/30 bg-emerald-900 shadow-2xl shadow-emerald-500/10 flex-shrink-0">
-              <img
+            <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-emerald-500/30 bg-emerald-900 shadow-2xl shadow-emerald-500/10 flex-shrink-0">
+              <Image
                 src={org.imageUrl}
                 alt={org.name}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 112px, 128px"
+                priority
               />
             </div>
 
@@ -146,10 +150,12 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                     {/* Image */}
                     <div className="h-52 bg-green-100/30 relative overflow-hidden">
                       {product.imageUrl ? (
-                        <img
+                        <Image
                           src={product.imageUrl}
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-700"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-green-100 to-emerald-100">
@@ -204,9 +210,9 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                     key={service.id}
                     className="flex gap-5 bg-white border border-green-200/50 rounded-2xl p-5 hover:shadow-lg hover:shadow-green-100/30 transition-all duration-300"
                   >
-                    <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-green-100">
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-green-100">
                       {service.imageUrl ? (
-                        <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover" />
+                        <Image src={service.imageUrl} alt={service.name} fill className="object-cover" sizes="80px" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-2xl">🌻</div>
                       )}
@@ -258,7 +264,7 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
       <section className="bg-emerald-950">
         <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img src={org.imageUrl} alt={org.name} className="w-8 h-8 rounded-full" />
+            <Image src={org.imageUrl} alt={org.name} width={32} height={32} className="rounded-full" />
             <span className="text-xs font-semibold text-emerald-400">{org.name}</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-emerald-600">
