@@ -7,7 +7,8 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/vendors(.*)',
   '/products(.*)',   // Allows public access to all products and services
-  '/api(.*)'          // Allows public API queries (e.g. database reads)
+  '/api(.*)',        // Allows public API queries (e.g. database reads)
+  '/_next(.*)'       // Allows public access to Next.js static files/image optimization
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

@@ -56,6 +56,11 @@ export default async function RootLayout({
               <Link href="/products" className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors">
                 Products & Services
               </Link>
+              {orgId && (orgRole === 'org:admin' || orgRole === 'org:vendor') && (
+                <Link href="/vendor/products" className="text-xs font-semibold text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors">
+                  Add Items
+                </Link>
+              )}
             </div>
 
             <div className="flex items-center gap-4">
