@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef } from 'react';
 import { addProductAction, deleteProductAction } from './actions';
-import { uploadFileToB2 } from '@/utils/b2Upload';
+import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import Image from 'next/image';
 
 interface Product {
@@ -43,7 +43,7 @@ export default function ManageProductsClient({ initialProducts, categories }: Ma
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // File Upload Handler using our Backblaze B2 utility
+  // File Upload Handler using our Cloudinary utility
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -59,13 +59,13 @@ export default function ManageProductsClient({ initialProducts, categories }: Ma
     setMessage(null);
 
     try {
-      const result = await uploadFileToB2(file, (progress) => {
+      const result = await uploadToCloudinary(file, (progress) => {
         setUploadProgress(progress.percent);
       });
 
       if (result.success && result.publicUrl) {
         setImageUrl(result.publicUrl);
-        setMessage({ type: 'success', text: 'Image uploaded successfully to Backblaze B2!' });
+        setMessage({ type: 'success', text: 'Image uploaded successfully to Cloudinary!' });
       } else {
         setMessage({ type: 'error', text: result.error || 'Upload failed' });
       }
