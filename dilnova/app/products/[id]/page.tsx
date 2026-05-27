@@ -6,7 +6,7 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, sql, desc, and } from 'drizzle-orm';
 import { getCachedOrganizations, type CachedOrg } from '@/utils/clerkCache';
-import ProductImageZoom from './ProductImageZoom';
+import ProductGalleryPlayer from './ProductGalleryPlayer';
 import WishlistButton from './WishlistButton';
 import ReviewsSection from './ReviewsSection';
 import QASection from './QASection';
@@ -149,6 +149,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
     currency: 'USD',
   });
 
+  const mediaPayload = Array.isArray(product.media) && product.media.length > 0
+    ? (product.media as { url: string; type: 'image' | 'video' }[])
+    : product.imageUrl
+      ? [{ url: product.imageUrl, type: 'image' as const }]
+      : [];
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans pb-24">
       {/* Top Breadcrumb Nav */}
@@ -198,24 +204,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           
           {/* Left Column: Image Area (5 cols) */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="relative">
-              {product.imageUrl ? (
-                <ProductImageZoom imageUrl={product.imageUrl} alt={product.name} />
-              ) : (
-                <div className="relative w-full aspect-square bg-zinc-100 dark:bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-200/50 dark:border-zinc-800 flex items-center justify-center text-6xl">
-                  📦
-                </div>
-              )}
-              
-              {/* Type Badge */}
-              <span className={`absolute top-4 right-4 text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-md z-10 ${
-                product.type === 'service'
-                  ? 'bg-emerald-500 text-emerald-950'
-                  : 'bg-indigo-500 text-indigo-50'
-              }`}>
-                {product.type}
-              </span>
-            </div>
+            <ProductGalleryPlayer media={mediaPayload} alt={product.name} type={product.type} />
           </div>
 
           {/* Right Column: Title, Price, Description, Vendor Info (7 cols) */}

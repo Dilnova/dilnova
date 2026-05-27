@@ -5,13 +5,14 @@ import { addProductAction, deleteProductAction } from './actions';
 import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import Image from 'next/image';
 
-interface Product {
+export interface Product {
   id: string;
   name: string;
   type: string; // 'product' | 'service'
   description: string | null;
   price: number;
   imageUrl: string | null;
+  media?: { url: string; type: 'image' | 'video' }[] | null;
   categoryId: string | null;
 }
 
@@ -25,9 +26,14 @@ interface Category {
 interface ManageProductsClientProps {
   initialProducts: Product[];
   categories: Category[];
+  maxMediaLimit: number;
 }
 
-export default function ManageProductsClient({ initialProducts, categories }: ManageProductsClientProps) {
+export default function ManageProductsClient({
+  initialProducts,
+  categories,
+  maxMediaLimit,
+}: ManageProductsClientProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [name, setName] = useState('');
   const [type, setType] = useState<'product' | 'service'>('product');
@@ -35,8 +41,8 @@ export default function ManageProductsClient({ initialProducts, categories }: Ma
   const [price, setPrice] = useState('');
   const [categoryId, setCategoryId] = useState('');
   
-  // Image Upload State
-  const [imageUrl, setImageUrl] = useState('');
+  // Media Upload State (multiple files)
+  const [media, setMedia] = useState<{ url: string; type: 'image' | 'video' }[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +55,12 @@ export default function ManageProductsClient({ initialProducts, categories }: Ma
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Enforce 10MB limit (standard for products, can be adjusted)
+    if (media.length >= maxMediaLimit) {
+      setMessage({ type: 'error', text: `Maximum media upload limit of ${maxMediaLimit} reached.` });
+      return;
+    }
+
+    // Enforce 10MB limit
     if (file.size > 10 * 1024 * 1024) {
       setMessage({ type: 'error', text: 'File size exceeds 10MB limit.' });
       return;
@@ -59,24 +70,32 @@ export default function ManageProductsClient({ initialProducts, categories }: Ma
     setUploadProgress(0);
     setMessage(null);
 
+    const fileType = file.type.startsWith('video/') ? ('video' as const) : ('image' as const);
+
     try {
       const result = await uploadToCloudinary(file, (progress) => {
         setUploadProgress(progress.percent);
       });
 
       if (result.success && result.publicUrl) {
-        setImageUrl(result.publicUrl);
-        setMessage({ type: 'success', text: 'Image uploaded successfully to Cloudinary!' });
+        const newItem = { url: result.publicUrl, type: fileType };
+        setMedia((prev) => [...prev, newItem]);
+        setMessage({ type: 'success', text: `${fileType === 'video' ? 'Video' : 'Image'} uploaded successfully to Cloudinary!` });
       } else {
         setMessage({ type: 'error', text: result.error || 'Upload failed' });
       }
     } catch (err) {
       console.error(err);
-      setMessage({ type: 'error', text: 'An error occurred during image upload.' });
+      setMessage({ type: 'error', text: 'An error occurred during media upload.' });
     } finally {
       setIsUploading(false);
       setUploadProgress(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const handleRemoveMedia = (index: number) => {
+    setMedia((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleAddItem = (e: React.FormEvent) => {
@@ -96,12 +115,14 @@ export default function ManageProductsClient({ initialProducts, categories }: Ma
 
     startTransition(async () => {
       try {
+        const primaryThumbnail = media[0]?.url || '';
         const result = await addProductAction({
           name,
           type,
           description,
           priceInDollars: priceNum,
-          imageUrl,
+          imageUrl: primaryThumbnail,
+          media: media,
           categoryId,
         });
 
@@ -115,7 +136,8 @@ export default function ManageProductsClient({ initialProducts, categories }: Ma
             type,
             description,
             price: Math.round(priceNum * 100),
-            imageUrl: imageUrl || null,
+            imageUrl: primaryThumbnail || null,
+            media: media,
             categoryId: categoryId || null,
           };
           setProducts([newProduct, ...products]);
@@ -125,8 +147,7 @@ export default function ManageProductsClient({ initialProducts, categories }: Ma
           setDescription('');
           setPrice('');
           setCategoryId('');
-          setImageUrl('');
-          if (fileInputRef.current) fileInputRef.current.value = '';
+          setMedia([]);
         }
       } catch (err) {
         setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to add item.' });
@@ -358,54 +379,72 @@ export default function ManageProductsClient({ initialProducts, categories }: Ma
                 placeholder="Details about product materials, sizes, or service inclusions..."
                 className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500"
               />
-            </div>
-
-            {/* Backblaze B2 Image Upload */}
-            <div className="space-y-2">
+                        {/* Cloudinary Gallery Upload */}
+            <div className="space-y-2.5">
               <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 font-mono">
-                Direct Backblaze B2 Upload
+                Cloudinary Media Gallery
               </label>
+
+              {/* Uploaded Gallery Grid */}
+              {media.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 border border-zinc-200 dark:border-zinc-800/80 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
+                  {media.map((item, index) => (
+                    <div
+                      key={index}
+                      className="relative aspect-square rounded-lg overflow-hidden border border-zinc-250 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900"
+                    >
+                      {item.type === 'video' ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-zinc-300 p-1 text-center">
+                          <span className="text-xl">🎬</span>
+                          <span className="text-[8px] font-mono mt-1 truncate max-w-full">Video</span>
+                        </div>
+                      ) : (
+                        <Image
+                          src={item.url}
+                          alt="Gallery item preview"
+                          fill
+                          className="object-cover"
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMedia(index)}
+                        className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-md text-[8px] px-1 py-0.5 cursor-pointer transition-all shadow"
+                        title="Remove media"
+                      >
+                        ✕
+                      </button>
+                      {index === 0 && (
+                        <span className="absolute bottom-1 left-1 bg-purple-700/90 text-white text-[7px] px-1 py-0.5 rounded font-bold uppercase tracking-wide">
+                          Primary
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Upload Drop Zone / Button */}
               <div className="border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-zinc-50/50 dark:bg-zinc-900/10 flex flex-col items-center justify-center gap-2">
+                <svg className="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
                 
-                {imageUrl ? (
-                  /* Uploaded Image Thumbnail Preview */
-                  <div className="relative w-full h-32 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900">
-                    <Image
-                      src={imageUrl}
-                      alt="Uploaded File Preview"
-                      fill
-                      className="object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setImageUrl('')}
-                      className="absolute top-2 right-2 bg-zinc-900/80 hover:bg-zinc-950 text-white rounded-md text-[10px] px-2 py-1 transition-all"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  /* Upload input state */
-                  <>
-                    <svg className="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    
-                    <div className="text-center">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                        className="text-xs font-semibold text-purple-700 dark:text-purple-400 hover:underline disabled:opacity-50 cursor-pointer"
-                      >
-                        {isUploading ? 'Uploading to B2...' : 'Click to Upload Media'}
-                      </button>
-                      <p className="text-[10px] text-zinc-400 mt-0.5 font-mono">PNG, JPG, WEBP, or MP4 (Max 10MB)</p>
-                    </div>
-                  </>
-                )}
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading || media.length >= maxMediaLimit}
+                    className="text-xs font-semibold text-purple-700 dark:text-purple-400 hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer"
+                  >
+                    {isUploading 
+                      ? 'Uploading to Cloudinary...' 
+                      : media.length >= maxMediaLimit
+                        ? `Media Limit Reached (${maxMediaLimit})`
+                        : `Click to Add Media (${media.length}/${maxMediaLimit})`}
+                  </button>
+                  <p className="text-[10px] text-zinc-400 mt-0.5 font-mono">PNG, JPG, WEBP, or MP4 (Max 10MB)</p>
+                </div>
 
                 <input
                   type="file"
@@ -431,7 +470,7 @@ export default function ManageProductsClient({ initialProducts, categories }: Ma
                   </div>
                 </div>
               )}
-            </div>
+            </div>  </div>
 
             {/* Submit Button */}
             <button

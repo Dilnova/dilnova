@@ -5,6 +5,7 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath, updateTag } from 'next/cache';
+import { getSystemSetting } from '@/utils/settings';
 
 interface AddProductInput {
   name: string;
@@ -12,6 +13,7 @@ interface AddProductInput {
   description: string;
   priceInDollars: number;
   imageUrl: string;
+  media: { url: string; type: 'image' | 'video' }[];
   categoryId: string; // uuid
 }
 
@@ -50,6 +52,12 @@ export async function addProductAction(data: AddProductInput) {
     // Convert price to cents to avoid floating-point arithmetic errors
     const priceInCents = Math.round(data.priceInDollars * 100);
 
+    // Load max media uploads config and validate
+    const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
+    const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
+
+    const mediaPayload = Array.isArray(data.media) ? data.media.slice(0, maxMediaLimit) : [];
+
     // 4. Secure Insert
     await db.insert(schema.products).values({
       name,
@@ -57,6 +65,7 @@ export async function addProductAction(data: AddProductInput) {
       description,
       price: priceInCents,
       imageUrl: imageUrl || null,
+      media: mediaPayload,
       orgId: orgId, // Tied securely to user's current session orgId
       categoryId: categoryId || null,
     });

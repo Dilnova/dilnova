@@ -1,4 +1,10 @@
-import { pgTable, text, timestamp, integer, uuid, AnyPgColumn, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, uuid, AnyPgColumn, unique, jsonb } from 'drizzle-orm/pg-core';
+
+export const systemSettings = pgTable('system_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
 
 export const categories = pgTable('categories', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -18,6 +24,7 @@ export const products = pgTable('products', {
   orgId: text('org_id').notNull(), // Links to Clerk Organization ID
   categoryId: uuid('category_id').references(() => categories.id), // Links to category
   views: integer('views').default(0).notNull(),
+  media: jsonb('media').$type<{ url: string; type: 'image' | 'video' }[]>().default([]).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

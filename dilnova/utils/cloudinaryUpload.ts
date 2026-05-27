@@ -36,7 +36,8 @@ export async function uploadToCloudinary(
 
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, true);
+    const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, true);
 
     // Track upload progress
     if (onProgress && xhr.upload) {

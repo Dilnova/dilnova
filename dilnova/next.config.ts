@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://*.backblazeb2.com; connect-src 'self' https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://api.clerk.com; frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev; upgrade-insecure-requests;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://*.backblazeb2.com; connect-src 'self' https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://api.clerk.com https://api.cloudinary.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev; upgrade-insecure-requests;",
           },
           {
             key: 'X-Frame-Options',

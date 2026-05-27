@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import ManageProductsClient from './ManageProductsClient';
+import ManageProductsClient, { type Product } from './ManageProductsClient';
+import { getSystemSetting } from '@/utils/settings';
 
 export const revalidate = 0; // Fresh load on each edit/view session
 
@@ -28,6 +29,7 @@ export default async function VendorProductsPage() {
       description: schema.products.description,
       price: schema.products.price,
       imageUrl: schema.products.imageUrl,
+      media: schema.products.media,
       categoryId: schema.products.categoryId,
     })
     .from(schema.products)
@@ -42,6 +44,10 @@ export default async function VendorProductsPage() {
       parentId: schema.categories.parentId,
     })
     .from(schema.categories);
+
+  // Fetch max media limit setting
+  const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
+  const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
 
   return (
     <main className="p-8 max-w-7xl mx-auto font-sans">
@@ -79,10 +85,11 @@ export default async function VendorProductsPage() {
 
         <hr className="border-zinc-200 dark:border-zinc-800 my-6" />
 
-        {/* Client Management Component (Integrated with B2 Uploader) */}
+        {/* Client Management Component (Integrated with Cloudinary Uploader) */}
         <ManageProductsClient 
-          initialProducts={vendorProducts} 
+          initialProducts={vendorProducts as Product[]} 
           categories={categories} 
+          maxMediaLimit={maxMediaLimit}
         />
         
       </div>

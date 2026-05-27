@@ -8,6 +8,7 @@ import {
   updateProductAction,
   deleteProductAction,
 } from './actions';
+import { updateSystemSettingAction } from './settingsActions';
 
 interface Category {
   id: string;
@@ -40,17 +41,22 @@ interface SuperAdminClientProps {
     totalCategories: number;
     totalViews: number;
   };
+  maxMediaLimit: number;
 }
 
 export default function SuperAdminClient({
   categories,
   products,
   stats,
+  maxMediaLimit,
 }: SuperAdminClientProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'categories' | 'products'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'categories' | 'products' | 'settings'>('overview');
   const [isPending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Settings State
+  const [mediaLimitInput, setMediaLimitInput] = useState(maxMediaLimit);
 
   // Category Form State
   const [categoryName, setCategoryName] = useState('');
@@ -235,6 +241,27 @@ export default function SuperAdminClient({
     });
   };
 
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (mediaLimitInput < 1 || mediaLimitInput > 20) {
+      triggerNotification(false, 'Media limit must be between 1 and 20.');
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        await updateSystemSettingAction('max_media_limit', mediaLimitInput.toString());
+        triggerNotification(true, 'System settings updated successfully.');
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Failed to update system settings.';
+        triggerNotification(false, msg);
+      }
+    });
+  };
+
   // Filter listings
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
@@ -267,7 +294,7 @@ export default function SuperAdminClient({
 
         {/* Tab switcher */}
         <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800/80 self-start">
-          {(['overview', 'categories', 'products'] as const).map((tab) => (
+          {(['overview', 'categories', 'products', 'settings'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -551,6 +578,42 @@ export default function SuperAdminClient({
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* ── SETTINGS TAB ────────────────────────────────────────── */}
+      {activeTab === 'settings' && (
+        <div className="bg-white border border-zinc-200 rounded-2xl p-6 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm max-w-xl space-y-6">
+          <div>
+            <h2 className="text-base font-extrabold text-zinc-900 dark:text-zinc-50">System Configurations</h2>
+            <p className="text-[11px] text-zinc-400 font-mono mt-0.5">Configure system thresholds and global limits</p>
+          </div>
+
+          <form onSubmit={handleSaveSettings} className="space-y-4">
+            <div>
+              <label className="text-[10px] font-mono font-bold text-zinc-450 block mb-1">Max Media Upload Limit (Images/Videos)</label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                required
+                value={mediaLimitInput}
+                onChange={(e) => setMediaLimitInput(parseInt(e.target.value, 10) || 1)}
+                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-transparent font-mono focus:outline-none focus:ring-1 focus:ring-purple-500"
+              />
+              <p className="text-[10px] text-zinc-400 mt-1">
+                Configure the maximum number of images and videos that vendors can attach to each product or service listing. (Min: 1, Max: 20).
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isPending}
+              className="py-2 px-4 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm shadow-purple-900/10"
+            >
+              {isPending ? 'Saving Configurations...' : 'Save Configurations'}
+            </button>
+          </form>
         </div>
       )}
 
