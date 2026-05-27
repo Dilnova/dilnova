@@ -16,6 +16,7 @@ export const products = pgTable('products', {
   imageUrl: text('image_url'),
   orgId: text('org_id').notNull(), // Links to Clerk Organization ID
   categoryId: uuid('category_id').references(() => categories.id), // Links to category
+  views: integer('views').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { getCachedOrganizations, type CachedOrg } from '@/utils/clerkCache';
 import ProductImageZoom from './ProductImageZoom';
 
@@ -35,6 +35,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
   }
 
   const { product, category } = result;
+
+  // Increment view count in background (don't block page render for faster TTFB)
+  db.update(schema.products)
+    .set({
+      views: sql`${schema.products.views} + 1`,
+    })
+    .where(eq(schema.products.id, id))
+    .catch((err) => console.error('Failed to increment view count:', err));
 
   // 2. Fetch Seller Organization from Clerk (Optimized with cached lookup + fallback)
   const client = await clerkClient();
@@ -135,12 +143,21 @@ export default async function ProductDetailPage({ params }: PageProps) {
             
             {/* Upper Section */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                {category && (
+              <div className="flex items-center justify-between gap-2">
+                {category ? (
                   <span className="text-[10px] font-mono uppercase tracking-widest text-purple-600 dark:text-purple-400 font-bold">
                     {category.name}
                   </span>
+                ) : (
+                  <div />
                 )}
+                <div className="flex items-center gap-1 text-xs text-zinc-450 dark:text-zinc-500 font-mono" title="Total page views">
+                  <svg className="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>{product.views + 1} views</span>
+                </div>
               </div>
 
               <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
