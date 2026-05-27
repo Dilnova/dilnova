@@ -10,6 +10,8 @@ import ProductImageZoom from './ProductImageZoom';
 import WishlistButton from './WishlistButton';
 import ReviewsSection from './ReviewsSection';
 import QASection from './QASection';
+import { rateLimit } from '@/utils/rateLimit';
+import { logger } from '@/utils/logger';
 
 interface PageProps {
   params: Promise<{
@@ -100,13 +102,19 @@ export default async function ProductDetailPage({ params }: PageProps) {
     parentCategory = parentResult || null;
   }
 
-  // Increment view count in background (don't block page render for faster TTFB)
-  db.update(schema.products)
-    .set({
-      views: sql`${schema.products.views} + 1`,
+  // Increment view count in background, rate limited to 3 per minute per IP to prevent spam
+  rateLimit(3, 60 * 1000)
+    .then(() => {
+      db.update(schema.products)
+        .set({
+          views: sql`${schema.products.views} + 1`,
+        })
+        .where(eq(schema.products.id, id))
+        .catch((err) => logger.error('Failed to increment view count', err, { productId: id }));
     })
-    .where(eq(schema.products.id, id))
-    .catch((err) => console.error('Failed to increment view count:', err));
+    .catch(() => {
+      // Silently ignore rate limit errors to ensure seamless UX for the customer
+    });
 
   // 2. Fetch Seller Organization from Clerk (Optimized with cached lookup + fallback)
   const client = await clerkClient();
@@ -128,7 +136,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       };
     }
   } catch (err) {
-    console.error('Failed to resolve seller organization details:', err);
+    logger.error('Failed to resolve seller organization details', err, { productId: product.id, orgId: product.orgId });
   }
 
   const vendorName = orgDetails ? orgDetails.name : 'Unknown Vendor';

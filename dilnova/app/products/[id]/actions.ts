@@ -5,6 +5,8 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { rateLimit } from '@/utils/rateLimit';
+import { logger } from '@/utils/logger';
 
 /**
  * Toggles a product in/out of the user's wishlist.
@@ -12,6 +14,7 @@ import { revalidatePath } from 'next/cache';
  */
 export async function toggleWishlistAction(productId: string) {
   try {
+    await rateLimit(10, 60 * 1000); // Max 10 wishlist toggles per minute per IP
     const { userId } = await auth();
     if (!userId) {
       throw new Error('You must be signed in to add items to your wishlist.');
@@ -57,7 +60,7 @@ export async function toggleWishlistAction(productId: string) {
       return { success: true, isFavorited: true };
     }
   } catch (error) {
-    console.error('Error toggling wishlist:', error);
+    logger.error('Error toggling wishlist', error);
     throw new Error(error instanceof Error ? error.message : 'Database error');
   }
 }
@@ -68,6 +71,7 @@ export async function toggleWishlistAction(productId: string) {
  */
 export async function submitReviewAction(productId: string, rating: number, comment: string) {
   try {
+    await rateLimit(5, 60 * 1000); // Max 5 reviews per minute per IP
     const { userId } = await auth();
     const user = await currentUser();
 
@@ -123,7 +127,7 @@ export async function submitReviewAction(productId: string, rating: number, comm
     revalidatePath('/products');
     return { success: true };
   } catch (error) {
-    console.error('Error submitting review:', error);
+    logger.error('Error submitting review', error, { productId });
     throw new Error(error instanceof Error ? error.message : 'Database error');
   }
 }
@@ -133,6 +137,7 @@ export async function submitReviewAction(productId: string, rating: number, comm
  */
 export async function submitQuestionAction(productId: string, content: string) {
   try {
+    await rateLimit(5, 60 * 1000); // Max 5 questions per minute per IP
     const { userId } = await auth();
     const user = await currentUser();
 
@@ -159,7 +164,7 @@ export async function submitQuestionAction(productId: string, content: string) {
     revalidatePath(`/products/${productId}`);
     return { success: true };
   } catch (error) {
-    console.error('Error submitting question:', error);
+    logger.error('Error submitting question', error, { productId });
     throw new Error(error instanceof Error ? error.message : 'Database error');
   }
 }
@@ -170,6 +175,7 @@ export async function submitQuestionAction(productId: string, content: string) {
  */
 export async function submitAnswerAction(questionId: string, answer: string) {
   try {
+    await rateLimit(10, 60 * 1000); // Max 10 answers per minute per IP
     const { userId, orgId, orgRole } = await auth();
 
     if (!userId || !orgId) {
@@ -218,7 +224,7 @@ export async function submitAnswerAction(questionId: string, answer: string) {
     revalidatePath(`/products/${questionDetails.product.id}`);
     return { success: true };
   } catch (error) {
-    console.error('Error answering question:', error);
+    logger.error('Error answering question', error, { questionId });
     throw new Error(error instanceof Error ? error.message : 'Database error');
   }
 }
