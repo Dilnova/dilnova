@@ -5,7 +5,6 @@ import { eq, and, ilike, or } from 'drizzle-orm';
 import Link from 'next/link';
 import Image from 'next/image';
 import CatalogFilters from './CatalogFilters';
-import { getCachedOrganizations } from '../../utils/clerkCache';
 
 export const revalidate = 0; // Fresh load on each catalog query
 
@@ -120,7 +119,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                     key={product.id}
                     className="group flex flex-col justify-between border border-zinc-200/80 dark:border-zinc-850/80 bg-white dark:bg-zinc-950 rounded-2xl overflow-hidden hover:border-purple-500/40 dark:hover:border-purple-500/40 hover:shadow-lg transition-all duration-305"
                   >
-                    <div>
+                    <Link href={`/products/${product.id}`} target="_blank" className="flex-1 flex flex-col group">
                       {/* Image Thumbnail */}
                       <div className="h-44 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
                         {product.imageUrl ? (
@@ -148,24 +147,26 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                       </div>
 
                       {/* Content Card Body */}
-                      <div className="p-4">
-                        <div className="flex items-center gap-1.5 mb-2">
-                          {category && (
-                            <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">
-                              {category.name}
-                            </span>
-                          )}
-                        </div>
+                      <div className="p-4 flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            {category && (
+                              <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">
+                                {category.name}
+                              </span>
+                            )}
+                          </div>
 
-                        <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50 leading-snug line-clamp-1 mb-1">
-                          {product.name}
-                        </h3>
-                        
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed min-h-[2.5rem]">
-                          {product.description || 'No description provided.'}
-                        </p>
+                          <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50 leading-snug line-clamp-1 mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                            {product.name}
+                          </h3>
+                          
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed min-h-[2.5rem]">
+                            {product.description || 'No description provided.'}
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    </Link>
 
                     {/* Price and Vendor Ownership Row */}
                     <div className="p-4 border-t border-zinc-100 dark:border-zinc-900/60">

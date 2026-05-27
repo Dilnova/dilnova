@@ -145,38 +145,49 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                 return (
                   <div
                     key={product.id}
-                    className="group bg-green-50/50 border border-green-200/50 rounded-3xl overflow-hidden hover:shadow-xl hover:shadow-green-100/50 hover:border-green-300/60 transition-all duration-300"
+                    className="group bg-green-50/50 border border-green-200/50 rounded-3xl overflow-hidden hover:shadow-xl hover:shadow-green-100/50 hover:border-green-300/60 transition-all duration-300 flex flex-col justify-between"
                   >
-                    {/* Image */}
-                    <div className="h-52 bg-green-100/30 relative overflow-hidden">
-                      {product.imageUrl ? (
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.name}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-700"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-green-100 to-emerald-100">
-                          🌿
-                        </div>
-                      )}
-                    </div>
+                    <Link href={`/products/${product.id}`} target="_blank" className="flex-1 flex flex-col group/item">
+                      {/* Image */}
+                      <div className="h-52 bg-green-100/30 relative overflow-hidden">
+                        {product.imageUrl ? (
+                          <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-700"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-green-100 to-emerald-100">
+                            🌿
+                          </div>
+                        )}
+                      </div>
 
-                    {/* Content */}
-                    <div className="p-5">
-                      <h3 className="text-sm font-bold text-emerald-900 line-clamp-1 group-hover:text-green-700 transition-colors">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs text-emerald-700/60 line-clamp-2 mt-1.5 leading-relaxed">
-                        {product.description || 'A beautiful addition to your collection.'}
-                      </p>
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-green-200/40">
+                      {/* Content */}
+                      <div className="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                          <h3 className="text-sm font-bold text-emerald-900 line-clamp-1 group-hover/item:text-green-700 transition-colors">
+                            {product.name}
+                          </h3>
+                          <p className="text-xs text-emerald-700/60 line-clamp-2 mt-1.5 leading-relaxed">
+                            {product.description || 'A beautiful addition to your collection.'}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+
+                    <div className="px-5 pb-5">
+                      <div className="flex items-center justify-between pt-4 border-t border-green-200/40">
                         <span className="text-lg font-extrabold text-emerald-800">{formattedPrice}</span>
-                        <button className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white transition-colors cursor-pointer">
-                          Add to Cart
-                        </button>
+                        <Link
+                          href={`/products/${product.id}`}
+                          target="_blank"
+                          className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white transition-colors cursor-pointer text-center"
+                        >
+                          View Details
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -206,9 +217,11 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                 });
 
                 return (
-                  <div
+                  <Link
                     key={service.id}
-                    className="flex gap-5 bg-white border border-green-200/50 rounded-2xl p-5 hover:shadow-lg hover:shadow-green-100/30 transition-all duration-300"
+                    href={`/products/${service.id}`}
+                    target="_blank"
+                    className="flex gap-5 bg-white border border-green-200/50 rounded-2xl p-5 hover:shadow-lg hover:shadow-green-100/30 transition-all duration-300 group/item hover:border-green-300/60"
                   >
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-green-100">
                       {service.imageUrl ? (
@@ -218,7 +231,7 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                       )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-sm font-bold text-emerald-900">{service.name}</h3>
+                      <h3 className="text-sm font-bold text-emerald-900 group-hover/item:text-green-700 transition-colors">{service.name}</h3>
                       <p className="text-xs text-emerald-700/60 mt-1 line-clamp-2 leading-relaxed">
                         {service.description}
                       </p>
@@ -227,7 +240,7 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                         <span className="text-[10px] font-mono text-emerald-600/40 uppercase">per session</span>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

@@ -172,55 +172,63 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
                 return (
                   <div
                     key={product.id}
-                    className="group relative bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-orange-500/40 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300"
+                    className="group relative bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-orange-500/40 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 flex flex-col justify-between"
                   >
-                    {/* Product Image */}
-                    <div className="h-48 bg-zinc-800 relative overflow-hidden">
-                      {product.imageUrl ? (
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.name}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-3xl bg-gradient-to-br from-zinc-800 to-zinc-900">
-                          🔧
-                        </div>
-                      )}
+                    <Link href={`/products/${product.id}`} target="_blank" className="flex-1 flex flex-col group/item">
+                      {/* Product Image */}
+                      <div className="h-48 bg-zinc-800 relative overflow-hidden">
+                        {product.imageUrl ? (
+                          <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-3xl bg-gradient-to-br from-zinc-800 to-zinc-900">
+                            🔧
+                          </div>
+                        )}
 
-                      {/* Type badge */}
-                      <span className={`absolute top-3 right-3 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-1 rounded ${
-                        product.type === 'service'
-                          ? 'bg-teal-500 text-teal-950'
-                          : 'bg-orange-500 text-orange-950'
-                      }`}>
-                        {product.type}
-                      </span>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-5">
-                      {product.categoryName && (
-                        <span className="text-[9px] font-mono text-orange-500/60 uppercase tracking-widest">
-                          {product.categoryName}
+                        {/* Type badge */}
+                        <span className={`absolute top-3 right-3 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-1 rounded ${
+                          product.type === 'service'
+                            ? 'bg-teal-500 text-teal-950'
+                            : 'bg-orange-500 text-orange-950'
+                        }`}>
+                          {product.type}
                         </span>
-                      )}
-                      <h3 className="text-sm font-bold text-white mt-1 line-clamp-1 group-hover:text-orange-400 transition-colors">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs text-zinc-500 line-clamp-2 mt-1.5 leading-relaxed">
-                        {product.description || 'No description available.'}
-                      </p>
-                    </div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                          {product.categoryName && (
+                            <span className="text-[9px] font-mono text-orange-500/60 uppercase tracking-widest">
+                              {product.categoryName}
+                            </span>
+                          )}
+                          <h3 className="text-sm font-bold text-white mt-1 line-clamp-1 group-hover/item:text-orange-400 transition-colors">
+                            {product.name}
+                          </h3>
+                          <p className="text-xs text-zinc-500 line-clamp-2 mt-1.5 leading-relaxed">
+                            {product.description || 'No description available.'}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
 
                     {/* Price & CTA */}
                     <div className="px-5 pb-5 flex items-center justify-between border-t border-zinc-800/60 pt-4">
                       <span className="text-lg font-black text-white">{formattedPrice}</span>
-                      <button className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-xs font-bold text-white transition-colors cursor-pointer">
+                      <Link
+                        href={`/products/${product.id}`}
+                        target="_blank"
+                        className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-xs font-bold text-white transition-colors cursor-pointer text-center"
+                      >
                         View Details
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 );
