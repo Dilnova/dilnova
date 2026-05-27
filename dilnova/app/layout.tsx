@@ -62,6 +62,11 @@ export default async function RootLayout({
                   Add Items
                 </Link>
               )}
+              {userRole === 'admin' && (
+                <Link href="/superadmin" className="text-xs font-bold text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors">
+                  Superadmin Console
+                </Link>
+              )}
             </div>
 
             <div className="flex items-center gap-4">
