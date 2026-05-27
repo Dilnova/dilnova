@@ -1,9 +1,10 @@
-import { pgTable, text, timestamp, integer, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, uuid, AnyPgColumn } from 'drizzle-orm/pg-core';
 
 export const categories = pgTable('categories', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
   slug: text('slug').unique().notNull(),
+  parentId: uuid('parent_id').references((): AnyPgColumn => categories.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

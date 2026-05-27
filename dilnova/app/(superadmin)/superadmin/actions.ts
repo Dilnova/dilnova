@@ -16,7 +16,7 @@ async function checkSuperAdmin() {
 
 // ── CATEGORIES CRUD ───────────────────────────────────────────
 
-export async function createCategoryAction(name: string, slug: string) {
+export async function createCategoryAction(name: string, slug: string, parentId?: string | null) {
   await checkSuperAdmin();
 
   if (!name.trim() || !slug.trim()) {
@@ -26,17 +26,22 @@ export async function createCategoryAction(name: string, slug: string) {
   await db.insert(schema.categories).values({
     name: name.trim(),
     slug: slug.trim().toLowerCase(),
+    parentId: parentId || null,
   });
 
   revalidatePath('/superadmin');
   revalidatePath('/products');
 }
 
-export async function updateCategoryAction(id: string, name: string, slug: string) {
+export async function updateCategoryAction(id: string, name: string, slug: string, parentId?: string | null) {
   await checkSuperAdmin();
 
   if (!name.trim() || !slug.trim()) {
     throw new Error('Name and slug cannot be empty.');
+  }
+
+  if (parentId === id) {
+    throw new Error('A category cannot refer to itself as its parent.');
   }
 
   await db
@@ -44,6 +49,7 @@ export async function updateCategoryAction(id: string, name: string, slug: strin
     .set({
       name: name.trim(),
       slug: slug.trim().toLowerCase(),
+      parentId: parentId || null,
     })
     .where(eq(schema.categories.id, id));
 

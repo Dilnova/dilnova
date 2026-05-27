@@ -1,7 +1,7 @@
 import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
-import { eq, and, ilike, or } from 'drizzle-orm';
+import { eq, and, ilike, or, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import Image from 'next/image';
 import CatalogFilters from './CatalogFilters';
@@ -47,7 +47,13 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   }
 
   if (selectedCategory) {
-    whereClauses.push(eq(schema.products.categoryId, selectedCategory.id));
+    if (!selectedCategory.parentId) {
+      const subCategoryIds = categoriesList.filter((c) => c.parentId === selectedCategory.id).map((c) => c.id);
+      const categoryIdsToFilter = [selectedCategory.id, ...subCategoryIds];
+      whereClauses.push(inArray(schema.products.categoryId, categoryIdsToFilter));
+    } else {
+      whereClauses.push(eq(schema.products.categoryId, selectedCategory.id));
+    }
   }
 
   if (currentType !== 'all') {

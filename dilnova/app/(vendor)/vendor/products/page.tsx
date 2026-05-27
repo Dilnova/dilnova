@@ -39,6 +39,7 @@ export default async function VendorProductsPage() {
       id: schema.categories.id,
       name: schema.categories.name,
       slug: schema.categories.slug,
+      parentId: schema.categories.parentId,
     })
     .from(schema.categories);
 

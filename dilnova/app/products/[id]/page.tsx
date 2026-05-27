@@ -36,6 +36,17 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const { product, category } = result;
 
+  // Fetch parent category if this is a subcategory
+  let parentCategory = null;
+  if (category?.parentId) {
+    const [parentResult] = await db
+      .select()
+      .from(schema.categories)
+      .where(eq(schema.categories.id, category.parentId))
+      .limit(1);
+    parentCategory = parentResult || null;
+  }
+
   // Increment view count in background (don't block page render for faster TTFB)
   db.update(schema.products)
     .set({
@@ -88,6 +99,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
           <span>/</span>
           {category ? (
             <>
+              {parentCategory && (
+                <>
+                  <Link href={`/products?category=${parentCategory.slug}`} className="hover:text-purple-500 uppercase transition-colors">
+                    {parentCategory.name}
+                  </Link>
+                  <span>/</span>
+                </>
+              )}
               <Link href={`/products?category=${category.slug}`} className="hover:text-purple-500 uppercase transition-colors">
                 {category.name}
               </Link>

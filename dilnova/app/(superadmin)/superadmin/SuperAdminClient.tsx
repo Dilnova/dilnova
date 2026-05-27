@@ -13,6 +13,7 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+  parentId: string | null;
   createdAt: Date;
 }
 
@@ -54,6 +55,7 @@ export default function SuperAdminClient({
   // Category Form State
   const [categoryName, setCategoryName] = useState('');
   const [categorySlug, setCategorySlug] = useState('');
+  const [categoryParentId, setCategoryParentId] = useState('');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
@@ -87,6 +89,31 @@ export default function SuperAdminClient({
     );
   };
 
+  // Helper: render hierarchical category options
+  const renderCategoryOptions = (includeAllOption = false) => {
+    const mainCats = categories.filter((c) => !c.parentId);
+    return (
+      <>
+        <option value={includeAllOption ? 'all' : ''}>
+          {includeAllOption ? 'All Categories' : 'Uncategorized'}
+        </option>
+        {mainCats.map((main) => {
+          const subs = categories.filter((c) => c.parentId === main.id);
+          return (
+            <optgroup key={main.id} label={main.name}>
+              <option value={main.id}>{main.name} (All)</option>
+              {subs.map((sub) => (
+                <option key={sub.id} value={sub.id}>
+                  {sub.name}
+                </option>
+              ))}
+            </optgroup>
+          );
+        })}
+      </>
+    );
+  };
+
   // Helper: show transient message
   const triggerNotification = (success: boolean, text: string) => {
     if (success) {
@@ -106,6 +133,7 @@ export default function SuperAdminClient({
     setEditingCategory(null);
     setCategoryName('');
     setCategorySlug('');
+    setCategoryParentId('');
     setIsCategoryModalOpen(true);
   };
 
@@ -113,6 +141,7 @@ export default function SuperAdminClient({
     setEditingCategory(cat);
     setCategoryName(cat.name);
     setCategorySlug(cat.slug);
+    setCategoryParentId(cat.parentId || '');
     setIsCategoryModalOpen(true);
   };
 
@@ -123,10 +152,10 @@ export default function SuperAdminClient({
     startTransition(async () => {
       try {
         if (editingCategory) {
-          await updateCategoryAction(editingCategory.id, categoryName, categorySlug);
+          await updateCategoryAction(editingCategory.id, categoryName, categorySlug, categoryParentId || null);
           triggerNotification(true, 'Category updated successfully.');
         } else {
-          await createCategoryAction(categoryName, categorySlug);
+          await createCategoryAction(categoryName, categorySlug, categoryParentId || null);
           triggerNotification(true, 'Category created successfully.');
         }
         setIsCategoryModalOpen(false);
@@ -386,7 +415,20 @@ export default function SuperAdminClient({
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
                 {categories.map((cat) => (
                   <tr key={cat.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30">
-                    <td className="py-3.5 px-4 font-bold text-zinc-900 dark:text-zinc-100">{cat.name}</td>
+                    <td className="py-3.5 px-4 text-zinc-900 dark:text-zinc-100">
+                      <div className="font-bold flex items-center gap-2">
+                        <span>{cat.name}</span>
+                        {cat.parentId ? (
+                          <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-mono text-[9px] uppercase tracking-wider dark:bg-zinc-850 dark:text-zinc-400">
+                            Sub of {categories.find((c) => c.id === cat.parentId)?.name || 'Unknown'}
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-mono text-[9px] uppercase tracking-wider dark:bg-purple-950/20 dark:text-purple-400">
+                            Main
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-3.5 px-4 font-mono text-zinc-500">{cat.slug}</td>
                     <td className="py-3.5 px-4 font-mono text-[10px] text-zinc-400">{cat.id}</td>
                     <td className="py-3.5 px-4 text-zinc-500 font-mono">{new Date(cat.createdAt).toLocaleDateString()}</td>
@@ -447,14 +489,9 @@ export default function SuperAdminClient({
               <select
                 value={productCategoryFilter}
                 onChange={(e) => setProductCategoryFilter(e.target.value)}
-                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs bg-transparent focus:outline-none dark:bg-zinc-950"
+                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs bg-transparent focus:outline-none dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
               >
-                <option value="all">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                {renderCategoryOptions(true)}
               </select>
             </div>
           </div>
@@ -551,6 +588,24 @@ export default function SuperAdminClient({
                 />
               </div>
 
+              <div>
+                <label className="text-[10px] font-mono font-bold text-zinc-450 block mb-1">Parent Category</label>
+                <select
+                  value={categoryParentId}
+                  onChange={(e) => setCategoryParentId(e.target.value)}
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-transparent focus:outline-none dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
+                >
+                  <option value="">None (Make Main Category)</option>
+                  {categories
+                    .filter((c) => !c.parentId && c.id !== editingCategory?.id)
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
               <div className="pt-4 flex gap-3">
                 <button
                   type="button"
@@ -599,14 +654,9 @@ export default function SuperAdminClient({
                   <select
                     value={editProdCategory}
                     onChange={(e) => setEditProdCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-transparent focus:outline-none dark:bg-zinc-950"
+                    className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-transparent focus:outline-none dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200"
                   >
-                    <option value="">Uncategorized</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
+                    {renderCategoryOptions(false)}
                   </select>
                 </div>
               </div>

@@ -7,6 +7,7 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+  parentId: string | null;
 }
 
 interface CatalogFiltersProps {
@@ -56,6 +57,16 @@ export default function CatalogFilters({
     updateParams({ search: searchVal || null });
   };
 
+  const activeCat = categories.find((c) => c.slug === currentCategory);
+  const parentCat = activeCat?.parentId
+    ? categories.find((c) => c.id === activeCat.parentId)
+    : activeCat;
+
+  const mainCategories = categories.filter((c) => !c.parentId);
+  const subCategories = parentCat
+    ? categories.filter((c) => c.parentId === parentCat.id)
+    : [];
+
   return (
     <div className="space-y-6 bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-900 p-6 rounded-2xl shadow-sm mb-10">
       
@@ -81,33 +92,65 @@ export default function CatalogFilters({
       </form>
 
       {/* Filter Tabs Section */}
-      <div className="flex flex-wrap items-center justify-between gap-6 border-t border-zinc-100 dark:border-zinc-900 pt-6">
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 border-t border-zinc-100 dark:border-zinc-900 pt-6">
         
         {/* Category Selection Pills */}
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => updateParams({ category: null })}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
-              !currentCategory
-                ? 'bg-purple-650 text-white border-purple-650 dark:bg-purple-500 dark:border-purple-500'
-                : 'bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-450 dark:border-zinc-850 dark:hover:bg-zinc-800'
-            }`}
-          >
-            All Categories
-          </button>
-          {categories.map((cat) => (
+        <div className="flex flex-col gap-4 flex-1">
+          {/* Main Categories Row */}
+          <div className="flex flex-wrap gap-1.5">
             <button
-              key={cat.id}
-              onClick={() => updateParams({ category: cat.slug })}
+              onClick={() => updateParams({ category: null })}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
-                currentCategory === cat.slug
+                !currentCategory
                   ? 'bg-purple-650 text-white border-purple-650 dark:bg-purple-500 dark:border-purple-500'
                   : 'bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-450 dark:border-zinc-850 dark:hover:bg-zinc-800'
               }`}
             >
-              {cat.name}
+              All Categories
             </button>
-          ))}
+            {mainCategories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => updateParams({ category: cat.slug })}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
+                  parentCat?.id === cat.id
+                    ? 'bg-purple-650 text-white border-purple-650 dark:bg-purple-500 dark:border-purple-500'
+                    : 'bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-450 dark:border-zinc-850 dark:hover:bg-zinc-800'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Subcategories Row */}
+          {parentCat && subCategories.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pl-4 border-l-2 border-purple-200 dark:border-purple-900/60 animate-fade-in">
+              <button
+                onClick={() => updateParams({ category: parentCat.slug })}
+                className={`px-2.5 py-1 rounded-md text-[10px] font-bold font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
+                  currentCategory === parentCat.slug
+                    ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/60'
+                    : 'bg-zinc-50 text-zinc-500 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-450 dark:border-zinc-850 dark:hover:bg-zinc-800'
+                }`}
+              >
+                All {parentCat.name}
+              </button>
+              {subCategories.map((sub) => (
+                <button
+                  key={sub.id}
+                  onClick={() => updateParams({ category: sub.slug })}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-bold font-mono uppercase tracking-wider transition-colors cursor-pointer border ${
+                    currentCategory === sub.slug
+                      ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/60'
+                      : 'bg-zinc-50 text-zinc-500 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-450 dark:border-zinc-850 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  {sub.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Type Filter Selectors (Product vs Service) */}

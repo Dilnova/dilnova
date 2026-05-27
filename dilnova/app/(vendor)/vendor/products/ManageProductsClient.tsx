@@ -19,6 +19,7 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+  parentId: string | null;
 }
 
 interface ManageProductsClientProps {
@@ -326,11 +327,21 @@ export default function ManageProductsClient({ initialProducts, categories }: Ma
                   className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500"
                 >
                   <option value="">Select Category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
+                  {categories
+                    .filter((c) => !c.parentId)
+                    .map((main) => {
+                      const subs = categories.filter((c) => c.parentId === main.id);
+                      return (
+                        <optgroup key={main.id} label={main.name}>
+                          <option value={main.id}>{main.name} (All)</option>
+                          {subs.map((sub) => (
+                            <option key={sub.id} value={sub.id}>
+                              {sub.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
                 </select>
               </div>
             </div>
