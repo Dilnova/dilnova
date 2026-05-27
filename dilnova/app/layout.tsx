@@ -3,6 +3,7 @@ import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton, Organizati
 import { Geist, Geist_Mono } from 'next/font/google'
 import Link from 'next/link'
 import { auth, currentUser } from '@clerk/nextjs/server'
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import './globals.css'
 
 const geistSans = Geist({
@@ -92,6 +93,7 @@ export default async function RootLayout({
             </div>
           </header>
           {children}
+          <SpeedInsights />
         </ClerkProvider>
       </body>
     </html>
