@@ -1,12 +1,15 @@
-import { clerkClient } from '@clerk/nextjs/server';
+import { clerkClient, auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, desc, and } from 'drizzle-orm';
 import { getCachedOrganizations, type CachedOrg } from '@/utils/clerkCache';
 import ProductImageZoom from './ProductImageZoom';
+import WishlistButton from './WishlistButton';
+import ReviewsSection from './ReviewsSection';
+import QASection from './QASection';
 
 interface PageProps {
   params: Promise<{
@@ -35,6 +38,56 @@ export default async function ProductDetailPage({ params }: PageProps) {
   }
 
   const { product, category } = result;
+
+  // 1.5. Fetch Auth context, Reviews, Questions and Wishlist status
+  const { userId, orgId: userOrgId } = await auth();
+
+  const productReviews = await db
+    .select()
+    .from(schema.reviews)
+    .where(eq(schema.reviews.productId, id))
+    .orderBy(desc(schema.reviews.createdAt));
+
+  const productQuestions = await db
+    .select()
+    .from(schema.questions)
+    .where(eq(schema.questions.productId, id))
+    .orderBy(desc(schema.questions.createdAt));
+
+  let isFavorited = false;
+  let userHasReviewed = false;
+
+  if (userId) {
+    const [fav] = await db
+      .select()
+      .from(schema.wishlists)
+      .where(
+        and(
+          eq(schema.wishlists.userId, userId),
+          eq(schema.wishlists.productId, id)
+        )
+      )
+      .limit(1);
+    isFavorited = !!fav;
+
+    const [rev] = await db
+      .select()
+      .from(schema.reviews)
+      .where(
+        and(
+          eq(schema.reviews.userId, userId),
+          eq(schema.reviews.productId, id)
+        )
+      )
+      .limit(1);
+    userHasReviewed = !!rev;
+  }
+
+  // Calculate review stats
+  const totalReviews = productReviews.length;
+  const averageRating = totalReviews
+    ? Number((productReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
+    : 0;
 
   // Fetch parent category if this is a subcategory
   let parentCategory = null;
@@ -170,12 +223,24 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 ) : (
                   <div />
                 )}
-                <div className="flex items-center gap-1 text-xs text-zinc-450 dark:text-zinc-500 font-mono" title="Total page views">
-                  <svg className="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span>{product.views + 1} views</span>
+                <div className="flex items-center gap-4">
+                  {totalReviews > 0 ? (
+                    <div className="flex items-center gap-1.5 text-xs text-amber-500 font-bold font-mono">
+                      <span>★</span>
+                      <span>{averageRating}</span>
+                      <span className="text-zinc-400 font-normal">({totalReviews})</span>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] text-zinc-400 font-mono">Unrated</span>
+                  )}
+
+                  <div className="flex items-center gap-1 text-xs text-zinc-450 dark:text-zinc-500 font-mono" title="Total page views">
+                    <svg className="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span>{product.views + 1} views</span>
+                  </div>
                 </div>
               </div>
 
@@ -259,7 +324,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     href={`/vendors/${vendorSlug}`}
                     className="flex-1 text-center py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:hover:bg-zinc-800 dark:text-zinc-300 text-xs font-semibold rounded-lg shadow-sm transition-all"
                   >
-                    Browse Vendor Storefront &rarr;
+                    Storefront &rarr;
                   </Link>
                 )}
                 
@@ -269,12 +334,39 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 >
                   Contact Vendor
                 </a>
+
+                <WishlistButton
+                  productId={product.id}
+                  initialFavorited={isFavorited}
+                  isLoggedIn={!!userId}
+                  showLabel={true}
+                  className="flex-1 sm:flex-initial"
+                />
               </div>
             </div>
 
           </div>
 
         </div>
+
+        {/* Reviews Section */}
+        <ReviewsSection
+          productId={product.id}
+          reviews={productReviews}
+          isLoggedIn={!!userId}
+          userHasReviewed={userHasReviewed}
+          productOrgId={product.orgId}
+          userOrgId={userOrgId || null}
+        />
+
+        {/* Q&A Section */}
+        <QASection
+          productId={product.id}
+          questions={productQuestions}
+          isLoggedIn={!!userId}
+          productOrgId={product.orgId}
+          userOrgId={userOrgId || null}
+        />
       </main>
     </div>
   );

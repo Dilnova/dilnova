@@ -1,10 +1,11 @@
-import { clerkClient } from '@clerk/nextjs/server';
+import { clerkClient, auth } from '@clerk/nextjs/server';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
 import { eq, and, ilike, or, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import Image from 'next/image';
 import CatalogFilters from './CatalogFilters';
+import WishlistButton from './[id]/WishlistButton';
 
 export const revalidate = 0; // Fresh load on each catalog query
 
@@ -83,6 +84,19 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
     .limit(itemsPerPage)
     .offset((currentPage - 1) * itemsPerPage);
 
+  // Fetch reviews and wishlist statuses for the returned product IDs
+  const { userId } = await auth();
+  const productIds = results.map((r) => r.product.id);
+
+  const allReviewsForPage = productIds.length > 0
+    ? await db.select().from(schema.reviews).where(inArray(schema.reviews.productId, productIds))
+    : [];
+
+  const userWishlist = (userId && productIds.length > 0)
+    ? await db.select().from(schema.wishlists).where(and(eq(schema.wishlists.userId, userId), inArray(schema.wishlists.productId, productIds)))
+    : [];
+  const wishlistSet = new Set(userWishlist.map((w) => w.productId));
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans pb-24">
       <div className="pt-12"></div>
@@ -120,6 +134,13 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                   currency: 'USD',
                 });
 
+                const productReviews = allReviewsForPage.filter((r) => r.productId === product.id);
+                const totalReviews = productReviews.length;
+                const averageRating = totalReviews
+                  ? Number((productReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
+                  : 0;
+                const isFavorited = wishlistSet.has(product.id);
+
                 return (
                   <div
                     key={product.id}
@@ -141,6 +162,17 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                             📦
                           </div>
                         )}
+
+                        {/* Wishlist Toggle Overlay */}
+                        <div className="absolute top-3 left-3 z-10">
+                          <WishlistButton
+                            productId={product.id}
+                            initialFavorited={isFavorited}
+                            isLoggedIn={!!userId}
+                            showLabel={false}
+                            className="p-1.5 h-8 w-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-none hover:bg-white dark:hover:bg-zinc-900 shadow-sm"
+                          />
+                        </div>
                         
                         {/* Type Badge */}
                         <span className={`absolute top-3 right-3 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow ${
@@ -155,10 +187,18 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                       {/* Content Card Body */}
                       <div className="p-4 flex-1 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center gap-1.5 mb-2">
-                            {category && (
+                          <div className="flex items-center justify-between gap-1.5 mb-2">
+                            {category ? (
                               <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">
                                 {category.name}
+                              </span>
+                            ) : (
+                              <div />
+                            )}
+                            {totalReviews > 0 && (
+                              <span className="text-[10px] font-bold text-amber-500 flex items-center gap-0.5">
+                                <span>★</span>
+                                <span>{averageRating}</span>
                               </span>
                             )}
                           </div>
