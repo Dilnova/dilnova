@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, uuid, AnyPgColumn, unique, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, uuid, AnyPgColumn, unique, jsonb, index } from 'drizzle-orm/pg-core';
 
 export const systemSettings = pgTable('system_settings', {
   key: text('key').primaryKey(),
@@ -27,7 +27,11 @@ export const products = pgTable('products', {
   media: jsonb('media').$type<{ url: string; type: 'image' | 'video' }[]>().default([]).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('idx_products_org_id').on(t.orgId),
+  index('idx_products_category_id').on(t.categoryId),
+  index('idx_products_created_at').on(t.createdAt),
+]);
 
 export const reviews = pgTable('reviews', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -38,7 +42,10 @@ export const reviews = pgTable('reviews', {
   rating: integer('rating').notNull(), // 1 to 5
   comment: text('comment'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('idx_reviews_product_id').on(t.productId),
+  index('idx_reviews_user_id').on(t.userId),
+]);
 
 export const wishlists = pgTable('wishlists', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -46,7 +53,8 @@ export const wishlists = pgTable('wishlists', {
   productId: uuid('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => [
-  unique('wishlist_user_product_unique').on(t.userId, t.productId)
+  unique('wishlist_user_product_unique').on(t.userId, t.productId),
+  index('idx_wishlists_user_id').on(t.userId),
 ]);
 
 export const questions = pgTable('questions', {
@@ -60,5 +68,22 @@ export const questions = pgTable('questions', {
   answeredBy: text('answered_by'), // Vendor user/org identifier
   answeredAt: timestamp('answered_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (t) => [
+  index('idx_questions_product_id').on(t.productId),
+]);
+
+export const auditLogs = pgTable('audit_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  action: text('action').notNull(), // e.g., 'CREATE_CATEGORY', 'UPDATE_CATEGORY', 'DELETE_CATEGORY', 'UPDATE_PRODUCT', 'DELETE_PRODUCT', 'UPDATE_SYSTEM_SETTING', 'UPDATE_MEMBER_ROLE', 'UPDATE_VENDOR_METADATA', 'CREATE_PRODUCT', 'DELETE_PRODUCT'
+  targetType: text('target_type').notNull(), // e.g., 'category', 'product', 'system_setting', 'membership', 'vendor'
+  targetId: text('target_id').notNull(),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_audit_logs_user_id').on(t.userId),
+  index('idx_audit_logs_action').on(t.action),
+  index('idx_audit_logs_created_at').on(t.createdAt),
+]);
+
 

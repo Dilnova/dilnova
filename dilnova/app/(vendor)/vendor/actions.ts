@@ -2,6 +2,9 @@
 
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
+import { vendorMetadataSchema } from '@/utils/schemas';
+import { logAuditAction } from '@/utils/auditLogger';
+import { logger } from '@/utils/logger';
 
 interface VendorMetadataInput {
   description: string;
@@ -15,10 +18,16 @@ interface VendorMetadataInput {
  * Restricted to users who belong to the organization and hold either an admin or vendor role.
  */
 export async function updateVendorMetadata(organizationId: string, data: VendorMetadataInput) {
-  const { orgId, orgRole } = await auth();
+  // ── Schema Validation ──
+  const parsed = vendorMetadataSchema.safeParse({ organizationId, data });
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+  }
+
+  const { orgId, orgRole, userId } = await auth();
 
   // 1. Authenticate: Verify the user is logged in and belongs to the requested organization
-  if (!orgId || orgId !== organizationId) {
+  if (!orgId || orgId !== parsed.data.organizationId) {
     throw new Error('Not authorized: You do not belong to this organization.');
   }
 
@@ -27,27 +36,33 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
     throw new Error('Not authorized: Only vendors or administrators can configure profile settings.');
   }
 
-  // 3. Sanitization & Validation
-  const description = data.description?.slice(0, 1000).trim() || '';
-  const address = data.address?.slice(0, 250).trim() || '';
-  const phone = data.phone?.slice(0, 50).trim() || '';
-  const bannerUrl = data.bannerUrl?.trim() || '';
-
-  if (bannerUrl && !bannerUrl.startsWith('http://') && !bannerUrl.startsWith('https://')) {
-    throw new Error('Invalid URL format: Banner URL must begin with http:// or https://');
-  }
-
   const client = await clerkClient();
 
-  // 4. Update the organization's public metadata in Clerk
-  await client.organizations.updateOrganizationMetadata(organizationId, {
+  // 3. Update the organization's public metadata in Clerk (using validated data)
+  await client.organizations.updateOrganizationMetadata(parsed.data.organizationId, {
     publicMetadata: {
-      description,
-      address,
-      phone,
-      bannerUrl,
+      description: parsed.data.data.description,
+      address: parsed.data.data.address,
+      phone: parsed.data.data.phone,
+      bannerUrl: parsed.data.data.bannerUrl,
     },
   });
+
+  // 4. Audit Logging
+  if (userId) {
+    await logAuditAction({
+      userId,
+      action: 'UPDATE_VENDOR_METADATA',
+      targetType: 'vendor',
+      targetId: parsed.data.organizationId,
+      metadata: {
+        description: parsed.data.data.description,
+        address: parsed.data.data.address,
+        phone: parsed.data.data.phone,
+        bannerUrl: parsed.data.data.bannerUrl,
+      },
+    });
+  }
 
   // 5. Cache Revalidation: ensure changes are immediately visible
   revalidatePath('/');
@@ -56,12 +71,12 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
   
   // Revalidate the vendor's profile page using its slug
   try {
-    const org = await client.organizations.getOrganization({ organizationId });
+    const org = await client.organizations.getOrganization({ organizationId: parsed.data.organizationId });
     if (org.slug) {
       revalidatePath(`/vendors/${org.slug}`);
     }
   } catch (err) {
-    console.error('Error fetching org slug for path revalidation:', err);
+    logger.error('Error fetching org slug for path revalidation:', err);
   }
 
   return { success: true };

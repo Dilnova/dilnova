@@ -9,6 +9,11 @@ if (!connectionString) {
 }
 
 // Disable prefetch because Supabase/Neon connection poolers do not support it in transaction mode
-const client = postgres(connectionString, { prepare: false });
+const client = postgres(connectionString, {
+  prepare: false,
+  max: 10,         // Connection pool size limit
+  idle_timeout: 20, // Close idle connections after 20 seconds
+  connect_timeout: 10, // 10 second timeout for establishing connection
+});
 
 export const db = drizzle(client, { schema });

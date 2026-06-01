@@ -7,6 +7,12 @@ import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { rateLimit } from '@/utils/rateLimit';
 import { logger } from '@/utils/logger';
+import {
+  toggleWishlistSchema,
+  submitReviewSchema,
+  submitQuestionSchema,
+  submitAnswerSchema,
+} from '@/utils/schemas';
 
 /**
  * Toggles a product in/out of the user's wishlist.
@@ -14,6 +20,12 @@ import { logger } from '@/utils/logger';
  */
 export async function toggleWishlistAction(productId: string) {
   try {
+    // ── Schema Validation ──
+    const parsed = toggleWishlistSchema.safeParse({ productId });
+    if (!parsed.success) {
+      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+    }
+
     await rateLimit(10, 60 * 1000); // Max 10 wishlist toggles per minute per IP
     const { userId } = await auth();
     if (!userId) {
@@ -27,7 +39,7 @@ export async function toggleWishlistAction(productId: string) {
       .where(
         and(
           eq(schema.wishlists.userId, userId),
-          eq(schema.wishlists.productId, productId)
+          eq(schema.wishlists.productId, parsed.data.productId)
         )
       )
       .limit(1);
@@ -39,11 +51,11 @@ export async function toggleWishlistAction(productId: string) {
         .where(
           and(
             eq(schema.wishlists.userId, userId),
-            eq(schema.wishlists.productId, productId)
+            eq(schema.wishlists.productId, parsed.data.productId)
           )
         );
       
-      revalidatePath(`/products/${productId}`);
+      revalidatePath(`/products/${parsed.data.productId}`);
       revalidatePath('/products');
       revalidatePath('/customer');
       return { success: true, isFavorited: false };
@@ -51,10 +63,10 @@ export async function toggleWishlistAction(productId: string) {
       // Add it
       await db.insert(schema.wishlists).values({
         userId,
-        productId,
+        productId: parsed.data.productId,
       });
 
-      revalidatePath(`/products/${productId}`);
+      revalidatePath(`/products/${parsed.data.productId}`);
       revalidatePath('/products');
       revalidatePath('/customer');
       return { success: true, isFavorited: true };
@@ -71,6 +83,12 @@ export async function toggleWishlistAction(productId: string) {
  */
 export async function submitReviewAction(productId: string, rating: number, comment: string) {
   try {
+    // ── Schema Validation ──
+    const parsed = submitReviewSchema.safeParse({ productId, rating, comment });
+    if (!parsed.success) {
+      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+    }
+
     await rateLimit(5, 60 * 1000); // Max 5 reviews per minute per IP
     const { userId } = await auth();
     const user = await currentUser();
@@ -79,11 +97,6 @@ export async function submitReviewAction(productId: string, rating: number, comm
       throw new Error('You must be signed in to submit a review.');
     }
 
-    if (rating < 1 || rating > 5) {
-      throw new Error('Rating must be between 1 and 5.');
-    }
-
-    const trimmedComment = comment?.trim().slice(0, 1000) || '';
     const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Anonymous';
     const userImageUrl = user.imageUrl || '';
 
@@ -94,7 +107,7 @@ export async function submitReviewAction(productId: string, rating: number, comm
       .where(
         and(
           eq(schema.reviews.userId, userId),
-          eq(schema.reviews.productId, productId)
+          eq(schema.reviews.productId, parsed.data.productId)
         )
       )
       .limit(1);
@@ -104,8 +117,8 @@ export async function submitReviewAction(productId: string, rating: number, comm
       await db
         .update(schema.reviews)
         .set({
-          rating,
-          comment: trimmedComment,
+          rating: parsed.data.rating,
+          comment: parsed.data.comment,
           userName,
           userImageUrl,
           createdAt: new Date(),
@@ -114,16 +127,16 @@ export async function submitReviewAction(productId: string, rating: number, comm
     } else {
       // Insert a new review
       await db.insert(schema.reviews).values({
-        productId,
+        productId: parsed.data.productId,
         userId,
         userName,
         userImageUrl,
-        rating,
-        comment: trimmedComment,
+        rating: parsed.data.rating,
+        comment: parsed.data.comment,
       });
     }
 
-    revalidatePath(`/products/${productId}`);
+    revalidatePath(`/products/${parsed.data.productId}`);
     revalidatePath('/products');
     return { success: true };
   } catch (error) {
@@ -137,6 +150,12 @@ export async function submitReviewAction(productId: string, rating: number, comm
  */
 export async function submitQuestionAction(productId: string, content: string) {
   try {
+    // ── Schema Validation ──
+    const parsed = submitQuestionSchema.safeParse({ productId, content });
+    if (!parsed.success) {
+      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+    }
+
     await rateLimit(5, 60 * 1000); // Max 5 questions per minute per IP
     const { userId } = await auth();
     const user = await currentUser();
@@ -145,23 +164,18 @@ export async function submitQuestionAction(productId: string, content: string) {
       throw new Error('You must be signed in to ask a question.');
     }
 
-    const trimmedContent = content?.trim().slice(0, 500);
-    if (!trimmedContent) {
-      throw new Error('Question content cannot be empty.');
-    }
-
     const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Anonymous';
     const userImageUrl = user.imageUrl || '';
 
     await db.insert(schema.questions).values({
-      productId,
+      productId: parsed.data.productId,
       userId,
       userName,
       userImageUrl,
-      content: trimmedContent,
+      content: parsed.data.content,
     });
 
-    revalidatePath(`/products/${productId}`);
+    revalidatePath(`/products/${parsed.data.productId}`);
     return { success: true };
   } catch (error) {
     logger.error('Error submitting question', error, { productId });
@@ -175,6 +189,12 @@ export async function submitQuestionAction(productId: string, content: string) {
  */
 export async function submitAnswerAction(questionId: string, answer: string) {
   try {
+    // ── Schema Validation ──
+    const parsed = submitAnswerSchema.safeParse({ questionId, answer });
+    if (!parsed.success) {
+      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+    }
+
     await rateLimit(10, 60 * 1000); // Max 10 answers per minute per IP
     const { userId, orgId, orgRole } = await auth();
 
@@ -187,11 +207,6 @@ export async function submitAnswerAction(questionId: string, answer: string) {
       throw new Error('Not authorized: Only vendors or administrators can reply to questions.');
     }
 
-    const trimmedAnswer = answer?.trim().slice(0, 1000);
-    if (!trimmedAnswer) {
-      throw new Error('Answer cannot be empty.');
-    }
-
     // Resolve the question and verify the product belongs to the seller's active organization
     const [questionDetails] = await db
       .select({
@@ -200,7 +215,7 @@ export async function submitAnswerAction(questionId: string, answer: string) {
       })
       .from(schema.questions)
       .innerJoin(schema.products, eq(schema.questions.productId, schema.products.id))
-      .where(eq(schema.questions.id, questionId))
+      .where(eq(schema.questions.id, parsed.data.questionId))
       .limit(1);
 
     if (!questionDetails) {
@@ -215,11 +230,11 @@ export async function submitAnswerAction(questionId: string, answer: string) {
     await db
       .update(schema.questions)
       .set({
-        answer: trimmedAnswer,
+        answer: parsed.data.answer,
         answeredBy: userId,
         answeredAt: new Date(),
       })
-      .where(eq(schema.questions.id, questionId));
+      .where(eq(schema.questions.id, parsed.data.questionId));
 
     revalidatePath(`/products/${questionDetails.product.id}`);
     return { success: true };
