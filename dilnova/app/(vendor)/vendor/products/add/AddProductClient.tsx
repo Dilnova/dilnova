@@ -115,7 +115,7 @@ export default function AddProductClient({
         });
 
         if (result.success) {
-          setMessage({ type: 'success', text: `Successfully added "${name}"! Redirecting to catalog...` });
+          setMessage({ type: 'success', text: `Successfully added "${name}"!` });
 
           // Reset Form Fields
           setName('');
@@ -123,11 +123,6 @@ export default function AddProductClient({
           setPrice('');
           setCategoryId('');
           setMedia([]);
-
-          // Redirect to management page after a brief delay
-          setTimeout(() => {
-            router.push('/vendor/products');
-          }, 1500);
         }
       } catch (err) {
         setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to add item.' });
