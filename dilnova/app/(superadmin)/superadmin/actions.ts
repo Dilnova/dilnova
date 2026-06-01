@@ -136,6 +136,8 @@ export async function updateProductAction(
     categoryId?: string | null;
     description?: string | null;
     type?: 'product' | 'service';
+    imageUrl?: string;
+    media?: { url: string; type: 'image' | 'video' }[];
   }
 ) {
   return runWithCorrelationId(async () => {
@@ -170,6 +172,14 @@ export async function updateProductAction(
 
     if (parsed.data.updates.type !== undefined) {
       setClause.type = parsed.data.updates.type;
+    }
+
+    if (parsed.data.updates.imageUrl !== undefined) {
+      setClause.imageUrl = parsed.data.updates.imageUrl;
+    }
+
+    if (parsed.data.updates.media !== undefined) {
+      setClause.media = parsed.data.updates.media;
     }
 
     await db

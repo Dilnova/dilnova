@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useRef } from 'react';
+import Image from 'next/image';
+import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import {
   createCategoryAction,
   updateCategoryAction,
@@ -30,6 +32,7 @@ interface Product {
   views: number;
   categoryName: string | null;
   createdAt: Date;
+  media?: { url: string; type: 'image' | 'video' }[] | null;
 }
 
 interface SuperAdminClientProps {
@@ -77,6 +80,10 @@ export default function SuperAdminClient({
   const [editProdCategory, setEditProdCategory] = useState('');
   const [editProdDesc, setEditProdDesc] = useState('');
   const [editProdType, setEditProdType] = useState<'product' | 'service'>('product');
+  const [editProdMedia, setEditProdMedia] = useState<{ url: string; type: 'image' | 'video' }[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
   // Top 5 viewed products
@@ -198,7 +205,53 @@ export default function SuperAdminClient({
     setEditProdCategory(prod.categoryId || '');
     setEditProdDesc(prod.description || '');
     setEditProdType(prod.type as 'product' | 'service');
+    setEditProdMedia(prod.media || []);
     setIsProductModalOpen(true);
+  };
+
+  const handleProductFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (editProdMedia.length >= maxMediaLimit) {
+      triggerNotification(false, `Maximum media upload limit of ${maxMediaLimit} reached.`);
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      triggerNotification(false, 'File size exceeds 10MB limit.');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const fileType = file.type.startsWith('video/') ? ('video' as const) : ('image' as const);
+
+    try {
+      const result = await uploadToCloudinary(file, (progress) => {
+        setUploadProgress(progress.percent);
+      });
+
+      if (result.success && result.publicUrl) {
+        const newItem = { url: result.publicUrl, type: fileType };
+        setEditProdMedia((prev) => [...prev, newItem]);
+        triggerNotification(true, `${fileType === 'video' ? 'Video' : 'Image'} uploaded successfully!`);
+      } else {
+        triggerNotification(false, result.error || 'Upload failed');
+      }
+    } catch (err) {
+      console.error(err);
+      triggerNotification(false, 'An error occurred during media upload.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveProductMedia = (index: number) => {
+    setEditProdMedia((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
@@ -208,14 +261,17 @@ export default function SuperAdminClient({
 
     startTransition(async () => {
       try {
+        const primaryThumbnail = editProdMedia[0]?.url || '';
         await updateProductAction(editingProduct.id, {
           name: editProdName,
           price: Math.round(editProdPrice * 100), // convert back to cents
           categoryId: editProdCategory || null,
           description: editProdDesc,
           type: editProdType,
+          imageUrl: primaryThumbnail,
+          media: editProdMedia,
         });
-        triggerNotification(true, 'Product details updated successfully.');
+        triggerNotification(true, 'Product details and media updated successfully.');
         setIsProductModalOpen(false);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Failed to save product.';
@@ -693,7 +749,7 @@ export default function SuperAdminClient({
       {/* ── PRODUCT EDIT MODAL ─────────────────────────────────── */}
       {isProductModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40 p-4">
-          <div className="bg-white dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl animate-scale-up">
+          <div className="bg-white dark:bg-zinc-950 border border-zinc-250 dark:border-zinc-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
             <h3 className="text-base font-extrabold text-zinc-900 dark:text-zinc-50 mb-1">
               Moderate Catalog Item
             </h3>
@@ -757,6 +813,93 @@ export default function SuperAdminClient({
                 />
               </div>
 
+              {/* Media Gallery */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-mono font-bold text-zinc-450 block mb-1">
+                  Media Gallery ({editProdMedia.length}/{maxMediaLimit})
+                </label>
+
+                {/* Uploaded Grid */}
+                {editProdMedia.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 border border-zinc-200 dark:border-zinc-850 rounded-xl p-2 bg-zinc-50/50 dark:bg-zinc-900/10">
+                    {editProdMedia.map((item, index) => (
+                      <div
+                        key={index}
+                        className="relative aspect-square rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900"
+                      >
+                        {item.type === 'video' ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 text-zinc-350 p-1 text-center">
+                            <span className="text-sm">🎬</span>
+                            <span className="text-[7px] font-mono mt-0.5 truncate max-w-full">Video</span>
+                          </div>
+                        ) : (
+                          <Image
+                            src={item.url}
+                            alt="Preview"
+                            fill
+                            className="object-cover"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveProductMedia(index)}
+                          className="absolute top-0.5 right-0.5 bg-red-600 hover:bg-red-700 text-white rounded p-0.5 text-[8px] leading-none cursor-pointer transition-all shadow"
+                          title="Remove media"
+                        >
+                          ✕
+                        </button>
+                        {index === 0 && (
+                          <span className="absolute bottom-0.5 left-0.5 bg-purple-700/95 text-white text-[6px] px-1 py-0.5 rounded font-bold uppercase">
+                            Primary
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload Drop Zone / Button */}
+                <div className="border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-zinc-50/30 dark:bg-zinc-900/5 flex flex-col items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading || editProdMedia.length >= maxMediaLimit}
+                    className="text-xs font-semibold text-purple-700 dark:text-purple-400 hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer"
+                  >
+                    {isUploading 
+                      ? 'Uploading to Cloudinary...' 
+                      : editProdMedia.length >= maxMediaLimit
+                        ? `Media Limit Reached (${maxMediaLimit})`
+                        : `Click to Add Media (${editProdMedia.length}/${maxMediaLimit})`}
+                  </button>
+                  <p className="text-[9px] text-zinc-400 font-mono">PNG, JPG, WEBP, or MP4 (Max 10MB)</p>
+                  
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleProductFileUpload}
+                    accept="image/*,video/*"
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Upload Progress Bar */}
+                {isUploading && uploadProgress !== null && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[9px] font-mono text-zinc-400">
+                      <span>Uploading...</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full h-1 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-purple-650 rounded-full transition-all"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="pt-4 flex gap-3">
                 <button
                   type="button"
@@ -767,7 +910,7 @@ export default function SuperAdminClient({
                 </button>
                 <button
                   type="submit"
-                  disabled={isPending}
+                  disabled={isPending || isUploading}
                   className="flex-1 py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm shadow-purple-900/10"
                 >
                   Save Mod Override

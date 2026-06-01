@@ -58,6 +58,13 @@ export const updateProductSchema = z.object({
     categoryId: z.string().uuid().nullable().optional(),
     description: z.string().max(5000).nullable().optional(),
     type: z.enum(['product', 'service']).optional(),
+    imageUrl: z.string().trim().optional(),
+    media: z.array(
+      z.object({
+        url: z.string().url('Invalid media URL.'),
+        type: z.enum(['image', 'video']),
+      })
+    ).optional(),
   }),
 });
 
