@@ -69,22 +69,30 @@ export default async function VendorPage() {
           </div>
         </div>
 
-        {/* Catalog Banner Link */}
+        {/* Catalog Banner Links */}
         <div className="border border-purple-200 bg-purple-50/50 rounded-xl p-5 mb-8 dark:border-purple-900/40 dark:bg-purple-950/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1">
             <h3 className="text-sm font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
               <span>🛒</span> Product & Service Catalog
             </h3>
             <p className="text-xs text-purple-700/80 dark:text-purple-400">
-              Add products or services, upload product images to Backblaze B2, and manage your inventory directory.
+              Add products or services, upload product images to Cloudinary, and manage your inventory directory.
             </p>
           </div>
-          <Link
-            href="/vendor/products"
-            className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-all whitespace-nowrap cursor-pointer"
-          >
-            Manage Catalog &rarr;
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/vendor/products"
+              className="px-4 py-2 bg-white hover:bg-zinc-50 border border-purple-200 dark:border-purple-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-purple-700 dark:text-purple-400 rounded-lg text-xs font-semibold shadow-sm transition-all whitespace-nowrap cursor-pointer"
+            >
+              Manage Catalog
+            </Link>
+            <Link
+              href="/vendor/products/add"
+              className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-all whitespace-nowrap cursor-pointer"
+            >
+              + Add New Item &rarr;
+            </Link>
+          </div>
         </div>
 
         {/* Metadata Settings Form */}

@@ -49,9 +49,14 @@ export default async function RootLayout({
                   Products & Services
                 </Link>
                 {orgId && (orgRole === 'org:admin' || orgRole === 'org:vendor') && (
-                  <Link href="/vendor/products" className="text-xs font-semibold text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors">
-                    Add Items
-                  </Link>
+                  <>
+                    <Link href="/vendor/products" className="text-xs font-semibold text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors">
+                      Manage Catalog
+                    </Link>
+                    <Link href="/vendor/products/add" className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors">
+                      + Add Item
+                    </Link>
+                  </>
                 )}
                 {userRole === 'admin' && (
                   <Link href="/superadmin" className="text-xs font-bold text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors">
