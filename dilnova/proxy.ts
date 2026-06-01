@@ -1,6 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import type { NextFetchEvent } from 'next/server';
 
 const isPublicRoute = createRouteMatcher([
   '/',
@@ -13,7 +15,7 @@ const isPublicRoute = createRouteMatcher([
   '/_next(.*)'       // Allows public access to Next.js static files/image optimization
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
+const clerkHandler = clerkMiddleware(async (auth, req) => {
   const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-request-id', requestId);
@@ -30,6 +32,12 @@ export default clerkMiddleware(async (auth, req) => {
   response.headers.set('x-request-id', requestId);
   return response;
 });
+
+// Next.js 16 requires the proxy file to export a named `proxy` function
+// (the `middleware` convention is deprecated)
+export function proxy(request: NextRequest, event: NextFetchEvent) {
+  return clerkHandler(request, event);
+}
 
 export const config = {
   matcher: [
