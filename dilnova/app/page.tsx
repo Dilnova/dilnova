@@ -226,6 +226,7 @@ export default async function Home() {
                     {/* Header Banner */}
                     <div className="h-24 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
                       {metadata.bannerUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img
                           src={metadata.bannerUrl}
                           alt={`${vendor.name} banner`}
@@ -243,6 +244,7 @@ export default async function Home() {
                     <div className="px-6 pb-4 relative">
                       <div className="absolute -top-6 left-6">
                         <div className="w-12 h-12 rounded-lg overflow-hidden border border-white dark:border-zinc-950 bg-white shadow-sm flex items-center justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={vendor.imageUrl}
                             alt={vendor.name}

@@ -9,6 +9,7 @@ import { getSystemSetting } from '@/utils/settings';
 import { logger } from '@/utils/logger';
 import { addProductSchema, vendorDeleteProductSchema } from '@/utils/schemas';
 import { logAuditAction } from '@/utils/auditLogger';
+import { runWithCorrelationId } from '@/utils/asyncContext';
 
 /**
  * Enterprise-grade Server Action to securely insert a new product/service into PostgreSQL.
@@ -23,74 +24,76 @@ export async function addProductAction(data: {
   media: { url: string; type: 'image' | 'video' }[];
   categoryId: string;
 }) {
-  try {
-    // ── Schema Validation ──
-    const parsed = addProductSchema.safeParse(data);
-    if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+  return runWithCorrelationId(async () => {
+    try {
+      // ── Schema Validation ──
+      const parsed = addProductSchema.safeParse(data);
+      if (!parsed.success) {
+        throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      }
+
+      // 1. Authentication & Organization Context Check
+      const { userId, orgId, orgRole } = await auth();
+      if (!userId || !orgId) {
+        throw new Error('Not authorized: You must be signed in with an active organization.');
+      }
+
+      // 2. Authorization Check: Must be admin or vendor member of the organization
+      if (orgRole !== 'org:admin' && orgRole !== 'org:vendor') {
+        throw new Error('Not authorized: You do not have permissions to manage this catalog.');
+      }
+
+      // Convert price to cents to avoid floating-point arithmetic errors
+      const priceInCents = Math.round(parsed.data.priceInDollars * 100);
+
+      // Load max media uploads config and validate
+      const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
+      const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
+
+      const mediaPayload = parsed.data.media.slice(0, maxMediaLimit);
+
+      // 3. Secure Insert
+      const [newProduct] = await db
+        .insert(schema.products)
+        .values({
+          name: parsed.data.name,
+          type: parsed.data.type,
+          description: parsed.data.description,
+          price: priceInCents,
+          imageUrl: parsed.data.imageUrl || null,
+          media: mediaPayload,
+          orgId: orgId, // Tied securely to user's current session orgId
+          categoryId: parsed.data.categoryId || null,
+        })
+        .returning();
+
+      if (newProduct) {
+        await logAuditAction({
+          userId,
+          action: 'CREATE_PRODUCT',
+          targetType: 'product',
+          targetId: newProduct.id,
+          metadata: {
+            name: newProduct.name,
+            type: newProduct.type,
+            price: newProduct.price,
+            orgId: newProduct.orgId,
+          },
+        });
+      }
+
+      // 4. Cache Invalidation
+      revalidatePath('/products');
+      revalidatePath('/vendors');
+      revalidatePath('/vendor/products');
+      updateTag(`vendor-products-${orgId}`);
+
+      return { success: true };
+    } catch (error) {
+      logger.error('Error adding product', error);
+      throw new Error(error instanceof Error ? error.message : 'Internal database error');
     }
-
-    // 1. Authentication & Organization Context Check
-    const { userId, orgId, orgRole } = await auth();
-    if (!userId || !orgId) {
-      throw new Error('Not authorized: You must be signed in with an active organization.');
-    }
-
-    // 2. Authorization Check: Must be admin or vendor member of the organization
-    if (orgRole !== 'org:admin' && orgRole !== 'org:vendor') {
-      throw new Error('Not authorized: You do not have permissions to manage this catalog.');
-    }
-
-    // Convert price to cents to avoid floating-point arithmetic errors
-    const priceInCents = Math.round(parsed.data.priceInDollars * 100);
-
-    // Load max media uploads config and validate
-    const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
-    const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
-
-    const mediaPayload = parsed.data.media.slice(0, maxMediaLimit);
-
-    // 3. Secure Insert
-    const [newProduct] = await db
-      .insert(schema.products)
-      .values({
-        name: parsed.data.name,
-        type: parsed.data.type,
-        description: parsed.data.description,
-        price: priceInCents,
-        imageUrl: parsed.data.imageUrl || null,
-        media: mediaPayload,
-        orgId: orgId, // Tied securely to user's current session orgId
-        categoryId: parsed.data.categoryId || null,
-      })
-      .returning();
-
-    if (newProduct) {
-      await logAuditAction({
-        userId,
-        action: 'CREATE_PRODUCT',
-        targetType: 'product',
-        targetId: newProduct.id,
-        metadata: {
-          name: newProduct.name,
-          type: newProduct.type,
-          price: newProduct.price,
-          orgId: newProduct.orgId,
-        },
-      });
-    }
-
-    // 4. Cache Invalidation
-    revalidatePath('/products');
-    revalidatePath('/vendors');
-    revalidatePath('/vendor/products');
-    updateTag(`vendor-products-${orgId}`);
-
-    return { success: true };
-  } catch (error) {
-    logger.error('Error adding product', error);
-    throw new Error(error instanceof Error ? error.message : 'Internal database error');
-  }
+  });
 }
 
 /**
@@ -98,62 +101,64 @@ export async function addProductAction(data: {
  * Ensures the product actually belongs to the user's active organization (prevents cross-tenant deletion).
  */
 export async function deleteProductAction(productId: string) {
-  try {
-    // ── Schema Validation ──
-    const parsed = vendorDeleteProductSchema.safeParse({ productId });
-    if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
-    }
+  return runWithCorrelationId(async () => {
+    try {
+      // ── Schema Validation ──
+      const parsed = vendorDeleteProductSchema.safeParse({ productId });
+      if (!parsed.success) {
+        throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      }
 
-    // 1. Authentication & Organization Context Check
-    const { userId, orgId, orgRole } = await auth();
-    if (!userId || !orgId) {
-      throw new Error('Not authorized: You must be signed in with an active organization.');
-    }
+      // 1. Authentication & Organization Context Check
+      const { userId, orgId, orgRole } = await auth();
+      if (!userId || !orgId) {
+        throw new Error('Not authorized: You must be signed in with an active organization.');
+      }
 
-    // 2. Authorization Check
-    if (orgRole !== 'org:admin' && orgRole !== 'org:vendor') {
-      throw new Error('Not authorized: You do not have permissions to modify this catalog.');
-    }
+      // 2. Authorization Check
+      if (orgRole !== 'org:admin' && orgRole !== 'org:vendor') {
+        throw new Error('Not authorized: You do not have permissions to modify this catalog.');
+      }
 
-    // 3. Safe Deletion: Conditioned on both Product ID AND Organization ID
-    const result = await db
-      .delete(schema.products)
-      .where(
-        and(
-          eq(schema.products.id, parsed.data.productId),
-          eq(schema.products.orgId, orgId) // Prevent deleting items from other vendors
+      // 3. Safe Deletion: Conditioned on both Product ID AND Organization ID
+      const result = await db
+        .delete(schema.products)
+        .where(
+          and(
+            eq(schema.products.id, parsed.data.productId),
+            eq(schema.products.orgId, orgId) // Prevent deleting items from other vendors
+          )
         )
-      )
-      .returning();
+        .returning();
 
-    if (result.length === 0) {
-      throw new Error('Item not found or does not belong to your organization.');
+      if (result.length === 0) {
+        throw new Error('Item not found or does not belong to your organization.');
+      }
+
+      const deletedProduct = result[0];
+      if (deletedProduct) {
+        await logAuditAction({
+          userId,
+          action: 'DELETE_PRODUCT',
+          targetType: 'product',
+          targetId: deletedProduct.id,
+          metadata: {
+            name: deletedProduct.name,
+            orgId: deletedProduct.orgId,
+          },
+        });
+      }
+
+      // 4. Cache Invalidation
+      revalidatePath('/products');
+      revalidatePath('/vendors');
+      revalidatePath('/vendor/products');
+      updateTag(`vendor-products-${orgId}`);
+
+      return { success: true };
+    } catch (error) {
+      logger.error('Error deleting product', error);
+      throw new Error(error instanceof Error ? error.message : 'Internal database error');
     }
-
-    const deletedProduct = result[0];
-    if (deletedProduct) {
-      await logAuditAction({
-        userId,
-        action: 'DELETE_PRODUCT',
-        targetType: 'product',
-        targetId: deletedProduct.id,
-        metadata: {
-          name: deletedProduct.name,
-          orgId: deletedProduct.orgId,
-        },
-      });
-    }
-
-    // 4. Cache Invalidation
-    revalidatePath('/products');
-    revalidatePath('/vendors');
-    revalidatePath('/vendor/products');
-    updateTag(`vendor-products-${orgId}`);
-
-    return { success: true };
-  } catch (error) {
-    logger.error('Error deleting product', error);
-    throw new Error(error instanceof Error ? error.message : 'Internal database error');
-  }
+  });
 }

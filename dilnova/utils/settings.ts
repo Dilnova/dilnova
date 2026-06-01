@@ -17,7 +17,7 @@ export async function getSystemSetting(key: string, defaultValue: string): Promi
       .where(eq(schema.systemSettings.key, key))
       .limit(1);
     return setting ? setting.value : defaultValue;
-  } catch (err) {
+  } catch {
     // Graceful recovery for non-migrated databases or local network pooler errors
     return defaultValue;
   }

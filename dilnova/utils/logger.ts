@@ -1,3 +1,5 @@
+import { getRequestId } from './asyncContext';
+
 /**
  * Structured JSON Logger for enterprise production environments.
  * Outputs raw JSON in production environments (perfect for Datadog, Axiom, Sentry, Cloudwatch)
@@ -5,34 +7,41 @@
  */
 export const logger = {
   info: (message: string, context?: Record<string, unknown>) => {
+    const requestId = getRequestId();
     if (process.env.NODE_ENV === 'production') {
       console.log(
         JSON.stringify({
           level: 'info',
           message,
+          requestId,
           context,
           timestamp: new Date().toISOString(),
         })
       );
     } else {
-      console.log(`[INFO] ${message}`, context ? JSON.stringify(context, null, 2) : '');
+      const idPrefix = requestId ? ` [${requestId}]` : '';
+      console.log(`[INFO]${idPrefix} ${message}`, context ? JSON.stringify(context, null, 2) : '');
     }
   },
   warn: (message: string, context?: Record<string, unknown>) => {
+    const requestId = getRequestId();
     if (process.env.NODE_ENV === 'production') {
       console.warn(
         JSON.stringify({
           level: 'warn',
           message,
+          requestId,
           context,
           timestamp: new Date().toISOString(),
         })
       );
     } else {
-      console.warn(`[WARN] ${message}`, context ? JSON.stringify(context, null, 2) : '');
+      const idPrefix = requestId ? ` [${requestId}]` : '';
+      console.warn(`[WARN]${idPrefix} ${message}`, context ? JSON.stringify(context, null, 2) : '');
     }
   },
   error: (message: string, error?: unknown, context?: Record<string, unknown>) => {
+    const requestId = getRequestId();
     const errorDetails =
       error instanceof Error
         ? { name: error.name, message: error.message, stack: error.stack }
@@ -43,14 +52,16 @@ export const logger = {
         JSON.stringify({
           level: 'error',
           message,
+          requestId,
           error: errorDetails,
           context,
           timestamp: new Date().toISOString(),
         })
       );
     } else {
+      const idPrefix = requestId ? ` [${requestId}]` : '';
       console.error(
-        `[ERROR] ${message}`,
+        `[ERROR]${idPrefix} ${message}`,
         errorDetails || '',
         context ? JSON.stringify(context, null, 2) : ''
       );

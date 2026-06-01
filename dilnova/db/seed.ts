@@ -23,7 +23,7 @@ async function main() {
 
   // 1. Seed Categories
   console.log('Inserting default categories...');
-  const seededCategories = await db.insert(schema.categories).values([
+  await db.insert(schema.categories).values([
     { name: 'Hardware', slug: 'hardware' },
     { name: 'Plants', slug: 'plants' },
     { name: 'Tech Store', slug: 'tech' },
