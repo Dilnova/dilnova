@@ -1,64 +1,64 @@
 import { headers } from 'next/headers';
 import { logger } from '@/utils/logger';
+import { Redis } from '@upstash/redis';
+import { Ratelimit } from '@upstash/ratelimit';
 
-// ═══════════════════════════════════════════════════════════
-// IN-MEMORY RATE LIMITER — Sliding Window Algorithm
-// ═══════════════════════════════════════════════════════════
-//
-// ⚠️  PRODUCTION WARNING:
-// This rate limiter uses an in-memory Map. In multi-instance deployments
-// (Vercel serverless, Docker replicas, edge workers), each instance
-// maintains its own counter — effectively multiplying the real limit
-// by the number of instances.
-//
-// For production, replace with a distributed rate limiter:
-//   • Upstash Redis: @upstash/ratelimit (recommended for serverless)
-//   • Redis: ioredis + sliding window
-//   • Supabase: RPC function with advisory locks
-//
-// This in-memory implementation is suitable for:
-//   • Single-instance deployments
-//   • Development / staging environments
-//   • Supplementary defense-in-depth behind a CDN rate limiter (e.g., Vercel WAF, Cloudflare)
-
-/** Maximum entries before forced cleanup to prevent memory exhaustion */
+// In-memory fallback map for development/testing when Upstash env vars are not configured
+const memoryTracker = new Map<string, number[]>();
 const MAX_TRACKER_SIZE = 10_000;
-
-// Keep track of IP addresses and their hit timestamps
-const tracker = new Map<string, number[]>();
-
-// Run clean-up periodically to prevent memory leaks
 let lastCleanup = Date.now();
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-let hasLoggedProductionWarning = false;
+const ratelimitCache = new Map<string, Ratelimit>();
+let hasLoggedUpstashWarning = false;
 
-function cleanupOldKeys(now: number, windowMs: number) {
-  for (const [ip, timestamps] of tracker.entries()) {
-    const active = timestamps.filter((t) => now - t < windowMs);
-    if (active.length === 0) {
-      tracker.delete(ip);
-    } else if (active.length !== timestamps.length) {
-      tracker.set(ip, active);
+function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    if (process.env.NODE_ENV === 'production' && !hasLoggedUpstashWarning) {
+      hasLoggedUpstashWarning = true;
+      logger.warn('Upstash Redis credentials are not configured. Rate limiting is falling back to the local in-memory store.');
     }
+    return null;
+  }
+
+  const key = `${limit}:${windowMs}`;
+  if (ratelimitCache.has(key)) {
+    return ratelimitCache.get(key)!;
+  }
+
+  try {
+    const redis = new Redis({
+      url,
+      token,
+    });
+
+    const client = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+      analytics: true,
+      prefix: '@upstash/ratelimit',
+    });
+
+    ratelimitCache.set(key, client);
+    return client;
+  } catch (error) {
+    logger.error('Failed to create Upstash Ratelimit instance, falling back to local memory', error);
+    return null;
   }
 }
 
 /**
  * Checks if the calling client IP exceeds the configured rate limit.
- * Uses a sliding-window algorithm to track client request timestamps.
+ * Uses Upstash Redis when configured, and falls back to an in-memory sliding window.
  * 
  * @param limit Max number of allowed requests in the window.
  * @param windowMs Time window in milliseconds.
  * @throws Error if the rate limit is exceeded.
  */
 export async function rateLimit(limit: number, windowMs: number): Promise<void> {
-  // Log a one-time warning in production about in-memory limitations
-  if (process.env.NODE_ENV === 'production' && !hasLoggedProductionWarning) {
-    hasLoggedProductionWarning = true;
-    logger.warn('In-memory rate limiter is active in production. Consider upgrading to a distributed solution (e.g., @upstash/ratelimit) for multi-instance deployments.');
-  }
-
   const reqHeaders = await headers();
   // Get IP address from proxy headers, fallback to localhost
   const ip =
@@ -66,6 +66,30 @@ export async function rateLimit(limit: number, windowMs: number): Promise<void> 
     reqHeaders.get('x-real-ip') ||
     '127.0.0.1';
 
+  const client = getRatelimitClient(limit, windowMs);
+
+  if (client) {
+    try {
+      const { success } = await client.limit(ip);
+      if (!success) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+      return;
+    } catch (error) {
+      // Re-throw rate limit exceeded errors
+      if (error instanceof Error && error.message.includes('Rate limit exceeded')) {
+        throw error;
+      }
+      // Log connection or network errors, and proceed to the in-memory fallback
+      logger.error('Upstash rate limiting failed, falling back to in-memory limiter', error);
+    }
+  }
+
+  // Fallback to in-memory sliding window rate limiting
+  runInMemoryRateLimit(ip, limit, windowMs);
+}
+
+function runInMemoryRateLimit(ip: string, limit: number, windowMs: number): void {
   const now = Date.now();
 
   // Periodically cleanup expired entries to prevent memory bloat
@@ -75,22 +99,21 @@ export async function rateLimit(limit: number, windowMs: number): Promise<void> 
   }
 
   // Hard cap: prevent unbounded memory growth from a DDoS with unique IPs
-  if (tracker.size > MAX_TRACKER_SIZE) {
-    logger.warn('Rate limiter tracker exceeded max size, performing emergency cleanup.', {
-      trackerSize: tracker.size,
+  if (memoryTracker.size > MAX_TRACKER_SIZE) {
+    logger.warn('Rate limiter memory tracker exceeded max size, performing emergency cleanup.', {
+      trackerSize: memoryTracker.size,
     });
     cleanupOldKeys(now, windowMs);
-    // If still too large after cleanup, clear oldest half
-    if (tracker.size > MAX_TRACKER_SIZE) {
-      const entries = Array.from(tracker.entries());
+    if (memoryTracker.size > MAX_TRACKER_SIZE) {
+      const entries = Array.from(memoryTracker.entries());
       const half = Math.floor(entries.length / 2);
       for (let i = 0; i < half; i++) {
-        tracker.delete(entries[i][0]);
+        memoryTracker.delete(entries[i][0]);
       }
     }
   }
 
-  const timestamps = tracker.get(ip) || [];
+  const timestamps = memoryTracker.get(ip) || [];
 
   // Filter out timestamps outside the sliding window
   const activeTimestamps = timestamps.filter((t) => now - t < windowMs);
@@ -101,5 +124,16 @@ export async function rateLimit(limit: number, windowMs: number): Promise<void> 
 
   // Record this hit
   activeTimestamps.push(now);
-  tracker.set(ip, activeTimestamps);
+  memoryTracker.set(ip, activeTimestamps);
+}
+
+function cleanupOldKeys(now: number, windowMs: number) {
+  for (const [ip, timestamps] of memoryTracker.entries()) {
+    const active = timestamps.filter((t) => now - t < windowMs);
+    if (active.length === 0) {
+      memoryTracker.delete(ip);
+    } else if (active.length !== timestamps.length) {
+      memoryTracker.set(ip, active);
+    }
+  }
 }
