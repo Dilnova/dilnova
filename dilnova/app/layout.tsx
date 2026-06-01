@@ -5,6 +5,7 @@ import { auth, currentUser } from '@clerk/nextjs/server'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
 import { runWithCorrelationId } from '@/utils/asyncContext'
+import HeaderNav from './HeaderNav'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -34,44 +35,51 @@ export default async function RootLayout({
       canCreateOrg = isUserVendorOrAdmin;
     }
 
+    // Build responsive links dynamically based on user session status and permissions
+    const links: { href: string; label: string; colorClass?: string }[] = [
+      { href: '/vendors', label: 'Browse Vendors' },
+      { href: '/products', label: 'Products & Services' },
+    ];
+
+    if (orgId && (orgRole === 'org:admin' || orgRole === 'org:vendor')) {
+      links.push({
+        href: '/vendor/products',
+        label: 'Manage Catalog',
+        colorClass: 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300',
+      });
+      links.push({
+        href: '/vendor/products/add',
+        label: '+ Add Item',
+        colorClass: 'text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300',
+      });
+    }
+
+    if (userRole === 'admin') {
+      links.push({
+        href: '/superadmin',
+        label: 'Superadmin Console',
+        colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-bold',
+      });
+    }
+
     return (
       <html lang="en">
         <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
           <ClerkProvider>
-            <header className="flex justify-between items-center px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-16">
-              <div className="flex items-center gap-6">
+            <header className="flex justify-between items-center px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-16">
+              <div className="flex items-center gap-3 md:gap-6">
                 <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90">
                   DILNOVA
                 </Link>
-                <Link href="/vendors" className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors">
-                  Browse Vendors
-                </Link>
-                <Link href="/products" className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors">
-                  Products & Services
-                </Link>
-                {orgId && (orgRole === 'org:admin' || orgRole === 'org:vendor') && (
-                  <>
-                    <Link href="/vendor/products" className="text-xs font-semibold text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-colors">
-                      Manage Catalog
-                    </Link>
-                    <Link href="/vendor/products/add" className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors">
-                      + Add Item
-                    </Link>
-                  </>
-                )}
-                {userRole === 'admin' && (
-                  <Link href="/superadmin" className="text-xs font-bold text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors">
-                    Superadmin Console
-                  </Link>
-                )}
+                <HeaderNav links={links} />
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4">
                 <Show when="signed-out">
-                  <div className="flex items-center gap-3 text-xs font-semibold">
+                  <div className="flex items-center gap-2 md:gap-3 text-xs font-semibold">
                     <SignInButton />
                     <SignUpButton>
-                      <button className="bg-purple-700 text-white rounded-lg h-9 px-4 cursor-pointer hover:bg-purple-800 transition-colors">
+                      <button className="bg-purple-700 text-white rounded-lg h-9 px-3 md:px-4 cursor-pointer hover:bg-purple-800 transition-colors">
                         Sign Up
                       </button>
                     </SignUpButton>
@@ -79,7 +87,7 @@ export default async function RootLayout({
                 </Show>
 
                 <Show when="signed-in">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 md:gap-4">
                     <OrganizationSwitcher 
                       afterCreateOrganizationUrl="/" 
                       afterSelectOrganizationUrl="/"
