@@ -57,6 +57,14 @@ const nextConfig: NextConfig = {
         key: 'Permissions-Policy',
         value: 'camera=(), microphone=(), geolocation=()',
       },
+      {
+        key: 'X-DNS-Prefetch-Control',
+        value: 'off',
+      },
+      {
+        key: 'Cross-Origin-Opener-Policy',
+        value: 'same-origin',
+      },
     ];
 
     if (isProd) {

@@ -1,7 +1,7 @@
 import { clerkClient, auth } from '@clerk/nextjs/server';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
-import { eq, and, ilike, or, inArray } from 'drizzle-orm';
+import { eq, and, ilike, or, inArray, sql } from 'drizzle-orm';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
@@ -84,10 +84,12 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const whereClauses = [];
 
   if (currentSearch) {
+    // Escape SQL LIKE wildcard characters to prevent unintended pattern matching
+    const sanitizedSearch = currentSearch.replace(/[%_]/g, '\\$&');
     whereClauses.push(
       or(
-        ilike(schema.products.name, `%${currentSearch}%`),
-        ilike(schema.products.description, `%${currentSearch}%`)
+        ilike(schema.products.name, `%${sanitizedSearch}%`),
+        ilike(schema.products.description, `%${sanitizedSearch}%`)
       )
     );
   }
@@ -109,12 +111,11 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   // Apply where conditions
   const conditions = whereClauses.length > 0 ? and(...whereClauses) : undefined;
   
-  // Calculate total count for pagination
-  const allMatchedProducts = await db
-    .select()
+  // Calculate total count for pagination using an efficient COUNT(*) query
+  const [{ count: totalCount }] = await db
+    .select({ count: sql<number>`cast(count(*) as int)` })
     .from(schema.products)
     .where(conditions);
-  const totalCount = allMatchedProducts.length;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   // Retrieve paginated records

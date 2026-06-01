@@ -8,6 +8,7 @@ import { updateSystemSettingSchema } from '@/utils/schemas';
 import { checkSuperAdmin } from '@/utils/authGuards';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
+import { rateLimit } from '@/utils/rateLimit';
 
 /**
  * Enterprise Server Action to configure system-wide parameters (e.g., max media upload limit).
@@ -15,6 +16,7 @@ import { runWithCorrelationId } from '@/utils/asyncContext';
  */
 export async function updateSystemSettingAction(key: string, value: string) {
   return runWithCorrelationId(async () => {
+    await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
     const user = await checkSuperAdmin();
 
     // ── Schema Validation ──

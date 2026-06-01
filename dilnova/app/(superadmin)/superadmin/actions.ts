@@ -14,11 +14,13 @@ import {
 import { checkSuperAdmin } from '@/utils/authGuards';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
+import { rateLimit } from '@/utils/rateLimit';
 
 // ── CATEGORIES CRUD ───────────────────────────────────────────
 
 export async function createCategoryAction(name: string, slug: string, parentId?: string | null) {
   return runWithCorrelationId(async () => {
+    await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
     const user = await checkSuperAdmin();
 
     // ── Schema Validation ──
@@ -53,6 +55,7 @@ export async function createCategoryAction(name: string, slug: string, parentId?
 
 export async function updateCategoryAction(id: string, name: string, slug: string, parentId?: string | null) {
   return runWithCorrelationId(async () => {
+    await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
     const user = await checkSuperAdmin();
 
     // ── Schema Validation ──
@@ -89,6 +92,7 @@ export async function updateCategoryAction(id: string, name: string, slug: strin
 
 export async function deleteCategoryAction(id: string) {
   return runWithCorrelationId(async () => {
+    await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
     const user = await checkSuperAdmin();
 
     // ── Schema Validation ──
@@ -135,6 +139,7 @@ export async function updateProductAction(
   }
 ) {
   return runWithCorrelationId(async () => {
+    await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
     const user = await checkSuperAdmin();
 
     // ── Schema Validation ──
@@ -188,6 +193,7 @@ export async function updateProductAction(
 
 export async function deleteProductAction(id: string) {
   return runWithCorrelationId(async () => {
+    await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
     const user = await checkSuperAdmin();
 
     // ── Schema Validation ──

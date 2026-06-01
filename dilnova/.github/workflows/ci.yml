@@ -41,6 +41,10 @@ jobs:
           UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
           UPSTASH_REDIS_REST_TOKEN: dummy-token
 
+      - name: Security Audit
+        run: pnpm audit --audit-level moderate
+        continue-on-error: true # Don't block deploys for low-severity issues
+
       - name: Verify Next.js Build
         run: pnpm build
         env:
