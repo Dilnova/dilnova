@@ -1,21 +1,10 @@
 import type { Metadata } from 'next'
 import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton, OrganizationSwitcher } from '@clerk/nextjs'
-import { Geist, Geist_Mono } from 'next/font/google'
 import Link from 'next/link'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { runWithCorrelationId } from '@/utils/asyncContext'
 import './globals.css'
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-})
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-})
 
 export const metadata: Metadata = {
   title: 'Dilnova Commerce Hub',
@@ -46,7 +35,7 @@ export default async function RootLayout({
 
     return (
       <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950`}>
+        <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
           <ClerkProvider>
             <header className="flex justify-between items-center px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-16">
               <div className="flex items-center gap-6">

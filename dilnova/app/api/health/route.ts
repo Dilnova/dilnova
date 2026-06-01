@@ -24,7 +24,9 @@ export async function GET() {
           status: 'error',
           timestamp: new Date().toISOString(),
           database: 'disconnected',
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: process.env.NODE_ENV === 'production'
+            ? 'Internal database connection failed.'
+            : (error instanceof Error ? error.message : 'Unknown error'),
         },
         { status: 500 }
       );

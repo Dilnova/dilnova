@@ -120,3 +120,8 @@ export const addProductSchema = z.object({
 export const vendorDeleteProductSchema = z.object({
   productId: z.string().uuid('Invalid product ID.'),
 });
+
+export const incrementViewsSchema = z.object({
+  productId: uuidField,
+});
+

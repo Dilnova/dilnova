@@ -4,14 +4,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { eq, sql, desc, and } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { getCachedOrganizations, type CachedOrg } from '@/utils/clerkCache';
 import type { Metadata } from 'next';
 import ProductGalleryPlayer from './ProductGalleryPlayer';
 import WishlistButton from './WishlistButton';
 import ReviewsSection from './ReviewsSection';
 import QASection from './QASection';
-import { rateLimit } from '@/utils/rateLimit';
+import ProductViewTracker from './ProductViewTracker';
 import { logger } from '@/utils/logger';
 
 interface PageProps {
@@ -149,19 +149,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     parentCategory = parentResult || null;
   }
 
-  // Increment view count in background, rate limited to 3 per minute per IP to prevent spam
-  rateLimit(3, 60 * 1000)
-    .then(() => {
-      db.update(schema.products)
-        .set({
-          views: sql`${schema.products.views} + 1`,
-        })
-        .where(eq(schema.products.id, id))
-        .catch((err) => logger.error('Failed to increment view count', err, { productId: id }));
-    })
-    .catch(() => {
-      // Silently ignore rate limit errors to ensure seamless UX for the customer
-    });
+
 
   // 2. Fetch Seller Organization from Clerk (Optimized with cached lookup + fallback)
   const client = await clerkClient();
@@ -204,6 +192,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans pb-24">
+      {/* Client-side View Counter Trigger */}
+      <ProductViewTracker productId={id} />
       {/* Top Breadcrumb Nav */}
       <div className="max-w-6xl mx-auto px-6 pt-8 flex items-center justify-between">
         <nav className="flex items-center gap-2 text-xs font-mono text-zinc-400">

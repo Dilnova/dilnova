@@ -9,7 +9,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/vendors(.*)',
   '/products(.*)',   // Allows public access to all products and services
-  '/api(.*)',        // Allows public API queries (e.g. database reads)
+  '/api/health(.*)', // Allows public access to the health check endpoint
   '/_next(.*)'       // Allows public access to Next.js static files/image optimization
 ]);
 

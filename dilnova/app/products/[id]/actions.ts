@@ -3,7 +3,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { rateLimit } from '@/utils/rateLimit';
 import { logger } from '@/utils/logger';
@@ -12,6 +12,7 @@ import {
   submitReviewSchema,
   submitQuestionSchema,
   submitAnswerSchema,
+  incrementViewsSchema,
 } from '@/utils/schemas';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 
@@ -249,6 +250,37 @@ export async function submitAnswerAction(questionId: string, answer: string) {
     } catch (error) {
       logger.error('Error answering question', error, { questionId });
       throw new Error(error instanceof Error ? error.message : 'Database error');
+    }
+  });
+}
+
+/**
+ * Increments a product's views count securely.
+ * Rate limited to prevent spam.
+ */
+export async function incrementProductViewsAction(productId: string) {
+  return runWithCorrelationId(async () => {
+    try {
+      // ── Schema Validation ──
+      const parsed = incrementViewsSchema.safeParse({ productId });
+      if (!parsed.success) {
+        throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      }
+
+      await rateLimit(3, 60 * 1000); // Max 3 page views per minute per IP
+
+      await db
+        .update(schema.products)
+        .set({
+          views: sql`${schema.products.views} + 1`,
+        })
+        .where(eq(schema.products.id, parsed.data.productId));
+
+      return { success: true };
+    } catch (error) {
+      // Silently handle rate limit or other issues to prevent breaking client-side UX
+      logger.warn('Failed to increment product views', { productId, error });
+      return { success: false };
     }
   });
 }
