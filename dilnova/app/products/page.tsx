@@ -4,6 +4,7 @@ import * as schema from '../../db/schema';
 import { eq, and, ilike, or, inArray } from 'drizzle-orm';
 import Link from 'next/link';
 import Image from 'next/image';
+import type { Metadata } from 'next';
 import CatalogFilters from './CatalogFilters';
 import WishlistButton from './[id]/WishlistButton';
 
@@ -16,6 +17,50 @@ interface PageProps {
     type?: string;
     page?: string;
   }>;
+}
+
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const currentSearch = params.search || '';
+  const currentCategorySlug = params.category || '';
+  const currentType = params.type || 'all';
+
+  let title = 'Products & Services Catalog | Dilnova';
+  let description = 'Browse local multi-vendor products and services available on Dilnova Commerce Hub.';
+
+  if (currentCategorySlug) {
+    try {
+      const [selectedCategory] = await db
+        .select({ name: schema.categories.name })
+        .from(schema.categories)
+        .where(eq(schema.categories.slug, currentCategorySlug))
+        .limit(1);
+
+      if (selectedCategory) {
+        title = `${selectedCategory.name} - Products & Services | Dilnova`;
+        description = `Explore the best ${selectedCategory.name.toLowerCase()} catalog, matching products, and services offered by our vendors on Dilnova.`;
+      }
+    } catch {
+      // ignore
+    }
+  } else if (currentSearch) {
+    title = `Search results for "${currentSearch}" | Dilnova`;
+    description = `View all multi-vendor products and services matching search term "${currentSearch}" on Dilnova.`;
+  } else if (currentType !== 'all') {
+    const typeLabel = currentType === 'product' ? 'Products' : 'Services';
+    title = `Browse ${typeLabel} | Dilnova`;
+    description = `Explore high-quality vendor ${typeLabel.toLowerCase()} listings on Dilnova Commerce Hub.`;
+  }
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+    },
+  };
 }
 
 export default async function ProductsCatalogPage({ searchParams }: PageProps) {

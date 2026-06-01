@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { clerkClient } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { customStorefronts } from './custom/registry';
@@ -11,6 +12,79 @@ interface PageProps {
 }
 
 export const revalidate = 30; // Cache and regenerate page in background at most every 30 seconds (ISR)
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const client = await clerkClient();
+
+  const isDistarSubVendor = ['distar-hardware', 'distar-nursery', 'distar-tech', 'dilstar-services'].includes(slug);
+
+  let clerkOrg = null;
+  try {
+    const orgs = await getCachedOrganizations(client);
+    if (isDistarSubVendor) {
+      clerkOrg = orgs.find(
+        (o) => o.name.toLowerCase() === 'distar' || o.slug === 'distar' || (o.slug && o.slug.startsWith('distar-'))
+      );
+    } else {
+      clerkOrg = orgs.find(
+        (o) => o.slug === slug || o.id === slug
+      );
+    }
+
+    if (!clerkOrg) {
+      try {
+        const o = await client.organizations.getOrganization({ slug });
+        if (o) {
+          clerkOrg = {
+            id: o.id,
+            name: o.name,
+            slug: o.slug,
+            imageUrl: o.imageUrl,
+            publicMetadata: o.publicMetadata,
+          };
+        }
+      } catch {
+        // ignore
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  if (!clerkOrg) {
+    return {
+      title: 'Vendor Storefront | Dilnova',
+    };
+  }
+
+  let displayName = clerkOrg.name;
+  if (slug === 'distar-hardware') {
+    displayName = 'Distar Hardware';
+  } else if (slug === 'distar-nursery') {
+    displayName = 'Distar Nursery';
+  } else if (slug === 'distar-tech') {
+    displayName = 'Distar Tech Store';
+  } else if (slug === 'dilstar-services') {
+    displayName = 'Dilstar Services';
+  }
+
+  const title = `${displayName} Storefront | Dilnova`;
+  const description = clerkOrg.publicMetadata?.description
+    ? (clerkOrg.publicMetadata.description as string)
+    : `Browse products and services catalog offered by ${displayName} on Dilnova.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      images: clerkOrg.imageUrl ? [{ url: clerkOrg.imageUrl }] : [],
+    },
+  };
+}
 
 // Pre-render the core sub-vendor storefront paths at build-time for instant first load
 export async function generateStaticParams() {

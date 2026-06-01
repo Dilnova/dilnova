@@ -6,6 +6,7 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, sql, desc, and } from 'drizzle-orm';
 import { getCachedOrganizations, type CachedOrg } from '@/utils/clerkCache';
+import type { Metadata } from 'next';
 import ProductGalleryPlayer from './ProductGalleryPlayer';
 import WishlistButton from './WishlistButton';
 import ReviewsSection from './ReviewsSection';
@@ -20,6 +21,52 @@ interface PageProps {
 }
 
 export const revalidate = 60; // Cache for 60 seconds (ISR)
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+
+  try {
+    const [result] = await db
+      .select({
+        product: schema.products,
+      })
+      .from(schema.products)
+      .where(eq(schema.products.id, id))
+      .limit(1);
+
+    if (!result || !result.product) {
+      return {
+        title: 'Product Not Found | Dilnova',
+      };
+    }
+
+    const { product } = result;
+    const formattedPrice = (product.price / 100).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+
+    const title = `${product.name} | Dilnova`;
+    const description = product.description
+      ? (product.description.length > 150 ? product.description.substring(0, 147) + '...' : product.description)
+      : `Get ${product.name} for ${formattedPrice} from our multi-vendor catalog on Dilnova.`;
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+        images: product.imageUrl ? [{ url: product.imageUrl }] : [],
+      },
+    };
+  } catch {
+    return {
+      title: 'Product Details | Dilnova',
+    };
+  }
+}
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const { id } = await params;

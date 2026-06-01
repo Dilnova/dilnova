@@ -1,9 +1,15 @@
 import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import { OrganizationList } from '@clerk/nextjs';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import RoleToggleButton from './RoleToggleButton';
 import ScrollRedirector from './ScrollRedirector';
 import { getCachedOrganizations } from '../utils/clerkCache';
+
+export const metadata: Metadata = {
+  title: 'Dilnova Multi-Vendor Commerce Marketplace',
+  description: 'Welcome to the Dilnova Commerce Hub. Explore our industrial, botanical, consulting, and technological vendor storefronts.',
+};
 
 export default async function Home() {
   const { orgId, orgRole } = await auth();

@@ -1,9 +1,15 @@
 import { clerkClient } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import Image from 'next/image';
+import type { Metadata } from 'next';
 import { getCachedOrganizations } from '../../utils/clerkCache';
 
 export const revalidate = 30; // ISR: cache and regenerate in background
+
+export const metadata: Metadata = {
+  title: 'Active Vendors Directory | Dilnova',
+  description: 'Explore the registered local sub-vendors, stores, and service providers offering catalog items inside the Dilnova Commerce Hub.',
+};
 
 export default async function VendorsDirectoryPage() {
   const client = await clerkClient();
