@@ -3,6 +3,7 @@ import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton, Organizati
 import Link from 'next/link'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/next"
 import { runWithCorrelationId } from '@/utils/asyncContext'
 import './globals.css'
 
@@ -96,6 +97,7 @@ export default async function RootLayout({
             </header>
             {children}
             <SpeedInsights />
+            <Analytics />
           </ClerkProvider>
         </body>
       </html>
