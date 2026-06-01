@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { StorefrontProps } from './types';
+import { isVideoUrl } from '@/utils/media';
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -151,13 +152,24 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                       {/* Image */}
                       <div className="h-52 bg-green-100/30 relative overflow-hidden">
                         {product.imageUrl ? (
-                          <Image
-                            src={product.imageUrl}
-                            alt={product.name}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-700"
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          />
+                          isVideoUrl(product.imageUrl) ? (
+                            <video
+                              src={product.imageUrl}
+                              muted
+                              loop
+                              playsInline
+                              autoPlay
+                              className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700"
+                            />
+                          ) : (
+                            <Image
+                              src={product.imageUrl}
+                              alt={product.name}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-700"
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            />
+                          )
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-green-100 to-emerald-100">
                             🌿
@@ -225,7 +237,18 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                   >
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-green-100">
                       {service.imageUrl ? (
-                        <Image src={service.imageUrl} alt={service.name} fill className="object-cover" sizes="80px" />
+                        isVideoUrl(service.imageUrl) ? (
+                          <video
+                            src={service.imageUrl}
+                            muted
+                            loop
+                            playsInline
+                            autoPlay
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <Image src={service.imageUrl} alt={service.name} fill className="object-cover" sizes="80px" />
+                        )
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-2xl">🌻</div>
                       )}

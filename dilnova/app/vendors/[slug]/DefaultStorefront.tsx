@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import FollowButton from './FollowButton';
 import type { StorefrontProps } from './custom/types';
+import { isVideoUrl } from '@/utils/media';
 
 /**
  * Default storefront layout used by vendors without a custom page.
@@ -137,13 +138,24 @@ export default function DefaultStorefront({ org, products }: StorefrontProps) {
                     <Link href={`/products/${product.id}`} target="_blank" className="flex-1 flex flex-col group">
                       <div className="h-40 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
                         {product.imageUrl ? (
-                          <Image
-                            src={product.imageUrl}
-                            alt={product.name}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-500"
-                            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
-                          />
+                          isVideoUrl(product.imageUrl) ? (
+                            <video
+                              src={product.imageUrl}
+                              muted
+                              loop
+                              playsInline
+                              autoPlay
+                              className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                            />
+                          ) : (
+                            <Image
+                              src={product.imageUrl}
+                              alt={product.name}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-500"
+                              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                            />
+                          )
                         ) : (
                           <div className="w-full h-full bg-gradient-to-r from-purple-500/5 via-indigo-500/5 to-blue-500/5 flex items-center justify-center text-2xl">
                             📦

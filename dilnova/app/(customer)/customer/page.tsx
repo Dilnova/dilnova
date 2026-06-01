@@ -1,6 +1,7 @@
 import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import Image from 'next/image';
+import { isVideoUrl } from '@/utils/media';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
@@ -116,14 +117,25 @@ export default async function CustomerPage() {
                       className="flex border border-zinc-200/80 dark:border-zinc-850 rounded-2xl overflow-hidden bg-white dark:bg-zinc-950 shadow-sm relative group hover:border-purple-500/30 transition-all"
                     >
                       {product.imageUrl ? (
-                        <div className="w-24 h-24 relative flex-shrink-0 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-100 dark:border-zinc-900">
-                          <Image
-                            src={product.imageUrl}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                            sizes="96px"
-                          />
+                        <div className="w-24 h-24 relative flex-shrink-0 bg-zinc-50 dark:bg-zinc-900 border-r border-zinc-100 dark:border-zinc-900 overflow-hidden">
+                          {isVideoUrl(product.imageUrl) ? (
+                            <video
+                              src={product.imageUrl}
+                              muted
+                              loop
+                              playsInline
+                              autoPlay
+                              className="object-cover w-full h-full"
+                            />
+                          ) : (
+                            <Image
+                              src={product.imageUrl}
+                              alt={product.name}
+                              fill
+                              className="object-cover"
+                              sizes="96px"
+                            />
+                          )}
                         </div>
                       ) : (
                         <div className="w-24 h-24 bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center text-xl flex-shrink-0 border-r border-zinc-100 dark:border-zinc-900">

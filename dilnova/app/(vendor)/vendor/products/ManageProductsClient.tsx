@@ -4,6 +4,7 @@ import { useState, useTransition, useRef } from 'react';
 import { addProductAction, deleteProductAction } from './actions';
 import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import Image from 'next/image';
+import { isVideoUrl } from '@/utils/media';
 
 export interface Product {
   id: string;
@@ -199,12 +200,23 @@ export default function ManageProductsClient({
                     {/* Image Preview */}
                     <div className="relative w-full h-32 bg-zinc-100 dark:bg-zinc-900 rounded-lg overflow-hidden mb-3 border border-zinc-200/55 dark:border-zinc-800">
                       {item.imageUrl ? (
-                        <Image
-                          src={item.imageUrl}
-                          alt={item.name}
-                          fill
-                          className="object-cover"
-                        />
+                        isVideoUrl(item.imageUrl) ? (
+                          <video
+                            src={item.imageUrl}
+                            muted
+                            loop
+                            playsInline
+                            autoPlay
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <Image
+                            src={item.imageUrl}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                          />
+                        )
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-xs text-zinc-400 font-mono">
                           No Image Provided

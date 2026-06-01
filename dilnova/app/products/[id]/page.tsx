@@ -13,6 +13,7 @@ import ReviewsSection from './ReviewsSection';
 import QASection from './QASection';
 import ProductViewTracker from './ProductViewTracker';
 import { logger } from '@/utils/logger';
+import { isVideoUrl } from '@/utils/media';
 
 interface PageProps {
   params: Promise<{
@@ -187,7 +188,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const mediaPayload = Array.isArray(product.media) && product.media.length > 0
     ? (product.media as { url: string; type: 'image' | 'video' }[])
     : product.imageUrl
-      ? [{ url: product.imageUrl, type: 'image' as const }]
+      ? [{ url: product.imageUrl, type: isVideoUrl(product.imageUrl) ? ('video' as const) : ('image' as const) }]
       : [];
 
   return (

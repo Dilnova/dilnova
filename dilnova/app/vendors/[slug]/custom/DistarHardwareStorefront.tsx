@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { StorefrontProps } from './types';
+import { isVideoUrl } from '@/utils/media';
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -178,13 +179,24 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
                       {/* Product Image */}
                       <div className="h-48 bg-zinc-800 relative overflow-hidden">
                         {product.imageUrl ? (
-                          <Image
-                            src={product.imageUrl}
-                            alt={product.name}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-500"
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          />
+                          isVideoUrl(product.imageUrl) ? (
+                            <video
+                              src={product.imageUrl}
+                              muted
+                              loop
+                              playsInline
+                              autoPlay
+                              className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                            />
+                          ) : (
+                            <Image
+                              src={product.imageUrl}
+                              alt={product.name}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-500"
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            />
+                          )
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-3xl bg-gradient-to-br from-zinc-800 to-zinc-900">
                             🔧
