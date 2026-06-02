@@ -44,6 +44,9 @@ export default async function SuperAdminDashboardPage() {
   const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
   const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
 
+  const systemLogo = await getSystemSetting('system_logo', '');
+  const systemFavicon = await getSystemSetting('system_favicon', '');
+
   return (
     <main className="p-6 md:p-10 max-w-7xl mx-auto font-sans w-full">
       <SuperAdminClient
@@ -51,6 +54,8 @@ export default async function SuperAdminDashboardPage() {
         products={products}
         stats={stats}
         maxMediaLimit={maxMediaLimit}
+        systemLogo={systemLogo}
+        systemFavicon={systemFavicon}
       />
     </main>
   );

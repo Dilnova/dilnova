@@ -45,6 +45,8 @@ interface SuperAdminClientProps {
     totalViews: number;
   };
   maxMediaLimit: number;
+  systemLogo: string;
+  systemFavicon: string;
 }
 
 export default function SuperAdminClient({
@@ -52,6 +54,8 @@ export default function SuperAdminClient({
   products,
   stats,
   maxMediaLimit,
+  systemLogo,
+  systemFavicon,
 }: SuperAdminClientProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'categories' | 'products' | 'settings'>('overview');
   const [isPending, startTransition] = useTransition();
@@ -60,6 +64,15 @@ export default function SuperAdminClient({
 
   // Settings State
   const [mediaLimitInput, setMediaLimitInput] = useState(maxMediaLimit);
+  const [logoInput, setLogoInput] = useState(systemLogo);
+  const [faviconInput, setFaviconInput] = useState(systemFavicon);
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
+  const [isFaviconUploading, setIsFaviconUploading] = useState(false);
+  const [logoUploadProgress, setLogoUploadProgress] = useState<number | null>(null);
+  const [faviconUploadProgress, setFaviconUploadProgress] = useState<number | null>(null);
+
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const faviconFileInputRef = useRef<HTMLInputElement>(null);
 
   // Category Form State
   const [categoryName, setCategoryName] = useState('');
@@ -297,6 +310,72 @@ export default function SuperAdminClient({
     });
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      triggerNotification(false, 'Logo file size exceeds 5MB limit.');
+      return;
+    }
+
+    setIsLogoUploading(true);
+    setLogoUploadProgress(0);
+
+    try {
+      const result = await uploadToCloudinary(file, (progress) => {
+        setLogoUploadProgress(progress.percent);
+      });
+
+      if (result.success && result.publicUrl) {
+        setLogoInput(result.publicUrl);
+        triggerNotification(true, 'Logo uploaded successfully!');
+      } else {
+        triggerNotification(false, result.error || 'Upload failed');
+      }
+    } catch (err) {
+      console.error(err);
+      triggerNotification(false, 'An error occurred during logo upload.');
+    } finally {
+      setIsLogoUploading(false);
+      setLogoUploadProgress(null);
+      if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+    }
+  };
+
+  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      triggerNotification(false, 'Favicon file size exceeds 2MB limit.');
+      return;
+    }
+
+    setIsFaviconUploading(true);
+    setFaviconUploadProgress(0);
+
+    try {
+      const result = await uploadToCloudinary(file, (progress) => {
+        setFaviconUploadProgress(progress.percent);
+      });
+
+      if (result.success && result.publicUrl) {
+        setFaviconInput(result.publicUrl);
+        triggerNotification(true, 'Favicon uploaded successfully!');
+      } else {
+        triggerNotification(false, result.error || 'Upload failed');
+      }
+    } catch (err) {
+      console.error(err);
+      triggerNotification(false, 'An error occurred during favicon upload.');
+    } finally {
+      setIsFaviconUploading(false);
+      setFaviconUploadProgress(null);
+      if (faviconFileInputRef.current) faviconFileInputRef.current.value = '';
+    }
+  };
+
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -310,6 +389,8 @@ export default function SuperAdminClient({
     startTransition(async () => {
       try {
         await updateSystemSettingAction('max_media_limit', mediaLimitInput.toString());
+        await updateSystemSettingAction('system_logo', logoInput);
+        await updateSystemSettingAction('system_favicon', faviconInput);
         triggerNotification(true, 'System settings updated successfully.');
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Failed to update system settings.';
@@ -662,10 +743,102 @@ export default function SuperAdminClient({
               </p>
             </div>
 
+            {/* Logo configuration */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-mono font-bold text-zinc-450 block">System Logo</label>
+              {logoInput ? (
+                <div className="flex items-center gap-3 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
+                  <div className="relative w-12 h-12 rounded overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-150 dark:bg-zinc-900">
+                    <Image src={logoInput} alt="System Logo Preview" fill className="object-contain" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLogoInput('')}
+                    className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded text-[10px] font-semibold transition-colors cursor-pointer"
+                  >
+                    Remove Logo
+                  </button>
+                </div>
+              ) : (
+                <div className="border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-zinc-50/30 dark:bg-zinc-900/5 flex flex-col items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => logoFileInputRef.current?.click()}
+                    disabled={isLogoUploading}
+                    className="text-xs font-semibold text-purple-700 dark:text-purple-400 hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer"
+                  >
+                    {isLogoUploading ? 'Uploading Logo...' : 'Click to Upload Logo'}
+                  </button>
+                  <p className="text-[9px] text-zinc-400 font-mono">PNG, JPG, WEBP (Max 5MB)</p>
+                  <input
+                    type="file"
+                    ref={logoFileInputRef}
+                    onChange={handleLogoUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
+              )}
+              {isLogoUploading && logoUploadProgress !== null && (
+                <div className="w-full h-1 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-purple-650 rounded-full transition-all"
+                    style={{ width: `${logoUploadProgress}%` }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Favicon configuration */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-mono font-bold text-zinc-450 block">Favicon Icon</label>
+              {faviconInput ? (
+                <div className="flex items-center gap-3 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
+                  <div className="relative w-8 h-8 rounded overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-150 dark:bg-zinc-900">
+                    <Image src={faviconInput} alt="Favicon Preview" fill className="object-contain" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFaviconInput('')}
+                    className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded text-[10px] font-semibold transition-colors cursor-pointer"
+                  >
+                    Remove Favicon
+                  </button>
+                </div>
+              ) : (
+                <div className="border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-4 bg-zinc-50/30 dark:bg-zinc-900/5 flex flex-col items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => faviconFileInputRef.current?.click()}
+                    disabled={isFaviconUploading}
+                    className="text-xs font-semibold text-purple-700 dark:text-purple-400 hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer"
+                  >
+                    {isFaviconUploading ? 'Uploading Favicon...' : 'Click to Upload Favicon'}
+                  </button>
+                  <p className="text-[9px] text-zinc-400 font-mono">ICO, PNG (Max 2MB)</p>
+                  <input
+                    type="file"
+                    ref={faviconFileInputRef}
+                    onChange={handleFaviconUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
+              )}
+              {isFaviconUploading && faviconUploadProgress !== null && (
+                <div className="w-full h-1 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-purple-650 rounded-full transition-all"
+                    style={{ width: `${faviconUploadProgress}%` }}
+                  />
+                </div>
+              )}
+            </div>
+
             <button
               type="submit"
-              disabled={isPending}
-              className="py-2 px-4 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm shadow-purple-900/10"
+              disabled={isPending || isLogoUploading || isFaviconUploading}
+              className="py-2 px-4 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm shadow-purple-900/10 disabled:opacity-50"
             >
               {isPending ? 'Saving Configurations...' : 'Save Configurations'}
             </button>

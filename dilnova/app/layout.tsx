@@ -8,9 +8,16 @@ import { runWithCorrelationId } from '@/utils/asyncContext'
 import HeaderNav from './HeaderNav'
 import './globals.css'
 
-export const metadata: Metadata = {
-  title: 'Dilnova Commerce Hub',
-  description: 'Enterprise RBAC sandbox with multi-vendor isolation',
+import { getSystemSetting } from '@/utils/settings'
+import Image from 'next/image'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const faviconUrl = await getSystemSetting('system_favicon', '');
+  return {
+    title: 'Dilnova Commerce Hub',
+    description: 'Enterprise RBAC sandbox with multi-vendor isolation',
+    icons: faviconUrl ? { icon: faviconUrl } : undefined,
+  };
 }
 
 export default async function RootLayout({
@@ -62,14 +69,28 @@ export default async function RootLayout({
       });
     }
 
+    const logoUrl = await getSystemSetting('system_logo', '');
+
     return (
       <html lang="en">
         <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
           <ClerkProvider>
             <header className="flex justify-between items-center px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-16">
               <div className="flex items-center gap-3 md:gap-6">
-                <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90">
-                  DILNOVA
+                <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center">
+                  {logoUrl ? (
+                    <div className="relative h-8 w-28">
+                      <Image
+                        src={logoUrl}
+                        alt="Dilnova Logo"
+                        fill
+                        className="object-contain object-left"
+                        priority
+                      />
+                    </div>
+                  ) : (
+                    'DILNOVA'
+                  )}
                 </Link>
                 <HeaderNav links={links} />
               </div>
