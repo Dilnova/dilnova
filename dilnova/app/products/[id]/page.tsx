@@ -12,6 +12,7 @@ import WishlistButton from './WishlistButton';
 import ReviewsSection from './ReviewsSection';
 import QASection from './QASection';
 import ProductViewTracker from './ProductViewTracker';
+import ProductDetailAddToCart from './ProductDetailAddToCart';
 import { logger } from '@/utils/logger';
 import { isVideoUrl } from '@/utils/media';
 
@@ -352,6 +353,20 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   )}
                 </div>
               )}
+
+              {/* Transactional Add to Cart Section */}
+              <div className="pt-3 border-t border-zinc-200/60 dark:border-zinc-800/60">
+                <ProductDetailAddToCart
+                  product={{
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    imageUrl: product.imageUrl,
+                    vendorName: vendorName,
+                    type: product.type,
+                  }}
+                />
+              </div>
 
               <div className="pt-2 flex flex-col sm:flex-row gap-3">
                 {vendorSlug && (

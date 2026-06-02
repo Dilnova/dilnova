@@ -8,6 +8,7 @@ import { isVideoUrl } from '../../utils/media';
 import type { Metadata } from 'next';
 import CatalogFilters from './CatalogFilters';
 import WishlistButton from './[id]/WishlistButton';
+import AddToCartButton from '../components/AddToCartButton';
 
 export const revalidate = 0; // Fresh load on each catalog query
 
@@ -275,16 +276,30 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                     {/* Price and Vendor Ownership Row */}
                     <div className="p-4 border-t border-zinc-100 dark:border-zinc-900/60">
                       <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
-                          {formattedPrice}
-                        </span>
-                        <div className="flex items-center gap-1 text-[10px] text-zinc-400 dark:text-zinc-500 font-mono" title="Views count">
-                          <svg className="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                          <span>{product.views}</span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
+                            {formattedPrice}
+                          </span>
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5" title="Views count">
+                            <svg className="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span>{product.views} views</span>
+                          </div>
                         </div>
+                        <AddToCartButton
+                          product={{
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            imageUrl: product.imageUrl,
+                            vendorName: vendorName,
+                            type: product.type,
+                          }}
+                          showLabel={false}
+                          className="h-8 w-8 text-xs rounded-lg"
+                        />
                       </div>
 
                       {/* Vendor Owner Label */}

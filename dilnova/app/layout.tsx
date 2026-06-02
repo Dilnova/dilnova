@@ -8,6 +8,9 @@ import { runWithCorrelationId } from '@/utils/asyncContext'
 import HeaderNav from './HeaderNav'
 import './globals.css'
 
+import { CartProvider } from './context/CartContext'
+import CartIcon from './components/CartIcon'
+
 import { getSystemSetting } from '@/utils/settings'
 import Image from 'next/image'
 
@@ -75,56 +78,61 @@ export default async function RootLayout({
       <html lang="en">
         <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
           <ClerkProvider>
-            <header className="flex justify-between items-center px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-16">
-              <div className="flex items-center gap-3 md:gap-6">
-                <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center">
-                  {logoUrl ? (
-                    <div className="relative h-8 w-28">
-                      <Image
-                        src={logoUrl}
-                        alt="Dilnova Logo"
-                        fill
-                        className="object-contain object-left"
-                        priority
-                      />
+            <CartProvider>
+              <header className="flex justify-between items-center px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-16">
+                <div className="flex items-center gap-3 md:gap-6">
+                  <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center">
+                    {logoUrl ? (
+                      <div className="relative h-8 w-28">
+                        <Image
+                          src={logoUrl}
+                          alt="Dilnova Logo"
+                          fill
+                          className="object-contain object-left"
+                          priority
+                        />
+                      </div>
+                    ) : (
+                      'DILNOVA'
+                    )}
+                  </Link>
+                  <HeaderNav links={links} />
+                </div>
+
+                <div className="flex items-center gap-2 md:gap-4">
+                  {/* Shopping Cart Icon (Link to page) */}
+                  <CartIcon />
+
+                  <Show when="signed-out">
+                    <div className="flex items-center gap-2 md:gap-3 text-xs font-semibold">
+                      <SignInButton />
+                      <SignUpButton>
+                        <button className="bg-purple-700 text-white rounded-lg h-9 px-3 md:px-4 cursor-pointer hover:bg-purple-800 transition-colors">
+                          Sign Up
+                        </button>
+                      </SignUpButton>
                     </div>
-                  ) : (
-                    'DILNOVA'
-                  )}
-                </Link>
-                <HeaderNav links={links} />
-              </div>
+                  </Show>
 
-              <div className="flex items-center gap-2 md:gap-4">
-                <Show when="signed-out">
-                  <div className="flex items-center gap-2 md:gap-3 text-xs font-semibold">
-                    <SignInButton />
-                    <SignUpButton>
-                      <button className="bg-purple-700 text-white rounded-lg h-9 px-3 md:px-4 cursor-pointer hover:bg-purple-800 transition-colors">
-                        Sign Up
-                      </button>
-                    </SignUpButton>
-                  </div>
-                </Show>
-
-                <Show when="signed-in">
-                  <div className="flex items-center gap-2 md:gap-4">
-                    <OrganizationSwitcher 
-                      afterCreateOrganizationUrl="/" 
-                      afterSelectOrganizationUrl="/"
-                      appearance={{
-                        elements: {
-                          organizationSwitcherPopoverActionButton__createOrganization: canCreateOrg ? 'flex' : 'hidden',
-                          organizationSwitcherPopoverCreateOrganization: canCreateOrg ? 'flex' : 'hidden',
-                        }
-                      }}
-                    />
-                    <UserButton />
-                  </div>
-                </Show>
-              </div>
-            </header>
-            {children}
+                  <Show when="signed-in">
+                    <div className="flex items-center gap-2 md:gap-4">
+                      <OrganizationSwitcher 
+                        afterCreateOrganizationUrl="/" 
+                        afterSelectOrganizationUrl="/"
+                        appearance={{
+                          elements: {
+                            organizationSwitcherPopoverActionButton__createOrganization: canCreateOrg ? 'flex' : 'hidden',
+                            organizationSwitcherPopoverCreateOrganization: canCreateOrg ? 'flex' : 'hidden',
+                          }
+                        }}
+                      />
+                      <UserButton />
+                    </div>
+                  </Show>
+                </div>
+              </header>
+              {children}
+            </CartProvider>
             <SpeedInsights />
             <Analytics />
           </ClerkProvider>
