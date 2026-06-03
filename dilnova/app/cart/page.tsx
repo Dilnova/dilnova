@@ -4,8 +4,10 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 import { useCart } from '../context/CartContext';
 import { isVideoUrl } from '@/utils/media';
+import { sendCartSummaryEmailAction } from './actions';
 
 export default function CartPage() {
   const {
@@ -18,11 +20,42 @@ export default function CartPage() {
   } = useCart();
 
   const router = useRouter();
+  const { isSignedIn, user } = useUser();
+
   const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success'>('idle');
+  const [emailInput, setEmailInput] = useState('');
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success'>('idle');
+  const [emailMessage, setEmailMessage] = useState('');
 
   const handleGoBack = (e: React.MouseEvent) => {
     e.preventDefault();
     router.back();
+  };
+
+  const handleSendInbox = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetEmail = isSignedIn ? user?.primaryEmailAddress?.emailAddress : emailInput;
+    if (!targetEmail) return;
+
+    setEmailStatus('sending');
+    try {
+      const res = await sendCartSummaryEmailAction(targetEmail, cartItems, cartTotal);
+      if (res.success) {
+        setEmailStatus('success');
+        setEmailMessage(`Cart list successfully sent to ${targetEmail}!`);
+        setTimeout(() => {
+          setEmailStatus('idle');
+          setEmailInput('');
+        }, 4000);
+      } else {
+        setEmailStatus('idle');
+        alert(res.error || 'Failed to send email.');
+      }
+    } catch (err: unknown) {
+      setEmailStatus('idle');
+      const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      alert(errMsg);
+    }
   };
 
   const formatPrice = (cents: number) => {
@@ -196,7 +229,7 @@ export default function CartPage() {
                         <div className="flex items-center border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-zinc-50/50 dark:bg-zinc-900/30">
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-150 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold transition-all cursor-pointer"
+                            className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-855 dark:text-zinc-400 dark:hover:text-zinc-150 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold transition-all cursor-pointer"
                             aria-label="Decrease quantity"
                           >
                             -
@@ -206,7 +239,7 @@ export default function CartPage() {
                           </span>
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-850 dark:text-zinc-400 dark:hover:text-zinc-150 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold transition-all cursor-pointer"
+                            className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-855 dark:text-zinc-400 dark:hover:text-zinc-150 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold transition-all cursor-pointer"
                             aria-label="Increase quantity"
                           >
                             +
@@ -218,7 +251,7 @@ export default function CartPage() {
                           <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono block">
                             {formatPrice(item.price)} each
                           </span>
-                          <span className="text-sm font-extrabold font-mono text-zinc-950 dark:text-zinc-50 mt-0.5">
+                          <span className="text-sm font-extrabold font-mono text-zinc-955 dark:text-zinc-50 mt-0.5">
                             {formatPrice(item.price * item.quantity)}
                           </span>
                         </div>
@@ -241,8 +274,9 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* Right side: Summary Box (col-span 4) */}
+            {/* Right side: Summary & Email Box (col-span 4) */}
             <div className="lg:col-span-4 space-y-4">
+              {/* Order Summary Card */}
               <div className="bg-white border border-zinc-200/80 rounded-2xl p-6 dark:bg-zinc-950 dark:border-zinc-900 shadow-sm space-y-6">
                 <h2 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
                   Order Summary
@@ -301,6 +335,60 @@ export default function CartPage() {
                     Clear Cart
                   </button>
                 </div>
+              </div>
+
+              {/* Send to Inbox Box */}
+              <div className="bg-white border border-zinc-200/80 rounded-2xl p-6 dark:bg-zinc-950 dark:border-zinc-900 shadow-sm space-y-4">
+                <h2 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
+                  Send Cart to Inbox
+                </h2>
+                
+                {emailStatus === 'success' ? (
+                  <div className="bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-450 p-3.5 rounded-xl text-xs leading-relaxed">
+                    {emailMessage}
+                  </div>
+                ) : (
+                  <form onSubmit={handleSendInbox} className="space-y-3">
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-450 leading-relaxed">
+                      {isSignedIn 
+                        ? `Email the list of these ${cartCount} items to your registered address.`
+                        : "Enter your email address to receive a summary copy of your shopping cart."
+                      }
+                    </p>
+                    
+                    {!isSignedIn && (
+                      <input
+                        type="email"
+                        required
+                        placeholder="your-email@example.com"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50"
+                      />
+                    )}
+                    
+                    {isSignedIn && (
+                      <div className="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-900 truncate">
+                        📧 {user?.primaryEmailAddress?.emailAddress}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={emailStatus === 'sending'}
+                      className="w-full text-center py-2.5 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      {emailStatus === 'sending' ? (
+                        <>
+                          <span className="animate-spin text-sm">⏳</span>
+                          <span>Sending...</span>
+                        </>
+                      ) : (
+                        <span>Email Summary</span>
+                      )}
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
 
