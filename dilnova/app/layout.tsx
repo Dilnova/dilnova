@@ -49,6 +49,7 @@ export default async function RootLayout({
     const links: { href: string; label: string; colorClass?: string }[] = [
       { href: '/vendors', label: 'Browse Vendors' },
       { href: '/products', label: 'Products & Services' },
+      { href: '/contact', label: 'Contact Us' },
     ];
 
     if (orgId && (orgRole === 'org:admin' || orgRole === 'org:vendor')) {

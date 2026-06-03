@@ -187,197 +187,110 @@ export default async function Home() {
 
       </section>
 
-      {/* 2. Available Other Vendors Section */}
+      {/* 2. Platform Core Architecture & Capabilities Section */}
       <section className="max-w-6xl mx-auto px-6 py-20 w-full border-b border-zinc-200/60 dark:border-zinc-800/60">
         <div className="text-center mb-16">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/50 mb-3 font-mono">
-            Active Tenant Feeds
+            Platform Capabilities
           </span>
           <h2 className="text-3xl font-extrabold tracking-tight mb-3">
-            Available Other Vendors
+            Why Dilnova Commerce Hub?
           </h2>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
-            Discover other custom storefronts and business entities registered in our sandbox database.
+            Discover the technical features powering our multi-tenant enterprise marketplace.
           </p>
         </div>
 
-        {otherVendors.length === 0 ? (
-          <div className="max-w-md mx-auto text-center border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 p-8 rounded-2xl">
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed font-mono">
-              No custom vendors created yet. Use the **Developer RBAC Sandbox Controls** below to register your own custom organization storefront!
-            </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Feature 1 */}
+          <div className="border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/30 p-6 rounded-2xl flex gap-4">
+            <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl h-fit">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-50">Multi-Tenant Storefront Isolation</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                Dilnova isolates stores at the tenant level. Each registered brand or vendor operates their catalog, layout, and settings in dedicated workspaces, ensuring secure, autonomous management.
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {otherVendors.map((vendor) => {
-              const metadata = (vendor.publicMetadata || {}) as {
-                description?: string;
-                bannerUrl?: string;
-                address?: string;
-                phone?: string;
-              };
 
-              return (
-                <div
-                  key={vendor.id}
-                  className="group relative flex flex-col justify-between border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 rounded-2xl overflow-hidden hover:border-purple-500/40 dark:hover:border-purple-500/40 hover:shadow-lg transition-all duration-300"
-                >
-                  <div>
-                    {/* Header Banner */}
-                    <div className="h-24 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
-                      {metadata.bannerUrl ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={metadata.bannerUrl}
-                          alt={`${vendor.name} banner`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-r from-purple-500/10 via-indigo-500/10 to-blue-500/10" />
-                      )}
-                    </div>
-
-                    {/* Logo & Info */}
-                    <div className="px-6 pb-4 relative">
-                      <div className="absolute -top-6 left-6">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-white dark:border-zinc-950 bg-white shadow-sm flex items-center justify-center">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={vendor.imageUrl}
-                            alt={vendor.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="pt-8">
-                        <h3 className="text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-50 group-hover:text-purple-500 transition-colors">
-                          {vendor.name}
-                        </h3>
-                        <span className="text-[9px] font-mono text-zinc-400 block mb-2">
-                          @{vendor.slug || 'no-slug'}
-                        </span>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed min-h-[2.5rem]">
-                          {metadata.description || 'No description published yet.'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Visit Action */}
-                  <div className="px-6 pb-6 pt-4 border-t border-zinc-100 dark:border-zinc-900/60 flex items-center justify-between">
-                    <span className="text-[9px] font-mono text-zinc-400">
-                      ID: {vendor.id.slice(0, 10)}...
-                    </span>
-                    <Link
-                      href={`/vendors/${vendor.slug || vendor.id}`}
-                      className="inline-flex h-8 items-center justify-center rounded-lg bg-zinc-900 hover:bg-zinc-800 px-3.5 text-[10px] font-semibold text-white dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 transition-colors cursor-pointer"
-                    >
-                      Visit Storefront &rarr;
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
+          {/* Feature 2 */}
+          <div className="border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/30 p-6 rounded-2xl flex gap-4">
+            <div className="p-3 bg-emerald-500/10 text-emerald-550 rounded-xl h-fit">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-50">Role-Based Access Control (RBAC)</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                Enterprise-grade authorization models dictate catalog management. Roles like Customer, Vendor Merchant, and Hub Admin separate consumer shopping experiences from vendor configuration dashboards.
+              </p>
+            </div>
           </div>
-        )}
+
+          {/* Feature 3 */}
+          <div className="border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/30 p-6 rounded-2xl flex gap-4">
+            <div className="p-3 bg-indigo-500/10 text-indigo-550 rounded-xl h-fit">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-50">Unified Multi-Vendor Cart</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                Add products from completely different vendors (e.g. bio-plants from Nursery and tech parts from Tech Store) to a single persistent cart and manage your checkout journey seamlessly.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature 4 */}
+          <div className="border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/30 p-6 rounded-2xl flex gap-4">
+            <div className="p-3 bg-teal-500/10 text-teal-550 rounded-xl h-fit">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-50">High Performance & SEO First</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                Built with next-generation web technologies, offering server-side rendering for catalog listing, structured SEO parameters, semantic schema validation, and blazingly fast interaction rates.
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* 3. Collapsible Developer Sandbox Console (Clerk RBAC Controls) */}
-      {user && (
-        <section className="max-w-4xl mx-auto px-6 pt-16 pb-6 w-full">
-          <details className="group border border-purple-200/60 dark:border-purple-900/30 bg-purple-50/30 dark:bg-purple-950/10 rounded-2xl overflow-hidden shadow-sm">
-            <summary className="flex items-center justify-between p-5 cursor-pointer font-semibold text-xs text-purple-800 dark:text-purple-300 select-none font-mono">
-              <span className="flex items-center gap-2">
-                🛡️ Developer RBAC Sandbox Controls
-              </span>
-              <span className="transition-transform group-open:rotate-180">
-                ▼
-              </span>
-            </summary>
-            
-            <div className="p-6 border-t border-purple-200/60 dark:border-purple-900/20 space-y-6">
-              {orgId ? (
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200/40 dark:border-zinc-800/40 pb-4">
-                  <div>
-                    <h4 className="text-sm font-bold">Active Organization Context</h4>
-                    <p className="text-[10px] text-zinc-400 font-mono mt-0.5">Org ID: {orgId}</p>
-                  </div>
-                  <div className="text-right font-mono text-xs">
-                    <span className="text-zinc-400">Your Role:</span> <strong className="text-purple-650 dark:text-purple-400 uppercase">{orgRole}</strong>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-200/40 dark:border-zinc-800/40 pb-4">
-                  <div>
-                    <h4 className="text-sm font-bold">Standard Customer Session</h4>
-                    <p className="text-[10px] text-zinc-400 font-mono mt-0.5">No active Organization selected</p>
-                  </div>
-                </div>
-              )}
+      {/* 4. Call-to-Action / Get in Touch Section */}
+      <section className="max-w-4xl mx-auto px-6 py-16 w-full text-center">
+        <div className="border border-purple-200/60 dark:border-purple-900/30 bg-gradient-to-r from-purple-500/5 via-indigo-500/5 to-blue-500/5 dark:from-purple-950/10 dark:via-indigo-950/10 dark:to-blue-950/10 p-10 rounded-3xl relative overflow-hidden shadow-md">
+          {/* Ambient Glows */}
+          <div className="absolute top-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
-              {/* Role Toggle Button */}
-              <RoleToggleButton currentRole={userRole} />
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 text-center">
-                <Link
-                  href="/admin"
-                  className={`py-2 px-3 rounded-lg text-xs font-semibold border ${
-                    hasAdminAccess
-                      ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-950/40 dark:bg-red-950/20 dark:text-red-400'
-                      : 'opacity-40 border-zinc-200 text-zinc-400 pointer-events-none dark:border-zinc-800'
-                  }`}
-                >
-                  Admin Console
-                </Link>
-                <Link
-                  href="/vendor"
-                  className={`py-2 px-3 rounded-lg text-xs font-semibold border ${
-                    hasVendorAccess
-                      ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-950/40 dark:bg-amber-950/20 dark:text-amber-400'
-                      : 'opacity-40 border-zinc-200 text-zinc-400 pointer-events-none dark:border-zinc-800'
-                  }`}
-                >
-                  Vendor Portal
-                </Link>
-                <Link
-                  href="/customer"
-                  className={`py-2 px-3 rounded-lg text-xs font-semibold border ${
-                    hasCustomerAccess
-                      ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-950/40 dark:bg-blue-950/20 dark:text-blue-400'
-                      : 'opacity-40 border-zinc-200 text-zinc-400 pointer-events-none dark:border-zinc-800'
-                  }`}
-                >
-                  Customer Area
-                </Link>
-              </div>
-
-              {!orgId && (
-                <div className="pt-4 border-t border-zinc-200/40 dark:border-zinc-800/40 text-center">
-                  <p className="text-[11px] text-zinc-500 mb-4">Select or Create a Business Organization to test Admin and Vendor controls:</p>
-                  <div className="flex justify-center overflow-hidden">
-                    <OrganizationList 
-                      hidePersonal={true} 
-                      afterCreateOrganizationUrl="/" 
-                      afterSelectOrganizationUrl="/" 
-                      appearance={{
-                        elements: {
-                          organizationListCreateOrganizationButton: 'flex',
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+          <div className="relative z-10 space-y-4">
+            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              Looking to Collaborate or Register Your Store?
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto leading-relaxed">
+              We provide partners and merchants with robust tools to scale. Whether you need to integrate, register a vendor organization, or want more details, get in touch with our team.
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/contact"
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-purple-700 hover:bg-purple-800 px-6 text-xs font-bold text-white transition-all duration-200 shadow-md hover:shadow-purple-500/20 active:scale-[0.98] cursor-pointer"
+              >
+                Contact Dilnova Hub
+              </Link>
             </div>
-          </details>
-        </section>
-      )}
+          </div>
+        </div>
+      </section>
 
-      {/* 4. Automatic End-of-Scroll Redirector */}
+      {/* 5. Automatic End-of-Scroll Redirector */}
       <ScrollRedirector />
 
       {/* Footer */}
