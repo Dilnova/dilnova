@@ -25,6 +25,110 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  top: 0px !important;
+}
+
+/* Hide Google Translate Banner and Branding */
+iframe.skiptranslate,
+.skiptranslate,
+.goog-te-banner-frame,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.goog-text-highlight {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  box-sizing: border-box;
+}
+
+/* ═══════════════════════════════════════════════════════
+   LANGUAGE SPLASH SCREEN ANIMATIONS
+   ═══════════════════════════════════════════════════════ */
+
+/* Splash entrance */
+.lang-splash-enter {
+  animation: langSplashFadeIn 0.5s ease-out forwards;
+}
+
+@keyframes langSplashFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Splash exit */
+.lang-splash-exit {
+  animation: langSplashFadeOut 0.5s ease-in forwards;
+}
+
+@keyframes langSplashFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+}
+
+/* Splash header entrance */
+.lang-splash-header {
+  animation: langSplashSlideDown 0.6s ease-out forwards;
+}
+
+@keyframes langSplashSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Splash cards staggered entrance */
+.lang-splash-card {
+  opacity: 0;
+  animation: langSplashCardIn 0.5s ease-out forwards;
+}
+
+@keyframes langSplashCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   FLOATING LANGUAGE BUTTON ANIMATIONS
+   ═══════════════════════════════════════════════════════ */
+
+.floating-lang-menu {
+  animation: floatingMenuIn 0.25s ease-out forwards;
+  transform-origin: bottom right;
+}
+
+@keyframes floatingMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 

@@ -10,6 +10,9 @@ import './globals.css'
 
 import { CartProvider } from './context/CartContext'
 import CartIcon from './components/CartIcon'
+import LanguageSelector from './components/LanguageSelector'
+import LanguageSplash from './components/LanguageSplash'
+import FloatingLanguageButton from './components/FloatingLanguageButton'
 
 import { getSystemSetting } from '@/utils/settings'
 import Image from 'next/image'
@@ -101,6 +104,9 @@ export default async function RootLayout({
                 </div>
 
                 <div className="flex items-center gap-2 md:gap-4">
+                  {/* Language Selector Dropdown */}
+                  <LanguageSelector />
+
                   {/* Shopping Cart Icon (Link to page) */}
                   <CartIcon />
 
@@ -133,6 +139,8 @@ export default async function RootLayout({
                 </div>
               </header>
               {children}
+              <LanguageSplash />
+              <FloatingLanguageButton />
             </CartProvider>
             <SpeedInsights />
             <Analytics />
