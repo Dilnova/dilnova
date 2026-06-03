@@ -131,10 +131,10 @@ export default function AddProductClient({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-8">
       {/* Left: Form */}
-      <div className="lg:col-span-3 space-y-6">
-        <div className="bg-white border border-zinc-200 rounded-2xl p-6 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-6">
+      <div className="lg:col-span-3 space-y-4 sm:space-y-6">
+        <div className="bg-white sm:border sm:border-zinc-200 sm:rounded-2xl p-0 sm:p-6 dark:bg-zinc-950 sm:dark:border-zinc-800 sm:shadow-sm space-y-5 sm:space-y-6">
           <div>
             <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100">Create Catalog Item</h2>
             <p className="text-xs text-zinc-500 mt-0.5">
@@ -202,7 +202,7 @@ export default function AddProductClient({
             </div>
 
             {/* Price & Category Dropdown */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 font-mono">
                   Price (USD)
@@ -270,7 +270,7 @@ export default function AddProductClient({
 
               {/* Uploaded Gallery Grid */}
               {media.length > 0 && (
-                <div className="grid grid-cols-4 gap-2 border border-zinc-200 dark:border-zinc-800/80 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 border border-zinc-200 dark:border-zinc-800/80 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
                   {media.map((item, index) => (
                     <div
                       key={index}
@@ -308,8 +308,8 @@ export default function AddProductClient({
               )}
 
               {/* Upload Drop Zone / Button */}
-              <div className="border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-6 bg-zinc-50/50 dark:bg-zinc-900/10 flex flex-col items-center justify-center gap-2">
-                <svg className="w-10 h-10 text-zinc-300 dark:text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-4 sm:p-6 bg-zinc-50/50 dark:bg-zinc-900/10 flex flex-col items-center justify-center gap-2">
+                <svg className="w-8 h-8 sm:w-10 sm:h-10 text-zinc-300 dark:text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
                 
@@ -368,9 +368,9 @@ export default function AddProductClient({
       </div>
 
       {/* Right: Tips & Info Sidebar */}
-      <div className="lg:col-span-2 space-y-5">
+      <div className="lg:col-span-2 space-y-3 sm:space-y-5">
         {/* Tips Card */}
-        <div className="bg-white border border-zinc-200 rounded-2xl p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm">
+        <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm">
           <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mb-3 flex items-center gap-1.5">
             <span>💡</span> Tips for Great Listings
           </h3>
@@ -399,7 +399,7 @@ export default function AddProductClient({
         </div>
 
         {/* Limits Card */}
-        <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-5 dark:bg-zinc-900/40 dark:border-zinc-800">
+        <div className="bg-zinc-50 border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-900/40 dark:border-zinc-800">
           <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mb-3 flex items-center gap-1.5">
             <span>📊</span> Upload Limits
           </h3>

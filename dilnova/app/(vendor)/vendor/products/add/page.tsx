@@ -32,48 +32,39 @@ export default async function AddProductPage() {
   const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
 
   return (
-    <main className="p-8 max-w-7xl mx-auto font-sans">
-      <div className="border border-zinc-200 rounded-2xl p-8 bg-white dark:border-zinc-800 dark:bg-zinc-950 shadow-md">
-        
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 mb-2">
-              New Catalog Entry
-            </span>
-            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-              Add Product or Service
-            </h1>
-            <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">
-              Create a new catalog listing for <strong className="text-zinc-800 dark:text-zinc-250 font-semibold">{org.name}</strong>.
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Link
-              href="/vendor/products"
-              className="text-xs font-semibold px-3 py-1.5 rounded-md border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
-            >
-              &larr; Back to Catalog
-            </Link>
-            <Link
-              href="/vendor"
-              className="text-xs font-semibold px-3 py-1.5 rounded-md border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
-            >
-              Profile
-            </Link>
-          </div>
+    <main className="px-3 py-4 sm:p-8 max-w-7xl mx-auto font-sans">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+        <div>
+          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+            Add Product or Service
+          </h1>
+          <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm mt-1">
+            Create a new catalog listing for <strong className="text-zinc-800 dark:text-zinc-250 font-semibold">{org.name}</strong>.
+          </p>
         </div>
-
-        <hr className="border-zinc-200 dark:border-zinc-800 my-6" />
-
-        {/* Client Form Component */}
-        <AddProductClient 
-          categories={categories} 
-          maxMediaLimit={maxMediaLimit}
-        />
         
+        <div className="flex items-center gap-2">
+          <Link
+            href="/vendor/products"
+            className="text-xs font-semibold px-3 py-1.5 rounded-md border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors"
+          >
+            &larr; Back to Catalog
+          </Link>
+          <Link
+            href="/vendor"
+            className="text-xs font-semibold px-3 py-1.5 rounded-md border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors"
+          >
+            Profile
+          </Link>
+        </div>
       </div>
+
+      {/* Client Form Component */}
+      <AddProductClient 
+        categories={categories} 
+        maxMediaLimit={maxMediaLimit}
+      />
     </main>
   );
 }
