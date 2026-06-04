@@ -153,3 +153,20 @@ iframe.skiptranslate,
   }
 }
 
+/* ═══════════════════════════════════════════════════════
+   MOBILE UTILITY CLASSES
+   ═══════════════════════════════════════════════════════ */
+
+/* Safe area for iPhones with gesture bar */
+.safe-area-bottom {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+/* Hide scrollbar but allow scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

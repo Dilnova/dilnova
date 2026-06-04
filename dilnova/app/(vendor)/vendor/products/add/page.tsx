@@ -32,28 +32,28 @@ export default async function AddProductPage() {
   const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
 
   return (
-    <main className="px-3 py-4 sm:p-8 max-w-7xl mx-auto font-sans">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Add Product or Service
+    <main className="px-3 py-4 sm:px-6 sm:py-8 max-w-7xl mx-auto font-sans">
+      {/* Header — compact on mobile */}
+      <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 truncate">
+            Add Item
           </h1>
-          <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm mt-1">
-            Create a new catalog listing for <strong className="text-zinc-800 dark:text-zinc-250 font-semibold">{org.name}</strong>.
+          <p className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-sm mt-0.5 truncate">
+            New listing for <strong className="text-zinc-800 dark:text-zinc-250 font-semibold">{org.name}</strong>
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           <Link
             href="/vendor/products"
-            className="text-xs font-semibold px-3 py-1.5 rounded-md border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors"
+            className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors whitespace-nowrap"
           >
-            &larr; Back to Catalog
+            ← Catalog
           </Link>
           <Link
             href="/vendor"
-            className="text-xs font-semibold px-3 py-1.5 rounded-md border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors"
+            className="hidden sm:inline-flex text-xs font-semibold px-3 py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors"
           >
             Profile
           </Link>
