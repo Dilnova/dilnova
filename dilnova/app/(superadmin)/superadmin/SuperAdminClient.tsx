@@ -81,6 +81,7 @@ interface SuperAdminClientProps {
   contactSubmissions: ContactSubmission[];
   hardwareCustomEnabled: boolean;
   nurseryCustomEnabled: boolean;
+  techCustomEnabled: boolean;
 }
 
 export default function SuperAdminClient({
@@ -94,6 +95,7 @@ export default function SuperAdminClient({
   contactSubmissions,
   hardwareCustomEnabled,
   nurseryCustomEnabled,
+  techCustomEnabled,
 }: SuperAdminClientProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'categories' | 'products' | 'pricing' | 'contacts' | 'settings'>('overview');
   const [isPending, startTransition] = useTransition();
@@ -110,6 +112,7 @@ export default function SuperAdminClient({
   const [faviconUploadProgress, setFaviconUploadProgress] = useState<number | null>(null);
   const [hardwareCustomEnabledInput, setHardwareCustomEnabledInput] = useState(hardwareCustomEnabled);
   const [nurseryCustomEnabledInput, setNurseryCustomEnabledInput] = useState(nurseryCustomEnabled);
+  const [techCustomEnabledInput, setTechCustomEnabledInput] = useState(techCustomEnabled);
 
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const faviconFileInputRef = useRef<HTMLInputElement>(null);
@@ -462,6 +465,7 @@ export default function SuperAdminClient({
         await updateSystemSettingAction('system_favicon', faviconInput);
         await updateSystemSettingAction('custom_storefront_distar-hardware', hardwareCustomEnabledInput ? 'true' : 'false');
         await updateSystemSettingAction('custom_storefront_distar-nursery', nurseryCustomEnabledInput ? 'true' : 'false');
+        await updateSystemSettingAction('custom_storefront_distar-tech', techCustomEnabledInput ? 'true' : 'false');
         triggerNotification(true, 'System settings updated successfully.');
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Failed to update system settings.';
@@ -1404,6 +1408,32 @@ export default function SuperAdminClient({
                   <span
                     className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
                       nurseryCustomEnabledInput ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between py-1 border-t border-zinc-100 dark:border-zinc-900 pt-3">
+                <div className="space-y-0.5">
+                  <label htmlFor="toggle-tech" className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                    Distar Tech Storefront
+                  </label>
+                  <p className="text-[10px] text-zinc-400">
+                    Toggle custom dashboard storefront layout for Distar Tech Store
+                  </p>
+                </div>
+                <button
+                  id="toggle-tech"
+                  type="button"
+                  onClick={() => setTechCustomEnabledInput(!techCustomEnabledInput)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
+                    techCustomEnabledInput ? 'bg-purple-600' : 'bg-zinc-200 dark:bg-zinc-800'
+                  }`}
+                  aria-pressed={techCustomEnabledInput}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      techCustomEnabledInput ? 'translate-x-4' : 'translate-x-0'
                     }`}
                   />
                 </button>

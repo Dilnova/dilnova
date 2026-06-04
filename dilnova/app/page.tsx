@@ -110,11 +110,12 @@ export default async function Home() {
 
   const hardwareCustomEnabled = (await getSystemSetting('custom_storefront_distar-hardware', 'true')) === 'true';
   const nurseryCustomEnabled = (await getSystemSetting('custom_storefront_distar-nursery', 'true')) === 'true';
+  const techCustomEnabled = (await getSystemSetting('custom_storefront_distar-tech', 'true')) === 'true';
 
   const activeCount = [
     hardwareCustomEnabled,
     nurseryCustomEnabled,
-    true, // Distar Tech Store is always on
+    techCustomEnabled,
     true  // Dilstar Services is always on
   ].filter(Boolean).length;
 
@@ -205,39 +206,41 @@ export default async function Home() {
         )}
 
         {/* Division 3: Distar Tech Store */}
-        <div className="relative group overflow-hidden bg-indigo-950 text-indigo-50 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 border-r border-indigo-900 last:border-r-0">
-          <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] [background-size:12px_12px] pointer-events-none" />
-          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-indigo-500/20" />
+        {techCustomEnabled && (
+          <div className="relative group overflow-hidden bg-indigo-950 text-indigo-50 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 border-r border-indigo-900 last:border-r-0">
+            <div className="absolute inset-0 bg-[radial-gradient(#ffffff03_1px,transparent_1px)] [background-size:12px_12px] pointer-events-none" />
+            <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-indigo-500/20" />
 
-          <div className="relative z-10">
-            <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-indigo-400/10 text-indigo-300 border border-indigo-400/20 mb-4 uppercase tracking-wider font-mono">
-              Tech / Cyber
-            </span>
-          </div>
-
-          <div className="relative z-10 my-auto">
-            <h2 className="text-3xl font-extrabold tracking-tight mb-3">
-              DISTAR <br />
-              <span className="text-indigo-400 bg-gradient-to-r from-indigo-400 via-purple-300 to-indigo-500 bg-clip-text text-transparent">
-                TECH STORE
+            <div className="relative z-10">
+              <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-indigo-400/10 text-indigo-300 border border-indigo-400/20 mb-4 uppercase tracking-wider font-mono">
+                Tech / Cyber
               </span>
-            </h2>
-            <p className="text-xs text-indigo-300/70 leading-relaxed mb-6">
-              Developer workstations, high-performance components, IoT configurations, and server accessories.
-            </p>
-            <Link
-              href="/vendors/distar-tech"
-              className="inline-block bg-indigo-500 hover:bg-indigo-600 text-indigo-955 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
-            >
-              Browse Technology
-            </Link>
-          </div>
+            </div>
 
-          <div className="relative z-10 flex items-center justify-between border-t border-indigo-900/60 pt-4 mt-6 text-[10px] font-mono text-indigo-700">
-            <span>SYS_WORK_3.1</span>
-            <span className="text-indigo-400">ENTERPRISE</span>
+            <div className="relative z-10 my-auto">
+              <h2 className="text-3xl font-extrabold tracking-tight mb-3">
+                DISTAR <br />
+                <span className="text-indigo-400 bg-gradient-to-r from-indigo-400 via-purple-300 to-indigo-500 bg-clip-text text-transparent">
+                  TECH STORE
+                </span>
+              </h2>
+              <p className="text-xs text-indigo-300/70 leading-relaxed mb-6">
+                Developer workstations, high-performance components, IoT configurations, and server accessories.
+              </p>
+              <Link
+                href="/vendors/distar-tech"
+                className="inline-block bg-indigo-500 hover:bg-indigo-600 text-indigo-955 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+              >
+                Browse Technology
+              </Link>
+            </div>
+
+            <div className="relative z-10 flex items-center justify-between border-t border-indigo-900/60 pt-4 mt-6 text-[10px] font-mono text-indigo-700">
+              <span>SYS_WORK_3.1</span>
+              <span className="text-indigo-400">ENTERPRISE</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Division 4: Dilstar Services */}
         <div className="relative group overflow-hidden bg-slate-900 text-slate-100 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 last:border-r-0">
