@@ -518,7 +518,7 @@ export default function SuperAdminClient({
           name: planName,
           price: planPrice,
           period: planPeriod,
-          description: planDesc || null,
+          description: planDesc || undefined,
           features: featuresArray,
           isPopular: planIsPopular,
           buttonText: planButtonText,
