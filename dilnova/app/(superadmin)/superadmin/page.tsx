@@ -48,7 +48,7 @@ export default async function SuperAdminDashboardPage() {
   const systemFavicon = await getSystemSetting('system_favicon', '');
 
   return (
-    <main className="p-6 md:p-10 max-w-7xl mx-auto font-sans w-full">
+    <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
       <SuperAdminClient
         categories={categories}
         products={products}
