@@ -330,6 +330,7 @@ export default function AddProductClient({
                           alt="Gallery item preview"
                           fill
                           className="object-cover"
+                          sizes="(max-width: 640px) 96px, 112px"
                         />
                       )}
                       {/* Delete button — large enough for thumb tap */}

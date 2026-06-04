@@ -1025,7 +1025,7 @@ export default function SuperAdminClient({
                   {/* Thumbnail */}
                   <div className="w-14 h-14 rounded-lg bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 overflow-hidden relative">
                     {p.imageUrl ? (
-                      <Image src={p.imageUrl} alt={p.name} fill className="object-cover" />
+                      <Image src={p.imageUrl} alt={p.name} fill className="object-cover" sizes="56px" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xl opacity-30">📷</div>
                     )}
@@ -1285,7 +1285,7 @@ export default function SuperAdminClient({
               {logoInput ? (
                 <div className="flex items-center gap-3 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
                   <div className="relative w-16 h-12 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 flex-shrink-0">
-                    <Image src={logoInput} alt="System Logo Preview" fill className="object-contain" />
+                    <Image src={logoInput} alt="System Logo Preview" fill className="object-contain" sizes="64px" />
                   </div>
                   <button
                     type="button"
@@ -1327,7 +1327,7 @@ export default function SuperAdminClient({
               {faviconInput ? (
                 <div className="flex items-center gap-3 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
                   <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 flex-shrink-0">
-                    <Image src={faviconInput} alt="Favicon Preview" fill className="object-contain" />
+                    <Image src={faviconInput} alt="Favicon Preview" fill className="object-contain" sizes="40px" />
                   </div>
                   <button
                     type="button"
@@ -1664,7 +1664,7 @@ export default function SuperAdminClient({
                             <span className="text-lg">🎬</span>
                           </div>
                         ) : (
-                          <Image src={item.url} alt="Preview" fill className="object-cover" />
+                          <Image src={item.url} alt="Preview" fill className="object-cover" sizes="80px" />
                         )}
                         <button
                           type="button"

@@ -93,6 +93,7 @@ export default async function RootLayout({
                           alt="Dilnova Logo"
                           fill
                           className="object-contain object-left"
+                          sizes="(max-width: 640px) 96px, 112px"
                           priority
                         />
                       </div>
