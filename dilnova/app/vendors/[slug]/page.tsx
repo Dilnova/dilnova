@@ -147,8 +147,26 @@ export default async function VendorProfilePage({ params }: PageProps) {
   }
 
   if (!clerkOrg) {
-    console.error(`[Vendor Page] No organization found for slug: "${slug}"`);
-    return notFound();
+    if (isDistarSubVendor) {
+      let fallbackName = 'Distar Storefront';
+      if (slug === 'distar-hardware') fallbackName = 'Distar Hardware';
+      else if (slug === 'distar-nursery') fallbackName = 'Distar Nursery';
+      else if (slug === 'distar-tech') fallbackName = 'Distar Tech Store';
+      else if (slug === 'dilstar-services') fallbackName = 'Dilstar Services';
+
+      clerkOrg = {
+        id: `org_${slug.replace(/-/g, '_')}_placeholder`,
+        name: fallbackName,
+        slug: slug,
+        imageUrl: '',
+        publicMetadata: {
+          description: `Welcome to ${fallbackName}. Browse our catalog.`,
+        },
+      };
+    } else {
+      console.error(`[Vendor Page] No organization found for slug: "${slug}"`);
+      return notFound();
+    }
   }
 
   // 2. Normalize org data into our StorefrontProps shape, overriding the name for specific sub-vendors sharing the 'distar' Clerk organization
