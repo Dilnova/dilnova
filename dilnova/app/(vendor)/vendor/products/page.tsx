@@ -35,47 +35,43 @@ export default async function VendorProductsPage() {
     .where(eq(schema.products.orgId, orgId));
 
   return (
-    <main className="p-8 max-w-7xl mx-auto font-sans">
-      <div className="border border-zinc-200 rounded-2xl p-8 bg-white dark:border-zinc-800 dark:bg-zinc-950 shadow-md">
-        
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 mb-2">
-              Vendor Catalog Workspace
+    <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+              {org.name}
             </span>
-            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-              Manage Inventory
-            </h1>
-            <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">
-              View, search, and manage catalog items for <strong className="text-zinc-800 dark:text-zinc-250 font-semibold">{org.name}</strong>.
-            </p>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Link
-              href="/vendor"
-              className="text-xs font-semibold px-3 py-1.5 rounded-md border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
-            >
-              &larr; Back to Profile
-            </Link>
-            <Link
-              href="/"
-              className="text-xs font-semibold px-3 py-1.5 rounded-md border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
-            >
-              Home Page
-            </Link>
-          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+            Manage Inventory
+          </h1>
+          <p className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-sm mt-0.5 hidden sm:block">
+            View, search, and manage your catalog items.
+          </p>
         </div>
-
-        <hr className="border-zinc-200 dark:border-zinc-800 my-6" />
-
-        {/* Client Management Component (listing + delete only) */}
-        <ManageProductsClient 
-          initialProducts={vendorProducts as Product[]} 
-        />
         
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <Link
+            href="/vendor"
+            className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors whitespace-nowrap"
+          >
+            ← Profile
+          </Link>
+          <Link
+            href="/"
+            className="hidden sm:inline-flex text-xs font-semibold px-3 py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors"
+          >
+            Home
+          </Link>
+        </div>
       </div>
+
+      {/* Client Management Component */}
+      <ManageProductsClient 
+        initialProducts={vendorProducts as Product[]} 
+      />
     </main>
   );
 }
