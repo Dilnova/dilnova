@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
 interface LinkItem {
@@ -16,8 +16,27 @@ interface HeaderNavProps {
 export default function HeaderNav({ links }: HeaderNavProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Close on Escape key
+  const handleEscape = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') setIsOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when menu is open on mobile
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, handleEscape]);
+
   return (
-    <div className="flex items-center gap-4">
+    <>
       {/* Desktop Navigation */}
       <nav className="hidden md:flex items-center gap-6">
         {links.map((link) => (
@@ -36,8 +55,9 @@ export default function HeaderNav({ links }: HeaderNavProps) {
       {/* Mobile Hamburger Toggle */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-600/50"
+        className="md:hidden p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-600/50 flex-shrink-0"
         aria-label="Toggle navigation menu"
+        aria-expanded={isOpen}
       >
         <svg
           className="w-5 h-5"
@@ -63,23 +83,35 @@ export default function HeaderNav({ links }: HeaderNavProps) {
         </svg>
       </button>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Menu Overlay + Dropdown */}
       {isOpen && (
-        <div className="absolute top-16 left-0 right-0 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-lg shadow-lg py-4 px-6 flex flex-col gap-4 md:hidden z-40 transition-all duration-200 ease-in-out">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setIsOpen(false)}
-              className={`text-sm font-semibold transition-colors py-2 border-b border-zinc-100 dark:border-zinc-900/50 last:border-0 ${
-                link.colorClass || 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
+        <>
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+          {/* Menu panel - fixed below header */}
+          <div
+            className="fixed top-14 sm:top-16 left-0 right-0 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/98 dark:bg-zinc-950/98 backdrop-blur-xl shadow-2xl py-3 px-5 flex flex-col gap-1 md:hidden z-50"
+            style={{ animation: 'mobileMenuSlideDown 0.2s ease-out' }}
+          >
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                className={`text-sm font-semibold transition-colors py-3 px-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900/60 ${
+                  link.colorClass || 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </>
       )}
-    </div>
+    </>
   );
 }

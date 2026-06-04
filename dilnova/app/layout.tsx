@@ -80,14 +80,14 @@ export default async function RootLayout({
 
     return (
       <html lang="en">
-        <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
+        <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-x-hidden">
           <ClerkProvider>
             <CartProvider>
-              <header className="flex justify-between items-center px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-16">
-                <div className="flex items-center gap-3 md:gap-6">
-                  <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center">
+              <header className="relative flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-14 sm:h-16 overflow-visible max-w-full">
+                <div className="flex items-center gap-2 sm:gap-3 md:gap-6 min-w-0 flex-shrink">
+                  <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center flex-shrink-0">
                     {logoUrl ? (
-                      <div className="relative h-8 w-28">
+                      <div className="relative h-7 w-24 sm:h-8 sm:w-28">
                         <Image
                           src={logoUrl}
                           alt="Dilnova Logo"
@@ -103,18 +103,20 @@ export default async function RootLayout({
                   <HeaderNav links={links} />
                 </div>
 
-                <div className="flex items-center gap-2 md:gap-4">
-                  {/* Language Selector Dropdown */}
-                  <LanguageSelector />
+                <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-shrink-0">
+                  {/* Language Selector Dropdown - hidden on very small screens since FloatingLanguageButton covers it */}
+                  <div className="hidden sm:block">
+                    <LanguageSelector />
+                  </div>
 
                   {/* Shopping Cart Icon (Link to page) */}
                   <CartIcon />
 
                   <Show when="signed-out">
-                    <div className="flex items-center gap-2 md:gap-3 text-xs font-semibold">
+                    <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-xs font-semibold">
                       <SignInButton />
                       <SignUpButton>
-                        <button className="bg-purple-700 text-white rounded-lg h-9 px-3 md:px-4 cursor-pointer hover:bg-purple-800 transition-colors">
+                        <button className="bg-purple-700 text-white rounded-lg h-8 sm:h-9 px-2.5 sm:px-3 md:px-4 text-[11px] sm:text-xs cursor-pointer hover:bg-purple-800 transition-colors whitespace-nowrap">
                           Sign Up
                         </button>
                       </SignUpButton>
@@ -122,17 +124,19 @@ export default async function RootLayout({
                   </Show>
 
                   <Show when="signed-in">
-                    <div className="flex items-center gap-2 md:gap-4">
-                      <OrganizationSwitcher 
-                        afterCreateOrganizationUrl="/" 
-                        afterSelectOrganizationUrl="/"
-                        appearance={{
-                          elements: {
-                            organizationSwitcherPopoverActionButton__createOrganization: canCreateOrg ? 'flex' : 'hidden',
-                            organizationSwitcherPopoverCreateOrganization: canCreateOrg ? 'flex' : 'hidden',
-                          }
-                        }}
-                      />
+                    <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4">
+                      <div className="hidden sm:block">
+                        <OrganizationSwitcher 
+                          afterCreateOrganizationUrl="/" 
+                          afterSelectOrganizationUrl="/"
+                          appearance={{
+                            elements: {
+                              organizationSwitcherPopoverActionButton__createOrganization: canCreateOrg ? 'flex' : 'hidden',
+                              organizationSwitcherPopoverCreateOrganization: canCreateOrg ? 'flex' : 'hidden',
+                            }
+                          }}
+                        />
+                      </div>
                       <UserButton />
                     </div>
                   </Show>
