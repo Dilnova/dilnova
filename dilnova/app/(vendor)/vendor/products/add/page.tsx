@@ -32,7 +32,7 @@ export default async function AddProductPage() {
   const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
 
   return (
-    <main className="px-3 py-4 sm:px-6 sm:py-8 max-w-7xl mx-auto font-sans">
+    <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
       {/* Header — compact on mobile */}
       <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
         <div className="min-w-0">
