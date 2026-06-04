@@ -2,6 +2,7 @@ import type { StorefrontProps } from './types';
 import DistarHardwareStorefront from './DistarHardwareStorefront';
 import DistarNurseryStorefront from './DistarNurseryStorefront';
 import DistarTechStorefront from './DistarTechStorefront';
+import DilstarServicesStorefront from './DilstarServicesStorefront';
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -18,9 +19,10 @@ import DistarTechStorefront from './DistarTechStorefront';
  * ═══════════════════════════════════════════════════════════════
  */
 export const customStorefronts: Record<string, React.ComponentType<StorefrontProps>> = {
-  'distar-hardware':  DistarHardwareStorefront,
-  'distar-nursery':   DistarNurseryStorefront,
-  'distar-tech':      DistarTechStorefront,
+  'distar-hardware':   DistarHardwareStorefront,
+  'distar-nursery':    DistarNurseryStorefront,
+  'distar-tech':       DistarTechStorefront,
+  'dilstar-services':  DilstarServicesStorefront,
   // Add more custom vendor pages here...
   // 'vendor-slug': VendorStorefrontComponent,
 };

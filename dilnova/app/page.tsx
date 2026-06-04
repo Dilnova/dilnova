@@ -111,12 +111,13 @@ export default async function Home() {
   const hardwareCustomEnabled = (await getSystemSetting('custom_storefront_distar-hardware', 'true')) === 'true';
   const nurseryCustomEnabled = (await getSystemSetting('custom_storefront_distar-nursery', 'true')) === 'true';
   const techCustomEnabled = (await getSystemSetting('custom_storefront_distar-tech', 'true')) === 'true';
+  const servicesCustomEnabled = (await getSystemSetting('custom_storefront_dilstar-services', 'true')) === 'true';
 
   const activeCount = [
     hardwareCustomEnabled,
     nurseryCustomEnabled,
     techCustomEnabled,
-    true  // Dilstar Services is always on
+    servicesCustomEnabled
   ].filter(Boolean).length;
 
   const gridColsClass = 
@@ -243,39 +244,41 @@ export default async function Home() {
         )}
 
         {/* Division 4: Dilstar Services */}
-        <div className="relative group overflow-hidden bg-slate-900 text-slate-100 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 last:border-r-0">
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-teal-500/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-teal-500/20" />
+        {servicesCustomEnabled && (
+          <div className="relative group overflow-hidden bg-slate-900 text-slate-100 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 last:border-r-0">
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-teal-500/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-teal-500/20" />
 
-          <div className="relative z-10">
-            <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-teal-400/10 text-teal-400 border border-teal-400/20 mb-4 uppercase tracking-wider font-mono">
-              Consulting
-            </span>
-          </div>
-
-          <div className="relative z-10 my-auto">
-            <h2 className="text-3xl font-extrabold tracking-tight mb-3">
-              DILSTAR <br />
-              <span className="text-teal-400 bg-gradient-to-r from-teal-400 via-emerald-300 to-teal-500 bg-clip-text text-transparent">
-                SERVICES
+            <div className="relative z-10">
+              <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-teal-400/10 text-teal-400 border border-teal-400/20 mb-4 uppercase tracking-wider font-mono">
+                Consulting
               </span>
-            </h2>
-            <p className="text-xs text-slate-400 leading-relaxed mb-6">
-              Connect with master gardeners, professional tool technicians, home builders, and enterprise tech architects.
-            </p>
-            <Link
-              href="/vendors/dilstar-services"
-              className="inline-block bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
-            >
-              Book Consultation
-            </Link>
-          </div>
+            </div>
 
-          <div className="relative z-10 flex items-center justify-between border-t border-slate-800/80 pt-4 mt-6 text-[10px] font-mono text-slate-500">
-            <span>SRV_CONS_4.5</span>
-            <span className="text-teal-400">EXPERT AGENTS</span>
+            <div className="relative z-10 my-auto">
+              <h2 className="text-3xl font-extrabold tracking-tight mb-3">
+                DILSTAR <br />
+                <span className="text-teal-400 bg-gradient-to-r from-teal-400 via-emerald-300 to-teal-500 bg-clip-text text-transparent">
+                  SERVICES
+                </span>
+              </h2>
+              <p className="text-xs text-slate-400 leading-relaxed mb-6">
+                Connect with master gardeners, professional tool technicians, home builders, and enterprise tech architects.
+              </p>
+              <Link
+                href="/vendors/dilstar-services"
+                className="inline-block bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+              >
+                Book Consultation
+              </Link>
+            </div>
+
+            <div className="relative z-10 flex items-center justify-between border-t border-slate-800/80 pt-4 mt-6 text-[10px] font-mono text-slate-500">
+              <span>SRV_CONS_4.5</span>
+              <span className="text-teal-400">EXPERT AGENTS</span>
+            </div>
           </div>
-        </div>
+        )}
 
       </section>
 

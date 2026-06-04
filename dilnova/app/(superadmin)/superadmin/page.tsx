@@ -62,6 +62,7 @@ export default async function SuperAdminDashboardPage() {
   const hardwareCustomEnabled = (await getSystemSetting('custom_storefront_distar-hardware', 'true')) === 'true';
   const nurseryCustomEnabled = (await getSystemSetting('custom_storefront_distar-nursery', 'true')) === 'true';
   const techCustomEnabled = (await getSystemSetting('custom_storefront_distar-tech', 'true')) === 'true';
+  const servicesCustomEnabled = (await getSystemSetting('custom_storefront_dilstar-services', 'true')) === 'true';
 
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
@@ -77,6 +78,7 @@ export default async function SuperAdminDashboardPage() {
         hardwareCustomEnabled={hardwareCustomEnabled}
         nurseryCustomEnabled={nurseryCustomEnabled}
         techCustomEnabled={techCustomEnabled}
+        servicesCustomEnabled={servicesCustomEnabled}
       />
     </main>
   );
