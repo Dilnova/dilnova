@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, uuid, AnyPgColumn, unique, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, uuid, AnyPgColumn, unique, jsonb, index, boolean } from 'drizzle-orm/pg-core';
 
 export const systemSettings = pgTable('system_settings', {
   key: text('key').primaryKey(),
@@ -84,6 +84,35 @@ export const auditLogs = pgTable('audit_logs', {
   index('idx_audit_logs_user_id').on(t.userId),
   index('idx_audit_logs_action').on(t.action),
   index('idx_audit_logs_created_at').on(t.createdAt),
+]);
+
+export const pricingPlans = pgTable('pricing_plans', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  price: text('price').notNull(),
+  period: text('period').default('/month').notNull(),
+  description: text('description'),
+  features: jsonb('features').$type<string[]>().default([]).notNull(),
+  isPopular: boolean('is_popular').default(false).notNull(),
+  buttonText: text('button_text').default('Get Started').notNull(),
+  buttonLink: text('button_link').default('/contact').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const contactSubmissions = pgTable('contact_submissions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull(),
+  category: text('category').notNull(), // 'collaboration' | 'registration' | 'info'
+  subject: text('subject').notNull(),
+  message: text('message').notNull(),
+  status: text('status').default('pending').notNull(), // 'pending' | 'connected' | 'no_longer'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_contact_submissions_email').on(t.email),
+  index('idx_contact_submissions_status').on(t.status),
 ]);
 
 

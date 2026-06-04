@@ -5,6 +5,9 @@ import type { Metadata } from 'next';
 import RoleToggleButton from './RoleToggleButton';
 import ScrollRedirector from './ScrollRedirector';
 import { getCachedOrganizations } from '../utils/clerkCache';
+import { db } from '@/db';
+import * as schema from '@/db/schema';
+import { asc } from 'drizzle-orm';
 
 export const metadata: Metadata = {
   title: 'Dilnova Multi-Vendor Commerce Marketplace',
@@ -22,6 +25,71 @@ export default async function Home() {
   const hasAdminAccess = !!orgId && orgRole === 'org:admin';
   const hasVendorAccess = !!orgId && (orgRole === 'org:vendor' || orgRole === 'org:member' || orgRole === 'org:admin');
   const hasCustomerAccess = !!user && (!orgId || orgRole === 'org:customer' || orgRole === 'org:member' || orgRole === 'org:admin');
+
+  // Fetch pricing plans from DB
+  let plans = await db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt));
+
+  // If no plans, fallback to default plans
+  if (plans.length === 0) {
+    plans = [
+      {
+        id: 'starter',
+        name: 'Starter',
+        price: '$0',
+        period: '/month',
+        description: 'Perfect for independent creators and hobbyists launching their first store.',
+        features: [
+          '1 Storefront Profile',
+          'Up to 10 active listings',
+          'Standard customer reviews',
+          'Basic profile customization'
+        ],
+        isPopular: false,
+        buttonText: 'Get Started',
+        buttonLink: '/contact?plan=starter',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'growth',
+        name: 'Growth',
+        price: '$5',
+        period: '/yearly',
+        description: 'Ideal for growing brands and businesses requiring advanced features.',
+        features: [
+          '1 Storefront Profile',
+          'Unlimited active listings',
+          'Interactive Q&A system',
+          'Multiple images & videos per listing',
+          'Premium custom storefront themes'
+        ],
+        isPopular: true,
+        buttonText: 'Get Growth Plan',
+        buttonLink: '/contact?plan=growth',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'enterprise',
+        name: 'Enterprise',
+        price: 'Custom',
+        period: '',
+        description: 'Built for large organizations needing multiple stores and dedicated setups.',
+        features: [
+          'Multiple Storefront Profiles',
+          'Unlimited listings & media uploads',
+          'Customer reviews & interactive Q&A',
+          'Custom branding configurations',
+          'Priority support & management'
+        ],
+        isPopular: false,
+        buttonText: 'Contact Sales',
+        buttonLink: '/contact?plan=enterprise',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ] as any;
+  }
 
   // Fetch all registered organization vendors from Clerk (cached)
   const client = await clerkClient();
@@ -261,6 +329,75 @@ export default async function Home() {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* 3. Pricing & Plans Section */}
+      <section className="max-w-6xl mx-auto px-6 py-20 w-full border-b border-zinc-200/60 dark:border-zinc-800/60">
+        <div className="text-center mb-16">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-900/50 mb-3 font-mono">
+            Flexible Pricing Plans
+          </span>
+          <h2 className="text-3xl font-extrabold tracking-tight mb-3">
+            Plans for Businesses of All Sizes
+          </h2>
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
+            Choose the right subscription to scale your vendor storefront or launch a unified shopping experience.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+          {plans.map((plan: any) => {
+            const isGrowth = plan.isPopular;
+            return (
+              <div
+                key={plan.id}
+                className={`flex flex-col p-8 rounded-3xl relative overflow-hidden transition-all duration-300 hover:-translate-y-1 ${
+                  isGrowth
+                    ? 'border-2 border-purple-500 bg-white dark:bg-zinc-900/40 hover:shadow-xl hover:shadow-purple-500/10'
+                    : 'border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/20 hover:shadow-lg'
+                }`}
+              >
+                {isGrowth && (
+                  <div className="absolute top-0 right-0 bg-purple-500 text-white font-mono text-[9px] uppercase font-bold tracking-widest px-3 py-1 rounded-bl-xl">
+                    Most Popular
+                  </div>
+                )}
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">{plan.name}</h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed min-h-[32px]">
+                    {plan.description}
+                  </p>
+                  <div className="mt-4 flex items-baseline">
+                    <span className="text-4xl font-extrabold tracking-tight">{plan.price}</span>
+                    {plan.period && (
+                      <span className="ml-1 text-xs text-zinc-550 dark:text-zinc-450 font-medium">{plan.period}</span>
+                    )}
+                  </div>
+                </div>
+                <ul className="space-y-3.5 mb-8 text-xs text-zinc-600 dark:text-zinc-300 flex-grow">
+                  {(plan.features || []).map((feature: string, idx: number) => (
+                    <li key={idx} className="flex items-center gap-2">
+                      <svg className={`w-4 h-4 shrink-0 ${isGrowth ? 'text-purple-500' : 'text-emerald-500'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href={plan.buttonLink || '/contact'}
+                  className={`w-full text-center py-2.5 px-4 rounded-xl text-xs font-semibold transition-colors duration-200 ${
+                    isGrowth
+                      ? 'bg-purple-700 hover:bg-purple-800 text-white shadow-md'
+                      : 'border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  {plan.buttonText || 'Get Started'}
+                </Link>
+              </div>
+            );
+          })}
         </div>
       </section>
 

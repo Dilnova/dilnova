@@ -2,6 +2,8 @@
 
 import tls from 'tls';
 import net from 'net';
+import { db } from '@/db';
+import * as schema from '@/db/schema';
 import { rateLimit } from '@/utils/rateLimit';
 import { z } from 'zod';
 
@@ -90,7 +92,7 @@ function sendRawSmtpEmail(options: {
         } else if (step === 1 && code === 250) {
           send('STARTTLS');
           step = 1.5;
-        } else if (step === 1.5 && code === 220) {
+        } else if (step.toString() === '1.5' && code === 220) {
           socket.removeAllListeners('data');
           const secureSocket = tls.connect({
             socket: socket,
@@ -122,7 +124,7 @@ function sendRawSmtpEmail(options: {
         return;
       }
 
-      if (step === 1.6 && code === 250) {
+      if (step.toString() === '1.6' && code === 250) {
         send('AUTH LOGIN');
         step = 2;
       } else if (step === 2 && code === 334) {
@@ -234,6 +236,16 @@ export async function submitContactFormAction(prevState: any, formData: FormData
 
     // Rate Limiting: Max 2 messages per minute per IP
     await rateLimit(2, 60 * 1000);
+
+    // Save submission to database
+    await db.insert(schema.contactSubmissions).values({
+      name,
+      email,
+      category,
+      subject,
+      message,
+      status: 'pending',
+    });
 
     const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
     const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);

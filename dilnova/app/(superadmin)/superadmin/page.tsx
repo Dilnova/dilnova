@@ -47,6 +47,18 @@ export default async function SuperAdminDashboardPage() {
   const systemLogo = await getSystemSetting('system_logo', '');
   const systemFavicon = await getSystemSetting('system_favicon', '');
 
+  // 4. Fetch Pricing Plans
+  const pricingPlans = await db
+    .select()
+    .from(schema.pricingPlans)
+    .orderBy(desc(schema.pricingPlans.createdAt));
+
+  // 5. Fetch Contact Submissions
+  const contactSubmissions = await db
+    .select()
+    .from(schema.contactSubmissions)
+    .orderBy(desc(schema.contactSubmissions.createdAt));
+
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
       <SuperAdminClient
@@ -56,6 +68,8 @@ export default async function SuperAdminDashboardPage() {
         maxMediaLimit={maxMediaLimit}
         systemLogo={systemLogo}
         systemFavicon={systemFavicon}
+        pricingPlans={pricingPlans}
+        contactSubmissions={contactSubmissions}
       />
     </main>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { submitContactFormAction } from './actions';
 
 type CategoryType = 'collaboration' | 'registration' | 'info';
@@ -19,6 +19,32 @@ export default function ContactPage() {
     subject: '',
     message: '',
   });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const plan = searchParams.get('plan');
+      if (plan) {
+        const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
+        let defaultMessage = '';
+        if (plan === 'starter') {
+          defaultMessage = `Hi Dilnova team,\n\nI would like to register my storefront on the Starter Plan ($0/month). Please guide me on the next steps to set up my catalog.\n\nThanks!`;
+        } else if (plan === 'growth') {
+          defaultMessage = `Hi Dilnova team,\n\nI am interested in registering my storefront on the Growth Plan ($5/yearly) to upload unlimited listings. Please let me know how to get started.\n\nThanks!`;
+        } else if (plan === 'enterprise') {
+          defaultMessage = `Hi Dilnova team,\n\nWe are looking to set up multiple storefront profiles with custom branding and priority support configurations. Please connect us with a representative to discuss the custom Enterprise Plan setup.\n\nThanks!`;
+        } else {
+          defaultMessage = `Hi Dilnova team,\n\nI am interested in registering a new storefront on the marketplace. Please provide more details on how to get started.\n\nThanks!`;
+        }
+        setFormData((prev) => ({
+          ...prev,
+          category: plan === 'enterprise' ? 'collaboration' : 'registration',
+          subject: `Inquiry for ${planName} Plan Registration`,
+          message: defaultMessage,
+        }));
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
