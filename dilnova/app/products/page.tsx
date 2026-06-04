@@ -170,7 +170,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {results.map(({ product, category }) => {
+              {results.map(({ product, category }, index) => {
                 // Map the organization ID to its name and logo in Clerk
                 const orgMatch = organizations.find((o) => o.id === product.orgId);
                 const vendorName = orgMatch ? orgMatch.name : 'Unknown Vendor';
@@ -214,6 +214,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-500"
                               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                              priority={index < 4}
                             />
                           )
                         ) : (

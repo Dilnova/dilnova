@@ -193,7 +193,7 @@ export default function ManageProductsClient({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-          {filteredProducts.map((item) => (
+          {filteredProducts.map((item, index) => (
             <div
               key={item.id}
               className={`group flex flex-row sm:flex-col bg-white border border-zinc-200 rounded-xl sm:rounded-2xl dark:bg-zinc-950 dark:border-zinc-800 overflow-hidden hover:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 ${
@@ -219,6 +219,7 @@ export default function ManageProductsClient({
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                       sizes="(max-width: 640px) 112px, 280px"
+                      priority={index < 4}
                     />
                   )
                 ) : (

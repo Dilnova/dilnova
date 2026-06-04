@@ -47,7 +47,7 @@ export default async function VendorsDirectoryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {vendors.map((vendor) => {
+            {vendors.map((vendor, index) => {
               const metadata = (vendor.publicMetadata || {}) as {
                 description?: string;
                 bannerUrl?: string;
@@ -70,6 +70,7 @@ export default async function VendorsDirectoryPage() {
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          priority={index < 3}
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10" />
