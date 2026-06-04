@@ -59,6 +59,9 @@ export default async function SuperAdminDashboardPage() {
     .from(schema.contactSubmissions)
     .orderBy(desc(schema.contactSubmissions.createdAt));
 
+  const hardwareCustomEnabled = (await getSystemSetting('custom_storefront_distar-hardware', 'true')) === 'true';
+  const nurseryCustomEnabled = (await getSystemSetting('custom_storefront_distar-nursery', 'true')) === 'true';
+
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
       <SuperAdminClient
@@ -70,6 +73,8 @@ export default async function SuperAdminDashboardPage() {
         systemFavicon={systemFavicon}
         pricingPlans={pricingPlans}
         contactSubmissions={contactSubmissions}
+        hardwareCustomEnabled={hardwareCustomEnabled}
+        nurseryCustomEnabled={nurseryCustomEnabled}
       />
     </main>
   );

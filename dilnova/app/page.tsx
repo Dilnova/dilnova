@@ -8,6 +8,7 @@ import { getCachedOrganizations } from '../utils/clerkCache';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { asc } from 'drizzle-orm';
+import { getSystemSetting } from '@/utils/settings';
 
 export const metadata: Metadata = {
   title: 'Dilnova Multi-Vendor Commerce Marketplace',
@@ -107,81 +108,101 @@ export default async function Home() {
     }
   );
 
+  const hardwareCustomEnabled = (await getSystemSetting('custom_storefront_distar-hardware', 'true')) === 'true';
+  const nurseryCustomEnabled = (await getSystemSetting('custom_storefront_distar-nursery', 'true')) === 'true';
+
+  const activeCount = [
+    hardwareCustomEnabled,
+    nurseryCustomEnabled,
+    true, // Distar Tech Store is always on
+    true  // Dilstar Services is always on
+  ].filter(Boolean).length;
+
+  const gridColsClass = 
+    activeCount === 4 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" :
+    activeCount === 3 ? "grid-cols-1 sm:grid-cols-3 lg:grid-cols-3" :
+    activeCount === 2 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2" :
+    "grid-cols-1";
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans flex flex-col antialiased">
       
-      {/* 1. Main Stage (4-Column Split-Screen Hero) */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 min-h-[80vh] w-full border-b border-zinc-200 dark:border-zinc-800">
+      {/* 1. Main Stage (Split-Screen Hero) */}
+      <section className={`grid ${gridColsClass} min-h-[80vh] w-full border-b border-zinc-200 dark:border-zinc-800`}>
         
         {/* Division 1: Distar Hardware */}
-        <div className="relative group overflow-hidden bg-zinc-900 text-zinc-100 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 border-r border-zinc-800 last:border-r-0">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
-          <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-amber-500/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-amber-500/20" />
-          
-          <div className="relative z-10">
-            <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-4 uppercase tracking-wider font-mono">
-              Industrial
-            </span>
-          </div>
-
-          <div className="relative z-10 my-auto">
-            <h2 className="text-3xl font-extrabold tracking-tight mb-3">
-              DISTAR <br />
-              <span className="text-amber-500 bg-gradient-to-r from-amber-500 via-orange-400 to-amber-600 bg-clip-text text-transparent">
-                HARDWARE
+        {hardwareCustomEnabled && (
+          <div className="relative group overflow-hidden bg-zinc-900 text-zinc-100 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 border-r border-zinc-800 last:border-r-0">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
+            <div className="absolute -top-40 -left-40 w-80 h-80 rounded-full bg-amber-500/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-amber-500/20" />
+            
+            <div className="relative z-10">
+              <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-4 uppercase tracking-wider font-mono">
+                Industrial
               </span>
-            </h2>
-            <p className="text-xs text-zinc-400 leading-relaxed mb-6">
-              Raw industrial power, heavy-duty machinery, and contractor-grade tools. Engineered for reliability in the field.
-            </p>
-            <Link
-              href="/vendors/distar-hardware"
-              className="inline-block bg-amber-600 hover:bg-amber-700 text-zinc-950 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
-            >
-              Browse Hardware
-            </Link>
-          </div>
+            </div>
 
-          <div className="relative z-10 flex items-center justify-between border-t border-zinc-800/80 pt-4 mt-6 text-[10px] font-mono text-zinc-500">
-            <span>ENG_VER_1.4</span>
-            <span className="text-amber-500">HEAVY DUTY</span>
+            <div className="relative z-10 my-auto">
+              <h2 className="text-3xl font-extrabold tracking-tight mb-3">
+                DISTAR <br />
+                <span className="text-amber-500 bg-gradient-to-r from-amber-500 via-orange-400 to-amber-600 bg-clip-text text-transparent">
+                  HARDWARE
+                </span>
+              </h2>
+              <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+                Raw industrial power, heavy-duty machinery, and contractor-grade tools. Engineered for reliability in the field.
+              </p>
+              <Link
+                href="/vendors/distar-hardware"
+                className="inline-block bg-amber-600 hover:bg-amber-700 text-zinc-955 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+              >
+                Browse Hardware
+              </Link>
+            </div>
+
+            <div className="relative z-10 flex items-center justify-between border-t border-zinc-800/80 pt-4 mt-6 text-[10px] font-mono text-zinc-500">
+              <span>ENG_VER_1.4</span>
+              <span className="text-amber-500">HEAVY DUTY</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Division 2: Distar Plant Nursery */}
-        <div className="relative group overflow-hidden bg-emerald-950 text-emerald-50 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 border-r border-emerald-900 last:border-r-0">
-          <div className="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-          <div className="absolute -bottom-40 -right-40 w-80 h-80 rounded-full bg-emerald-400/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-emerald-400/20" />
+        {nurseryCustomEnabled && (
+          <div className="relative group overflow-hidden bg-emerald-950 text-emerald-50 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 border-r border-emerald-900 last:border-r-0">
+            <div className="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+            <div className="absolute -bottom-40 -right-40 w-80 h-80 rounded-full bg-emerald-400/10 blur-[100px] pointer-events-none transition-all duration-700 group-hover:bg-emerald-400/20" />
 
-          <div className="relative z-10">
-            <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/20 mb-4 uppercase tracking-wider font-mono">
-              Botanical
-            </span>
-          </div>
-
-          <div className="relative z-10 my-auto">
-            <h2 className="text-3xl font-extrabold tracking-tight mb-3">
-              DISTAR <br />
-              <span className="text-emerald-400 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 bg-clip-text text-transparent">
-                NURSERY
+            <div className="relative z-10">
+              <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-[10px] font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/20 mb-4 uppercase tracking-wider font-mono">
+                Botanical
               </span>
-            </h2>
-            <p className="text-xs text-emerald-300/70 leading-relaxed mb-6">
-              Curated organic flora, seeds, exotic indoor plants, and landscaping consulting. Grow your perfect bio-environment.
-            </p>
-            <Link
-              href="/vendors/distar-nursery"
-              className="inline-block bg-emerald-500 hover:bg-emerald-600 text-emerald-955 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
-            >
-              Browse Nursery
-            </Link>
-          </div>
+            </div>
 
-          <div className="relative z-10 flex items-center justify-between border-t border-emerald-900/60 pt-4 mt-6 text-[10px] font-mono text-emerald-700">
-            <span>BOT_SYS_2.0</span>
-            <span className="text-emerald-400">ORGANIC</span>
+            <div className="relative z-10 my-auto">
+              <h2 className="text-3xl font-extrabold tracking-tight mb-3">
+                DISTAR <br />
+                <span className="text-emerald-400 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 bg-clip-text text-transparent">
+                  NURSERY
+                </span>
+              </h2>
+              <p className="text-xs text-emerald-300/70 leading-relaxed mb-6">
+                Curated organic flora, seeds, exotic indoor plants, and landscaping consulting. Grow your perfect bio-environment.
+              </p>
+              <Link
+                href="/vendors/distar-nursery"
+                className="inline-block bg-emerald-500 hover:bg-emerald-600 text-emerald-955 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+              >
+                Browse Nursery
+              </Link>
+            </div>
+
+            <div className="relative z-10 flex items-center justify-between border-t border-emerald-900/60 pt-4 mt-6 text-[10px] font-mono text-emerald-700">
+              <span>BOT_SYS_2.0</span>
+              <span className="text-emerald-400">ORGANIC</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Division 3: Distar Tech Store */}
         <div className="relative group overflow-hidden bg-indigo-950 text-indigo-50 flex flex-col justify-between p-8 sm:p-10 transition-all duration-500 border-r border-indigo-900 last:border-r-0">

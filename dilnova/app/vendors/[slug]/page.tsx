@@ -6,6 +6,7 @@ import DefaultStorefront from './DefaultStorefront';
 import { getVendorProducts } from './getVendorProducts';
 import type { VendorOrg } from './custom/types';
 import { getCachedOrganizations } from '../../../utils/clerkCache';
+import { getSystemSetting } from '../../../utils/settings';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -204,7 +205,8 @@ export default async function VendorProfilePage({ params }: PageProps) {
   }
 
   // 4. Check registry for custom storefront
-  const CustomStorefront = slug ? customStorefronts[slug] : undefined;
+  const isCustomEnabled = (await getSystemSetting(`custom_storefront_${slug}`, 'true')) === 'true';
+  const CustomStorefront = (slug && isCustomEnabled) ? customStorefronts[slug] : undefined;
 
   if (CustomStorefront) {
     return <CustomStorefront org={org} products={products} />;

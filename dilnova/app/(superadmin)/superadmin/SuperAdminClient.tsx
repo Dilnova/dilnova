@@ -79,6 +79,8 @@ interface SuperAdminClientProps {
   systemFavicon: string;
   pricingPlans: PricingPlan[];
   contactSubmissions: ContactSubmission[];
+  hardwareCustomEnabled: boolean;
+  nurseryCustomEnabled: boolean;
 }
 
 export default function SuperAdminClient({
@@ -90,6 +92,8 @@ export default function SuperAdminClient({
   systemFavicon,
   pricingPlans,
   contactSubmissions,
+  hardwareCustomEnabled,
+  nurseryCustomEnabled,
 }: SuperAdminClientProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'categories' | 'products' | 'pricing' | 'contacts' | 'settings'>('overview');
   const [isPending, startTransition] = useTransition();
@@ -104,6 +108,8 @@ export default function SuperAdminClient({
   const [isFaviconUploading, setIsFaviconUploading] = useState(false);
   const [logoUploadProgress, setLogoUploadProgress] = useState<number | null>(null);
   const [faviconUploadProgress, setFaviconUploadProgress] = useState<number | null>(null);
+  const [hardwareCustomEnabledInput, setHardwareCustomEnabledInput] = useState(hardwareCustomEnabled);
+  const [nurseryCustomEnabledInput, setNurseryCustomEnabledInput] = useState(nurseryCustomEnabled);
 
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const faviconFileInputRef = useRef<HTMLInputElement>(null);
@@ -454,6 +460,8 @@ export default function SuperAdminClient({
         await updateSystemSettingAction('max_media_limit', mediaLimitInput.toString());
         await updateSystemSettingAction('system_logo', logoInput);
         await updateSystemSettingAction('system_favicon', faviconInput);
+        await updateSystemSettingAction('custom_storefront_distar-hardware', hardwareCustomEnabledInput ? 'true' : 'false');
+        await updateSystemSettingAction('custom_storefront_distar-nursery', nurseryCustomEnabledInput ? 'true' : 'false');
         triggerNotification(true, 'System settings updated successfully.');
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Failed to update system settings.';
@@ -1341,6 +1349,65 @@ export default function SuperAdminClient({
                   <div className="h-full bg-purple-600 rounded-full transition-all" style={{ width: `${faviconUploadProgress}%` }} />
                 </div>
               )}
+            </div>
+
+            {/* Custom Storefront Toggles */}
+            <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-4">
+              <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 border-b border-zinc-100 dark:border-zinc-900 pb-2">
+                <span>🎨</span> Custom Storefront Layouts
+              </h3>
+              
+              <div className="flex items-center justify-between py-1">
+                <div className="space-y-0.5">
+                  <label htmlFor="toggle-hardware" className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                    Distar Hardware Storefront
+                  </label>
+                  <p className="text-[10px] text-zinc-400">
+                    Toggle custom dashboard storefront layout for Distar Hardware
+                  </p>
+                </div>
+                <button
+                  id="toggle-hardware"
+                  type="button"
+                  onClick={() => setHardwareCustomEnabledInput(!hardwareCustomEnabledInput)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
+                    hardwareCustomEnabledInput ? 'bg-purple-600' : 'bg-zinc-200 dark:bg-zinc-800'
+                  }`}
+                  aria-pressed={hardwareCustomEnabledInput}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      hardwareCustomEnabledInput ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between py-1 border-t border-zinc-100 dark:border-zinc-900 pt-3">
+                <div className="space-y-0.5">
+                  <label htmlFor="toggle-nursery" className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                    Distar Nursery Storefront
+                  </label>
+                  <p className="text-[10px] text-zinc-400">
+                    Toggle custom dashboard storefront layout for Distar Nursery
+                  </p>
+                </div>
+                <button
+                  id="toggle-nursery"
+                  type="button"
+                  onClick={() => setNurseryCustomEnabledInput(!nurseryCustomEnabledInput)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
+                    nurseryCustomEnabledInput ? 'bg-purple-600' : 'bg-zinc-200 dark:bg-zinc-800'
+                  }`}
+                  aria-pressed={nurseryCustomEnabledInput}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      nurseryCustomEnabledInput ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
 
             {/* Save button */}
