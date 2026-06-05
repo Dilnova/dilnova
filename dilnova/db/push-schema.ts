@@ -2,6 +2,7 @@
  * Push schema to database using drizzle-orm.
  * Run: npx tsx db/push-schema.ts
  */
+process.env.HOME = '/Users/dilukalahiru/Documents/dilnova/dilnova/dilnova/scratch';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
@@ -107,7 +108,87 @@ async function push() {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_simulated_order_items_product_id ON simulated_order_items (product_id)`);
   console.log('✓ simulated_order_items');
 
-  console.log('\n✅ All IMS tables created successfully!');
+  console.log('Altering existing categories & products tables for Enterprise Grade features...');
+
+  // Drop deprecated registry tables if they exist
+  await db.execute(sql`DROP TABLE IF EXISTS catalog_registry CASCADE`);
+  await db.execute(sql`DROP TABLE IF EXISTS enterprise_categories CASCADE`);
+
+  // Create tax_classes table
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS tax_classes (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      name TEXT NOT NULL,
+      rate_percent REAL NOT NULL,
+      code TEXT NOT NULL UNIQUE
+    )
+  `);
+  console.log('✓ tax_classes');
+
+  // Create metadata_templates table
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS metadata_templates (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      name TEXT NOT NULL,
+      fields JSONB NOT NULL
+    )
+  `);
+  console.log('✓ metadata_templates');
+
+  // Alter existing categories table to support parent_id references and templates
+  await db.execute(sql`
+    ALTER TABLE categories 
+    ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES categories(id) ON DELETE CASCADE,
+    ADD COLUMN IF NOT EXISTS localized_names JSONB,
+    ADD COLUMN IF NOT EXISTS localized_descriptions JSONB,
+    ADD COLUMN IF NOT EXISTS metadata_template_id UUID REFERENCES metadata_templates(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS tax_class_id UUID REFERENCES tax_classes(id),
+    ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true NOT NULL,
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT now() NOT NULL
+  `);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_categories_parent ON categories (parent_id)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories (slug)`);
+  console.log('✓ categories altered');
+
+  // Alter existing products table to support sku, barcodes, attributes
+  await db.execute(sql`
+    ALTER TABLE products 
+    ADD COLUMN IF NOT EXISTS sku TEXT UNIQUE,
+    ADD COLUMN IF NOT EXISTS barcodes JSONB DEFAULT '[]'::jsonb NOT NULL,
+    ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active' NOT NULL,
+    ADD COLUMN IF NOT EXISTS attributes JSONB DEFAULT '{}'::jsonb NOT NULL
+  `);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_products_attributes ON products USING GIN (attributes)`);
+  console.log('✓ products altered');
+
+  // Create service_configurations table linked to products
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS service_configurations (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE UNIQUE,
+      duration_minutes INTEGER NOT NULL,
+      buffer_minutes INTEGER DEFAULT 0 NOT NULL,
+      requires_resource_allocation BOOLEAN DEFAULT false NOT NULL
+    )
+  `);
+  console.log('✓ service_configurations');
+
+  // Create inventory_balances table linked to products
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS inventory_balances (
+      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+      product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      location_id UUID NOT NULL,
+      quantity_on_hand REAL DEFAULT 0.0 NOT NULL,
+      allocated_quantity REAL DEFAULT 0.0 NOT NULL,
+      low_stock_threshold REAL DEFAULT 1.0 NOT NULL,
+      bin_location TEXT,
+      CONSTRAINT unique_location_item UNIQUE (location_id, product_id)
+    )
+  `);
+  console.log('✓ inventory_balances');
+
+  console.log('\n✅ All tables and schemas updated successfully!');
   await client.end();
   process.exit(0);
 }

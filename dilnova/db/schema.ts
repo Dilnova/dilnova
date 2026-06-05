@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, uuid, AnyPgColumn, unique, jsonb, index, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, uuid, AnyPgColumn, unique, jsonb, index, boolean, real } from 'drizzle-orm/pg-core';
 
 export const systemSettings = pgTable('system_settings', {
   key: text('key').primaryKey(),
@@ -11,13 +11,22 @@ export const categories = pgTable('categories', {
   name: text('name').notNull(),
   slug: text('slug').unique().notNull(),
   parentId: uuid('parent_id').references((): AnyPgColumn => categories.id, { onDelete: 'cascade' }),
+  localizedNames: jsonb('localized_names').$type<Record<string, string>>(),
+  localizedDescriptions: jsonb('localized_descriptions').$type<Record<string, string>>(),
+  metadataTemplateId: uuid('metadata_template_id').references(() => metadataTemplates.id, { onDelete: 'set null' }),
+  taxClassId: uuid('tax_class_id').references(() => taxClasses.id),
+  isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_categories_parent').on(t.parentId),
+  index('idx_categories_slug').on(t.slug),
+]);
 
 export const products = pgTable('products', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
-  type: text('type').default('product').notNull(), // 'product' | 'service'
+  type: text('type').default('product').notNull(), // 'product' | 'service' | 'living_organism' | etc.
   description: text('description'),
   price: integer('price').notNull(), // price in cents (e.g. 999 for $9.99)
   imageUrl: text('image_url'),
@@ -25,12 +34,20 @@ export const products = pgTable('products', {
   categoryId: uuid('category_id').references(() => categories.id), // Links to category
   views: integer('views').default(0).notNull(),
   media: jsonb('media').$type<{ url: string; type: 'image' | 'video' }[]>().default([]).notNull(),
+  
+  // New Enterprise properties
+  sku: text('sku'),
+  barcodes: jsonb('barcodes').$type<string[]>().default([]).notNull(),
+  status: text('status').default('active').notNull(),
+  attributes: jsonb('attributes').$type<Record<string, any>>().default({}).notNull(),
+
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => [
   index('idx_products_org_id').on(t.orgId),
   index('idx_products_category_id').on(t.categoryId),
   index('idx_products_created_at').on(t.createdAt),
+  index('idx_products_attributes').on(t.attributes),
 ]);
 
 export const reviews = pgTable('reviews', {
@@ -266,4 +283,48 @@ export const billingReceiptItems = pgTable('billing_receipt_items', {
   index('idx_billing_receipt_items_receipt_id').on(t.receiptId),
   index('idx_billing_receipt_items_product_id').on(t.productId),
 ]);
+
+// ═══════════════════════════════════════════════════════════
+// UNIVERSAL ENTERPRISE CATEGORIZATION & CATALOG SYSTEMS
+// ═══════════════════════════════════════════════════════════
+
+export const taxClasses = pgTable('tax_classes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  ratePercent: real('rate_percent').notNull(),
+  code: text('code').unique().notNull(),
+});
+
+export const metadataTemplates = pgTable('metadata_templates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  fields: jsonb('fields').$type<{
+    key: string;
+    label: string;
+    type: 'string' | 'number' | 'boolean' | 'array' | 'date';
+    required: boolean;
+    unit?: string;
+  }[]>().notNull(),
+});
+
+export const serviceConfigurations = pgTable('service_configurations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  productId: uuid('product_id').references(() => products.id, { onDelete: 'cascade' }).unique().notNull(),
+  durationMinutes: integer('duration_minutes').notNull(),
+  bufferMinutes: integer('buffer_minutes').default(0).notNull(),
+  requiresResourceAllocation: boolean('requires_resource_allocation').default(false).notNull(),
+});
+
+export const inventoryBalances = pgTable('inventory_balances', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  productId: uuid('product_id').references(() => products.id, { onDelete: 'cascade' }).notNull(),
+  locationId: uuid('location_id').notNull(), // Links to branches table
+  quantityOnHand: real('quantity_on_hand').default(0.0).notNull(),
+  allocatedQuantity: real('allocated_quantity').default(0.0).notNull(),
+  lowStockThreshold: real('low_stock_threshold').default(1.0).notNull(),
+  binLocation: text('bin_location'),
+}, (t) => [
+  unique('unique_location_item').on(t.locationId, t.productId),
+]);
+
 
