@@ -28,6 +28,7 @@ export default function AddProductClient({
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [quantity, setQuantity] = useState('0');
   
   // Media Upload State (multiple files)
   const [media, setMedia] = useState<{ url: string; type: 'image' | 'video' }[]>([]);
@@ -120,6 +121,15 @@ export default function AddProductClient({
       return;
     }
 
+    let quantityNum = 0;
+    if (type === 'product') {
+      quantityNum = parseInt(quantity, 10);
+      if (isNaN(quantityNum) || quantityNum < 0) {
+        setMessage({ type: 'error', text: 'Please enter a valid non-negative quantity.' });
+        return;
+      }
+    }
+
     startTransition(async () => {
       try {
         const primaryThumbnail = media[0]?.url || '';
@@ -131,6 +141,7 @@ export default function AddProductClient({
           imageUrl: primaryThumbnail,
           media: media,
           categoryId,
+          quantity: type === 'product' ? quantityNum : undefined,
         });
 
         if (result.success) {
@@ -142,6 +153,7 @@ export default function AddProductClient({
           setPrice('');
           setCategoryId('');
           setMedia([]);
+          setQuantity('0');
 
           // Scroll to top on mobile after success
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -231,8 +243,8 @@ export default function AddProductClient({
                 />
               </div>
 
-              {/* Price & Category — stacked on mobile, side-by-side on larger */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Price, Category & Quantity — stacked on mobile, grid layout on larger screens */}
+              <div className={`grid grid-cols-1 ${type === 'product' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
                     Price (USD) <span className="text-rose-500">*</span>
@@ -281,6 +293,24 @@ export default function AddProductClient({
                       })}
                   </select>
                 </div>
+
+                {type === 'product' && (
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                      Initial Quantity
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputMode="numeric"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      placeholder="0"
+                      className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 rounded-xl text-base sm:text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 font-mono transition-all"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

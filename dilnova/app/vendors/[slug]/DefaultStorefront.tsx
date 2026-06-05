@@ -3,6 +3,7 @@ import Image from 'next/image';
 import FollowButton from './FollowButton';
 import type { StorefrontProps } from './custom/types';
 import { isVideoUrl } from '@/utils/media';
+import AddToCartButton from '@/app/components/AddToCartButton';
 
 /**
  * Default storefront layout used by vendors without a custom page.

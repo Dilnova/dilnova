@@ -122,6 +122,7 @@ export const addProductSchema = z.object({
     })
   ).default([]),
   categoryId: z.string().uuid('Invalid category ID.').or(z.literal('')).default(''),
+  quantity: z.number().int('Quantity must be a whole number.').nonnegative('Quantity cannot be negative.').optional().default(0),
 });
 
 export const vendorDeleteProductSchema = z.object({

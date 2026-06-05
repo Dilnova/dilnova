@@ -101,6 +101,7 @@ describe('Zod Input Schemas Validation', () => {
         imageUrl: 'https://example.com/saw.jpg',
         media: [],
         categoryId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        quantity: 10,
       });
       expect(valid.success).toBe(true);
     });
@@ -116,6 +117,32 @@ describe('Zod Input Schemas Validation', () => {
         categoryId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
       });
       expect(invalid.success).toBe(false);
+    });
+
+    it('should validate non-negative integer quantity and reject negative/float quantity values', () => {
+      const validZero = addProductSchema.safeParse({
+        name: 'Circular Saw 15A',
+        type: 'product',
+        priceInDollars: 99.99,
+        quantity: 0,
+      });
+      expect(validZero.success).toBe(true);
+
+      const invalidNegative = addProductSchema.safeParse({
+        name: 'Circular Saw 15A',
+        type: 'product',
+        priceInDollars: 99.99,
+        quantity: -5,
+      });
+      expect(invalidNegative.success).toBe(false);
+
+      const invalidFloat = addProductSchema.safeParse({
+        name: 'Circular Saw 15A',
+        type: 'product',
+        priceInDollars: 99.99,
+        quantity: 5.5,
+      });
+      expect(invalidFloat.success).toBe(false);
     });
   });
 });

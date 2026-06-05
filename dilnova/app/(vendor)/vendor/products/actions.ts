@@ -23,6 +23,7 @@ export async function addProductAction(data: {
   imageUrl: string;
   media: { url: string; type: 'image' | 'video' }[];
   categoryId: string;
+  quantity?: number;
 }) {
   return runWithCorrelationId(async () => {
     try {
@@ -68,6 +69,34 @@ export async function addProductAction(data: {
         .returning();
 
       if (newProduct) {
+        // Initialize inventory entry if product type is 'product'
+        if (newProduct.type === 'product') {
+          const initialQty = parsed.data.quantity ?? 0;
+          const [inv] = await db
+            .insert(schema.inventory)
+            .values({
+              productId: newProduct.id,
+              sku: null,
+              quantity: initialQty,
+              lowStockThreshold: 5,
+              binLocation: null,
+              supplierId: null,
+            })
+            .returning();
+
+          if (inv && initialQty > 0) {
+            await db.insert(schema.inventoryMovements).values({
+              inventoryId: inv.id,
+              type: 'restock',
+              quantityChanged: initialQty,
+              previousQuantity: 0,
+              newQuantity: initialQty,
+              reason: 'Initial setup on item creation',
+              userId,
+            });
+          }
+        }
+
         await logAuditAction({
           userId,
           action: 'CREATE_PRODUCT',
