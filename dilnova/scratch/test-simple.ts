@@ -5,3 +5,6 @@ try {
 } catch (err) {
   console.error("Fetch failed:", err);
 }
+
+export {};
+
