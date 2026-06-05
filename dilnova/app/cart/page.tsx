@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { useCart } from '../context/CartContext';
 import { isVideoUrl } from '@/utils/media';
-import { sendCartSummaryEmailAction } from './actions';
+import { sendCartSummaryEmailAction, simulatedCheckoutAction } from './actions';
 
 export default function CartPage() {
   const {
@@ -23,6 +23,7 @@ export default function CartPage() {
   const { isSignedIn, user } = useUser();
 
   const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success'>('idle');
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState('');
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success'>('idle');
   const [emailMessage, setEmailMessage] = useState('');
@@ -65,11 +66,43 @@ export default function CartPage() {
     });
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     setCheckoutStatus('processing');
-    setTimeout(() => {
-      setCheckoutStatus('success');
-    }, 1500);
+    setCheckoutError(null);
+
+    // Determine customer info
+    const customerName = isSignedIn
+      ? (user?.fullName || user?.firstName || 'Customer')
+      : 'Guest Customer';
+    const customerEmail = isSignedIn
+      ? (user?.primaryEmailAddress?.emailAddress || 'guest@unknown.com')
+      : emailInput || 'guest@unknown.com';
+
+    try {
+      const result = await simulatedCheckoutAction(
+        customerName,
+        customerEmail,
+        cartItems.map((item) => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          vendorName: item.vendorName,
+          type: item.type,
+        })),
+        cartTotal
+      );
+
+      if (result.success) {
+        setCheckoutStatus('success');
+      } else {
+        setCheckoutStatus('idle');
+        setCheckoutError(result.error || 'Checkout failed.');
+      }
+    } catch (err) {
+      setCheckoutStatus('idle');
+      setCheckoutError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+    }
   };
 
   const handleSuccessClose = () => {

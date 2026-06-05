@@ -115,4 +115,155 @@ export const contactSubmissions = pgTable('contact_submissions', {
   index('idx_contact_submissions_status').on(t.status),
 ]);
 
+// ═══════════════════════════════════════════════════════════
+// INVENTORY MANAGEMENT SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+export const suppliers = pgTable('suppliers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orgId: text('org_id').notNull(), // Clerk Organization ID of the vendor who owns this supplier
+  name: text('name').notNull(),
+  contactName: text('contact_name'),
+  email: text('email'),
+  phone: text('phone'),
+  address: text('address'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_suppliers_org_id').on(t.orgId),
+]);
+
+export const inventory = pgTable('inventory', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  productId: uuid('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }).unique(),
+  sku: text('sku'), // Stock Keeping Unit
+  quantity: integer('quantity').default(0).notNull(),
+  lowStockThreshold: integer('low_stock_threshold').default(5).notNull(),
+  binLocation: text('bin_location'), // e.g. "Aisle 2, Shelf B"
+  supplierId: uuid('supplier_id').references(() => suppliers.id, { onDelete: 'set null' }),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_inventory_product_id').on(t.productId),
+  index('idx_inventory_supplier_id').on(t.supplierId),
+  index('idx_inventory_sku').on(t.sku),
+]);
+
+export const inventoryMovements = pgTable('inventory_movements', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  inventoryId: uuid('inventory_id').notNull().references(() => inventory.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'restock' | 'sale_depletion' | 'manual_adjustment' | 'damage_loss' | 'order_cancellation'
+  quantityChanged: integer('quantity_changed').notNull(), // positive or negative
+  previousQuantity: integer('previous_quantity').notNull(),
+  newQuantity: integer('new_quantity').notNull(),
+  reason: text('reason'),
+  userId: text('user_id').notNull(), // Clerk User ID of the action performer
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_inventory_movements_inventory_id').on(t.inventoryId),
+  index('idx_inventory_movements_type').on(t.type),
+  index('idx_inventory_movements_created_at').on(t.createdAt),
+]);
+
+export const simulatedOrders = pgTable('simulated_orders', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  customerName: text('customer_name').notNull(),
+  customerEmail: text('customer_email').notNull(),
+  totalAmount: integer('total_amount').notNull(), // in cents
+  status: text('status').default('pending').notNull(), // 'pending' | 'fulfilled' | 'cancelled'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_simulated_orders_status').on(t.status),
+  index('idx_simulated_orders_created_at').on(t.createdAt),
+  index('idx_simulated_orders_email').on(t.customerEmail),
+]);
+
+export const simulatedOrderItems = pgTable('simulated_order_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orderId: uuid('order_id').notNull().references(() => simulatedOrders.id, { onDelete: 'cascade' }),
+  productId: uuid('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  productName: text('product_name').notNull(), // Snapshot at time of order
+  vendorOrgId: text('vendor_org_id').notNull(), // Snapshot of the vendor's org
+  quantity: integer('quantity').notNull(),
+  unitPrice: integer('unit_price').notNull(), // in cents, snapshot at time of order
+}, (t) => [
+  index('idx_simulated_order_items_order_id').on(t.orderId),
+  index('idx_simulated_order_items_product_id').on(t.productId),
+]);
+
+// ═══════════════════════════════════════════════════════════
+// MULTI-BRANCH & BILLING (Premium Features)
+// ═══════════════════════════════════════════════════════════
+
+/** Branches / store locations per vendor organization */
+export const branches = pgTable('branches', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orgId: text('org_id').notNull(), // Clerk Organization ID
+  name: text('name').notNull(), // e.g. "Downtown Store", "Warehouse A"
+  address: text('address'),
+  phone: text('phone'),
+  isDefault: boolean('is_default').default(false).notNull(), // The default/main branch
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_branches_org_id').on(t.orgId),
+]);
+
+/** Per-branch stock levels (extends the central `inventory` table) */
+export const branchInventory = pgTable('branch_inventory', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  branchId: uuid('branch_id').notNull().references(() => branches.id, { onDelete: 'cascade' }),
+  productId: uuid('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  sku: text('sku'), // Branch-specific SKU override
+  quantity: integer('quantity').default(0).notNull(),
+  binLocation: text('bin_location'), // Branch-specific bin/shelf location
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => [
+  unique('branch_inventory_branch_product_unique').on(t.branchId, t.productId),
+  index('idx_branch_inventory_branch_id').on(t.branchId),
+  index('idx_branch_inventory_product_id').on(t.productId),
+]);
+
+/** Assigns organization members to specific branches with a role */
+export const branchMembers = pgTable('branch_members', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  branchId: uuid('branch_id').notNull().references(() => branches.id, { onDelete: 'cascade' }),
+  memberUserId: text('member_user_id').notNull(), // Clerk User ID
+  role: text('role').default('cashier').notNull(), // 'cashier' | 'manager'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [
+  unique('branch_members_branch_user_unique').on(t.branchId, t.memberUserId),
+  index('idx_branch_members_branch_id').on(t.branchId),
+  index('idx_branch_members_user_id').on(t.memberUserId),
+]);
+
+/** POS billing receipts created at a branch register */
+export const billingReceipts = pgTable('billing_receipts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  branchId: uuid('branch_id').notNull().references(() => branches.id, { onDelete: 'cascade' }),
+  orgId: text('org_id').notNull(), // Clerk Organization ID (denormalized for fast queries)
+  cashierUserId: text('cashier_user_id').notNull(), // Clerk User ID of the cashier
+  totalAmount: integer('total_amount').notNull(), // in cents
+  paymentMethod: text('payment_method').default('cash').notNull(), // 'cash' | 'card' | 'other'
+  customerName: text('customer_name'), // optional walk-in customer name
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_billing_receipts_branch_id').on(t.branchId),
+  index('idx_billing_receipts_org_id').on(t.orgId),
+  index('idx_billing_receipts_cashier').on(t.cashierUserId),
+  index('idx_billing_receipts_created_at').on(t.createdAt),
+]);
+
+/** Line items for each billing receipt */
+export const billingReceiptItems = pgTable('billing_receipt_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  receiptId: uuid('receipt_id').notNull().references(() => billingReceipts.id, { onDelete: 'cascade' }),
+  productId: uuid('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  productName: text('product_name').notNull(), // Snapshot at time of billing
+  quantity: integer('quantity').notNull(),
+  unitPrice: integer('unit_price').notNull(), // in cents, snapshot
+}, (t) => [
+  index('idx_billing_receipt_items_receipt_id').on(t.receiptId),
+  index('idx_billing_receipt_items_product_id').on(t.productId),
+]);
 

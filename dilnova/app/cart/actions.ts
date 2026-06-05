@@ -400,3 +400,156 @@ export async function sendCartSummaryEmailAction(
     return { success: false, error: errorMsg };
   }
 }
+
+// ═══════════════════════════════════════════════════════════
+// SIMULATED CHECKOUT — Stock Validation & Order Placement
+// ═══════════════════════════════════════════════════════════
+
+import { db } from '@/db';
+import * as schema from '@/db/schema';
+import { eq } from 'drizzle-orm';
+
+interface CheckoutItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  vendorName: string;
+  type: string;
+  vendorOrgId?: string;
+}
+
+const checkoutItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  price: z.number(),
+  quantity: z.number().int().positive(),
+  vendorName: z.string(),
+  type: z.string(),
+  vendorOrgId: z.string().optional(),
+});
+
+const checkoutSchema = z.object({
+  customerName: z.string().min(1, 'Customer name is required.'),
+  customerEmail: z.string().email('Invalid email address.'),
+  items: z.array(checkoutItemSchema).min(1, 'Cart must contain at least one item.'),
+  totalAmount: z.number().nonnegative(),
+});
+
+export async function simulatedCheckoutAction(
+  customerName: string,
+  customerEmail: string,
+  items: CheckoutItem[],
+  totalAmount: number
+) {
+  try {
+    // ── Input Validation ──
+    const parsed = checkoutSchema.safeParse({ customerName, customerEmail, items, totalAmount });
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0]?.message || 'Invalid checkout data.' };
+    }
+
+    const { customerName: name, customerEmail: email, items: validItems, totalAmount: total } = parsed.data;
+
+    // ── Rate Limiting ──
+    await rateLimit(5, 60 * 1000); // Max 5 checkouts per minute
+
+    // ── Stock Validation ──
+    const stockErrors: string[] = [];
+    const inventoryUpdates: { inventoryId: string; productId: string; currentQty: number; requestedQty: number }[] = [];
+
+    for (const item of validItems) {
+      // Look up inventory record for this product
+      const [inv] = await db
+        .select()
+        .from(schema.inventory)
+        .where(eq(schema.inventory.productId, item.id))
+        .limit(1);
+
+      if (inv) {
+        // Product has inventory tracking — validate stock
+        if (inv.quantity < item.quantity) {
+          stockErrors.push(
+            `"${item.name}" only has ${inv.quantity} units in stock (requested ${item.quantity}).`
+          );
+        } else {
+          inventoryUpdates.push({
+            inventoryId: inv.id,
+            productId: item.id,
+            currentQty: inv.quantity,
+            requestedQty: item.quantity,
+          });
+        }
+      }
+      // If no inventory record exists, allow the order (untracked product)
+    }
+
+    if (stockErrors.length > 0) {
+      return {
+        success: false,
+        error: `Insufficient stock:\n${stockErrors.join('\n')}`,
+        stockErrors,
+      };
+    }
+
+    // ── Create Simulated Order ──
+    const [order] = await db
+      .insert(schema.simulatedOrders)
+      .values({
+        customerName: name,
+        customerEmail: email,
+        totalAmount: total,
+        status: 'pending',
+      })
+      .returning();
+
+    if (!order) {
+      return { success: false, error: 'Failed to create order record.' };
+    }
+
+    // ── Insert Order Items ──
+    for (const item of validItems) {
+      // Fetch the product to get the orgId
+      const [product] = await db
+        .select({ orgId: schema.products.orgId })
+        .from(schema.products)
+        .where(eq(schema.products.id, item.id))
+        .limit(1);
+
+      await db.insert(schema.simulatedOrderItems).values({
+        orderId: order.id,
+        productId: item.id,
+        productName: item.name,
+        vendorOrgId: product?.orgId || item.vendorOrgId || 'unknown',
+        quantity: item.quantity,
+        unitPrice: item.price,
+      });
+    }
+
+    // ── Deplete Inventory & Record Movements ──
+    for (const update of inventoryUpdates) {
+      const newQty = update.currentQty - update.requestedQty;
+
+      await db
+        .update(schema.inventory)
+        .set({ quantity: newQty, updatedAt: new Date() })
+        .where(eq(schema.inventory.id, update.inventoryId));
+
+      await db.insert(schema.inventoryMovements).values({
+        inventoryId: update.inventoryId,
+        type: 'sale_depletion',
+        quantityChanged: -update.requestedQty,
+        previousQuantity: update.currentQty,
+        newQuantity: newQty,
+        reason: `Simulated order ${order.id}`,
+        userId: 'customer', // No auth required for customer checkout
+      });
+    }
+
+    return { success: true, orderId: order.id };
+  } catch (error: unknown) {
+    console.error('Checkout failed:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown server error during checkout.';
+    return { success: false, error: errorMsg };
+  }
+}

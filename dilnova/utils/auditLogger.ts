@@ -5,7 +5,7 @@ import { logger } from './logger';
 export interface AuditLogParams {
   userId: string;
   action: string;
-  targetType: 'category' | 'product' | 'system_setting' | 'membership' | 'vendor' | 'pricing_plan' | 'contact';
+  targetType: 'category' | 'product' | 'system_setting' | 'membership' | 'vendor' | 'pricing_plan' | 'contact' | 'supplier' | 'inventory' | 'simulated_order' | 'branch' | 'billing_receipt';
   targetId: string;
   metadata?: Record<string, unknown> | null;
 }
