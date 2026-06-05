@@ -108,6 +108,14 @@ export default async function VendorProductsPage({ searchParams }: PageProps) {
         >
           📦 Inventory Workspace
         </Link>
+        {inventoryData && inventoryData.premiumStatus.billingActive && (
+          <Link
+            href="/vendor/billing"
+            className="pb-2.5 px-4 text-xs font-extrabold transition-all border-b-2 border-transparent text-zinc-450 hover:text-zinc-700"
+          >
+            📠 POS Billing Register
+          </Link>
+        )}
       </div>
 
       {/* Content rendering based on Tab */}

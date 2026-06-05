@@ -16,6 +16,7 @@ import FloatingLanguageButton from './components/FloatingLanguageButton'
 
 import { getSystemSetting } from '@/utils/settings'
 import Image from 'next/image'
+import { getPremiumStatus } from '@/utils/premiumLicense'
 
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting('system_favicon', '');
@@ -48,6 +49,12 @@ export default async function RootLayout({
       canCreateOrg = isUserVendorOrAdmin;
     }
 
+    let billingActive = false;
+    if (orgId) {
+      const status = await getPremiumStatus(orgId);
+      billingActive = status.billingActive;
+    }
+
     // Build responsive links dynamically based on user session status and permissions
     const links: { href: string; label: string; colorClass?: string }[] = [
       { href: '/vendors', label: 'Browse Vendors' },
@@ -65,6 +72,14 @@ export default async function RootLayout({
         href: '/vendor/products/add',
         label: '+ Add Item',
         colorClass: 'text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300',
+      });
+    }
+
+    if (orgId && billingActive && (orgRole === 'org:admin' || orgRole === 'org:vendor' || orgRole === 'org:member')) {
+      links.push({
+        href: '/vendor/billing',
+        label: 'POS Register',
+        colorClass: 'text-indigo-650 hover:text-indigo-850 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold',
       });
     }
 

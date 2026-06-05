@@ -19,7 +19,7 @@ import {
 
 // ── Types ──
 type ViewMode = 'simple' | 'advanced';
-type AdvancedTab = 'stock' | 'suppliers' | 'orders' | 'movements' | 'branches' | 'pos';
+type AdvancedTab = 'stock' | 'suppliers' | 'orders' | 'movements' | 'branches';
 
 interface Props {
   initialData: Awaited<ReturnType<typeof getVendorInventoryData>>;
@@ -735,7 +735,6 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
               { key: 'orders', label: 'Simulated Orders', icon: '🛒' },
               { key: 'movements', label: 'Movement Logs', icon: '📋' },
               ...(data.premiumStatus.multiBranchActive ? [{ key: 'branches', label: 'Branch Directory', icon: '🏬' }] : []),
-              ...(data.premiumStatus.billingActive ? [{ key: 'pos', label: 'POS Billing Register', icon: '📠' }] : []),
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -1076,148 +1075,6 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
             </div>
           )}
 
-          {/* TAB 6: POS BILLING REGISTER */}
-          {advancedTab === 'pos' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Product Catalog Picker */}
-              <div className="lg:col-span-8 bg-white border border-zinc-200 rounded-2xl p-4 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-4">
-                <div className="flex justify-between items-center border-b border-zinc-150 pb-2">
-                  <h3 className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">POS Checkout Catalog</h3>
-                  <span className="text-[10px] font-mono bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-black">
-                    Register Scoped: {getBranchName(selectedBranchId)}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {data.inventoryItems.map((item) => {
-                    const info = getProductStockInfo(item.productId);
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => addToPOSCart(item)}
-                        disabled={info.qty <= 0}
-                        className={`p-3 border rounded-xl text-left transition-all active:scale-[0.97] hover:border-indigo-400 group ${
-                          info.qty <= 0 ? 'opacity-50 cursor-not-allowed bg-zinc-50' : 'bg-white hover:bg-zinc-50/50'
-                        }`}
-                      >
-                        <span className="font-bold text-xs block text-zinc-900 truncate">{item.productName}</span>
-                        <div className="flex justify-between items-center mt-2">
-                          <span className="text-xs font-black font-mono text-zinc-800">$15.00</span>
-                          <span className={`text-[10px] font-bold ${info.qty <= 5 ? 'text-rose-500 font-extrabold' : 'text-zinc-400'}`}>
-                            {info.qty} available
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* POS Cart Summary */}
-              <div className="lg:col-span-4 bg-white border border-zinc-200 rounded-2xl p-4 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-4 flex flex-col justify-between">
-                <div>
-                  <h3 className="font-black text-sm text-zinc-900 dark:text-zinc-100 mb-3">POS Register Receipt</h3>
-                  <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
-                    {posCart.map((item) => (
-                      <div key={item.product.productId} className="flex justify-between items-center text-xs">
-                        <div className="min-w-0 flex-1">
-                          <span className="font-semibold text-zinc-900 block truncate">{item.product.productName}</span>
-                          <span className="text-[10px] text-zinc-400 font-mono">$15.00 each</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 ml-2">
-                          <button
-                            onClick={() => updateCartQty(item.product.productId, item.quantity - 1)}
-                            className="w-5 h-5 rounded bg-zinc-100 flex items-center justify-center text-[10px] font-bold"
-                          >
-                            -
-                          </button>
-                          <span className="w-6 text-center font-mono font-bold text-xs">{item.quantity}</span>
-                          <button
-                            onClick={() => updateCartQty(item.product.productId, item.quantity + 1)}
-                            className="w-5 h-5 rounded bg-zinc-100 flex items-center justify-center text-[10px] font-bold"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {posCart.length === 0 && (
-                      <p className="text-xs text-zinc-400 text-center py-6 font-mono">No items in pos ticket.</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="border-t border-zinc-100 dark:border-zinc-850 pt-3 space-y-3">
-                  <div className="flex justify-between text-xs font-black">
-                    <span>Subtotal:</span>
-                    <span className="font-mono text-sm">${(posCart.reduce((sum, item) => sum + item.quantity * 15.00, 0)).toFixed(2)}</span>
-                  </div>
-
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={posCustomerName}
-                      onChange={(e) => setPosCustomerName(e.target.value)}
-                      placeholder="Walk-in Customer Name"
-                      className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg text-xs"
-                    />
-                    <select
-                      value={posPaymentMethod}
-                      onChange={(e) => setPosPaymentMethod(e.target.value as any)}
-                      className="w-full px-3 py-1.5 border border-zinc-200 rounded-lg text-xs"
-                    >
-                      <option value="cash">Cash Tendered</option>
-                      <option value="card">Card Terminal</option>
-                      <option value="other">Store Credit/Other</option>
-                    </select>
-                  </div>
-
-                  <button
-                    onClick={handlePOSCheckout}
-                    disabled={posCart.length === 0 || isPending}
-                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-97 disabled:opacity-50"
-                  >
-                    ✓ Complete POS Order
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* --- Print Receipt View --- */}
-      {posReceiptToPrint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-sm border border-zinc-200 shadow-2xl space-y-4">
-            <div className="text-center">
-              <h3 className="font-black text-lg">Dilnova Point-of-Sale</h3>
-              <p className="text-xs text-zinc-500">Receipt ID: {posReceiptToPrint.id}</p>
-              <p className="text-xs text-zinc-500">Branch: {posReceiptToPrint.branchName}</p>
-            </div>
-            <div className="border-t border-b border-dashed border-zinc-300 py-3 text-xs space-y-1.5 font-mono">
-              {posReceiptToPrint.items.map((i: any, index: number) => (
-                <div key={index} className="flex justify-between">
-                  <span>{i.name} x{i.qty}</span>
-                  <span>${(i.price * i.qty).toFixed(2)}</span>
-                </div>
-              ))}
-              <div className="border-t border-dashed border-zinc-300 pt-2 flex justify-between font-bold">
-                <span>TOTAL PAID ({posReceiptToPrint.paymentMethod.toUpperCase()}):</span>
-                <span>${posReceiptToPrint.total.toFixed(2)}</span>
-              </div>
-            </div>
-            <div className="text-center text-xs text-zinc-400">
-              <p>Customer: {posReceiptToPrint.customerName || 'Walk-in'}</p>
-              <p>Thank you for shopping with us!</p>
-            </div>
-            <button
-              onClick={() => setPosReceiptToPrint(null)}
-              className="w-full py-2 bg-zinc-900 text-white rounded-xl text-xs font-bold cursor-pointer"
-            >
-              Close Print Dialog
-            </button>
-          </div>
         </div>
       )}
 
