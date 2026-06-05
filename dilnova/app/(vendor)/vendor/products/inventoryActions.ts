@@ -147,32 +147,61 @@ export async function getVendorInventoryData() {
       }
     }
 
-    // 6. Fetch Branches (Premium Multi-Branch)
+    // 6. Fetch Branches (Premium Multi-Branch, or single default fallback if billing is active)
     let branches: any[] = [];
     let branchInventoryList: any[] = [];
     let branchMembersList: any[] = [];
-    if (premiumStatus.multiBranchActive) {
+    if (premiumStatus.multiBranchActive || premiumStatus.billingActive) {
       branches = await db
         .select()
         .from(schema.branches)
         .where(eq(schema.branches.orgId, orgId))
         .orderBy(schema.branches.name);
 
+      // If no branches exist, programmatically insert a default branch record named "Main Register"
+      if (branches.length === 0) {
+        const [defaultBranch] = await db
+          .insert(schema.branches)
+          .values({
+            orgId,
+            name: 'Main Register',
+            isDefault: true,
+          })
+          .returning();
+        if (defaultBranch) {
+          branches = [defaultBranch];
+        }
+      }
+
       const branchIds = branches.map((b) => b.id);
       if (branchIds.length > 0) {
-        branchInventoryList = await db
-          .select({
-            id: schema.branchInventory.id,
-            branchId: schema.branchInventory.branchId,
-            productId: schema.branchInventory.productId,
-            sku: schema.branchInventory.sku,
-            quantity: schema.branchInventory.quantity,
-            binLocation: schema.branchInventory.binLocation,
-            productName: schema.products.name,
-          })
-          .from(schema.branchInventory)
-          .innerJoin(schema.products, eq(schema.branchInventory.productId, schema.products.id))
-          .where(inArray(schema.branchInventory.branchId, branchIds));
+        if (premiumStatus.multiBranchActive) {
+          branchInventoryList = await db
+            .select({
+              id: schema.branchInventory.id,
+              branchId: schema.branchInventory.branchId,
+              productId: schema.branchInventory.productId,
+              sku: schema.branchInventory.sku,
+              quantity: schema.branchInventory.quantity,
+              binLocation: schema.branchInventory.binLocation,
+              productName: schema.products.name,
+            })
+            .from(schema.branchInventory)
+            .innerJoin(schema.products, eq(schema.branchInventory.productId, schema.products.id))
+            .where(inArray(schema.branchInventory.branchId, branchIds));
+        } else {
+          // Fallback: Populate the branchInventory list using central inventory so the default branch register has access to central stock
+          const defaultBranchId = branches[0].id;
+          branchInventoryList = inventoryItems.map((invItem) => ({
+            id: invItem.id,
+            branchId: defaultBranchId,
+            productId: invItem.productId,
+            sku: invItem.sku,
+            quantity: invItem.quantity,
+            binLocation: invItem.binLocation,
+            productName: invItem.productName,
+          }));
+        }
 
         branchMembersList = await db
           .select()
@@ -840,24 +869,68 @@ export async function processBillingCheckoutAction(data: {
           throw new Error(`Product not found or access denied: ${item.productName}`);
         }
 
-        // Deduct branch inventory stock
-        const [branchInv] = await tx
-          .select()
-          .from(schema.branchInventory)
-          .where(and(eq(schema.branchInventory.branchId, parsed.data.branchId), eq(schema.branchInventory.productId, item.productId)))
-          .limit(1);
+        // Deduct inventory stock based on multi-branch status
+        let availableQuantity = 0;
+        let inventoryRecordId = '';
 
-        if (!branchInv || branchInv.quantity < item.quantity) {
-          throw new Error(`Insufficient stock for "${item.productName}" at branch "${branch.name}". Available: ${branchInv?.quantity ?? 0}`);
+        if (premiumStatus.multiBranchActive) {
+          const [branchInv] = await tx
+            .select()
+            .from(schema.branchInventory)
+            .where(and(eq(schema.branchInventory.branchId, parsed.data.branchId), eq(schema.branchInventory.productId, item.productId)))
+            .limit(1);
+
+          if (branchInv) {
+            availableQuantity = branchInv.quantity;
+            inventoryRecordId = branchInv.id;
+          }
+        } else {
+          // Central inventory mapping fallback
+          const [centralInv] = await tx
+            .select()
+            .from(schema.inventory)
+            .where(eq(schema.inventory.productId, item.productId))
+            .limit(1);
+
+          if (centralInv) {
+            availableQuantity = centralInv.quantity;
+            inventoryRecordId = centralInv.id;
+          }
         }
 
-        await tx
-          .update(schema.branchInventory)
-          .set({
-            quantity: branchInv.quantity - item.quantity,
-            updatedAt: new Date(),
-          })
-          .where(eq(schema.branchInventory.id, branchInv.id));
+        if (availableQuantity < item.quantity) {
+          throw new Error(`Insufficient stock for "${item.productName}" at branch "${branch.name}". Available: ${availableQuantity}`);
+        }
+
+        if (premiumStatus.multiBranchActive) {
+          await tx
+            .update(schema.branchInventory)
+            .set({
+              quantity: availableQuantity - item.quantity,
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.branchInventory.id, inventoryRecordId));
+        } else {
+          // Update central inventory quantity
+          await tx
+            .update(schema.inventory)
+            .set({
+              quantity: availableQuantity - item.quantity,
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.inventory.id, inventoryRecordId));
+
+          // Insert an inventory movement for tracking
+          await tx.insert(schema.inventoryMovements).values({
+            inventoryId: inventoryRecordId,
+            type: 'sale_depletion',
+            quantityChanged: -item.quantity,
+            previousQuantity: availableQuantity,
+            newQuantity: availableQuantity - item.quantity,
+            reason: `POS Checkout Receipt (Default Branch)`,
+            userId,
+          });
+        }
 
         // Add receipt line item
         await tx.insert(schema.billingReceiptItems).values({

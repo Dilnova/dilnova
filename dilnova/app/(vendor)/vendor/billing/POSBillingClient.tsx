@@ -197,21 +197,27 @@ export default function POSBillingClient({ initialData }: Props) {
               <p className="text-xs text-zinc-400">Click products below to add them to the ticket list.</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-zinc-405">Branch Register:</span>
-              <select
-                value={selectedBranchId}
-                onChange={(e) => {
-                  setSelectedBranchId(e.target.value);
-                  setCart([]); // Clear cart when branch changes
-                }}
-                className="px-3 py-1.5 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 font-bold focus:outline-none"
-              >
-                {data.branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    🏬 {b.name}
-                  </option>
-                ))}
-              </select>
+              <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Branch Register:</span>
+              {data.premiumStatus?.multiBranchActive ? (
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => {
+                    setSelectedBranchId(e.target.value);
+                    setCart([]); // Clear cart when branch changes
+                  }}
+                  className="px-3 py-1.5 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 font-bold focus:outline-none"
+                >
+                  {data.branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      🏬 {b.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                  🏬 {data.branches.find((b) => b.id === selectedBranchId)?.name || 'Main Register'}
+                </span>
+              )}
             </div>
           </div>
 

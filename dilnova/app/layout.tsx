@@ -131,11 +131,7 @@ export default async function RootLayout({
                   <Show when="signed-out">
                     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-xs font-semibold">
                       <SignInButton />
-                      <SignUpButton>
-                        <button className="bg-purple-700 text-white rounded-lg h-8 sm:h-9 px-2.5 sm:px-3 md:px-4 text-[11px] sm:text-xs cursor-pointer hover:bg-purple-800 transition-colors whitespace-nowrap">
-                          Sign Up
-                        </button>
-                      </SignUpButton>
+                      <SignUpButton><button className="bg-purple-700 text-white rounded-lg h-8 sm:h-9 px-2.5 sm:px-3 md:px-4 text-[11px] sm:text-xs cursor-pointer hover:bg-purple-800 transition-colors whitespace-nowrap">Sign Up</button></SignUpButton>
                     </div>
                   </Show>
 
