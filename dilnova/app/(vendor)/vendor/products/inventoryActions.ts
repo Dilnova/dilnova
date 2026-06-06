@@ -64,9 +64,39 @@ export async function getVendorInventoryData() {
 
     const productIds = vendorProducts.map((p) => p.id);
 
-    // 2. Fetch Central Inventory
+    // 2. Fetch Central Inventory (with auto-initialization of missing records)
     let inventoryItems: any[] = [];
     if (productIds.length > 0) {
+      // Find which products already have an inventory tracking record
+      const existingInventory = await db
+        .select({
+          productId: schema.inventory.productId,
+        })
+        .from(schema.inventory)
+        .where(inArray(schema.inventory.productId, productIds));
+
+      const trackedProductIdsSet = new Set(existingInventory.map((i) => i.productId));
+
+      // Identify products of type 'product' that do not have an inventory row yet
+      const missingInventoryProducts = vendorProducts.filter(
+        (p) => p.type === 'product' && !trackedProductIdsSet.has(p.id)
+      );
+
+      // Bulk initialize missing inventory records
+      if (missingInventoryProducts.length > 0) {
+        await db.insert(schema.inventory).values(
+          missingInventoryProducts.map((p) => ({
+            productId: p.id,
+            sku: null,
+            quantity: 0,
+            lowStockThreshold: 5,
+            binLocation: null,
+            supplierId: null,
+          }))
+        );
+      }
+
+      // Fetch the full inventory records list
       inventoryItems = await db
         .select({
           id: schema.inventory.id,
