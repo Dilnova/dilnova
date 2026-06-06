@@ -63,7 +63,9 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
   useEffect(() => {
     if (data.branches && data.branches.length > 0) {
       const defaultBranch = data.branches.find((b) => b.isDefault) || data.branches[0];
-      setSelectedBranchId(defaultBranch.id);
+      requestAnimationFrame(() => {
+        setSelectedBranchId(defaultBranch.id);
+      });
     }
   }, [data.branches]);
 

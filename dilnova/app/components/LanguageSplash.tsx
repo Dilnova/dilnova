@@ -20,8 +20,10 @@ export default function LanguageSplash() {
     if (pref) return; // Already chose before — don't show
 
     const detected = detectBrowserLanguage();
-    setDetectedLang(detected);
-    setVisible(true);
+    requestAnimationFrame(() => {
+      setDetectedLang(detected);
+      setVisible(true);
+    });
 
     // Lock body scroll while splash is open
     document.body.style.overflow = 'hidden';

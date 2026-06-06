@@ -36,12 +36,14 @@ export default function ContactPage() {
         } else {
           defaultMessage = `Hi Dilnova team,\n\nI am interested in registering a new storefront on the marketplace. Please provide more details on how to get started.\n\nThanks!`;
         }
-        setFormData((prev) => ({
-          ...prev,
-          category: plan === 'enterprise' ? 'collaboration' : 'registration',
-          subject: `Inquiry for ${planName} Plan Registration`,
-          message: defaultMessage,
-        }));
+        requestAnimationFrame(() => {
+          setFormData((prev) => ({
+            ...prev,
+            category: plan === 'enterprise' ? 'collaboration' : 'registration',
+            subject: `Inquiry for ${planName} Plan Registration`,
+            message: defaultMessage,
+          }));
+        });
       }
     }
   }, []);

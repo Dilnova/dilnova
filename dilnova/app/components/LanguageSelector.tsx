@@ -28,7 +28,7 @@ export default function LanguageSelector() {
 
     // 2. Check existing preference or cookie
     const pref = getLangPreference();
-    let lang = pref || getCurrentLangFromCookie();
+    const lang = pref || getCurrentLangFromCookie();
 
     // If we have a preference but no googtrans, re-apply it
     if (pref && !getCurrentLangFromCookie()) {
@@ -40,7 +40,9 @@ export default function LanguageSelector() {
       setLangPreferenceCookie(lang);
     }
 
-    setCurrentLang(lang);
+    requestAnimationFrame(() => {
+      setCurrentLang(lang);
+    });
 
     // 3. Inject Google Translate script dynamically if not already present
     if (!document.getElementById('google-translate-script')) {

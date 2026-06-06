@@ -454,99 +454,129 @@ export async function simulatedCheckoutAction(
     // ── Rate Limiting ──
     await rateLimit(5, 60 * 1000); // Max 5 checkouts per minute
 
-    // ── Stock Validation ──
-    const stockErrors: string[] = [];
-    const inventoryUpdates: { inventoryId: string; productId: string; currentQty: number; requestedQty: number }[] = [];
+    // ── Concurrency Safe Stock Validation & Checkout ──
+    return await db.transaction(async (tx) => {
+      const stockErrors: string[] = [];
+      const inventoryUpdates: { inventoryId: string; productId: string; currentQty: number; requestedQty: number }[] = [];
+      const verifiedItems: { id: string; name: string; price: number; quantity: number; vendorOrgId: string }[] = [];
+      let serverCalculatedTotal = 0;
 
-    for (const item of validItems) {
-      // Look up inventory record for this product
-      const [inv] = await db
-        .select()
-        .from(schema.inventory)
-        .where(eq(schema.inventory.productId, item.id))
-        .limit(1);
+      // ── Verify Prices & Fetch Scoped Vendor IDs Server-side ──
+      for (const item of validItems) {
+        const [product] = await tx
+          .select({
+            id: schema.products.id,
+            name: schema.products.name,
+            price: schema.products.price,
+            orgId: schema.products.orgId,
+          })
+          .from(schema.products)
+          .where(eq(schema.products.id, item.id))
+          .limit(1);
 
-      if (inv) {
-        // Product has inventory tracking — validate stock
-        if (inv.quantity < item.quantity) {
-          stockErrors.push(
-            `"${item.name}" only has ${inv.quantity} units in stock (requested ${item.quantity}).`
-          );
-        } else {
-          inventoryUpdates.push({
-            inventoryId: inv.id,
-            productId: item.id,
-            currentQty: inv.quantity,
-            requestedQty: item.quantity,
-          });
+        if (!product) {
+          throw new Error(`Product not found in catalog: ${item.name}`);
         }
+
+        serverCalculatedTotal += product.price * item.quantity;
+        verifiedItems.push({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: item.quantity,
+          vendorOrgId: product.orgId,
+        });
       }
-      // If no inventory record exists, allow the order (untracked product)
-    }
 
-    if (stockErrors.length > 0) {
-      return {
-        success: false,
-        error: `Insufficient stock:\n${stockErrors.join('\n')}`,
-        stockErrors,
-      };
-    }
+      // ── Verify Client-provided Total Matches Server Calculations ──
+      if (serverCalculatedTotal !== total) {
+        throw new Error(`Checkout transaction price mismatch. Calculated: ${serverCalculatedTotal}, Received: ${total}`);
+      }
 
-    // ── Create Simulated Order ──
-    const [order] = await db
-      .insert(schema.simulatedOrders)
-      .values({
-        customerName: name,
-        customerEmail: email,
-        totalAmount: total,
-        status: 'pending',
-      })
-      .returning();
+      for (const item of verifiedItems) {
+        // Look up inventory record for this product with row lock
+        const [inv] = await tx
+          .select()
+          .from(schema.inventory)
+          .where(eq(schema.inventory.productId, item.id))
+          .for('update')
+          .limit(1);
 
-    if (!order) {
-      return { success: false, error: 'Failed to create order record.' };
-    }
+        if (inv) {
+          // Product has inventory tracking — validate stock
+          if (inv.quantity < item.quantity) {
+            stockErrors.push(
+              `"${item.name}" only has ${inv.quantity} units in stock (requested ${item.quantity}).`
+            );
+          } else {
+            inventoryUpdates.push({
+              inventoryId: inv.id,
+              productId: item.id,
+              currentQty: inv.quantity,
+              requestedQty: item.quantity,
+            });
+          }
+        }
+        // If no inventory record exists, allow the order (untracked product)
+      }
 
-    // ── Insert Order Items ──
-    for (const item of validItems) {
-      // Fetch the product to get the orgId
-      const [product] = await db
-        .select({ orgId: schema.products.orgId })
-        .from(schema.products)
-        .where(eq(schema.products.id, item.id))
-        .limit(1);
+      if (stockErrors.length > 0) {
+        return {
+          success: false,
+          error: `Insufficient stock:\n${stockErrors.join('\n')}`,
+          stockErrors,
+        };
+      }
 
-      await db.insert(schema.simulatedOrderItems).values({
-        orderId: order.id,
-        productId: item.id,
-        productName: item.name,
-        vendorOrgId: product?.orgId || item.vendorOrgId || 'unknown',
-        quantity: item.quantity,
-        unitPrice: item.price,
-      });
-    }
+      // ── Create Simulated Order ──
+      const [order] = await tx
+        .insert(schema.simulatedOrders)
+        .values({
+          customerName: name,
+          customerEmail: email,
+          totalAmount: serverCalculatedTotal,
+          status: 'pending',
+        })
+        .returning();
 
-    // ── Deplete Inventory & Record Movements ──
-    for (const update of inventoryUpdates) {
-      const newQty = update.currentQty - update.requestedQty;
+      if (!order) {
+        throw new Error('Failed to create order record.');
+      }
 
-      await db
-        .update(schema.inventory)
-        .set({ quantity: newQty, updatedAt: new Date() })
-        .where(eq(schema.inventory.id, update.inventoryId));
+      // ── Insert Order Items using DB-verified information ──
+      for (const item of verifiedItems) {
+        await tx.insert(schema.simulatedOrderItems).values({
+          orderId: order.id,
+          productId: item.id,
+          productName: item.name,
+          vendorOrgId: item.vendorOrgId,
+          quantity: item.quantity,
+          unitPrice: item.price,
+        });
+      }
 
-      await db.insert(schema.inventoryMovements).values({
-        inventoryId: update.inventoryId,
-        type: 'sale_depletion',
-        quantityChanged: -update.requestedQty,
-        previousQuantity: update.currentQty,
-        newQuantity: newQty,
-        reason: `Simulated order ${order.id}`,
-        userId: 'customer', // No auth required for customer checkout
-      });
-    }
+      // ── Deplete Inventory & Record Movements ──
+      for (const update of inventoryUpdates) {
+        const newQty = update.currentQty - update.requestedQty;
 
-    return { success: true, orderId: order.id };
+        await tx
+          .update(schema.inventory)
+          .set({ quantity: newQty, updatedAt: new Date() })
+          .where(eq(schema.inventory.id, update.inventoryId));
+
+        await tx.insert(schema.inventoryMovements).values({
+          inventoryId: update.inventoryId,
+          type: 'sale_depletion',
+          quantityChanged: -update.requestedQty,
+          previousQuantity: update.currentQty,
+          newQuantity: newQty,
+          reason: `Simulated order ${order.id}`,
+          userId: 'customer', // No auth required for customer checkout
+        });
+      }
+
+      return { success: true, orderId: order.id };
+    });
   } catch (error: unknown) {
     console.error('Checkout failed:', error);
     const errorMsg = error instanceof Error ? error.message : 'Unknown server error during checkout.';

@@ -40,7 +40,9 @@ export default function POSBillingClient({ initialData }: Props) {
   useEffect(() => {
     if (data.branches && data.branches.length > 0) {
       const defaultBranch = data.branches.find((b) => b.isDefault) || data.branches[0];
-      setSelectedBranchId(defaultBranch.id);
+      requestAnimationFrame(() => {
+        setSelectedBranchId(defaultBranch.id);
+      });
     }
   }, [data.branches]);
 
@@ -136,7 +138,7 @@ export default function POSBillingClient({ initialData }: Props) {
           productId: item.product.productId,
           productName: item.product.productName,
           quantity: item.quantity,
-          unitPrice: 1500, // mock price in cents ($15.00)
+          unitPrice: item.product.productPrice, // actual price in cents
         }));
 
         const result = await processBillingCheckoutAction({
@@ -153,7 +155,7 @@ export default function POSBillingClient({ initialData }: Props) {
         setReceiptToPrint({
           id: result.receiptId,
           branchName: data.branches.find((b) => b.id === selectedBranchId)?.name || 'Branch Register',
-          items: cart.map((i) => ({ name: i.product.productName, qty: i.quantity, price: 15.00 })),
+          items: cart.map((i) => ({ name: i.product.productName, qty: i.quantity, price: i.product.productPrice / 100 })),
           total: result.totalAmount / 100,
           paymentMethod,
           customerName,
@@ -170,7 +172,7 @@ export default function POSBillingClient({ initialData }: Props) {
     });
   };
 
-  const totalAmount = cart.reduce((sum, item) => sum + item.quantity * 15.00, 0);
+  const totalAmount = cart.reduce((sum, item) => sum + item.quantity * (item.product.productPrice / 100), 0);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-220px)] items-stretch">
@@ -254,7 +256,7 @@ export default function POSBillingClient({ initialData }: Props) {
                   <div>
                     <span className="text-[10px] text-zinc-450 block font-mono">SKU: {info.sku}</span>
                     <div className="flex justify-between items-center mt-1.5 pt-1.5 border-t border-zinc-50 dark:border-zinc-800">
-                      <span className="text-xs font-black font-mono text-zinc-850 dark:text-white">$15.00</span>
+                      <span className="text-xs font-black font-mono text-zinc-850 dark:text-white">${(item.productPrice / 100).toFixed(2)}</span>
                       <span className={`text-[9px] font-bold ${info.qty <= 5 ? 'text-rose-500 font-extrabold' : 'text-zinc-400'}`}>
                         {info.qty} left
                       </span>
@@ -281,7 +283,7 @@ export default function POSBillingClient({ initialData }: Props) {
               <div key={item.product.productId} className="flex justify-between items-center text-xs">
                 <div className="min-w-0 flex-1">
                   <span className="font-bold text-zinc-900 dark:text-zinc-100 block truncate">{item.product.productName}</span>
-                  <span className="text-[10px] text-zinc-400 font-mono">$15.00 each</span>
+                  <span className="text-[10px] text-zinc-400 font-mono">${(item.product.productPrice / 100).toFixed(2)} each</span>
                 </div>
                 <div className="flex items-center gap-1.5 ml-2">
                   <button

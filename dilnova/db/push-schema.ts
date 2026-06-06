@@ -2,7 +2,8 @@
  * Push schema to database using drizzle-orm.
  * Run: npx tsx db/push-schema.ts
  */
-process.env.HOME = '/Users/dilukalahiru/Documents/dilnova/dilnova/dilnova/scratch';
+import path from 'path';
+process.env.HOME = path.resolve(process.cwd(), 'scratch');
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 

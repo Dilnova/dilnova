@@ -234,15 +234,21 @@ export async function submitContactFormAction(prevState: any, formData: FormData
 
     const { name, email, category, subject, message } = parsedInput.data;
 
+    // Sanitize user inputs to prevent SMTP header injection by removing CR/LF characters
+    const cleanHeader = (val: string) => val.replace(/[\r\n]+/g, ' ');
+    const sanitizedName = cleanHeader(name);
+    const sanitizedEmail = cleanHeader(email);
+    const sanitizedSubject = cleanHeader(subject);
+
     // Rate Limiting: Max 2 messages per minute per IP
     await rateLimit(2, 60 * 1000);
 
-    // Save submission to database
+    // Save submission to database (saving sanitized strings)
     await db.insert(schema.contactSubmissions).values({
-      name,
-      email,
+      name: sanitizedName,
+      email: sanitizedEmail,
       category,
-      subject,
+      subject: sanitizedSubject,
       message,
       status: 'pending',
     });
@@ -284,7 +290,7 @@ export async function submitContactFormAction(prevState: any, formData: FormData
               <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px;">
                 <tr>
                   <td style="padding: 6px 0; color: #71717a; width: 120px; font-weight: bold;">From:</td>
-                  <td style="padding: 6px 0; color: #18181b;">${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;</td>
+                  <td style="padding: 6px 0; color: #18181b;">${escapeHtml(sanitizedName)} &lt;${escapeHtml(sanitizedEmail)}&gt;</td>
                 </tr>
                 <tr>
                   <td style="padding: 6px 0; color: #71717a; font-weight: bold;">Category:</td>
@@ -292,7 +298,7 @@ export async function submitContactFormAction(prevState: any, formData: FormData
                 </tr>
                 <tr>
                   <td style="padding: 6px 0; color: #71717a; font-weight: bold;">Subject:</td>
-                  <td style="padding: 6px 0; color: #18181b;">${escapeHtml(subject)}</td>
+                  <td style="padding: 6px 0; color: #18181b;">${escapeHtml(sanitizedSubject)}</td>
                 </tr>
               </table>
               <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 14px; color: #334155; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(message)}</div>
@@ -314,7 +320,7 @@ export async function submitContactFormAction(prevState: any, formData: FormData
       to: emailFromAddress,
       from: emailFromAddress,
       fromName: emailFromName,
-      subject: `[Contact Form - ${categoryLabel}] ${subject}`,
+      subject: `[Contact Form - ${categoryLabel}] ${sanitizedSubject}`,
       html: emailHtml,
     });
 

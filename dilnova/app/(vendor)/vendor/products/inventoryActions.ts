@@ -109,6 +109,7 @@ export async function getVendorInventoryData() {
           updatedAt: schema.inventory.updatedAt,
           productName: schema.products.name,
           productType: schema.products.type,
+          productPrice: schema.products.price,
           supplierName: schema.suppliers.name,
         })
         .from(schema.inventory)
@@ -845,7 +846,7 @@ export async function processBillingCheckoutAction(data: {
   return runWithCorrelationId(async () => {
     await rateLimit(30, 60 * 1000);
     // Any org member can process checkout if billing register is active, no checkRole requirement.
-    const { userId, orgId, premiumStatus } = await verifyVendorAccess({ requireAdminOrVendor: false });
+    const { userId, orgId, orgRole, premiumStatus } = await verifyVendorAccess({ requireAdminOrVendor: false });
     if (!premiumStatus.billingActive) {
       throw new Error('POS Billing Register feature is not unlocked on your account tier.');
     }
@@ -864,6 +865,24 @@ export async function processBillingCheckoutAction(data: {
 
     if (!branch) {
       throw new Error('Branch not found or access denied.');
+    }
+
+    // Verify cashier assignment to the branch when multi-branch is active and the cashier is not a global admin
+    if (premiumStatus.multiBranchActive && orgRole !== 'org:admin') {
+      const [membership] = await db
+        .select()
+        .from(schema.branchMembers)
+        .where(
+          and(
+            eq(schema.branchMembers.branchId, parsed.data.branchId),
+            eq(schema.branchMembers.memberUserId, userId)
+          )
+        )
+        .limit(1);
+
+      if (!membership) {
+        throw new Error('Not authorized: You are not assigned to this branch register.');
+      }
     }
 
     // Validate quantities & update stock at the branch level (or fallback to central inventory if single branch is default and has no specific record)
@@ -886,11 +905,13 @@ export async function processBillingCheckoutAction(data: {
         .returning();
 
       for (const item of parsed.data.items) {
-        totalAmount += item.unitPrice * item.quantity;
-
         // Verify product catalog exists and belongs to this organization
         const [prod] = await tx
-          .select({ id: schema.products.id, name: schema.products.name })
+          .select({
+            id: schema.products.id,
+            name: schema.products.name,
+            price: schema.products.price,
+          })
           .from(schema.products)
           .where(and(eq(schema.products.id, item.productId), eq(schema.products.orgId, orgId)))
           .limit(1);
@@ -898,6 +919,13 @@ export async function processBillingCheckoutAction(data: {
         if (!prod) {
           throw new Error(`Product not found or access denied: ${item.productName}`);
         }
+
+        // Verify product price matches to prevent tampering
+        if (prod.price !== item.unitPrice) {
+          throw new Error(`Price mismatch for "${prod.name}". Catalog price: ${prod.price}, Received: ${item.unitPrice}`);
+        }
+
+        totalAmount += prod.price * item.quantity;
 
         // Deduct inventory stock based on multi-branch status
         let availableQuantity = 0;
@@ -908,6 +936,7 @@ export async function processBillingCheckoutAction(data: {
             .select()
             .from(schema.branchInventory)
             .where(and(eq(schema.branchInventory.branchId, parsed.data.branchId), eq(schema.branchInventory.productId, item.productId)))
+            .for('update')
             .limit(1);
 
           if (branchInv) {
@@ -920,6 +949,7 @@ export async function processBillingCheckoutAction(data: {
             .select()
             .from(schema.inventory)
             .where(eq(schema.inventory.productId, item.productId))
+            .for('update')
             .limit(1);
 
           if (centralInv) {
@@ -929,7 +959,7 @@ export async function processBillingCheckoutAction(data: {
         }
 
         if (availableQuantity < item.quantity) {
-          throw new Error(`Insufficient stock for "${item.productName}" at branch "${branch.name}". Available: ${availableQuantity}`);
+          throw new Error(`Insufficient stock for "${prod.name}" at branch "${branch.name}". Available: ${availableQuantity}`);
         }
 
         if (premiumStatus.multiBranchActive) {
@@ -962,13 +992,13 @@ export async function processBillingCheckoutAction(data: {
           });
         }
 
-        // Add receipt line item
+        // Add receipt line item using verified database properties
         await tx.insert(schema.billingReceiptItems).values({
           receiptId: receipt.id,
           productId: item.productId,
-          productName: item.productName,
+          productName: prod.name,
           quantity: item.quantity,
-          unitPrice: item.unitPrice,
+          unitPrice: prod.price,
         });
       }
 

@@ -11,6 +11,8 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/vendors(.*)',
   '/products(.*)',   // Allows public access to all products and services
+  '/cart',           // Allows guest checkout/cart access
+  '/contact',        // Allows public contact form submissions
   '/api/health(.*)', // Allows public access to the health check endpoint
   '/_next(.*)'       // Allows public access to Next.js static files/image optimization
 ]);

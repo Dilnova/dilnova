@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useMemo } from 'react';
 import {
   createSupplierAction,
   updateSupplierAction,
@@ -107,6 +107,12 @@ export default function InventoryTab({
 }: InventoryTabProps) {
   const [subTab, setSubTab] = useState<InventorySubTab>('stock');
   const [isPending, startTransition] = useTransition();
+  const [now, setNow] = useState<number>(0);
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      setNow(Date.now());
+    });
+  }, []);
 
   // ── Stock Filters ──
   const [stockSearch, setStockSearch] = useState('');
@@ -811,7 +817,7 @@ export default function InventoryTab({
 
                     let isExpired = false;
                     if (imsExpiresAt) {
-                      isExpired = new Date(imsExpiresAt).getTime() < Date.now();
+                      isExpired = new Date(imsExpiresAt).getTime() < now;
                     }
 
                     return (

@@ -11,6 +11,7 @@ import {
   adjustInventorySchema,
   updateInventoryDetailsSchema,
   updateSimulatedOrderStatusSchema,
+  updateImsLicenseSchema,
 } from '@/utils/schemas';
 import { checkSuperAdmin } from '@/utils/authGuards';
 import { logAuditAction } from '@/utils/auditLogger';
@@ -406,21 +407,27 @@ export async function updateOrgImsLicenseAction(data: {
 }) {
   return runWithCorrelationId(async () => {
     const user = await checkSuperAdmin();
+
+    const parsed = updateImsLicenseSchema.safeParse(data);
+    if (!parsed.success) {
+      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+    }
+
     const { updateOrgImsLicense } = await import('@/utils/premiumLicense');
 
-    await updateOrgImsLicense(data.organizationId, {
-      imsEnabled: data.imsEnabled,
-      imsExpiresAt: data.imsExpiresAt,
-      imsMultiBranchEnabled: data.imsMultiBranchEnabled,
-      imsBillingEnabled: data.imsBillingEnabled,
+    await updateOrgImsLicense(parsed.data.organizationId, {
+      imsEnabled: parsed.data.imsEnabled,
+      imsExpiresAt: parsed.data.imsExpiresAt,
+      imsMultiBranchEnabled: parsed.data.imsMultiBranchEnabled,
+      imsBillingEnabled: parsed.data.imsBillingEnabled,
     });
 
     await logAuditAction({
       userId: user.id,
       action: 'UPDATE_IMS_LICENSE',
       targetType: 'vendor',
-      targetId: data.organizationId,
-      metadata: data,
+      targetId: parsed.data.organizationId,
+      metadata: parsed.data,
     });
 
     revalidatePath('/superadmin');
