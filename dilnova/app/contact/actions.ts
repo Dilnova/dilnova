@@ -97,7 +97,7 @@ function sendRawSmtpEmail(options: {
           const secureSocket = tls.connect({
             socket: socket,
             host: options.host,
-            rejectUnauthorized: false
+            rejectUnauthorized: true
           }, () => {
             step = 1.6;
             secureSocket.write('EHLO localhost\r\n');
@@ -168,7 +168,7 @@ function sendRawSmtpEmail(options: {
       socket = tls.connect({
         host: options.host,
         port: options.port,
-        rejectUnauthorized: false,
+        rejectUnauthorized: true,
       });
       socket.on('data', handleData);
       socket.on('error', (err: any) => reject(err));
