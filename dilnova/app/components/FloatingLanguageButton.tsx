@@ -11,6 +11,7 @@ import {
 export default function FloatingLanguageButton() {
   const [currentLang, setCurrentLang] = useState('en');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hasPreference, setHasPreference] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -19,6 +20,8 @@ export default function FloatingLanguageButton() {
     requestAnimationFrame(() => {
       setCurrentLang(pref);
     });
+
+    setHasPreference(!!getLangPreference());
 
     // Click outside to close
     const handleClickOutside = (event: MouseEvent) => {
@@ -40,6 +43,8 @@ export default function FloatingLanguageButton() {
   };
 
   const activeLang = LANGUAGES.find((l) => l.code === currentLang) || LANGUAGES[0];
+
+  if (!hasPreference) return null;
 
   return (
     <div
