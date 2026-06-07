@@ -20,8 +20,9 @@ import { getPremiumStatus } from '@/utils/premiumLicense'
 
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting('system_favicon', '');
+  const systemName = await getSystemSetting('system_name', 'Dilnova Commerce Hub');
   return {
-    title: 'Dilnova Commerce Hub',
+    title: systemName,
     description: 'Enterprise RBAC sandbox with multi-vendor isolation',
     icons: faviconUrl ? { icon: faviconUrl } : undefined,
   };
@@ -92,6 +93,7 @@ export default async function RootLayout({
     }
 
     const logoUrl = await getSystemSetting('system_logo', '');
+    const systemName = await getSystemSetting('system_name', 'Dilnova');
 
     return (
       <html lang="en">
@@ -105,7 +107,7 @@ export default async function RootLayout({
                       <div className="relative h-7 w-24 sm:h-8 sm:w-28">
                         <Image
                           src={logoUrl}
-                          alt="Dilnova Logo"
+                          alt={`${systemName} Logo`}
                           fill
                           className="object-contain object-left"
                           sizes="(max-width: 640px) 96px, 112px"
@@ -113,7 +115,7 @@ export default async function RootLayout({
                         />
                       </div>
                     ) : (
-                      'DILNOVA'
+                      systemName.toUpperCase()
                     )}
                   </Link>
                   <HeaderNav links={links} />
@@ -155,7 +157,7 @@ export default async function RootLayout({
                 </div>
               </header>
               {children}
-              <LanguageSplash />
+              <LanguageSplash systemName={systemName} />
               <FloatingLanguageButton />
             </CartProvider>
             <SpeedInsights />

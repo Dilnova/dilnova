@@ -17,6 +17,7 @@ export const revalidate = 30; // Cache and regenerate page in background at most
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const client = await clerkClient();
+  const systemName = await getSystemSetting('system_name', 'Dilnova');
 
   const isDistarSubVendor = ['distar-hardware', 'distar-nursery', 'distar-tech', 'dilstar-services'].includes(slug);
 
@@ -55,7 +56,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!clerkOrg) {
     return {
-      title: 'Vendor Storefront | Dilnova',
+      title: `Vendor Storefront | ${systemName}`,
     };
   }
 
@@ -70,10 +71,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     displayName = 'Dilstar Services';
   }
 
-  const title = `${displayName} Storefront | Dilnova`;
+  const title = `${displayName} Storefront | ${systemName}`;
   const description = clerkOrg.publicMetadata?.description
     ? (clerkOrg.publicMetadata.description as string)
-    : `Browse products and services catalog offered by ${displayName} on Dilnova.`;
+    : `Browse products and services catalog offered by ${displayName} on ${systemName}.`;
 
   return {
     title,

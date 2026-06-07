@@ -4,6 +4,7 @@ import tls from 'tls';
 import net from 'net';
 import { rateLimit } from '@/utils/rateLimit';
 import { z } from 'zod';
+import { getSystemSetting } from '@/utils/settings';
 
 interface CartItem {
   id: string;
@@ -254,12 +255,15 @@ export async function sendCartSummaryEmailAction(
     // Max 3 emails per minute per IP to prevent spamming/abuse of the SMTP relay
     await rateLimit(3, 60 * 1000);
 
+    const systemName = await getSystemSetting('system_name', 'Dilnova');
+    const systemNameHub = `${systemName} Commerce Hub`;
+
     const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
     const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
     const smtpUser = process.env.SMTP_USER;
     const smtpPassword = process.env.SMTP_PASSWORD;
     const emailFromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@dilstar.pp.ua';
-    const emailFromName = process.env.EMAIL_FROM_NAME || 'Dilstar Hub';
+    const emailFromName = process.env.EMAIL_FROM_NAME || `${systemName} Hub`;
 
     if (!smtpUser || !smtpPassword) {
       console.error('SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing');
@@ -307,14 +311,14 @@ export async function sendCartSummaryEmailAction(
       <html>
         <head>
           <meta charset="utf-8">
-          <title>Your Dilnova Shopping Cart Summary</title>
+          <title>Your ${systemName} Shopping Cart Summary</title>
         </head>
-        <body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #fafafa; color: #18181b;">
+          <body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #fafafa; color: #18181b;">
           <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
             <!-- Header banner -->
             <div style="background-color: #6b21a8; padding: 24px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 1px; font-family: inherit;">
-                DILNOVA COMMERCE HUB
+                ${systemNameHub.toUpperCase()}
               </h1>
               <p style="margin: 4px 0 0 0; color: #e9d5ff; font-size: 12px;">Your Saved Shopping Cart</p>
             </div>
@@ -373,7 +377,7 @@ export async function sendCartSummaryEmailAction(
 
             <!-- footer disclaimer -->
             <div style="background-color: #f4f4f5; padding: 16px; text-align: center; border-top: 1px solid #e4e4e7; font-size: 11px; color: #a1a1aa;">
-              Dilnova Commerce Hub &copy; 2026. All rights reserved.
+              ${systemNameHub} &copy; 2026. All rights reserved.
             </div>
           </div>
         </body>
@@ -389,7 +393,7 @@ export async function sendCartSummaryEmailAction(
       to: validatedEmail,
       from: emailFromAddress,
       fromName: emailFromName,
-      subject: 'Your Shopping Cart Summary | Dilnova',
+      subject: `Your Shopping Cart Summary | ${systemName}`,
       html: emailHtml,
     });
 

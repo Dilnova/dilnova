@@ -10,14 +10,18 @@ import * as schema from '@/db/schema';
 import { asc } from 'drizzle-orm';
 import { getSystemSetting } from '@/utils/settings';
 
-export const metadata: Metadata = {
-  title: 'Dilnova Multi-Vendor Commerce Marketplace',
-  description: 'Welcome to the Dilnova Commerce Hub. Explore our industrial, botanical, consulting, and technological vendor storefronts.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const systemName = await getSystemSetting('system_name', 'Dilnova');
+  return {
+    title: `${systemName} Multi-Vendor Commerce Marketplace`,
+    description: `Welcome to the ${systemName} Commerce Hub. Explore our industrial, botanical, consulting, and technological vendor storefronts.`,
+  };
+}
 
 export default async function Home() {
   const { orgId, orgRole } = await auth();
   const user = await currentUser();
+  const systemName = await getSystemSetting('system_name', 'Dilnova');
 
   // Retrieve user-level metadata role for RBAC
   const userRole = user?.publicMetadata?.role as string | undefined;
@@ -289,7 +293,7 @@ export default async function Home() {
             Platform Capabilities
           </span>
           <h2 className="text-3xl font-extrabold tracking-tight mb-3">
-            Why Dilnova Commerce Hub?
+            Why {systemName} Commerce Hub?
           </h2>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
             Discover the technical features powering our multi-tenant enterprise marketplace.
@@ -307,7 +311,7 @@ export default async function Home() {
             <div className="space-y-2">
               <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-50">Multi-Tenant Storefront Isolation</h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Dilnova isolates stores at the tenant level. Each registered brand or vendor operates their catalog, layout, and settings in dedicated workspaces, ensuring secure, autonomous management.
+                {systemName} isolates stores at the tenant level. Each registered brand or vendor operates their catalog, layout, and settings in dedicated workspaces, ensuring secure, autonomous management.
               </p>
             </div>
           </div>
@@ -447,7 +451,7 @@ export default async function Home() {
                 href="/contact"
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-purple-700 hover:bg-purple-800 px-6 text-xs font-bold text-white transition-all duration-200 shadow-md hover:shadow-purple-500/20 active:scale-[0.98] cursor-pointer"
               >
-                Contact Dilnova Hub
+                Contact {systemName} Hub
               </Link>
             </div>
           </div>
@@ -459,7 +463,7 @@ export default async function Home() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-650 bg-white dark:bg-zinc-950">
-        <p>&copy; {new Date().getFullYear()} Dilnova Marketplace. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} {systemName} Marketplace. All rights reserved.</p>
       </footer>
     </div>
   );

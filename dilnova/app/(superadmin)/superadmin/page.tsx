@@ -57,6 +57,7 @@ export default async function SuperAdminDashboardPage() {
 
   const systemLogo = await getSystemSetting('system_logo', '');
   const systemFavicon = await getSystemSetting('system_favicon', '');
+  const systemName = await getSystemSetting('system_name', 'Dilnova');
 
   // 4. Fetch Pricing Plans
   const pricingPlans = await db
@@ -168,6 +169,7 @@ export default async function SuperAdminDashboardPage() {
         maxMediaLimit={maxMediaLimit}
         systemLogo={systemLogo}
         systemFavicon={systemFavicon}
+        systemName={systemName}
         pricingPlans={pricingPlans}
         contactSubmissions={contactSubmissions}
         hardwareCustomEnabled={hardwareCustomEnabled}

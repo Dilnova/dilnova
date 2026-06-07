@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import POSBillingClient from './POSBillingClient';
 import { getVendorInventoryData } from '../products/inventoryActions';
+import { getSystemSetting } from '@/utils/settings';
 
 export const revalidate = 0; // Fresh load
 
@@ -22,6 +23,8 @@ export default async function VendorBillingPage() {
   } catch (err) {
     errorMsg = err instanceof Error ? err.message : 'Unable to load billing register.';
   }
+
+  const systemName = await getSystemSetting('system_name', 'Dilnova');
 
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
@@ -60,6 +63,7 @@ export default async function VendorBillingPage() {
       {inventoryData && inventoryData.premiumStatus.billingActive ? (
         <POSBillingClient
           initialData={inventoryData}
+          systemName={systemName}
         />
       ) : (
         <div className="text-center py-16 border border-zinc-250 rounded-2xl dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 shadow-sm space-y-4 max-w-xl mx-auto mt-6">

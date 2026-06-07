@@ -6,9 +6,10 @@ import Image from 'next/image';
 
 interface Props {
   initialData: Awaited<ReturnType<typeof getVendorInventoryData>>;
+  systemName?: string;
 }
 
-export default function POSBillingClient({ initialData }: Props) {
+export default function POSBillingClient({ initialData, systemName = 'Dilnova' }: Props) {
   const [isPending, startTransition] = useTransition();
   const [data, setData] = useState(initialData);
   const [toast, setToast] = useState<{ success: boolean; text: string } | null>(null);
@@ -354,7 +355,7 @@ export default function POSBillingClient({ initialData }: Props) {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white p-6 rounded-2xl w-full max-w-sm border border-zinc-200 shadow-2xl space-y-4">
               <div className="text-center">
-                <h3 className="font-black text-lg">Dilnova Point-of-Sale</h3>
+                <h3 className="font-black text-lg">{systemName} Point-of-Sale</h3>
                 <p className="text-xs text-zinc-500">Receipt ID: {receiptToPrint.id}</p>
                 <p className="text-xs text-zinc-500">Branch: {receiptToPrint.branchName}</p>
               </div>

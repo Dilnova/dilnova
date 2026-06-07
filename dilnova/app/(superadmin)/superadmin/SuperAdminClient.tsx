@@ -79,6 +79,7 @@ interface SuperAdminClientProps {
   maxMediaLimit: number;
   systemLogo: string;
   systemFavicon: string;
+  systemName: string;
   pricingPlans: PricingPlan[];
   contactSubmissions: ContactSubmission[];
   hardwareCustomEnabled: boolean;
@@ -107,6 +108,7 @@ export default function SuperAdminClient({
   maxMediaLimit,
   systemLogo,
   systemFavicon,
+  systemName,
   pricingPlans,
   contactSubmissions,
   hardwareCustomEnabled,
@@ -129,6 +131,7 @@ export default function SuperAdminClient({
   const [mediaLimitInput, setMediaLimitInput] = useState(maxMediaLimit);
   const [logoInput, setLogoInput] = useState(systemLogo);
   const [faviconInput, setFaviconInput] = useState(systemFavicon);
+  const [systemNameInput, setSystemNameInput] = useState(systemName);
   const [isLogoUploading, setIsLogoUploading] = useState(false);
   const [isFaviconUploading, setIsFaviconUploading] = useState(false);
   const [logoUploadProgress, setLogoUploadProgress] = useState<number | null>(null);
@@ -484,6 +487,7 @@ export default function SuperAdminClient({
 
     startTransition(async () => {
       try {
+        await updateSystemSettingAction('system_name', systemNameInput.trim());
         await updateSystemSettingAction('max_media_limit', mediaLimitInput.toString());
         await updateSystemSettingAction('system_logo', logoInput);
         await updateSystemSettingAction('system_favicon', faviconInput);
@@ -1293,6 +1297,25 @@ export default function SuperAdminClient({
           </div>
 
           <form onSubmit={handleSaveSettings} className="space-y-4">
+            {/* Application Name */}
+            <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-3">
+              <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                <span>🏷️</span> Application Name
+              </h3>
+              <input
+                type="text"
+                required
+                maxLength={100}
+                value={systemNameInput}
+                onChange={(e) => setSystemNameInput(e.target.value)}
+                className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-sans focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all"
+                placeholder="e.g. Dilnova Hub"
+              />
+              <p className="text-[10px] text-zinc-400">
+                The global display name of the application, used in header titles, layouts, metadata, and automated emails.
+              </p>
+            </div>
+
             {/* Media Limit */}
             <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-3">
               <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">

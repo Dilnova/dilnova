@@ -6,6 +6,7 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { rateLimit } from '@/utils/rateLimit';
 import { z } from 'zod';
+import { getSystemSetting } from '@/utils/settings';
 
 function sendRawSmtpEmail(options: {
   host: string;
@@ -253,12 +254,15 @@ export async function submitContactFormAction(prevState: any, formData: FormData
       status: 'pending',
     });
 
+    const systemName = await getSystemSetting('system_name', 'Dilnova');
+    const systemNameHub = `${systemName} Commerce Hub`;
+
     const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
     const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
     const smtpUser = process.env.SMTP_USER;
     const smtpPassword = process.env.SMTP_PASSWORD;
     const emailFromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@dilstar.pp.ua';
-    const emailFromName = process.env.EMAIL_FROM_NAME || 'Dilstar Contact Form';
+    const emailFromName = process.env.EMAIL_FROM_NAME || `${systemName} Contact Form`;
 
     if (!smtpUser || !smtpPassword) {
       console.error('SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing');
@@ -281,7 +285,7 @@ export async function submitContactFormAction(prevState: any, formData: FormData
           <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
             <div style="background-color: #6b21a8; padding: 24px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 1px;">
-                DILNOVA COMMERCE HUB
+                ${systemNameHub.toUpperCase()}
               </h1>
               <p style="margin: 4px 0 0 0; color: #e9d5ff; font-size: 12px;">New Contact Submission</p>
             </div>
@@ -304,7 +308,7 @@ export async function submitContactFormAction(prevState: any, formData: FormData
               <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 14px; color: #334155; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(message)}</div>
             </div>
             <div style="background-color: #f4f4f5; padding: 16px; text-align: center; border-top: 1px solid #e4e4e7; font-size: 11px; color: #a1a1aa;">
-              Dilnova Commerce Hub &copy; 2026. All rights reserved.
+              ${systemNameHub} &copy; 2026. All rights reserved.
             </div>
           </div>
         </body>

@@ -8,7 +8,11 @@ import {
   applyLanguage,
 } from './languageUtils';
 
-export default function LanguageSplash() {
+interface LanguageSplashProps {
+  systemName?: string;
+}
+
+export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplashProps) {
   const [visible, setVisible] = useState(false);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [animatingOut, setAnimatingOut] = useState(false);
@@ -63,11 +67,11 @@ export default function LanguageSplash() {
             </div>
 
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20">
-              🛒 Dilnova Commerce Hub
+              🛒 {systemName} Commerce Hub
             </div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
-              Welcome to <span className="bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent">Dilnova</span>
+              Welcome to <span className="bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent">{systemName}</span>
             </h1>
 
             <p className="text-sm sm:text-base text-zinc-400 max-w-md mx-auto leading-relaxed">

@@ -9,6 +9,7 @@ import type { Metadata } from 'next';
 import CatalogFilters from './CatalogFilters';
 import WishlistButton from './[id]/WishlistButton';
 import AddToCartButton from '../components/AddToCartButton';
+import { getSystemSetting } from '../../utils/settings';
 
 export const revalidate = 0; // Fresh load on each catalog query
 
@@ -27,8 +28,10 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const currentCategorySlug = params.category || '';
   const currentType = params.type || 'all';
 
-  let title = 'Products & Services Catalog | Dilnova';
-  let description = 'Browse local multi-vendor products and services available on Dilnova Commerce Hub.';
+  const systemName = await getSystemSetting('system_name', 'Dilnova');
+
+  let title = `Products & Services Catalog | ${systemName}`;
+  let description = `Browse local multi-vendor products and services available on ${systemName} Commerce Hub.`;
 
   if (currentCategorySlug) {
     try {
@@ -39,19 +42,19 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
         .limit(1);
 
       if (selectedCategory) {
-        title = `${selectedCategory.name} - Products & Services | Dilnova`;
-        description = `Explore the best ${selectedCategory.name.toLowerCase()} catalog, matching products, and services offered by our vendors on Dilnova.`;
+        title = `${selectedCategory.name} - Products & Services | ${systemName}`;
+        description = `Explore the best ${selectedCategory.name.toLowerCase()} catalog, matching products, and services offered by our vendors on ${systemName}.`;
       }
     } catch {
       // ignore
     }
   } else if (currentSearch) {
-    title = `Search results for "${currentSearch}" | Dilnova`;
-    description = `View all multi-vendor products and services matching search term "${currentSearch}" on Dilnova.`;
+    title = `Search results for "${currentSearch}" | ${systemName}`;
+    description = `View all multi-vendor products and services matching search term "${currentSearch}" on ${systemName}.`;
   } else if (currentType !== 'all') {
     const typeLabel = currentType === 'product' ? 'Products' : 'Services';
-    title = `Browse ${typeLabel} | Dilnova`;
-    description = `Explore high-quality vendor ${typeLabel.toLowerCase()} listings on Dilnova Commerce Hub.`;
+    title = `Browse ${typeLabel} | ${systemName}`;
+    description = `Explore high-quality vendor ${typeLabel.toLowerCase()} listings on ${systemName} Commerce Hub.`;
   }
 
   return {

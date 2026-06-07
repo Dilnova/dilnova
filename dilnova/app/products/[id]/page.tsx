@@ -15,6 +15,7 @@ import ProductViewTracker from './ProductViewTracker';
 import ProductDetailAddToCart from './ProductDetailAddToCart';
 import { logger } from '@/utils/logger';
 import { isVideoUrl } from '@/utils/media';
+import { getSystemSetting } from '@/utils/settings';
 
 interface PageProps {
   params: Promise<{
@@ -26,6 +27,7 @@ export const revalidate = 60; // Cache for 60 seconds (ISR)
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
+  const systemName = await getSystemSetting('system_name', 'Dilnova');
 
   try {
     const [result] = await db
@@ -38,7 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     if (!result || !result.product) {
       return {
-        title: 'Product Not Found | Dilnova',
+        title: `Product Not Found | ${systemName}`,
       };
     }
 
@@ -48,10 +50,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       currency: 'USD',
     });
 
-    const title = `${product.name} | Dilnova`;
+    const title = `${product.name} | ${systemName}`;
     const description = product.description
       ? (product.description.length > 150 ? product.description.substring(0, 147) + '...' : product.description)
-      : `Get ${product.name} for ${formattedPrice} from our multi-vendor catalog on Dilnova.`;
+      : `Get ${product.name} for ${formattedPrice} from our multi-vendor catalog on ${systemName}.`;
 
     return {
       title,
@@ -65,7 +67,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   } catch {
     return {
-      title: 'Product Details | Dilnova',
+      title: `Product Details | ${systemName}`,
     };
   }
 }
