@@ -14,7 +14,9 @@ const isPublicRoute = createRouteMatcher([
   '/cart',           // Allows guest checkout/cart access
   '/contact',        // Allows public contact form submissions
   '/api/health(.*)', // Allows public access to the health check endpoint
-  '/_next(.*)'       // Allows public access to Next.js static files/image optimization
+  '/_next(.*)',      // Allows public access to Next.js static files/image optimization
+  '/sitemap.xml',    // Allow public access to sitemap.xml
+  '/robots.txt'      // Allow public access to robots.txt
 ]);
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
