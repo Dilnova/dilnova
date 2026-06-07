@@ -1,11 +1,12 @@
 import { MetadataRoute } from 'next';
 import { db } from '@/db';
 import { products, categories } from '@/db/schema';
+import { DEFAULT_APP_URL } from '@/utils/brand';
 
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dilnova.com';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
 
   let productEntries: MetadataRoute.Sitemap = [];
   let categoryEntries: MetadataRoute.Sitemap = [];

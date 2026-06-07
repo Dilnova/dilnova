@@ -16,6 +16,7 @@ import ProductDetailAddToCart from './ProductDetailAddToCart';
 import { logger } from '@/utils/logger';
 import { isVideoUrl } from '@/utils/media';
 import { getSystemSetting } from '@/utils/settings';
+import { DEFAULT_SUPPORT_EMAIL } from '@/utils/brand';
 
 interface PageProps {
   params: Promise<{
@@ -381,7 +382,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 )}
                 
                 <a
-                  href={`mailto:support@dilnova.com?subject=Enquiry: ${encodeURIComponent(product.name)}`}
+                  href={`mailto:${process.env.EMAIL_FROM_ADDRESS || DEFAULT_SUPPORT_EMAIL}?subject=Enquiry: ${encodeURIComponent(product.name)}`}
                   className="flex-1 text-center py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold rounded-lg shadow-sm shadow-purple-900/10 transition-all cursor-pointer"
                 >
                   Contact Vendor

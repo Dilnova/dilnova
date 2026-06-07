@@ -5,6 +5,7 @@ import net from 'net';
 import { rateLimit } from '@/utils/rateLimit';
 import { z } from 'zod';
 import { getSystemSetting } from '@/utils/settings';
+import { DEFAULT_APP_URL } from '@/utils/brand';
 
 interface CartItem {
   id: string;
@@ -369,7 +370,7 @@ export async function sendCartSummaryEmailAction(
 
               <!-- Footer Buttons -->
               <div style="text-align: center; margin-top: 32px;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://dilnova.com'}/cart" style="display: inline-block; background-color: #6b21a8; color: #ffffff; font-size: 12px; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(107, 33, 168, 0.2);">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL}/cart" style="display: inline-block; background-color: #6b21a8; color: #ffffff; font-size: 12px; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(107, 33, 168, 0.2);">
                   View Cart & Checkout
                 </a>
               </div>
