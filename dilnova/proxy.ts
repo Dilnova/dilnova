@@ -39,15 +39,37 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 
 // Next.js 16 requires the proxy file to export a named `proxy` function
 // (the `middleware` convention is deprecated)
-export function proxy(request: NextRequest, event: NextFetchEvent) {
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const userAgent = request.headers.get('user-agent') || '';
   const isBot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/i.test(userAgent);
 
-  if (isBot) {
-    return NextResponse.next();
+  const response = await clerkHandler(request, event);
+
+  if (isBot && response && response.status >= 300 && response.status < 400) {
+    // Intercept redirect for bots, convert to NextResponse.next()
+    const requestHeaders = new Headers(request.headers);
+    response.headers.forEach((value, key) => {
+      requestHeaders.set(key, value);
+    });
+
+    if (!requestHeaders.has('x-clerk-auth-status')) {
+      requestHeaders.set('x-clerk-auth-status', 'signed-out');
+    }
+
+    const nextResponse = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      }
+    });
+
+    response.headers.forEach((value, key) => {
+      nextResponse.headers.set(key, value);
+    });
+
+    return nextResponse;
   }
 
-  return clerkHandler(request, event);
+  return response;
 }
 
 export const config = {
