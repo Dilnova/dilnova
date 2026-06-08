@@ -1,5 +1,52 @@
 import type { NextConfig } from "next";
 
+// Helper to extract the custom Clerk domain from the publishable key
+const getClerkDomain = (): string | null => {
+  const key = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  if (!key) return null;
+  try {
+    const payload = key.split('_')[2];
+    if (!payload) return null;
+    const decoded = Buffer.from(payload, 'base64').toString('utf-8');
+    const domain = decoded.split('$')[0];
+    return domain || null;
+  } catch {
+    return null;
+  }
+};
+
+const clerkDomain = getClerkDomain();
+
+const remotePatterns: Array<{ protocol: 'https' | 'http'; hostname: string }> = [
+  {
+    protocol: 'https',
+    hostname: 'images.unsplash.com',
+  },
+  {
+    protocol: 'https',
+    hostname: 'img.clerk.com',
+  },
+  {
+    protocol: 'https',
+    hostname: '**.clerk.com',
+  },
+  {
+    protocol: 'https',
+    hostname: 'res.cloudinary.com',
+  },
+  {
+    protocol: 'https',
+    hostname: '**.backblazeb2.com',
+  },
+];
+
+if (clerkDomain) {
+  remotePatterns.push({
+    protocol: 'https',
+    hostname: clerkDomain,
+  });
+}
+
 const nextConfig: NextConfig = {
   /**
    * ═══════════════════════════════════════════════════════════
@@ -9,37 +56,26 @@ const nextConfig: NextConfig = {
 
   // Allow next/image to optimize images from these external domains
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'img.clerk.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.clerk.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.backblazeb2.com',
-      },
-    ],
+    remotePatterns,
   },
 
   async headers() {
     const isProd = process.env.NODE_ENV === 'production';
 
+    const clerkDomains = [
+      'https://img.clerk.com',
+      'https://*.clerk.com',
+      'https://*.clerk.accounts.dev',
+    ];
+    if (clerkDomain) {
+      clerkDomains.push(`https://${clerkDomain}`);
+    }
+    const clerkDomainsStr = clerkDomains.join(' ');
+
     const headersList = [
       {
         key: 'Content-Security-Policy',
-        value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://*.backblazeb2.com https://translate.google.com http://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' https://img.clerk.com https://*.clerk.com https://*.clerk.accounts.dev https://api.clerk.com https://api.cloudinary.com https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev; worker-src 'self' blob:;${isProd ? ' upgrade-insecure-requests;' : ''}`,
+        value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.backblazeb2.com https://translate.google.com http://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:;${isProd ? ' upgrade-insecure-requests;' : ''}`,
       },
       {
         key: 'X-Frame-Options',
