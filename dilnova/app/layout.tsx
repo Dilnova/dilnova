@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import React from 'react'
 import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton, OrganizationSwitcher } from '@clerk/nextjs'
 import Link from 'next/link'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
 import { runWithCorrelationId } from '@/utils/asyncContext'
@@ -18,6 +18,7 @@ import FloatingLanguageButton from './components/FloatingLanguageButton'
 import { getSystemSetting } from '@/utils/settings'
 import Image from 'next/image'
 import { getPremiumStatus } from '@/utils/premiumLicense'
+import { getCachedUserRole } from '@/utils/clerkCache'
 
 const SignUpTriggerButton = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
   (props, ref) => {
@@ -52,13 +53,15 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   return runWithCorrelationId(async () => {
-    const { orgId, orgRole } = await auth();
-    const user = await currentUser();
+    const { orgId, orgRole, userId } = await auth();
+    let userRole: string | undefined = undefined;
+    if (userId) {
+      userRole = await getCachedUserRole(userId);
+    }
 
     // RBAC check: can the user create organizations?
     // 1. If user is in an active organization context, check if they are an admin or vendor
     // 2. If user is not in an organization context, check if their user-level metadata role is admin or vendor
-    const userRole = user?.publicMetadata?.role as string | undefined;
     const isUserVendorOrAdmin = userRole === 'admin' || userRole === 'vendor';
 
     let canCreateOrg = false;

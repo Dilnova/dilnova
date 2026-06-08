@@ -1,5 +1,6 @@
 import { clerkClient } from '@clerk/nextjs/server';
 import { logger } from './logger';
+import { unstable_cache } from 'next/cache';
 
 export interface CachedOrg {
   id: string;
@@ -58,3 +59,26 @@ export function invalidateClerkCache() {
   cachedOrgs = null;
   lastCacheFetch = 0;
 }
+
+/**
+ * Retrieves the user's public metadata role using Next.js unstable_cache
+ * to bypass slow Clerk API lookups on every request.
+ */
+export const getCachedUserRole = unstable_cache(
+  async (userId: string): Promise<string | undefined> => {
+    try {
+      logger.info(`Fetching role for user ${userId} from Clerk API`);
+      const client = await clerkClient();
+      const user = await client.users.getUser(userId);
+      return user.publicMetadata?.role as string | undefined;
+    } catch (err) {
+      logger.error(`Failed to fetch user role for ${userId} from Clerk`, err);
+      return undefined;
+    }
+  },
+  ['clerk-user-role'],
+  {
+    tags: ['clerk-user-role'],
+    revalidate: 300, // Cache for 5 minutes (300 seconds)
+  }
+);
