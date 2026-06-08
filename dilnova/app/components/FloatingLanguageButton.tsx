@@ -17,11 +17,11 @@ export default function FloatingLanguageButton() {
   useEffect(() => {
     // Read current language from cookie
     const pref = getLangPreference() || getCurrentLangFromCookie();
+    const hasPref = !!getLangPreference();
     requestAnimationFrame(() => {
       setCurrentLang(pref);
+      setHasPreference(hasPref);
     });
-
-    setHasPreference(!!getLangPreference());
 
     // Click outside to close
     const handleClickOutside = (event: MouseEvent) => {
