@@ -179,6 +179,7 @@ export default async function RootLayout({
                           hidePersonal={false}
                           appearance={{
                             elements: {
+                              organizationSwitcherTrigger: 'dark:[&_*]:!text-zinc-50',
                               organizationSwitcherPopoverActionButton__createOrganization: canCreateOrg ? 'flex' : 'hidden',
                               organizationSwitcherPopoverCreateOrganization: canCreateOrg ? 'flex' : 'hidden',
                             }
