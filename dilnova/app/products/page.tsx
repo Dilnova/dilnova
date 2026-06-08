@@ -10,6 +10,7 @@ import CatalogFilters from './CatalogFilters';
 import WishlistButton from './[id]/WishlistButton';
 import AddToCartButton from '../components/AddToCartButton';
 import { getSystemSetting } from '../../utils/settings';
+import { getCachedOrganizations } from '../../utils/clerkCache';
 
 export const revalidate = 0; // Fresh load on each catalog query
 
@@ -76,14 +77,18 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const currentPage = parseInt(params.page || '1', 10);
   const itemsPerPage = 12;
 
-  // 1. Fetch categories
-  const categoriesList = await db.select().from(schema.categories);
-  const selectedCategory = categoriesList.find(c => c.slug === currentCategorySlug);
+  // 1. Fetch categories and Clerk client concurrently
+  const clientPromise = clerkClient();
+  const categoriesPromise = db.select().from(schema.categories);
 
-  // 2. Fetch Organizations from Clerk to map vendor details
-  const client = await clerkClient();
-  const orgListResponse = await client.organizations.getOrganizationList({ limit: 100 });
-  const organizations = orgListResponse.data;
+  const [client, categoriesList] = await Promise.all([
+    clientPromise,
+    categoriesPromise,
+  ]);
+
+  // 2. Fetch Organizations from Clerk (cached)
+  const organizations = await getCachedOrganizations(client);
+  const selectedCategory = categoriesList.find(c => c.slug === currentCategorySlug);
 
   // 3. Build Drizzle query clauses dynamically
   const whereClauses = [];
@@ -116,36 +121,40 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   // Apply where conditions
   const conditions = whereClauses.length > 0 ? and(...whereClauses) : undefined;
   
-  // Calculate total count for pagination using an efficient COUNT(*) query
-  const [{ count: totalCount }] = await db
-    .select({ count: sql<number>`cast(count(*) as int)` })
-    .from(schema.products)
-    .where(conditions);
+  // Calculate total count and retrieve paginated records in parallel
+  const [countResult, results] = await Promise.all([
+    db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(schema.products)
+      .where(conditions),
+    db
+      .select({
+        product: schema.products,
+        category: schema.categories,
+      })
+      .from(schema.products)
+      .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
+      .where(conditions)
+      .limit(itemsPerPage)
+      .offset((currentPage - 1) * itemsPerPage)
+  ]);
+
+  const totalCount = countResult[0]?.count || 0;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-  // Retrieve paginated records
-  const results = await db
-    .select({
-      product: schema.products,
-      category: schema.categories,
-    })
-    .from(schema.products)
-    .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
-    .where(conditions)
-    .limit(itemsPerPage)
-    .offset((currentPage - 1) * itemsPerPage);
-
-  // Fetch reviews and wishlist statuses for the returned product IDs
+  // Fetch reviews and wishlist statuses for the returned product IDs in parallel
   const { userId } = await auth();
   const productIds = results.map((r) => r.product.id);
 
-  const allReviewsForPage = productIds.length > 0
-    ? await db.select().from(schema.reviews).where(inArray(schema.reviews.productId, productIds))
-    : [];
+  const [allReviewsForPage, userWishlist] = await Promise.all([
+    productIds.length > 0
+      ? db.select().from(schema.reviews).where(inArray(schema.reviews.productId, productIds))
+      : Promise.resolve([]),
+    (userId && productIds.length > 0)
+      ? db.select().from(schema.wishlists).where(and(eq(schema.wishlists.userId, userId), inArray(schema.wishlists.productId, productIds)))
+      : Promise.resolve([])
+  ]);
 
-  const userWishlist = (userId && productIds.length > 0)
-    ? await db.select().from(schema.wishlists).where(and(eq(schema.wishlists.userId, userId), inArray(schema.wishlists.productId, productIds)))
-    : [];
   const wishlistSet = new Set(userWishlist.map((w) => w.productId));
 
   return (

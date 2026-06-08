@@ -16,7 +16,8 @@ export interface CachedOrg {
 
 let cachedOrgs: CachedOrg[] | null = null;
 let lastCacheFetch = 0;
-const CACHE_TTL = 30 * 1000; // Cache for 30 seconds
+const CACHE_TTL = 5 * 60 * 1000; // Cache for 5 minutes
+
 
 /**
  * Retrieves the list of Clerk organizations using an in-memory cache to bypass

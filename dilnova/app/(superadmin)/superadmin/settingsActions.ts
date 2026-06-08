@@ -3,7 +3,7 @@
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { updateSystemSettingSchema } from '@/utils/schemas';
 import { checkSuperAdmin } from '@/utils/authGuards';
 import { logAuditAction } from '@/utils/auditLogger';
@@ -58,6 +58,7 @@ export async function updateSystemSettingAction(key: string, value: string) {
     });
 
     // Clear cache for admin panels and vendor portals to reflect configuration updates immediately
+    revalidateTag('system-settings', 'max');
     revalidatePath('/superadmin');
     revalidatePath('/vendor/products');
     revalidatePath('/', 'layout');

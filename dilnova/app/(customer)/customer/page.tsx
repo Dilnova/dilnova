@@ -5,6 +5,7 @@ import { isVideoUrl } from '@/utils/media';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
+import { getCachedOrganizations } from '@/utils/clerkCache';
 
 export default async function CustomerPage() {
   const { orgId, orgRole } = await auth();
@@ -39,10 +40,9 @@ export default async function CustomerPage() {
         .where(inArray(schema.products.id, userWishlist.map(w => w.productId)))
     : [];
 
-  // Query Clerk vendors to map brand names
+  // Query Clerk vendors to map brand names (cached)
   const client = await clerkClient();
-  const orgListResponse = await client.organizations.getOrganizationList({ limit: 100 });
-  const organizations = orgListResponse.data;
+  const organizations = await getCachedOrganizations(client);
 
   return (
     <main className="p-8 max-w-4xl mx-auto font-sans flex-1 flex flex-col justify-center">

@@ -20,19 +20,38 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Home() {
   const { orgId, orgRole } = await auth();
-  const user = await currentUser();
-  const systemName = await getSystemSetting('system_name', 'Dilnova');
 
-  // Retrieve user-level metadata role for RBAC
-  const userRole = user?.publicMetadata?.role as string | undefined;
+  // Parallelize initial database and API fetches
+  const clientPromise = clerkClient();
+  const plansPromise = db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt));
+  const settingsPromise = Promise.all([
+    getSystemSetting('system_name', 'Dilnova'),
+    getSystemSetting('custom_storefront_distar-hardware', 'true'),
+    getSystemSetting('custom_storefront_distar-nursery', 'true'),
+    getSystemSetting('custom_storefront_distar-tech', 'true'),
+    getSystemSetting('custom_storefront_dilstar-services', 'true'),
+  ]);
 
-  // Determine permissions based on organization role
-  const hasAdminAccess = !!orgId && orgRole === 'org:admin';
-  const hasVendorAccess = !!orgId && (orgRole === 'org:member' || orgRole === 'org:admin');
-  const hasCustomerAccess = !!user && (!orgId || orgRole === 'org:member' || orgRole === 'org:admin');
+  const [client, dbPlans, settingsResult] = await Promise.all([
+    clientPromise,
+    plansPromise,
+    settingsPromise,
+  ]);
 
-  // Fetch pricing plans from DB
-  let plans = await db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt));
+  const [
+    systemName,
+    hardwareCustomEnabledVal,
+    nurseryCustomEnabledVal,
+    techCustomEnabledVal,
+    servicesCustomEnabledVal,
+  ] = settingsResult;
+
+  const hardwareCustomEnabled = hardwareCustomEnabledVal === 'true';
+  const nurseryCustomEnabled = nurseryCustomEnabledVal === 'true';
+  const techCustomEnabled = techCustomEnabledVal === 'true';
+  const servicesCustomEnabled = servicesCustomEnabledVal === 'true';
+
+  let plans = dbPlans;
 
   // If no plans, fallback to default plans
   if (plans.length === 0) {
@@ -97,7 +116,6 @@ export default async function Home() {
   }
 
   // Fetch all registered organization vendors from Clerk (cached)
-  const client = await clerkClient();
   const allOrganizations = await getCachedOrganizations(client);
 
   // Filter out the core four portals so we only show "other" custom vendors
@@ -111,11 +129,6 @@ export default async function Home() {
       return !isCore && !isMainDistar && !isMainServices;
     }
   );
-
-  const hardwareCustomEnabled = (await getSystemSetting('custom_storefront_distar-hardware', 'true')) === 'true';
-  const nurseryCustomEnabled = (await getSystemSetting('custom_storefront_distar-nursery', 'true')) === 'true';
-  const techCustomEnabled = (await getSystemSetting('custom_storefront_distar-tech', 'true')) === 'true';
-  const servicesCustomEnabled = (await getSystemSetting('custom_storefront_dilstar-services', 'true')) === 'true';
 
   const activeCount = [
     hardwareCustomEnabled,
