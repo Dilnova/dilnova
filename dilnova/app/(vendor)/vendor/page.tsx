@@ -38,12 +38,22 @@ export default async function VendorPage() {
             </p>
           </div>
           
-          <Link
-            href="/"
-            className="self-start text-xs font-semibold px-3 py-1.5 rounded-md border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
-          >
-            &larr; Home Page
-          </Link>
+          <div className="flex items-center gap-2 self-start">
+            {orgRole === 'org:admin' && (
+              <Link
+                href="/admin"
+                className="text-xs font-bold px-3 py-1.5 rounded-md border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-450 dark:hover:bg-rose-900/30 transition-all"
+              >
+                Members Console &rarr;
+              </Link>
+            )}
+            <Link
+              href="/"
+              className="text-xs font-semibold px-3 py-1.5 rounded-md border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors"
+            >
+              &larr; Home Page
+            </Link>
+          </div>
         </div>
 
         <hr className="border-zinc-200 dark:border-zinc-800 my-6" />

@@ -92,6 +92,14 @@ export default async function RootLayout({
       });
     }
 
+    if (orgId && orgRole === 'org:admin') {
+      links.push({
+        href: '/admin',
+        label: 'Admin Console',
+        colorClass: 'text-rose-600 hover:text-rose-800 dark:text-rose-450 dark:hover:text-rose-350 font-semibold',
+      });
+    }
+
     if (orgId && billingActive && (orgRole === 'org:admin' || orgRole === 'org:member')) {
       links.push({
         href: '/vendor/billing',
