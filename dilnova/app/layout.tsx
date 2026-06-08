@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton, OrganizationSwitcher } from '@clerk/nextjs'
 import Link from 'next/link'
 import { auth, currentUser } from '@clerk/nextjs/server'
+import { headers } from 'next/headers'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
 import { runWithCorrelationId } from '@/utils/asyncContext'
@@ -92,44 +93,48 @@ export default async function RootLayout({
       });
     }
 
+    const headersList = await headers();
+    const userAgent = headersList.get('user-agent') || '';
+    const isBot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/i.test(userAgent);
+
     const logoUrl = await getSystemSetting('system_logo', '');
     const systemName = await getSystemSetting('system_name', 'Dilnova');
 
-    return (
-      <html lang="en">
-        <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-x-hidden">
-          <ClerkProvider>
-            <CartProvider>
-              <header className="relative flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-14 sm:h-16 overflow-visible max-w-full">
-                <div className="flex items-center gap-2 sm:gap-3 md:gap-6 min-w-0 flex-shrink">
-                  <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center flex-shrink-0">
-                    {logoUrl ? (
-                      <div className="relative h-7 w-24 sm:h-8 sm:w-28">
-                        <Image
-                          src={logoUrl}
-                          alt={`${systemName} Logo`}
-                          fill
-                          className="object-contain object-left"
-                          sizes="(max-width: 640px) 96px, 112px"
-                          priority
-                        />
-                      </div>
-                    ) : (
-                      systemName.toUpperCase()
-                    )}
-                  </Link>
-                  <HeaderNav links={links} />
-                </div>
-
-                <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-shrink-0">
-                  {/* Language Selector Dropdown - hidden on very small screens since FloatingLanguageButton covers it */}
-                  <div className="hidden sm:block">
-                    <LanguageSelector />
+    const layoutContent = (
+      <>
+        <CartProvider>
+          <header className="relative flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-14 sm:h-16 overflow-visible max-w-full">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-6 min-w-0 flex-shrink">
+              <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center flex-shrink-0">
+                {logoUrl ? (
+                  <div className="relative h-7 w-24 sm:h-8 sm:w-28">
+                    <Image
+                      src={logoUrl}
+                      alt={`${systemName} Logo`}
+                      fill
+                      className="object-contain object-left"
+                      sizes="(max-width: 640px) 96px, 112px"
+                      priority
+                    />
                   </div>
+                ) : (
+                  systemName.toUpperCase()
+                )}
+              </Link>
+              <HeaderNav links={links} />
+            </div>
 
-                  {/* Shopping Cart Icon (Link to page) */}
-                  <CartIcon />
+            <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-shrink-0">
+              {/* Language Selector Dropdown - hidden on very small screens since FloatingLanguageButton covers it */}
+              <div className="hidden sm:block">
+                <LanguageSelector />
+              </div>
 
+              {/* Shopping Cart Icon (Link to page) */}
+              <CartIcon />
+
+              {!isBot ? (
+                <>
                   <Show when="signed-out">
                     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-xs font-semibold">
                       <SignInButton />
@@ -154,15 +159,34 @@ export default async function RootLayout({
                       <UserButton />
                     </div>
                   </Show>
+                </>
+              ) : (
+                <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-xs font-semibold">
+                  <Link href="/sign-in" className="hover:opacity-90">Sign In</Link>
+                  <Link href="/sign-up" className="bg-purple-700 text-white rounded-lg h-8 sm:h-9 px-2.5 sm:px-3 md:px-4 text-[11px] sm:text-xs hover:bg-purple-800 transition-colors flex items-center justify-center whitespace-nowrap">Sign Up</Link>
                 </div>
-              </header>
-              {children}
-              <LanguageSplash systemName={systemName} />
-              <FloatingLanguageButton />
-            </CartProvider>
-            <SpeedInsights />
-            <Analytics />
-          </ClerkProvider>
+              )}
+            </div>
+          </header>
+          {children}
+          <LanguageSplash systemName={systemName} />
+          <FloatingLanguageButton />
+        </CartProvider>
+        <SpeedInsights />
+        <Analytics />
+      </>
+    );
+
+    return (
+      <html lang="en">
+        <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-x-hidden">
+          {isBot ? (
+            layoutContent
+          ) : (
+            <ClerkProvider>
+              {layoutContent}
+            </ClerkProvider>
+          )}
         </body>
       </html>
     );

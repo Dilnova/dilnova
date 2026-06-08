@@ -40,6 +40,13 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 // Next.js 16 requires the proxy file to export a named `proxy` function
 // (the `middleware` convention is deprecated)
 export function proxy(request: NextRequest, event: NextFetchEvent) {
+  const userAgent = request.headers.get('user-agent') || '';
+  const isBot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/i.test(userAgent);
+
+  if (isBot) {
+    return NextResponse.next();
+  }
+
   return clerkHandler(request, event);
 }
 
