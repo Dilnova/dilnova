@@ -79,12 +79,15 @@ export default async function RootLayout({
       { href: '/contact', label: 'Contact Us' },
     ];
 
-    if (orgId && (orgRole === 'org:admin' || orgRole === 'org:member')) {
+    if (orgId && orgRole === 'org:admin') {
       links.push({
         href: '/vendor/products',
         label: 'Manage Catalog',
         colorClass: 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300',
       });
+    }
+
+    if (orgId && (orgRole === 'org:admin' || orgRole === 'org:member')) {
       links.push({
         href: '/vendor/products/add',
         label: '+ Add Item',

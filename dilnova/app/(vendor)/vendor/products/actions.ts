@@ -145,8 +145,8 @@ export async function deleteProductAction(productId: string) {
       }
 
       // 2. Authorization Check
-      if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
-        throw new Error('Not authorized: You do not have permissions to modify this catalog.');
+      if (orgRole !== 'org:admin') {
+        throw new Error('Not authorized: Only administrators can modify this catalog.');
       }
 
       // 3. Safe Deletion: Conditioned on both Product ID AND Organization ID

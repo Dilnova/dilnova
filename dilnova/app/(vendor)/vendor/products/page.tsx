@@ -17,7 +17,7 @@ interface PageProps {
 export default async function VendorProductsPage({ searchParams }: PageProps) {
   // 1. Authenticate & Obtain Organization Context & Role
   const { userId, orgId, orgRole } = await auth();
-  if (!userId || !orgId || (orgRole !== 'org:admin' && orgRole !== 'org:member')) {
+  if (!userId || !orgId || orgRole !== 'org:admin') {
     redirect('/unauthorized');
   }
 

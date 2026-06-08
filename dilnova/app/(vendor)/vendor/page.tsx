@@ -80,30 +80,51 @@ export default async function VendorPage() {
         </div>
 
         {/* Catalog Banner Links */}
-        <div className="border border-purple-200 bg-purple-50/50 rounded-xl p-5 mb-8 dark:border-purple-900/40 dark:bg-purple-950/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h3 className="text-sm font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
-              <span>🛒</span> Product & Service Catalog
-            </h3>
-            <p className="text-xs text-purple-700/80 dark:text-purple-400">
-              Add products or services, upload product images to Cloudinary, and manage your inventory directory.
-            </p>
+        {orgRole === 'org:admin' ? (
+          <div className="border border-purple-200 bg-purple-50/50 rounded-xl p-5 mb-8 dark:border-purple-900/40 dark:bg-purple-950/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
+                <span>🛒</span> Product & Service Catalog
+              </h3>
+              <p className="text-xs text-purple-700/80 dark:text-purple-400">
+                Add products or services, upload product images to Cloudinary, and manage your inventory directory.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/vendor/products"
+                className="px-4 py-2 bg-white hover:bg-zinc-50 border border-purple-200 dark:border-purple-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-purple-700 dark:text-purple-400 rounded-lg text-xs font-semibold shadow-sm transition-all whitespace-nowrap cursor-pointer"
+              >
+                Manage Catalog
+              </Link>
+              <Link
+                href="/vendor/products/add"
+                className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-all whitespace-nowrap cursor-pointer"
+              >
+                + Add New Item &rarr;
+              </Link>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/vendor/products"
-              className="px-4 py-2 bg-white hover:bg-zinc-50 border border-purple-200 dark:border-purple-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-purple-700 dark:text-purple-400 rounded-lg text-xs font-semibold shadow-sm transition-all whitespace-nowrap cursor-pointer"
-            >
-              Manage Catalog
-            </Link>
-            <Link
-              href="/vendor/products/add"
-              className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-all whitespace-nowrap cursor-pointer"
-            >
-              + Add New Item &rarr;
-            </Link>
-          </div>
-        </div>
+        ) : (
+          orgRole === 'org:member' && (
+            <div className="border border-emerald-250 bg-emerald-50/50 rounded-xl p-5 mb-8 dark:border-emerald-900/40 dark:bg-emerald-950/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                  <span>🛒</span> Add Catalog Listing
+                </h3>
+                <p className="text-xs text-emerald-650 dark:text-emerald-400">
+                  Create new product or service listings and upload images for your storefront.
+                </p>
+              </div>
+              <Link
+                href="/vendor/products/add"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all whitespace-nowrap cursor-pointer"
+              >
+                + Add New Item &rarr;
+              </Link>
+            </div>
+          )
+        )}
 
         {/* Metadata Settings Form */}
         <div className="space-y-6">
