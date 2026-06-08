@@ -40,7 +40,7 @@ export async function addProductAction(data: {
       }
 
       // 2. Authorization Check: Must be admin or vendor member of the organization
-      if (orgRole !== 'org:admin' && orgRole !== 'org:vendor') {
+      if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
         throw new Error('Not authorized: You do not have permissions to manage this catalog.');
       }
 
@@ -145,7 +145,7 @@ export async function deleteProductAction(productId: string) {
       }
 
       // 2. Authorization Check
-      if (orgRole !== 'org:admin' && orgRole !== 'org:vendor') {
+      if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
         throw new Error('Not authorized: You do not have permissions to modify this catalog.');
       }
 

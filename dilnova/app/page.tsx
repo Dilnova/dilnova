@@ -28,8 +28,8 @@ export default async function Home() {
 
   // Determine permissions based on organization role
   const hasAdminAccess = !!orgId && orgRole === 'org:admin';
-  const hasVendorAccess = !!orgId && (orgRole === 'org:vendor' || orgRole === 'org:member' || orgRole === 'org:admin');
-  const hasCustomerAccess = !!user && (!orgId || orgRole === 'org:customer' || orgRole === 'org:member' || orgRole === 'org:admin');
+  const hasVendorAccess = !!orgId && (orgRole === 'org:member' || orgRole === 'org:admin');
+  const hasCustomerAccess = !!user && (!orgId || orgRole === 'org:member' || orgRole === 'org:admin');
 
   // Fetch pricing plans from DB
   let plans = await db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt));

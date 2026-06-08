@@ -212,7 +212,7 @@ export async function submitAnswerAction(questionId: string, answer: string) {
       }
 
       // Role check: must be admin or vendor member of the seller organization
-      if (orgRole !== 'org:admin' && orgRole !== 'org:vendor') {
+      if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
         throw new Error('Not authorized: Only vendors or administrators can reply to questions.');
       }
 

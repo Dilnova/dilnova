@@ -37,8 +37,6 @@ export default function RoleSelector({ orgId, userId, currentRole }: RoleSelecto
       >
         <option value="org:member">org:member (Default Member)</option>
         <option value="org:admin">org:admin (Administrator)</option>
-        <option value="org:vendor">org:vendor (Custom Vendor)</option>
-        <option value="org:customer">org:customer (Custom Customer)</option>
       </select>
       {isPending && (
         <span className="text-[10px] text-zinc-400 font-mono animate-pulse">

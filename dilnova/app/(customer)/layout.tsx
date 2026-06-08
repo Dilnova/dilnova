@@ -16,7 +16,7 @@ export default async function CustomerLayout({
   // Guard 2: If user is acting under an active organization context,
   // enforce that their role is allowed (customer, member, or admin)
   if (orgId) {
-    const isAuthorized = orgRole === 'org:customer' || orgRole === 'org:member' || orgRole === 'org:admin';
+    const isAuthorized = orgRole === 'org:member' || orgRole === 'org:admin';
     if (!isAuthorized) {
       redirect('/unauthorized');
     }

@@ -33,7 +33,7 @@ async function verifyVendorAccess(options?: { requireAdminOrVendor?: boolean }) 
 
   // POS Billing allows any member if billing is active, but dashboard adjustments require admin/vendor role
   const checkRole = options?.requireAdminOrVendor ?? true;
-  if (checkRole && orgRole !== 'org:admin' && orgRole !== 'org:vendor') {
+  if (checkRole && orgRole !== 'org:admin' && orgRole !== 'org:member') {
     throw new Error('Not authorized: You do not have permissions to manage inventory settings.');
   }
 

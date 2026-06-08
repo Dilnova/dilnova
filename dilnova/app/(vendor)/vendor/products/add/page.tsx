@@ -9,7 +9,7 @@ import { getSystemSetting } from '@/utils/settings';
 export default async function AddProductPage() {
   // 1. Authenticate & Obtain Organization Context & Role
   const { userId, orgId, orgRole } = await auth();
-  if (!userId || !orgId || (orgRole !== 'org:admin' && orgRole !== 'org:vendor')) {
+  if (!userId || !orgId || (orgRole !== 'org:admin' && orgRole !== 'org:member')) {
     redirect('/unauthorized');
   }
 

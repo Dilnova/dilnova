@@ -9,7 +9,7 @@ export const revalidate = 0; // Fresh load
 
 export default async function VendorBillingPage() {
   const { userId, orgId, orgRole } = await auth();
-  if (!userId || !orgId || (orgRole !== 'org:admin' && orgRole !== 'org:vendor' && orgRole !== 'org:member')) {
+  if (!userId || !orgId || (orgRole !== 'org:admin' && orgRole !== 'org:member')) {
     redirect('/unauthorized');
   }
 

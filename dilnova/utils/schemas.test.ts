@@ -75,7 +75,7 @@ describe('Zod Input Schemas Validation', () => {
       const valid2 = updateMemberRoleSchema.safeParse({
         organizationId: 'org_123',
         userId: 'user_123',
-        newRole: 'org:vendor',
+        newRole: 'org:member',
       });
       expect(valid1.success).toBe(true);
       expect(valid2.success).toBe(true);

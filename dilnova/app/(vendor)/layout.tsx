@@ -9,7 +9,7 @@ export default async function VendorLayout({
   const { orgId, orgRole } = await auth();
 
   // Protect the entire route group: only vendor, default member, or admin can pass
-  const isAuthorized = orgId && (orgRole === 'org:vendor' || orgRole === 'org:member' || orgRole === 'org:admin');
+  const isAuthorized = orgId && (orgRole === 'org:member' || orgRole === 'org:admin');
   if (!isAuthorized) {
     redirect('/unauthorized');
   }

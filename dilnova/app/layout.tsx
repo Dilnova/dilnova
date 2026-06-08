@@ -46,7 +46,7 @@ export default async function RootLayout({
 
     let canCreateOrg = false;
     if (orgId) {
-      canCreateOrg = orgRole === 'org:admin' || orgRole === 'org:vendor';
+      canCreateOrg = orgRole === 'org:admin' || orgRole === 'org:member';
     } else {
       canCreateOrg = isUserVendorOrAdmin;
     }
@@ -64,7 +64,7 @@ export default async function RootLayout({
       { href: '/contact', label: 'Contact Us' },
     ];
 
-    if (orgId && (orgRole === 'org:admin' || orgRole === 'org:vendor')) {
+    if (orgId && (orgRole === 'org:admin' || orgRole === 'org:member')) {
       links.push({
         href: '/vendor/products',
         label: 'Manage Catalog',
@@ -77,7 +77,7 @@ export default async function RootLayout({
       });
     }
 
-    if (orgId && billingActive && (orgRole === 'org:admin' || orgRole === 'org:vendor' || orgRole === 'org:member')) {
+    if (orgId && billingActive && (orgRole === 'org:admin' || orgRole === 'org:member')) {
       links.push({
         href: '/vendor/billing',
         label: 'POS Register',

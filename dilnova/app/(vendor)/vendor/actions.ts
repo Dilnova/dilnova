@@ -34,7 +34,7 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
     }
 
     // 2. Authorize: Verify the user has administrative or vendor permissions in the organization
-    if (orgRole !== 'org:admin' && orgRole !== 'org:vendor') {
+    if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
       throw new Error('Not authorized: Only vendors or administrators can configure profile settings.');
     }
 
