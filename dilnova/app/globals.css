@@ -19,6 +19,8 @@
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+
+
 }
 
 html {
@@ -170,3 +172,4 @@ iframe.skiptranslate,
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+

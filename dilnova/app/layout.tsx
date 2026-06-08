@@ -34,6 +34,8 @@ const SignUpTriggerButton = React.forwardRef<HTMLButtonElement, React.ButtonHTML
 )
 SignUpTriggerButton.displayName = 'SignUpTriggerButton'
 
+
+
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting('system_favicon', '');
   const systemName = await getSystemSetting('system_name', 'Dilnova Commerce Hub');
@@ -172,6 +174,9 @@ export default async function RootLayout({
                         <OrganizationSwitcher 
                           afterCreateOrganizationUrl="/" 
                           afterSelectOrganizationUrl="/"
+                          afterLeaveOrganizationUrl="/"
+                          afterSelectPersonalUrl="/"
+                          hidePersonal={false}
                           appearance={{
                             elements: {
                               organizationSwitcherPopoverActionButton__createOrganization: canCreateOrg ? 'flex' : 'hidden',
