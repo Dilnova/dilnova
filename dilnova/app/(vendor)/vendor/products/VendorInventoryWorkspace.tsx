@@ -1041,7 +1041,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
 
                     <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Assigned Members (Cashiers/Managers)</span>
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Assigned Branch Members</span>
                         <button
                           onClick={() => {
                             setAssignBranchId(b.id);
@@ -1051,7 +1051,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                           }}
                           className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold"
                         >
-                          + Assign Cashier
+                          + Assign Member
                         </button>
                       </div>
                       <div className="space-y-1.5">
@@ -1068,7 +1068,6 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">{bm.role}</span>
                                 <button
                                   onClick={() => handleRemoveMember(bm.id)}
                                   className="text-rose-500 hover:text-rose-700 text-xs font-bold"
@@ -1079,7 +1078,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                             </div>
                           ))}
                         {data.branchMembers.filter((bm) => bm.branchId === b.id).length === 0 && (
-                          <p className="text-[10px] text-zinc-400">No cashiers mapped yet. Single-owner defaults active.</p>
+                          <p className="text-[10px] text-zinc-400">No members assigned yet. Single-owner defaults active.</p>
                         )}
                       </div>
                     </div>
@@ -1303,13 +1302,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                   ))}
                 </select>
               </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Branch Role Mapping</label>
-                <select value={assignRole} onChange={(e) => setAssignRole(e.target.value as any)} required className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none">
-                  <option value="cashier">POS Cashier Register</option>
-                  <option value="manager">Branch Store Manager</option>
-                </select>
-              </div>
+
               <div className="flex gap-2">
                 <button type="button" onClick={() => setIsAssignMemberModalOpen(false)} className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
                 <button type="submit" disabled={isPending} className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md">Assign Duty</button>
