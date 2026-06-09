@@ -5,6 +5,8 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import AddProductClient from './AddProductClient';
 import { getSystemSetting } from '@/utils/settings';
+import { getPremiumStatus } from '@/utils/premiumLicense';
+import { eq, and } from 'drizzle-orm';
 
 export default async function AddProductPage() {
   // 1. Authenticate & Obtain Organization Context & Role
@@ -17,7 +19,55 @@ export default async function AddProductPage() {
   const client = await clerkClient();
   const org = await client.organizations.getOrganization({ organizationId: orgId });
 
-  // 3. Fetch All Available Categories for selection
+  // 3. Resolve Premium Status & Branch Names
+  const premiumStatus = await getPremiumStatus(orgId);
+  
+  let branchNames = '';
+  if (premiumStatus.multiBranchActive) {
+    // Find user's assigned branches
+    const userBranches = await db
+      .select({ name: schema.branches.name })
+      .from(schema.branchMembers)
+      .innerJoin(schema.branches, eq(schema.branchMembers.branchId, schema.branches.id))
+      .where(
+        and(
+          eq(schema.branchMembers.memberUserId, userId),
+          eq(schema.branches.orgId, orgId)
+        )
+      );
+    
+    if (userBranches.length > 0) {
+      branchNames = userBranches.map((b) => b.name).join(', ');
+    }
+  }
+
+  // Fallback to default/first branch if branchNames is empty
+  if (!branchNames) {
+    const [defaultBranch] = await db
+      .select({ name: schema.branches.name })
+      .from(schema.branches)
+      .where(
+        and(
+          eq(schema.branches.orgId, orgId),
+          eq(schema.branches.isDefault, true)
+        )
+      )
+      .limit(1);
+
+    if (defaultBranch) {
+      branchNames = defaultBranch.name;
+    } else {
+      const [firstBranch] = await db
+        .select({ name: schema.branches.name })
+        .from(schema.branches)
+        .where(eq(schema.branches.orgId, orgId))
+        .limit(1);
+      
+      branchNames = firstBranch ? firstBranch.name : 'Main Register';
+    }
+  }
+
+  // 4. Fetch All Available Categories for selection
   const categories = await db
     .select({
       id: schema.categories.id,
@@ -27,7 +77,7 @@ export default async function AddProductPage() {
     })
     .from(schema.categories);
 
-  // 4. Fetch max media limit setting
+  // 5. Fetch max media limit setting
   const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
   const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
 
@@ -40,7 +90,7 @@ export default async function AddProductPage() {
             Add Item
           </h1>
           <p className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-sm mt-0.5 truncate">
-            New listing for <strong className="text-zinc-800 dark:text-zinc-250 font-semibold">{org.name}</strong>
+            New listing for <strong className="text-zinc-800 dark:text-zinc-250 font-semibold">{org.name} + {branchNames}</strong>
           </p>
         </div>
         
@@ -68,3 +118,4 @@ export default async function AddProductPage() {
     </main>
   );
 }
+
