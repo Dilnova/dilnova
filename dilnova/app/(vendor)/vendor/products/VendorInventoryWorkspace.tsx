@@ -154,6 +154,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
 
   // --- Filters ---
   const filteredStock = data.inventoryItems.filter((item) => {
+    if (item.productType === 'service') return false; // Exclude services from stock levels
     const info = getProductStockInfo(item.productId);
     const matchesSearch =
       !stockSearch.trim() ||

@@ -10,6 +10,7 @@ import { logger } from '@/utils/logger';
 import { addProductSchema, vendorDeleteProductSchema } from '@/utils/schemas';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
+import { getPremiumStatus } from '@/utils/premiumLicense';
 
 /**
  * Enterprise-grade Server Action to securely insert a new product/service into PostgreSQL.
@@ -53,29 +54,36 @@ export async function addProductAction(data: {
 
       const mediaPayload = parsed.data.media.slice(0, maxMediaLimit);
 
-      // 3. Secure Insert
-      const [newProduct] = await db
-        .insert(schema.products)
-        .values({
-          name: parsed.data.name,
-          type: parsed.data.type,
-          description: parsed.data.description,
-          price: priceInCents,
-          imageUrl: parsed.data.imageUrl || null,
-          media: mediaPayload,
-          orgId: orgId, // Tied securely to user's current session orgId
-          categoryId: parsed.data.categoryId || null,
-        })
-        .returning();
+      // Resolve premium status first (before starting the transaction)
+      const premiumStatus = await getPremiumStatus(orgId);
 
-      if (newProduct) {
+      // 3. Secure Insert within a database transaction
+      const newProduct = await db.transaction(async (tx) => {
+        const [prod] = await tx
+          .insert(schema.products)
+          .values({
+            name: parsed.data.name,
+            type: parsed.data.type,
+            description: parsed.data.description,
+            price: priceInCents,
+            imageUrl: parsed.data.imageUrl || null,
+            media: mediaPayload,
+            orgId: orgId, // Tied securely to user's current session orgId
+            categoryId: parsed.data.categoryId || null,
+          })
+          .returning();
+
+        if (!prod) {
+          throw new Error('Failed to create product record.');
+        }
+
         // Initialize inventory entry if product type is 'product'
-        if (newProduct.type === 'product') {
+        if (prod.type === 'product') {
           const initialQty = parsed.data.quantity ?? 0;
-          const [inv] = await db
+          const [inv] = await tx
             .insert(schema.inventory)
             .values({
-              productId: newProduct.id,
+              productId: prod.id,
               sku: null,
               quantity: initialQty,
               lowStockThreshold: 5,
@@ -85,7 +93,7 @@ export async function addProductAction(data: {
             .returning();
 
           if (inv && initialQty > 0) {
-            await db.insert(schema.inventoryMovements).values({
+            await tx.insert(schema.inventoryMovements).values({
               inventoryId: inv.id,
               type: 'restock',
               quantityChanged: initialQty,
@@ -95,8 +103,62 @@ export async function addProductAction(data: {
               userId,
             });
           }
+
+          // If Multi-Branch feature is active, auto-allocate to relevant branches
+          if (premiumStatus.multiBranchActive) {
+            // Find if the creator has any assigned branch(es)
+            const userBranches = await tx
+              .select({ branchId: schema.branchMembers.branchId })
+              .from(schema.branchMembers)
+              .innerJoin(schema.branches, eq(schema.branchMembers.branchId, schema.branches.id))
+              .where(
+                and(
+                  eq(schema.branchMembers.memberUserId, userId),
+                  eq(schema.branches.orgId, orgId)
+                )
+              );
+
+            if (userBranches.length > 0) {
+              // Allocate to all assigned branches of this member
+              for (const ub of userBranches) {
+                await tx.insert(schema.branchInventory).values({
+                  branchId: ub.branchId,
+                  productId: prod.id,
+                  quantity: initialQty,
+                  sku: null,
+                  binLocation: null,
+                });
+              }
+            } else {
+              // Fallback: allocate to the default (Main Register / Warehouse) branch of the org
+              const [defaultBranch] = await tx
+                .select({ id: schema.branches.id })
+                .from(schema.branches)
+                .where(
+                  and(
+                    eq(schema.branches.orgId, orgId),
+                    eq(schema.branches.isDefault, true)
+                  )
+                )
+                .limit(1);
+
+              if (defaultBranch) {
+                await tx.insert(schema.branchInventory).values({
+                  branchId: defaultBranch.id,
+                  productId: prod.id,
+                  quantity: initialQty,
+                  sku: null,
+                  binLocation: null,
+                });
+              }
+            }
+          }
         }
 
+        return prod;
+      });
+
+      if (newProduct) {
         await logAuditAction({
           userId,
           action: 'CREATE_PRODUCT',

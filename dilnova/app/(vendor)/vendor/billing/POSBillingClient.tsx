@@ -59,6 +59,14 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
   const [receiptToPrint, setReceiptToPrint] = useState<any>(null);
 
   const getProductStockInfo = (productId: string) => {
+    const prod = data.inventoryItems.find((i) => i.productId === productId);
+    if (prod?.productType === 'service') {
+      return {
+        qty: 999999, // services have infinite virtual stock
+        sku: 'Service',
+        binLocation: 'N/A',
+      };
+    }
     if (selectedBranchId) {
       const bInv = data.branchInventory.find(
         (bi) => bi.branchId === selectedBranchId && bi.productId === productId
@@ -258,9 +266,13 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
                     <span className="text-[10px] text-zinc-450 block font-mono">SKU: {info.sku}</span>
                     <div className="flex justify-between items-center mt-1.5 pt-1.5 border-t border-zinc-50 dark:border-zinc-800">
                       <span className="text-xs font-black font-mono text-zinc-850 dark:text-white">${(item.productPrice / 100).toFixed(2)}</span>
-                      <span className={`text-[9px] font-bold ${info.qty <= 5 ? 'text-rose-500 font-extrabold' : 'text-zinc-400'}`}>
-                        {info.qty} left
-                      </span>
+                      {item.productType === 'service' ? (
+                        <span className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">Service</span>
+                      ) : (
+                        <span className={`text-[9px] font-bold ${info.qty <= 5 ? 'text-rose-500 font-extrabold' : 'text-zinc-400'}`}>
+                          {info.qty} left
+                        </span>
+                      )}
                     </div>
                   </div>
                 </button>
