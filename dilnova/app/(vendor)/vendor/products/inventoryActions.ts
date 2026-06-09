@@ -293,16 +293,18 @@ export async function getVendorInventoryData() {
         .limit(50);
     }
 
-    // Fetch org members list from Clerk for display in branch mapping
+    // Fetch org members list from Clerk for display in branch mapping (filter out org admins)
     let orgMembers: { userId: string; name: string; email: string }[] = [];
     try {
       const client = await clerkClient();
       const memberships = await client.organizations.getOrganizationMembershipList({ organizationId: orgId });
-      orgMembers = memberships.data.map((m) => ({
-        userId: m.publicUserData?.userId || '',
-        name: `${m.publicUserData?.firstName || ''} ${m.publicUserData?.lastName || ''}`.trim() || m.publicUserData?.identifier || 'Unknown Member',
-        email: m.publicUserData?.identifier || '',
-      })).filter((m) => m.userId);
+      orgMembers = memberships.data
+        .filter((m) => m.role !== 'org:admin' && m.publicUserData?.userId)
+        .map((m) => ({
+          userId: m.publicUserData?.userId || '',
+          name: `${m.publicUserData?.firstName || ''} ${m.publicUserData?.lastName || ''}`.trim() || m.publicUserData?.identifier || 'Unknown Member',
+          email: m.publicUserData?.identifier || '',
+        }));
     } catch (err) {
       // Graceful degradation
     }
