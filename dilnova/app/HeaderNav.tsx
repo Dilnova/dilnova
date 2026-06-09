@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 
 interface LinkItem {
@@ -15,11 +15,35 @@ interface HeaderNavProps {
 
 export default function HeaderNav({ links }: HeaderNavProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key
   const handleEscape = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') setIsOpen(false);
   }, []);
+
+  // Close when clicking outside of the mobile toggle and the menu panel
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        isOpen &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node) &&
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside, true);
+    document.addEventListener('touchstart', handleClickOutside, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true);
+      document.removeEventListener('touchstart', handleClickOutside, true);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -54,6 +78,7 @@ export default function HeaderNav({ links }: HeaderNavProps) {
 
       {/* Mobile Hamburger Toggle */}
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="md:hidden p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-600/50 flex-shrink-0"
         aria-label="Toggle navigation menu"
@@ -94,6 +119,7 @@ export default function HeaderNav({ links }: HeaderNavProps) {
           />
           {/* Menu panel - fixed below header */}
           <div
+            ref={menuRef}
             className="fixed top-14 sm:top-16 left-0 right-0 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/98 dark:bg-zinc-950/98 backdrop-blur-xl shadow-2xl py-3 px-5 flex flex-col gap-1 md:hidden z-50"
             style={{ animation: 'mobileMenuSlideDown 0.2s ease-out' }}
           >
