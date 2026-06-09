@@ -712,7 +712,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                             setAllocateBin(info.binLocation !== '—' ? info.binLocation : '');
                             setIsAllocateModalOpen(true);
                           }}
-                          className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-150 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400 rounded-lg text-[10px] font-bold cursor-pointer"
+                          className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400 rounded-lg text-[10px] font-bold cursor-pointer"
                         >
                           Allocate
                         </button>
@@ -806,7 +806,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                         <tr key={item.id} className="hover:bg-zinc-50/30">
                           <td className="p-3 font-bold text-zinc-900 dark:text-zinc-200">{item.productName}</td>
                           <td className="p-3 font-mono text-zinc-500">{info.sku}</td>
-                          <td className="p-3 font-black text-sm">{info.qty}</td>
+                          <td className="p-3 font-black text-sm text-zinc-900 dark:text-zinc-200">{info.qty}</td>
                           <td className="p-3 text-zinc-500">{item.lowStockThreshold}</td>
                           <td className="p-3 text-zinc-500">{info.binLocation}</td>
                           <td className="p-3 text-zinc-500">{item.supplierName || '—'}</td>
@@ -929,7 +929,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                     </div>
                     <div className="text-right flex flex-col justify-between items-end">
                       <div>
-                        <span className="text-sm font-mono font-black">${(o.totalAmount / 100).toFixed(2)}</span>
+                        <span className="text-sm font-mono font-black text-zinc-900 dark:text-zinc-100">${(o.totalAmount / 100).toFixed(2)}</span>
                         <p className={`text-[10px] uppercase font-bold mt-1 ${
                           o.status === 'fulfilled' ? 'text-emerald-600' : o.status === 'cancelled' ? 'text-rose-600' : 'text-amber-600'
                         }`}>{o.status}</p>
@@ -945,10 +945,10 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
           {advancedTab === 'movements' && (
             <div className="space-y-3">
               <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-50">Inventory Audit History</h3>
-              <div className="bg-white border border-zinc-200 rounded-2xl dark:bg-zinc-950 dark:border-zinc-800 overflow-hidden shadow-sm">
+              <div className="bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 overflow-hidden shadow-sm">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-zinc-200 text-zinc-400 uppercase font-mono text-[9px]">
+                    <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 uppercase font-mono text-[9px]">
                       <th className="p-3">Date</th>
                       <th className="p-3">Product</th>
                       <th className="p-3">Type</th>
@@ -961,8 +961,8 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                     {filteredMovements.map((m) => (
                       <tr key={m.id} className="hover:bg-zinc-50/20">
                         <td className="p-3 text-zinc-500 font-mono">{new Date(m.createdAt).toLocaleDateString()}</td>
-                        <td className="p-3 font-bold">{m.productName}</td>
-                        <td className="p-3 font-semibold">{movementTypeLabels[m.type] || m.type}</td>
+                        <td className="p-3 font-bold text-zinc-900 dark:text-zinc-200">{m.productName}</td>
+                        <td className="p-3 font-semibold text-zinc-900 dark:text-zinc-200">{movementTypeLabels[m.type] || m.type}</td>
                         <td className="p-3 font-bold font-mono">
                           <span className={m.quantityChanged > 0 ? 'text-emerald-600' : 'text-rose-600'}>
                             {m.quantityChanged > 0 ? '+' : ''}
@@ -1006,7 +1006,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                   <div key={b.id} className="bg-white border border-zinc-200 rounded-2xl p-4 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-3">
                     <div className="flex justify-between items-start">
                       <div>
-                        <span className="font-extrabold text-sm text-zinc-900 dark:text-zinc-150">🏬 {b.name}</span>
+                        <span className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">🏬 {b.name}</span>
                         {b.isDefault && (
                           <span className="ml-2 px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase">Default</span>
                         )}
@@ -1020,7 +1020,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                             setBranchPhone(b.phone || '');
                             setIsBranchModalOpen(true);
                           }}
-                          className="text-xs text-zinc-400 hover:text-indigo-650"
+                          className="text-xs text-zinc-400 hover:text-indigo-600"
                         >
                           Edit
                         </button>
@@ -1068,7 +1068,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-850">{bm.role}</span>
+                                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">{bm.role}</span>
                                 <button
                                   onClick={() => handleRemoveMember(bm.id)}
                                   className="text-rose-500 hover:text-rose-700 text-xs font-bold"
@@ -1103,23 +1103,23 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
             </div>
             <form onSubmit={handleAdjustStock} className="p-5 space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Adjustment Type</label>
-                <select value={adjustType} onChange={(e) => setAdjustType(e.target.value as any)} className="w-full px-3 py-2 border rounded-xl text-xs">
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Adjustment Type</label>
+                <select value={adjustType} onChange={(e) => setAdjustType(e.target.value as any)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none">
                   <option value="restock">📥 Restock (add units)</option>
                   <option value="manual_adjustment">🔧 Manual Adjustment</option>
                   <option value="damage_loss">⚠️ Damage/Loss (remove units)</option>
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Quantity</label>
-                <input type="number" min="1" value={adjustQty} onChange={(e) => setAdjustQty(e.target.value)} required className="w-full px-3 py-2 border rounded-xl text-xs font-mono" placeholder="10" />
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Quantity</label>
+                <input type="number" min="1" value={adjustQty} onChange={(e) => setAdjustQty(e.target.value)} required className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs font-mono bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="10" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Reason</label>
-                <input type="text" value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs" placeholder="e.g. Received new pallet" />
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Reason</label>
+                <input type="text" value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="e.g. Received new pallet" />
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setIsAdjustModalOpen(false)} className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-250 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
+                <button type="button" onClick={() => setIsAdjustModalOpen(false)} className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
                 <button type="submit" disabled={isPending} className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md">Apply</button>
               </div>
             </form>
@@ -1136,8 +1136,8 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
             </div>
             <form onSubmit={handleInitInventory} className="p-5 space-y-3.5">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Product</label>
-                <select value={initProductId} onChange={(e) => setInitProductId(e.target.value)} required className="w-full px-3 py-2 border rounded-xl text-xs">
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Product</label>
+                <select value={initProductId} onChange={(e) => setInitProductId(e.target.value)} required className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none">
                   <option value="">-- Select Product --</option>
                   {data.productsWithoutInventory.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
@@ -1146,27 +1146,27 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-zinc-650">SKU Code</label>
-                  <input type="text" value={initSku} onChange={(e) => setInitSku(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs font-mono" placeholder="SKU-..." />
+                  <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">SKU Code</label>
+                  <input type="text" value={initSku} onChange={(e) => setInitSku(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs font-mono bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="SKU-..." />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-zinc-650">Initial Qty</label>
-                  <input type="number" min="0" value={initQty} onChange={(e) => setInitQty(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs font-mono" />
+                  <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Initial Qty</label>
+                  <input type="number" min="0" value={initQty} onChange={(e) => setInitQty(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs font-mono bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-zinc-650">Low Threshold</label>
-                  <input type="number" min="0" value={initThreshold} onChange={(e) => setInitThreshold(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs font-mono" />
+                  <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Low Threshold</label>
+                  <input type="number" min="0" value={initThreshold} onChange={(e) => setInitThreshold(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs font-mono bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-zinc-650">Shelf Bin Location</label>
-                  <input type="text" value={initBin} onChange={(e) => setInitBin(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs" placeholder="Aisle 1" />
+                  <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Shelf Bin Location</label>
+                  <input type="text" value={initBin} onChange={(e) => setInitBin(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="Aisle 1" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Link Supplier</label>
-                <select value={initSupplierId} onChange={(e) => setInitSupplierId(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs">
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Link Supplier</label>
+                <select value={initSupplierId} onChange={(e) => setInitSupplierId(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none">
                   <option value="">-- None --</option>
                   {data.suppliers.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
@@ -1174,7 +1174,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                 </select>
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setIsInitModalOpen(false)} className="flex-1 py-2 bg-zinc-100 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
+                <button type="button" onClick={() => setIsInitModalOpen(false)} className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
                 <button type="submit" disabled={isPending} className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md">Track Product</button>
               </div>
             </form>
@@ -1191,29 +1191,29 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
             </div>
             <form onSubmit={handleSaveSupplier} className="p-5 space-y-3.5">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Supplier Name</label>
-                <input type="text" value={supplierName} onChange={(e) => setSupplierName(e.target.value)} required className="w-full px-3 py-2 border rounded-xl text-xs" placeholder="Acme Ltd" />
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Supplier Name</label>
+                <input type="text" value={supplierName} onChange={(e) => setSupplierName(e.target.value)} required className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="Acme Ltd" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Contact Agent</label>
-                <input type="text" value={supplierContact} onChange={(e) => setSupplierContact(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs" placeholder="Jane Doe" />
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Contact Agent</label>
+                <input type="text" value={supplierContact} onChange={(e) => setSupplierContact(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="Jane Doe" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-zinc-650">Email</label>
-                  <input type="email" value={supplierEmail} onChange={(e) => setSupplierEmail(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs" placeholder="jane@acme.com" />
+                  <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Email</label>
+                  <input type="email" value={supplierEmail} onChange={(e) => setSupplierEmail(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="jane@acme.com" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-zinc-650">Phone</label>
-                  <input type="text" value={supplierPhone} onChange={(e) => setSupplierPhone(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs" placeholder="+1234" />
+                  <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Phone</label>
+                  <input type="text" value={supplierPhone} onChange={(e) => setSupplierPhone(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="+1234" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Office Address</label>
-                <input type="text" value={supplierAddress} onChange={(e) => setSupplierAddress(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs" placeholder="Street Address" />
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Office Address</label>
+                <input type="text" value={supplierAddress} onChange={(e) => setSupplierAddress(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="Street Address" />
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setIsSupplierModalOpen(false)} className="flex-1 py-2 bg-zinc-100 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
+                <button type="button" onClick={() => setIsSupplierModalOpen(false)} className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
                 <button type="submit" disabled={isPending} className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md">Save Supplier</button>
               </div>
             </form>
@@ -1230,19 +1230,19 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
             </div>
             <form onSubmit={handleSaveBranch} className="p-5 space-y-3.5">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Branch Name</label>
-                <input type="text" value={branchName} onChange={(e) => setBranchName(e.target.value)} required className="w-full px-3 py-2 border rounded-xl text-xs" placeholder="e.g. Uptown POS Outlet" />
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Branch Name</label>
+                <input type="text" value={branchName} onChange={(e) => setBranchName(e.target.value)} required className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="e.g. Uptown POS Outlet" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Street Address</label>
-                <input type="text" value={branchAddress} onChange={(e) => setBranchAddress(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs" placeholder="Street name, City" />
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Street Address</label>
+                <input type="text" value={branchAddress} onChange={(e) => setBranchAddress(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="Street name, City" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Store Phone Contact</label>
-                <input type="text" value={branchPhone} onChange={(e) => setBranchPhone(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs" placeholder="+123..." />
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Store Phone Contact</label>
+                <input type="text" value={branchPhone} onChange={(e) => setBranchPhone(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="+123..." />
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setIsBranchModalOpen(false)} className="flex-1 py-2 bg-zinc-100 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
+                <button type="button" onClick={() => setIsBranchModalOpen(false)} className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
                 <button type="submit" disabled={isPending} className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md">Register</button>
               </div>
             </form>
@@ -1262,21 +1262,21 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
             </div>
             <form onSubmit={handleAllocateStock} className="p-5 space-y-3.5">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Quantity at Location</label>
-                <input type="number" min="0" value={allocateQty} onChange={(e) => setAllocateQty(e.target.value)} required className="w-full px-3 py-2 border rounded-xl text-xs font-mono" />
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Quantity at Location</label>
+                <input type="number" min="0" value={allocateQty} onChange={(e) => setAllocateQty(e.target.value)} required className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs font-mono bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-zinc-650">Location SKU Override</label>
-                  <input type="text" value={allocateSku} onChange={(e) => setAllocateSku(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs font-mono" placeholder="SKU-..." />
+                  <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Location SKU Override</label>
+                  <input type="text" value={allocateSku} onChange={(e) => setAllocateSku(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs font-mono bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="SKU-..." />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-zinc-650">Shelf Bin Location</label>
-                  <input type="text" value={allocateBin} onChange={(e) => setAllocateBin(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs" placeholder="Aisle 3" />
+                  <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Shelf Bin Location</label>
+                  <input type="text" value={allocateBin} onChange={(e) => setAllocateBin(e.target.value)} className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none" placeholder="Aisle 3" />
                 </div>
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setIsAllocateModalOpen(false)} className="flex-1 py-2 bg-zinc-100 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
+                <button type="button" onClick={() => setIsAllocateModalOpen(false)} className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
                 <button type="submit" disabled={isPending} className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md">Apply Allocation</button>
               </div>
             </form>
@@ -1293,8 +1293,8 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
             </div>
             <form onSubmit={handleAssignMember} className="p-5 space-y-3.5">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Select Member</label>
-                <select value={assignMemberId} onChange={(e) => setAssignMemberId(e.target.value)} required className="w-full px-3 py-2 border rounded-xl text-xs">
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Select Member</label>
+                <select value={assignMemberId} onChange={(e) => setAssignMemberId(e.target.value)} required className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none">
                   <option value="">-- Select Org Member --</option>
                   {data.orgMembers.map((m) => (
                     <option key={m.userId} value={m.userId}>
@@ -1304,14 +1304,14 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-650">Branch Role Mapping</label>
-                <select value={assignRole} onChange={(e) => setAssignRole(e.target.value as any)} required className="w-full px-3 py-2 border rounded-xl text-xs">
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Branch Role Mapping</label>
+                <select value={assignRole} onChange={(e) => setAssignRole(e.target.value as any)} required className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none">
                   <option value="cashier">POS Cashier Register</option>
                   <option value="manager">Branch Store Manager</option>
                 </select>
               </div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setIsAssignMemberModalOpen(false)} className="flex-1 py-2 bg-zinc-100 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
+                <button type="button" onClick={() => setIsAssignMemberModalOpen(false)} className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
                 <button type="submit" disabled={isPending} className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md">Assign Duty</button>
               </div>
             </form>
