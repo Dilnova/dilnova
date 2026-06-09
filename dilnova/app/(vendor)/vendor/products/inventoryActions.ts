@@ -49,7 +49,7 @@ async function verifyVendorAccess(options?: { requireAdminOrVendor?: boolean }) 
 
 export async function getVendorInventoryData() {
   return runWithCorrelationId(async () => {
-    const { orgId, premiumStatus } = await verifyVendorAccess({ requireAdminOrVendor: false });
+    const { userId, orgId, orgRole, premiumStatus } = await verifyVendorAccess({ requireAdminOrVendor: false });
 
     // 1. Fetch Products
     const vendorProducts = await db
@@ -183,14 +183,14 @@ export async function getVendorInventoryData() {
     let branchInventoryList: any[] = [];
     let branchMembersList: any[] = [];
     if (premiumStatus.multiBranchActive || premiumStatus.billingActive) {
-      branches = await db
+      let allBranches = await db
         .select()
         .from(schema.branches)
         .where(eq(schema.branches.orgId, orgId))
         .orderBy(schema.branches.name);
 
       // If no branches exist, programmatically insert a default branch record named "Main Register"
-      if (branches.length === 0) {
+      if (allBranches.length === 0) {
         const [defaultBranch] = await db
           .insert(schema.branches)
           .values({
@@ -200,8 +200,49 @@ export async function getVendorInventoryData() {
           })
           .returning();
         if (defaultBranch) {
-          branches = [defaultBranch];
+          allBranches = [defaultBranch];
         }
+      }
+
+      // Auto-migrate/initialize default branch inventory for ongoing shop records in multi-branch mode
+      if (premiumStatus.multiBranchActive) {
+        const defaultBranch = allBranches.find((b) => b.isDefault) || allBranches[0];
+        if (defaultBranch) {
+          const existingDefaultInv = await db
+            .select({ productId: schema.branchInventory.productId })
+            .from(schema.branchInventory)
+            .where(eq(schema.branchInventory.branchId, defaultBranch.id));
+          const defaultProductIdsSet = new Set(existingDefaultInv.map((bi) => bi.productId));
+
+          const missingDefaultBranchInv = inventoryItems.filter(
+            (item) => item.productType === 'product' && !defaultProductIdsSet.has(item.productId)
+          );
+
+          if (missingDefaultBranchInv.length > 0) {
+            await db.insert(schema.branchInventory).values(
+              missingDefaultBranchInv.map((item) => ({
+                branchId: defaultBranch.id,
+                productId: item.productId,
+                quantity: item.quantity ?? 0,
+                sku: item.sku,
+                binLocation: item.binLocation,
+              }))
+            );
+          }
+        }
+      }
+
+      // Filter branches for non-admin users if multi-branch is active
+      if (premiumStatus.multiBranchActive && orgRole !== 'org:admin') {
+        const memberAssignments = await db
+          .select({ branchId: schema.branchMembers.branchId })
+          .from(schema.branchMembers)
+          .where(eq(schema.branchMembers.memberUserId, userId));
+
+        const assignedIds = new Set(memberAssignments.map((a) => a.branchId));
+        branches = allBranches.filter((b) => assignedIds.has(b.id));
+      } else {
+        branches = allBranches;
       }
 
       const branchIds = branches.map((b) => b.id);
