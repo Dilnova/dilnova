@@ -37,6 +37,7 @@ export default function AddProductClient({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoCameraInputRef = useRef<HTMLInputElement>(null);
 
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -367,20 +368,35 @@ export default function AddProductClient({
 
               {/* Upload Buttons — Two large buttons for mobile: Camera + Gallery */}
               {media.length < maxMediaLimit && (
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                   {/* Camera Capture (mobile-first) */}
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
                     disabled={isUploading}
-                    className="flex flex-col items-center justify-center gap-1.5 py-5 sm:py-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-900/50 transition-all cursor-pointer active:scale-[0.97] disabled:opacity-50"
+                    className="flex flex-col items-center justify-center gap-1.5 py-4 sm:py-3.5 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-900/50 transition-all cursor-pointer active:scale-[0.97] disabled:opacity-50"
                   >
-                    <svg className="w-7 h-7 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                    <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                       Camera
+                    </span>
+                  </button>
+
+                  {/* Video Capture (mobile-first) */}
+                  <button
+                    type="button"
+                    onClick={() => videoCameraInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="flex flex-col items-center justify-center gap-1.5 py-4 sm:py-3.5 border-2 border-dashed border-emerald-300 dark:border-emerald-800 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/30 transition-all cursor-pointer active:scale-[0.97] disabled:opacity-50"
+                  >
+                    <svg className="w-6 h-6 text-emerald-500 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      Video Cam
                     </span>
                   </button>
 
@@ -389,12 +405,12 @@ export default function AddProductClient({
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
-                    className="flex flex-col items-center justify-center gap-1.5 py-5 sm:py-4 border-2 border-dashed border-purple-300 dark:border-purple-800 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-100/60 dark:hover:bg-purple-950/30 transition-all cursor-pointer active:scale-[0.97] disabled:opacity-50"
+                    className="flex flex-col items-center justify-center gap-1.5 py-4 sm:py-3.5 border-2 border-dashed border-purple-300 dark:border-purple-800 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-100/60 dark:hover:bg-purple-950/30 transition-all cursor-pointer active:scale-[0.97] disabled:opacity-50"
                   >
-                    <svg className="w-7 h-7 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                    <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
                       Gallery
                     </span>
                   </button>
@@ -411,6 +427,14 @@ export default function AddProductClient({
                 ref={cameraInputRef}
                 onChange={handleFileUpload}
                 accept="image/*"
+                capture="environment"
+                className="hidden"
+              />
+              <input
+                type="file"
+                ref={videoCameraInputRef}
+                onChange={handleFileUpload}
+                accept="video/*"
                 capture="environment"
                 className="hidden"
               />
