@@ -173,22 +173,20 @@ export default async function RootLayout({
 
                   <Show when="signed-in">
                     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4">
-                      <div className="hidden sm:block">
-                        <OrganizationSwitcher 
-                          afterCreateOrganizationUrl="/" 
-                          afterSelectOrganizationUrl="/"
-                          afterLeaveOrganizationUrl="/"
-                          afterSelectPersonalUrl="/"
-                          hidePersonal={false}
-                          appearance={{
-                            elements: {
-                              organizationSwitcherTrigger: 'dark:[&_*]:!text-zinc-50',
-                              organizationSwitcherPopoverActionButton__createOrganization: canCreateOrg ? 'flex' : 'hidden',
-                              organizationSwitcherPopoverCreateOrganization: canCreateOrg ? 'flex' : 'hidden',
-                            }
-                          }}
-                        />
-                      </div>
+                      <OrganizationSwitcher 
+                        afterCreateOrganizationUrl="/" 
+                        afterSelectOrganizationUrl="/"
+                        afterLeaveOrganizationUrl="/"
+                        afterSelectPersonalUrl="/"
+                        hidePersonal={false}
+                        appearance={{
+                          elements: {
+                            organizationSwitcherTrigger: 'dark:[&_*]:!text-zinc-50',
+                            organizationSwitcherPopoverActionButton__createOrganization: canCreateOrg ? 'flex' : 'hidden',
+                            organizationSwitcherPopoverCreateOrganization: canCreateOrg ? 'flex' : 'hidden',
+                          }
+                        }}
+                      />
                       <UserButton />
                     </div>
                   </Show>
