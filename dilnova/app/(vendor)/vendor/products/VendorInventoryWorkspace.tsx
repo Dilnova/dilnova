@@ -501,6 +501,10 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
     return data.orgMembers.find((m) => m.userId === userId)?.name || userId;
   };
 
+  const getMemberEmail = (userId: string) => {
+    return data.orgMembers.find((m) => m.userId === userId)?.email || '';
+  };
+
   const movementTypeLabels: Record<string, string> = {
     restock: '📥 Restock',
     sale_depletion: '📤 Sale',
@@ -1055,7 +1059,14 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                           .filter((bm) => bm.branchId === b.id)
                           .map((bm) => (
                             <div key={bm.id} className="flex justify-between items-center text-xs bg-zinc-50 dark:bg-zinc-900/50 p-2 rounded-lg">
-                              <span>👤 {getMemberName(bm.memberUserId)}</span>
+                              <div className="flex flex-col">
+                                <span className="font-semibold text-zinc-900 dark:text-zinc-100">👤 {getMemberName(bm.memberUserId)}</span>
+                                {getMemberEmail(bm.memberUserId) && (
+                                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono ml-5">
+                                    {getMemberEmail(bm.memberUserId)}
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-850">{bm.role}</span>
                                 <button
@@ -1286,7 +1297,9 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                 <select value={assignMemberId} onChange={(e) => setAssignMemberId(e.target.value)} required className="w-full px-3 py-2 border rounded-xl text-xs">
                   <option value="">-- Select Org Member --</option>
                   {data.orgMembers.map((m) => (
-                    <option key={m.userId} value={m.userId}>{m.name}</option>
+                    <option key={m.userId} value={m.userId}>
+                      {m.name} {m.email ? `(${m.email})` : ''}
+                    </option>
                   ))}
                 </select>
               </div>

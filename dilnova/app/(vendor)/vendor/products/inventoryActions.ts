@@ -294,13 +294,14 @@ export async function getVendorInventoryData() {
     }
 
     // Fetch org members list from Clerk for display in branch mapping
-    let orgMembers: { userId: string; name: string }[] = [];
+    let orgMembers: { userId: string; name: string; email: string }[] = [];
     try {
       const client = await clerkClient();
       const memberships = await client.organizations.getOrganizationMembershipList({ organizationId: orgId });
       orgMembers = memberships.data.map((m) => ({
         userId: m.publicUserData?.userId || '',
         name: `${m.publicUserData?.firstName || ''} ${m.publicUserData?.lastName || ''}`.trim() || m.publicUserData?.identifier || 'Unknown Member',
+        email: m.publicUserData?.identifier || '',
       })).filter((m) => m.userId);
     } catch (err) {
       // Graceful degradation
