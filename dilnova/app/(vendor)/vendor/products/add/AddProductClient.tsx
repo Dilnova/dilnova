@@ -5,6 +5,7 @@ import { addProductAction } from '../actions';
 import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import CategorySelector from '@/app/components/CategorySelector';
 
 interface Category {
   id: string;
@@ -269,29 +270,11 @@ export default function AddProductClient({
                   <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
                     Category
                   </label>
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 rounded-xl text-base sm:text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 transition-all appearance-none"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
-                  >
-                    <option value="">Select Category</option>
-                    {categories
-                      .filter((c) => !c.parentId)
-                      .map((main) => {
-                        const subs = categories.filter((c) => c.parentId === main.id);
-                        return (
-                          <optgroup key={main.id} label={main.name}>
-                            <option value={main.id}>{main.name} (All)</option>
-                            {subs.map((sub) => (
-                              <option key={sub.id} value={sub.id}>
-                                {sub.name}
-                              </option>
-                            ))}
-                          </optgroup>
-                        );
-                      })}
-                  </select>
+                  <CategorySelector
+                    categories={categories}
+                    selectedId={categoryId}
+                    onChange={setCategoryId}
+                  />
                 </div>
 
                 {type === 'product' && (
