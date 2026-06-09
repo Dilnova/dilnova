@@ -1,4 +1,4 @@
-import { clerkClient } from '@clerk/nextjs/server';
+import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
 import { logger } from './logger';
 import { unstable_cache } from 'next/cache';
 
@@ -68,7 +68,7 @@ export const getCachedUserRole = unstable_cache(
   async (userId: string): Promise<string | undefined> => {
     try {
       logger.info(`Fetching role for user ${userId} from Clerk API`);
-      const client = await clerkClient();
+      const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
       const user = await client.users.getUser(userId);
       return user.publicMetadata?.role as string | undefined;
     } catch (err) {

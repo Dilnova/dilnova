@@ -1,6 +1,6 @@
 'use server';
 
-import { clerkClient } from '@clerk/nextjs/server';
+import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
 import { logger } from './logger';
 import { unstable_cache, revalidateTag } from 'next/cache';
 
@@ -44,7 +44,7 @@ export interface PremiumStatus {
  */
 const fetchRawStatus = unstable_cache(
   async (orgId: string) => {
-    const client = await clerkClient();
+    const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
     const org = await client.organizations.getOrganization({ organizationId: orgId });
     const meta = (org.publicMetadata || {}) as Record<string, unknown>;
 
