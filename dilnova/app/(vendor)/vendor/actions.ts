@@ -2,6 +2,7 @@
 
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
+import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
 import { vendorMetadataSchema } from '@/utils/schemas';
 import { logAuditAction } from '@/utils/auditLogger';
 import { logger } from '@/utils/logger';
@@ -71,7 +72,7 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
 
     // 5. Cache Revalidation: ensure changes are immediately visible
     revalidatePath('/');
-    revalidatePath('/vendor');
+    revalidateVendorConsole();
     revalidatePath('/vendors');
     
     // Revalidate the vendor's profile page using its slug

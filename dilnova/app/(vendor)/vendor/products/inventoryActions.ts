@@ -3,7 +3,7 @@
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import {
   createSupplierSchema,
@@ -388,7 +388,7 @@ export async function vendorAdjustInventoryAction(data: {
       metadata: { change: parsed.data.quantityChange, newQuantity },
     });
 
-    revalidatePath('/vendor/products');
+    revalidateVendorConsole();
     return { success: true, newQuantity };
   });
 }
@@ -431,7 +431,7 @@ export async function vendorCreateSupplierAction(data: {
       metadata: { name: supplier.name, orgId },
     });
 
-    revalidatePath('/vendor/products');
+    revalidateVendorConsole();
     return { success: true, supplier };
   });
 }
@@ -483,7 +483,7 @@ export async function vendorUpdateSupplierAction(data: {
       metadata: { name: parsed.data.name },
     });
 
-    revalidatePath('/vendor/products');
+    revalidateVendorConsole();
     return { success: true };
   });
 }
@@ -514,7 +514,7 @@ export async function vendorDeleteSupplierAction(id: string) {
       targetId: parsed.data.id,
     });
 
-    revalidatePath('/vendor/products');
+    revalidateVendorConsole();
     return { success: true };
   });
 }
@@ -591,7 +591,7 @@ export async function vendorInitInventoryAction(data: {
       metadata: { productId: data.productId, quantity },
     });
 
-    revalidatePath('/vendor/products');
+    revalidateVendorConsole();
     return { success: true, inventory: inv };
   });
 }
@@ -638,7 +638,7 @@ export async function createBranchAction(data: { name: string; address?: string;
       metadata: { name: branch.name, isDefault },
     });
 
-    revalidatePath('/vendor/products');
+    revalidateVendorConsole();
     return { success: true, branch };
   });
 }
@@ -678,7 +678,7 @@ export async function updateBranchAction(data: { id: string; name: string; addre
       metadata: { name: parsed.data.name },
     });
 
-    revalidatePath('/vendor/products');
+    revalidateVendorConsole();
     return { success: true };
   });
 }
@@ -719,7 +719,7 @@ export async function deleteBranchAction(id: string) {
       targetId: parsed.data.id,
     });
 
-    revalidatePath('/vendor/products');
+    revalidateVendorConsole();
     return { success: true };
   });
 }
@@ -792,7 +792,7 @@ export async function allocateBranchStockAction(data: {
       });
     }
 
-    revalidatePath('/vendor/products');
+    revalidateVendorConsole();
     return { success: true };
   });
 }
@@ -842,7 +842,7 @@ export async function assignBranchMemberAction(data: { branchId: string; memberU
       });
     }
 
-    revalidatePath('/vendor/products');
+    revalidateVendorConsole();
     return { success: true };
   });
 }
@@ -873,7 +873,7 @@ export async function removeBranchMemberAction(id: string) {
 
     await db.delete(schema.branchMembers).where(eq(schema.branchMembers.id, parsed.data.id));
 
-    revalidatePath('/vendor/products');
+    revalidateVendorConsole();
     return { success: true };
   });
 }
@@ -1064,7 +1064,7 @@ export async function processBillingCheckoutAction(data: {
         metadata: { branchId: parsed.data.branchId, totalAmount, paymentMethod: parsed.data.paymentMethod },
       });
 
-      revalidatePath('/vendor/products');
+      revalidateVendorConsole();
       return { success: true, receiptId: receipt.id, totalAmount };
     });
   });

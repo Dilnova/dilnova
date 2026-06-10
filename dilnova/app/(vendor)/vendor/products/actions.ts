@@ -5,6 +5,7 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath, updateTag } from 'next/cache';
+import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
 import { getSystemSetting } from '@/utils/settings';
 import { logger } from '@/utils/logger';
 import { addProductSchema, vendorDeleteProductSchema } from '@/utils/schemas';
@@ -156,7 +157,7 @@ export async function addProductAction(data: {
       // 4. Cache Invalidation
       revalidatePath('/products');
       revalidatePath('/vendors');
-      revalidatePath('/vendor/products');
+      revalidateVendorConsole();
       updateTag(`vendor-products-${orgId}`);
 
       return { success: true };
@@ -223,7 +224,7 @@ export async function deleteProductAction(productId: string) {
       // 4. Cache Invalidation
       revalidatePath('/products');
       revalidatePath('/vendors');
-      revalidatePath('/vendor/products');
+      revalidateVendorConsole();
       updateTag(`vendor-products-${orgId}`);
 
       return { success: true };
