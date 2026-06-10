@@ -71,7 +71,7 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
             </div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
-              Welcome to <span className="bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent">{systemName}</span>
+              Welcome to <span className="text-purple-300">{systemName}</span>
             </h1>
 
             <p className="text-sm sm:text-base text-zinc-400 max-w-md mx-auto leading-relaxed">
@@ -160,7 +160,7 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
                     </p>
 
                     {lang.code !== 'en' && (
-                      <p className="text-[9px] text-zinc-650 font-mono uppercase tracking-wider mt-1 hidden sm:block">
+                      <p className="text-[9px] text-zinc-400 font-mono uppercase tracking-wider mt-1 hidden sm:block">
                         {lang.name}
                       </p>
                     )}
@@ -179,7 +179,7 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
           </div>
 
           {/* Subtle footer hint */}
-          <p className="text-[10px] text-zinc-650 text-center font-mono uppercase tracking-wider mt-2">
+          <p className="text-[10px] text-zinc-400 text-center font-mono uppercase tracking-wider mt-2">
             You can change your language anytime from the menu
           </p>
         </div>

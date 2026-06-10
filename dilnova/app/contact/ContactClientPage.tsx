@@ -92,7 +92,7 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
 
       <div className="w-full max-w-6xl relative z-10 flex flex-col gap-10">
         <div className="text-center max-w-2xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-zinc-900 via-purple-700 to-zinc-900 dark:from-zinc-100 dark:via-purple-400 dark:to-zinc-100 bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 mb-4">
             Connect with {systemName}
           </h1>
           <p className="text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">

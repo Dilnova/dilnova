@@ -20,6 +20,19 @@ import Image from 'next/image'
 import { getPremiumStatus } from '@/utils/premiumLicense'
 import { getCachedUserRole } from '@/utils/clerkCache'
 
+const SignInTriggerButton = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
+  (props, ref) => (
+    <button
+      {...props}
+      ref={ref}
+      className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50 text-[11px] sm:text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap"
+    >
+      Sign In
+    </button>
+  )
+)
+SignInTriggerButton.displayName = 'SignInTriggerButton'
+
 const SignUpTriggerButton = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
   (props, ref) => {
     return (
@@ -141,16 +154,16 @@ export default async function RootLayout({
           <ClerkProvider>
             <CartProvider>
               <header className="relative flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-14 sm:h-16 overflow-visible max-w-full">
-                <div className="flex items-center gap-2 sm:gap-3 md:gap-6 min-w-0 flex-shrink">
-                  <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center flex-shrink-0">
+                <div className="flex items-center gap-2 sm:gap-3 md:gap-5 min-w-0 flex-1 overflow-hidden">
+                  <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center shrink-0">
                     {logoUrl ? (
-                      <div className="relative h-7 w-24 sm:h-8 sm:w-28">
+                      <div className="relative h-8 w-28 sm:h-9 sm:w-32 rounded-lg bg-white px-2 py-1 shadow-sm ring-1 ring-zinc-200/80 dark:ring-zinc-700/60">
                         <Image
                           src={logoUrl}
                           alt={`${systemName} Logo`}
                           fill
-                          className="object-contain object-left"
-                          sizes="(max-width: 640px) 96px, 112px"
+                          className="object-contain object-center"
+                          sizes="(max-width: 640px) 112px, 128px"
                           priority
                         />
                       </div>
@@ -158,10 +171,12 @@ export default async function RootLayout({
                       systemName.toUpperCase()
                     )}
                   </Link>
-                  <HeaderNav links={links} />
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <HeaderNav links={links} />
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1 sm:gap-2 md:gap-4 flex-shrink-0">
+                <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0">
                   {/* Language Selector Dropdown - hidden on very small screens since FloatingLanguageButton covers it */}
                   <div className="hidden sm:block">
                     <LanguageSelector />
@@ -172,7 +187,9 @@ export default async function RootLayout({
 
                   <Show when="signed-out">
                     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-xs font-semibold">
-                      <SignInButton />
+                      <SignInButton>
+                        <SignInTriggerButton />
+                      </SignInButton>
                       <SignUpButton>
                         <SignUpTriggerButton />
                       </SignUpButton>

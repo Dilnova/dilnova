@@ -6,7 +6,7 @@ export default function NotFound() {
       <div className="text-center max-w-lg space-y-8">
         {/* Large 404 number with gradient */}
         <div className="relative">
-          <span className="text-[10rem] sm:text-[12rem] font-black leading-none tracking-tighter bg-gradient-to-b from-zinc-300 to-zinc-100 dark:from-zinc-700 dark:to-zinc-900 bg-clip-text text-transparent select-none">
+          <span className="text-[10rem] sm:text-[12rem] font-black leading-none tracking-tighter bg-gradient-to-b from-zinc-300 to-zinc-100 dark:from-zinc-400 dark:to-zinc-200 bg-clip-text text-transparent select-none">
             404
           </span>
           {/* Subtle glow effect */}

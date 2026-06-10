@@ -181,7 +181,7 @@ export default function ManageProductsClient({
       {/* Product Grid */}
       {filteredProducts.length === 0 ? (
         <div className="text-center py-16 sm:py-20 border-2 border-dashed border-zinc-200 rounded-2xl dark:border-zinc-800 bg-white/50 dark:bg-zinc-950/50">
-          <div className="text-5xl mb-4">{products.length === 0 ? '📦' : '🔍'}</div>
+          <div className="text-5xl mb-4 emoji">{products.length === 0 ? '📦' : '🔍'}</div>
           <p className="text-zinc-600 dark:text-zinc-300 text-sm font-semibold">
             {products.length === 0 ? 'Your catalog is empty' : 'No items match your search'}
           </p>
@@ -232,7 +232,7 @@ export default function ManageProductsClient({
                   )
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl opacity-30">📷</span>
+                    <span className="text-3xl emoji opacity-50">📷</span>
                   </div>
                 )}
                 

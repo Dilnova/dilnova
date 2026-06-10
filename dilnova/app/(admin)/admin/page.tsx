@@ -57,11 +57,11 @@ export default async function AdminPage() {
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 mb-2">
               🛡️ Organization Admin
             </span>
-            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-55">
+            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
               Admin & Members Console
             </h1>
             <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm mt-1">
-              Configure details and manage members for <strong className="text-zinc-800 dark:text-zinc-250 font-semibold">{org.name}</strong>.
+              Configure details and manage members for <strong className="text-zinc-800 dark:text-zinc-200 font-semibold">{org.name}</strong>.
             </p>
           </div>
           

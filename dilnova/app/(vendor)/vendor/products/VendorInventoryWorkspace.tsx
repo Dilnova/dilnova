@@ -545,7 +545,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                     : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500'
                 }`}
               >
-                <span>{tab.icon}</span>
+                <span className="emoji text-sm" aria-hidden="true">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}

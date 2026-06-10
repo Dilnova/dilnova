@@ -164,16 +164,14 @@ export default async function Home() {
             <div className="relative z-10 my-auto">
               <h2 className="text-3xl font-extrabold tracking-tight mb-3">
                 DISTAR <br />
-                <span className="text-amber-500 bg-gradient-to-r from-amber-500 via-orange-400 to-amber-600 bg-clip-text text-transparent">
-                  HARDWARE
-                </span>
+                <span className="text-amber-400">HARDWARE</span>
               </h2>
               <p className="text-xs text-zinc-400 leading-relaxed mb-6">
                 Raw industrial power, heavy-duty machinery, and contractor-grade tools. Engineered for reliability in the field.
               </p>
               <Link
                 href="/vendors/distar-hardware"
-                className="inline-block bg-amber-600 hover:bg-amber-700 text-zinc-955 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="inline-block bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 Browse Hardware
               </Link>
@@ -201,22 +199,20 @@ export default async function Home() {
             <div className="relative z-10 my-auto">
               <h2 className="text-3xl font-extrabold tracking-tight mb-3">
                 DISTAR <br />
-                <span className="text-emerald-400 bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 bg-clip-text text-transparent">
-                  NURSERY
-                </span>
+                <span className="text-emerald-300">NURSERY</span>
               </h2>
               <p className="text-xs text-emerald-300/70 leading-relaxed mb-6">
                 Curated organic flora, seeds, exotic indoor plants, and landscaping consulting. Grow your perfect bio-environment.
               </p>
               <Link
                 href="/vendors/distar-nursery"
-                className="inline-block bg-emerald-500 hover:bg-emerald-600 text-emerald-955 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="inline-block bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 Browse Nursery
               </Link>
             </div>
 
-            <div className="relative z-10 flex items-center justify-between border-t border-emerald-900/60 pt-4 mt-6 text-[10px] font-mono text-emerald-700">
+            <div className="relative z-10 flex items-center justify-between border-t border-emerald-900/60 pt-4 mt-6 text-[10px] font-mono text-emerald-400/80">
               <span>BOT_SYS_2.0</span>
               <span className="text-emerald-400">ORGANIC</span>
             </div>
@@ -238,22 +234,20 @@ export default async function Home() {
             <div className="relative z-10 my-auto">
               <h2 className="text-3xl font-extrabold tracking-tight mb-3">
                 DISTAR <br />
-                <span className="text-indigo-400 bg-gradient-to-r from-indigo-400 via-purple-300 to-indigo-500 bg-clip-text text-transparent">
-                  TECH STORE
-                </span>
+                <span className="text-indigo-300">TECH STORE</span>
               </h2>
               <p className="text-xs text-indigo-300/70 leading-relaxed mb-6">
                 Developer workstations, high-performance components, IoT configurations, and server accessories.
               </p>
               <Link
                 href="/vendors/distar-tech"
-                className="inline-block bg-indigo-500 hover:bg-indigo-600 text-indigo-955 font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-[10px] uppercase tracking-wider px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 Browse Technology
               </Link>
             </div>
 
-            <div className="relative z-10 flex items-center justify-between border-t border-indigo-900/60 pt-4 mt-6 text-[10px] font-mono text-indigo-700">
+            <div className="relative z-10 flex items-center justify-between border-t border-indigo-900/60 pt-4 mt-6 text-[10px] font-mono text-indigo-400/80">
               <span>SYS_WORK_3.1</span>
               <span className="text-indigo-400">ENTERPRISE</span>
             </div>
@@ -275,9 +269,7 @@ export default async function Home() {
             <div className="relative z-10 my-auto">
               <h2 className="text-3xl font-extrabold tracking-tight mb-3">
                 DILSTAR <br />
-                <span className="text-teal-400 bg-gradient-to-r from-teal-400 via-emerald-300 to-teal-500 bg-clip-text text-transparent">
-                  SERVICES
-                </span>
+                <span className="text-teal-300">SERVICES</span>
               </h2>
               <p className="text-xs text-slate-400 leading-relaxed mb-6">
                 Connect with master gardeners, professional tool technicians, home builders, and enterprise tech architects.
@@ -475,7 +467,7 @@ export default async function Home() {
       <ScrollRedirector />
 
       {/* Footer */}
-      <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-650 bg-white dark:bg-zinc-950">
+      <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-950">
         <p>&copy; {new Date().getFullYear()} {systemName} Marketplace. All rights reserved.</p>
       </footer>
     </div>

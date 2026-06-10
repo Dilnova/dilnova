@@ -12,6 +12,47 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+
+  --color-zinc-150: #f4f4f5;
+  --color-zinc-350: #d4d4d8;
+  --color-zinc-450: #a1a1aa;
+  --color-zinc-455: #a1a1aa;
+  --color-zinc-550: #71717a;
+  --color-zinc-650: #a1a1aa;
+  --color-zinc-750: #52525b;
+  --color-zinc-805: #3f3f46;
+  --color-zinc-850: #3f3f46;
+  --color-zinc-855: #3f3f46;
+  --color-zinc-905: #18181b;
+  --color-zinc-955: #09090b;
+
+  --color-indigo-350: #a5b4fc;
+  --color-indigo-650: #4f46e5;
+  --color-indigo-850: #3730a3;
+  --color-indigo-955: #1e1b4b;
+
+  --color-emerald-350: #6ee7b7;
+  --color-emerald-450: #34d399;
+  --color-emerald-650: #059669;
+  --color-emerald-955: #022c22;
+
+  --color-purple-650: #9333ea;
+  --color-purple-750: #7e22ce;
+  --color-purple-850: #6b21a8;
+
+  --color-teal-650: #0d9488;
+  --color-amber-450: #fbbf24;
+
+  --color-red-650: #dc2626;
+  --color-red-750: #b91c1c;
+  --color-red-905: #7f1d1d;
+  --color-red-955: #450a0a;
+
+  --color-rose-450: #fb7185;
+  --color-rose-455: #fb7185;
+  --color-rose-955: #4c0519;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -171,3 +212,39 @@ iframe.skiptranslate,
   display: none;
 }
 
+@keyframes ui-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ui-slide-in-from-top {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ui-scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in { animation: ui-fade-in 0.3s ease-out forwards; }
+.animate-in { animation-duration: 150ms; animation-fill-mode: both; animation-timing-function: ease-out; }
+.fade-in, .fade-in-50 { animation-name: ui-fade-in; }
+.slide-in-from-top-1, .slide-in-from-top-2 { animation-name: ui-slide-in-from-top; }
+.animate-scale-in { animation: ui-scale-in 0.2s ease-out forwards; }
+
+/* Keep emoji glyphs visible across font weights and dark mode */
+.emoji {
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  display: inline-block;
+}
+
+input, textarea, select { color: #18181b; }
+
+@media (prefers-color-scheme: dark) {
+  input, textarea, select { color: #f4f4f5; }
+  input::placeholder, textarea::placeholder { color: #71717a; }
+}

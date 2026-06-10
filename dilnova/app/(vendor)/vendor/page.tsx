@@ -1,5 +1,6 @@
 import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
+import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
@@ -87,32 +88,43 @@ export default async function VendorPage({ searchParams }: PageProps) {
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full flex-1">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-              {org.name}
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-              Vendor Control Workspace
-            </span>
+        <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+          <div className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white shadow-sm shrink-0">
+            {org.imageUrl ? (
+              <Image src={org.imageUrl} alt={`${org.name} logo`} fill className="object-cover" sizes="64px" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-400 font-extrabold text-xl sm:text-2xl">
+                {org.name.charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-55">
-            Storefront Console
-          </h1>
-          <p className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-sm mt-0.5">
-            {orgRole === 'org:admin'
-              ? 'Manage your product catalog, active stock levels, multiple branches, and point-of-sale registers.'
-              : 'Add products and services or process point-of-sale register checkouts.'}
-          </p>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+                {org.name}
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                Vendor Control Workspace
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+              Storefront Console
+            </h1>
+            <p className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-sm mt-0.5">
+              {orgRole === 'org:admin'
+                ? 'Manage your product catalog, active stock levels, multiple branches, and point-of-sale registers.'
+                : 'Add products and services or process point-of-sale register checkouts.'}
+            </p>
+          </div>
         </div>
         
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 self-start sm:self-center">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-start sm:self-center">
           {orgRole === 'org:admin' && (
             <Link
               href="/admin"
               className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-red-200 hover:bg-red-50 dark:border-red-905/40 dark:hover:bg-red-955/20 text-red-750 dark:text-red-400 transition-colors whitespace-nowrap cursor-pointer"
             >
-              ⚙️ Org Admin Console
+              <span className="emoji" aria-hidden="true">⚙️</span> Org Admin Console
             </Link>
           )}
           <Link
@@ -130,8 +142,8 @@ export default async function VendorPage({ searchParams }: PageProps) {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {/* Card 1: Catalog Size */}
             <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <span className="text-5xl">📁</span>
+              <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none">
+                <span className="text-5xl emoji">📁</span>
               </div>
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Catalog Items</p>
               <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 font-mono mt-1">{totalItems}</h3>
@@ -144,8 +156,8 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
             {/* Card 2: Active Branches */}
             <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <span className="text-5xl">🏬</span>
+              <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none">
+                <span className="text-5xl emoji">🏬</span>
               </div>
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Branches</p>
               <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 font-mono mt-1">{activeBranches}</h3>
@@ -156,8 +168,8 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
             {/* Card 3: Low Stock Alerts */}
             <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <span className="text-5xl">⚠️</span>
+              <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none">
+                <span className="text-5xl emoji">⚠️</span>
               </div>
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Low Stock Alerts</p>
               <h3 className={`text-2xl font-black font-mono mt-1 ${lowStockCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-900 dark:text-zinc-50'}`}>{lowStockCount}</h3>
@@ -168,8 +180,8 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
             {/* Card 4: Out of Stock Warnings */}
             <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <span className="text-5xl">🚫</span>
+              <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none">
+                <span className="text-5xl emoji">🚫</span>
               </div>
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Out of Stock</p>
               <h3 className={`text-2xl font-black font-mono mt-1 ${outOfStockCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-zinc-50'}`}>{outOfStockCount}</h3>
@@ -189,7 +201,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
                   : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
               }`}
             >
-              📁 Product Catalog
+              <span className="emoji text-sm" aria-hidden="true">📁</span> Product Catalog
             </Link>
             <Link
               href="?tab=inventory"
@@ -199,7 +211,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
                   : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
               }`}
             >
-              📦 Inventory Workspace
+              <span className="emoji text-sm" aria-hidden="true">📦</span> Inventory Workspace
             </Link>
           </div>
 
@@ -216,7 +228,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
                 />
               ) : (
                 <div className="text-center py-16 border border-zinc-250 rounded-2xl dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 shadow-sm space-y-4 max-w-xl mx-auto mt-6">
-                  <div className="text-5xl">👑</div>
+                  <div className="text-5xl emoji">👑</div>
                   <h2 className="text-lg font-black text-zinc-900 dark:text-white">Premium Inventory Management System</h2>
                   <p className="text-zinc-500 text-xs leading-relaxed">
                     Unlock multi-branch stock levels, supplier management directories, real-time POS cash register checkouts, and historical stock audit log tracking.
@@ -244,8 +256,8 @@ export default async function VendorPage({ searchParams }: PageProps) {
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Identity details panel */}
           <div className="relative overflow-hidden bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm dark:bg-zinc-955 dark:border-zinc-900">
-            <div className="absolute top-0 right-0 p-6 opacity-[0.02] dark:opacity-[0.05]">
-              <span className="text-9xl">👥</span>
+            <div className="absolute top-0 right-0 p-6 opacity-10 dark:opacity-15 pointer-events-none">
+              <span className="text-9xl emoji">👥</span>
             </div>
             <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-450 mb-3 font-mono">
               Active Member Session Details
@@ -270,7 +282,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
           <div className="border border-emerald-250 bg-emerald-50/50 rounded-2xl p-6 dark:border-emerald-900/40 dark:bg-emerald-950/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all hover:bg-emerald-50/80">
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                <span>🛒</span> Add Catalog Listing
+                <span className="emoji" aria-hidden="true">🛒</span> Add Catalog Listing
               </h3>
               <p className="text-xs text-emerald-650 dark:text-emerald-450">
                 Create new product or service listings and upload images for your storefront.
