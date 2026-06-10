@@ -164,6 +164,7 @@ export default function AddProductClient({
 
         if (result.success) {
           setMessage({ type: 'success', text: `✅ "${name}" added successfully!` });
+          router.refresh();
 
           // Reset Form Fields
           setName('');

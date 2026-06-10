@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { deleteProductAction } from './actions';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -24,12 +25,18 @@ interface ManageProductsClientProps {
 export default function ManageProductsClient({
   initialProducts,
 }: ManageProductsClientProps) {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [filter, setFilter] = useState<'all' | 'product' | 'service'>('all');
   const [search, setSearch] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Keep local list in sync when server data refreshes (e.g. after add on another page)
+  useEffect(() => {
+    setProducts(initialProducts);
+  }, [initialProducts]);
 
   // Auto-dismiss toasts
   useEffect(() => {
@@ -48,7 +55,8 @@ export default function ManageProductsClient({
         const result = await deleteProductAction(id);
         if (result.success) {
           setMessage({ type: 'success', text: `Deleted "${itemName}".` });
-          setProducts(products.filter((p) => p.id !== id));
+          setProducts((prev) => prev.filter((p) => p.id !== id));
+          router.refresh();
         }
       } catch (err) {
         setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to delete item.' });
