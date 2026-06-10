@@ -29,36 +29,58 @@ export default async function VendorPage({ searchParams }: PageProps) {
   const org = await client.organizations.getOrganization({ organizationId: orgId });
 
   const resolvedParams = await searchParams;
-  // For admins, default tab is catalog
   const activeTab = resolvedParams.tab || 'catalog';
 
-  // Fetch products and inventory data if org:admin
+  // Fetch products and inventory data in parallel to optimize loading latency (reduce TTFB)
   let vendorProducts: Product[] = [];
-  let inventoryData = null;
+  let inventoryData: any = null;
   let inventoryErrorMsg = '';
 
   if (orgRole === 'org:admin') {
-    if (activeTab === 'catalog') {
-      vendorProducts = (await db
-        .select({
-          id: schema.products.id,
-          name: schema.products.name,
-          type: schema.products.type,
-          description: schema.products.description,
-          price: schema.products.price,
-          imageUrl: schema.products.imageUrl,
-          media: schema.products.media,
-          categoryId: schema.products.categoryId,
-        })
-        .from(schema.products)
-        .where(eq(schema.products.orgId, orgId))) as Product[];
-    } else if (activeTab === 'inventory') {
-      try {
-        inventoryData = await getVendorInventoryData();
-      } catch (err) {
-        inventoryErrorMsg = err instanceof Error ? err.message : 'Unable to load inventory data.';
-      }
+    try {
+      const [productsResult, inventoryResult] = await Promise.all([
+        db
+          .select({
+            id: schema.products.id,
+            name: schema.products.name,
+            type: schema.products.type,
+            description: schema.products.description,
+            price: schema.products.price,
+            imageUrl: schema.products.imageUrl,
+            media: schema.products.media,
+            categoryId: schema.products.categoryId,
+          })
+          .from(schema.products)
+          .where(eq(schema.products.orgId, orgId)),
+        getVendorInventoryData().catch((err) => {
+          inventoryErrorMsg = err instanceof Error ? err.message : 'Unable to load inventory data.';
+          return null;
+        }),
+      ]);
+      vendorProducts = productsResult as Product[];
+      inventoryData = inventoryResult;
+    } catch (err) {
+      // Graceful fallback
     }
+  }
+
+  // Compute metrics summary stats for enterprise-grade KPI cards
+  const totalItems = vendorProducts.length;
+  const totalProducts = vendorProducts.filter((p) => p.type === 'product').length;
+  const totalServices = vendorProducts.filter((p) => p.type === 'service').length;
+  const activeBranches = inventoryData ? inventoryData.branches.length : 0;
+
+  let lowStockCount = 0;
+  let outOfStockCount = 0;
+  if (inventoryData && inventoryData.inventoryItems) {
+    inventoryData.inventoryItems.forEach((item: any) => {
+      const qty = item.quantity ?? 0;
+      if (qty === 0) {
+        outOfStockCount++;
+      } else if (qty <= item.lowStockThreshold) {
+        lowStockCount++;
+      }
+    });
   }
 
   return (
@@ -74,7 +96,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
               Vendor Control Workspace
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-55">
             Storefront Console
           </h1>
           <p className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-sm mt-0.5">
@@ -88,7 +110,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
           {orgRole === 'org:admin' && (
             <Link
               href="/admin"
-              className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-red-200 hover:bg-red-50 dark:border-red-905/40 dark:hover:bg-red-955/20 text-red-750 dark:text-red-400 transition-colors whitespace-nowrap"
+              className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-red-200 hover:bg-red-50 dark:border-red-905/40 dark:hover:bg-red-955/20 text-red-750 dark:text-red-400 transition-colors whitespace-nowrap cursor-pointer"
             >
               ⚙️ Org Admin Console
             </Link>
@@ -104,24 +126,77 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
       {orgRole === 'org:admin' ? (
         <>
-          {/* Tabs Switcher for Admin */}
-          <div className="flex gap-2 border-b border-zinc-250 dark:border-zinc-850 pb-px mb-6 overflow-x-auto">
+          {/* Enterprise-grade KPI Metrics Summary Dashboard */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {/* Card 1: Catalog Size */}
+            <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <span className="text-5xl">📁</span>
+              </div>
+              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Catalog Items</p>
+              <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 font-mono mt-1">{totalItems}</h3>
+              <div className="flex gap-2 text-[10px] text-zinc-400 mt-2 font-mono">
+                <span className="text-indigo-600 dark:text-indigo-400 font-bold">{totalProducts} products</span>
+                <span>•</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">{totalServices} services</span>
+              </div>
+            </div>
+
+            {/* Card 2: Active Branches */}
+            <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <span className="text-5xl">🏬</span>
+              </div>
+              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Branches</p>
+              <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 font-mono mt-1">{activeBranches}</h3>
+              <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-2 font-mono">
+                Active branch channels
+              </div>
+            </div>
+
+            {/* Card 3: Low Stock Alerts */}
+            <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <span className="text-5xl">⚠️</span>
+              </div>
+              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Low Stock Alerts</p>
+              <h3 className={`text-2xl font-black font-mono mt-1 ${lowStockCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-900 dark:text-zinc-50'}`}>{lowStockCount}</h3>
+              <div className="text-[10px] text-zinc-450 dark:text-zinc-500 mt-2 font-mono">
+                {lowStockCount > 0 ? 'Requires restocking soon' : 'All stock levels OK'}
+              </div>
+            </div>
+
+            {/* Card 4: Out of Stock Warnings */}
+            <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <span className="text-5xl">🚫</span>
+              </div>
+              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Out of Stock</p>
+              <h3 className={`text-2xl font-black font-mono mt-1 ${outOfStockCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-900 dark:text-zinc-50'}`}>{outOfStockCount}</h3>
+              <div className="text-[10px] text-zinc-450 dark:text-zinc-500 mt-2 font-mono">
+                {outOfStockCount > 0 ? 'Requires immediate action' : 'No empty stock lanes'}
+              </div>
+            </div>
+          </div>
+
+          {/* Premium Pill Segmented Tabs Switcher */}
+          <div className="flex bg-zinc-100/80 dark:bg-zinc-900/60 backdrop-blur-md p-1 rounded-2xl mb-6 border border-zinc-200/50 dark:border-zinc-800/30 max-w-sm">
             <Link
               href="?tab=catalog"
-              className={`pb-2.5 px-4 text-xs font-extrabold transition-all border-b-2 whitespace-nowrap ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'catalog'
-                  ? 'border-purple-650 text-purple-700 dark:text-purple-400 font-black'
-                  : 'border-transparent text-zinc-450 hover:text-zinc-700'
+                  ? 'bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
               }`}
             >
               📁 Product Catalog
             </Link>
             <Link
               href="?tab=inventory"
-              className={`pb-2.5 px-4 text-xs font-extrabold transition-all border-b-2 whitespace-nowrap ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'inventory'
-                  ? 'border-purple-650 text-purple-700 dark:text-purple-400 font-black'
-                  : 'border-transparent text-zinc-450 hover:text-zinc-700'
+                  ? 'bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
               }`}
             >
               📦 Inventory Workspace
@@ -168,9 +243,12 @@ export default async function VendorPage({ searchParams }: PageProps) {
         /* Regular Members Dashboard (Non-Admin View) */
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Identity details panel */}
-          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm dark:bg-zinc-950 dark:border-zinc-900">
+          <div className="relative overflow-hidden bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm dark:bg-zinc-955 dark:border-zinc-900">
+            <div className="absolute top-0 right-0 p-6 opacity-[0.02] dark:opacity-[0.05]">
+              <span className="text-9xl">👥</span>
+            </div>
             <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-450 mb-3 font-mono">
-              Active Identity Details
+              Active Member Session Details
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono text-zinc-650 dark:text-zinc-400">
               <div>
@@ -189,7 +267,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
           </div>
 
           {/* Member Banner Card */}
-          <div className="border border-emerald-250 bg-emerald-50/50 rounded-2xl p-6 dark:border-emerald-900/40 dark:bg-emerald-950/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="border border-emerald-250 bg-emerald-50/50 rounded-2xl p-6 dark:border-emerald-900/40 dark:bg-emerald-950/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all hover:bg-emerald-50/80">
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
                 <span>🛒</span> Add Catalog Listing
