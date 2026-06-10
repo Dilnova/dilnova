@@ -425,43 +425,16 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
 
     startTransition(async () => {
       try {
-        const payload = posCart.map((item) => ({
+        const checkoutItems = posCart.map((item) => ({
           productId: item.product.productId,
           productName: item.product.productName,
           quantity: item.quantity,
-          unitPrice: item.product.price || 0, // In central inventory lookup, let's fetch product price or fallback to catalog price. We need catalog price!
+          unitPrice: item.product.productPrice,
         }));
-
-        // Find product price in data
-        const checkoutItems = payload.map((item) => {
-          const matchedInv = data.inventoryItems.find((inv) => inv.productId === item.productId);
-          const matchedBranchInv = data.branchInventory.find(
-            (bi) => bi.productId === item.productId && bi.branchId === selectedBranchId
-          );
-          // Let's search inventory item price
-          const price = 999; // default mock fallback
-          return {
-            ...item,
-            unitPrice: 1000, // mock price in cents ($10.00). We can fetch price from product if needed.
-          };
-        });
-
-        // Let's resolve correct unitPrice using database schema values or local cache
-        const finalCheckoutItems = checkoutItems.map(item => {
-          // Let's get product catalog item to fetch its original price
-          const catalogItem = data.inventoryItems.find(inv => inv.productId === item.productId);
-          // Wait, let's find the price in central product list
-          // For safety, let's look up if we can get it from inventory item:
-          // Wait, let's add `price` to query return in actions or just compute it. Let's send catalog product price.
-          return {
-            ...item,
-            unitPrice: 1500, // mock base price
-          };
-        });
 
         const result = await processBillingCheckoutAction({
           branchId: selectedBranchId,
-          items: finalCheckoutItems,
+          items: checkoutItems,
           paymentMethod: posPaymentMethod,
           customerName: posCustomerName,
           notes: posNotes,
@@ -474,7 +447,11 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
           id: result.receiptId,
           branchName: data.branches.find(b => b.id === selectedBranchId)?.name || 'Branch Register',
           cashier: 'Cashier Register',
-          items: posCart.map(i => ({ name: i.product.productName, qty: i.quantity, price: 15.00 })),
+          items: posCart.map((i) => ({
+            name: i.product.productName,
+            qty: i.quantity,
+            price: i.product.productPrice / 100,
+          })),
           total: result.totalAmount / 100,
           paymentMethod: posPaymentMethod,
           customerName: posCustomerName,
