@@ -10,14 +10,19 @@ interface VendorProfileFormProps {
     address?: string;
     phone?: string;
     bannerUrl?: string;
+    stockAllocationMode?: 'target_branch' | 'central_intake';
   };
+  isAdmin?: boolean;
 }
 
-export default function VendorProfileForm({ orgId, initialMetadata }: VendorProfileFormProps) {
+export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = false }: VendorProfileFormProps) {
   const [description, setDescription] = useState(initialMetadata.description || '');
   const [address, setAddress] = useState(initialMetadata.address || '');
   const [phone, setPhone] = useState(initialMetadata.phone || '');
   const [bannerUrl, setBannerUrl] = useState(initialMetadata.bannerUrl || '');
+  const [stockAllocationMode, setStockAllocationMode] = useState<'target_branch' | 'central_intake'>(
+    initialMetadata.stockAllocationMode || 'central_intake'
+  );
 
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -33,6 +38,7 @@ export default function VendorProfileForm({ orgId, initialMetadata }: VendorProf
           address,
           phone,
           bannerUrl,
+          stockAllocationMode,
         });
         if (result.success) {
           setMessage({ type: 'success', text: 'Storefront profile updated successfully!' });
@@ -133,6 +139,48 @@ export default function VendorProfileForm({ orgId, initialMetadata }: VendorProf
           />
         </div>
       </div>
+
+      {/* Stock Allocation Settings — Only editable/visible by Org Admin */}
+      {isAdmin && (
+        <div className="space-y-3 pt-6 border-t border-zinc-100 dark:border-zinc-900">
+          <div>
+            <h4 className="text-sm font-bold text-zinc-805 dark:text-zinc-150">Stock Allocation Configuration</h4>
+            <p className="text-[11px] text-zinc-400 mt-0.5">
+              Choose how your organization allocates initial stock when listing new products.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setStockAllocationMode('central_intake')}
+              className={`flex flex-col items-start p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                stockAllocationMode === 'central_intake'
+                  ? 'bg-purple-50 border-purple-300 text-purple-700 shadow-sm dark:bg-purple-950/20 dark:border-purple-800 dark:text-purple-355'
+                  : 'bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50/50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400'
+              }`}
+            >
+              <span className="font-bold text-xs">🏢 Central Intake & Manual Distribution</span>
+              <span className="text-[10px] opacity-80 mt-1 leading-relaxed">
+                New stock is deposited into the Main/Default branch. Other branches start at 0, and the admin distributes it manually from the inventory workspace.
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStockAllocationMode('target_branch')}
+              className={`flex flex-col items-start p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                stockAllocationMode === 'target_branch'
+                  ? 'bg-purple-50 border-purple-300 text-purple-700 shadow-sm dark:bg-purple-950/20 dark:border-purple-800 dark:text-purple-355'
+                  : 'bg-white border-zinc-200 text-zinc-500 hover:bg-zinc-50/50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400'
+              }`}
+            >
+              <span className="font-bold text-xs">🎯 Destination Branch Selector</span>
+              <span className="text-[10px] opacity-80 mt-1 leading-relaxed">
+                A "Destination Branch" dropdown shows on the Add Item page. Initial stock goes directly to the chosen branch registry.
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="pt-4 border-t border-zinc-100 dark:border-zinc-900 flex justify-end">
         <button

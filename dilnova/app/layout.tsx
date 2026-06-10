@@ -84,11 +84,19 @@ export default async function RootLayout({
       { href: '/contact', label: 'Contact Us' },
     ];
 
+    if (orgId && (orgRole === 'org:admin' || orgRole === 'org:member')) {
+      links.push({
+        href: '/vendor',
+        label: 'Storefront Console',
+        colorClass: 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-semibold',
+      });
+    }
+
     if (orgId && orgRole === 'org:admin') {
       links.push({
-        href: '/vendor/products',
-        label: 'Manage Catalog',
-        colorClass: 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300',
+        href: '/admin',
+        label: 'Org Admin Console',
+        colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold',
       });
     }
 
@@ -100,11 +108,11 @@ export default async function RootLayout({
       });
     }
 
-    if (orgId && orgRole === 'org:admin') {
+    if (userId) {
       links.push({
-        href: '/admin',
-        label: 'Admin Console',
-        colorClass: 'text-rose-600 hover:text-rose-800 dark:text-rose-450 dark:hover:text-rose-350 font-semibold',
+        href: '/customer',
+        label: 'Customer Portal',
+        colorClass: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-semibold',
       });
     }
 

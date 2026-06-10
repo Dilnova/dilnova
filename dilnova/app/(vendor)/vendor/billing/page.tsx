@@ -47,7 +47,7 @@ export default async function VendorBillingPage() {
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           {orgRole === 'org:admin' && (
             <Link
-              href="/vendor/products"
+              href="/vendor?tab=inventory"
               className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors whitespace-nowrap"
             >
               ← Inventory

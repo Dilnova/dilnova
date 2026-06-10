@@ -18,6 +18,10 @@ export default async function AddProductPage() {
   // 2. Fetch Organization Details from Clerk
   const client = await clerkClient();
   const org = await client.organizations.getOrganization({ organizationId: orgId });
+  const metadata = (org.publicMetadata || {}) as {
+    stockAllocationMode?: 'target_branch' | 'central_intake';
+  };
+  const stockAllocationMode = metadata.stockAllocationMode || 'central_intake';
 
   // 3. Resolve Premium Status & Branch Names
   const premiumStatus = await getPremiumStatus(orgId);
@@ -77,7 +81,17 @@ export default async function AddProductPage() {
     })
     .from(schema.categories);
 
-  // 5. Fetch max media limit setting
+  // 5. Fetch All Active Branches for allocation dropdown selection
+  const branches = await db
+    .select({
+      id: schema.branches.id,
+      name: schema.branches.name,
+      isDefault: schema.branches.isDefault,
+    })
+    .from(schema.branches)
+    .where(eq(schema.branches.orgId, orgId));
+
+  // 6. Fetch max media limit setting
   const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
   const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
 
@@ -96,17 +110,19 @@ export default async function AddProductPage() {
         
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           <Link
-            href="/vendor/products"
+            href={orgRole === 'org:admin' ? "/vendor?tab=catalog" : "/vendor"}
             className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors whitespace-nowrap"
           >
             ← Catalog
           </Link>
-          <Link
-            href="/vendor"
-            className="hidden sm:inline-flex text-xs font-semibold px-3 py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors"
-          >
-            Profile
-          </Link>
+          {orgRole === 'org:admin' && (
+            <Link
+              href="/admin"
+              className="hidden sm:inline-flex text-xs font-semibold px-3 py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors"
+            >
+              Org Admin
+            </Link>
+          )}
         </div>
       </div>
 
@@ -114,6 +130,9 @@ export default async function AddProductPage() {
       <AddProductClient 
         categories={categories} 
         maxMediaLimit={maxMediaLimit}
+        branches={branches}
+        isMultiBranchActive={premiumStatus.multiBranchActive}
+        stockAllocationMode={stockAllocationMode}
       />
     </main>
   );

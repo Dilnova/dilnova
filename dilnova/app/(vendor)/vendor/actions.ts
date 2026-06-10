@@ -12,6 +12,7 @@ interface VendorMetadataInput {
   address: string;
   phone: string;
   bannerUrl: string;
+  stockAllocationMode?: 'target_branch' | 'central_intake';
 }
 
 /**
@@ -47,6 +48,7 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
         address: parsed.data.data.address,
         phone: parsed.data.data.phone,
         bannerUrl: parsed.data.data.bannerUrl,
+        stockAllocationMode: parsed.data.data.stockAllocationMode,
       },
     });
 
@@ -62,6 +64,7 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
           address: parsed.data.data.address,
           phone: parsed.data.data.phone,
           bannerUrl: parsed.data.data.bannerUrl,
+          stockAllocationMode: parsed.data.data.stockAllocationMode,
         },
       });
     }

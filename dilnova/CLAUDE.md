@@ -17,8 +17,8 @@ This file provides quick-reference commands, architecture details, and coding co
 ### 1. Multi-Tenant Authorization & RBAC
 *   **Context Isolation**: Always retrieve `orgId` from Clerk's `auth()` inside pages and server actions to segregate and filter data records.
 *   **Role Protection**:
-    *   **Admins (`org:admin`)**: Only admins can access catalog management (`/vendor/products`), adjust suppliers, assign branch cashiers, and view/modify memberships on the `/admin` console.
-    *   **Members (`org:member`)**: Permitted to run **POS Register** (`/vendor/billing`) and **+ Add Item** listings (`/vendor/products/add`), but blocked from catalog management dashboard and members console.
+    *   **Admins (`org:admin`)**: Only admins can access catalog management (`/vendor/products`), adjust suppliers, assign branch cashiers, and view/modify memberships on the `/vendor` console.
+    *   **Members (`org:member`)**: Permitted to run **POS Register** (`/vendor/billing`) and **+ Add Item** listings (`/vendor/products/add`), but blocked from catalog management dashboard.
     *   **Actions Security**: Always duplicate role validation checks at the Server Action level (`addProductAction`, `deleteProductAction`, etc.) using `auth()`.
 
 ### 2. Code Conventions

@@ -17,11 +17,17 @@ interface Category {
 interface AddProductClientProps {
   categories: Category[];
   maxMediaLimit: number;
+  branches?: { id: string; name: string; isDefault: boolean }[];
+  isMultiBranchActive?: boolean;
+  stockAllocationMode?: 'target_branch' | 'central_intake';
 }
 
 export default function AddProductClient({
   categories,
   maxMediaLimit,
+  branches = [],
+  isMultiBranchActive = false,
+  stockAllocationMode = 'central_intake',
 }: AddProductClientProps) {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -30,6 +36,15 @@ export default function AddProductClient({
   const [price, setPrice] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [quantity, setQuantity] = useState('0');
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+
+  // Default to main/default branch
+  useEffect(() => {
+    if (branches && branches.length > 0) {
+      const def = branches.find((b) => b.isDefault) || branches[0];
+      setSelectedBranchId(def.id);
+    }
+  }, [branches]);
   
   // Media Upload State (multiple files)
   const [media, setMedia] = useState<{ url: string; type: 'image' | 'video' }[]>([]);
@@ -144,6 +159,7 @@ export default function AddProductClient({
           media: media,
           categoryId,
           quantity: type === 'product' ? quantityNum : undefined,
+          branchId: type === 'product' && isMultiBranchActive && stockAllocationMode === 'target_branch' ? selectedBranchId : undefined,
         });
 
         if (result.success) {
@@ -246,7 +262,11 @@ export default function AddProductClient({
               </div>
 
               {/* Price, Category & Quantity — stacked on mobile, grid layout on larger screens */}
-              <div className={`grid grid-cols-1 ${type === 'product' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
+              <div className={`grid grid-cols-1 ${
+                type === 'product'
+                  ? (isMultiBranchActive && stockAllocationMode === 'target_branch' && branches && branches.length > 0 ? 'sm:grid-cols-4' : 'sm:grid-cols-3')
+                  : 'sm:grid-cols-2'
+              } gap-3`}>
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
                     Price (USD) <span className="text-rose-500">*</span>
@@ -293,6 +313,25 @@ export default function AddProductClient({
                       placeholder="0"
                       className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 rounded-xl text-base sm:text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 font-mono transition-all"
                     />
+                  </div>
+                )}
+
+                {type === 'product' && isMultiBranchActive && stockAllocationMode === 'target_branch' && branches && branches.length > 0 && (
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                      Destination Branch
+                    </label>
+                    <select
+                      value={selectedBranchId}
+                      onChange={(e) => setSelectedBranchId(e.target.value)}
+                      className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 rounded-xl text-base sm:text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 transition-all font-semibold"
+                    >
+                      {branches.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          🏬 {b.name} {b.isDefault ? '(Main)' : ''}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
               </div>

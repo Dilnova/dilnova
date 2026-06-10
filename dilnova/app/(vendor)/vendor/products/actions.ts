@@ -25,6 +25,7 @@ export async function addProductAction(data: {
   media: { url: string; type: 'image' | 'video' }[];
   categoryId: string;
   quantity?: number;
+  branchId?: string;
 }) {
   return runWithCorrelationId(async () => {
     try {
@@ -104,53 +105,32 @@ export async function addProductAction(data: {
             });
           }
 
-          // If Multi-Branch feature is active, auto-allocate to relevant branches
+          // If Multi-Branch feature is active, allocate to selected/target branch, and initialize others to 0
           if (premiumStatus.multiBranchActive) {
-            // Find if the creator has any assigned branch(es)
-            const userBranches = await tx
-              .select({ branchId: schema.branchMembers.branchId })
-              .from(schema.branchMembers)
-              .innerJoin(schema.branches, eq(schema.branchMembers.branchId, schema.branches.id))
-              .where(
-                and(
-                  eq(schema.branchMembers.memberUserId, userId),
-                  eq(schema.branches.orgId, orgId)
-                )
-              );
+            // Get all branches of the organization to initialize tracking
+            const orgBranches = await tx
+              .select({ id: schema.branches.id, isDefault: schema.branches.isDefault })
+              .from(schema.branches)
+              .where(eq(schema.branches.orgId, orgId));
 
-            if (userBranches.length > 0) {
-              // Allocate to all assigned branches of this member
-              for (const ub of userBranches) {
-                await tx.insert(schema.branchInventory).values({
-                  branchId: ub.branchId,
-                  productId: prod.id,
-                  quantity: initialQty,
-                  sku: null,
-                  binLocation: null,
-                });
-              }
-            } else {
-              // Fallback: allocate to the default (Main Register / Warehouse) branch of the org
-              const [defaultBranch] = await tx
-                .select({ id: schema.branches.id })
-                .from(schema.branches)
-                .where(
-                  and(
-                    eq(schema.branches.orgId, orgId),
-                    eq(schema.branches.isDefault, true)
-                  )
-                )
-                .limit(1);
+            // Determine target branch for initial stock allocation
+            let targetBranchId = parsed.data.branchId;
+            
+            // If no target branch specified, fallback to default/main branch
+            if (!targetBranchId) {
+              const defaultBranch = orgBranches.find((b) => b.isDefault) || orgBranches[0];
+              targetBranchId = defaultBranch?.id;
+            }
 
-              if (defaultBranch) {
-                await tx.insert(schema.branchInventory).values({
-                  branchId: defaultBranch.id,
-                  productId: prod.id,
-                  quantity: initialQty,
-                  sku: null,
-                  binLocation: null,
-                });
-              }
+            // Create inventory records for all branches, putting the initial quantity only in the target branch
+            for (const ob of orgBranches) {
+              await tx.insert(schema.branchInventory).values({
+                branchId: ob.id,
+                productId: prod.id,
+                quantity: ob.id === targetBranchId ? initialQty : 0, // only the target branch gets the initial stock
+                sku: null,
+                binLocation: null,
+              });
             }
           }
         }

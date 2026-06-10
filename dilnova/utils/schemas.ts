@@ -104,6 +104,7 @@ export const vendorMetadataSchema = z.object({
         (val) => val === '' || val.startsWith('https://'),
         { message: 'Banner URL must use HTTPS.' }
       ),
+    stockAllocationMode: z.enum(['target_branch', 'central_intake']).default('central_intake'),
   }),
 });
 
@@ -123,6 +124,7 @@ export const addProductSchema = z.object({
   ).default([]),
   categoryId: z.string().uuid('Invalid category ID.').or(z.literal('')).default(''),
   quantity: z.number().int('Quantity must be a whole number.').nonnegative('Quantity cannot be negative.').optional().default(0),
+  branchId: z.string().uuid('Invalid branch ID.').or(z.literal('')).optional().default(''),
 });
 
 export const vendorDeleteProductSchema = z.object({
