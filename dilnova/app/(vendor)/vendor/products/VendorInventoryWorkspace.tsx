@@ -18,7 +18,6 @@ import {
 } from './inventoryActions';
 
 // ── Types ──
-type ViewMode = 'simple' | 'advanced';
 type AdvancedTab = 'stock' | 'suppliers' | 'orders' | 'movements' | 'branches';
 
 interface Props {
@@ -54,7 +53,6 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
   };
 
   // View States
-  const [viewMode, setViewMode] = useState<ViewMode>('simple');
   const [advancedTab, setAdvancedTab] = useState<AdvancedTab>('stock');
 
   // Branch selector (Premium multi-branch)
@@ -530,37 +528,11 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
         </div>
       )}
 
-      {/* ── View Selector & Branch Filter ── */}
-      <div className="bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Workspace Mode:</span>
-          <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
-            <button
-              onClick={() => setViewMode('simple')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'simple'
-                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-700'
-              }`}
-            >
-              Simple View
-            </button>
-            <button
-              onClick={() => setViewMode('advanced')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'advanced'
-                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-700'
-              }`}
-            >
-              Advanced View
-            </button>
-          </div>
-        </div>
-
-        {data.premiumStatus.multiBranchActive && (
+      {/* ── Branch Filter ── */}
+      {data.premiumStatus.multiBranchActive && (
+        <div className="bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Active Branch:</span>
+            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Active Branch Context:</span>
             <select
               value={selectedBranchId}
               onChange={(e) => setSelectedBranchId(e.target.value)}
@@ -573,167 +545,11 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
               ))}
             </select>
           </div>
-        )}
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════ */}
-      {/* ── SIMPLE VIEW ──────────────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════ */}
-      {viewMode === 'simple' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-extrabold text-zinc-900 dark:text-zinc-50">Quick Stock Adjust</h2>
-              <p className="text-xs text-zinc-500">Quickly view levels and increment or decrement stock.</p>
-            </div>
-            {data.productsWithoutInventory.length > 0 && (
-              <button
-                onClick={() => setIsInitModalOpen(true)}
-                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-[0.97]"
-              >
-                + Init Stock Tracking
-              </button>
-            )}
-          </div>
-
-          <div className="bg-white border border-zinc-200 rounded-2xl dark:bg-zinc-950 dark:border-zinc-800 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex gap-2">
-              <input
-                type="text"
-                value={stockSearch}
-                onChange={(e) => setStockSearch(e.target.value)}
-                placeholder="Filter by product name..."
-                className="w-full px-4 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 focus:outline-none"
-              />
-            </div>
-
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-900">
-              {filteredStock.map((item) => {
-                const info = getProductStockInfo(item.productId);
-                const isLow = info.qty > 0 && info.qty <= item.lowStockThreshold;
-                const isOut = info.qty === 0;
-
-                return (
-                  <div key={item.id} className="p-4 flex items-center justify-between gap-4 hover:bg-zinc-50/40 dark:hover:bg-zinc-900/20">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{item.productName}</span>
-                        {isOut ? (
-                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400">OUT</span>
-                        ) : isLow ? (
-                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">LOW</span>
-                        ) : (
-                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400">OK</span>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-zinc-400 mt-0.5 font-mono">
-                        SKU: {info.sku} · Location: {info.binLocation}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => {
-                            if (info.qty <= 0) return;
-                            startTransition(async () => {
-                              try {
-                                if (info.isBranch) {
-                                  await allocateBranchStockAction({
-                                    branchId: selectedBranchId,
-                                    productId: item.productId,
-                                    quantity: info.qty - 1,
-                                    sku: info.sku !== '—' ? info.sku : undefined,
-                                    binLocation: info.binLocation !== '—' ? info.binLocation : undefined,
-                                  });
-                                } else {
-                                  await vendorAdjustInventoryAction({
-                                    inventoryId: item.id,
-                                    quantityChange: -1,
-                                    type: 'manual_adjustment',
-                                    reason: 'Simple view quick decrement',
-                                  });
-                                }
-                                triggerNotification(true, 'Stock decremented.');
-                                refreshData();
-                              } catch (err) {
-                                triggerNotification(false, 'Failed to adjust stock.');
-                              }
-                            });
-                          }}
-                          disabled={info.qty <= 0 || isPending}
-                          className="w-7 h-7 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 flex items-center justify-center font-bold text-xs cursor-pointer active:scale-95 disabled:opacity-50"
-                        >
-                          -
-                        </button>
-                        <span className="w-12 text-center font-black font-mono text-sm dark:text-white">
-                          {info.qty}
-                        </span>
-                        <button
-                          onClick={() => {
-                            startTransition(async () => {
-                              try {
-                                if (info.isBranch) {
-                                  await allocateBranchStockAction({
-                                    branchId: selectedBranchId,
-                                    productId: item.productId,
-                                    quantity: info.qty + 1,
-                                    sku: info.sku !== '—' ? info.sku : undefined,
-                                    binLocation: info.binLocation !== '—' ? info.binLocation : undefined,
-                                  });
-                                } else {
-                                  await vendorAdjustInventoryAction({
-                                    inventoryId: item.id,
-                                    quantityChange: 1,
-                                    type: 'restock',
-                                    reason: 'Simple view quick increment',
-                                  });
-                                }
-                                triggerNotification(true, 'Stock incremented.');
-                                refreshData();
-                              } catch (err) {
-                                triggerNotification(false, 'Failed to adjust stock.');
-                              }
-                            });
-                          }}
-                          disabled={isPending}
-                          className="w-7 h-7 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 flex items-center justify-center font-bold text-xs cursor-pointer active:scale-95"
-                        >
-                          +
-                        </button>
-                      </div>
-
-                      {data.premiumStatus.multiBranchActive && (
-                        <button
-                          onClick={() => {
-                            setAllocatingProduct(item);
-                            setAllocateQty(info.qty.toString());
-                            setAllocateSku(info.sku !== '—' ? info.sku : '');
-                            setAllocateBin(info.binLocation !== '—' ? info.binLocation : '');
-                            setIsAllocateModalOpen(true);
-                          }}
-                          className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400 rounded-lg text-[10px] font-bold cursor-pointer"
-                        >
-                          Allocate
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              {filteredStock.length === 0 && (
-                <div className="p-8 text-center text-zinc-400 font-mono text-xs">No records found.</div>
-              )}
-            </div>
-          </div>
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════ */}
-      {/* ── ADVANCED VIEW ─────────────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════ */}
-      {viewMode === 'advanced' && (
-        <div className="space-y-4">
+      {/* ── Tabs & Tables View ── */}
+      <div className="space-y-4">
           {/* Sub Navigation */}
           <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
             {[
@@ -784,6 +600,15 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                     </button>
                   ))}
                 </div>
+
+                {data.productsWithoutInventory.length > 0 && (
+                  <button
+                    onClick={() => setIsInitModalOpen(true)}
+                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all active:scale-[0.97] sm:ml-auto whitespace-nowrap"
+                  >
+                    + Init Stock Tracking
+                  </button>
+                )}
               </div>
 
               <div className="bg-white border border-zinc-200 rounded-2xl dark:bg-zinc-950 dark:border-zinc-800 shadow-sm overflow-hidden">
@@ -1087,9 +912,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
               </div>
             </div>
           )}
-
         </div>
-      )}
 
       {/* ── MODALS ── */}
 
