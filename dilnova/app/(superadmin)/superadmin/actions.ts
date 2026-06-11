@@ -3,7 +3,7 @@
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { clerkClient } from '@clerk/nextjs/server';
 import {
   createCategorySchema,
@@ -383,13 +383,19 @@ export async function updateContactStatusAction(
 
       const clerkUser = userList.data?.[0];
       if (clerkUser) {
-        const nextRole = status === 'connected' ? 'vendor' : 'customer';
-        await client.users.updateUserMetadata(clerkUser.id, {
-          publicMetadata: {
-            role: nextRole,
-          },
-        });
-        console.log(`Successfully updated Clerk user ${clerkUser.id} role to ${nextRole}`);
+        const existingRole = clerkUser.publicMetadata?.role as string | undefined;
+        if (existingRole === 'admin') {
+          console.log(`Skipped role sync for superadmin user ${clerkUser.id}.`);
+        } else if (status !== 'pending') {
+          const nextRole = status === 'connected' ? 'vendor' : 'customer';
+          await client.users.updateUserMetadata(clerkUser.id, {
+            publicMetadata: {
+              role: nextRole,
+            },
+          });
+          revalidateTag('clerk-user-role', 'max');
+          console.log(`Successfully updated Clerk user ${clerkUser.id} role to ${nextRole}`);
+        }
       } else {
         console.log(`No Clerk user found with email ${submission.email} to sync role.`);
       }

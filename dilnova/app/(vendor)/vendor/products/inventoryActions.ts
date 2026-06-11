@@ -28,16 +28,19 @@ import { rateLimit } from '@/utils/rateLimit';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 
 // Helper to authenticate vendor context and check premium status
-async function verifyVendorAccess(options?: { requireAdminOrVendor?: boolean }) {
+async function verifyVendorAccess(options?: { allowMember?: boolean }) {
   const { userId, orgId, orgRole } = await auth();
   if (!userId || !orgId) {
     throw new Error('Not authorized: You must be signed in with an active organization.');
   }
 
-  // POS Billing allows any member if billing is active, but dashboard adjustments require admin/vendor role
-  const checkRole = options?.requireAdminOrVendor ?? true;
-  if (checkRole && orgRole !== 'org:admin' && orgRole !== 'org:member') {
-    throw new Error('Not authorized: You do not have permissions to manage inventory settings.');
+  const allowMember = options?.allowMember === true;
+  if (allowMember) {
+    if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
+      throw new Error('Not authorized: You do not have access to this organization.');
+    }
+  } else if (orgRole !== 'org:admin') {
+    throw new Error('Not authorized: Only organization admins can perform this action.');
   }
 
   const premiumStatus = await getPremiumStatus(orgId);
@@ -52,7 +55,7 @@ async function verifyVendorAccess(options?: { requireAdminOrVendor?: boolean }) 
 
 export async function getVendorInventoryData() {
   return runWithCorrelationId(async () => {
-    const { userId, orgId, orgRole, premiumStatus } = await verifyVendorAccess({ requireAdminOrVendor: false });
+    const { userId, orgId, orgRole, premiumStatus } = await verifyVendorAccess({ allowMember: true });
 
     // 1. Fetch Products
     const vendorProducts = await db
@@ -845,6 +848,18 @@ export async function assignBranchMemberAction(data: { branchId: string; memberU
       throw new Error('Branch not found or access denied.');
     }
 
+    const client = await clerkClient();
+    const memberships = await client.organizations.getOrganizationMembershipList({
+      organizationId: orgId,
+      limit: 100,
+    });
+    const isOrgMember = memberships.data.some(
+      (membership) => membership.publicUserData?.userId === parsed.data.memberUserId
+    );
+    if (!isOrgMember) {
+      throw new Error('Selected user is not a member of this organization.');
+    }
+
     // Check if user is already assigned to a branch
     const [existing] = await db
       .select()
@@ -913,7 +928,7 @@ export async function processBillingCheckoutAction(data: {
   return runWithCorrelationId(async () => {
     await rateLimit(30, 60 * 1000);
     // Any org member can process checkout if billing register is active, no checkRole requirement.
-    const { userId, orgId, orgRole, premiumStatus } = await verifyVendorAccess({ requireAdminOrVendor: false });
+    const { userId, orgId, orgRole, premiumStatus } = await verifyVendorAccess({ allowMember: true });
     if (!premiumStatus.billingActive) {
       throw new Error('POS Billing Register feature is not unlocked on your account tier.');
     }

@@ -35,9 +35,9 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
       throw new Error('Not authorized: You do not belong to this organization.');
     }
 
-    // 2. Authorize: Verify the user has administrative or vendor permissions in the organization
-    if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
-      throw new Error('Not authorized: Only vendors or administrators can configure profile settings.');
+    // 2. Authorize: Only organization admins can update storefront profile settings
+    if (orgRole !== 'org:admin') {
+      throw new Error('Not authorized: Only organization admins can configure profile settings.');
     }
 
     const client = await clerkClient();

@@ -410,9 +410,11 @@ export async function sendCartSummaryEmailAction(
 // SIMULATED CHECKOUT — Stock Validation & Order Placement
 // ═══════════════════════════════════════════════════════════
 
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
+import { normalizeCustomerEmail, getNormalizedClerkUserEmail } from '@/utils/customerEmail';
 import { resolveCheckoutOptionsForOrgs } from '@/utils/checkoutOptions';
 import {
   resolveInitialOrderStatus,
@@ -557,15 +559,32 @@ export async function simulatedCheckoutAction(
       return { success: false, error: parsed.error.issues[0]?.message || 'Invalid checkout data.' };
     }
 
+    let name = parsed.data.customerName.trim();
+    let email = normalizeCustomerEmail(parsed.data.customerEmail);
     const {
-      customerName: name,
-      customerEmail: email,
       items: validItems,
       totalAmount: total,
       fulfillmentMethod: fulfillment,
       paymentMethod: payment,
       pickupBranchId: pickupBranch,
     } = parsed.data;
+
+    const { userId } = await auth();
+    if (userId) {
+      const user = await currentUser();
+      if (!user) {
+        return { success: false, error: 'Authentication session is invalid. Please sign in again.' };
+      }
+      const sessionEmail = getNormalizedClerkUserEmail(user);
+      if (!sessionEmail) {
+        return {
+          success: false,
+          error: 'Your account does not have an email address. Please update your profile before checkout.',
+        };
+      }
+      email = sessionEmail;
+      name = user.fullName || user.firstName || name;
+    }
 
     // ── Rate Limiting ──
     await rateLimit(5, 60 * 1000); // Max 5 checkouts per minute

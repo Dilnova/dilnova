@@ -19,8 +19,8 @@ export async function updateProductStockAvailabilityAction(
     if (!userId || !orgId) {
       throw new Error('Not authorized.');
     }
-    if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
-      throw new Error('Not authorized to update inventory.');
+    if (orgRole !== 'org:admin') {
+      throw new Error('Not authorized: Only organization admins can update stock availability.');
     }
 
     const availability = await validateStockAvailabilityId(stockAvailability);

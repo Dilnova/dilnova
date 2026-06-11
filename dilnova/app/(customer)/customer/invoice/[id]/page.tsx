@@ -6,6 +6,7 @@ import * as schema from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
+import { getNormalizedClerkUserEmail, normalizeCustomerEmail } from '@/utils/customerEmail';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -20,7 +21,7 @@ export default async function InvoicePage({ params }: PageProps) {
   }
 
   const { id } = await params;
-  const userEmail = user.emailAddresses[0]?.emailAddress || '';
+  const normalizedUserEmail = getNormalizedClerkUserEmail(user);
 
   // Retrieve the order
   const [order] = await db
@@ -30,7 +31,11 @@ export default async function InvoicePage({ params }: PageProps) {
     .limit(1);
 
   // Authorization check: Make sure order exists and email matches
-  if (!order || order.customerEmail !== userEmail) {
+  if (
+    !order ||
+    !normalizedUserEmail ||
+    normalizeCustomerEmail(order.customerEmail) !== normalizedUserEmail
+  ) {
     notFound();
   }
 

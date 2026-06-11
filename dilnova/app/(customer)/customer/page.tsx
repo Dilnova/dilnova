@@ -4,8 +4,9 @@ import Image from 'next/image';
 import { isVideoUrl } from '@/utils/media';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { eq, inArray, desc } from 'drizzle-orm';
+import { eq, inArray, desc, sql } from 'drizzle-orm';
 import { getCachedOrganizations } from '@/utils/clerkCache';
+import { getClerkUserEmail, getNormalizedClerkUserEmail } from '@/utils/customerEmail';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
 
@@ -32,7 +33,8 @@ export default async function CustomerPage({ searchParams }: PageProps) {
     );
   }
 
-  const userEmail = user.emailAddresses[0]?.emailAddress || 'No email';
+  const userEmail = getClerkUserEmail(user) || 'No email';
+  const normalizedUserEmail = getNormalizedClerkUserEmail(user);
 
   // Fetch Clerk organizations, wishlist, and simulated orders in parallel (reduce latency)
   const client = await clerkClient();
@@ -42,11 +44,13 @@ export default async function CustomerPage({ searchParams }: PageProps) {
       .from(schema.wishlists)
       .where(eq(schema.wishlists.userId, user.id)),
     getCachedOrganizations(client).catch(() => []),
-    db
-      .select()
-      .from(schema.simulatedOrders)
-      .where(eq(schema.simulatedOrders.customerEmail, userEmail))
-      .orderBy(desc(schema.simulatedOrders.createdAt)),
+    normalizedUserEmail
+      ? db
+          .select()
+          .from(schema.simulatedOrders)
+          .where(sql`lower(trim(${schema.simulatedOrders.customerEmail})) = ${normalizedUserEmail}`)
+          .orderBy(desc(schema.simulatedOrders.createdAt))
+      : Promise.resolve([]),
     getCheckoutOptionsCatalog(),
   ]);
 
