@@ -210,8 +210,12 @@ export default function CartPage() {
       );
 
       if (result.success) {
+        clearCart();
         setConfirmedOrderEmail(customerEmail);
         setCheckoutStatus('success');
+        setFulfillmentMethod('standard_delivery');
+        setPaymentMethod('pay_online');
+        setPickupBranchId('');
         sessionStorage.removeItem(GUEST_CHECKOUT_KEY);
       } else {
         setCheckoutStatus('idle');
@@ -224,8 +228,8 @@ export default function CartPage() {
   };
 
   const handleSuccessClose = () => {
-    clearCart();
     setCheckoutStatus('idle');
+    router.push('/products');
   };
 
   // Calculations
