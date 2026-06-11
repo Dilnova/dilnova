@@ -1,7 +1,5 @@
 'use server';
 
-import tls from 'tls';
-import net from 'net';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { rateLimit } from '@/utils/rateLimit';
 import { z } from 'zod';
@@ -35,6 +33,9 @@ import {
   buildBankTransferCheckoutInstructions,
   getBankTransferDetailsForOrgs,
 } from '@/utils/bankTransferServer';
+import { sendOrderConfirmationEmailForOrder } from '@/utils/orderConfirmationEmail';
+import { escapeHtml, sendRawSmtpEmail } from '@/utils/smtpClient';
+import { logger } from '@/utils/logger';
 
 interface CartItem {
   id: string;
@@ -44,207 +45,6 @@ interface CartItem {
   quantity: number;
   vendorName: string;
   type: string;
-}
-
-// Custom SMTP transaction client using Node's net & tls modules, supporting STARTTLS
-function sendRawSmtpEmail(options: {
-  host: string;
-  port: number;
-  user: string;
-  pass: string;
-  to: string;
-  from: string;
-  fromName: string;
-  subject: string;
-  html: string;
-}): Promise<boolean> {
-  return new Promise((resolve, reject) => {
-    const useTlsDirectly = options.port === 465;
-
-    let socket: any;
-    let step = 0;
-    const responseLog: string[] = [];
-
-    const send = (data: string) => {
-      socket.write(data + '\r\n');
-    };
-
-    const handleData = (chunk: Buffer) => {
-      const data = chunk.toString();
-      responseLog.push(data);
-
-      const lines = data.split('\r\n').filter(l => l.trim().length > 0);
-      const lastLine = lines[lines.length - 1];
-      const code = parseInt(lastLine.substring(0, 3), 10);
-
-      // SMTP error codes
-      if (code >= 400) {
-        socket.destroy();
-        reject(new Error(`SMTP Error at step ${step}: ${lastLine}`));
-        return;
-      }
-
-      if (useTlsDirectly) {
-        // Direct TLS state machine
-        if (step === 0 && code === 220) {
-          send('EHLO localhost');
-          step = 1;
-        } else if (step === 1 && code === 250) {
-          send('AUTH LOGIN');
-          step = 2;
-        } else if (step === 2 && code === 334) {
-          send(Buffer.from(options.user).toString('base64'));
-          step = 3;
-        } else if (step === 3 && code === 334) {
-          send(Buffer.from(options.pass).toString('base64'));
-          step = 4;
-        } else if (step === 4 && code === 235) {
-          send(`MAIL FROM:<${options.from}>`);
-          step = 5;
-        } else if (step === 5 && code === 250) {
-          send(`RCPT TO:<${options.to}>`);
-          step = 6;
-        } else if (step === 6 && code === 250) {
-          send('DATA');
-          step = 7;
-        } else if (step === 7 && code === 354) {
-          const emailData = [
-            `From: "${options.fromName}" <${options.from}>`,
-            `To: ${options.to}`,
-            `Subject: ${options.subject}`,
-            'MIME-Version: 1.0',
-            'Content-Type: text/html; charset="UTF-8"',
-            '',
-            options.html,
-            '.'
-          ].join('\r\n');
-          send(emailData);
-          step = 8;
-        } else if (step === 8 && code === 250) {
-          send('QUIT');
-          step = 9;
-        } else if (step === 9) {
-          socket.destroy();
-          resolve(true);
-        }
-      } else {
-        // STARTTLS state machine (e.g. port 587)
-        if (step === 0 && code === 220) {
-          send('EHLO localhost');
-          step = 1;
-        } else if (step === 1 && code === 250) {
-          send('STARTTLS');
-          step = 1.5;
-        } else if (step === 1.5 && code === 220) {
-          // Upgrade to TLS!
-          socket.removeAllListeners('data');
-          const secureSocket = tls.connect({
-            socket: socket,
-            host: options.host,
-            rejectUnauthorized: true
-          }, () => {
-            // Once connected, start SMTP handshake over secure socket
-            step = 1.6;
-            secureSocket.write('EHLO localhost\r\n');
-          });
-
-          secureSocket.on('data', handleSecureData);
-          secureSocket.on('error', (err) => reject(err));
-          socket = secureSocket;
-        }
-      }
-    };
-
-    const handleSecureData = (chunk: Buffer) => {
-      const data = chunk.toString();
-      responseLog.push(data);
-
-      const lines = data.split('\r\n').filter(l => l.trim().length > 0);
-      const lastLine = lines[lines.length - 1];
-      const code = parseInt(lastLine.substring(0, 3), 10);
-
-      if (code >= 400) {
-        socket.destroy();
-        reject(new Error(`SMTP Error at step ${step}: ${lastLine}`));
-        return;
-      }
-
-      if (step === 1.6 && code === 250) {
-        send('AUTH LOGIN');
-        step = 2;
-      } else if (step === 2 && code === 334) {
-        send(Buffer.from(options.user).toString('base64'));
-        step = 3;
-      } else if (step === 3 && code === 334) {
-        send(Buffer.from(options.pass).toString('base64'));
-        step = 4;
-      } else if (step === 4 && code === 235) {
-        send(`MAIL FROM:<${options.from}>`);
-        step = 5;
-      } else if (step === 5 && code === 250) {
-        send(`RCPT TO:<${options.to}>`);
-        step = 6;
-      } else if (step === 6 && code === 250) {
-        send('DATA');
-        step = 7;
-      } else if (step === 7 && code === 354) {
-        const emailData = [
-          `From: "${options.fromName}" <${options.from}>`,
-          `To: ${options.to}`,
-          `Subject: ${options.subject}`,
-          'MIME-Version: 1.0',
-          'Content-Type: text/html; charset="UTF-8"',
-          '',
-          options.html,
-          '.'
-        ].join('\r\n');
-        send(emailData);
-        step = 8;
-      } else if (step === 8 && code === 250) {
-        send('QUIT');
-        step = 9;
-      } else if (step === 9) {
-        socket.destroy();
-        resolve(true);
-      }
-    };
-
-    if (useTlsDirectly) {
-      socket = tls.connect({
-        host: options.host,
-        port: options.port,
-        rejectUnauthorized: true,
-      });
-      socket.on('data', handleData);
-      socket.on('error', (err: any) => reject(err));
-      socket.on('end', () => {
-        if (step < 9) {
-          reject(new Error(`SMTP connection closed prematurely at step ${step}. Log: ${responseLog.join('\n')}`));
-        }
-      });
-    } else {
-      socket = net.connect({
-        host: options.host,
-        port: options.port,
-      });
-      socket.on('data', handleData);
-      socket.on('error', (err: any) => reject(err));
-      socket.on('end', () => {
-        if (step < 9) {
-          reject(new Error(`SMTP connection closed prematurely at step ${step}. Log: ${responseLog.join('\n')}`));
-        }
-      });
-    }
-  });
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
 
 const cartItemSchema = z.object({
@@ -1007,10 +807,27 @@ export async function simulatedCheckoutAction(
       });
     }
 
+    const emailResult = await sendOrderConfirmationEmailForOrder(createdOrderId, {
+      customerName: name,
+      customerEmail: email,
+      paymentMethod: payment,
+      fulfillmentMethod: fulfillment,
+      bankTransferInstructions,
+      isSignedIn: Boolean(userId),
+    });
+
+    if (!emailResult.success) {
+      logger.warn('Order placed but confirmation email was not sent', {
+        orderId: createdOrderId,
+        error: emailResult.error,
+      });
+    }
+
     return {
       success: true,
       orderId: createdOrderId,
       bankTransferInstructions,
+      confirmationEmailSent: emailResult.success,
     };
   } catch (error: unknown) {
     console.error('Checkout failed:', error);

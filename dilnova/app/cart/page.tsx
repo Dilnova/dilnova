@@ -53,6 +53,7 @@ export default function CartPage() {
   const [confirmedOrderId, setConfirmedOrderId] = useState('');
   const [bankTransferInstructions, setBankTransferInstructions] =
     useState<BankTransferCheckoutInstructions | null>(null);
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState(false);
   const [fulfillmentMethod, setFulfillmentMethod] = useState('store_pickup');
   const [paymentMethod, setPaymentMethod] = useState(BANK_TRANSFER_PAYMENT_ID);
   const [pickupBranchId, setPickupBranchId] = useState('');
@@ -364,6 +365,7 @@ export default function CartPage() {
         setConfirmedOrderEmail(customerEmail);
         setConfirmedOrderId(result.orderId || '');
         setBankTransferInstructions(result.bankTransferInstructions || null);
+        setConfirmationEmailSent(result.confirmationEmailSent === true);
         setCheckoutStatus('success');
         setFulfillmentMethod('store_pickup');
         setPaymentMethod(BANK_TRANSFER_PAYMENT_ID);
@@ -437,14 +439,28 @@ export default function CartPage() {
                 <>
                   Your order has been received and is awaiting bank transfer payment.
                   {confirmedOrderEmail && (
-                    <> Order updates will use <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+                    <>
+                      {' '}
+                      {confirmationEmailSent ? (
+                        <>A confirmation with payment instructions was sent to <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+                      ) : (
+                        <>Use the details below to complete your transfer. Save this page or note your payment reference.</>
+                      )}
+                    </>
                   )}
                 </>
               ) : (
                 <>
                   Thank you for your order.
                   {confirmedOrderEmail && (
-                    <> Updates will be sent to <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+                    <>
+                      {' '}
+                      {confirmationEmailSent ? (
+                        <>A confirmation was sent to <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+                      ) : (
+                        <>Order updates will use <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+                      )}
+                    </>
                   )}
                 </>
               )}
