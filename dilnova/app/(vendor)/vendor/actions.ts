@@ -41,10 +41,13 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
     }
 
     const client = await clerkClient();
+    const org = await client.organizations.getOrganization({ organizationId: parsed.data.organizationId });
+    const existingMeta = (org.publicMetadata || {}) as Record<string, unknown>;
 
-    // 3. Update the organization's public metadata in Clerk (using validated data)
-    await client.organizations.updateOrganizationMetadata(parsed.data.organizationId, {
+    // 3. Merge profile fields into existing organization metadata
+    await client.organizations.updateOrganization(parsed.data.organizationId, {
       publicMetadata: {
+        ...existingMeta,
         description: parsed.data.data.description,
         address: parsed.data.data.address,
         phone: parsed.data.data.phone,

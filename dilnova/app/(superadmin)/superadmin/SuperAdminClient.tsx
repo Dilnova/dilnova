@@ -15,7 +15,9 @@ import {
   updateContactStatusAction,
 } from './actions';
 import { updateSystemSettingAction } from './settingsActions';
+import CheckoutOptionsSettings from './CheckoutOptionsSettings';
 import InventoryTab from './InventoryTab';
+import type { CheckoutOptionDefinition } from '@/utils/checkoutOptionsShared';
 import type { InventoryItem, Supplier as IMSSupplier, InventoryMovement, SimulatedOrder, ProductForInventory } from './InventoryTab';
 
 interface Category {
@@ -86,6 +88,7 @@ interface SuperAdminClientProps {
   nurseryCustomEnabled: boolean;
   techCustomEnabled: boolean;
   servicesCustomEnabled: boolean;
+  checkoutOptionsCatalog: CheckoutOptionDefinition[];
   // IMS props
   inventoryItems: InventoryItem[];
   imsSuppliers: IMSSupplier[];
@@ -115,6 +118,7 @@ export default function SuperAdminClient({
   nurseryCustomEnabled,
   techCustomEnabled,
   servicesCustomEnabled,
+  checkoutOptionsCatalog,
   inventoryItems,
   imsSuppliers,
   inventoryMovements,
@@ -1545,6 +1549,11 @@ export default function SuperAdminClient({
               )}
             </button>
           </form>
+
+          <CheckoutOptionsSettings
+            initialCatalog={checkoutOptionsCatalog}
+            triggerNotification={triggerNotification}
+          />
         </div>
       )}
 

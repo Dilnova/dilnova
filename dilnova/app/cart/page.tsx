@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { SignInButton, SignUpButton, useUser } from '@clerk/nextjs';
 import { useCart } from '../context/CartContext';
 import { isVideoUrl } from '@/utils/media';
-import { sendCartSummaryEmailAction, simulatedCheckoutAction } from './actions';
+import { getCartCheckoutOptionsAction, sendCartSummaryEmailAction, simulatedCheckoutAction } from './actions';
 
 const GUEST_CHECKOUT_KEY = 'dilnova_guest_checkout';
 
@@ -35,6 +35,15 @@ export default function CartPage() {
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success'>('idle');
   const [emailMessage, setEmailMessage] = useState('');
   const [confirmedOrderEmail, setConfirmedOrderEmail] = useState('');
+  const [fulfillmentMethod, setFulfillmentMethod] = useState('standard_delivery');
+  const [paymentMethod, setPaymentMethod] = useState('pay_online');
+  const [pickupBranchId, setPickupBranchId] = useState('');
+  const [checkoutOptions, setCheckoutOptions] = useState<{
+    fulfillment: { id: string; label: string; description?: string; zeroShipping: boolean; requiresBranch: boolean }[];
+    payment: { id: string; label: string; description?: string }[];
+    pickupBranches: { orgId: string; branches: { id: string; name: string; address: string | null; phone: string | null }[] }[];
+  }>({ fulfillment: [], payment: [], pickupBranches: [] });
+  const [optionsLoading, setOptionsLoading] = useState(false);
 
   // Restore guest checkout details from session
   useEffect(() => {
@@ -58,6 +67,49 @@ export default function CartPage() {
       JSON.stringify({ name: guestName, email: guestEmail })
     );
   }, [guestName, guestEmail, isSignedIn]);
+
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      setCheckoutOptions({ fulfillment: [], payment: [], pickupBranches: [] });
+      return;
+    }
+
+    let cancelled = false;
+    setOptionsLoading(true);
+
+    getCartCheckoutOptionsAction(cartItems.map((item) => item.id))
+      .then((result) => {
+        if (cancelled || !result.success) return;
+
+        setCheckoutOptions({
+          fulfillment: result.fulfillment,
+          payment: result.payment,
+          pickupBranches: result.pickupBranches,
+        });
+
+        setFulfillmentMethod((current) =>
+          result.fulfillment.some((o) => o.id === current)
+            ? current
+            : (result.fulfillment[0]?.id || 'standard_delivery')
+        );
+        setPaymentMethod((current) =>
+          result.payment.some((o) => o.id === current)
+            ? current
+            : (result.payment[0]?.id || 'pay_online')
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setOptionsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cartItems]);
+
+  const selectedFulfillment = checkoutOptions.fulfillment.find((o) => o.id === fulfillmentMethod);
+  const selectedPayment = checkoutOptions.payment.find((o) => o.id === paymentMethod);
+  const pickupBranches = checkoutOptions.pickupBranches[0]?.branches || [];
 
   const handleGoBack = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -124,6 +176,19 @@ export default function CartPage() {
       return;
     }
 
+    if (!selectedFulfillment) {
+      setCheckoutError('Please select a fulfillment method.');
+      return;
+    }
+    if (!selectedPayment) {
+      setCheckoutError('Please select a payment method.');
+      return;
+    }
+    if (selectedFulfillment.requiresBranch && !pickupBranchId) {
+      setCheckoutError('Please select a store branch for pickup.');
+      return;
+    }
+
     setCheckoutStatus('processing');
 
     try {
@@ -138,7 +203,10 @@ export default function CartPage() {
           vendorName: item.vendorName,
           type: item.type,
         })),
-        cartTotal
+        cartTotal,
+        fulfillmentMethod,
+        paymentMethod,
+        selectedFulfillment.requiresBranch ? pickupBranchId : null
       );
 
       if (result.success) {
@@ -163,7 +231,8 @@ export default function CartPage() {
   // Calculations
   const taxRate = 0.08; // 8% estimated tax
   const estimatedTax = cartTotal * taxRate;
-  const shippingFee = cartTotal > 5000 ? 0 : 500; // Free shipping over $50.00, otherwise $5.00
+  const baseShippingFee = cartTotal > 5000 ? 0 : 500; // Free shipping over $50.00, otherwise $5.00
+  const shippingFee = selectedFulfillment?.zeroShipping ? 0 : baseShippingFee;
   const grandTotal = cartTotal + estimatedTax + shippingFee;
 
   if (checkoutStatus === 'success') {
@@ -453,6 +522,118 @@ export default function CartPage() {
                   </div>
                 )}
 
+                {/* Fulfillment & Payment Options */}
+                {cartItems.length > 0 && (
+                  <div className="space-y-4 border-t border-zinc-100 dark:border-zinc-900 pt-4">
+                    <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
+                      Delivery & Payment
+                    </h3>
+
+                    {optionsLoading ? (
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Loading checkout options...</p>
+                    ) : (
+                      <>
+                        {checkoutOptions.fulfillment.length > 0 ? (
+                          <div className="space-y-2">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Fulfillment</p>
+                            {checkoutOptions.fulfillment.map((option) => (
+                              <label
+                                key={option.id}
+                                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                                  fulfillmentMethod === option.id
+                                    ? 'border-purple-500/50 bg-purple-500/5'
+                                    : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30'
+                                }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name="fulfillment"
+                                  value={option.id}
+                                  checked={fulfillmentMethod === option.id}
+                                  onChange={() => {
+                                    setFulfillmentMethod(option.id);
+                                    if (!option.requiresBranch) setPickupBranchId('');
+                                  }}
+                                  className="mt-0.5"
+                                />
+                                <span className="min-w-0">
+                                  <span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200">{option.label}</span>
+                                  {option.description && (
+                                    <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">{option.description}</span>
+                                  )}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                            No fulfillment methods are enabled for the vendors in your cart.
+                          </p>
+                        )}
+
+                        {selectedFulfillment?.requiresBranch && (
+                          <div className="space-y-2">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Pickup Branch</p>
+                            {pickupBranches.length > 0 ? (
+                              <select
+                                value={pickupBranchId}
+                                onChange={(e) => setPickupBranchId(e.target.value)}
+                                className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50"
+                              >
+                                <option value="">Select a branch</option>
+                                {pickupBranches.map((branch) => (
+                                  <option key={branch.id} value={branch.id}>
+                                    {branch.name}{branch.address ? ` — ${branch.address}` : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                                Store pickup is enabled but no branches are configured for this vendor.
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {checkoutOptions.payment.length > 0 ? (
+                          <div className="space-y-2">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Payment</p>
+                            {checkoutOptions.payment.map((option) => (
+                              <label
+                                key={option.id}
+                                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                                  paymentMethod === option.id
+                                    ? 'border-purple-500/50 bg-purple-500/5'
+                                    : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30'
+                                }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name="payment"
+                                  value={option.id}
+                                  checked={paymentMethod === option.id}
+                                  onChange={() => setPaymentMethod(option.id)}
+                                  className="mt-0.5"
+                                />
+                                <span className="min-w-0">
+                                  <span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200">{option.label}</span>
+                                  {option.description && (
+                                    <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">{option.description}</span>
+                                  )}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                            No payment methods are enabled for the vendors in your cart.
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {checkoutError && (
                   <div className="bg-rose-500/10 border border-rose-500/25 text-rose-700 dark:text-rose-400 p-3 rounded-xl text-xs leading-relaxed whitespace-pre-line">
                     {checkoutError}
@@ -462,7 +643,13 @@ export default function CartPage() {
                 <div className="pt-2 space-y-3">
                   <button
                     onClick={handleCheckout}
-                    disabled={checkoutStatus === 'processing' || cartItems.length === 0}
+                    disabled={
+                      checkoutStatus === 'processing' ||
+                      cartItems.length === 0 ||
+                      optionsLoading ||
+                      !selectedFulfillment ||
+                      !selectedPayment
+                    }
                     className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
                     {checkoutStatus === 'processing' ? (

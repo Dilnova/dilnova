@@ -1,7 +1,9 @@
 import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import VendorProfileForm from '@/app/(vendor)/vendor/VendorProfileForm';
+import OrgCheckoutOptionsForm from '@/app/(vendor)/vendor/OrgCheckoutOptionsForm';
 import RoleSelector from './RoleSelector';
+import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 
 export default async function AdminPage() {
   const { orgId, orgRole } = await auth();
@@ -13,12 +15,13 @@ export default async function AdminPage() {
 
   // Fetch current organization details and membership directories in parallel (reduce latency)
   const client = await clerkClient();
-  const [org, membershipsResponse] = await Promise.all([
+  const [org, membershipsResponse, checkoutOptionsCatalog] = await Promise.all([
     client.organizations.getOrganization({ organizationId: orgId }),
     client.organizations.getOrganizationMembershipList({
       organizationId: orgId,
       limit: 100,
-    }).catch(() => ({ data: [] }))
+    }).catch(() => ({ data: [] })),
+    getCheckoutOptionsCatalog(),
   ]);
 
   const metadata = (org.publicMetadata || {}) as {
@@ -27,6 +30,7 @@ export default async function AdminPage() {
     phone?: string;
     bannerUrl?: string;
     stockAllocationMode?: 'target_branch' | 'central_intake';
+    checkout_options?: Record<string, boolean>;
   };
   const memberships = membershipsResponse.data;
 
@@ -122,6 +126,21 @@ export default async function AdminPage() {
           </div>
 
           <VendorProfileForm orgId={orgId} initialMetadata={metadata} isAdmin={true} />
+        </div>
+
+        {/* Checkout Options */}
+        <div className="space-y-6 mb-8 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-5 bg-zinc-50/10 dark:bg-zinc-900/5">
+          <div>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 font-sans">Checkout Options</h3>
+            <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+              Enable store pickup, cash on delivery, and other checkout methods for customers buying from your organization.
+            </p>
+          </div>
+          <OrgCheckoutOptionsForm
+            orgId={orgId}
+            catalog={checkoutOptionsCatalog}
+            initialOptions={metadata.checkout_options || {}}
+          />
         </div>
 
         {/* Members Management Console */}
