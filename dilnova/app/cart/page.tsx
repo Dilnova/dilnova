@@ -17,7 +17,6 @@ import { isPaymentCompatibleWithFulfillment } from '@/utils/checkoutOptionsShare
 import { calculateCheckoutTotals } from '@/utils/checkoutTotals';
 import {
   BANK_TRANSFER_PAYMENT_ID,
-  allocateVendorPaymentAmounts,
   isBankTransferPayment,
   type BankTransferCheckoutInstructions,
 } from '@/utils/bankTransfer';
@@ -61,22 +60,15 @@ export default function CartPage() {
     fulfillment: { id: string; label: string; description?: string; zeroShipping: boolean; requiresBranch: boolean }[];
     payment: { id: string; label: string; description?: string; requiresDelivery: boolean; pendingPayment?: boolean }[];
     pickupBranches: { orgId: string; branches: { id: string; name: string; address: string | null; phone: string | null }[] }[];
-    bankDetailsByOrg: Record<
+    vendorBankTransferByOrg: Record<
       string,
       {
         vendorName: string;
         configured: boolean;
-        bankDetails: {
-          bankName: string;
-          accountName: string;
-          accountNumber: string;
-          branchCode: string;
-          instructions: string;
-        } | null;
       }
     >;
     vendorCartSummary: { orgId: string; vendorName: string; subtotalCents: number }[];
-  }>({ fulfillment: [], payment: [], pickupBranches: [], bankDetailsByOrg: {}, vendorCartSummary: [] });
+  }>({ fulfillment: [], payment: [], pickupBranches: [], vendorBankTransferByOrg: {}, vendorCartSummary: [] });
   const [optionsLoading, setOptionsLoading] = useState(false);
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [vendorCount, setVendorCount] = useState(0);
@@ -146,7 +138,7 @@ export default function CartPage() {
         fulfillment: [],
         payment: [],
         pickupBranches: [],
-        bankDetailsByOrg: {},
+        vendorBankTransferByOrg: {},
         vendorCartSummary: [],
       });
       setOptionsError(null);
@@ -182,7 +174,7 @@ export default function CartPage() {
             fulfillment: [],
             payment: [],
             pickupBranches: [],
-            bankDetailsByOrg: {},
+            vendorBankTransferByOrg: {},
             vendorCartSummary: [],
           });
           setVendorCount(0);
@@ -196,7 +188,7 @@ export default function CartPage() {
           fulfillment: result.fulfillment,
           payment: result.payment,
           pickupBranches: result.pickupBranches,
-          bankDetailsByOrg: result.bankDetailsByOrg || {},
+          vendorBankTransferByOrg: result.vendorBankTransferByOrg || {},
           vendorCartSummary: result.vendorCartSummary || [],
         });
         setVendorCount(result.vendorCount);
@@ -231,7 +223,7 @@ export default function CartPage() {
           fulfillment: [],
           payment: [],
           pickupBranches: [],
-          bankDetailsByOrg: {},
+          vendorBankTransferByOrg: {},
           vendorCartSummary: [],
         });
         setVendorCount(0);
@@ -413,34 +405,12 @@ export default function CartPage() {
     selectedFulfillment?.zeroShipping ?? false
   );
   const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = checkoutTotals;
-  const vendorCartSubtotal = checkoutOptions.vendorCartSummary.reduce(
-    (sum, vendor) => sum + vendor.subtotalCents,
-    0
-  );
-  const bankTransferPreview: BankTransferCheckoutInstructions | null =
-    isBankTransferPayment(paymentMethod) && checkoutOptions.vendorCartSummary.length > 0
-      ? {
-          orderId: 'preview',
-          reference: 'Shown after you place the order',
-          grandTotalCents: grandTotal,
-          vendors: allocateVendorPaymentAmounts(
-            Object.fromEntries(
-              checkoutOptions.vendorCartSummary.map((vendor) => [vendor.orgId, vendor.subtotalCents])
-            ),
-            vendorCartSubtotal,
-            grandTotal
-          ).map(({ orgId, amountCents }) => ({
-            orgId,
-            vendorName: checkoutOptions.bankDetailsByOrg[orgId]?.vendorName || 'Vendor',
-            amountCents,
-            bankDetails: checkoutOptions.bankDetailsByOrg[orgId]?.bankDetails ?? null,
-          })),
-        }
-      : null;
+  const bankTransferSelected =
+    isBankTransferPayment(paymentMethod) && checkoutOptions.vendorCartSummary.length > 0;
   const bankTransferMissingDetails =
-    isBankTransferPayment(paymentMethod) &&
+    bankTransferSelected &&
     checkoutOptions.vendorCartSummary.some(
-      (vendor) => !checkoutOptions.bankDetailsByOrg[vendor.orgId]?.configured
+      (vendor) => !checkoutOptions.vendorBankTransferByOrg[vendor.orgId]?.configured
     );
 
   if (checkoutStatus === 'success') {
@@ -906,14 +876,17 @@ export default function CartPage() {
                           </p>
                         ) : null}
 
-                        {bankTransferPreview && (
+                        {bankTransferSelected && (
                           <div className="space-y-2">
                             {bankTransferMissingDetails ? (
                               <p className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
                                 Bank transfer cannot be completed until all vendors configure their bank account details.
                               </p>
                             ) : (
-                              <BankTransferInstructions instructions={bankTransferPreview} compact />
+                              <p className="text-[11px] text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                                Bank account details and your payment reference will be shown after you place the order
+                                (confirmation screen, email, and invoice).
+                              </p>
                             )}
                           </div>
                         )}

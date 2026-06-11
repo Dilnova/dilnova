@@ -27,6 +27,7 @@ import {
   allocateVendorPaymentAmounts,
   hasCompleteBankDetails,
   isBankTransferPayment,
+  toVendorBankTransferAvailability,
   type BankTransferCheckoutInstructions,
 } from '@/utils/bankTransfer';
 import {
@@ -356,7 +357,7 @@ export async function getCartCheckoutOptionsAction(
         pickupBranches: [],
         singleVendorOrgId: null,
         vendorCount: 0,
-        bankDetailsByOrg: {},
+        vendorBankTransferByOrg: {},
         vendorCartSummary: [],
       };
     }
@@ -439,14 +440,12 @@ export async function getCartCheckoutOptionsAction(
       pickupBranches: resolved.pickupBranches,
       singleVendorOrgId: resolved.singleVendorOrgId,
       vendorCount: uniqueOrgIds.length,
-      bankDetailsByOrg: Object.fromEntries(
+      vendorBankTransferByOrg: Object.fromEntries(
         uniqueOrgIds.map((orgId) => [
           orgId,
-          {
-            vendorName: bankDetailsByOrg[orgId]?.vendorName || 'Vendor',
-            configured: hasCompleteBankDetails(bankDetailsByOrg[orgId]?.bankDetails),
-            bankDetails: bankDetailsByOrg[orgId]?.bankDetails ?? null,
-          },
+          toVendorBankTransferAvailability(
+            bankDetailsByOrg[orgId] ?? { vendorName: 'Vendor', bankDetails: null }
+          ),
         ])
       ),
       vendorCartSummary: uniqueOrgIds.map((orgId) => ({

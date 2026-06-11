@@ -5,6 +5,7 @@ import {
   hasCompleteBankDetails,
   isBankTransferPayment,
   parseBankTransferDetailsFromMetadata,
+  toVendorBankTransferAvailability,
 } from './bankTransfer';
 
 describe('bankTransfer utilities', () => {
@@ -38,6 +39,26 @@ describe('bankTransfer utilities', () => {
         })
       )
     ).toBe(false);
+  });
+
+  it('builds pre-checkout availability without exposing account numbers', () => {
+    const availability = toVendorBankTransferAvailability({
+      vendorName: 'Distar Hardware',
+      bankDetails: {
+        bankName: 'Commercial Bank',
+        accountName: 'Distar Hardware',
+        accountNumber: '1234567890',
+        branchCode: '001',
+        instructions: 'Include order reference.',
+      },
+    });
+
+    expect(availability).toEqual({
+      vendorName: 'Distar Hardware',
+      configured: true,
+    });
+    expect(availability).not.toHaveProperty('bankDetails');
+    expect(availability).not.toHaveProperty('accountNumber');
   });
 
   it('allocates grand total across vendors proportionally', () => {

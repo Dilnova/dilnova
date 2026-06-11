@@ -22,6 +22,22 @@ export interface BankTransferCheckoutInstructions {
   vendors: BankTransferVendorInstruction[];
 }
 
+/** Safe pre-checkout payload — no account numbers exposed before an order exists */
+export interface VendorBankTransferAvailability {
+  vendorName: string;
+  configured: boolean;
+}
+
+export function toVendorBankTransferAvailability(input: {
+  vendorName: string;
+  bankDetails: BankTransferDetails | null;
+}): VendorBankTransferAvailability {
+  return {
+    vendorName: input.vendorName,
+    configured: hasCompleteBankDetails(input.bankDetails),
+  };
+}
+
 export function isBankTransferPayment(paymentMethodId: string): boolean {
   return paymentMethodId === BANK_TRANSFER_PAYMENT_ID;
 }
