@@ -21,6 +21,7 @@ import {
 } from '@/utils/schemas';
 import { getPremiumStatus } from '@/utils/premiumLicense';
 import { validateStockAvailabilityId } from '@/utils/stockAvailability';
+import { reserveProductStock, applyStockReservation } from '@/utils/inventoryStock';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { rateLimit } from '@/utils/rateLimit';
@@ -981,72 +982,22 @@ export async function processBillingCheckoutAction(data: {
 
         totalAmount += prod.price * item.quantity;
 
-        // ONLY perform inventory checks and deductions if the item is a tangible product (services don't have physical stock limits)
+        // Products: always deplete central inventory; also deplete branch stock when multi-branch is active
         if (prod.type === 'product') {
-          // Deduct inventory stock based on multi-branch status
-          let availableQuantity = 0;
-          let inventoryRecordId = '';
+          const stockResult = await reserveProductStock(tx, item.productId, item.quantity, {
+            branchId: premiumStatus.multiBranchActive ? parsed.data.branchId : null,
+            productName: prod.name,
+          });
 
-          if (premiumStatus.multiBranchActive) {
-            const [branchInv] = await tx
-              .select()
-              .from(schema.branchInventory)
-              .where(and(eq(schema.branchInventory.branchId, parsed.data.branchId), eq(schema.branchInventory.productId, item.productId)))
-              .for('update')
-              .limit(1);
-
-            if (branchInv) {
-              availableQuantity = branchInv.quantity;
-              inventoryRecordId = branchInv.id;
-            }
-          } else {
-            // Central inventory mapping fallback
-            const [centralInv] = await tx
-              .select()
-              .from(schema.inventory)
-              .where(eq(schema.inventory.productId, item.productId))
-              .for('update')
-              .limit(1);
-
-            if (centralInv) {
-              availableQuantity = centralInv.quantity;
-              inventoryRecordId = centralInv.id;
-            }
+          if (!stockResult.ok) {
+            const branchHint = premiumStatus.multiBranchActive ? ` at branch "${branch.name}"` : '';
+            throw new Error(`${stockResult.error.replace(/\.$/, '')}${branchHint}.`);
           }
 
-          if (availableQuantity < item.quantity) {
-            throw new Error(`Insufficient stock for "${prod.name}" at branch "${branch.name}". Available: ${availableQuantity}`);
-          }
-
-          if (premiumStatus.multiBranchActive) {
-            await tx
-              .update(schema.branchInventory)
-              .set({
-                quantity: availableQuantity - item.quantity,
-                updatedAt: new Date(),
-              })
-              .where(eq(schema.branchInventory.id, inventoryRecordId));
-          } else {
-            // Update central inventory quantity
-            await tx
-              .update(schema.inventory)
-              .set({
-                quantity: availableQuantity - item.quantity,
-                updatedAt: new Date(),
-              })
-              .where(eq(schema.inventory.id, inventoryRecordId));
-
-            // Insert an inventory movement for tracking
-            await tx.insert(schema.inventoryMovements).values({
-              inventoryId: inventoryRecordId,
-              type: 'sale_depletion',
-              quantityChanged: -item.quantity,
-              previousQuantity: availableQuantity,
-              newQuantity: availableQuantity - item.quantity,
-              reason: `POS Checkout Receipt (Default Branch)`,
-              userId,
-            });
-          }
+          await applyStockReservation(tx, item.quantity, stockResult.reservation, {
+            userId,
+            reason: `POS receipt ${receipt.id} (${branch.name})`,
+          });
         }
 
         // Add receipt line item using verified database properties

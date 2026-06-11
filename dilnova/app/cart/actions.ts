@@ -415,6 +415,11 @@ import * as schema from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { resolveCheckoutOptionsForOrgs } from '@/utils/checkoutOptions';
 import { getStockAvailabilityCatalog, resolveEffectiveStockAvailability } from '@/utils/stockAvailability';
+import {
+  reserveProductStock,
+  applyStockReservation,
+  type StockReservation,
+} from '@/utils/inventoryStock';
 
 interface CheckoutItem {
   id: string;
@@ -561,7 +566,7 @@ export async function simulatedCheckoutAction(
     // ── Concurrency Safe Stock Validation & Checkout ──
     return await db.transaction(async (tx) => {
       const stockErrors: string[] = [];
-      const inventoryUpdates: { inventoryId: string; productId: string; currentQty: number; requestedQty: number }[] = [];
+      const stockReservations: { productId: string; quantity: number; reservation: StockReservation }[] = [];
       const verifiedItems: { id: string; name: string; price: number; quantity: number; vendorOrgId: string }[] = [];
       let serverCalculatedTotal = 0;
       const availabilityCatalog = await getStockAvailabilityCatalog();
@@ -596,47 +601,6 @@ export async function simulatedCheckoutAction(
       // ── Verify Client-provided Total Matches Server Calculations ──
       if (serverCalculatedTotal !== total) {
         throw new Error(`Checkout transaction price mismatch. Calculated: ${serverCalculatedTotal}, Received: ${total}`);
-      }
-
-      for (const item of verifiedItems) {
-        // Look up inventory record for this product with row lock
-        const [inv] = await tx
-          .select()
-          .from(schema.inventory)
-          .where(eq(schema.inventory.productId, item.id))
-          .for('update')
-          .limit(1);
-
-        if (inv) {
-          const availability = resolveEffectiveStockAvailability(
-            availabilityCatalog,
-            inv.stockAvailability,
-            inv.quantity
-          );
-          if (availability && !availability.allowsPurchase) {
-            stockErrors.push(`"${item.name}" is currently marked as ${availability.label} and cannot be purchased.`);
-          } else if (inv.quantity < item.quantity) {
-            stockErrors.push(
-              `"${item.name}" only has ${inv.quantity} units in stock (requested ${item.quantity}).`
-            );
-          } else {
-            inventoryUpdates.push({
-              inventoryId: inv.id,
-              productId: item.id,
-              currentQty: inv.quantity,
-              requestedQty: item.quantity,
-            });
-          }
-        }
-        // If no inventory record exists, allow the order (untracked product)
-      }
-
-      if (stockErrors.length > 0) {
-        return {
-          success: false,
-          error: `Insufficient stock:\n${stockErrors.join('\n')}`,
-          stockErrors,
-        };
       }
 
       const vendorOrgIds = [...new Set(verifiedItems.map((item) => item.vendorOrgId))];
@@ -700,6 +664,56 @@ export async function simulatedCheckoutAction(
         return { success: false, error: 'Pickup branch is only required for store pickup orders.' };
       }
 
+      const pickupBranchForStock = fulfillmentOption.requiresBranch ? pickupBranch : null;
+
+      for (const item of verifiedItems) {
+        const [invMeta] = await tx
+          .select({
+            stockAvailability: schema.inventory.stockAvailability,
+            quantity: schema.inventory.quantity,
+          })
+          .from(schema.inventory)
+          .where(eq(schema.inventory.productId, item.id))
+          .limit(1);
+
+        if (!invMeta) {
+          continue; // Untracked product — no stock limits
+        }
+
+        const availability = resolveEffectiveStockAvailability(
+          availabilityCatalog,
+          invMeta.stockAvailability,
+          invMeta.quantity
+        );
+        if (availability && !availability.allowsPurchase) {
+          stockErrors.push(`"${item.name}" is currently marked as ${availability.label} and cannot be purchased.`);
+          continue;
+        }
+
+        const stockResult = await reserveProductStock(tx, item.id, item.quantity, {
+          branchId: pickupBranchForStock,
+          productName: item.name,
+        });
+
+        if (!stockResult.ok) {
+          stockErrors.push(stockResult.error);
+        } else {
+          stockReservations.push({
+            productId: item.id,
+            quantity: item.quantity,
+            reservation: stockResult.reservation,
+          });
+        }
+      }
+
+      if (stockErrors.length > 0) {
+        return {
+          success: false,
+          error: `Insufficient stock:\n${stockErrors.join('\n')}`,
+          stockErrors,
+        };
+      }
+
       const orderStatus = payment === 'cash_on_delivery' ? 'pending_payment' : 'pending';
 
       // ── Create Simulated Order ──
@@ -732,23 +746,11 @@ export async function simulatedCheckoutAction(
         });
       }
 
-      // ── Deplete Inventory & Record Movements ──
-      for (const update of inventoryUpdates) {
-        const newQty = update.currentQty - update.requestedQty;
-
-        await tx
-          .update(schema.inventory)
-          .set({ quantity: newQty, updatedAt: new Date() })
-          .where(eq(schema.inventory.id, update.inventoryId));
-
-        await tx.insert(schema.inventoryMovements).values({
-          inventoryId: update.inventoryId,
-          type: 'sale_depletion',
-          quantityChanged: -update.requestedQty,
-          previousQuantity: update.currentQty,
-          newQuantity: newQty,
-          reason: `Simulated order ${order.id}`,
-          userId: 'customer', // No auth required for customer checkout
+      // ── Deplete central (+ branch for store pickup) inventory ──
+      for (const { quantity, reservation } of stockReservations) {
+        await applyStockReservation(tx, quantity, reservation, {
+          userId: 'customer',
+          reason: `Online order ${order.id}`,
         });
       }
 
