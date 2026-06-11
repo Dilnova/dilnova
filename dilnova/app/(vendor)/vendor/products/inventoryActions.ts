@@ -20,6 +20,7 @@ import {
   processBillingCheckoutSchema,
 } from '@/utils/schemas';
 import { getPremiumStatus } from '@/utils/premiumLicense';
+import { validateStockAvailabilityId } from '@/utils/stockAvailability';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { rateLimit } from '@/utils/rateLimit';
@@ -92,6 +93,7 @@ export async function getVendorInventoryData() {
             lowStockThreshold: 5,
             binLocation: null,
             supplierId: null,
+            stockAvailability: 'in_stock',
           }))
         );
       }
@@ -106,6 +108,7 @@ export async function getVendorInventoryData() {
           lowStockThreshold: schema.inventory.lowStockThreshold,
           binLocation: schema.inventory.binLocation,
           supplierId: schema.inventory.supplierId,
+          stockAvailability: schema.inventory.stockAvailability,
           updatedAt: schema.inventory.updatedAt,
           productName: schema.products.name,
           productType: schema.products.type,
@@ -528,6 +531,7 @@ export async function vendorInitInventoryAction(data: {
   lowStockThreshold?: number;
   binLocation?: string;
   supplierId?: string | null;
+  stockAvailability?: string;
 }) {
   return runWithCorrelationId(async () => {
     await rateLimit(20, 60 * 1000);
@@ -558,6 +562,10 @@ export async function vendorInitInventoryAction(data: {
     }
 
     const quantity = data.quantity ?? 0;
+    const availability = await validateStockAvailabilityId(data.stockAvailability || 'in_stock');
+    if (!availability) {
+      throw new Error('Invalid stock availability status.');
+    }
 
     const [inv] = await db
       .insert(schema.inventory)
@@ -568,6 +576,7 @@ export async function vendorInitInventoryAction(data: {
         lowStockThreshold: data.lowStockThreshold ?? 5,
         binLocation: data.binLocation || null,
         supplierId: data.supplierId || null,
+        stockAvailability: availability.id,
       })
       .returning();
 

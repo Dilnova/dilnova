@@ -11,6 +11,9 @@ import WishlistButton from './[id]/WishlistButton';
 import AddToCartButton from '../components/AddToCartButton';
 import { getSystemSetting } from '../../utils/settings';
 import { getCachedOrganizations } from '../../utils/clerkCache';
+import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
+import { resolveEffectiveStockAvailability } from '@/utils/stockAvailabilityShared';
+import StockAvailabilityBadge from '../components/StockAvailabilityBadge';
 
 export const revalidate = 0; // Fresh load on each catalog query
 
@@ -81,9 +84,10 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const clientPromise = clerkClient();
   const categoriesPromise = db.select().from(schema.categories);
 
-  const [client, categoriesList] = await Promise.all([
+  const [client, categoriesList, stockAvailabilityCatalog] = await Promise.all([
     clientPromise,
     categoriesPromise,
+    getStockAvailabilityCatalog(),
   ]);
 
   // 2. Fetch Organizations from Clerk (cached)
@@ -146,14 +150,28 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const { userId } = await auth();
   const productIds = results.map((r) => r.product.id);
 
-  const [allReviewsForPage, userWishlist] = await Promise.all([
+  const [allReviewsForPage, userWishlist, inventoryRows] = await Promise.all([
     productIds.length > 0
       ? db.select().from(schema.reviews).where(inArray(schema.reviews.productId, productIds))
       : Promise.resolve([]),
     (userId && productIds.length > 0)
       ? db.select().from(schema.wishlists).where(and(eq(schema.wishlists.userId, userId), inArray(schema.wishlists.productId, productIds)))
-      : Promise.resolve([])
+      : Promise.resolve([]),
+    productIds.length > 0
+      ? db
+          .select({
+            productId: schema.inventory.productId,
+            stockAvailability: schema.inventory.stockAvailability,
+            quantity: schema.inventory.quantity,
+          })
+          .from(schema.inventory)
+          .where(inArray(schema.inventory.productId, productIds))
+      : Promise.resolve([]),
   ]);
+
+  const inventoryByProduct = new Map(
+    inventoryRows.map((row) => [row.productId, { stockAvailability: row.stockAvailability, quantity: row.quantity }])
+  );
 
   const wishlistSet = new Set(userWishlist.map((w) => w.productId));
 
@@ -200,6 +218,15 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                   ? Number((productReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
                   : 0;
                 const isFavorited = wishlistSet.has(product.id);
+                const inventoryInfo = inventoryByProduct.get(product.id);
+                const availabilityDef =
+                  product.type === 'product'
+                    ? resolveEffectiveStockAvailability(
+                        stockAvailabilityCatalog,
+                        inventoryInfo?.stockAvailability,
+                        inventoryInfo?.quantity
+                      )
+                    : null;
 
                 return (
                   <div
@@ -275,9 +302,17 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                             )}
                           </div>
 
-                          <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50 leading-snug line-clamp-1 mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                            {product.name}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50 leading-snug line-clamp-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                              {product.name}
+                            </h3>
+                            {availabilityDef && (
+                              <StockAvailabilityBadge
+                                label={availabilityDef.label}
+                                tone={availabilityDef.badgeTone}
+                              />
+                            )}
+                          </div>
                           
                           <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed min-h-[2.5rem]">
                             {product.description || 'No description provided.'}
@@ -310,6 +345,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                             vendorName: vendorName,
                             type: product.type,
                           }}
+                          canPurchase={availabilityDef ? availabilityDef.allowsPurchase : true}
                           showLabel={false}
                           className="h-8 w-8 text-xs rounded-lg"
                         />

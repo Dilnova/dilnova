@@ -99,6 +99,20 @@ export const updateOrgCheckoutOptionsSchema = z.object({
   checkoutOptions: z.record(z.string(), z.boolean()),
 });
 
+const stockAvailabilityDefinitionSchema = z.object({
+  id: z.string().min(1).max(50).regex(/^[a-z0-9_]+$/, 'Status ID must be lowercase letters, numbers, and underscores.'),
+  label: z.string().min(1, 'Label is required.').max(100).trim(),
+  description: z.string().max(250).trim().optional(),
+  platformEnabled: z.boolean(),
+  isBuiltIn: z.boolean().optional(),
+  allowsPurchase: z.boolean(),
+  badgeTone: z.enum(['emerald', 'rose', 'amber', 'blue', 'zinc']).optional(),
+});
+
+export const updateStockAvailabilityCatalogSchema = z.object({
+  options: z.array(stockAvailabilityDefinitionSchema).min(1, 'At least one stock availability option is required.'),
+});
+
 // ── Admin: Organization Member Role ──────────────────────
 
 const ALLOWED_ORG_ROLES = ['org:member', 'org:admin', 'org:vendor', 'org:customer'] as const;
@@ -145,6 +159,7 @@ export const addProductSchema = z.object({
   categoryId: z.string().uuid('Invalid category ID.').or(z.literal('')).default(''),
   quantity: z.number().int('Quantity must be a whole number.').nonnegative('Quantity cannot be negative.').optional().default(0),
   branchId: z.string().uuid('Invalid branch ID.').or(z.literal('')).optional().default(''),
+  stockAvailability: z.string().min(1).max(50).optional().default('in_stock'),
 });
 
 export const vendorDeleteProductSchema = z.object({
@@ -186,6 +201,7 @@ export const updateInventoryDetailsSchema = z.object({
   lowStockThreshold: z.number().int().min(0).optional(),
   binLocation: z.string().max(200).trim().optional(),
   supplierId: z.string().uuid().nullable().optional(),
+  stockAvailability: z.string().min(1).max(50).optional(),
 });
 
 export const updateSimulatedOrderStatusSchema = z.object({

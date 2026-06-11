@@ -12,6 +12,7 @@ import { addProductSchema, vendorDeleteProductSchema } from '@/utils/schemas';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { getPremiumStatus } from '@/utils/premiumLicense';
+import { validateStockAvailabilityId } from '@/utils/stockAvailability';
 
 /**
  * Enterprise-grade Server Action to securely insert a new product/service into PostgreSQL.
@@ -27,6 +28,7 @@ export async function addProductAction(data: {
   categoryId: string;
   quantity?: number;
   branchId?: string;
+  stockAvailability?: string;
 }) {
   return runWithCorrelationId(async () => {
     try {
@@ -59,6 +61,15 @@ export async function addProductAction(data: {
       // Resolve premium status first (before starting the transaction)
       const premiumStatus = await getPremiumStatus(orgId);
 
+      let resolvedStockAvailability = 'in_stock';
+      if (parsed.data.type === 'product') {
+        const availability = await validateStockAvailabilityId(parsed.data.stockAvailability);
+        if (!availability) {
+          throw new Error('Invalid stock availability status selected.');
+        }
+        resolvedStockAvailability = availability.id;
+      }
+
       // 3. Secure Insert within a database transaction
       const newProduct = await db.transaction(async (tx) => {
         const [prod] = await tx
@@ -82,6 +93,7 @@ export async function addProductAction(data: {
         // Initialize inventory entry if product type is 'product'
         if (prod.type === 'product') {
           const initialQty = parsed.data.quantity ?? 0;
+
           const [inv] = await tx
             .insert(schema.inventory)
             .values({
@@ -91,6 +103,7 @@ export async function addProductAction(data: {
               lowStockThreshold: 5,
               binLocation: null,
               supplierId: null,
+              stockAvailability: resolvedStockAvailability,
             })
             .returning();
 

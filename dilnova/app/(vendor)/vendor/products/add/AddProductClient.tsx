@@ -6,6 +6,7 @@ import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import CategorySelector from '@/app/components/CategorySelector';
+import type { StockAvailabilityDefinition } from '@/utils/stockAvailabilityShared';
 
 interface Category {
   id: string;
@@ -20,6 +21,7 @@ interface AddProductClientProps {
   branches?: { id: string; name: string; isDefault: boolean }[];
   isMultiBranchActive?: boolean;
   stockAllocationMode?: 'target_branch' | 'central_intake';
+  stockAvailabilityOptions?: StockAvailabilityDefinition[];
 }
 
 export default function AddProductClient({
@@ -28,6 +30,7 @@ export default function AddProductClient({
   branches = [],
   isMultiBranchActive = false,
   stockAllocationMode = 'central_intake',
+  stockAvailabilityOptions = [],
 }: AddProductClientProps) {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -36,6 +39,9 @@ export default function AddProductClient({
   const [price, setPrice] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [quantity, setQuantity] = useState('0');
+  const [stockAvailability, setStockAvailability] = useState(
+    stockAvailabilityOptions.find((o) => o.id === 'in_stock')?.id || stockAvailabilityOptions[0]?.id || 'in_stock'
+  );
   const [selectedBranchId, setSelectedBranchId] = useState('');
 
   // Default to main/default branch
@@ -160,6 +166,7 @@ export default function AddProductClient({
           categoryId,
           quantity: type === 'product' ? quantityNum : undefined,
           branchId: type === 'product' && isMultiBranchActive && stockAllocationMode === 'target_branch' ? selectedBranchId : undefined,
+          stockAvailability: type === 'product' ? stockAvailability : undefined,
         });
 
         if (result.success) {
@@ -300,21 +307,39 @@ export default function AddProductClient({
                 </div>
 
                 {type === 'product' && (
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
-                      Initial Quantity
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      inputMode="numeric"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      placeholder="0"
-                      className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 rounded-xl text-base sm:text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 font-mono transition-all"
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                        Stock Availability
+                      </label>
+                      <select
+                        value={stockAvailability}
+                        onChange={(e) => setStockAvailability(e.target.value)}
+                        className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 rounded-xl text-base sm:text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 transition-all font-semibold"
+                      >
+                        {stockAvailabilityOptions.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                        Initial Quantity
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="numeric"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        placeholder="0"
+                        className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 rounded-xl text-base sm:text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 font-mono transition-all"
+                      />
+                    </div>
+                  </>
                 )}
 
                 {type === 'product' && isMultiBranchActive && stockAllocationMode === 'target_branch' && branches && branches.length > 0 && (

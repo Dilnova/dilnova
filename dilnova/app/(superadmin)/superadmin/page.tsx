@@ -4,6 +4,7 @@ import { eq, desc, notInArray } from 'drizzle-orm';
 import SuperAdminClient from './SuperAdminClient';
 import { getSystemSetting } from '@/utils/settings';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
+import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
 import { clerkClient } from '@clerk/nextjs/server';
 
 export const revalidate = 0; // Fresh database query on each load
@@ -77,6 +78,7 @@ export default async function SuperAdminDashboardPage() {
   const techCustomEnabled = (await getSystemSetting('custom_storefront_distar-tech', 'true')) === 'true';
   const servicesCustomEnabled = (await getSystemSetting('custom_storefront_dilstar-services', 'true')) === 'true';
   const checkoutOptionsCatalog = await getCheckoutOptionsCatalog();
+  const stockAvailabilityCatalog = await getStockAvailabilityCatalog();
 
   // ═══════════════════════════════════════════════════════════
   // 6. INVENTORY MANAGEMENT SYSTEM DATA
@@ -114,6 +116,7 @@ export default async function SuperAdminDashboardPage() {
     lowStockThreshold: row.inventory.lowStockThreshold,
     binLocation: row.inventory.binLocation,
     supplierId: row.inventory.supplierId,
+    stockAvailability: row.inventory.stockAvailability,
     updatedAt: row.inventory.updatedAt,
     productName: row.product?.name || 'Unknown Product',
     productType: row.product?.type || 'product',
@@ -179,6 +182,7 @@ export default async function SuperAdminDashboardPage() {
         techCustomEnabled={techCustomEnabled}
         servicesCustomEnabled={servicesCustomEnabled}
         checkoutOptionsCatalog={checkoutOptionsCatalog}
+        stockAvailabilityCatalog={stockAvailabilityCatalog}
         inventoryItems={inventoryItems}
         imsSuppliers={imsSuppliers}
         inventoryMovements={inventoryMovements}

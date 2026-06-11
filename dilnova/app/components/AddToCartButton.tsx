@@ -15,6 +15,7 @@ interface AddToCartButtonProps {
   quantity?: number;
   className?: string;
   showLabel?: boolean;
+  canPurchase?: boolean;
 }
 
 export default function AddToCartButton({
@@ -22,9 +23,33 @@ export default function AddToCartButton({
   quantity = 1,
   className = '',
   showLabel = true,
+  canPurchase = true,
 }: AddToCartButtonProps) {
   const { addToCart } = useCart();
   const [added, setAdded] = useState(false);
+
+  if (!canPurchase) {
+    if (!showLabel) {
+      return (
+        <span
+          className={`inline-flex items-center justify-center p-2 h-8 w-8 rounded-lg border text-xs bg-zinc-100 border-zinc-200 text-zinc-400 dark:bg-zinc-900 dark:border-zinc-800 ${className}`}
+          title="Unavailable"
+        >
+          —
+        </span>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        disabled
+        className={`inline-flex items-center justify-center font-mono font-bold uppercase text-[10px] tracking-wider px-4 py-2.5 rounded-xl bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500 cursor-not-allowed ${className}`}
+      >
+        Unavailable
+      </button>
+    );
+  }
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();

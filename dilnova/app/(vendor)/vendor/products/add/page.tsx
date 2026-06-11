@@ -6,6 +6,8 @@ import * as schema from '@/db/schema';
 import AddProductClient from './AddProductClient';
 import { getSystemSetting } from '@/utils/settings';
 import { getPremiumStatus } from '@/utils/premiumLicense';
+import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
+import { getEnabledStockAvailabilityOptions } from '@/utils/stockAvailabilityShared';
 import { eq, and } from 'drizzle-orm';
 
 export default async function AddProductPage() {
@@ -94,6 +96,8 @@ export default async function AddProductPage() {
   // 6. Fetch max media limit setting
   const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
   const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
+  const stockAvailabilityCatalog = await getStockAvailabilityCatalog();
+  const stockAvailabilityOptions = getEnabledStockAvailabilityOptions(stockAvailabilityCatalog);
 
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
@@ -133,6 +137,7 @@ export default async function AddProductPage() {
         branches={branches}
         isMultiBranchActive={premiumStatus.multiBranchActive}
         stockAllocationMode={stockAllocationMode}
+        stockAvailabilityOptions={stockAvailabilityOptions}
       />
     </main>
   );

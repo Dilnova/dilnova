@@ -22,6 +22,7 @@ export interface InventoryItem {
   lowStockThreshold: number;
   binLocation: string | null;
   supplierId: string | null;
+  stockAvailability: string;
   updatedAt: Date;
   productName: string;
   productType: string;
@@ -505,12 +506,11 @@ export default function InventoryTab({
                         <td className="py-3 px-4 text-zinc-500">{item.binLocation || '—'}</td>
                         <td className="py-3 px-4 text-zinc-500">{item.supplierName || '—'}</td>
                         <td className="py-3 px-4">
-                          {isOut ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400">OUT OF STOCK</span>
-                          ) : isLow ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">LOW STOCK</span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">IN STOCK</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 uppercase">
+                            {(item.stockAvailability || 'in_stock').replace(/_/g, ' ')}
+                          </span>
+                          {isLow && !isOut && (
+                            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">LOW QTY</span>
                           )}
                         </td>
                         <td className="py-3 px-4">

@@ -414,6 +414,7 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { resolveCheckoutOptionsForOrgs } from '@/utils/checkoutOptions';
+import { getStockAvailabilityCatalog, resolveEffectiveStockAvailability } from '@/utils/stockAvailability';
 
 interface CheckoutItem {
   id: string;
@@ -563,6 +564,7 @@ export async function simulatedCheckoutAction(
       const inventoryUpdates: { inventoryId: string; productId: string; currentQty: number; requestedQty: number }[] = [];
       const verifiedItems: { id: string; name: string; price: number; quantity: number; vendorOrgId: string }[] = [];
       let serverCalculatedTotal = 0;
+      const availabilityCatalog = await getStockAvailabilityCatalog();
 
       // ── Verify Prices & Fetch Scoped Vendor IDs Server-side ──
       for (const item of validItems) {
@@ -606,8 +608,14 @@ export async function simulatedCheckoutAction(
           .limit(1);
 
         if (inv) {
-          // Product has inventory tracking — validate stock
-          if (inv.quantity < item.quantity) {
+          const availability = resolveEffectiveStockAvailability(
+            availabilityCatalog,
+            inv.stockAvailability,
+            inv.quantity
+          );
+          if (availability && !availability.allowsPurchase) {
+            stockErrors.push(`"${item.name}" is currently marked as ${availability.label} and cannot be purchased.`);
+          } else if (inv.quantity < item.quantity) {
             stockErrors.push(
               `"${item.name}" only has ${inv.quantity} units in stock (requested ${item.quantity}).`
             );

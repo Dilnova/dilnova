@@ -16,8 +16,10 @@ import {
 } from './actions';
 import { updateSystemSettingAction } from './settingsActions';
 import CheckoutOptionsSettings from './CheckoutOptionsSettings';
+import StockAvailabilitySettings from './StockAvailabilitySettings';
 import InventoryTab from './InventoryTab';
 import type { CheckoutOptionDefinition } from '@/utils/checkoutOptionsShared';
+import type { StockAvailabilityDefinition } from '@/utils/stockAvailabilityShared';
 import type { InventoryItem, Supplier as IMSSupplier, InventoryMovement, SimulatedOrder, ProductForInventory } from './InventoryTab';
 
 interface Category {
@@ -89,6 +91,7 @@ interface SuperAdminClientProps {
   techCustomEnabled: boolean;
   servicesCustomEnabled: boolean;
   checkoutOptionsCatalog: CheckoutOptionDefinition[];
+  stockAvailabilityCatalog: StockAvailabilityDefinition[];
   // IMS props
   inventoryItems: InventoryItem[];
   imsSuppliers: IMSSupplier[];
@@ -119,6 +122,7 @@ export default function SuperAdminClient({
   techCustomEnabled,
   servicesCustomEnabled,
   checkoutOptionsCatalog,
+  stockAvailabilityCatalog,
   inventoryItems,
   imsSuppliers,
   inventoryMovements,
@@ -1552,6 +1556,11 @@ export default function SuperAdminClient({
 
           <CheckoutOptionsSettings
             initialCatalog={checkoutOptionsCatalog}
+            triggerNotification={triggerNotification}
+          />
+
+          <StockAvailabilitySettings
+            initialCatalog={stockAvailabilityCatalog}
             triggerNotification={triggerNotification}
           />
         </div>

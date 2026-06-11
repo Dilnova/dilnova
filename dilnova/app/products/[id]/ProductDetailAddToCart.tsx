@@ -12,9 +12,15 @@ interface ProductDetailAddToCartProps {
     vendorName: string;
     type: string;
   };
+  canPurchase?: boolean;
+  stockLabel?: string;
 }
 
-export default function ProductDetailAddToCart({ product }: ProductDetailAddToCartProps) {
+export default function ProductDetailAddToCart({
+  product,
+  canPurchase = true,
+  stockLabel,
+}: ProductDetailAddToCartProps) {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -30,6 +36,20 @@ export default function ProductDetailAddToCart({ product }: ProductDetailAddToCa
       setQuantity(1); // Reset quantity to 1 after adding
     }, 1500);
   };
+
+  if (!canPurchase) {
+    return (
+      <div className="space-y-2">
+        <button
+          type="button"
+          disabled
+          className="w-full h-10 flex items-center justify-center text-xs font-mono font-bold uppercase tracking-wider rounded-xl bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500 cursor-not-allowed"
+        >
+          {stockLabel ? `${stockLabel} — Cannot Add to Cart` : 'Currently Unavailable'}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full">

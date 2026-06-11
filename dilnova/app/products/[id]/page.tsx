@@ -16,6 +16,9 @@ import ProductDetailAddToCart from './ProductDetailAddToCart';
 import { logger } from '@/utils/logger';
 import { isVideoUrl } from '@/utils/media';
 import { getSystemSetting } from '@/utils/settings';
+import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
+import { resolveEffectiveStockAvailability } from '@/utils/stockAvailabilityShared';
+import StockAvailabilityBadge from '@/app/components/StockAvailabilityBadge';
 import { DEFAULT_SUPPORT_EMAIL } from '@/utils/brand';
 
 interface PageProps {
@@ -92,6 +95,30 @@ export default async function ProductDetailPage({ params }: PageProps) {
   }
 
   const { product, category } = result;
+
+  const [stockAvailabilityCatalog, inventoryRecord] = await Promise.all([
+    getStockAvailabilityCatalog(),
+    product.type === 'product'
+      ? db
+          .select({
+            stockAvailability: schema.inventory.stockAvailability,
+            quantity: schema.inventory.quantity,
+          })
+          .from(schema.inventory)
+          .where(eq(schema.inventory.productId, id))
+          .limit(1)
+          .then((rows) => rows[0] || null)
+      : Promise.resolve(null),
+  ]);
+
+  const availabilityDef =
+    product.type === 'product'
+      ? resolveEffectiveStockAvailability(
+          stockAvailabilityCatalog,
+          inventoryRecord?.stockAvailability,
+          inventoryRecord?.quantity
+        )
+      : null;
 
   // 1.5. Fetch Auth context, Reviews, Questions and Wishlist status
   const { userId, orgId: userOrgId } = await auth();
@@ -283,9 +310,18 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 </div>
               </div>
 
-              <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
-                {product.name}
-              </h1>
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
+                  {product.name}
+                </h1>
+                {availabilityDef && (
+                  <StockAvailabilityBadge
+                    label={availabilityDef.label}
+                    tone={availabilityDef.badgeTone}
+                    className="mt-1"
+                  />
+                )}
+              </div>
 
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-black font-mono text-purple-700 dark:text-purple-400">
@@ -368,6 +404,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     vendorName: vendorName,
                     type: product.type,
                   }}
+                  canPurchase={availabilityDef ? availabilityDef.allowsPurchase : true}
+                  stockLabel={availabilityDef?.label}
                 />
               </div>
 

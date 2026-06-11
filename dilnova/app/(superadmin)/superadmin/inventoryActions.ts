@@ -16,6 +16,7 @@ import {
 import { checkSuperAdmin } from '@/utils/authGuards';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
+import { validateStockAvailabilityId } from '@/utils/stockAvailability';
 import { rateLimit } from '@/utils/rateLimit';
 
 // ── SUPPLIER CRUD ─────────────────────────────────────────────
@@ -210,6 +211,7 @@ export async function updateInventoryDetailsAction(data: {
   lowStockThreshold?: number;
   binLocation?: string;
   supplierId?: string | null;
+  stockAvailability?: string;
 }) {
   return runWithCorrelationId(async () => {
     await rateLimit(20, 60 * 1000);
@@ -228,6 +230,13 @@ export async function updateInventoryDetailsAction(data: {
     if (parsed.data.lowStockThreshold !== undefined) setClause.lowStockThreshold = parsed.data.lowStockThreshold;
     if (parsed.data.binLocation !== undefined) setClause.binLocation = parsed.data.binLocation;
     if (parsed.data.supplierId !== undefined) setClause.supplierId = parsed.data.supplierId;
+    if (parsed.data.stockAvailability !== undefined) {
+      const availability = await validateStockAvailabilityId(parsed.data.stockAvailability);
+      if (!availability) {
+        throw new Error('Invalid stock availability status.');
+      }
+      setClause.stockAvailability = availability.id;
+    }
 
     await db
       .update(schema.inventory)
@@ -284,6 +293,7 @@ export async function createInventoryForProductAction(data: {
         lowStockThreshold: data.lowStockThreshold ?? 5,
         binLocation: data.binLocation || null,
         supplierId: data.supplierId || null,
+        stockAvailability: 'in_stock',
       })
       .returning();
 

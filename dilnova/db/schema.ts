@@ -157,6 +157,7 @@ export const inventory = pgTable('inventory', {
   lowStockThreshold: integer('low_stock_threshold').default(5).notNull(),
   binLocation: text('bin_location'), // e.g. "Aisle 2, Shelf B"
   supplierId: uuid('supplier_id').references(() => suppliers.id, { onDelete: 'set null' }),
+  stockAvailability: text('stock_availability').default('in_stock').notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => [
   index('idx_inventory_product_id').on(t.productId),
