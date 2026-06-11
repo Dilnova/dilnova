@@ -13,6 +13,7 @@ import {
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+/** Online checkout reserves stock immediately (including bank transfer / COD). Cancellation restores it. */
 export async function applyOnlineOrderItemStock(
   tx: DbTransaction,
   params: {

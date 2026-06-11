@@ -712,9 +712,9 @@ export async function simulatedCheckoutAction(
       }
 
       const orderStatus = resolveInitialOrderStatus(paymentOption);
-      const holdStockUntilFulfillment = orderStatus === 'pending_payment';
 
-      // ── Create Simulated Order ──
+      // Reserve stock at checkout for all orders (including bank transfer / COD).
+      // pending_payment orders hold inventory until fulfilled or cancelled; cancellation restores stock.
       const [order] = await tx
         .insert(schema.simulatedOrders)
         .values({
@@ -728,7 +728,7 @@ export async function simulatedCheckoutAction(
           fulfillmentMethod: fulfillment,
           paymentMethod: payment,
           pickupBranchId: fulfillmentOption.requiresBranch ? pickupBranch : null,
-          stockDepleted: !holdStockUntilFulfillment,
+          stockDepleted: true,
         })
         .returning();
 
@@ -748,21 +748,19 @@ export async function simulatedCheckoutAction(
         });
       }
 
-      if (!holdStockUntilFulfillment) {
-        for (const { productId, quantity, reservation } of stockReservations) {
-          const item = verifiedItems.find((v) => v.id === productId);
-          if (!item) continue;
+      for (const { productId, quantity, reservation } of stockReservations) {
+        const item = verifiedItems.find((v) => v.id === productId);
+        if (!item) continue;
 
-          await applyOnlineOrderItemStock(tx, {
-            quantity,
-            reservation,
-            pickupBranchId: pickupBranchForStock ?? null,
-            vendorOrgId: item.vendorOrgId,
-            productId: item.id,
-            orderId: order.id,
-            userId: userId || 'customer',
-          });
-        }
+        await applyOnlineOrderItemStock(tx, {
+          quantity,
+          reservation,
+          pickupBranchId: pickupBranchForStock ?? null,
+          vendorOrgId: item.vendorOrgId,
+          productId: item.id,
+          orderId: order.id,
+          userId: userId || 'customer',
+        });
       }
 
       const vendorSubtotals = new Map<string, number>();

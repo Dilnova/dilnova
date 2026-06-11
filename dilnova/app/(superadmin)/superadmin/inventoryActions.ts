@@ -382,6 +382,7 @@ export async function updateSimulatedOrderStatusAction(
 
       let stockDepleted = order.stockDepleted;
 
+      // Legacy fallback: orders placed before checkout reservation may still need depletion on fulfill.
       if (
         newStatus === 'fulfilled' &&
         previousStatus === 'pending_payment' &&
