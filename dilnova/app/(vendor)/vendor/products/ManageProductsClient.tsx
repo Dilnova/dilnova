@@ -232,7 +232,7 @@ export default function ManageProductsClient({
                   )
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl emoji opacity-50">📷</span>
+                    <span className="text-3xl emoji opacity-70">📷</span>
                   </div>
                 )}
                 

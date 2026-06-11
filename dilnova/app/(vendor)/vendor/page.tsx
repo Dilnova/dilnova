@@ -142,7 +142,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {/* Card 1: Catalog Size */}
             <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none">
+              <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
                 <span className="text-5xl emoji">📁</span>
               </div>
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Catalog Items</p>
@@ -156,7 +156,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
             {/* Card 2: Active Branches */}
             <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none">
+              <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
                 <span className="text-5xl emoji">🏬</span>
               </div>
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Branches</p>
@@ -168,7 +168,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
             {/* Card 3: Low Stock Alerts */}
             <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none">
+              <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
                 <span className="text-5xl emoji">⚠️</span>
               </div>
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Low Stock Alerts</p>
@@ -180,7 +180,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
             {/* Card 4: Out of Stock Warnings */}
             <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none">
+              <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
                 <span className="text-5xl emoji">🚫</span>
               </div>
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Out of Stock</p>
@@ -256,7 +256,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Identity details panel */}
           <div className="relative overflow-hidden bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm dark:bg-zinc-955 dark:border-zinc-900">
-            <div className="absolute top-0 right-0 p-6 opacity-10 dark:opacity-15 pointer-events-none">
+            <div className="absolute top-0 right-0 p-6 opacity-25 dark:opacity-30 pointer-events-none">
               <span className="text-9xl emoji">👥</span>
             </div>
             <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-450 mb-3 font-mono">
