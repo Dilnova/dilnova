@@ -22,6 +22,16 @@ import {
 import { getPremiumStatus } from '@/utils/premiumLicense';
 import { validateStockAvailabilityId } from '@/utils/stockAvailability';
 import { reserveProductStock, applyStockReservation } from '@/utils/inventoryStock';
+import {
+  sumBranchAllocatedQuantity,
+  validateBranchAllocationAgainstCentral,
+  validateCentralQuantityCoversBranches,
+  incrementDefaultBranchStock,
+} from '@/utils/stockLedger';
+import {
+  getStockAvailabilityCatalog,
+  resolveEffectiveStockAvailability,
+} from '@/utils/stockAvailability';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { rateLimit } from '@/utils/rateLimit';
@@ -327,6 +337,7 @@ export async function getVendorInventoryData() {
     }
 
     const checkoutOptionsCatalog = await getCheckoutOptionsCatalog();
+    const stockAvailabilityCatalog = await getStockAvailabilityCatalog();
 
     return {
       inventoryItems,
@@ -341,6 +352,7 @@ export async function getVendorInventoryData() {
       orgMembers,
       premiumStatus,
       checkoutOptionsCatalog,
+      stockAvailabilityCatalog,
     };
   });
 }
@@ -356,48 +368,69 @@ export async function vendorAdjustInventoryAction(data: {
   return runWithCorrelationId(async () => {
     await rateLimit(30, 60 * 1000);
     const { userId, orgId } = await verifyVendorAccess();
+    const premiumStatus = await getPremiumStatus(orgId);
 
     const parsed = adjustInventorySchema.safeParse(data);
     if (!parsed.success) {
       throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
     }
 
-    // Fetch current inventory item and verify vendor ownership
-    const [inv] = await db
-      .select({
-        id: schema.inventory.id,
-        quantity: schema.inventory.quantity,
-        productId: schema.inventory.productId,
-      })
-      .from(schema.inventory)
-      .innerJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
-      .where(and(eq(schema.inventory.id, parsed.data.inventoryId), eq(schema.products.orgId, orgId)))
-      .limit(1);
+    const newQuantity = await db.transaction(async (tx) => {
+      const [inv] = await tx
+        .select({
+          id: schema.inventory.id,
+          quantity: schema.inventory.quantity,
+          productId: schema.inventory.productId,
+        })
+        .from(schema.inventory)
+        .innerJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
+        .where(and(eq(schema.inventory.id, parsed.data.inventoryId), eq(schema.products.orgId, orgId)))
+        .limit(1);
 
-    if (!inv) {
-      throw new Error('Inventory record not found or access denied.');
-    }
+      if (!inv) {
+        throw new Error('Inventory record not found or access denied.');
+      }
 
-    const previousQuantity = inv.quantity;
-    const newQuantity = previousQuantity + parsed.data.quantityChange;
+      const previousQuantity = inv.quantity;
+      const nextQuantity = previousQuantity + parsed.data.quantityChange;
 
-    if (newQuantity < 0) {
-      throw new Error(`Cannot reduce stock below 0. Current: ${previousQuantity}`);
-    }
+      if (nextQuantity < 0) {
+        throw new Error(`Cannot reduce stock below 0. Current: ${previousQuantity}`);
+      }
 
-    await db
-      .update(schema.inventory)
-      .set({ quantity: newQuantity, updatedAt: new Date() })
-      .where(eq(schema.inventory.id, parsed.data.inventoryId));
+      if (premiumStatus.multiBranchActive) {
+        const totalBranchAllocated = await sumBranchAllocatedQuantity(tx, inv.productId);
+        const branchCheck = validateCentralQuantityCoversBranches(nextQuantity, totalBranchAllocated);
+        if (!branchCheck.ok) {
+          throw new Error(branchCheck.error);
+        }
+      }
 
-    await db.insert(schema.inventoryMovements).values({
-      inventoryId: parsed.data.inventoryId,
-      type: parsed.data.type,
-      quantityChanged: parsed.data.quantityChange,
-      previousQuantity,
-      newQuantity,
-      reason: parsed.data.reason || null,
-      userId,
+      await tx
+        .update(schema.inventory)
+        .set({ quantity: nextQuantity, updatedAt: new Date() })
+        .where(eq(schema.inventory.id, parsed.data.inventoryId));
+
+      await tx.insert(schema.inventoryMovements).values({
+        inventoryId: parsed.data.inventoryId,
+        type: parsed.data.type,
+        quantityChanged: parsed.data.quantityChange,
+        previousQuantity,
+        newQuantity: nextQuantity,
+        reason: parsed.data.reason || null,
+        userId,
+      });
+
+      if (premiumStatus.multiBranchActive && parsed.data.quantityChange > 0) {
+        await incrementDefaultBranchStock(
+          tx,
+          orgId,
+          inv.productId,
+          parsed.data.quantityChange
+        );
+      }
+
+      return nextQuantity;
     });
 
     await logAuditAction({
@@ -791,6 +824,30 @@ export async function allocateBranchStockAction(data: {
       throw new Error('Product not found or access denied.');
     }
 
+    const [centralInv] = await db
+      .select({ quantity: schema.inventory.quantity })
+      .from(schema.inventory)
+      .where(eq(schema.inventory.productId, parsed.data.productId))
+      .limit(1);
+
+    if (!centralInv) {
+      throw new Error('Central inventory record not found for this product.');
+    }
+
+    const otherBranchesAllocated = await sumBranchAllocatedQuantity(
+      db,
+      parsed.data.productId,
+      { excludeBranchId: parsed.data.branchId }
+    );
+    const allocationCheck = validateBranchAllocationAgainstCentral(
+      centralInv.quantity,
+      otherBranchesAllocated,
+      parsed.data.quantity
+    );
+    if (!allocationCheck.ok) {
+      throw new Error(allocationCheck.error);
+    }
+
     // Upsert branch inventory
     const [existing] = await db
       .select()
@@ -967,10 +1024,23 @@ export async function processBillingCheckoutAction(data: {
       }
     }
 
-    // Validate quantities & update stock at the branch level (or fallback to central inventory if single branch is default and has no specific record)
-    // Actually, in multi-branch mode, we check `branchInventory`. Let's process transactions securely inside database transactions.
+    const aggregatedItems = new Map<
+      string,
+      { productId: string; productName: string; quantity: number; unitPrice: number }
+    >();
+    for (const item of parsed.data.items) {
+      const existing = aggregatedItems.get(item.productId);
+      if (existing) {
+        existing.quantity += item.quantity;
+      } else {
+        aggregatedItems.set(item.productId, { ...item });
+      }
+    }
+    const checkoutItems = [...aggregatedItems.values()];
+
     return await db.transaction(async (tx) => {
       let totalAmount = 0;
+      const availabilityCatalog = await getStockAvailabilityCatalog();
 
       // 1. Create Receipt
       const [receipt] = await tx
@@ -986,14 +1056,14 @@ export async function processBillingCheckoutAction(data: {
         })
         .returning();
 
-      for (const item of parsed.data.items) {
-        // Verify product catalog exists and belongs to this organization
+      for (const item of checkoutItems) {
         const [prod] = await tx
           .select({
             id: schema.products.id,
             name: schema.products.name,
             price: schema.products.price,
             type: schema.products.type,
+            status: schema.products.status,
           })
           .from(schema.products)
           .where(and(eq(schema.products.id, item.productId), eq(schema.products.orgId, orgId)))
@@ -1002,16 +1072,38 @@ export async function processBillingCheckoutAction(data: {
         if (!prod) {
           throw new Error(`Product not found or access denied: ${item.productName}`);
         }
-
-        // Verify product price matches to prevent tampering
+        if (prod.status !== 'active') {
+          throw new Error(`"${prod.name}" is not active and cannot be sold.`);
+        }
         if (prod.price !== item.unitPrice) {
           throw new Error(`Price mismatch for "${prod.name}". Catalog price: ${prod.price}, Received: ${item.unitPrice}`);
         }
 
         totalAmount += prod.price * item.quantity;
 
-        // Products: always deplete central inventory; also deplete branch stock when multi-branch is active
         if (prod.type === 'product') {
+          const [invMeta] = await tx
+            .select({
+              stockAvailability: schema.inventory.stockAvailability,
+              quantity: schema.inventory.quantity,
+            })
+            .from(schema.inventory)
+            .where(eq(schema.inventory.productId, item.productId))
+            .limit(1);
+
+          if (!invMeta) {
+            throw new Error(`"${prod.name}" has no inventory record and cannot be sold.`);
+          }
+
+          const availability = resolveEffectiveStockAvailability(
+            availabilityCatalog,
+            invMeta.stockAvailability,
+            invMeta.quantity
+          );
+          if (availability && !availability.allowsPurchase) {
+            throw new Error(`"${prod.name}" is marked as ${availability.label} and cannot be sold.`);
+          }
+
           const stockResult = await reserveProductStock(tx, item.productId, item.quantity, {
             branchId: premiumStatus.multiBranchActive ? parsed.data.branchId : null,
             productName: prod.name,
@@ -1028,7 +1120,6 @@ export async function processBillingCheckoutAction(data: {
           });
         }
 
-        // Add receipt line item using verified database properties
         await tx.insert(schema.billingReceiptItems).values({
           receiptId: receipt.id,
           productId: item.productId,

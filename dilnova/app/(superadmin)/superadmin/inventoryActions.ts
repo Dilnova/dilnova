@@ -14,6 +14,10 @@ import {
   updateImsLicenseSchema,
 } from '@/utils/schemas';
 import { checkSuperAdmin } from '@/utils/authGuards';
+import {
+  sumBranchAllocatedQuantity,
+  validateCentralQuantityCoversBranches,
+} from '@/utils/stockLedger';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { validateStockAvailabilityId } from '@/utils/stockAvailability';
@@ -152,39 +156,46 @@ export async function adjustInventoryAction(data: {
       throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
     }
 
-    // Fetch current inventory
-    const [inv] = await db
-      .select()
-      .from(schema.inventory)
-      .where(eq(schema.inventory.id, parsed.data.inventoryId))
-      .limit(1);
+    const newQuantity = await db.transaction(async (tx) => {
+      const [inv] = await tx
+        .select()
+        .from(schema.inventory)
+        .where(eq(schema.inventory.id, parsed.data.inventoryId))
+        .limit(1);
 
-    if (!inv) {
-      throw new Error('Inventory record not found.');
-    }
+      if (!inv) {
+        throw new Error('Inventory record not found.');
+      }
 
-    const previousQuantity = inv.quantity;
-    const newQuantity = previousQuantity + parsed.data.quantityChange;
+      const previousQuantity = inv.quantity;
+      const nextQuantity = previousQuantity + parsed.data.quantityChange;
 
-    if (newQuantity < 0) {
-      throw new Error(`Cannot reduce stock below 0. Current: ${previousQuantity}, Change: ${parsed.data.quantityChange}`);
-    }
+      if (nextQuantity < 0) {
+        throw new Error(`Cannot reduce stock below 0. Current: ${previousQuantity}, Change: ${parsed.data.quantityChange}`);
+      }
 
-    // Update quantity
-    await db
-      .update(schema.inventory)
-      .set({ quantity: newQuantity, updatedAt: new Date() })
-      .where(eq(schema.inventory.id, parsed.data.inventoryId));
+      const totalBranchAllocated = await sumBranchAllocatedQuantity(tx, inv.productId);
+      const branchCheck = validateCentralQuantityCoversBranches(nextQuantity, totalBranchAllocated);
+      if (!branchCheck.ok) {
+        throw new Error(branchCheck.error);
+      }
 
-    // Log movement
-    await db.insert(schema.inventoryMovements).values({
-      inventoryId: parsed.data.inventoryId,
-      type: parsed.data.type,
-      quantityChanged: parsed.data.quantityChange,
-      previousQuantity,
-      newQuantity,
-      reason: parsed.data.reason || null,
-      userId: user.id,
+      await tx
+        .update(schema.inventory)
+        .set({ quantity: nextQuantity, updatedAt: new Date() })
+        .where(eq(schema.inventory.id, parsed.data.inventoryId));
+
+      await tx.insert(schema.inventoryMovements).values({
+        inventoryId: parsed.data.inventoryId,
+        type: parsed.data.type,
+        quantityChanged: parsed.data.quantityChange,
+        previousQuantity,
+        newQuantity: nextQuantity,
+        reason: parsed.data.reason || null,
+        userId: user.id,
+      });
+
+      return nextQuantity;
     });
 
     await logAuditAction({
@@ -195,7 +206,6 @@ export async function adjustInventoryAction(data: {
       metadata: {
         type: parsed.data.type,
         change: parsed.data.quantityChange,
-        previousQuantity,
         newQuantity,
         reason: parsed.data.reason,
       },

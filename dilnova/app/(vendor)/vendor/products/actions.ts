@@ -139,6 +139,10 @@ export async function addProductAction(data: {
               targetBranchId = defaultBranch?.id;
             }
 
+            if (targetBranchId && !orgBranches.some((b) => b.id === targetBranchId)) {
+              throw new Error('Selected branch is not valid for this organization.');
+            }
+
             if (targetBranchId) {
               for (const ob of orgBranches) {
                 await tx.insert(schema.branchInventory).values({

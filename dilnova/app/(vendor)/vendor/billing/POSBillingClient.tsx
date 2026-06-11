@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from 'react';
 import { getVendorInventoryData, processBillingCheckoutAction } from '../products/inventoryActions';
 import Image from 'next/image';
+import { resolveEffectiveStockAvailability } from '@/utils/stockAvailabilityShared';
 
 interface Props {
   initialData: Awaited<ReturnType<typeof getVendorInventoryData>>;
@@ -58,6 +59,19 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'other'>('cash');
   const [receiptToPrint, setReceiptToPrint] = useState<any>(null);
 
+  const availabilityCatalog = data.stockAvailabilityCatalog || [];
+
+  const isProductPurchasable = (item: (typeof data.inventoryItems)[number]) => {
+    if (item.productType === 'service') return true;
+    if (!item.id) return false;
+    const availability = resolveEffectiveStockAvailability(
+      availabilityCatalog,
+      item.stockAvailability,
+      item.quantity ?? 0
+    );
+    return availability?.allowsPurchase ?? false;
+  };
+
   const getProductStockInfo = (productId: string) => {
     const prod = data.inventoryItems.find((i) => i.productId === productId);
     if (prod?.productType === 'service') {
@@ -91,10 +105,14 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
       !searchQuery.trim() ||
       item.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.sku && item.sku.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesSearch;
+    return matchesSearch && isProductPurchasable(item);
   });
 
   const addToCart = (product: any) => {
+    if (!isProductPurchasable(product)) {
+      triggerNotification(false, 'This item is not available for sale.');
+      return;
+    }
     const stock = getProductStockInfo(product.productId);
     const existing = cart.find((item) => item.product.productId === product.productId);
     const currentQtyInCart = existing?.quantity ?? 0;
