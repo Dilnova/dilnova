@@ -1,6 +1,6 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -58,8 +58,14 @@ export async function addProductAction(data: {
 
       const mediaPayload = parsed.data.media.slice(0, maxMediaLimit);
 
-      // Resolve premium status first (before starting the transaction)
+      // Resolve premium status and org stock allocation mode (before starting the transaction)
       const premiumStatus = await getPremiumStatus(orgId);
+      const client = await clerkClient();
+      const org = await client.organizations.getOrganization({ organizationId: orgId });
+      const orgMetadata = (org.publicMetadata || {}) as {
+        stockAllocationMode?: 'target_branch' | 'central_intake';
+      };
+      const stockAllocationMode = orgMetadata.stockAllocationMode || 'central_intake';
 
       let resolvedStockAvailability = 'in_stock';
       if (parsed.data.type === 'product') {
@@ -119,32 +125,30 @@ export async function addProductAction(data: {
             });
           }
 
-          // If Multi-Branch feature is active, allocate to selected/target branch, and initialize others to 0
-          if (premiumStatus.multiBranchActive) {
-            // Get all branches of the organization to initialize tracking
+          // Multi-branch: only seed branch stock in target_branch mode.
+          // central_intake keeps all quantity at central until an admin allocates to a branch.
+          if (premiumStatus.multiBranchActive && stockAllocationMode === 'target_branch') {
             const orgBranches = await tx
               .select({ id: schema.branches.id, isDefault: schema.branches.isDefault })
               .from(schema.branches)
               .where(eq(schema.branches.orgId, orgId));
 
-            // Determine target branch for initial stock allocation
             let targetBranchId = parsed.data.branchId;
-            
-            // If no target branch specified, fallback to default/main branch
             if (!targetBranchId) {
               const defaultBranch = orgBranches.find((b) => b.isDefault) || orgBranches[0];
               targetBranchId = defaultBranch?.id;
             }
 
-            // Create inventory records for all branches, putting the initial quantity only in the target branch
-            for (const ob of orgBranches) {
-              await tx.insert(schema.branchInventory).values({
-                branchId: ob.id,
-                productId: prod.id,
-                quantity: ob.id === targetBranchId ? initialQty : 0, // only the target branch gets the initial stock
-                sku: null,
-                binLocation: null,
-              });
+            if (targetBranchId) {
+              for (const ob of orgBranches) {
+                await tx.insert(schema.branchInventory).values({
+                  branchId: ob.id,
+                  productId: prod.id,
+                  quantity: ob.id === targetBranchId ? initialQty : 0,
+                  sku: null,
+                  binLocation: null,
+                });
+              }
             }
           }
         }
