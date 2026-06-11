@@ -19,6 +19,7 @@ export type {
 export {
   CHECKOUT_OPTIONS_CATALOG_KEY,
   BUILTIN_CHECKOUT_OPTIONS,
+  DEPRECATED_CHECKOUT_OPTION_IDS,
   parseCheckoutOptionsCatalog,
   buildCheckoutOptionsCatalogPayload,
   createCustomCheckoutOption,

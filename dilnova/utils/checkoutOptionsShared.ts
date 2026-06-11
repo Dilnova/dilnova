@@ -1,5 +1,8 @@
 export const CHECKOUT_OPTIONS_CATALOG_KEY = 'checkout_options_catalog';
 
+/** Removed payment methods — filtered from catalog reads and org settings */
+export const DEPRECATED_CHECKOUT_OPTION_IDS = new Set(['pay_online']);
+
 export type CheckoutOptionType = 'fulfillment' | 'payment';
 
 export interface CheckoutOptionDefinition {
@@ -56,23 +59,18 @@ export const BUILTIN_CHECKOUT_OPTIONS: CheckoutOptionDefinition[] = [
     isBuiltIn: true,
     pendingPayment: true,
   },
-  {
-    id: 'pay_online',
-    label: 'Pay Online',
-    description: 'Simulated online payment',
-    type: 'payment',
-    platformEnabled: true,
-    isBuiltIn: true,
-  },
 ];
 
 const BUILTIN_DEFAULTS: Record<string, boolean> = {
   standard_delivery: false,
-  pay_online: false,
   store_pickup: true,
   cash_on_delivery: false,
   bank_transfer: true,
 };
+
+function isDeprecatedCheckoutOptionId(id: string): boolean {
+  return DEPRECATED_CHECKOUT_OPTION_IDS.has(id);
+}
 
 function slugifyOptionId(label: string): string {
   return label
@@ -101,7 +99,7 @@ export function parseCheckoutOptionsCatalog(raw: string | null | undefined): Che
     }
 
     for (const option of parsed) {
-      if (!option?.id || builtinById.has(option.id)) continue;
+      if (!option?.id || builtinById.has(option.id) || isDeprecatedCheckoutOptionId(option.id)) continue;
       merged.push({
         id: option.id,
         label: option.label || option.id,
@@ -116,7 +114,7 @@ export function parseCheckoutOptionsCatalog(raw: string | null | undefined): Che
       });
     }
 
-    return merged;
+    return merged.filter((option) => !isDeprecatedCheckoutOptionId(option.id));
   } catch {
     return [...BUILTIN_CHECKOUT_OPTIONS];
   }
@@ -136,7 +134,9 @@ export function isOrgOptionEnabled(
 export function buildCheckoutOptionsCatalogPayload(
   options: CheckoutOptionDefinition[]
 ): CheckoutOptionDefinition[] {
-  return options.map((option) => ({
+  return options
+    .filter((option) => !isDeprecatedCheckoutOptionId(option.id))
+    .map((option) => ({
     id: option.id,
     label: option.label.trim(),
     description: option.description?.trim(),

@@ -7,6 +7,7 @@ import { updateOrgCheckoutOptionsSchema } from '@/utils/schemas';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
+import { DEPRECATED_CHECKOUT_OPTION_IDS } from '@/utils/checkoutOptionsShared';
 
 export async function updateOrgCheckoutOptionsAction(
   organizationId: string,
@@ -33,7 +34,7 @@ export async function updateOrgCheckoutOptionsAction(
     const sanitized: Record<string, boolean> = {};
 
     for (const [key, enabled] of Object.entries(parsed.data.checkoutOptions)) {
-      if (!allowedIds.has(key)) continue;
+      if (!allowedIds.has(key) || DEPRECATED_CHECKOUT_OPTION_IDS.has(key)) continue;
       sanitized[key] = enabled === true;
     }
 
