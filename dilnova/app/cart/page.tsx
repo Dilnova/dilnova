@@ -1,13 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
+import { SignInButton, SignUpButton, useUser } from '@clerk/nextjs';
 import { useCart } from '../context/CartContext';
 import { isVideoUrl } from '@/utils/media';
 import { sendCartSummaryEmailAction, simulatedCheckoutAction } from './actions';
+
+const GUEST_CHECKOUT_KEY = 'dilnova_guest_checkout';
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
 
 export default function CartPage() {
   const {
@@ -24,9 +30,34 @@ export default function CartPage() {
 
   const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success'>('idle');
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [emailInput, setEmailInput] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success'>('idle');
   const [emailMessage, setEmailMessage] = useState('');
+  const [confirmedOrderEmail, setConfirmedOrderEmail] = useState('');
+
+  // Restore guest checkout details from session
+  useEffect(() => {
+    if (isSignedIn) return;
+    try {
+      const saved = sessionStorage.getItem(GUEST_CHECKOUT_KEY);
+      if (!saved) return;
+      const { name, email } = JSON.parse(saved) as { name?: string; email?: string };
+      if (name) setGuestName(name);
+      if (email) setGuestEmail(email);
+    } catch {
+      // ignore invalid session data
+    }
+  }, [isSignedIn]);
+
+  // Persist guest checkout details for the session
+  useEffect(() => {
+    if (isSignedIn) return;
+    sessionStorage.setItem(
+      GUEST_CHECKOUT_KEY,
+      JSON.stringify({ name: guestName, email: guestEmail })
+    );
+  }, [guestName, guestEmail, isSignedIn]);
 
   const handleGoBack = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -35,8 +66,12 @@ export default function CartPage() {
 
   const handleSendInbox = async (e: React.FormEvent) => {
     e.preventDefault();
-    const targetEmail = isSignedIn ? user?.primaryEmailAddress?.emailAddress : emailInput;
+    const targetEmail = isSignedIn ? user?.primaryEmailAddress?.emailAddress : guestEmail.trim();
     if (!targetEmail) return;
+    if (!isSignedIn && !isValidEmail(targetEmail)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
 
     setEmailStatus('sending');
     try {
@@ -46,7 +81,6 @@ export default function CartPage() {
         setEmailMessage(`Cart list successfully sent to ${targetEmail}!`);
         setTimeout(() => {
           setEmailStatus('idle');
-          setEmailInput('');
         }, 4000);
       } else {
         setEmailStatus('idle');
@@ -67,16 +101,30 @@ export default function CartPage() {
   };
 
   const handleCheckout = async () => {
-    setCheckoutStatus('processing');
     setCheckoutError(null);
 
-    // Determine customer info
     const customerName = isSignedIn
       ? (user?.fullName || user?.firstName || 'Customer')
-      : 'Guest Customer';
+      : guestName.trim();
     const customerEmail = isSignedIn
-      ? (user?.primaryEmailAddress?.emailAddress || 'guest@unknown.com')
-      : emailInput || 'guest@unknown.com';
+      ? (user?.primaryEmailAddress?.emailAddress || '')
+      : guestEmail.trim();
+
+    if (!isSignedIn) {
+      if (!customerName) {
+        setCheckoutError('Please enter your full name to proceed to checkout.');
+        return;
+      }
+      if (!customerEmail || !isValidEmail(customerEmail)) {
+        setCheckoutError('Please enter a valid email address to proceed to checkout.');
+        return;
+      }
+    } else if (!customerEmail) {
+      setCheckoutError('Your account does not have an email address. Please update your profile before checkout.');
+      return;
+    }
+
+    setCheckoutStatus('processing');
 
     try {
       const result = await simulatedCheckoutAction(
@@ -94,7 +142,9 @@ export default function CartPage() {
       );
 
       if (result.success) {
+        setConfirmedOrderEmail(customerEmail);
         setCheckoutStatus('success');
+        sessionStorage.removeItem(GUEST_CHECKOUT_KEY);
       } else {
         setCheckoutStatus('idle');
         setCheckoutError(result.error || 'Checkout failed.');
@@ -125,8 +175,11 @@ export default function CartPage() {
           </div>
           <div className="space-y-2">
             <h1 className="text-2xl font-extrabold tracking-tight">Order Confirmed!</h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-450">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
               Thank you for your purchase. We are simulating a successful payment and order placement.
+              {confirmedOrderEmail && (
+                <> A confirmation will be sent to <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+              )}
             </p>
           </div>
           <div className="border-t border-zinc-100 dark:border-zinc-850 pt-6">
@@ -345,11 +398,72 @@ export default function CartPage() {
                   </div>
                 </div>
 
+                {/* Guest or signed-in checkout details */}
+                {!isSignedIn ? (
+                  <div className="space-y-3 border-t border-zinc-100 dark:border-zinc-900 pt-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
+                        Guest Checkout
+                      </h3>
+                      <div className="flex items-center gap-2 text-[10px] font-semibold">
+                        <SignInButton mode="modal" forceRedirectUrl="/cart">
+                          <button type="button" className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 cursor-pointer">
+                            Sign in
+                          </button>
+                        </SignInButton>
+                        <span className="text-zinc-300 dark:text-zinc-600">|</span>
+                        <SignUpButton mode="modal" forceRedirectUrl="/cart">
+                          <button type="button" className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 cursor-pointer">
+                            Sign up
+                          </button>
+                        </SignUpButton>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                      No account needed. Enter your details below to complete your order.
+                    </p>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Full name"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50"
+                    />
+                    <input
+                      type="email"
+                      required
+                      placeholder="Email address"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50"
+                    />
+                  </div>
+                ) : (
+                  <div className="border-t border-zinc-100 dark:border-zinc-900 pt-4 space-y-1">
+                    <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
+                      Checkout as
+                    </h3>
+                    <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                      {user?.fullName || user?.firstName || 'Customer'}
+                    </p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
+                      {user?.primaryEmailAddress?.emailAddress}
+                    </p>
+                  </div>
+                )}
+
+                {checkoutError && (
+                  <div className="bg-rose-500/10 border border-rose-500/25 text-rose-700 dark:text-rose-400 p-3 rounded-xl text-xs leading-relaxed whitespace-pre-line">
+                    {checkoutError}
+                  </div>
+                )}
+
                 <div className="pt-2 space-y-3">
                   <button
                     onClick={handleCheckout}
-                    disabled={checkoutStatus === 'processing'}
-                    className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
+                    disabled={checkoutStatus === 'processing' || cartItems.length === 0}
+                    className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
                     {checkoutStatus === 'processing' ? (
                       <>
@@ -382,22 +496,19 @@ export default function CartPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleSendInbox} className="space-y-3">
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-450 leading-relaxed">
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
                       {isSignedIn 
                         ? `Email the list of these ${cartCount} items to your registered address.`
-                        : "Enter your email address to receive a summary copy of your shopping cart."
+                        : guestEmail.trim()
+                          ? `Send a summary of these ${cartCount} items to ${guestEmail.trim()}.`
+                          : `Enter your email in Guest Checkout above, then send a cart summary here.`
                       }
                     </p>
                     
-                    {!isSignedIn && (
-                      <input
-                        type="email"
-                        required
-                        placeholder="your-email@example.com"
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50"
-                      />
+                    {!isSignedIn && !guestEmail.trim() && (
+                      <p className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                        Add your email in the Guest Checkout section first.
+                      </p>
                     )}
                     
                     {isSignedIn && (
@@ -408,8 +519,8 @@ export default function CartPage() {
 
                     <button
                       type="submit"
-                      disabled={emailStatus === 'sending'}
-                      className="w-full text-center py-2.5 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                      disabled={emailStatus === 'sending' || (!isSignedIn && !guestEmail.trim())}
+                      className="w-full text-center py-2.5 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       {emailStatus === 'sending' ? (
                         <>
