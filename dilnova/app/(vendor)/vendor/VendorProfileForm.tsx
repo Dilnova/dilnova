@@ -11,6 +11,11 @@ interface VendorProfileFormProps {
     phone?: string;
     bannerUrl?: string;
     stockAllocationMode?: 'target_branch' | 'central_intake';
+    bankName?: string;
+    bankAccountName?: string;
+    bankAccountNumber?: string;
+    bankBranchCode?: string;
+    bankTransferInstructions?: string;
   };
   isAdmin?: boolean;
 }
@@ -22,6 +27,13 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
   const [bannerUrl, setBannerUrl] = useState(initialMetadata.bannerUrl || '');
   const [stockAllocationMode, setStockAllocationMode] = useState<'target_branch' | 'central_intake'>(
     initialMetadata.stockAllocationMode || 'central_intake'
+  );
+  const [bankName, setBankName] = useState(initialMetadata.bankName || '');
+  const [bankAccountName, setBankAccountName] = useState(initialMetadata.bankAccountName || '');
+  const [bankAccountNumber, setBankAccountNumber] = useState(initialMetadata.bankAccountNumber || '');
+  const [bankBranchCode, setBankBranchCode] = useState(initialMetadata.bankBranchCode || '');
+  const [bankTransferInstructions, setBankTransferInstructions] = useState(
+    initialMetadata.bankTransferInstructions || ''
   );
 
   const [isPending, startTransition] = useTransition();
@@ -39,6 +51,11 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
           phone,
           bannerUrl,
           stockAllocationMode,
+          bankName,
+          bankAccountName,
+          bankAccountNumber,
+          bankBranchCode,
+          bankTransferInstructions,
         });
         if (result.success) {
           setMessage({ type: 'success', text: 'Storefront profile updated successfully!' });
@@ -139,6 +156,84 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
           />
         </div>
       </div>
+
+      {isAdmin && (
+        <div className="space-y-4 pt-6 border-t border-zinc-100 dark:border-zinc-900">
+          <div>
+            <h4 className="text-sm font-bold text-zinc-805 dark:text-zinc-150">Bank Transfer Details</h4>
+            <p className="text-[11px] text-zinc-400 mt-0.5">
+              Shown to customers when they pay by bank transfer. Bank name, account name, and account number are required.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+                Bank Name
+              </label>
+              <input
+                type="text"
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                placeholder="e.g. Commercial Bank"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+                Account Name
+              </label>
+              <input
+                type="text"
+                value={bankAccountName}
+                onChange={(e) => setBankAccountName(e.target.value)}
+                placeholder="Registered account holder name"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+                Account Number
+              </label>
+              <input
+                type="text"
+                value={bankAccountNumber}
+                onChange={(e) => setBankAccountNumber(e.target.value)}
+                placeholder="1234567890"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500 font-mono"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+                Branch / Sort Code (optional)
+              </label>
+              <input
+                type="text"
+                value={bankBranchCode}
+                onChange={(e) => setBankBranchCode(e.target.value)}
+                placeholder="Branch code or SWIFT"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500 font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+              Additional Instructions (optional)
+            </label>
+            <textarea
+              value={bankTransferInstructions}
+              onChange={(e) => setBankTransferInstructions(e.target.value)}
+              rows={3}
+              placeholder="e.g. Use your order reference in the transfer description."
+              className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Stock Allocation Settings — Only editable/visible by Org Admin */}
       {isAdmin && (

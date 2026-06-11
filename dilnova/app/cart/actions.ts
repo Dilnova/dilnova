@@ -24,6 +24,17 @@ import {
 } from '@/utils/inventoryStock';
 import { calculateCheckoutTotals } from '@/utils/checkoutTotals';
 import { applyOnlineOrderItemStock } from '@/utils/onlineOrderStock';
+import {
+  BANK_TRANSFER_PAYMENT_ID,
+  allocateVendorPaymentAmounts,
+  hasCompleteBankDetails,
+  isBankTransferPayment,
+  type BankTransferCheckoutInstructions,
+} from '@/utils/bankTransfer';
+import {
+  buildBankTransferCheckoutInstructions,
+  getBankTransferDetailsForOrgs,
+} from '@/utils/bankTransferServer';
 
 interface CartItem {
   id: string;
@@ -463,6 +474,16 @@ const checkoutItemSchema = z.object({
   vendorOrgId: z.string().optional(),
 });
 
+type CheckoutTransactionResult =
+  | { success: false; error: string }
+  | {
+      success: true;
+      orderId: string;
+      grandTotalCents: number;
+      vendorSubtotals: Record<string, number>;
+      serverSubtotalCents: number;
+    };
+
 const checkoutSchema = z.object({
   customerName: z.string().min(1, 'Customer name is required.'),
   customerEmail: z.string().email('Invalid email address.'),
@@ -523,9 +544,11 @@ export async function syncCartPricesAction(productIds: string[]) {
   }
 }
 
-export async function getCartCheckoutOptionsAction(productIds: string[]) {
+export async function getCartCheckoutOptionsAction(
+  cartLines: { id: string; quantity: number; price: number }[]
+) {
   try {
-    if (productIds.length === 0) {
+    if (cartLines.length === 0) {
       return {
         success: true as const,
         fulfillment: [],
@@ -533,14 +556,31 @@ export async function getCartCheckoutOptionsAction(productIds: string[]) {
         pickupBranches: [],
         singleVendorOrgId: null,
         vendorCount: 0,
+        bankDetailsByOrg: {},
+        vendorCartSummary: [],
       };
     }
 
-    const uniqueIds = [...new Set(productIds)];
+    const uniqueIds = [...new Set(cartLines.map((line) => line.id))];
     const products = await db
-      .select({ id: schema.products.id, orgId: schema.products.orgId })
+      .select({
+        id: schema.products.id,
+        orgId: schema.products.orgId,
+        price: schema.products.price,
+      })
       .from(schema.products)
       .where(inArray(schema.products.id, uniqueIds));
+
+    const productById = new Map(products.map((product) => [product.id, product]));
+    const vendorSubtotals = new Map<string, number>();
+    for (const line of cartLines) {
+      const product = productById.get(line.id);
+      if (!product) continue;
+      vendorSubtotals.set(
+        product.orgId,
+        (vendorSubtotals.get(product.orgId) || 0) + product.price * line.quantity
+      );
+    }
 
     const orgIds = products.map((p) => p.orgId);
     const uniqueOrgIds = [...new Set(orgIds)];
@@ -575,6 +615,10 @@ export async function getCartCheckoutOptionsAction(productIds: string[]) {
     }
 
     const resolved = await resolveCheckoutOptionsForOrgs(orgIds, branchesByOrg);
+    const bankTransferEnabled = resolved.payment.some((o) => o.id === BANK_TRANSFER_PAYMENT_ID);
+    const bankDetailsByOrg = bankTransferEnabled
+      ? await getBankTransferDetailsForOrgs(uniqueOrgIds)
+      : {};
 
     return {
       success: true as const,
@@ -590,10 +634,26 @@ export async function getCartCheckoutOptionsAction(productIds: string[]) {
         label: o.label,
         description: o.description,
         requiresDelivery: o.requiresDelivery === true,
+        pendingPayment: o.pendingPayment === true,
       })),
       pickupBranches: resolved.pickupBranches,
       singleVendorOrgId: resolved.singleVendorOrgId,
       vendorCount: uniqueOrgIds.length,
+      bankDetailsByOrg: Object.fromEntries(
+        uniqueOrgIds.map((orgId) => [
+          orgId,
+          {
+            vendorName: bankDetailsByOrg[orgId]?.vendorName || 'Vendor',
+            configured: hasCompleteBankDetails(bankDetailsByOrg[orgId]?.bankDetails),
+            bankDetails: bankDetailsByOrg[orgId]?.bankDetails ?? null,
+          },
+        ])
+      ),
+      vendorCartSummary: uniqueOrgIds.map((orgId) => ({
+        orgId,
+        vendorName: bankDetailsByOrg[orgId]?.vendorName || 'Vendor',
+        subtotalCents: vendorSubtotals.get(orgId) || 0,
+      })),
     };
   } catch (error) {
     console.error('Failed to load checkout options:', error);
@@ -656,7 +716,7 @@ export async function simulatedCheckoutAction(
     await rateLimit(5, 60 * 1000); // Max 5 checkouts per minute
 
     // ── Concurrency Safe Stock Validation & Checkout ──
-    return await db.transaction(async (tx) => {
+    const txResult: CheckoutTransactionResult = await db.transaction(async (tx) => {
       const stockErrors: string[] = [];
       const stockReservations: { productId: string; quantity: number; reservation: StockReservation }[] = [];
       const verifiedItems: {
@@ -742,6 +802,21 @@ export async function simulatedCheckoutAction(
       }
       if (!paymentOption) {
         return { success: false, error: 'Selected payment method is not available for this cart.' };
+      }
+      if (isBankTransferPayment(payment)) {
+        const bankDetailsByOrg = await getBankTransferDetailsForOrgs(vendorOrgIds);
+        const vendorsMissingBankDetails = vendorOrgIds.filter(
+          (orgId) => !hasCompleteBankDetails(bankDetailsByOrg[orgId]?.bankDetails)
+        );
+        if (vendorsMissingBankDetails.length > 0) {
+          const vendorNames = vendorsMissingBankDetails.map(
+            (orgId) => bankDetailsByOrg[orgId]?.vendorName || 'A vendor'
+          );
+          return {
+            success: false as const,
+            error: `Bank transfer is unavailable because bank details are not configured for: ${vendorNames.join(', ')}. Please contact the store or choose another payment method.`,
+          };
+        }
       }
       if (!isPaymentCompatibleWithFulfillment(paymentOption, fulfillmentOption)) {
         return {
@@ -890,8 +965,53 @@ export async function simulatedCheckoutAction(
         }
       }
 
-      return { success: true, orderId: order.id };
+      const vendorSubtotals = new Map<string, number>();
+      for (const item of verifiedItems) {
+        vendorSubtotals.set(
+          item.vendorOrgId,
+          (vendorSubtotals.get(item.vendorOrgId) || 0) + item.price * item.quantity
+        );
+      }
+
+      return {
+        success: true as const,
+        orderId: order.id,
+        grandTotalCents: checkoutTotals.grandTotal,
+        vendorSubtotals: Object.fromEntries(vendorSubtotals),
+        serverSubtotalCents: serverSubtotal,
+      };
     });
+
+    if (!txResult.success) {
+      return { success: false, error: txResult.error };
+    }
+
+    const {
+      orderId: createdOrderId,
+      grandTotalCents,
+      vendorSubtotals: createdVendorSubtotals,
+      serverSubtotalCents,
+    } = txResult;
+
+    let bankTransferInstructions: BankTransferCheckoutInstructions | undefined;
+    if (isBankTransferPayment(payment)) {
+      const vendorAmounts = allocateVendorPaymentAmounts(
+        createdVendorSubtotals,
+        serverSubtotalCents,
+        grandTotalCents
+      );
+      bankTransferInstructions = await buildBankTransferCheckoutInstructions({
+        orderId: createdOrderId,
+        grandTotalCents,
+        vendorAmounts,
+      });
+    }
+
+    return {
+      success: true,
+      orderId: createdOrderId,
+      bankTransferInstructions,
+    };
   } catch (error: unknown) {
     console.error('Checkout failed:', error);
     const errorMsg = error instanceof Error ? error.message : 'Unknown server error during checkout.';

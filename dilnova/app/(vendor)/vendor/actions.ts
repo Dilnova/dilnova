@@ -14,6 +14,11 @@ interface VendorMetadataInput {
   phone: string;
   bannerUrl: string;
   stockAllocationMode?: 'target_branch' | 'central_intake';
+  bankName?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  bankBranchCode?: string;
+  bankTransferInstructions?: string;
 }
 
 /**
@@ -53,6 +58,11 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
         phone: parsed.data.data.phone,
         bannerUrl: parsed.data.data.bannerUrl,
         stockAllocationMode: parsed.data.data.stockAllocationMode,
+        bankName: parsed.data.data.bankName,
+        bankAccountName: parsed.data.data.bankAccountName,
+        bankAccountNumber: parsed.data.data.bankAccountNumber,
+        bankBranchCode: parsed.data.data.bankBranchCode,
+        bankTransferInstructions: parsed.data.data.bankTransferInstructions,
       },
     });
 
@@ -69,6 +79,9 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
           phone: parsed.data.data.phone,
           bannerUrl: parsed.data.data.bannerUrl,
           stockAllocationMode: parsed.data.data.stockAllocationMode,
+          bankName: parsed.data.data.bankName,
+          bankAccountName: parsed.data.data.bankAccountName,
+          bankAccountNumber: parsed.data.data.bankAccountNumber,
         },
       });
     }

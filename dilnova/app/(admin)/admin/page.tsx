@@ -39,6 +39,11 @@ export default async function AdminPage() {
     bannerUrl?: string;
     stockAllocationMode?: 'target_branch' | 'central_intake';
     checkout_options?: Record<string, boolean>;
+    bankName?: string;
+    bankAccountName?: string;
+    bankAccountNumber?: string;
+    bankBranchCode?: string;
+    bankTransferInstructions?: string;
   };
   const memberships = membershipsResponse.data;
 
@@ -141,7 +146,7 @@ export default async function AdminPage() {
           <div>
             <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 font-sans">Checkout Options</h3>
             <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-              Enable store pickup, cash on delivery, and other checkout methods for customers buying from your organization.
+              Enable store pickup, bank transfer, and other checkout methods for customers buying from your organization.
             </p>
           </div>
           <OrgCheckoutOptionsForm

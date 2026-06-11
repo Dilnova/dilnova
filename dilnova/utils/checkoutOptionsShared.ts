@@ -48,6 +48,15 @@ export const BUILTIN_CHECKOUT_OPTIONS: CheckoutOptionDefinition[] = [
     requiresDelivery: true,
   },
   {
+    id: 'bank_transfer',
+    label: 'Bank Transfer',
+    description: 'Transfer payment to the vendor bank account. Order is confirmed after payment is verified.',
+    type: 'payment',
+    platformEnabled: true,
+    isBuiltIn: true,
+    pendingPayment: true,
+  },
+  {
     id: 'pay_online',
     label: 'Pay Online',
     description: 'Simulated online payment',
@@ -58,10 +67,11 @@ export const BUILTIN_CHECKOUT_OPTIONS: CheckoutOptionDefinition[] = [
 ];
 
 const BUILTIN_DEFAULTS: Record<string, boolean> = {
-  standard_delivery: true,
-  pay_online: true,
-  store_pickup: false,
+  standard_delivery: false,
+  pay_online: false,
+  store_pickup: true,
   cash_on_delivery: false,
+  bank_transfer: true,
 };
 
 function slugifyOptionId(label: string): string {

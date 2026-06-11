@@ -15,6 +15,13 @@ import {
 } from './actions';
 import { isPaymentCompatibleWithFulfillment } from '@/utils/checkoutOptionsShared';
 import { calculateCheckoutTotals } from '@/utils/checkoutTotals';
+import {
+  BANK_TRANSFER_PAYMENT_ID,
+  allocateVendorPaymentAmounts,
+  isBankTransferPayment,
+  type BankTransferCheckoutInstructions,
+} from '@/utils/bankTransfer';
+import BankTransferInstructions from '@/app/components/BankTransferInstructions';
 
 const GUEST_CHECKOUT_KEY = 'dilnova_guest_checkout';
 
@@ -43,14 +50,32 @@ export default function CartPage() {
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success'>('idle');
   const [emailMessage, setEmailMessage] = useState('');
   const [confirmedOrderEmail, setConfirmedOrderEmail] = useState('');
-  const [fulfillmentMethod, setFulfillmentMethod] = useState('standard_delivery');
-  const [paymentMethod, setPaymentMethod] = useState('pay_online');
+  const [confirmedOrderId, setConfirmedOrderId] = useState('');
+  const [bankTransferInstructions, setBankTransferInstructions] =
+    useState<BankTransferCheckoutInstructions | null>(null);
+  const [fulfillmentMethod, setFulfillmentMethod] = useState('store_pickup');
+  const [paymentMethod, setPaymentMethod] = useState(BANK_TRANSFER_PAYMENT_ID);
   const [pickupBranchId, setPickupBranchId] = useState('');
   const [checkoutOptions, setCheckoutOptions] = useState<{
     fulfillment: { id: string; label: string; description?: string; zeroShipping: boolean; requiresBranch: boolean }[];
-    payment: { id: string; label: string; description?: string; requiresDelivery: boolean }[];
+    payment: { id: string; label: string; description?: string; requiresDelivery: boolean; pendingPayment?: boolean }[];
     pickupBranches: { orgId: string; branches: { id: string; name: string; address: string | null; phone: string | null }[] }[];
-  }>({ fulfillment: [], payment: [], pickupBranches: [] });
+    bankDetailsByOrg: Record<
+      string,
+      {
+        vendorName: string;
+        configured: boolean;
+        bankDetails: {
+          bankName: string;
+          accountName: string;
+          accountNumber: string;
+          branchCode: string;
+          instructions: string;
+        } | null;
+      }
+    >;
+    vendorCartSummary: { orgId: string; vendorName: string; subtotalCents: number }[];
+  }>({ fulfillment: [], payment: [], pickupBranches: [], bankDetailsByOrg: {}, vendorCartSummary: [] });
   const [optionsLoading, setOptionsLoading] = useState(false);
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [vendorCount, setVendorCount] = useState(0);
@@ -115,7 +140,13 @@ export default function CartPage() {
 
   useEffect(() => {
     if (cartItems.length === 0) {
-      setCheckoutOptions({ fulfillment: [], payment: [], pickupBranches: [] });
+      setCheckoutOptions({
+        fulfillment: [],
+        payment: [],
+        pickupBranches: [],
+        bankDetailsByOrg: {},
+        vendorCartSummary: [],
+      });
       setOptionsError(null);
       setVendorCount(0);
       setPickupBranchId('');
@@ -126,13 +157,25 @@ export default function CartPage() {
     setOptionsLoading(true);
     setOptionsError(null);
 
-    getCartCheckoutOptionsAction(cartItems.map((item) => item.id))
+    getCartCheckoutOptionsAction(
+        cartItems.map((item) => ({
+          id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        }))
+      )
       .then((result) => {
         if (cancelled) return;
 
         if (!result.success) {
           setOptionsError(result.error || 'Failed to load checkout options.');
-          setCheckoutOptions({ fulfillment: [], payment: [], pickupBranches: [] });
+          setCheckoutOptions({
+        fulfillment: [],
+        payment: [],
+        pickupBranches: [],
+        bankDetailsByOrg: {},
+        vendorCartSummary: [],
+      });
           setVendorCount(0);
           setFulfillmentMethod('');
           setPaymentMethod('');
@@ -144,6 +187,8 @@ export default function CartPage() {
           fulfillment: result.fulfillment,
           payment: result.payment,
           pickupBranches: result.pickupBranches,
+          bankDetailsByOrg: result.bankDetailsByOrg || {},
+          vendorCartSummary: result.vendorCartSummary || [],
         });
         setVendorCount(result.vendorCount);
 
@@ -317,9 +362,11 @@ export default function CartPage() {
       if (result.success) {
         clearCart();
         setConfirmedOrderEmail(customerEmail);
+        setConfirmedOrderId(result.orderId || '');
+        setBankTransferInstructions(result.bankTransferInstructions || null);
         setCheckoutStatus('success');
-        setFulfillmentMethod('standard_delivery');
-        setPaymentMethod('pay_online');
+        setFulfillmentMethod('store_pickup');
+        setPaymentMethod(BANK_TRANSFER_PAYMENT_ID);
         setPickupBranchId('');
         sessionStorage.removeItem(GUEST_CHECKOUT_KEY);
       } else {
@@ -342,24 +389,86 @@ export default function CartPage() {
     selectedFulfillment?.zeroShipping ?? false
   );
   const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = checkoutTotals;
+  const vendorCartSubtotal = checkoutOptions.vendorCartSummary.reduce(
+    (sum, vendor) => sum + vendor.subtotalCents,
+    0
+  );
+  const bankTransferPreview: BankTransferCheckoutInstructions | null =
+    isBankTransferPayment(paymentMethod) && checkoutOptions.vendorCartSummary.length > 0
+      ? {
+          orderId: 'preview',
+          reference: 'Shown after you place the order',
+          grandTotalCents: grandTotal,
+          vendors: allocateVendorPaymentAmounts(
+            Object.fromEntries(
+              checkoutOptions.vendorCartSummary.map((vendor) => [vendor.orgId, vendor.subtotalCents])
+            ),
+            vendorCartSubtotal,
+            grandTotal
+          ).map(({ orgId, amountCents }) => ({
+            orgId,
+            vendorName: checkoutOptions.bankDetailsByOrg[orgId]?.vendorName || 'Vendor',
+            amountCents,
+            bankDetails: checkoutOptions.bankDetailsByOrg[orgId]?.bankDetails ?? null,
+          })),
+        }
+      : null;
+  const bankTransferMissingDetails =
+    isBankTransferPayment(paymentMethod) &&
+    checkoutOptions.vendorCartSummary.some(
+      (vendor) => !checkoutOptions.bankDetailsByOrg[vendor.orgId]?.configured
+    );
 
   if (checkoutStatus === 'success') {
+    const isBankTransferOrder = Boolean(bankTransferInstructions);
+
     return (
       <main className="min-h-[80vh] flex items-center justify-center p-6 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 font-sans">
-        <div className="max-w-md w-full border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 bg-white dark:bg-zinc-900 shadow-xl text-center space-y-6 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-450 text-3xl animate-bounce">
-            ✓
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-extrabold tracking-tight">Order Confirmed!</h1>
+        <div className="max-w-lg w-full border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 bg-white dark:bg-zinc-900 shadow-xl space-y-6 animate-fade-in">
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-450 text-3xl">
+              ✓
+            </div>
+            <h1 className="text-2xl font-extrabold tracking-tight">
+              {isBankTransferOrder ? 'Order Placed' : 'Order Confirmed!'}
+            </h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Thank you for your purchase. We are simulating a successful payment and order placement.
-              {confirmedOrderEmail && (
-                <> A confirmation will be sent to <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+              {isBankTransferOrder ? (
+                <>
+                  Your order has been received and is awaiting bank transfer payment.
+                  {confirmedOrderEmail && (
+                    <> Order updates will use <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+                  )}
+                </>
+              ) : (
+                <>
+                  Thank you for your order.
+                  {confirmedOrderEmail && (
+                    <> Updates will be sent to <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+                  )}
+                </>
               )}
             </p>
+            {confirmedOrderId && (
+              <p className="text-[11px] font-mono text-zinc-400">
+                Order ID: {confirmedOrderId.slice(0, 8).toUpperCase()}
+              </p>
+            )}
           </div>
-          <div className="border-t border-zinc-100 dark:border-zinc-850 pt-6">
+
+          {bankTransferInstructions && (
+            <BankTransferInstructions instructions={bankTransferInstructions} compact />
+          )}
+
+          <div className="border-t border-zinc-100 dark:border-zinc-850 pt-6 space-y-3">
+            {isSignedIn && confirmedOrderId && (
+              <Link
+                href={`/customer/invoice/${confirmedOrderId}`}
+                className="block w-full text-center py-3 border border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 text-xs font-bold font-mono uppercase tracking-wider rounded-xl transition-all hover:bg-purple-50 dark:hover:bg-purple-950/20"
+              >
+                View Invoice
+              </Link>
+            )}
             <button
               onClick={handleSuccessClose}
               className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer"
@@ -758,6 +867,18 @@ export default function CartPage() {
                                 : 'No payment methods are enabled for this vendor. Contact the store or try again later.'}
                           </p>
                         ) : null}
+
+                        {bankTransferPreview && (
+                          <div className="space-y-2">
+                            {bankTransferMissingDetails ? (
+                              <p className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+                                Bank transfer cannot be completed until all vendors configure their bank account details.
+                              </p>
+                            ) : (
+                              <BankTransferInstructions instructions={bankTransferPreview} compact />
+                            )}
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -778,7 +899,8 @@ export default function CartPage() {
                       optionsLoading ||
                       !!optionsError ||
                       !selectedFulfillment ||
-                      !selectedPayment
+                      !selectedPayment ||
+                      bankTransferMissingDetails
                     }
                     className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
                   >

@@ -15,7 +15,7 @@ export function isActiveSimulatedOrder(status: string): boolean {
 export function formatOrderStatusLabel(status: string): string {
   switch (status) {
     case 'pending_payment':
-      return 'Pending Payment (COD)';
+      return 'Pending Payment';
     case 'pending':
       return 'Pending';
     case 'fulfilled':

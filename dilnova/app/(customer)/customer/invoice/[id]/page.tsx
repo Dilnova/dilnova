@@ -8,6 +8,9 @@ import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
 import { getNormalizedClerkUserEmail, normalizeCustomerEmail } from '@/utils/customerEmail';
 import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
+import { allocateVendorPaymentAmounts, isBankTransferPayment } from '@/utils/bankTransfer';
+import { buildBankTransferCheckoutInstructions } from '@/utils/bankTransferServer';
+import BankTransferInstructions from '@/app/components/BankTransferInstructions';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -66,6 +69,21 @@ export default async function InvoicePage({ params }: PageProps) {
 
   const orderTotals = getOrderDisplayTotals(order);
   const { subtotalAmount: subtotal, taxAmount: tax, shippingAmount: shipping, grandTotal } = orderTotals;
+
+  const vendorSubtotals = items.reduce<Record<string, number>>((acc, item) => {
+    acc[item.vendorOrgId] = (acc[item.vendorOrgId] || 0) + item.unitPrice * item.quantity;
+    return acc;
+  }, {});
+  const serverSubtotal = Object.values(vendorSubtotals).reduce((sum, amount) => sum + amount, 0);
+  const showBankTransferInstructions =
+    isBankTransferPayment(order.paymentMethod) && order.status === 'pending_payment';
+  const bankTransferInstructions = showBankTransferInstructions
+    ? await buildBankTransferCheckoutInstructions({
+        orderId: order.id,
+        grandTotalCents: grandTotal,
+        vendorAmounts: allocateVendorPaymentAmounts(vendorSubtotals, serverSubtotal, grandTotal),
+      })
+    : null;
 
   const formatPrice = (cents: number) => {
     return (cents / 100).toLocaleString('en-US', {
@@ -175,6 +193,12 @@ export default async function InvoicePage({ params }: PageProps) {
           </table>
         </div>
 
+        {bankTransferInstructions && (
+          <div className="pt-8">
+            <BankTransferInstructions instructions={bankTransferInstructions} />
+          </div>
+        )}
+
         {/* Totals Block */}
         <div className="flex justify-end pt-6">
           <div className="w-full sm:w-64 space-y-2 text-xs font-mono text-zinc-600 dark:text-zinc-400 print:text-black">
@@ -200,7 +224,9 @@ export default async function InvoicePage({ params }: PageProps) {
         </div>
 
         <div className="mt-16 pt-8 border-t border-zinc-100 dark:border-zinc-800 text-center text-[10px] text-zinc-400 dark:text-zinc-500 print:text-black">
-          Thank you for checkout with Dilnova Commerce Hub! This is a simulated transaction receipt.
+          {showBankTransferInstructions
+            ? 'Complete your bank transfer using the instructions above. Your order will be prepared after payment is verified.'
+            : 'Thank you for shopping with Dilnova Commerce Hub.'}
         </div>
       </div>
 

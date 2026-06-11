@@ -22,7 +22,7 @@ export default function OrgCheckoutOptionsForm({
     const initial: Record<string, boolean> = {};
     for (const option of platformOptions) {
       initial[option.id] = initialOptions[option.id] ?? (
-        option.id === 'standard_delivery' || option.id === 'pay_online'
+        option.id === 'store_pickup' || option.id === 'bank_transfer'
       );
     }
     return initial;
