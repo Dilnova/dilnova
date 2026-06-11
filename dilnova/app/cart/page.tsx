@@ -82,6 +82,7 @@ export default function CartPage() {
   const [vendorCount, setVendorCount] = useState(0);
   const [priceSyncNotice, setPriceSyncNotice] = useState<string | null>(null);
   const cartItemIds = cartItems.map((item) => item.id).join(',');
+  const cartLinesKey = cartItems.map((item) => `${item.id}:${item.quantity}`).join(',');
 
   // Restore guest checkout details from session
   useEffect(() => {
@@ -149,34 +150,41 @@ export default function CartPage() {
         vendorCartSummary: [],
       });
       setOptionsError(null);
+      setOptionsLoading(false);
       setVendorCount(0);
       setPickupBranchId('');
       return;
     }
 
-    let cancelled = false;
+    let active = true;
     setOptionsLoading(true);
     setOptionsError(null);
 
-    getCartCheckoutOptionsAction(
-        cartItems.map((item) => ({
-          id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-        }))
-      )
+    const lines = cartItems.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+    const loadTimeout = window.setTimeout(() => {
+      if (!active) return;
+      setOptionsLoading(false);
+      setOptionsError('Checkout options timed out. Please refresh the page and try again.');
+    }, 20000);
+
+    getCartCheckoutOptionsAction(lines)
       .then((result) => {
-        if (cancelled) return;
+        if (!active) return;
 
         if (!result.success) {
           setOptionsError(result.error || 'Failed to load checkout options.');
           setCheckoutOptions({
-        fulfillment: [],
-        payment: [],
-        pickupBranches: [],
-        bankDetailsByOrg: {},
-        vendorCartSummary: [],
-      });
+            fulfillment: [],
+            payment: [],
+            pickupBranches: [],
+            bankDetailsByOrg: {},
+            vendorCartSummary: [],
+          });
           setVendorCount(0);
           setFulfillmentMethod('');
           setPaymentMethod('');
@@ -216,14 +224,28 @@ export default function CartPage() {
           : (compatiblePayments[0]?.id || '');
         setPaymentMethod(nextPaymentId);
       })
+      .catch(() => {
+        if (!active) return;
+        setOptionsError('Failed to load checkout options. Please refresh the page.');
+        setCheckoutOptions({
+          fulfillment: [],
+          payment: [],
+          pickupBranches: [],
+          bankDetailsByOrg: {},
+          vendorCartSummary: [],
+        });
+        setVendorCount(0);
+      })
       .finally(() => {
-        if (!cancelled) setOptionsLoading(false);
+        window.clearTimeout(loadTimeout);
+        if (active) setOptionsLoading(false);
       });
 
     return () => {
-      cancelled = true;
+      active = false;
+      window.clearTimeout(loadTimeout);
     };
-  }, [cartItems]);
+  }, [cartLinesKey]);
 
   const selectedFulfillment = checkoutOptions.fulfillment.find((o) => o.id === fulfillmentMethod);
   const compatiblePayments = checkoutOptions.payment.filter((payment) =>
