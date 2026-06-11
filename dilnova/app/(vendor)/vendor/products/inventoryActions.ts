@@ -27,6 +27,7 @@ import {
   validateBranchAllocationAgainstCentral,
   validateCentralQuantityCoversBranches,
   incrementDefaultBranchStock,
+  decrementDefaultBranchStock,
 } from '@/utils/stockLedger';
 import {
   getStockAvailabilityCatalog,
@@ -427,6 +428,13 @@ export async function vendorAdjustInventoryAction(data: {
           orgId,
           inv.productId,
           parsed.data.quantityChange
+        );
+      } else if (premiumStatus.multiBranchActive && parsed.data.quantityChange < 0) {
+        await decrementDefaultBranchStock(
+          tx,
+          orgId,
+          inv.productId,
+          -parsed.data.quantityChange
         );
       }
 

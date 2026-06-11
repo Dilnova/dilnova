@@ -23,6 +23,7 @@ import {
   type StockReservation,
 } from '@/utils/inventoryStock';
 import { calculateCheckoutTotals } from '@/utils/checkoutTotals';
+import { applyOnlineOrderItemStock } from '@/utils/onlineOrderStock';
 
 interface CartItem {
   id: string;
@@ -836,6 +837,7 @@ export async function simulatedCheckoutAction(
       }
 
       const orderStatus = resolveInitialOrderStatus(paymentOption);
+      const holdStockUntilFulfillment = orderStatus === 'pending_payment';
 
       // ── Create Simulated Order ──
       const [order] = await tx
@@ -851,6 +853,7 @@ export async function simulatedCheckoutAction(
           fulfillmentMethod: fulfillment,
           paymentMethod: payment,
           pickupBranchId: fulfillmentOption.requiresBranch ? pickupBranch : null,
+          stockDepleted: !holdStockUntilFulfillment,
         })
         .returning();
 
@@ -870,12 +873,21 @@ export async function simulatedCheckoutAction(
         });
       }
 
-      // ── Deplete central (+ branch for store pickup) inventory ──
-      for (const { quantity, reservation } of stockReservations) {
-        await applyStockReservation(tx, quantity, reservation, {
-          userId: 'customer',
-          reason: `Online order ${order.id}`,
-        });
+      if (!holdStockUntilFulfillment) {
+        for (const { productId, quantity, reservation } of stockReservations) {
+          const item = verifiedItems.find((v) => v.id === productId);
+          if (!item) continue;
+
+          await applyOnlineOrderItemStock(tx, {
+            quantity,
+            reservation,
+            pickupBranchId: pickupBranchForStock ?? null,
+            vendorOrgId: item.vendorOrgId,
+            productId: item.id,
+            orderId: order.id,
+            userId: userId || 'customer',
+          });
+        }
       }
 
       return { success: true, orderId: order.id };

@@ -1,5 +1,5 @@
 import * as schema from '@/db/schema';
-import { eq, and, ne, sql } from 'drizzle-orm';
+import { eq, and, ne, sql, gte } from 'drizzle-orm';
 import type { db } from '@/db';
 
 type DbConn = Parameters<Parameters<typeof db.transaction>[0]>[0] | typeof db;
@@ -67,6 +67,97 @@ export async function getOrgDefaultBranchId(
 }
 
 /** Increase default branch allocation when central stock is restocked (multi-branch POS sync). */
+/** Reduce branch allocation rows after a central-only (delivery) sale to keep sum(branches) <= central. */
+export async function reduceBranchAllocationsForCentralSale(
+  conn: DbConn,
+  productId: string,
+  quantity: number,
+  orgId: string
+): Promise<void> {
+  if (quantity <= 0) return;
+
+  const rows = await conn
+    .select({
+      id: schema.branchInventory.id,
+      quantity: schema.branchInventory.quantity,
+      isDefault: schema.branches.isDefault,
+      branchName: schema.branches.name,
+    })
+    .from(schema.branchInventory)
+    .innerJoin(schema.branches, eq(schema.branchInventory.branchId, schema.branches.id))
+    .where(
+      and(eq(schema.branchInventory.productId, productId), eq(schema.branches.orgId, orgId))
+    );
+
+  const sorted = [...rows].sort((a, b) => {
+    if (a.isDefault && !b.isDefault) return -1;
+    if (!a.isDefault && b.isDefault) return 1;
+    return a.branchName.localeCompare(b.branchName);
+  });
+
+  let remaining = quantity;
+  for (const row of sorted) {
+    if (remaining <= 0) break;
+    const deduct = Math.min(remaining, row.quantity);
+    if (deduct <= 0) continue;
+
+    const [updated] = await conn
+      .update(schema.branchInventory)
+      .set({
+        quantity: sql`${schema.branchInventory.quantity} - ${deduct}`,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(schema.branchInventory.id, row.id),
+          gte(schema.branchInventory.quantity, deduct)
+        )
+      )
+      .returning({ id: schema.branchInventory.id });
+
+    if (updated) {
+      remaining -= deduct;
+    }
+  }
+}
+
+export async function decrementDefaultBranchStock(
+  conn: DbConn,
+  orgId: string,
+  productId: string,
+  quantityDelta: number
+): Promise<void> {
+  if (quantityDelta <= 0) return;
+
+  const branchId = await getOrgDefaultBranchId(conn, orgId);
+  if (!branchId) return;
+
+  const [existing] = await conn
+    .select({
+      id: schema.branchInventory.id,
+      quantity: schema.branchInventory.quantity,
+    })
+    .from(schema.branchInventory)
+    .where(
+      and(
+        eq(schema.branchInventory.branchId, branchId),
+        eq(schema.branchInventory.productId, productId)
+      )
+    )
+    .limit(1);
+
+  if (!existing || existing.quantity <= 0) return;
+
+  const deduct = Math.min(quantityDelta, existing.quantity);
+  await conn
+    .update(schema.branchInventory)
+    .set({
+      quantity: existing.quantity - deduct,
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.branchInventory.id, existing.id));
+}
+
 export async function incrementDefaultBranchStock(
   conn: DbConn,
   orgId: string,

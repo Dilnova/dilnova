@@ -193,6 +193,7 @@ export const simulatedOrders = pgTable('simulated_orders', {
   fulfillmentMethod: text('fulfillment_method').default('standard_delivery').notNull(),
   paymentMethod: text('payment_method').default('pay_online').notNull(),
   pickupBranchId: uuid('pickup_branch_id'),
+  stockDepleted: boolean('stock_depleted').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => [
