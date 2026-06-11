@@ -11,6 +11,10 @@ export interface CheckoutOptionDefinition {
   isBuiltIn?: boolean;
   zeroShipping?: boolean;
   requiresBranch?: boolean;
+  /** Payment options that create orders awaiting payment (e.g. COD) */
+  pendingPayment?: boolean;
+  /** Payment only allowed with delivery fulfillment (not store pickup) */
+  requiresDelivery?: boolean;
 }
 
 export const BUILTIN_CHECKOUT_OPTIONS: CheckoutOptionDefinition[] = [
@@ -40,6 +44,8 @@ export const BUILTIN_CHECKOUT_OPTIONS: CheckoutOptionDefinition[] = [
     type: 'payment',
     platformEnabled: true,
     isBuiltIn: true,
+    pendingPayment: true,
+    requiresDelivery: true,
   },
   {
     id: 'pay_online',
@@ -95,6 +101,8 @@ export function parseCheckoutOptionsCatalog(raw: string | null | undefined): Che
         isBuiltIn: false,
         zeroShipping: option.zeroShipping === true,
         requiresBranch: option.requiresBranch === true,
+        pendingPayment: option.pendingPayment === true,
+        requiresDelivery: option.requiresDelivery === true,
       });
     }
 
@@ -127,7 +135,53 @@ export function buildCheckoutOptionsCatalogPayload(
     isBuiltIn: option.isBuiltIn === true,
     zeroShipping: option.zeroShipping === true,
     requiresBranch: option.requiresBranch === true,
+    pendingPayment: option.pendingPayment === true,
+    requiresDelivery: option.requiresDelivery === true,
   }));
+}
+
+export function getCheckoutOptionLabel(
+  catalog: CheckoutOptionDefinition[],
+  optionId: string
+): string {
+  const option = catalog.find((o) => o.id === optionId);
+  if (option) return option.label;
+  return optionId
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+export function isPaymentCompatibleWithFulfillment(
+  payment: Pick<CheckoutOptionDefinition, 'requiresDelivery'>,
+  fulfillment: Pick<CheckoutOptionDefinition, 'requiresBranch'>
+): boolean {
+  if (payment.requiresDelivery && fulfillment.requiresBranch) return false;
+  return true;
+}
+
+export function describeOrderCheckout(
+  order: {
+    fulfillmentMethod: string;
+    paymentMethod: string;
+    pickupBranchId?: string | null;
+    pickupBranchName?: string | null;
+  },
+  catalog: CheckoutOptionDefinition[]
+): { fulfillment: string; payment: string; pickup?: string } {
+  const fulfillment = getCheckoutOptionLabel(catalog, order.fulfillmentMethod);
+  const payment = getCheckoutOptionLabel(catalog, order.paymentMethod);
+  const fulfillmentOption = catalog.find((o) => o.id === order.fulfillmentMethod);
+  const pickup =
+    fulfillmentOption?.requiresBranch && order.pickupBranchId
+      ? order.pickupBranchName || `Branch ${order.pickupBranchId.slice(0, 8)}`
+      : undefined;
+  return { fulfillment, payment, pickup };
+}
+
+export function resolveInitialOrderStatus(
+  paymentOption: CheckoutOptionDefinition
+): 'pending' | 'pending_payment' {
+  return paymentOption.pendingPayment === true ? 'pending_payment' : 'pending';
 }
 
 export function createCustomCheckoutOption(

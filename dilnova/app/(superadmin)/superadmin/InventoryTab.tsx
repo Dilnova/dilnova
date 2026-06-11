@@ -2,6 +2,12 @@
 
 import { useState, useTransition, useEffect, useMemo } from 'react';
 import {
+  isActiveSimulatedOrder,
+  formatOrderStatusLabel,
+  matchesOrderStatusFilter,
+} from '@/utils/orderStatus';
+import { describeOrderCheckout, type CheckoutOptionDefinition } from '@/utils/checkoutOptionsShared';
+import {
   createSupplierAction,
   updateSupplierAction,
   deleteSupplierAction,
@@ -60,6 +66,10 @@ export interface SimulatedOrder {
   customerEmail: string;
   totalAmount: number;
   status: string;
+  fulfillmentMethod: string;
+  paymentMethod: string;
+  pickupBranchId: string | null;
+  pickupBranchName?: string | null;
   createdAt: Date;
   updatedAt: Date;
   items: {
@@ -84,6 +94,7 @@ interface InventoryTabProps {
   movements: InventoryMovement[];
   simulatedOrders: SimulatedOrder[];
   productsWithoutInventory: ProductForInventory[];
+  checkoutOptionsCatalog: CheckoutOptionDefinition[];
   triggerNotification: (success: boolean, text: string) => void;
   organizations: {
     id: string;
@@ -103,6 +114,7 @@ export default function InventoryTab({
   movements,
   simulatedOrders,
   productsWithoutInventory,
+  checkoutOptionsCatalog,
   triggerNotification,
   organizations,
 }: InventoryTabProps) {
@@ -154,7 +166,9 @@ export default function InventoryTab({
   const [initSupplierId, setInitSupplierId] = useState('');
 
   // ── Order Filter ──
-  const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | 'pending' | 'fulfilled' | 'cancelled'>('all');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<
+    'all' | 'pending' | 'pending_payment' | 'fulfilled' | 'cancelled'
+  >('all');
 
   // ── Movement Filter ──
   const [movementTypeFilter, setMovementTypeFilter] = useState<string>('all');
@@ -172,7 +186,7 @@ export default function InventoryTab({
   });
 
   const filteredOrders = simulatedOrders.filter((o) =>
-    orderStatusFilter === 'all' || o.status === orderStatusFilter
+    matchesOrderStatusFilter(o.status, orderStatusFilter)
   );
 
   const filteredMovements = movements.filter((m) =>
@@ -636,7 +650,7 @@ export default function InventoryTab({
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">Simulated Orders</h2>
             <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
-              {(['all', 'pending', 'fulfilled', 'cancelled'] as const).map((f) => (
+              {(['all', 'pending', 'pending_payment', 'fulfilled', 'cancelled'] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setOrderStatusFilter(f)}
@@ -646,7 +660,11 @@ export default function InventoryTab({
                       : 'text-zinc-500 dark:text-zinc-400'
                   }`}
                 >
-                  {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
+                  {f === 'all'
+                    ? 'All'
+                    : f === 'pending_payment'
+                      ? 'COD'
+                      : f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
               ))}
             </div>
@@ -659,7 +677,9 @@ export default function InventoryTab({
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredOrders.map((order) => (
+              {filteredOrders.map((order) => {
+                const checkoutDetails = describeOrderCheckout(order, checkoutOptionsCatalog);
+                return (
                 <div key={order.id} className="bg-white border border-zinc-200 rounded-xl p-4 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>
@@ -668,15 +688,29 @@ export default function InventoryTab({
                       <p className="text-[10px] text-zinc-400 font-mono mt-0.5">
                         {new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
+                          {checkoutDetails.fulfillment}
+                        </span>
+                        <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300">
+                          {checkoutDetails.payment}
+                        </span>
+                        {checkoutDetails.pickup && (
+                          <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300">
+                            Pickup: {checkoutDetails.pickup}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-black font-mono text-zinc-900 dark:text-zinc-100">${(order.totalAmount / 100).toFixed(2)}</p>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         order.status === 'fulfilled' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' :
                         order.status === 'cancelled' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400' :
+                        order.status === 'pending_payment' ? 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400' :
                         'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
                       }`}>
-                        {order.status.toUpperCase()}
+                        {formatOrderStatusLabel(order.status).toUpperCase()}
                       </span>
                     </div>
                   </div>
@@ -692,7 +726,7 @@ export default function InventoryTab({
                   </div>
 
                   {/* Status actions */}
-                  {order.status === 'pending' && (
+                  {isActiveSimulatedOrder(order.status) && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleUpdateOrderStatus(order.id, 'fulfilled')}
@@ -711,7 +745,8 @@ export default function InventoryTab({
                     </div>
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>

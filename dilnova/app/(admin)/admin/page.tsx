@@ -4,6 +4,9 @@ import VendorProfileForm from '@/app/(vendor)/vendor/VendorProfileForm';
 import OrgCheckoutOptionsForm from '@/app/(vendor)/vendor/OrgCheckoutOptionsForm';
 import RoleSelector from './RoleSelector';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
+import { db } from '@/db';
+import * as schema from '@/db/schema';
+import { eq, sql } from 'drizzle-orm';
 
 export default async function AdminPage() {
   const { orgId, orgRole } = await auth();
@@ -15,13 +18,18 @@ export default async function AdminPage() {
 
   // Fetch current organization details and membership directories in parallel (reduce latency)
   const client = await clerkClient();
-  const [org, membershipsResponse, checkoutOptionsCatalog] = await Promise.all([
+  const [org, membershipsResponse, checkoutOptionsCatalog, branchCountRow] = await Promise.all([
     client.organizations.getOrganization({ organizationId: orgId }),
     client.organizations.getOrganizationMembershipList({
       organizationId: orgId,
       limit: 100,
     }).catch(() => ({ data: [] })),
     getCheckoutOptionsCatalog(),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(schema.branches)
+      .where(eq(schema.branches.orgId, orgId))
+      .then((rows) => rows[0]?.count ?? 0),
   ]);
 
   const metadata = (org.publicMetadata || {}) as {
@@ -140,6 +148,7 @@ export default async function AdminPage() {
             orgId={orgId}
             catalog={checkoutOptionsCatalog}
             initialOptions={metadata.checkout_options || {}}
+            branchCount={branchCountRow}
           />
         </div>
 

@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { eq, desc, notInArray } from 'drizzle-orm';
+import { eq, desc, notInArray, inArray } from 'drizzle-orm';
 import SuperAdminClient from './SuperAdminClient';
 import { getSystemSetting } from '@/utils/settings';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
@@ -150,13 +150,31 @@ export default async function SuperAdminDashboardPage() {
     .orderBy(desc(schema.simulatedOrders.createdAt))
     .limit(100);
 
+  const pickupBranchIds = [
+    ...new Set(rawOrders.map((order) => order.pickupBranchId).filter((id): id is string => Boolean(id))),
+  ];
+  const pickupBranchRows =
+    pickupBranchIds.length > 0
+      ? await db
+          .select({ id: schema.branches.id, name: schema.branches.name })
+          .from(schema.branches)
+          .where(inArray(schema.branches.id, pickupBranchIds))
+      : [];
+  const pickupBranchNameById = new Map(pickupBranchRows.map((branch) => [branch.id, branch.name]));
+
   const simulatedOrders = await Promise.all(
     rawOrders.map(async (order) => {
       const items = await db
         .select()
         .from(schema.simulatedOrderItems)
         .where(eq(schema.simulatedOrderItems.orderId, order.id));
-      return { ...order, items };
+      return {
+        ...order,
+        items,
+        pickupBranchName: order.pickupBranchId
+          ? pickupBranchNameById.get(order.pickupBranchId) ?? null
+          : null,
+      };
     })
   );
 

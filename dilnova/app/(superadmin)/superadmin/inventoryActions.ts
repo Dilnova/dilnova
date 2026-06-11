@@ -17,6 +17,7 @@ import { checkSuperAdmin } from '@/utils/authGuards';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { validateStockAvailabilityId } from '@/utils/stockAvailability';
+import { isActiveSimulatedOrder } from '@/utils/orderStatus';
 import { rateLimit } from '@/utils/rateLimit';
 
 // ── SUPPLIER CRUD ─────────────────────────────────────────────
@@ -353,8 +354,8 @@ export async function updateSimulatedOrderStatusAction(
 
     const previousStatus = order.status;
 
-    // If cancelling a pending order, restore inventory
-    if (newStatus === 'cancelled' && previousStatus === 'pending') {
+    // If cancelling an active order (pending or COD pending_payment), restore inventory
+    if (newStatus === 'cancelled' && isActiveSimulatedOrder(previousStatus)) {
       const orderItems = await db
         .select()
         .from(schema.simulatedOrderItems)
@@ -385,6 +386,29 @@ export async function updateSimulatedOrderStatusAction(
             reason: `Order ${parsed.data.orderId} cancelled by superadmin`,
             userId: user.id,
           });
+        }
+
+        if (order.pickupBranchId) {
+          const [branchInv] = await db
+            .select()
+            .from(schema.branchInventory)
+            .where(
+              and(
+                eq(schema.branchInventory.branchId, order.pickupBranchId),
+                eq(schema.branchInventory.productId, item.productId)
+              )
+            )
+            .limit(1);
+
+          if (branchInv) {
+            await db
+              .update(schema.branchInventory)
+              .set({
+                quantity: branchInv.quantity + item.quantity,
+                updatedAt: new Date(),
+              })
+              .where(eq(schema.branchInventory.id, branchInv.id));
+          }
         }
       }
     }

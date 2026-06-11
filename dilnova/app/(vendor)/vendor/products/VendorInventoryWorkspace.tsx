@@ -16,6 +16,8 @@ import {
   removeBranchMemberAction,
   processBillingCheckoutAction,
 } from './inventoryActions';
+import { formatOrderStatusLabel, matchesOrderStatusFilter } from '@/utils/orderStatus';
+import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
 
 // ── Types ──
 type AdvancedTab = 'stock' | 'suppliers' | 'orders' | 'movements' | 'branches';
@@ -70,7 +72,9 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
   // --- Filtering States ---
   const [stockSearch, setStockSearch] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out'>('all');
-  const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | 'pending' | 'fulfilled' | 'cancelled'>('all');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<
+    'all' | 'pending' | 'pending_payment' | 'fulfilled' | 'cancelled'
+  >('all');
   const [movementTypeFilter, setMovementTypeFilter] = useState<string>('all');
 
   // --- Modals State ---
@@ -169,7 +173,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
   });
 
   const filteredOrders = data.simulatedOrders.filter(
-    (o) => orderStatusFilter === 'all' || o.status === orderStatusFilter
+    (o) => matchesOrderStatusFilter(o.status, orderStatusFilter)
   );
 
   const filteredMovements = data.movements.filter(
@@ -701,7 +705,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-50">Customer Orders (Simulated)</h3>
                 <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
-                  {(['all', 'pending', 'fulfilled', 'cancelled'] as const).map((f) => (
+                  {(['all', 'pending', 'pending_payment', 'fulfilled', 'cancelled'] as const).map((f) => (
                     <button
                       key={f}
                       onClick={() => setOrderStatusFilter(f)}
@@ -709,18 +713,33 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                         orderStatusFilter === f ? 'bg-white shadow-sm font-black' : 'text-zinc-500'
                       }`}
                     >
-                      {f.toUpperCase()}
+                      {f === 'pending_payment' ? 'COD' : f.toUpperCase()}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="space-y-3">
-                {filteredOrders.map((o) => (
+                {filteredOrders.map((o) => {
+                  const checkoutDetails = describeOrderCheckout(o, data.checkoutOptionsCatalog);
+                  return (
                   <div key={o.id} className="bg-white border border-zinc-200 rounded-2xl p-4 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">{o.customerName} ({o.customerEmail})</p>
                       <p className="text-[10px] text-zinc-400 mt-1">Order Date: {new Date(o.createdAt).toLocaleString()}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
+                          {checkoutDetails.fulfillment}
+                        </span>
+                        <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300">
+                          {checkoutDetails.payment}
+                        </span>
+                        {checkoutDetails.pickup && (
+                          <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300">
+                            Pickup: {checkoutDetails.pickup}
+                          </span>
+                        )}
+                      </div>
                       <div className="mt-2 pl-2 border-l-2 border-zinc-200 space-y-1">
                         {o.items.map((item: any) => (
                           <p key={item.id} className="text-xs text-zinc-600 dark:text-zinc-400">
@@ -733,12 +752,16 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                       <div>
                         <span className="text-sm font-mono font-black text-zinc-900 dark:text-zinc-100">${(o.totalAmount / 100).toFixed(2)}</span>
                         <p className={`text-[10px] uppercase font-bold mt-1 ${
-                          o.status === 'fulfilled' ? 'text-emerald-600' : o.status === 'cancelled' ? 'text-rose-600' : 'text-amber-600'
-                        }`}>{o.status}</p>
+                          o.status === 'fulfilled' ? 'text-emerald-600' :
+                          o.status === 'cancelled' ? 'text-rose-600' :
+                          o.status === 'pending_payment' ? 'text-orange-600' :
+                          'text-amber-600'
+                        }`}>{formatOrderStatusLabel(o.status)}</p>
                       </div>
                     </div>
                   </div>
-                ))}
+                );
+                })}
               </div>
             </div>
           )}

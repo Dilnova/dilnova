@@ -30,6 +30,17 @@ export default function CheckoutOptionsSettings({
     );
   };
 
+  const toggleOptionFlag = (
+    id: string,
+    flag: 'zeroShipping' | 'requiresBranch' | 'pendingPayment' | 'requiresDelivery'
+  ) => {
+    setCatalog((prev) =>
+      prev.map((option) =>
+        option.id === id ? { ...option, [flag]: !option[flag] } : option
+      )
+    );
+  };
+
   const handleAddCustom = () => {
     const label = newLabel.trim();
     if (!label) {
@@ -77,6 +88,7 @@ export default function CheckoutOptionsSettings({
         title="Fulfillment Methods"
         options={fulfillmentOptions}
         onToggle={togglePlatformEnabled}
+        onToggleFlag={toggleOptionFlag}
         onRemoveCustom={handleRemoveCustom}
       />
 
@@ -84,6 +96,7 @@ export default function CheckoutOptionsSettings({
         title="Payment Methods"
         options={paymentOptions}
         onToggle={togglePlatformEnabled}
+        onToggleFlag={toggleOptionFlag}
         onRemoveCustom={handleRemoveCustom}
       />
 
@@ -133,11 +146,13 @@ function OptionGroup({
   title,
   options,
   onToggle,
+  onToggleFlag,
   onRemoveCustom,
 }: {
   title: string;
   options: CheckoutOptionDefinition[];
   onToggle: (id: string) => void;
+  onToggleFlag: (id: string, flag: 'zeroShipping' | 'requiresBranch' | 'pendingPayment' | 'requiresDelivery') => void;
   onRemoveCustom: (id: string) => void;
 }) {
   if (options.length === 0) return null;
@@ -155,7 +170,39 @@ function OptionGroup({
             <p className="text-[10px] text-zinc-400 font-mono truncate">
               {option.id}
               {option.isBuiltIn ? ' · built-in' : ' · custom'}
+              {option.type === 'fulfillment' && option.zeroShipping ? ' · free shipping' : ''}
+              {option.type === 'fulfillment' && option.requiresBranch ? ' · requires branch' : ''}
+              {option.type === 'payment' && option.pendingPayment ? ' · pending payment' : ''}
+              {option.type === 'payment' && option.requiresDelivery ? ' · delivery only' : ''}
             </p>
+            {!option.isBuiltIn && option.type === 'fulfillment' && (
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                <FlagToggle
+                  label="Free shipping"
+                  enabled={option.zeroShipping === true}
+                  onToggle={() => onToggleFlag(option.id, 'zeroShipping')}
+                />
+                <FlagToggle
+                  label="Requires branch"
+                  enabled={option.requiresBranch === true}
+                  onToggle={() => onToggleFlag(option.id, 'requiresBranch')}
+                />
+              </div>
+            )}
+            {!option.isBuiltIn && option.type === 'payment' && (
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                <FlagToggle
+                  label="Pending payment (COD)"
+                  enabled={option.pendingPayment === true}
+                  onToggle={() => onToggleFlag(option.id, 'pendingPayment')}
+                />
+                <FlagToggle
+                  label="Delivery only"
+                  enabled={option.requiresDelivery === true}
+                  onToggle={() => onToggleFlag(option.id, 'requiresDelivery')}
+                />
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {!option.isBuiltIn && (
@@ -185,5 +232,29 @@ function OptionGroup({
         </div>
       ))}
     </div>
+  );
+}
+
+function FlagToggle({
+  label,
+  enabled,
+  onToggle,
+}: {
+  label: string;
+  enabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
+        enabled
+          ? 'border-purple-500/40 bg-purple-500/10 text-purple-700 dark:text-purple-300'
+          : 'border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+      }`}
+    >
+      {label}: {enabled ? 'on' : 'off'}
+    </button>
   );
 }

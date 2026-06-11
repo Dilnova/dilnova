@@ -25,6 +25,7 @@ import { reserveProductStock, applyStockReservation } from '@/utils/inventorySto
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { rateLimit } from '@/utils/rateLimit';
+import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 
 // Helper to authenticate vendor context and check premium status
 async function verifyVendorAccess(options?: { requireAdminOrVendor?: boolean }) {
@@ -175,9 +176,18 @@ export async function getVendorInventoryData() {
           .orderBy(desc(schema.simulatedOrders.createdAt));
 
         // Attach items
+        const branchNameById = new Map(
+          (await db
+            .select({ id: schema.branches.id, name: schema.branches.name })
+            .from(schema.branches)
+            .where(eq(schema.branches.orgId, orgId)))
+            .map((branch) => [branch.id, branch.name])
+        );
+
         simulatedOrders = ordersList.map((o) => ({
           ...o,
           items: relatedItems.filter((ri) => ri.orderId === o.id),
+          pickupBranchName: o.pickupBranchId ? branchNameById.get(o.pickupBranchId) ?? null : null,
         }));
       }
     }
@@ -313,6 +323,8 @@ export async function getVendorInventoryData() {
       // Graceful degradation
     }
 
+    const checkoutOptionsCatalog = await getCheckoutOptionsCatalog();
+
     return {
       inventoryItems,
       suppliers,
@@ -325,6 +337,7 @@ export async function getVendorInventoryData() {
       billingReceipts,
       orgMembers,
       premiumStatus,
+      checkoutOptionsCatalog,
     };
   });
 }

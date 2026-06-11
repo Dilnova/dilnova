@@ -1114,6 +1114,7 @@ export default function SuperAdminClient({
           movements={inventoryMovements}
           simulatedOrders={simulatedOrders}
           productsWithoutInventory={productsWithoutInventory}
+          checkoutOptionsCatalog={checkoutOptionsCatalog}
           triggerNotification={triggerNotification}
           organizations={organizations}
         />

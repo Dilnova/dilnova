@@ -6,6 +6,8 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, inArray, desc } from 'drizzle-orm';
 import { getCachedOrganizations } from '@/utils/clerkCache';
+import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
+import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
 
 interface PageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -34,7 +36,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
 
   // Fetch Clerk organizations, wishlist, and simulated orders in parallel (reduce latency)
   const client = await clerkClient();
-  const [userWishlist, organizations, orders] = await Promise.all([
+  const [userWishlist, organizations, orders, checkoutOptionsCatalog] = await Promise.all([
     db
       .select()
       .from(schema.wishlists)
@@ -44,8 +46,21 @@ export default async function CustomerPage({ searchParams }: PageProps) {
       .select()
       .from(schema.simulatedOrders)
       .where(eq(schema.simulatedOrders.customerEmail, userEmail))
-      .orderBy(desc(schema.simulatedOrders.createdAt))
+      .orderBy(desc(schema.simulatedOrders.createdAt)),
+    getCheckoutOptionsCatalog(),
   ]);
+
+  const pickupBranchIds = [
+    ...new Set(orders.map((order) => order.pickupBranchId).filter((id): id is string => Boolean(id))),
+  ];
+  const pickupBranchRows =
+    pickupBranchIds.length > 0
+      ? await db
+          .select({ id: schema.branches.id, name: schema.branches.name })
+          .from(schema.branches)
+          .where(inArray(schema.branches.id, pickupBranchIds))
+      : [];
+  const pickupBranchNameById = new Map(pickupBranchRows.map((branch) => [branch.id, branch.name]));
 
   // Retrieve products in wishlist
   const wishlistItems = userWishlist.length > 0
@@ -332,6 +347,15 @@ export default async function CustomerPage({ searchParams }: PageProps) {
           ) : (
             <div className="space-y-4">
               {orders.map((order) => {
+                const checkoutDetails = describeOrderCheckout(
+                  {
+                    ...order,
+                    pickupBranchName: order.pickupBranchId
+                      ? pickupBranchNameById.get(order.pickupBranchId) ?? null
+                      : null,
+                  },
+                  checkoutOptionsCatalog
+                );
                 const formattedOrderTotal = (order.totalAmount / 100).toLocaleString('en-US', {
                   style: 'currency',
                   currency: 'USD',
@@ -373,6 +397,19 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                             </span>
                           </div>
                           <p className="text-[10px] text-zinc-405 font-medium">{orderDate}</p>
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
+                              {checkoutDetails.fulfillment}
+                            </span>
+                            <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-300">
+                              {checkoutDetails.payment}
+                            </span>
+                            {checkoutDetails.pickup && (
+                              <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300">
+                                Pickup: {checkoutDetails.pickup}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 

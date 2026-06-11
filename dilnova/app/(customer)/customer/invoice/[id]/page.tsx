@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
+import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -32,11 +34,29 @@ export default async function InvoicePage({ params }: PageProps) {
     notFound();
   }
 
-  // Retrieve the order items
-  const items = await db
-    .select()
-    .from(schema.simulatedOrderItems)
-    .where(eq(schema.simulatedOrderItems.orderId, id));
+  const [items, checkoutOptionsCatalog, pickupBranch] = await Promise.all([
+    db
+      .select()
+      .from(schema.simulatedOrderItems)
+      .where(eq(schema.simulatedOrderItems.orderId, id)),
+    getCheckoutOptionsCatalog(),
+    order.pickupBranchId
+      ? db
+          .select({ name: schema.branches.name })
+          .from(schema.branches)
+          .where(eq(schema.branches.id, order.pickupBranchId))
+          .limit(1)
+          .then((rows) => rows[0]?.name ?? null)
+      : Promise.resolve(null),
+  ]);
+
+  const checkoutDetails = describeOrderCheckout(
+    {
+      ...order,
+      pickupBranchName: pickupBranch,
+    },
+    checkoutOptionsCatalog
+  );
 
   const subtotal = order.totalAmount;
   const tax = subtotal * 0.08;
@@ -104,6 +124,23 @@ export default async function InvoicePage({ params }: PageProps) {
             <p className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">Dilnova Registry Service</p>
             <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">Automated Simulated Register checkout</p>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-8 text-xs border-b border-zinc-150 dark:border-zinc-800">
+          <div>
+            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Fulfillment</h3>
+            <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">{checkoutDetails.fulfillment}</p>
+          </div>
+          <div>
+            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Payment</h3>
+            <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">{checkoutDetails.payment}</p>
+          </div>
+          {checkoutDetails.pickup && (
+            <div>
+              <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Pickup Branch</h3>
+              <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">{checkoutDetails.pickup}</p>
+            </div>
+          )}
         </div>
 
         {/* Table of items */}

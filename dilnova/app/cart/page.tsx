@@ -8,6 +8,7 @@ import { SignInButton, SignUpButton, useUser } from '@clerk/nextjs';
 import { useCart } from '../context/CartContext';
 import { isVideoUrl } from '@/utils/media';
 import { getCartCheckoutOptionsAction, sendCartSummaryEmailAction, simulatedCheckoutAction } from './actions';
+import { isPaymentCompatibleWithFulfillment } from '@/utils/checkoutOptionsShared';
 
 const GUEST_CHECKOUT_KEY = 'dilnova_guest_checkout';
 
@@ -40,10 +41,12 @@ export default function CartPage() {
   const [pickupBranchId, setPickupBranchId] = useState('');
   const [checkoutOptions, setCheckoutOptions] = useState<{
     fulfillment: { id: string; label: string; description?: string; zeroShipping: boolean; requiresBranch: boolean }[];
-    payment: { id: string; label: string; description?: string }[];
+    payment: { id: string; label: string; description?: string; requiresDelivery: boolean }[];
     pickupBranches: { orgId: string; branches: { id: string; name: string; address: string | null; phone: string | null }[] }[];
   }>({ fulfillment: [], payment: [], pickupBranches: [] });
   const [optionsLoading, setOptionsLoading] = useState(false);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
+  const [vendorCount, setVendorCount] = useState(0);
 
   // Restore guest checkout details from session
   useEffect(() => {
@@ -71,32 +74,59 @@ export default function CartPage() {
   useEffect(() => {
     if (cartItems.length === 0) {
       setCheckoutOptions({ fulfillment: [], payment: [], pickupBranches: [] });
+      setOptionsError(null);
+      setVendorCount(0);
+      setPickupBranchId('');
       return;
     }
 
     let cancelled = false;
     setOptionsLoading(true);
+    setOptionsError(null);
 
     getCartCheckoutOptionsAction(cartItems.map((item) => item.id))
       .then((result) => {
-        if (cancelled || !result.success) return;
+        if (cancelled) return;
+
+        if (!result.success) {
+          setOptionsError(result.error || 'Failed to load checkout options.');
+          setCheckoutOptions({ fulfillment: [], payment: [], pickupBranches: [] });
+          setVendorCount(0);
+          setFulfillmentMethod('');
+          setPaymentMethod('');
+          setPickupBranchId('');
+          return;
+        }
 
         setCheckoutOptions({
           fulfillment: result.fulfillment,
           payment: result.payment,
           pickupBranches: result.pickupBranches,
         });
+        setVendorCount(result.vendorCount);
 
-        setFulfillmentMethod((current) =>
-          result.fulfillment.some((o) => o.id === current)
-            ? current
-            : (result.fulfillment[0]?.id || 'standard_delivery')
+        const nextFulfillmentId = result.fulfillment.some((o) => o.id === fulfillmentMethod)
+          ? fulfillmentMethod
+          : (result.fulfillment[0]?.id || '');
+        const nextFulfillment = result.fulfillment.find((o) => o.id === nextFulfillmentId);
+
+        setFulfillmentMethod(nextFulfillmentId);
+        if (!nextFulfillment?.requiresBranch) {
+          setPickupBranchId('');
+        }
+
+        const compatiblePayments = result.payment.filter((payment) =>
+          nextFulfillment
+            ? isPaymentCompatibleWithFulfillment(
+                { requiresDelivery: payment.requiresDelivery },
+                { requiresBranch: nextFulfillment.requiresBranch }
+              )
+            : true
         );
-        setPaymentMethod((current) =>
-          result.payment.some((o) => o.id === current)
-            ? current
-            : (result.payment[0]?.id || 'pay_online')
-        );
+        const nextPaymentId = compatiblePayments.some((o) => o.id === paymentMethod)
+          ? paymentMethod
+          : (compatiblePayments[0]?.id || '');
+        setPaymentMethod(nextPaymentId);
       })
       .finally(() => {
         if (!cancelled) setOptionsLoading(false);
@@ -108,8 +138,36 @@ export default function CartPage() {
   }, [cartItems]);
 
   const selectedFulfillment = checkoutOptions.fulfillment.find((o) => o.id === fulfillmentMethod);
-  const selectedPayment = checkoutOptions.payment.find((o) => o.id === paymentMethod);
+  const compatiblePayments = checkoutOptions.payment.filter((payment) =>
+    selectedFulfillment
+      ? isPaymentCompatibleWithFulfillment(
+          { requiresDelivery: payment.requiresDelivery },
+          { requiresBranch: selectedFulfillment.requiresBranch }
+        )
+      : true
+  );
+  const selectedPayment = compatiblePayments.find((o) => o.id === paymentMethod);
   const pickupBranches = checkoutOptions.pickupBranches[0]?.branches || [];
+
+  const handleFulfillmentChange = (optionId: string) => {
+    const option = checkoutOptions.fulfillment.find((o) => o.id === optionId);
+    setFulfillmentMethod(optionId);
+    if (!option?.requiresBranch) {
+      setPickupBranchId('');
+    }
+
+    const paymentsForFulfillment = checkoutOptions.payment.filter((payment) =>
+      option
+        ? isPaymentCompatibleWithFulfillment(
+            { requiresDelivery: payment.requiresDelivery },
+            { requiresBranch: option.requiresBranch }
+          )
+        : true
+    );
+    if (!paymentsForFulfillment.some((o) => o.id === paymentMethod)) {
+      setPaymentMethod(paymentsForFulfillment[0]?.id || '');
+    }
+  };
 
   const handleGoBack = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -533,10 +591,22 @@ export default function CartPage() {
                       Delivery & Payment
                     </h3>
 
+                    {optionsError && (
+                      <p className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+                        {optionsError}
+                      </p>
+                    )}
+
                     {optionsLoading ? (
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Loading checkout options...</p>
                     ) : (
                       <>
+                        {vendorCount > 1 && (
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-500/5 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2">
+                            Your cart includes items from {vendorCount} vendors. Only fulfillment and payment methods enabled by every vendor are shown. Store pickup is not available for multi-vendor carts.
+                          </p>
+                        )}
+
                         {checkoutOptions.fulfillment.length > 0 ? (
                           <div className="space-y-2">
                             <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Fulfillment</p>
@@ -554,10 +624,7 @@ export default function CartPage() {
                                   name="fulfillment"
                                   value={option.id}
                                   checked={fulfillmentMethod === option.id}
-                                  onChange={() => {
-                                    setFulfillmentMethod(option.id);
-                                    if (!option.requiresBranch) setPickupBranchId('');
-                                  }}
+                                  onChange={() => handleFulfillmentChange(option.id)}
                                   className="mt-0.5"
                                 />
                                 <span className="min-w-0">
@@ -569,11 +636,13 @@ export default function CartPage() {
                               </label>
                             ))}
                           </div>
-                        ) : (
+                        ) : !optionsError ? (
                           <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-                            No fulfillment methods are enabled for the vendors in your cart.
+                            {vendorCount > 1
+                              ? 'No shared fulfillment methods are enabled across all vendors in your cart. Remove items from some vendors or ask them to enable matching options.'
+                              : 'No fulfillment methods are enabled for this vendor. Contact the store or try again later.'}
                           </p>
-                        )}
+                        ) : null}
 
                         {selectedFulfillment?.requiresBranch && (
                           <div className="space-y-2">
@@ -599,10 +668,10 @@ export default function CartPage() {
                           </div>
                         )}
 
-                        {checkoutOptions.payment.length > 0 ? (
+                        {compatiblePayments.length > 0 ? (
                           <div className="space-y-2">
                             <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Payment</p>
-                            {checkoutOptions.payment.map((option) => (
+                            {compatiblePayments.map((option) => (
                               <label
                                 key={option.id}
                                 className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
@@ -628,11 +697,15 @@ export default function CartPage() {
                               </label>
                             ))}
                           </div>
-                        ) : (
+                        ) : !optionsError ? (
                           <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-                            No payment methods are enabled for the vendors in your cart.
+                            {checkoutOptions.payment.length > 0 && selectedFulfillment?.requiresBranch
+                              ? 'No payment methods are available for store pickup with the current selection. Choose home delivery or another fulfillment option.'
+                              : vendorCount > 1
+                                ? 'No shared payment methods are enabled across all vendors in your cart.'
+                                : 'No payment methods are enabled for this vendor. Contact the store or try again later.'}
                           </p>
-                        )}
+                        ) : null}
                       </>
                     )}
                   </div>
@@ -651,6 +724,7 @@ export default function CartPage() {
                       checkoutStatus === 'processing' ||
                       cartItems.length === 0 ||
                       optionsLoading ||
+                      !!optionsError ||
                       !selectedFulfillment ||
                       !selectedPayment
                     }

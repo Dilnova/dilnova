@@ -8,12 +8,14 @@ interface OrgCheckoutOptionsFormProps {
   orgId: string;
   catalog: CheckoutOptionDefinition[];
   initialOptions: Record<string, boolean>;
+  branchCount?: number;
 }
 
 export default function OrgCheckoutOptionsForm({
   orgId,
   catalog,
   initialOptions,
+  branchCount = 0,
 }: OrgCheckoutOptionsFormProps) {
   const platformOptions = catalog.filter((o) => o.platformEnabled);
   const [options, setOptions] = useState<Record<string, boolean>>(() => {
@@ -38,6 +40,16 @@ export default function OrgCheckoutOptionsForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
+
+    const hasFulfillment = fulfillmentOptions.some((option) => options[option.id] === true);
+    const hasPayment = paymentOptions.some((option) => options[option.id] === true);
+    if (!hasFulfillment || !hasPayment) {
+      setMessage({
+        type: 'error',
+        text: 'Enable at least one fulfillment method and one payment method before saving.',
+      });
+      return;
+    }
 
     startTransition(async () => {
       try {
@@ -85,12 +97,18 @@ export default function OrgCheckoutOptionsForm({
             Fulfillment Methods
           </h4>
           {fulfillmentOptions.map((option) => (
-            <OptionToggle
-              key={option.id}
-              option={option}
-              enabled={options[option.id] === true}
-              onToggle={() => toggleOption(option.id)}
-            />
+            <div key={option.id} className="space-y-1">
+              <OptionToggle
+                option={option}
+                enabled={options[option.id] === true}
+                onToggle={() => toggleOption(option.id)}
+              />
+              {option.requiresBranch && options[option.id] === true && branchCount === 0 && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 px-1">
+                  Store pickup is enabled but this organization has no branches. Add branches under inventory settings or customers will not see this option.
+                </p>
+              )}
+            </div>
           ))}
         </div>
       )}

@@ -37,6 +37,16 @@ export async function updateOrgCheckoutOptionsAction(
       sanitized[key] = enabled === true;
     }
 
+    const enabledFulfillment = catalog.some(
+      (option) => option.type === 'fulfillment' && option.platformEnabled && sanitized[option.id] === true
+    );
+    const enabledPayment = catalog.some(
+      (option) => option.type === 'payment' && option.platformEnabled && sanitized[option.id] === true
+    );
+    if (!enabledFulfillment || !enabledPayment) {
+      throw new Error('Enable at least one fulfillment method and one payment method.');
+    }
+
     const client = await clerkClient();
     const org = await client.organizations.getOrganization({ organizationId: parsed.data.organizationId });
     const existingMeta = (org.publicMetadata || {}) as Record<string, unknown>;

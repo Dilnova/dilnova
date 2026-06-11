@@ -414,6 +414,10 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { resolveCheckoutOptionsForOrgs } from '@/utils/checkoutOptions';
+import {
+  resolveInitialOrderStatus,
+  isPaymentCompatibleWithFulfillment,
+} from '@/utils/checkoutOptionsShared';
 import { getStockAvailabilityCatalog, resolveEffectiveStockAvailability } from '@/utils/stockAvailability';
 import {
   reserveProductStock,
@@ -460,6 +464,7 @@ export async function getCartCheckoutOptionsAction(productIds: string[]) {
         payment: [],
         pickupBranches: [],
         singleVendorOrgId: null,
+        vendorCount: 0,
       };
     }
 
@@ -516,9 +521,11 @@ export async function getCartCheckoutOptionsAction(productIds: string[]) {
         id: o.id,
         label: o.label,
         description: o.description,
+        requiresDelivery: o.requiresDelivery === true,
       })),
       pickupBranches: resolved.pickupBranches,
       singleVendorOrgId: resolved.singleVendorOrgId,
+      vendorCount: uniqueOrgIds.length,
     };
   } catch (error) {
     console.error('Failed to load checkout options:', error);
@@ -643,6 +650,12 @@ export async function simulatedCheckoutAction(
       if (!paymentOption) {
         return { success: false, error: 'Selected payment method is not available for this cart.' };
       }
+      if (!isPaymentCompatibleWithFulfillment(paymentOption, fulfillmentOption)) {
+        return {
+          success: false,
+          error: `${paymentOption.label} is only available for delivery orders, not store pickup.`,
+        };
+      }
 
       if (fulfillmentOption.requiresBranch) {
         if (!pickupBranch) {
@@ -714,7 +727,7 @@ export async function simulatedCheckoutAction(
         };
       }
 
-      const orderStatus = payment === 'cash_on_delivery' ? 'pending_payment' : 'pending';
+      const orderStatus = resolveInitialOrderStatus(paymentOption);
 
       // ── Create Simulated Order ──
       const [order] = await tx

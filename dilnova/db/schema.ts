@@ -186,7 +186,7 @@ export const simulatedOrders = pgTable('simulated_orders', {
   customerName: text('customer_name').notNull(),
   customerEmail: text('customer_email').notNull(),
   totalAmount: integer('total_amount').notNull(), // in cents
-  status: text('status').default('pending').notNull(), // 'pending' | 'fulfilled' | 'cancelled'
+  status: text('status').default('pending').notNull(), // 'pending' | 'pending_payment' | 'fulfilled' | 'cancelled'
   fulfillmentMethod: text('fulfillment_method').default('standard_delivery').notNull(),
   paymentMethod: text('payment_method').default('pay_online').notNull(),
   pickupBranchId: uuid('pickup_branch_id'),

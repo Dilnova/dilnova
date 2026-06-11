@@ -79,10 +79,15 @@ export async function resolveCheckoutOptionsForOrgs(
   );
 
   const platformEnabled = catalog.filter((o) => o.platformEnabled);
+  const singleVendorOrgId = uniqueOrgIds.length === 1 ? uniqueOrgIds[0] : null;
 
   const fulfillment = platformEnabled.filter((option) => {
     if (option.type !== 'fulfillment') return false;
-    if (option.requiresBranch && uniqueOrgIds.length > 1) return false;
+    if (option.requiresBranch) {
+      if (uniqueOrgIds.length > 1) return false;
+      const branches = singleVendorOrgId ? (branchesByOrg.get(singleVendorOrgId) || []) : [];
+      if (branches.length === 0) return false;
+    }
     return orgOptionsList.every(({ options }) => isOrgOptionEnabled(option, options));
   });
 
@@ -91,7 +96,6 @@ export async function resolveCheckoutOptionsForOrgs(
     return orgOptionsList.every(({ options }) => isOrgOptionEnabled(option, options));
   });
 
-  const singleVendorOrgId = uniqueOrgIds.length === 1 ? uniqueOrgIds[0] : null;
   const pickupBranches: ResolvedCheckoutOptions['pickupBranches'] = [];
 
   if (singleVendorOrgId) {

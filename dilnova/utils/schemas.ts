@@ -88,6 +88,8 @@ const checkoutOptionDefinitionSchema = z.object({
   isBuiltIn: z.boolean().optional(),
   zeroShipping: z.boolean().optional(),
   requiresBranch: z.boolean().optional(),
+  pendingPayment: z.boolean().optional(),
+  requiresDelivery: z.boolean().optional(),
 });
 
 export const updateCheckoutOptionsCatalogSchema = z.object({
