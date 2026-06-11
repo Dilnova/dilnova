@@ -18,6 +18,7 @@ import {
 } from './inventoryActions';
 import { formatOrderStatusLabel, matchesOrderStatusFilter } from '@/utils/orderStatus';
 import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
+import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
 
 // ── Types ──
 type AdvancedTab = 'stock' | 'suppliers' | 'orders' | 'movements' | 'branches';
@@ -750,7 +751,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                     </div>
                     <div className="text-right flex flex-col justify-between items-end">
                       <div>
-                        <span className="text-sm font-mono font-black text-zinc-900 dark:text-zinc-100">${(o.totalAmount / 100).toFixed(2)}</span>
+                        <span className="text-sm font-mono font-black text-zinc-900 dark:text-zinc-100">${(getOrderDisplayTotals(o).grandTotal / 100).toFixed(2)}</span>
                         <p className={`text-[10px] uppercase font-bold mt-1 ${
                           o.status === 'fulfilled' ? 'text-emerald-600' :
                           o.status === 'cancelled' ? 'text-rose-600' :

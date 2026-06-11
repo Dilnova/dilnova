@@ -7,6 +7,7 @@ import * as schema from '@/db/schema';
 import { eq, inArray, desc, sql } from 'drizzle-orm';
 import { getCachedOrganizations } from '@/utils/clerkCache';
 import { getClerkUserEmail, getNormalizedClerkUserEmail } from '@/utils/customerEmail';
+import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
 
@@ -106,7 +107,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
   // Calculate stats
   const totalSpent = orders.reduce((sum, order) => {
     if (order.status !== 'cancelled') {
-      return sum + order.totalAmount;
+      return sum + getOrderDisplayTotals(order).grandTotal;
     }
     return sum;
   }, 0);
@@ -360,7 +361,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                   },
                   checkoutOptionsCatalog
                 );
-                const formattedOrderTotal = (order.totalAmount / 100).toLocaleString('en-US', {
+                const formattedOrderTotal = (getOrderDisplayTotals(order).grandTotal / 100).toLocaleString('en-US', {
                   style: 'currency',
                   currency: 'USD',
                 });

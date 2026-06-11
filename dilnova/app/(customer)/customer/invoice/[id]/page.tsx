@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
 import { getNormalizedClerkUserEmail, normalizeCustomerEmail } from '@/utils/customerEmail';
+import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -63,9 +64,8 @@ export default async function InvoicePage({ params }: PageProps) {
     checkoutOptionsCatalog
   );
 
-  const subtotal = order.totalAmount;
-  const tax = subtotal * 0.08;
-  const grandTotal = subtotal + tax;
+  const orderTotals = getOrderDisplayTotals(order);
+  const { subtotalAmount: subtotal, taxAmount: tax, shippingAmount: shipping, grandTotal } = orderTotals;
 
   const formatPrice = (cents: number) => {
     return (cents / 100).toLocaleString('en-US', {
@@ -185,6 +185,12 @@ export default async function InvoicePage({ params }: PageProps) {
             <div className="flex justify-between">
               <span>Estimated Tax (8%):</span>
               <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">{formatPrice(tax)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Shipping:</span>
+              <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
+                {shipping === 0 ? 'FREE' : formatPrice(shipping)}
+              </span>
             </div>
             <div className="flex justify-between text-sm font-bold text-zinc-900 dark:text-zinc-100 print:text-black border-t border-zinc-200 dark:border-zinc-850 pt-2">
               <span>Total Amount:</span>

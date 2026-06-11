@@ -2,10 +2,27 @@
 
 import tls from 'tls';
 import net from 'net';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { rateLimit } from '@/utils/rateLimit';
 import { z } from 'zod';
 import { getSystemSetting } from '@/utils/settings';
 import { DEFAULT_APP_URL } from '@/utils/brand';
+import { db } from '@/db';
+import * as schema from '@/db/schema';
+import { eq, inArray } from 'drizzle-orm';
+import { normalizeCustomerEmail, getNormalizedClerkUserEmail } from '@/utils/customerEmail';
+import { resolveCheckoutOptionsForOrgs } from '@/utils/checkoutOptions';
+import {
+  resolveInitialOrderStatus,
+  isPaymentCompatibleWithFulfillment,
+} from '@/utils/checkoutOptionsShared';
+import { getStockAvailabilityCatalog, resolveEffectiveStockAvailability } from '@/utils/stockAvailability';
+import {
+  reserveProductStock,
+  applyStockReservation,
+  type StockReservation,
+} from '@/utils/inventoryStock';
+import { calculateCheckoutTotals } from '@/utils/checkoutTotals';
 
 interface CartItem {
   id: string;
@@ -237,7 +254,8 @@ const sendCartEmailSchema = z.object({
 export async function sendCartSummaryEmailAction(
   emailAddress: string,
   cartItems: CartItem[],
-  cartTotal: number
+  cartTotal: number,
+  zeroShipping = false
 ) {
   try {
     // ── Input Validation ──
@@ -271,11 +289,25 @@ export async function sendCartSummaryEmailAction(
       return { success: false, error: 'SMTP configuration is incomplete on the server.' };
     }
 
-    // Calculations
-    const taxRate = 0.08;
-    const estimatedTax = validatedTotal * taxRate;
-    const shippingFee = validatedTotal > 5000 ? 0 : 500;
-    const grandTotal = validatedTotal + estimatedTax + shippingFee;
+    const pricedItems = await Promise.all(
+      validatedItems.map(async (item) => {
+        const [product] = await db
+          .select({ price: schema.products.price, name: schema.products.name })
+          .from(schema.products)
+          .where(eq(schema.products.id, item.id))
+          .limit(1);
+        return {
+          ...item,
+          name: product?.name || item.name,
+          price: product?.price ?? item.price,
+        };
+      })
+    );
+    const syncedSubtotal = pricedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = calculateCheckoutTotals(
+      syncedSubtotal,
+      zeroShipping
+    );
 
     const formatPrice = (cents: number) => {
       return (cents / 100).toLocaleString('en-US', {
@@ -285,7 +317,7 @@ export async function sendCartSummaryEmailAction(
     };
 
     // Construct beautiful HTML items rows
-    const itemsHtml = validatedItems
+    const itemsHtml = pricedItems
       .map(
         (item) => `
         <tr style="border-bottom: 1px solid #e4e4e7;">
@@ -351,7 +383,7 @@ export async function sendCartSummaryEmailAction(
                 <table style="width: 100%; font-size: 13px; color: #475569;">
                   <tr>
                     <td style="padding: 4px 0;">Subtotal</td>
-                    <td style="padding: 4px 0; text-align: right; font-family: monospace;">${formatPrice(validatedTotal)}</td>
+                    <td style="padding: 4px 0; text-align: right; font-family: monospace;">${formatPrice(syncedSubtotal)}</td>
                   </tr>
                   <tr>
                     <td style="padding: 4px 0;">Estimated Tax (8%)</td>
@@ -410,23 +442,6 @@ export async function sendCartSummaryEmailAction(
 // SIMULATED CHECKOUT — Stock Validation & Order Placement
 // ═══════════════════════════════════════════════════════════
 
-import { auth, currentUser } from '@clerk/nextjs/server';
-import { db } from '@/db';
-import * as schema from '@/db/schema';
-import { eq, inArray } from 'drizzle-orm';
-import { normalizeCustomerEmail, getNormalizedClerkUserEmail } from '@/utils/customerEmail';
-import { resolveCheckoutOptionsForOrgs } from '@/utils/checkoutOptions';
-import {
-  resolveInitialOrderStatus,
-  isPaymentCompatibleWithFulfillment,
-} from '@/utils/checkoutOptionsShared';
-import { getStockAvailabilityCatalog, resolveEffectiveStockAvailability } from '@/utils/stockAvailability';
-import {
-  reserveProductStock,
-  applyStockReservation,
-  type StockReservation,
-} from '@/utils/inventoryStock';
-
 interface CheckoutItem {
   id: string;
   name: string;
@@ -451,11 +466,61 @@ const checkoutSchema = z.object({
   customerName: z.string().min(1, 'Customer name is required.'),
   customerEmail: z.string().email('Invalid email address.'),
   items: z.array(checkoutItemSchema).min(1, 'Cart must contain at least one item.'),
-  totalAmount: z.number().nonnegative(),
+  totalAmount: z.number().nonnegative(), // client grand total (subtotal + tax + shipping)
   fulfillmentMethod: z.string().min(1),
   paymentMethod: z.string().min(1),
   pickupBranchId: z.string().uuid().nullable().optional(),
 });
+
+function aggregateCheckoutItems(items: CheckoutItem[]): CheckoutItem[] {
+  const byId = new Map<string, CheckoutItem>();
+  for (const item of items) {
+    const existing = byId.get(item.id);
+    if (existing) {
+      byId.set(item.id, { ...existing, quantity: existing.quantity + item.quantity });
+    } else {
+      byId.set(item.id, { ...item });
+    }
+  }
+  return [...byId.values()];
+}
+
+export async function syncCartPricesAction(productIds: string[]) {
+  try {
+    const uniqueIds = [...new Set(productIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return { success: true as const, items: [], removedIds: [] };
+    }
+
+    const rows = await db
+      .select({
+        id: schema.products.id,
+        name: schema.products.name,
+        price: schema.products.price,
+        status: schema.products.status,
+      })
+      .from(schema.products)
+      .where(inArray(schema.products.id, uniqueIds));
+
+    const foundIds = new Set(rows.map((row) => row.id));
+    const missingIds = uniqueIds.filter((id) => !foundIds.has(id));
+    const inactiveIds = rows.filter((row) => row.status !== 'active').map((row) => row.id);
+    const activeRows = rows.filter((row) => row.status === 'active');
+
+    return {
+      success: true as const,
+      items: activeRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        price: row.price,
+      })),
+      removedIds: [...missingIds, ...inactiveIds],
+    };
+  } catch (error) {
+    console.error('Failed to sync cart prices:', error);
+    return { success: false as const, error: 'Failed to refresh cart prices.' };
+  }
+}
 
 export async function getCartCheckoutOptionsAction(productIds: string[]) {
   try {
@@ -561,9 +626,9 @@ export async function simulatedCheckoutAction(
 
     let name = parsed.data.customerName.trim();
     let email = normalizeCustomerEmail(parsed.data.customerEmail);
+    const aggregatedItems = aggregateCheckoutItems(parsed.data.items);
     const {
-      items: validItems,
-      totalAmount: total,
+      totalAmount: clientGrandTotal,
       fulfillmentMethod: fulfillment,
       paymentMethod: payment,
       pickupBranchId: pickupBranch,
@@ -593,40 +658,48 @@ export async function simulatedCheckoutAction(
     return await db.transaction(async (tx) => {
       const stockErrors: string[] = [];
       const stockReservations: { productId: string; quantity: number; reservation: StockReservation }[] = [];
-      const verifiedItems: { id: string; name: string; price: number; quantity: number; vendorOrgId: string }[] = [];
-      let serverCalculatedTotal = 0;
+      const verifiedItems: {
+        id: string;
+        name: string;
+        price: number;
+        quantity: number;
+        vendorOrgId: string;
+        type: string;
+      }[] = [];
+      let serverSubtotal = 0;
       const availabilityCatalog = await getStockAvailabilityCatalog();
 
-      // ── Verify Prices & Fetch Scoped Vendor IDs Server-side ──
-      for (const item of validItems) {
+      // ── Verify products, prices, and availability flags server-side ──
+      for (const item of aggregatedItems) {
         const [product] = await tx
           .select({
             id: schema.products.id,
             name: schema.products.name,
             price: schema.products.price,
             orgId: schema.products.orgId,
+            type: schema.products.type,
+            status: schema.products.status,
           })
           .from(schema.products)
           .where(eq(schema.products.id, item.id))
           .limit(1);
 
         if (!product) {
-          throw new Error(`Product not found in catalog: ${item.name}`);
+          return { success: false, error: `Product not found in catalog: ${item.name}` };
+        }
+        if (product.status !== 'active') {
+          return { success: false, error: `"${product.name}" is no longer available for purchase.` };
         }
 
-        serverCalculatedTotal += product.price * item.quantity;
+        serverSubtotal += product.price * item.quantity;
         verifiedItems.push({
           id: product.id,
           name: product.name,
           price: product.price,
           quantity: item.quantity,
           vendorOrgId: product.orgId,
+          type: product.type,
         });
-      }
-
-      // ── Verify Client-provided Total Matches Server Calculations ──
-      if (serverCalculatedTotal !== total) {
-        throw new Error(`Checkout transaction price mismatch. Calculated: ${serverCalculatedTotal}, Received: ${total}`);
       }
 
       const vendorOrgIds = [...new Set(verifiedItems.map((item) => item.vendorOrgId))];
@@ -696,9 +769,24 @@ export async function simulatedCheckoutAction(
         return { success: false, error: 'Pickup branch is only required for store pickup orders.' };
       }
 
+      const checkoutTotals = calculateCheckoutTotals(
+        serverSubtotal,
+        fulfillmentOption.zeroShipping === true
+      );
+      if (checkoutTotals.grandTotal !== clientGrandTotal) {
+        return {
+          success: false,
+          error: `Checkout total mismatch. Expected ${checkoutTotals.grandTotal}, received ${clientGrandTotal}. Please refresh your cart and try again.`,
+        };
+      }
+
       const pickupBranchForStock = fulfillmentOption.requiresBranch ? pickupBranch : null;
 
       for (const item of verifiedItems) {
+        if (item.type !== 'product') {
+          continue;
+        }
+
         const [invMeta] = await tx
           .select({
             stockAvailability: schema.inventory.stockAvailability,
@@ -709,7 +797,8 @@ export async function simulatedCheckoutAction(
           .limit(1);
 
         if (!invMeta) {
-          continue; // Untracked product — no stock limits
+          stockErrors.push(`"${item.name}" is not available for online purchase (missing inventory record).`);
+          continue;
         }
 
         const availability = resolveEffectiveStockAvailability(
@@ -754,7 +843,10 @@ export async function simulatedCheckoutAction(
         .values({
           customerName: name,
           customerEmail: email,
-          totalAmount: serverCalculatedTotal,
+          subtotalAmount: checkoutTotals.subtotalAmount,
+          taxAmount: checkoutTotals.taxAmount,
+          shippingAmount: checkoutTotals.shippingAmount,
+          totalAmount: checkoutTotals.grandTotal,
           status: orderStatus,
           fulfillmentMethod: fulfillment,
           paymentMethod: payment,

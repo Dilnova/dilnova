@@ -18,6 +18,10 @@ interface CartContextType {
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
+  syncCartPrices: (
+    updates: { id: string; name: string; price: number }[],
+    removedIds?: string[]
+  ) => void;
   cartTotal: number;
   cartCount: number;
 }
@@ -80,6 +84,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCartItems([]);
   };
 
+  const syncCartPrices = (
+    updates: { id: string; name: string; price: number }[],
+    removedIds: string[] = []
+  ) => {
+    const removedSet = new Set(removedIds);
+    const updateById = new Map(updates.map((item) => [item.id, item]));
+
+    setCartItems((prevItems) =>
+      prevItems
+        .filter((item) => !removedSet.has(item.id))
+        .map((item) => {
+          const update = updateById.get(item.id);
+          if (!update) return item;
+          return { ...item, name: update.name, price: update.price };
+        })
+    );
+  };
+
   const cartTotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
@@ -91,6 +113,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeFromCart,
         updateQuantity,
         clearCart,
+        syncCartPrices,
         cartTotal,
         cartCount,
       }}

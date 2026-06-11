@@ -7,8 +7,14 @@ import { useRouter } from 'next/navigation';
 import { SignInButton, SignUpButton, useUser } from '@clerk/nextjs';
 import { useCart } from '../context/CartContext';
 import { isVideoUrl } from '@/utils/media';
-import { getCartCheckoutOptionsAction, sendCartSummaryEmailAction, simulatedCheckoutAction } from './actions';
+import {
+  getCartCheckoutOptionsAction,
+  sendCartSummaryEmailAction,
+  simulatedCheckoutAction,
+  syncCartPricesAction,
+} from './actions';
 import { isPaymentCompatibleWithFulfillment } from '@/utils/checkoutOptionsShared';
+import { calculateCheckoutTotals } from '@/utils/checkoutTotals';
 
 const GUEST_CHECKOUT_KEY = 'dilnova_guest_checkout';
 
@@ -22,6 +28,7 @@ export default function CartPage() {
     removeFromCart,
     updateQuantity,
     clearCart,
+    syncCartPrices,
     cartTotal,
     cartCount,
   } = useCart();
@@ -47,6 +54,8 @@ export default function CartPage() {
   const [optionsLoading, setOptionsLoading] = useState(false);
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [vendorCount, setVendorCount] = useState(0);
+  const [priceSyncNotice, setPriceSyncNotice] = useState<string | null>(null);
+  const cartItemIds = cartItems.map((item) => item.id).join(',');
 
   // Restore guest checkout details from session
   useEffect(() => {
@@ -70,6 +79,39 @@ export default function CartPage() {
       JSON.stringify({ name: guestName, email: guestEmail })
     );
   }, [guestName, guestEmail, isSignedIn]);
+
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      setPriceSyncNotice(null);
+      return;
+    }
+
+    let cancelled = false;
+    syncCartPricesAction(cartItems.map((item) => item.id)).then((result) => {
+      if (cancelled || !result.success) return;
+
+      const previousById = new Map(cartItems.map((item) => [item.id, item]));
+      const priceChanged = result.items.some(
+        (item) => previousById.get(item.id)?.price !== item.price
+      );
+
+      syncCartPrices(result.items, result.removedIds);
+
+      if (result.removedIds.length > 0 && priceChanged) {
+        setPriceSyncNotice('Some items were removed and prices were updated to match the catalog.');
+      } else if (result.removedIds.length > 0) {
+        setPriceSyncNotice('Some unavailable items were removed from your cart.');
+      } else if (priceChanged) {
+        setPriceSyncNotice('Cart prices were updated to match the current catalog.');
+      } else {
+        setPriceSyncNotice(null);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cartItemIds, syncCartPrices]);
 
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -185,7 +227,12 @@ export default function CartPage() {
 
     setEmailStatus('sending');
     try {
-      const res = await sendCartSummaryEmailAction(targetEmail, cartItems, cartTotal);
+      const res = await sendCartSummaryEmailAction(
+        targetEmail,
+        cartItems,
+        cartTotal,
+        selectedFulfillment?.zeroShipping ?? false
+      );
       if (res.success) {
         setEmailStatus('success');
         setEmailMessage(`Cart list successfully sent to ${targetEmail}!`);
@@ -261,7 +308,7 @@ export default function CartPage() {
           vendorName: item.vendorName,
           type: item.type,
         })),
-        cartTotal,
+        grandTotal,
         fulfillmentMethod,
         paymentMethod,
         selectedFulfillment.requiresBranch ? pickupBranchId : null
@@ -290,12 +337,11 @@ export default function CartPage() {
     router.push('/products');
   };
 
-  // Calculations
-  const taxRate = 0.08; // 8% estimated tax
-  const estimatedTax = cartTotal * taxRate;
-  const baseShippingFee = cartTotal > 5000 ? 0 : 500; // Free shipping over $50.00, otherwise $5.00
-  const shippingFee = selectedFulfillment?.zeroShipping ? 0 : baseShippingFee;
-  const grandTotal = cartTotal + estimatedTax + shippingFee;
+  const checkoutTotals = calculateCheckoutTotals(
+    cartTotal,
+    selectedFulfillment?.zeroShipping ?? false
+  );
+  const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = checkoutTotals;
 
   if (checkoutStatus === 'success') {
     return (
@@ -498,6 +544,12 @@ export default function CartPage() {
                 <h2 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
                   Order Summary
                 </h2>
+
+                {priceSyncNotice && (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                    {priceSyncNotice}
+                  </p>
+                )}
 
                 <div className="space-y-3 text-xs font-mono">
                   <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">

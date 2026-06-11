@@ -185,7 +185,10 @@ export const simulatedOrders = pgTable('simulated_orders', {
   id: uuid('id').defaultRandom().primaryKey(),
   customerName: text('customer_name').notNull(),
   customerEmail: text('customer_email').notNull(),
-  totalAmount: integer('total_amount').notNull(), // in cents
+  subtotalAmount: integer('subtotal_amount').default(0).notNull(), // in cents
+  taxAmount: integer('tax_amount').default(0).notNull(), // in cents
+  shippingAmount: integer('shipping_amount').default(0).notNull(), // in cents
+  totalAmount: integer('total_amount').notNull(), // grand total in cents (subtotal + tax + shipping)
   status: text('status').default('pending').notNull(), // 'pending' | 'pending_payment' | 'fulfilled' | 'cancelled'
   fulfillmentMethod: text('fulfillment_method').default('standard_delivery').notNull(),
   paymentMethod: text('payment_method').default('pay_online').notNull(),

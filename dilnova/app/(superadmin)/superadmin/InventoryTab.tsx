@@ -7,6 +7,7 @@ import {
   matchesOrderStatusFilter,
 } from '@/utils/orderStatus';
 import { describeOrderCheckout, type CheckoutOptionDefinition } from '@/utils/checkoutOptionsShared';
+import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
 import {
   createSupplierAction,
   updateSupplierAction,
@@ -65,6 +66,9 @@ export interface SimulatedOrder {
   customerName: string;
   customerEmail: string;
   totalAmount: number;
+  subtotalAmount?: number | null;
+  taxAmount?: number | null;
+  shippingAmount?: number | null;
   status: string;
   fulfillmentMethod: string;
   paymentMethod: string;
@@ -703,7 +707,7 @@ export default function InventoryTab({
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-black font-mono text-zinc-900 dark:text-zinc-100">${(order.totalAmount / 100).toFixed(2)}</p>
+                      <p className="text-sm font-black font-mono text-zinc-900 dark:text-zinc-100">${(getOrderDisplayTotals(order).grandTotal / 100).toFixed(2)}</p>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         order.status === 'fulfilled' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' :
                         order.status === 'cancelled' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400' :

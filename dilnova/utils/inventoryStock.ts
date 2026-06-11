@@ -1,14 +1,12 @@
 import * as schema from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gte, sql } from 'drizzle-orm';
 import type { db } from '@/db';
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export interface StockReservation {
   centralInventoryId: string;
-  centralQty: number;
   branchInventoryId?: string;
-  branchQty?: number;
 }
 
 /**
@@ -24,7 +22,10 @@ export async function reserveProductStock(
   const label = options?.productName ? `"${options.productName}"` : 'Product';
 
   const [centralInv] = await tx
-    .select()
+    .select({
+      id: schema.inventory.id,
+      quantity: schema.inventory.quantity,
+    })
     .from(schema.inventory)
     .where(eq(schema.inventory.productId, productId))
     .for('update')
@@ -43,12 +44,14 @@ export async function reserveProductStock(
 
   const reservation: StockReservation = {
     centralInventoryId: centralInv.id,
-    centralQty: centralInv.quantity,
   };
 
   if (options?.branchId) {
     const [branchInv] = await tx
-      .select()
+      .select({
+        id: schema.branchInventory.id,
+        quantity: schema.branchInventory.quantity,
+      })
       .from(schema.branchInventory)
       .where(
         and(
@@ -71,15 +74,13 @@ export async function reserveProductStock(
     }
 
     reservation.branchInventoryId = branchInv.id;
-    reservation.branchQty = branchInv.quantity;
   }
 
   return { ok: true, reservation };
 }
 
 /**
- * Apply a stock reservation: always depletes central inventory;
- * also depletes branch inventory when the reservation includes a branch.
+ * Atomically deplete stock using SQL decrements guarded by quantity checks.
  */
 export async function applyStockReservation(
   tx: DbTransaction,
@@ -87,28 +88,56 @@ export async function applyStockReservation(
   reservation: StockReservation,
   options: { userId: string; reason: string }
 ): Promise<void> {
-  const newCentralQty = reservation.centralQty - quantity;
-
-  await tx
+  const [centralRow] = await tx
     .update(schema.inventory)
-    .set({ quantity: newCentralQty, updatedAt: new Date() })
-    .where(eq(schema.inventory.id, reservation.centralInventoryId));
+    .set({
+      quantity: sql`${schema.inventory.quantity} - ${quantity}`,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(schema.inventory.id, reservation.centralInventoryId),
+        gte(schema.inventory.quantity, quantity)
+      )
+    )
+    .returning({
+      quantity: schema.inventory.quantity,
+    });
+
+  if (!centralRow) {
+    throw new Error('Insufficient central stock during checkout.');
+  }
+
+  const newCentralQty = centralRow.quantity;
+  const previousCentralQty = newCentralQty + quantity;
 
   await tx.insert(schema.inventoryMovements).values({
     inventoryId: reservation.centralInventoryId,
     type: 'sale_depletion',
     quantityChanged: -quantity,
-    previousQuantity: reservation.centralQty,
+    previousQuantity: previousCentralQty,
     newQuantity: newCentralQty,
     reason: options.reason,
     userId: options.userId,
   });
 
-  if (reservation.branchInventoryId && reservation.branchQty !== undefined) {
-    const newBranchQty = reservation.branchQty - quantity;
-    await tx
+  if (reservation.branchInventoryId) {
+    const [branchRow] = await tx
       .update(schema.branchInventory)
-      .set({ quantity: newBranchQty, updatedAt: new Date() })
-      .where(eq(schema.branchInventory.id, reservation.branchInventoryId));
+      .set({
+        quantity: sql`${schema.branchInventory.quantity} - ${quantity}`,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(schema.branchInventory.id, reservation.branchInventoryId),
+          gte(schema.branchInventory.quantity, quantity)
+        )
+      )
+      .returning({ quantity: schema.branchInventory.quantity });
+
+    if (!branchRow) {
+      throw new Error('Insufficient branch stock during checkout.');
+    }
   }
 }
