@@ -64,7 +64,9 @@ export default function PaymentSlipUpload({
         setSlipUrl(upload.publicUrl!);
         setMessage({
           type: 'success',
-          text: 'Payment slip submitted. The vendor will verify your transfer shortly.',
+          text: result.vendorNotified
+            ? 'Payment slip submitted. Vendor admins were notified by email.'
+            : 'Payment slip submitted. The vendor will review your transfer shortly.',
         });
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to save payment slip.' });

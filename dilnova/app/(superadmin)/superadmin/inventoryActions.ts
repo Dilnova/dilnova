@@ -21,6 +21,8 @@ import {
 import {
   applySimulatedOrderStatusChange,
 } from '@/utils/simulatedOrderTransitions';
+import { sendPaymentVerifiedCustomerEmail } from '@/utils/paymentSlipEmail';
+import { logger } from '@/utils/logger';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { validateStockAvailabilityId } from '@/utils/stockAvailability';
@@ -381,6 +383,16 @@ export async function updateSimulatedOrderStatusAction(
       targetId: parsed.data.orderId,
       metadata: { previousStatus, newStatus },
     });
+
+    if (parsed.data.status === 'fulfilled') {
+      const emailResult = await sendPaymentVerifiedCustomerEmail(parsed.data.orderId);
+      if (!emailResult.success) {
+        logger.warn('Order fulfilled but customer confirmation email was not sent', {
+          orderId: parsed.data.orderId,
+          error: emailResult.error,
+        });
+      }
+    }
 
     revalidatePath('/superadmin');
     return { success: true };

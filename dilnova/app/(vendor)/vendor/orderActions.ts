@@ -23,6 +23,8 @@ import {
   rejectVendorPaymentSlip,
   verifyVendorOrderPayment,
 } from '@/utils/simulatedOrderTransitions';
+import { sendPaymentVerifiedCustomerEmail } from '@/utils/paymentSlipEmail';
+import { logger } from '@/utils/logger';
 
 async function loadVendorOrder(orderId: string, orgId: string) {
   const [order] = await db
@@ -98,6 +100,14 @@ export async function verifyOrderPaymentAction(orderId: string) {
       targetId: order.id,
       metadata: { paymentMethod: order.paymentMethod },
     });
+
+    const emailResult = await sendPaymentVerifiedCustomerEmail(order.id);
+    if (!emailResult.success) {
+      logger.warn('Order verified but customer confirmation email was not sent', {
+        orderId: order.id,
+        error: emailResult.error,
+      });
+    }
 
     revalidateVendorConsole();
     revalidatePath('/customer');

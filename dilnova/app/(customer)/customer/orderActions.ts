@@ -11,6 +11,8 @@ import { runWithCorrelationId } from '@/utils/asyncContext';
 import { getNormalizedClerkUserEmail, normalizeCustomerEmail } from '@/utils/customerEmail';
 import { canUploadPaymentSlip } from '@/utils/orderPayment';
 import { logAuditAction } from '@/utils/auditLogger';
+import { sendPaymentSlipUploadedNotifications } from '@/utils/paymentSlipEmail';
+import { logger } from '@/utils/logger';
 
 export async function submitPaymentSlipAction(input: {
   orderId: string;
@@ -83,7 +85,21 @@ export async function submitPaymentSlipAction(input: {
     revalidatePath('/cart');
     revalidatePath('/customer');
     revalidatePath(`/customer/invoice/${order.id}`);
+    revalidatePath('/vendor');
+    revalidatePath('/superadmin');
 
-    return { success: true as const };
+    const emailResult = await sendPaymentSlipUploadedNotifications(order.id);
+    if (!emailResult.success) {
+      logger.warn('Payment slip saved but vendor notification email was not sent', {
+        orderId: order.id,
+        error: emailResult.error,
+        notifiedCount: emailResult.notifiedCount,
+      });
+    }
+
+    return {
+      success: true as const,
+      vendorNotified: emailResult.success,
+    };
   });
 }
