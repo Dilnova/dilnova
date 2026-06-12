@@ -271,15 +271,84 @@ export default async function VendorPage({ searchParams }: PageProps) {
           {activeTab === 'inventory' && (
             <>
               {inventoryData && inventoryData.premiumStatus.imsActive ? (
-                <VendorInventoryWorkspace
-                  initialData={inventoryData}
-                />
+                <>
+                  <div className="mb-6 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-5 bg-zinc-50/10 dark:bg-zinc-900/5 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div>
+                        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Phase 3 — Inventory (IMS) Checklist</h3>
+                        <p className="text-xs text-zinc-500 mt-1">
+                          Manage stock, suppliers, branches, and online orders before POS testing.
+                        </p>
+                      </div>
+                      <span
+                        className={`self-start text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                          inventoryData.inventoryItems.length > 0
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
+                            : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400'
+                        }`}
+                      >
+                        {inventoryData.inventoryItems.length > 0 ? 'IMS active' : 'Initialize stock'}
+                      </span>
+                    </div>
+                    <ul className="space-y-2 text-xs text-zinc-700 dark:text-zinc-300">
+                      <li className="flex items-start gap-2">
+                        <span className="text-emerald-600">✓</span>
+                        Premium IMS license enabled
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className={inventoryData.inventoryItems.length > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
+                          {inventoryData.inventoryItems.length > 0 ? '✓' : '○'}
+                        </span>
+                        Stock records for products ({inventoryData.inventoryItems.length} tracked)
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className={inventoryData.movements.length > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
+                          {inventoryData.movements.length > 0 ? '✓' : '○'}
+                        </span>
+                        Stock movement logged — restock or adjust on <strong>Stock Levels</strong> tab
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className={inventoryData.suppliers.length > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
+                          {inventoryData.suppliers.length > 0 ? '✓' : '○'}
+                        </span>
+                        Supplier added ({inventoryData.suppliers.length}) <span className="text-zinc-400">(optional)</span>
+                      </li>
+                      {inventoryData.premiumStatus.multiBranchActive && (
+                        <>
+                          <li className="flex items-start gap-2">
+                            <span className={inventoryData.branches.length > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
+                              {inventoryData.branches.length > 0 ? '✓' : '○'}
+                            </span>
+                            Branch directory configured ({inventoryData.branches.length} branches)
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className={inventoryData.branchMembers.length > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
+                              {inventoryData.branchMembers.length > 0 ? '✓' : '○'}
+                            </span>
+                            Cashier assigned to branch ({inventoryData.branchMembers.length})
+                          </li>
+                        </>
+                      )}
+                      <li className="flex items-start gap-2">
+                        <span className={inventoryData.simulatedOrders.length > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
+                          {inventoryData.simulatedOrders.length > 0 ? '✓' : '○'}
+                        </span>
+                        Online order visible on <strong>Simulated Orders</strong> tab ({inventoryData.simulatedOrders.length})
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-zinc-400">○</span>
+                        Member RBAC: <code className="font-mono text-[10px]">org:member</code> cannot open this tab
+                      </li>
+                    </ul>
+                  </div>
+                  <VendorInventoryWorkspace initialData={inventoryData} />
+                </>
               ) : (
                 <div className="text-center py-16 border border-zinc-250 rounded-2xl dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 shadow-sm space-y-4 max-w-xl mx-auto mt-6">
                   <div className="text-5xl emoji">👑</div>
                   <h2 className="text-lg font-black text-zinc-900 dark:text-white">Premium Inventory Management System</h2>
                   <p className="text-zinc-500 text-xs leading-relaxed">
-                    Unlock multi-branch stock levels, supplier management directories, real-time POS cash register checkouts, and historical stock audit log tracking.
+                    Unlock multi-branch stock levels, supplier management directories, real-time POS cash register checkouts, and historical stock audit log tracking. Ask your platform superadmin to enable IMS under <strong>/superadmin → Inventory → Licenses</strong>.
                   </p>
                   {inventoryErrorMsg && (
                     <div className="bg-rose-50 text-rose-700 dark:bg-rose-955/20 dark:text-rose-455 p-3 rounded-lg text-xs font-mono">

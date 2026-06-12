@@ -19,7 +19,7 @@ export default async function VendorBillingPage() {
   let inventoryData = null;
   let errorMsg = '';
   try {
-    inventoryData = await getVendorInventoryData();
+    inventoryData = await getVendorInventoryData({ allowMember: true });
   } catch (err) {
     errorMsg = err instanceof Error ? err.message : 'Unable to load billing register.';
   }

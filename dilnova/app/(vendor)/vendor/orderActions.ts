@@ -211,20 +211,28 @@ export async function cancelVendorOrderAction(orderId: string) {
 }
 
 export async function getVendorPendingPaymentOrderIds(orgId: string): Promise<string[]> {
-  const rows = await db
-    .select({ orderId: schema.simulatedOrderItems.orderId })
-    .from(schema.simulatedOrderItems)
-    .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId));
+  return runWithCorrelationId(async () => {
+    const { orgId: sessionOrgId, orgRole } = await auth();
 
-  const orderIds = [...new Set(rows.map((row) => row.orderId))];
-  if (orderIds.length === 0) return [];
+    if (!sessionOrgId || orgRole !== 'org:admin' || sessionOrgId !== orgId) {
+      throw new Error('Not authorized: Only organization admins can view pending payment orders.');
+    }
 
-  const orders = await db
-    .select({ id: schema.simulatedOrders.id, status: schema.simulatedOrders.status })
-    .from(schema.simulatedOrders)
-    .where(inArray(schema.simulatedOrders.id, orderIds));
+    const rows = await db
+      .select({ orderId: schema.simulatedOrderItems.orderId })
+      .from(schema.simulatedOrderItems)
+      .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId));
 
-  return orders
-    .filter((order) => order.status === 'payment_submitted')
-    .map((order) => order.id);
+    const orderIds = [...new Set(rows.map((row) => row.orderId))];
+    if (orderIds.length === 0) return [];
+
+    const orders = await db
+      .select({ id: schema.simulatedOrders.id, status: schema.simulatedOrders.status })
+      .from(schema.simulatedOrders)
+      .where(inArray(schema.simulatedOrders.id, orderIds));
+
+    return orders
+      .filter((order) => order.status === 'payment_submitted')
+      .map((order) => order.id);
+  });
 }

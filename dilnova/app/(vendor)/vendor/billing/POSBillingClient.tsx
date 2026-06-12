@@ -29,7 +29,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
   // Re-fetch helper to keep UI fully in sync
   const refreshData = async () => {
     try {
-      const fresh = await getVendorInventoryData();
+      const fresh = await getVendorInventoryData({ allowMember: true });
       setData(fresh);
     } catch (err) {
       triggerNotification(false, 'Failed to refresh data.');

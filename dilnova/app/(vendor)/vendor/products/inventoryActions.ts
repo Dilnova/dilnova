@@ -64,9 +64,11 @@ async function verifyVendorAccess(options?: { allowMember?: boolean }) {
 
 // ── GET VENDOR IMS DATA ──────────────────────────────────────
 
-export async function getVendorInventoryData() {
+export async function getVendorInventoryData(options?: { allowMember?: boolean }) {
   return runWithCorrelationId(async () => {
-    const { userId, orgId, orgRole, premiumStatus } = await verifyVendorAccess({ allowMember: true });
+    const { userId, orgId, orgRole, premiumStatus } = await verifyVendorAccess({
+      allowMember: options?.allowMember === true,
+    });
 
     // 1. Fetch Products
     const vendorProducts = await db
