@@ -4,10 +4,14 @@ import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import ManageProductsClient, { type Product } from './products/ManageProductsClient';
 import VendorInventoryWorkspace from './products/VendorInventoryWorkspace';
 import { getVendorInventoryData } from './products/inventoryActions';
+import {
+  hasCompleteBankDetails,
+  parseBankTransferDetailsFromMetadata,
+} from '@/utils/bankTransfer';
 
 const IMS_WORKSPACE_TABS = ['stock', 'suppliers', 'orders', 'movements', 'branches'] as const;
 type ImsWorkspaceTab = (typeof IMS_WORKSPACE_TABS)[number];
@@ -45,10 +49,12 @@ export default async function VendorPage({ searchParams }: PageProps) {
   let vendorProducts: Product[] = [];
   let inventoryData: any = null;
   let inventoryErrorMsg = '';
+  let branchCount = 0;
+  let onlineOrderCount = 0;
 
   if (orgRole === 'org:admin') {
     try {
-      const [productsResult, inventoryResult] = await Promise.all([
+      const [productsResult, inventoryResult, branchCountRow, onlineOrderCountRow] = await Promise.all([
         db
           .select({
             id: schema.products.id,
@@ -62,13 +68,25 @@ export default async function VendorPage({ searchParams }: PageProps) {
           })
           .from(schema.products)
           .where(eq(schema.products.orgId, orgId)),
-        getVendorInventoryData().catch((err) => {
+        getVendorInventoryData().catch((err: unknown) => {
           inventoryErrorMsg = err instanceof Error ? err.message : 'Unable to load inventory data.';
           return null;
         }),
+        db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(schema.branches)
+          .where(eq(schema.branches.orgId, orgId))
+          .then((rows) => rows[0]?.count ?? 0),
+        db
+          .select({ count: sql<number>`count(distinct ${schema.simulatedOrderItems.orderId})::int` })
+          .from(schema.simulatedOrderItems)
+          .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId))
+          .then((rows) => rows[0]?.count ?? 0),
       ]);
       vendorProducts = productsResult as Product[];
       inventoryData = inventoryResult;
+      branchCount = branchCountRow;
+      onlineOrderCount = onlineOrderCountRow;
     } catch (err) {
       // Graceful fallback
     }
@@ -78,7 +96,41 @@ export default async function VendorPage({ searchParams }: PageProps) {
   const totalItems = vendorProducts.length;
   const totalProducts = vendorProducts.filter((p) => p.type === 'product').length;
   const totalServices = vendorProducts.filter((p) => p.type === 'service').length;
-  const activeBranches = inventoryData ? inventoryData.branches.length : 0;
+  const activeBranches = branchCount;
+
+  const orgMetadata = (org.publicMetadata || {}) as {
+    description?: string;
+    address?: string;
+    phone?: string;
+    bannerUrl?: string;
+    checkout_options?: Record<string, boolean>;
+    bankName?: string;
+    bankAccountName?: string;
+    bankAccountNumber?: string;
+    bankBranchCode?: string;
+    bankTransferInstructions?: string;
+  };
+  const checkoutOptions = orgMetadata.checkout_options || {};
+  const bankTransferConfigured = hasCompleteBankDetails(parseBankTransferDetailsFromMetadata(orgMetadata));
+  const pickupEnabled = checkoutOptions.store_pickup === true;
+  const bankTransferEnabled = checkoutOptions.bank_transfer === true;
+  const codEnabled = checkoutOptions.cash_on_delivery === true;
+  const deliveryEnabled = checkoutOptions.standard_delivery === true;
+  const hasFulfillmentOption = pickupEnabled || deliveryEnabled;
+  const hasPaymentOption = bankTransferEnabled || codEnabled;
+  const profileFieldsComplete = ['description', 'address', 'phone', 'bannerUrl'].every(
+    (field) => Boolean(orgMetadata[field as keyof typeof orgMetadata])
+  );
+  const pickupReady = !pickupEnabled || activeBranches > 0;
+  const bankTransferReady = !bankTransferEnabled || bankTransferConfigured;
+  const phase6ConfigReady =
+    Boolean(org.slug) &&
+    totalItems > 0 &&
+    profileFieldsComplete &&
+    hasFulfillmentOption &&
+    hasPaymentOption &&
+    pickupReady &&
+    bankTransferReady;
 
   let lowStockCount = 0;
   let outOfStockCount = 0;
@@ -201,7 +253,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
           </div>
 
           {/* Premium Pill Segmented Tabs Switcher */}
-          <div className="flex bg-zinc-100/80 dark:bg-zinc-900/60 backdrop-blur-md p-1 rounded-2xl mb-6 border border-zinc-200/50 dark:border-zinc-800/30 max-w-sm">
+          <div className="flex bg-zinc-100/80 dark:bg-zinc-900/60 backdrop-blur-md p-1 rounded-2xl mb-6 border border-zinc-200/50 dark:border-zinc-800/30 max-w-xl">
             <Link
               href="?tab=catalog"
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
@@ -217,10 +269,20 @@ export default async function VendorPage({ searchParams }: PageProps) {
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'inventory'
                   ? 'bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
+                  : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-300'
               }`}
             >
               <span className="emoji text-sm" aria-hidden="true">📦</span> Inventory Workspace
+            </Link>
+            <Link
+              href="?tab=storefront"
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'storefront'
+                  ? 'bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
+              }`}
+            >
+              <span className="emoji text-sm" aria-hidden="true">🌐</span> Public Storefront
             </Link>
           </div>
 
@@ -381,6 +443,174 @@ export default async function VendorPage({ searchParams }: PageProps) {
                   </div>
                 </div>
               )}
+            </>
+          )}
+
+          {activeTab === 'storefront' && (
+            <>
+              <div className="mb-6 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-5 bg-zinc-50/10 dark:bg-zinc-900/5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Phase 6 — Public Storefront Checklist</h3>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      Validate the customer-facing experience after Phases 1–5. Test as guest and signed-in customer in a separate browser.
+                    </p>
+                  </div>
+                  <span
+                    className={`self-start text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                      phase6ConfigReady && onlineOrderCount > 0
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
+                        : phase6ConfigReady
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400'
+                          : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-400'
+                    }`}
+                  >
+                    {phase6ConfigReady && onlineOrderCount > 0
+                      ? 'End-to-end verified'
+                      : phase6ConfigReady
+                        ? 'Run customer test'
+                        : 'Fix config gaps'}
+                  </span>
+                </div>
+                <ul className="space-y-2 text-xs text-zinc-700 dark:text-zinc-300">
+                  <li className="flex items-start gap-2">
+                    <span className={org.slug ? 'text-emerald-600' : 'text-zinc-400'}>{org.slug ? '✓' : '○'}</span>
+                    Storefront URL configured
+                    {org.slug ? (
+                      <>
+                        {' '}
+                        —{' '}
+                        <Link
+                          href={`/vendors/${org.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-purple-700 dark:text-purple-400 hover:underline"
+                        >
+                          /vendors/{org.slug}
+                        </Link>
+                      </>
+                    ) : (
+                      <span className="text-zinc-400"> (set org slug in Clerk)</span>
+                    )}
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className={profileFieldsComplete ? 'text-emerald-600' : 'text-zinc-400'}>
+                      {profileFieldsComplete ? '✓' : '○'}
+                    </span>
+                    Public profile complete — banner, description, address, phone at{' '}
+                    <Link href="/admin" className="text-purple-700 dark:text-purple-400 hover:underline">
+                      /admin
+                    </Link>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className={totalItems > 0 ? 'text-emerald-600' : 'text-zinc-400'}>{totalItems > 0 ? '✓' : '○'}</span>
+                    Listings visible on storefront ({totalItems} items) and{' '}
+                    <Link href="/products" className="text-purple-700 dark:text-purple-400 hover:underline">
+                      /products
+                    </Link>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className={hasFulfillmentOption && hasPaymentOption ? 'text-emerald-600' : 'text-zinc-400'}>
+                      {hasFulfillmentOption && hasPaymentOption ? '✓' : '○'}
+                    </span>
+                    Checkout options saved — fulfillment + payment enabled in{' '}
+                    <Link href="/admin" className="text-purple-700 dark:text-purple-400 hover:underline">
+                      /admin
+                    </Link>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className={bankTransferReady ? 'text-emerald-600' : 'text-zinc-400'}>
+                      {bankTransferReady ? '✓' : '○'}
+                    </span>
+                    Bank transfer ready
+                    {bankTransferEnabled ? (
+                      bankTransferConfigured ? (
+                        <span> — bank details complete</span>
+                      ) : (
+                        <span className="text-rose-600 dark:text-rose-400"> — fill bank fields at /admin</span>
+                      )
+                    ) : (
+                      <span className="text-zinc-400"> (not enabled)</span>
+                    )}
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className={pickupReady ? 'text-emerald-600' : 'text-zinc-400'}>
+                      {pickupReady ? '✓' : '○'}
+                    </span>
+                    Store pickup ready
+                    {pickupEnabled ? (
+                      activeBranches > 0 ? (
+                        <span> — {activeBranches} branch(es)</span>
+                      ) : (
+                        <span className="text-rose-600 dark:text-rose-400"> — create a branch in Inventory</span>
+                      )
+                    ) : (
+                      <span className="text-zinc-400"> (not enabled)</span>
+                    )}
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-zinc-400">○</span>
+                    Guest browse: out-of-stock items show unavailable; add-to-cart respects stock on storefront + product detail
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-zinc-400">○</span>
+                    Guest checkout blocked at <Link href="/cart" className="text-purple-700 dark:text-purple-400 hover:underline">/cart</Link> — sign-in required
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className={onlineOrderCount > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
+                      {onlineOrderCount > 0 ? '✓' : '○'}
+                    </span>
+                    Signed-in customer checkout completed ({onlineOrderCount} online orders) — see Phase 5 order lifecycle
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-zinc-400">○</span>
+                    <Link href="/cart" className="text-purple-700 dark:text-purple-400 hover:underline">/cart</Link> options match what you enabled at /admin (delivery, pickup, bank transfer, COD)
+                  </li>
+                </ul>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 bg-white dark:bg-zinc-950 shadow-sm space-y-3">
+                  <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Guest test (incognito)</h4>
+                  <ol className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2 list-decimal list-inside">
+                    <li>
+                      Open{' '}
+                      {org.slug ? (
+                        <Link href={`/vendors/${org.slug}`} className="text-purple-700 dark:text-purple-400 hover:underline">
+                          /vendors/{org.slug}
+                        </Link>
+                      ) : (
+                        'your storefront'
+                      )}
+                    </li>
+                    <li>Browse products — confirm stock badges and add-to-cart gating</li>
+                    <li>
+                      Open <Link href="/cart" className="text-purple-700 dark:text-purple-400 hover:underline">/cart</Link> — checkout should prompt sign-in
+                    </li>
+                  </ol>
+                </div>
+                <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 bg-white dark:bg-zinc-950 shadow-sm space-y-3">
+                  <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Customer test (signed in)</h4>
+                  <ol className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2 list-decimal list-inside">
+                    <li>Add in-stock item to cart from storefront or /products</li>
+                    <li>
+                      Checkout at <Link href="/cart" className="text-purple-700 dark:text-purple-400 hover:underline">/cart</Link> with enabled payment + fulfillment
+                    </li>
+                    <li>
+                      Track order at{' '}
+                      <Link href="/customer?tab=orders" className="text-purple-700 dark:text-purple-400 hover:underline">
+                        /customer
+                      </Link>
+                    </li>
+                    <li>
+                      Vendor verifies on{' '}
+                      <Link href="/vendor?tab=inventory&imsTab=orders" className="text-purple-700 dark:text-purple-400 hover:underline">
+                        Phase 5 orders tab
+                      </Link>
+                    </li>
+                  </ol>
+                </div>
+              </div>
             </>
           )}
         </>
