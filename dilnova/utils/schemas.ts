@@ -220,6 +220,24 @@ export const updateSimulatedOrderStatusSchema = z.object({
   status: z.enum(['pending', 'fulfilled', 'cancelled']),
 });
 
+export const submitPaymentSlipSchema = z.object({
+  orderId: uuidField,
+  slipUrl: z
+    .string()
+    .url('A valid slip image URL is required.')
+    .max(2048)
+    .refine((url) => /^https:\/\//.test(url), 'Slip URL must use HTTPS.'),
+  customerEmail: z.string().email().max(255).optional(),
+});
+
+export const vendorOrderActionSchema = z.object({
+  orderId: uuidField,
+});
+
+export const rejectPaymentSlipSchema = vendorOrderActionSchema.extend({
+  reason: z.string().max(500).trim().optional(),
+});
+
 // ── Multi-Branch Management ──────────────────────────────
 
 export const createBranchSchema = z.object({

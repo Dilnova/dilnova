@@ -19,9 +19,8 @@ import {
   validateCentralQuantityCoversBranches,
 } from '@/utils/stockLedger';
 import {
-  depleteOnlineOrderItemStock,
-  restoreOnlineOrderItemStock,
-} from '@/utils/onlineOrderStock';
+  applySimulatedOrderStatusChange,
+} from '@/utils/simulatedOrderTransitions';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { validateStockAvailabilityId } from '@/utils/stockAvailability';
@@ -368,66 +367,11 @@ export async function updateSimulatedOrderStatusAction(
     const previousStatus = order.status;
 
     await db.transaction(async (tx) => {
-      const orderItems = await tx
-        .select({
-          productId: schema.simulatedOrderItems.productId,
-          productName: schema.simulatedOrderItems.productName,
-          vendorOrgId: schema.simulatedOrderItems.vendorOrgId,
-          quantity: schema.simulatedOrderItems.quantity,
-          productType: schema.products.type,
-        })
-        .from(schema.simulatedOrderItems)
-        .innerJoin(schema.products, eq(schema.simulatedOrderItems.productId, schema.products.id))
-        .where(eq(schema.simulatedOrderItems.orderId, parsed.data.orderId));
-
-      let stockDepleted = order.stockDepleted;
-
-      // Legacy fallback: orders placed before checkout reservation may still need depletion on fulfill.
-      if (
-        newStatus === 'fulfilled' &&
-        previousStatus === 'pending_payment' &&
-        !order.stockDepleted
-      ) {
-        for (const item of orderItems) {
-          if (item.productType !== 'product') continue;
-
-          await depleteOnlineOrderItemStock(tx, {
-            productId: item.productId,
-            productName: item.productName,
-            quantity: item.quantity,
-            pickupBranchId: order.pickupBranchId,
-            vendorOrgId: item.vendorOrgId,
-            orderId: order.id,
-            userId: user.id,
-          });
-        }
-        stockDepleted = true;
-      }
-
-      if (newStatus === 'cancelled' && order.stockDepleted) {
-        for (const item of orderItems) {
-          if (item.productType !== 'product') continue;
-
-          await restoreOnlineOrderItemStock(tx, {
-            productId: item.productId,
-            quantity: item.quantity,
-            pickupBranchId: order.pickupBranchId,
-            vendorOrgId: item.vendorOrgId,
-            orderId: order.id,
-            userId: user.id,
-          });
-        }
-        stockDepleted = false;
-      }
-
-      await tx
-        .update(schema.simulatedOrders)
-        .set({
-          status: newStatus,
-          stockDepleted,
-          updatedAt: new Date(),
-        })
-        .where(eq(schema.simulatedOrders.id, parsed.data.orderId));
+      await applySimulatedOrderStatusChange(tx, {
+        order,
+        newStatus: parsed.data.status,
+        userId: user.id,
+      });
     });
 
     await logAuditAction({

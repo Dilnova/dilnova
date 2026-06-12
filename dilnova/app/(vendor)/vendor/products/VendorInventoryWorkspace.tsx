@@ -19,6 +19,12 @@ import {
 import { formatOrderStatusLabel, matchesOrderStatusFilter } from '@/utils/orderStatus';
 import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
 import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
+import { VendorOrderPaymentPanel } from '@/app/components/OrderPaymentPanels';
+import {
+  cancelVendorOrderAction,
+  rejectPaymentSlipAction,
+  verifyOrderPaymentAction,
+} from '../orderActions';
 
 // ── Types ──
 type AdvancedTab = 'stock' | 'suppliers' | 'orders' | 'movements' | 'branches';
@@ -74,7 +80,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
   const [stockSearch, setStockSearch] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out'>('all');
   const [orderStatusFilter, setOrderStatusFilter] = useState<
-    'all' | 'pending' | 'pending_payment' | 'fulfilled' | 'cancelled'
+    'all' | 'pending' | 'pending_payment' | 'payment_submitted' | 'fulfilled' | 'cancelled'
   >('all');
   const [movementTypeFilter, setMovementTypeFilter] = useState<string>('all');
 
@@ -180,6 +186,42 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
   const filteredMovements = data.movements.filter(
     (m) => movementTypeFilter === 'all' || m.type === movementTypeFilter
   );
+
+  const handleVerifyOrderPayment = (orderId: string) => {
+    startTransition(async () => {
+      try {
+        await verifyOrderPaymentAction(orderId);
+        triggerNotification(true, 'Order payment verified.');
+        refreshData();
+      } catch (error) {
+        triggerNotification(false, error instanceof Error ? error.message : 'Verification failed.');
+      }
+    });
+  };
+
+  const handleRejectPaymentSlip = (orderId: string) => {
+    startTransition(async () => {
+      try {
+        await rejectPaymentSlipAction(orderId);
+        triggerNotification(true, 'Payment slip rejected. Customer can upload again.');
+        refreshData();
+      } catch (error) {
+        triggerNotification(false, error instanceof Error ? error.message : 'Rejection failed.');
+      }
+    });
+  };
+
+  const handleCancelVendorOrder = (orderId: string) => {
+    startTransition(async () => {
+      try {
+        await cancelVendorOrderAction(orderId);
+        triggerNotification(true, 'Order cancelled.');
+        refreshData();
+      } catch (error) {
+        triggerNotification(false, error instanceof Error ? error.message : 'Cancellation failed.');
+      }
+    });
+  };
 
   // --- Handlers ---
   const handleSaveSupplier = (e: React.FormEvent) => {
@@ -706,7 +748,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-50">Customer Orders (Simulated)</h3>
                 <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
-                  {(['all', 'pending', 'pending_payment', 'fulfilled', 'cancelled'] as const).map((f) => (
+                  {(['all', 'pending', 'pending_payment', 'payment_submitted', 'fulfilled', 'cancelled'] as const).map((f) => (
                     <button
                       key={f}
                       onClick={() => setOrderStatusFilter(f)}
@@ -714,7 +756,11 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                         orderStatusFilter === f ? 'bg-white shadow-sm font-black' : 'text-zinc-500'
                       }`}
                     >
-                      {f === 'pending_payment' ? 'COD' : f.toUpperCase()}
+                      {f === 'pending_payment'
+                        ? 'Awaiting Pay'
+                        : f === 'payment_submitted'
+                          ? 'Slip Review'
+                          : f.toUpperCase()}
                     </button>
                   ))}
                 </div>
@@ -755,10 +801,24 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
                         <p className={`text-[10px] uppercase font-bold mt-1 ${
                           o.status === 'fulfilled' ? 'text-emerald-600' :
                           o.status === 'cancelled' ? 'text-rose-600' :
+                          o.status === 'payment_submitted' ? 'text-blue-600' :
                           o.status === 'pending_payment' ? 'text-orange-600' :
                           'text-amber-600'
                         }`}>{formatOrderStatusLabel(o.status)}</p>
                       </div>
+                      <VendorOrderPaymentPanel
+                        order={{
+                          id: o.id,
+                          paymentMethod: o.paymentMethod,
+                          status: o.status,
+                          paymentSlipUrl: o.paymentSlipUrl,
+                          customerEmail: o.customerEmail,
+                        }}
+                        onVerify={handleVerifyOrderPayment}
+                        onReject={handleRejectPaymentSlip}
+                        onCancel={handleCancelVendorOrder}
+                        isPending={isPending}
+                      />
                     </div>
                   </div>
                 );

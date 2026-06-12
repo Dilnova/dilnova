@@ -11,6 +11,8 @@ import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
 import { allocateVendorPaymentAmounts, isBankTransferPayment } from '@/utils/bankTransfer';
 import { buildBankTransferCheckoutInstructions } from '@/utils/bankTransferServer';
 import BankTransferInstructions from '@/app/components/BankTransferInstructions';
+import { CustomerPaymentSlipSection } from '@/app/components/OrderPaymentPanels';
+import { formatOrderStatusLabel } from '@/utils/orderStatus';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -76,7 +78,8 @@ export default async function InvoicePage({ params }: PageProps) {
   }, {});
   const serverSubtotal = Object.values(vendorSubtotals).reduce((sum, amount) => sum + amount, 0);
   const showBankTransferInstructions =
-    isBankTransferPayment(order.paymentMethod) && order.status === 'pending_payment';
+    isBankTransferPayment(order.paymentMethod) &&
+    (order.status === 'pending_payment' || order.status === 'payment_submitted');
   const bankTransferInstructions = showBankTransferInstructions
     ? await buildBankTransferCheckoutInstructions({
         orderId: order.id,
@@ -131,7 +134,7 @@ export default async function InvoicePage({ params }: PageProps) {
             <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 print:text-black">INVOICE</h2>
             <p>Invoice #: INV-{order.id.slice(0, 8).toUpperCase()}</p>
             <p>Date: {invoiceDate}</p>
-            <p>Status: <span className="uppercase font-bold">{order.status}</span></p>
+            <p>Status: <span className="uppercase font-bold">{formatOrderStatusLabel(order.status)}</span></p>
           </div>
         </div>
 
@@ -194,10 +197,22 @@ export default async function InvoicePage({ params }: PageProps) {
         </div>
 
         {bankTransferInstructions && (
-          <div className="pt-8">
+          <div className="pt-8 print:hidden">
             <BankTransferInstructions instructions={bankTransferInstructions} />
           </div>
         )}
+
+        <div className="pt-8 print:hidden">
+          <CustomerPaymentSlipSection
+            order={{
+              id: order.id,
+              paymentMethod: order.paymentMethod,
+              status: order.status,
+              paymentSlipUrl: order.paymentSlipUrl,
+              customerEmail: order.customerEmail,
+            }}
+          />
+        </div>
 
         {/* Totals Block */}
         <div className="flex justify-end pt-6">

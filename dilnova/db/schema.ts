@@ -189,11 +189,15 @@ export const simulatedOrders = pgTable('simulated_orders', {
   taxAmount: integer('tax_amount').default(0).notNull(), // in cents
   shippingAmount: integer('shipping_amount').default(0).notNull(), // in cents
   totalAmount: integer('total_amount').notNull(), // grand total in cents (subtotal + tax + shipping)
-  status: text('status').default('pending').notNull(), // 'pending' | 'pending_payment' | 'fulfilled' | 'cancelled'
+  status: text('status').default('pending').notNull(), // pending | pending_payment | payment_submitted | fulfilled | cancelled
   fulfillmentMethod: text('fulfillment_method').default('standard_delivery').notNull(),
   paymentMethod: text('payment_method').default('bank_transfer').notNull(),
   pickupBranchId: uuid('pickup_branch_id'),
   stockDepleted: boolean('stock_depleted').default(false).notNull(),
+  paymentSlipUrl: text('payment_slip_url'),
+  paymentSlipUploadedAt: timestamp('payment_slip_uploaded_at'),
+  paymentVerifiedAt: timestamp('payment_verified_at'),
+  paymentVerifiedBy: text('payment_verified_by'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => [

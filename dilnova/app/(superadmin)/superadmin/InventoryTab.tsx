@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import {
   isActiveSimulatedOrder,
   formatOrderStatusLabel,
@@ -74,6 +75,7 @@ export interface SimulatedOrder {
   paymentMethod: string;
   pickupBranchId: string | null;
   pickupBranchName?: string | null;
+  paymentSlipUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
   items: {
@@ -171,7 +173,7 @@ export default function InventoryTab({
 
   // ── Order Filter ──
   const [orderStatusFilter, setOrderStatusFilter] = useState<
-    'all' | 'pending' | 'pending_payment' | 'fulfilled' | 'cancelled'
+    'all' | 'pending' | 'pending_payment' | 'payment_submitted' | 'fulfilled' | 'cancelled'
   >('all');
 
   // ── Movement Filter ──
@@ -654,7 +656,7 @@ export default function InventoryTab({
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">Simulated Orders</h2>
             <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
-              {(['all', 'pending', 'pending_payment', 'fulfilled', 'cancelled'] as const).map((f) => (
+              {(['all', 'pending', 'pending_payment', 'payment_submitted', 'fulfilled', 'cancelled'] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setOrderStatusFilter(f)}
@@ -667,8 +669,10 @@ export default function InventoryTab({
                   {f === 'all'
                     ? 'All'
                     : f === 'pending_payment'
-                      ? 'COD'
-                      : f.charAt(0).toUpperCase() + f.slice(1)}
+                      ? 'Awaiting Pay'
+                      : f === 'payment_submitted'
+                        ? 'Slip Review'
+                        : f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
               ))}
             </div>
@@ -711,6 +715,7 @@ export default function InventoryTab({
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         order.status === 'fulfilled' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' :
                         order.status === 'cancelled' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400' :
+                        order.status === 'payment_submitted' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400' :
                         order.status === 'pending_payment' ? 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400' :
                         'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
                       }`}>
@@ -728,6 +733,26 @@ export default function InventoryTab({
                       </div>
                     ))}
                   </div>
+
+                  {order.paymentSlipUrl && (
+                    <div className="mb-3">
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Payment slip</p>
+                      <a
+                        href={order.paymentSlipUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative block w-full max-w-[220px] aspect-[4/3] rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900"
+                      >
+                        <Image
+                          src={order.paymentSlipUrl}
+                          alt="Customer payment slip"
+                          fill
+                          className="object-contain"
+                          sizes="220px"
+                        />
+                      </a>
+                    </div>
+                  )}
 
                   {/* Status actions */}
                   {isActiveSimulatedOrder(order.status) && (

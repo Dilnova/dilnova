@@ -10,6 +10,7 @@ import { getClerkUserEmail, getNormalizedClerkUserEmail } from '@/utils/customer
 import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
+import { formatOrderStatusLabel } from '@/utils/orderStatus';
 
 interface PageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -380,6 +381,10 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                   statusColor = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400';
                 } else if (order.status === 'cancelled') {
                   statusColor = 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400';
+                } else if (order.status === 'payment_submitted') {
+                  statusColor = 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400';
+                } else if (order.status === 'pending_payment') {
+                  statusColor = 'bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-400';
                 }
 
                 return (
@@ -398,7 +403,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                               Order #{order.id.slice(0, 8).toUpperCase()}
                             </span>
                             <span className={`text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${statusColor}`}>
-                              {order.status}
+                              {formatOrderStatusLabel(order.status)}
                             </span>
                           </div>
                           <p className="text-[10px] text-zinc-405 font-medium">{orderDate}</p>

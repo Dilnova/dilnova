@@ -21,6 +21,7 @@ import {
   type BankTransferCheckoutInstructions,
 } from '@/utils/bankTransfer';
 import BankTransferInstructions from '@/app/components/BankTransferInstructions';
+import { CustomerPaymentSlipSection } from '@/app/components/OrderPaymentPanels';
 
 const GUEST_CHECKOUT_KEY = 'dilnova_guest_checkout';
 
@@ -466,6 +467,17 @@ export default function CartPage() {
 
           {bankTransferInstructions && (
             <BankTransferInstructions instructions={bankTransferInstructions} compact />
+          )}
+
+          {isBankTransferOrder && confirmedOrderId && confirmedOrderEmail && (
+            <CustomerPaymentSlipSection
+              order={{
+                id: confirmedOrderId,
+                paymentMethod: BANK_TRANSFER_PAYMENT_ID,
+                status: 'pending_payment',
+                customerEmail: confirmedOrderEmail,
+              }}
+            />
           )}
 
           <div className="border-t border-zinc-100 dark:border-zinc-850 pt-6 space-y-3">
