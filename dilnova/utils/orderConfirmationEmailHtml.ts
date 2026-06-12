@@ -16,6 +16,8 @@ export function buildOrderConfirmationEmailHtml(input: {
   fulfillmentLabel: string;
   paymentLabel: string;
   pickupBranchName?: string | null;
+  shippingAddress?: string | null;
+  shippingPhone?: string | null;
   items: { productName: string; quantity: number; unitPrice: number }[];
   subtotalAmount: number;
   taxAmount: number;
@@ -33,6 +35,8 @@ export function buildOrderConfirmationEmailHtml(input: {
     fulfillmentLabel,
     paymentLabel,
     pickupBranchName,
+    shippingAddress,
+    shippingPhone,
     items,
     subtotalAmount,
     taxAmount,
@@ -152,7 +156,9 @@ export function buildOrderConfirmationEmailHtml(input: {
               <p style="margin: 0 0 6px 0;"><strong>Order ID:</strong> ${orderRef}</p>
               <p style="margin: 0 0 6px 0;"><strong>Fulfillment:</strong> ${escapeHtml(fulfillmentLabel)}</p>
               <p style="margin: 0 0 6px 0;"><strong>Payment:</strong> ${escapeHtml(paymentLabel)}</p>
-              ${pickupBranchName ? `<p style="margin: 0;"><strong>Pickup branch:</strong> ${escapeHtml(pickupBranchName)}</p>` : ''}
+              ${pickupBranchName ? `<p style="margin: 0 0 6px 0;"><strong>Pickup branch:</strong> ${escapeHtml(pickupBranchName)}</p>` : ''}
+              ${shippingAddress ? `<p style="margin: 0 0 6px 0;"><strong>Delivery address:</strong> ${escapeHtml(shippingAddress).replace(/\n/g, '<br/>')}</p>` : ''}
+              ${shippingPhone ? `<p style="margin: 0;"><strong>Delivery phone:</strong> ${escapeHtml(shippingPhone)}</p>` : ''}
             </div>
 
             ${bankTransferHtml}

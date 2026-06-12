@@ -311,6 +311,8 @@ const checkoutSchema = z.object({
   fulfillmentMethod: z.string().min(1),
   paymentMethod: z.string().min(1),
   pickupBranchId: z.string().uuid().nullable().optional(),
+  shippingAddress: z.string().max(500).trim().optional().nullable(),
+  shippingPhone: z.string().max(50).trim().optional().nullable(),
 });
 
 function aggregateCheckoutItems(items: CheckoutItem[]): CheckoutItem[] {
@@ -485,7 +487,9 @@ export async function simulatedCheckoutAction(
   totalAmount: number,
   fulfillmentMethod: string,
   paymentMethod: string,
-  pickupBranchId?: string | null
+  pickupBranchId?: string | null,
+  shippingAddress?: string | null,
+  shippingPhone?: string | null
 ) {
   try {
     // ── Input Validation ──
@@ -497,6 +501,8 @@ export async function simulatedCheckoutAction(
       fulfillmentMethod,
       paymentMethod,
       pickupBranchId: pickupBranchId || null,
+      shippingAddress: shippingAddress?.trim() || null,
+      shippingPhone: shippingPhone?.trim() || null,
     });
     if (!parsed.success) {
       return { success: false, error: parsed.error.issues[0]?.message || 'Invalid checkout data.' };
@@ -510,6 +516,8 @@ export async function simulatedCheckoutAction(
       fulfillmentMethod: fulfillment,
       paymentMethod: payment,
       pickupBranchId: pickupBranch,
+      shippingAddress: shippingAddressInput,
+      shippingPhone: shippingPhoneInput,
     } = parsed.data;
 
     const { userId } = await auth();
@@ -665,6 +673,23 @@ export async function simulatedCheckoutAction(
         return { success: false, error: 'Pickup branch is only required for store pickup orders.' };
       }
 
+      const normalizedShippingAddress = shippingAddressInput?.trim() || null;
+      const normalizedShippingPhone = shippingPhoneInput?.trim() || null;
+
+      if (!fulfillmentOption.requiresBranch) {
+        if (!normalizedShippingAddress || normalizedShippingAddress.length < 5) {
+          return {
+            success: false,
+            error: 'Please enter a complete delivery address for home delivery orders.',
+          };
+        }
+      } else if (normalizedShippingAddress || normalizedShippingPhone) {
+        return {
+          success: false,
+          error: 'Shipping address is only required for home delivery orders.',
+        };
+      }
+
       const checkoutTotals = calculateCheckoutTotals(
         serverSubtotal,
         fulfillmentOption.zeroShipping === true
@@ -748,6 +773,8 @@ export async function simulatedCheckoutAction(
           fulfillmentMethod: fulfillment,
           paymentMethod: payment,
           pickupBranchId: fulfillmentOption.requiresBranch ? pickupBranch : null,
+          shippingAddress: fulfillmentOption.requiresBranch ? null : normalizedShippingAddress,
+          shippingPhone: fulfillmentOption.requiresBranch ? null : normalizedShippingPhone,
           stockDepleted: true,
         })
         .returning();

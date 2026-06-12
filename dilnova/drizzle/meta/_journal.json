@@ -64,6 +64,13 @@
       "when": 1781200000000,
       "tag": "0008_payment_slip",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1781300000000,
+      "tag": "0009_shipping_address",
+      "breakpoints": true
     }
   ]
 }

@@ -91,6 +91,8 @@ export async function sendOrderConfirmationEmailForOrder(
       fulfillmentLabel: checkoutDetails.fulfillment,
       paymentLabel: checkoutDetails.payment,
       pickupBranchName: checkoutDetails.pickup ?? pickupBranch,
+      shippingAddress: order.shippingAddress,
+      shippingPhone: order.shippingPhone,
       items,
       subtotalAmount: orderTotals.subtotalAmount,
       taxAmount: orderTotals.taxAmount,

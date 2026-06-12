@@ -470,6 +470,18 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                         </div>
                       </div>
 
+                      {(order.shippingAddress || order.shippingPhone) && (
+                        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3.5 space-y-1">
+                          <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 font-mono">Delivery Details</h4>
+                          {order.shippingAddress && (
+                            <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-line">{order.shippingAddress}</p>
+                          )}
+                          {order.shippingPhone && (
+                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">{order.shippingPhone}</p>
+                          )}
+                        </div>
+                      )}
+
                       {/* Invoice Print Link */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-zinc-100 dark:border-zinc-900">
                         <div className="text-[10px] text-zinc-400 font-mono">

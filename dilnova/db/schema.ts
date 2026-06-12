@@ -198,6 +198,8 @@ export const simulatedOrders = pgTable('simulated_orders', {
   paymentSlipUploadedAt: timestamp('payment_slip_uploaded_at'),
   paymentVerifiedAt: timestamp('payment_verified_at'),
   paymentVerifiedBy: text('payment_verified_by'),
+  shippingAddress: text('shipping_address'),
+  shippingPhone: text('shipping_phone'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => [

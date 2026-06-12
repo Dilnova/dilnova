@@ -49,6 +49,8 @@ export default function CartPage() {
   const [fulfillmentMethod, setFulfillmentMethod] = useState('store_pickup');
   const [paymentMethod, setPaymentMethod] = useState(BANK_TRANSFER_PAYMENT_ID);
   const [pickupBranchId, setPickupBranchId] = useState('');
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [shippingPhone, setShippingPhone] = useState('');
   const [checkoutOptions, setCheckoutOptions] = useState<{
     fulfillment: { id: string; label: string; description?: string; zeroShipping: boolean; requiresBranch: boolean }[];
     payment: { id: string; label: string; description?: string; requiresDelivery: boolean; pendingPayment?: boolean }[];
@@ -103,18 +105,20 @@ export default function CartPage() {
   }, [cartItemIds, syncCartPrices]);
 
   useEffect(() => {
-    if (cartItems.length === 0) {
-      setCheckoutOptions({
-        fulfillment: [],
-        payment: [],
-        pickupBranches: [],
-        vendorBankTransferByOrg: {},
-        vendorCartSummary: [],
-      });
-      setOptionsError(null);
-      setOptionsLoading(false);
-      setVendorCount(0);
-      setPickupBranchId('');
+    if (!isSignedIn || cartItems.length === 0) {
+      if (cartItems.length === 0) {
+        setCheckoutOptions({
+          fulfillment: [],
+          payment: [],
+          pickupBranches: [],
+          vendorBankTransferByOrg: {},
+          vendorCartSummary: [],
+        });
+        setOptionsError(null);
+        setOptionsLoading(false);
+        setVendorCount(0);
+        setPickupBranchId('');
+      }
       return;
     }
 
@@ -207,9 +211,10 @@ export default function CartPage() {
       active = false;
       window.clearTimeout(loadTimeout);
     };
-  }, [cartLinesKey]);
+  }, [cartLinesKey, isSignedIn]);
 
   const selectedFulfillment = checkoutOptions.fulfillment.find((o) => o.id === fulfillmentMethod);
+  const requiresDeliveryAddress = Boolean(selectedFulfillment && !selectedFulfillment.requiresBranch);
   const compatiblePayments = checkoutOptions.payment.filter((payment) =>
     selectedFulfillment
       ? isPaymentCompatibleWithFulfillment(
@@ -313,6 +318,12 @@ export default function CartPage() {
       setCheckoutError('Please select a store branch for pickup.');
       return;
     }
+    if (requiresDeliveryAddress) {
+      if (!shippingAddress.trim() || shippingAddress.trim().length < 5) {
+        setCheckoutError('Please enter a complete delivery address for home delivery.');
+        return;
+      }
+    }
 
     setCheckoutStatus('processing');
 
@@ -331,7 +342,9 @@ export default function CartPage() {
         grandTotal,
         fulfillmentMethod,
         paymentMethod,
-        selectedFulfillment.requiresBranch ? pickupBranchId : null
+        selectedFulfillment.requiresBranch ? pickupBranchId : null,
+        requiresDeliveryAddress ? shippingAddress.trim() : null,
+        requiresDeliveryAddress ? shippingPhone.trim() || null : null
       );
 
       if (result.success) {
@@ -797,6 +810,26 @@ export default function CartPage() {
                           </div>
                         )}
 
+                        {requiresDeliveryAddress && (
+                          <div className="space-y-3">
+                            <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Delivery Address</p>
+                            <textarea
+                              value={shippingAddress}
+                              onChange={(e) => setShippingAddress(e.target.value)}
+                              rows={3}
+                              placeholder="Street address, city, postal code, and any delivery notes"
+                              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50 resize-y"
+                            />
+                            <input
+                              type="tel"
+                              value={shippingPhone}
+                              onChange={(e) => setShippingPhone(e.target.value)}
+                              placeholder="Contact phone for delivery (optional)"
+                              className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50"
+                            />
+                          </div>
+                        )}
+
                         {compatiblePayments.length > 0 ? (
                           <div className="space-y-2">
                             <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Payment</p>
@@ -880,8 +913,9 @@ export default function CartPage() {
                         optionsLoading ||
                         !!optionsError ||
                         !selectedFulfillment ||
-                        !selectedPayment ||
-                        bankTransferMissingDetails
+                      !selectedPayment ||
+                      bankTransferMissingDetails ||
+                      (requiresDeliveryAddress && shippingAddress.trim().length < 5)
                       }
                       className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
                     >

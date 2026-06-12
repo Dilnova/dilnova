@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       .where(eq(schema.products.id, id))
       .limit(1);
 
-    if (!result || !result.product) {
+    if (!result || !result.product || result.product.status !== 'active') {
       return {
         title: `Product Not Found | ${systemName}`,
       };
@@ -90,7 +90,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     .where(eq(schema.products.id, id))
     .limit(1);
 
-  if (!result || !result.product) {
+  if (!result || !result.product || result.product.status !== 'active') {
     notFound();
   }
 

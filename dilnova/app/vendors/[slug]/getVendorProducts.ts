@@ -1,6 +1,6 @@
 import { db } from '../../../db';
 import * as schema from '../../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import type { VendorProduct } from './custom/types';
 import { unstable_cache } from 'next/cache';
 
@@ -24,7 +24,7 @@ export async function getVendorProducts(orgId: string): Promise<VendorProduct[]>
         })
         .from(schema.products)
         .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
-        .where(eq(schema.products.orgId, id));
+        .where(and(eq(schema.products.orgId, id), eq(schema.products.status, 'active')));
 
       return results;
     },

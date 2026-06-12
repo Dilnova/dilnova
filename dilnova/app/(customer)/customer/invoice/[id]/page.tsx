@@ -139,12 +139,21 @@ export default async function InvoicePage({ params }: PageProps) {
         </div>
 
         {/* Bill to section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-8 text-xs">
+        <div className={`grid grid-cols-1 gap-8 py-8 text-xs ${order.shippingAddress ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
           <div>
             <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Billed To:</h3>
             <p className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">{order.customerName}</p>
             <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">{order.customerEmail}</p>
+            {order.shippingPhone && (
+              <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">{order.shippingPhone}</p>
+            )}
           </div>
+          {order.shippingAddress && (
+            <div>
+              <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Ship To:</h3>
+              <p className="text-zinc-800 dark:text-zinc-200 print:text-black whitespace-pre-line">{order.shippingAddress}</p>
+            </div>
+          )}
           <div className="sm:text-right">
             <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Issued By:</h3>
             <p className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">Dilnova Registry Service</p>

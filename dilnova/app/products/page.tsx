@@ -122,8 +122,9 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
     whereClauses.push(eq(schema.products.type, currentType));
   }
 
-  // Apply where conditions
-  const conditions = whereClauses.length > 0 ? and(...whereClauses) : undefined;
+  whereClauses.push(eq(schema.products.status, 'active'));
+
+  const conditions = and(...whereClauses);
   
   // Calculate total count and retrieve paginated records in parallel
   const [countResult, results] = await Promise.all([
