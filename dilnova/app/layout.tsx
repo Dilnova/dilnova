@@ -24,10 +24,15 @@ import { getCachedUserRole } from '@/utils/clerkCache'
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting('system_favicon', '');
   const systemName = await getSystemSetting('system_name', 'Dilnova Commerce Hub');
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dilstar.pp.ua';
   return {
     title: systemName,
     description: 'Enterprise RBAC sandbox with multi-vendor isolation',
     icons: faviconUrl ? { icon: faviconUrl } : undefined,
+    metadataBase: new URL(baseUrl),
+    alternates: {
+      canonical: '/',
+    },
   };
 }
 
