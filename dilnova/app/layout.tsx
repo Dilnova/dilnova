@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import React from 'react'
-import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton, OrganizationSwitcher } from '@clerk/nextjs'
+import { ClerkProvider, Show, UserButton, OrganizationSwitcher } from '@clerk/nextjs'
 import Link from 'next/link'
 import { auth } from '@clerk/nextjs/server'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
 import { runWithCorrelationId } from '@/utils/asyncContext'
 import HeaderNav from './HeaderNav'
+import HeaderAuthButtons from './components/HeaderAuthButtons'
 import './globals.css'
 
 import { CartProvider } from './context/CartContext'
@@ -19,36 +20,6 @@ import { getSystemSetting } from '@/utils/settings'
 import Image from 'next/image'
 import { getPremiumStatus } from '@/utils/premiumLicense'
 import { getCachedUserRole } from '@/utils/clerkCache'
-
-const SignInTriggerButton = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
-  (props, ref) => (
-    <button
-      {...props}
-      ref={ref}
-      className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50 text-[11px] sm:text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap"
-    >
-      Sign In
-    </button>
-  )
-)
-SignInTriggerButton.displayName = 'SignInTriggerButton'
-
-const SignUpTriggerButton = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
-  (props, ref) => {
-    return (
-      <button
-        {...props}
-        ref={ref}
-        className="bg-purple-700 text-white rounded-lg h-8 sm:h-9 px-2.5 sm:px-3 md:px-4 text-[11px] sm:text-xs cursor-pointer hover:bg-purple-800 transition-colors whitespace-nowrap"
-      >
-        Sign Up
-      </button>
-    )
-  }
-)
-SignUpTriggerButton.displayName = 'SignUpTriggerButton'
-
-
 
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting('system_favicon', '');
@@ -186,14 +157,7 @@ export default async function RootLayout({
                   <CartIcon />
 
                   <Show when="signed-out">
-                    <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-xs font-semibold">
-                      <SignInButton>
-                        <SignInTriggerButton />
-                      </SignInButton>
-                      <SignUpButton>
-                        <SignUpTriggerButton />
-                      </SignUpButton>
-                    </div>
+                    <HeaderAuthButtons />
                   </Show>
 
                   <Show when="signed-in">

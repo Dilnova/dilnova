@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { submitQuestionAction, submitAnswerAction } from './actions';
 import Image from 'next/image';
+import SignInPrompt from '@/app/components/SignInPrompt';
 
 interface Question {
   id: string;
@@ -283,9 +284,7 @@ export default function QASection({
       )}
 
       {!isLoggedIn && (
-        <p className="text-xs text-zinc-455 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-900 pt-4 font-mono">
-          🔒 Please sign in to submit a question.
-        </p>
+        <SignInPrompt message="🔒 Please sign in to submit a question." />
       )}
     </div>
   );

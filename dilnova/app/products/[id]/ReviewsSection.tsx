@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { submitReviewAction } from './actions';
 import Image from 'next/image';
+import SignInPrompt from '@/app/components/SignInPrompt';
 
 interface Review {
   id: string;
@@ -288,9 +289,7 @@ export default function ReviewsSection({
       )}
 
       {!isLoggedIn && (
-        <p className="text-xs text-zinc-450 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-900 pt-4 font-mono">
-          🔒 Please sign in to write or update a customer review.
-        </p>
+        <SignInPrompt message="🔒 Please sign in to write or update a customer review." />
       )}
     </div>
   );

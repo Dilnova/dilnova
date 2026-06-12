@@ -234,7 +234,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                     key={product.id}
                     className="group flex flex-col justify-between border border-zinc-200/80 dark:border-zinc-850/80 bg-white dark:bg-zinc-950 rounded-2xl overflow-hidden hover:border-purple-500/40 dark:hover:border-purple-500/40 hover:shadow-lg transition-all duration-305"
                   >
-                    <Link href={`/products/${product.id}`} target="_blank" className="flex-1 flex flex-col group">
+                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col group">
                       {/* Image Thumbnail */}
                       <div className="h-44 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
                         {product.imageUrl ? (
