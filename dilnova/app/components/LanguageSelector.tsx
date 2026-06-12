@@ -44,14 +44,15 @@ export default function LanguageSelector() {
       setCurrentLang(lang);
     });
 
-    // 3. Inject Google Translate script dynamically if not already present
-    if (!document.getElementById('google-translate-script')) {
+    // 3. Inject Google Translate script dynamically if not already present and not a bot
+    const isBot = typeof navigator !== 'undefined' && /bot|googlebot|crawler|spider|robot|crawling/i.test(navigator.userAgent || '');
+    if (!isBot && !document.getElementById('google-translate-script')) {
       const script = document.createElement('script');
       script.id = 'google-translate-script';
       script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
       script.async = true;
       document.body.appendChild(script);
-    } else {
+    } else if (!isBot) {
       // If script is already loaded but we remounted, re-run init if google API exists
       if ((window as any).google && (window as any).google.translate) {
         try {

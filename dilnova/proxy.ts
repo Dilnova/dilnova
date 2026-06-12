@@ -24,7 +24,11 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-request-id', requestId);
 
-  if (!isPublicRoute(req)) {
+  // Check if the request is from a search engine bot/crawler to avoid auth redirects
+  const userAgent = req.headers.get('user-agent') || '';
+  const isBot = /bot|googlebot|crawler|spider|robot|crawling/i.test(userAgent);
+
+  if (!isBot && !isPublicRoute(req)) {
     await auth.protect();
   }
 
