@@ -9,8 +9,16 @@ import ManageProductsClient, { type Product } from './products/ManageProductsCli
 import VendorInventoryWorkspace from './products/VendorInventoryWorkspace';
 import { getVendorInventoryData } from './products/inventoryActions';
 
+const IMS_WORKSPACE_TABS = ['stock', 'suppliers', 'orders', 'movements', 'branches'] as const;
+type ImsWorkspaceTab = (typeof IMS_WORKSPACE_TABS)[number];
+
+function parseImsWorkspaceTab(value: string | undefined): ImsWorkspaceTab | undefined {
+  if (!value) return undefined;
+  return IMS_WORKSPACE_TABS.includes(value as ImsWorkspaceTab) ? (value as ImsWorkspaceTab) : undefined;
+}
+
 interface PageProps {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; imsTab?: string }>;
 }
 
 export default async function VendorPage({ searchParams }: PageProps) {
@@ -31,6 +39,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
   const resolvedParams = await searchParams;
   const activeTab = resolvedParams.tab || 'catalog';
+  const initialImsTab = parseImsWorkspaceTab(resolvedParams.imsTab);
 
   // Fetch products and inventory data in parallel to optimize loading latency (reduce TTFB)
   let vendorProducts: Product[] = [];
@@ -333,7 +342,14 @@ export default async function VendorPage({ searchParams }: PageProps) {
                         <span className={inventoryData.simulatedOrders.length > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
                           {inventoryData.simulatedOrders.length > 0 ? '✓' : '○'}
                         </span>
-                        Online order visible on <strong>Simulated Orders</strong> tab ({inventoryData.simulatedOrders.length})
+                        Online order visible on{' '}
+                        <Link
+                          href="/vendor?tab=inventory&imsTab=orders"
+                          className="text-purple-700 dark:text-purple-400 hover:underline"
+                        >
+                          Simulated Orders
+                        </Link>{' '}
+                        ({inventoryData.simulatedOrders.length}) — full lifecycle in Phase 5
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-zinc-400">○</span>
@@ -341,7 +357,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
                       </li>
                     </ul>
                   </div>
-                  <VendorInventoryWorkspace initialData={inventoryData} />
+                  <VendorInventoryWorkspace initialData={inventoryData} initialAdvancedTab={initialImsTab} />
                 </>
               ) : (
                 <div className="text-center py-16 border border-zinc-250 rounded-2xl dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 shadow-sm space-y-4 max-w-xl mx-auto mt-6">
