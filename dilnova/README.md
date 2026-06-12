@@ -69,8 +69,14 @@ CLOUDINARY_API_SECRET=your_api_secret
 # Install packages
 pnpm install
 
-# Run database migrations
-pnpm drizzle-kit push
+# Apply database migrations (production-safe)
+pnpm db:migrate
+
+# Optional: push schema directly for local prototyping only (not for production)
+# pnpm db:push
+
+# Verify migration journal matches SQL files
+pnpm db:verify
 
 # Start the dev server
 pnpm dev
