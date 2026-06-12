@@ -6,13 +6,13 @@ import {
 } from './orderPayment';
 
 describe('orderPayment helpers', () => {
-  it('allows slip upload for bank transfer orders awaiting payment', () => {
+  it('allows slip upload only while payment is pending', () => {
     expect(
       canUploadPaymentSlip({ paymentMethod: 'bank_transfer', status: 'pending_payment' })
     ).toBe(true);
     expect(
       canUploadPaymentSlip({ paymentMethod: 'bank_transfer', status: 'payment_submitted' })
-    ).toBe(true);
+    ).toBe(false);
     expect(canUploadPaymentSlip({ paymentMethod: 'cash_on_delivery', status: 'pending_payment' })).toBe(
       false
     );

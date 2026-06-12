@@ -148,7 +148,7 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                     key={product.id}
                     className="group bg-green-50/50 border border-green-200/50 rounded-3xl overflow-hidden hover:shadow-xl hover:shadow-green-100/50 hover:border-green-300/60 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <Link href={`/products/${product.id}`} target="_blank" className="flex-1 flex flex-col group/item">
+                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col group/item">
                       {/* Image */}
                       <div className="h-52 bg-green-100/30 relative overflow-hidden">
                         {product.imageUrl ? (
@@ -195,7 +195,6 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                         <span className="text-lg font-extrabold text-emerald-800">{formattedPrice}</span>
                         <Link
                           href={`/products/${product.id}`}
-                          target="_blank"
                           className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white transition-colors cursor-pointer text-center"
                         >
                           View Details
@@ -232,7 +231,6 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                   <Link
                     key={service.id}
                     href={`/products/${service.id}`}
-                    target="_blank"
                     className="flex gap-5 bg-white border border-green-200/50 rounded-2xl p-5 hover:shadow-lg hover:shadow-green-100/30 transition-all duration-300 group/item hover:border-green-300/60"
                   >
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-green-100">

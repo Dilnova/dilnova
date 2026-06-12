@@ -30,14 +30,22 @@ export async function submitPaymentSlipAction(input: {
       };
     }
 
-    const user = await currentUser();
-    const sessionEmail = user ? getNormalizedClerkUserEmail(user) : null;
-    const submittedEmail = parsed.data.customerEmail
-      ? normalizeCustomerEmail(parsed.data.customerEmail)
-      : sessionEmail;
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false as const, error: 'Please sign in to upload a payment slip.' };
+    }
 
-    if (!submittedEmail) {
-      return { success: false as const, error: 'Customer email is required to upload a payment slip.' };
+    const user = await currentUser();
+    if (!user) {
+      return { success: false as const, error: 'Authentication session is invalid. Please sign in again.' };
+    }
+
+    const sessionEmail = getNormalizedClerkUserEmail(user);
+    if (!sessionEmail) {
+      return {
+        success: false as const,
+        error: 'Your account does not have an email address. Please update your profile first.',
+      };
     }
 
     const [order] = await db
@@ -50,7 +58,7 @@ export async function submitPaymentSlipAction(input: {
       return { success: false as const, error: 'Order not found.' };
     }
 
-    if (normalizeCustomerEmail(order.customerEmail) !== submittedEmail) {
+    if (normalizeCustomerEmail(order.customerEmail) !== sessionEmail) {
       return { success: false as const, error: 'You are not authorized to update this order.' };
     }
 
@@ -71,16 +79,13 @@ export async function submitPaymentSlipAction(input: {
       })
       .where(eq(schema.simulatedOrders.id, order.id));
 
-    const { userId } = await auth();
-    if (userId) {
-      await logAuditAction({
-        userId,
-        action: 'SUBMIT_PAYMENT_SLIP',
-        targetType: 'simulated_order',
-        targetId: order.id,
-        metadata: { paymentMethod: order.paymentMethod },
-      });
-    }
+    await logAuditAction({
+      userId,
+      action: 'SUBMIT_PAYMENT_SLIP',
+      targetType: 'simulated_order',
+      targetId: order.id,
+      metadata: { paymentMethod: order.paymentMethod },
+    });
 
     revalidatePath('/cart');
     revalidatePath('/customer');

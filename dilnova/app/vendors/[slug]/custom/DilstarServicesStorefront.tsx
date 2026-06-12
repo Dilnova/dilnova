@@ -158,7 +158,7 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
                     key={product.id}
                     className="group relative bg-[#0f172a] border border-slate-800 rounded-xl overflow-hidden hover:border-teal-500/40 hover:shadow-xl hover:shadow-teal-500/5 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <Link href={`/products/${product.id}`} target="_blank" className="flex-1 flex flex-col">
+                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col">
                       {/* Product Image */}
                       <div className="h-48 bg-slate-900 relative overflow-hidden border-b border-slate-800">
                         {product.imageUrl ? (

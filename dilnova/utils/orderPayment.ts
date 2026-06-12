@@ -13,7 +13,7 @@ export function canUploadPaymentSlip(order: {
 }): boolean {
   return (
     isBankTransferPayment(order.paymentMethod) &&
-    (order.status === 'pending_payment' || order.status === 'payment_submitted')
+    order.status === 'pending_payment'
   );
 }
 

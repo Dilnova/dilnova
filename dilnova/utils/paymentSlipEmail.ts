@@ -11,9 +11,13 @@ import { sendSystemHtmlEmail, getEmailSenderConfig } from '@/utils/emailDelivery
 import {
   buildPaymentSlipUploadedEmailHtml,
   buildPaymentVerifiedEmailHtml,
+  buildOrderCancelledEmailHtml,
+  buildPaymentSlipRejectedEmailHtml,
 } from '@/utils/paymentSlipEmailHtml';
 import { getOrgAdminEmails, getOrganizationName } from '@/utils/vendorOrgEmails';
 import { logger } from '@/utils/logger';
+import { isCodPayment } from '@/utils/orderPayment';
+import { escapeHtml } from '@/utils/smtpClient';
 
 export async function sendPaymentSlipUploadedNotifications(
   orderId: string
@@ -134,6 +138,8 @@ export async function sendPaymentVerifiedCustomerEmail(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
   const invoiceUrl = `${appUrl}/customer/invoice/${order.id}`;
   const grandTotal = getOrderDisplayTotals(order).grandTotal;
+  const orderRef = order.id.slice(0, 8).toUpperCase();
+  const isCod = isCodPayment(order.paymentMethod);
 
   const html = buildPaymentVerifiedEmailHtml({
     systemName: config.systemName,
@@ -144,11 +150,95 @@ export async function sendPaymentVerifiedCustomerEmail(
     fulfillmentLabel: checkoutDetails.fulfillment,
     pickupBranchName: checkoutDetails.pickup ?? pickupBranch,
     invoiceUrl,
+    headline: isCod ? 'Order Fulfilled' : 'Payment Verified',
+    introText: isCod
+      ? `Hi ${escapeHtml(order.customerName)}, your cash-on-delivery order <strong>#${orderRef}</strong> has been fulfilled. Thank you for your purchase.`
+      : undefined,
   });
 
   return sendSystemHtmlEmail(
     order.customerEmail,
-    `Payment Verified | ${config.systemName} #${order.id.slice(0, 8).toUpperCase()}`,
+    isCod
+      ? `Order Fulfilled | ${config.systemName} #${orderRef}`
+      : `Payment Verified | ${config.systemName} #${orderRef}`,
+    html
+  );
+}
+
+export async function sendOrderCancelledCustomerEmail(
+  orderId: string
+): Promise<{ success: boolean; error?: string }> {
+  const [order] = await db
+    .select()
+    .from(schema.simulatedOrders)
+    .where(eq(schema.simulatedOrders.id, orderId))
+    .limit(1);
+
+  if (!order) {
+    return { success: false, error: 'Order not found.' };
+  }
+
+  const config = await getEmailSenderConfig();
+  if (!config) {
+    return { success: false, error: 'SMTP not configured' };
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+  const invoiceUrl = `${appUrl}/customer/invoice/${order.id}`;
+  const grandTotal = getOrderDisplayTotals(order).grandTotal;
+  const orderRef = order.id.slice(0, 8).toUpperCase();
+
+  const html = buildOrderCancelledEmailHtml({
+    systemName: config.systemName,
+    orderId: order.id,
+    customerName: order.customerName,
+    grandTotalCents: grandTotal,
+    invoiceUrl,
+  });
+
+  return sendSystemHtmlEmail(
+    order.customerEmail,
+    `Order Cancelled | ${config.systemName} #${orderRef}`,
+    html
+  );
+}
+
+export async function sendPaymentSlipRejectedCustomerEmail(
+  orderId: string,
+  reason?: string | null
+): Promise<{ success: boolean; error?: string }> {
+  const [order] = await db
+    .select()
+    .from(schema.simulatedOrders)
+    .where(eq(schema.simulatedOrders.id, orderId))
+    .limit(1);
+
+  if (!order) {
+    return { success: false, error: 'Order not found.' };
+  }
+
+  const config = await getEmailSenderConfig();
+  if (!config) {
+    return { success: false, error: 'SMTP not configured' };
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+  const invoiceUrl = `${appUrl}/customer/invoice/${order.id}`;
+  const grandTotal = getOrderDisplayTotals(order).grandTotal;
+  const orderRef = order.id.slice(0, 8).toUpperCase();
+
+  const html = buildPaymentSlipRejectedEmailHtml({
+    systemName: config.systemName,
+    orderId: order.id,
+    customerName: order.customerName,
+    grandTotalCents: grandTotal,
+    reason,
+    invoiceUrl,
+  });
+
+  return sendSystemHtmlEmail(
+    order.customerEmail,
+    `Payment Slip Needs Attention | ${config.systemName} #${orderRef}`,
     html
   );
 }

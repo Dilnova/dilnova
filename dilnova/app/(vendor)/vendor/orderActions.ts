@@ -23,7 +23,7 @@ import {
   rejectVendorPaymentSlip,
   verifyVendorOrderPayment,
 } from '@/utils/simulatedOrderTransitions';
-import { sendPaymentVerifiedCustomerEmail } from '@/utils/paymentSlipEmail';
+import { sendPaymentVerifiedCustomerEmail, sendOrderCancelledCustomerEmail, sendPaymentSlipRejectedCustomerEmail } from '@/utils/paymentSlipEmail';
 import { logger } from '@/utils/logger';
 
 async function loadVendorOrder(orderId: string, orgId: string) {
@@ -146,6 +146,14 @@ export async function rejectPaymentSlipAction(orderId: string, reason?: string) 
       metadata: { reason: parsed.data.reason || null },
     });
 
+    const emailResult = await sendPaymentSlipRejectedCustomerEmail(order.id, parsed.data.reason);
+    if (!emailResult.success) {
+      logger.warn('Payment slip rejected but customer notification email was not sent', {
+        orderId: order.id,
+        error: emailResult.error,
+      });
+    }
+
     revalidateVendorConsole();
     revalidatePath('/customer');
     revalidatePath(`/customer/invoice/${order.id}`);
@@ -185,6 +193,14 @@ export async function cancelVendorOrderAction(orderId: string) {
       targetType: 'simulated_order',
       targetId: order.id,
     });
+
+    const emailResult = await sendOrderCancelledCustomerEmail(order.id);
+    if (!emailResult.success) {
+      logger.warn('Order cancelled but customer notification email was not sent', {
+        orderId: order.id,
+        error: emailResult.error,
+      });
+    }
 
     revalidateVendorConsole();
     revalidatePath('/customer');

@@ -175,7 +175,7 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
                     key={product.id}
                     className="group relative bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-orange-500/40 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <Link href={`/products/${product.id}`} target="_blank" className="flex-1 flex flex-col group/item">
+                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col group/item">
                       {/* Product Image */}
                       <div className="h-48 bg-zinc-800 relative overflow-hidden">
                         {product.imageUrl ? (
@@ -236,7 +236,6 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
                       <span className="text-lg font-black text-white">{formattedPrice}</span>
                       <Link
                         href={`/products/${product.id}`}
-                        target="_blank"
                         className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-xs font-bold text-white transition-colors cursor-pointer text-center"
                       >
                         View Details

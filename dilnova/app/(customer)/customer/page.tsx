@@ -4,20 +4,22 @@ import Image from 'next/image';
 import { isVideoUrl } from '@/utils/media';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { eq, inArray, desc, sql } from 'drizzle-orm';
+import { eq, inArray, desc, sql, or } from 'drizzle-orm';
 import { getCachedOrganizations } from '@/utils/clerkCache';
 import { getClerkUserEmail, getNormalizedClerkUserEmail } from '@/utils/customerEmail';
 import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
 import { formatOrderStatusLabel } from '@/utils/orderStatus';
+import { CustomerPaymentSlipSection } from '@/app/components/OrderPaymentPanels';
+import { isBankTransferPayment } from '@/utils/bankTransfer';
 
 interface PageProps {
   searchParams: Promise<{ tab?: string }>;
 }
 
 export default async function CustomerPage({ searchParams }: PageProps) {
-  const { orgRole } = await auth();
+  const { orgRole, userId } = await auth();
   const user = await currentUser();
 
   // If not logged in, return unauthorized layout or redirect
@@ -50,7 +52,14 @@ export default async function CustomerPage({ searchParams }: PageProps) {
       ? db
           .select()
           .from(schema.simulatedOrders)
-          .where(sql`lower(trim(${schema.simulatedOrders.customerEmail})) = ${normalizedUserEmail}`)
+          .where(
+            userId
+              ? or(
+                  eq(schema.simulatedOrders.customerUserId, userId),
+                  sql`lower(trim(${schema.simulatedOrders.customerEmail})) = ${normalizedUserEmail}`
+                )
+              : sql`lower(trim(${schema.simulatedOrders.customerEmail})) = ${normalizedUserEmail}`
+          )
           .orderBy(desc(schema.simulatedOrders.createdAt))
       : Promise.resolve([]),
     getCheckoutOptionsCatalog(),
@@ -482,6 +491,19 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                         </div>
                       )}
 
+                      {isBankTransferPayment(order.paymentMethod) &&
+                        (order.status === 'pending_payment' || order.status === 'payment_submitted') && (
+                          <CustomerPaymentSlipSection
+                            order={{
+                              id: order.id,
+                              paymentMethod: order.paymentMethod,
+                              status: order.status,
+                              paymentSlipUrl: order.paymentSlipUrl,
+                              customerEmail: order.customerEmail,
+                            }}
+                          />
+                        )}
+
                       {/* Invoice Print Link */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-zinc-100 dark:border-zinc-900">
                         <div className="text-[10px] text-zinc-400 font-mono">
@@ -523,12 +545,11 @@ export default async function CustomerPage({ searchParams }: PageProps) {
             </div>
 
             <div className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm dark:bg-zinc-900/40 dark:border-zinc-800 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 font-mono">Address Preference</h4>
-              <ul className="space-y-2 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
-                <li><span className="text-zinc-400 dark:text-zinc-500">Shipping Profile:</span> Default</li>
-                <li><span className="text-zinc-400 dark:text-zinc-500">Address Status:</span> Verified</li>
-                <li><span className="text-zinc-400 dark:text-zinc-500">Deliverability:</span> Active</li>
-              </ul>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 font-mono">Account Notes</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Delivery addresses are captured during checkout for home delivery orders.
+                Update your name and email in your Clerk account settings.
+              </p>
             </div>
           </div>
         </div>

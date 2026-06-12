@@ -40,7 +40,8 @@ export default async function InvoicePage({ params }: PageProps) {
   if (
     !order ||
     !normalizedUserEmail ||
-    normalizeCustomerEmail(order.customerEmail) !== normalizedUserEmail
+    (normalizeCustomerEmail(order.customerEmail) !== normalizedUserEmail &&
+      order.customerUserId !== userId)
   ) {
     notFound();
   }
@@ -253,16 +254,6 @@ export default async function InvoicePage({ params }: PageProps) {
             : 'Thank you for shopping with Dilnova Commerce Hub.'}
         </div>
       </div>
-
-      {/* Auto-print trigger scripts for convenience */}
-      <script dangerouslySetInnerHTML={{ __html: `
-        // Auto trigger print layout on loaded
-        window.addEventListener('DOMContentLoaded', () => {
-          setTimeout(() => {
-            window.print();
-          }, 500);
-        });
-      ` }} />
     </main>
   );
 }

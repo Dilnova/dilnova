@@ -8,14 +8,22 @@ export default function UnauthorizedPage() {
           403 - Unauthorized
         </h1>
         <p className="text-zinc-700 dark:text-zinc-300 text-sm mb-6 leading-relaxed">
-          Access Denied. You do not have the required permission level to access this page.
+          Access denied. You do not have the required permission level to access this page.
         </p>
-        <Link 
-          href="/" 
-          className="text-sm font-medium text-zinc-900 underline underline-offset-4 hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300"
-        >
-          Return to Home Page
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            href="/sign-in"
+            className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-sm font-semibold transition-colors"
+          >
+            Sign In
+          </Link>
+          <Link
+            href="/"
+            className="text-sm font-medium text-zinc-900 underline underline-offset-4 hover:text-zinc-600 dark:text-zinc-100 dark:hover:text-zinc-300"
+          >
+            Return to Home
+          </Link>
+        </div>
       </div>
     </main>
   );

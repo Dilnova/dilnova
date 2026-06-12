@@ -136,7 +136,7 @@ export default function DefaultStorefront({ org, products }: StorefrontProps) {
                     key={product.id}
                     className="group flex flex-col justify-between border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 rounded-2xl overflow-hidden hover:border-purple-500/40 hover:shadow-lg transition-all duration-300"
                   >
-                    <Link href={`/products/${product.id}`} target="_blank" className="flex-1 flex flex-col group">
+                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col group">
                       <div className="h-40 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
                         {product.imageUrl ? (
                           isVideoUrl(product.imageUrl) ? (
@@ -186,8 +186,20 @@ export default function DefaultStorefront({ org, products }: StorefrontProps) {
                         </div>
                       </div>
                     </Link>
-                    <div className="p-4 border-t border-zinc-100 dark:border-zinc-900/60">
+                    <div className="p-4 border-t border-zinc-100 dark:border-zinc-900/60 flex items-center justify-between gap-2">
                       <span className="text-sm font-extrabold">{formattedPrice}</span>
+                      <AddToCartButton
+                        product={{
+                          id: product.id,
+                          name: product.name,
+                          price: product.price,
+                          imageUrl: product.imageUrl,
+                          vendorName: org.name,
+                          type: product.type,
+                        }}
+                        showLabel={false}
+                        className="h-8 w-8 text-xs rounded-lg"
+                      />
                     </div>
                   </div>
                 );

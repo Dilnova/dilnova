@@ -161,7 +161,7 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
                     key={product.id}
                     className="group relative bg-[#0b0f19] border border-zinc-800 rounded-xl overflow-hidden hover:border-cyan-500/40 hover:shadow-xl hover:shadow-cyan-500/5 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <Link href={`/products/${product.id}`} target="_blank" className="flex-1 flex flex-col">
+                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col">
                       {/* Product Image */}
                       <div className="h-48 bg-zinc-900 relative overflow-hidden border-b border-zinc-800">
                         {product.imageUrl ? (

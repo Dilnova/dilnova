@@ -765,6 +765,7 @@ export async function simulatedCheckoutAction(
         .values({
           customerName: name,
           customerEmail: email,
+          customerUserId: userId,
           subtotalAmount: checkoutTotals.subtotalAmount,
           taxAmount: checkoutTotals.taxAmount,
           shippingAmount: checkoutTotals.shippingAmount,

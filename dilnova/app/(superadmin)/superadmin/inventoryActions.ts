@@ -21,7 +21,7 @@ import {
 import {
   applySimulatedOrderStatusChange,
 } from '@/utils/simulatedOrderTransitions';
-import { sendPaymentVerifiedCustomerEmail } from '@/utils/paymentSlipEmail';
+import { sendPaymentVerifiedCustomerEmail, sendOrderCancelledCustomerEmail } from '@/utils/paymentSlipEmail';
 import { logger } from '@/utils/logger';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
@@ -388,6 +388,16 @@ export async function updateSimulatedOrderStatusAction(
       const emailResult = await sendPaymentVerifiedCustomerEmail(parsed.data.orderId);
       if (!emailResult.success) {
         logger.warn('Order fulfilled but customer confirmation email was not sent', {
+          orderId: parsed.data.orderId,
+          error: emailResult.error,
+        });
+      }
+    }
+
+    if (parsed.data.status === 'cancelled') {
+      const emailResult = await sendOrderCancelledCustomerEmail(parsed.data.orderId);
+      if (!emailResult.success) {
+        logger.warn('Order cancelled but customer notification email was not sent', {
           orderId: parsed.data.orderId,
           error: emailResult.error,
         });
