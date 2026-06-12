@@ -7,6 +7,10 @@ import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
+import {
+  hasCompleteBankDetails,
+  parseBankTransferDetailsFromMetadata,
+} from '@/utils/bankTransfer';
 
 export default async function AdminPage() {
   const { orgId, orgRole } = await auth();
@@ -63,6 +67,35 @@ export default async function AdminPage() {
     }
   });
   const completionPercent = Math.round((fieldsCompleted / fieldsChecked) * 100);
+  const bankTransferConfigured = hasCompleteBankDetails(parseBankTransferDetailsFromMetadata(metadata));
+  const checkoutOptions = metadata.checkout_options || {};
+  const hasSavedCheckoutOptions = Object.values(checkoutOptions).some((enabled) => enabled === true);
+
+  const phase1Steps = [
+    {
+      label: 'Public profile saved (description, address, phone, banner)',
+      done: completionPercent === 100,
+    },
+    {
+      label: 'Stock allocation mode selected',
+      done: Boolean(metadata.stockAllocationMode),
+    },
+    {
+      label: 'Bank transfer details complete (if using bank transfer)',
+      done: bankTransferConfigured,
+      optional: !checkoutOptions.bank_transfer,
+    },
+    {
+      label: 'Checkout options saved (≥1 fulfillment + ≥1 payment)',
+      done: hasSavedCheckoutOptions,
+    },
+    {
+      label: 'At least one org:member invited for cashier testing',
+      done: memberCount >= 1,
+      optional: true,
+    },
+  ];
+  const phase1RequiredDone = phase1Steps.filter((step) => !step.optional).every((step) => step.done);
 
   return (
     <main className="p-4 sm:p-8 max-w-4xl mx-auto font-sans">
@@ -83,6 +116,16 @@ export default async function AdminPage() {
           </div>
           
           <div className="flex items-center gap-2 self-start sm:self-center">
+            {org.slug && (
+              <Link
+                href={`/vendors/${org.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-semibold px-3 py-2 rounded-lg border border-purple-200 hover:bg-purple-50 dark:border-purple-900/50 dark:hover:bg-purple-950/30 text-purple-700 dark:text-purple-300 transition-colors shadow-sm"
+              >
+                View Storefront ↗
+              </Link>
+            )}
             <Link
               href="/vendor"
               className="text-xs font-semibold px-3 py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors shadow-sm"
@@ -93,6 +136,45 @@ export default async function AdminPage() {
         </div>
 
         <hr className="border-zinc-200 dark:border-zinc-800 my-6" />
+
+        {/* Phase 1 setup checklist */}
+        <div className="mb-8 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-5 bg-zinc-50/10 dark:bg-zinc-900/5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Phase 1 — Org Setup Checklist</h3>
+              <p className="text-xs text-zinc-500 mt-1">
+                Complete these steps before moving to catalog, inventory, and POS testing.
+              </p>
+            </div>
+            <span
+              className={`self-start text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                phase1RequiredDone
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
+                  : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400'
+              }`}
+            >
+              {phase1RequiredDone ? 'Required steps complete' : 'Setup in progress'}
+            </span>
+          </div>
+          <ul className="space-y-2">
+            {phase1Steps.map((step) => (
+              <li
+                key={step.label}
+                className="flex items-start gap-2 text-xs text-zinc-700 dark:text-zinc-300"
+              >
+                <span className={step.done ? 'text-emerald-600' : 'text-zinc-400'} aria-hidden="true">
+                  {step.done ? '✓' : '○'}
+                </span>
+                <span>
+                  {step.label}
+                  {step.optional && (
+                    <span className="text-zinc-400 dark:text-zinc-500"> (optional)</span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
         {/* Enterprise Administrative KPIs Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -154,6 +236,7 @@ export default async function AdminPage() {
             catalog={checkoutOptionsCatalog}
             initialOptions={metadata.checkout_options || {}}
             branchCount={branchCountRow}
+            bankTransferConfigured={bankTransferConfigured}
           />
         </div>
 

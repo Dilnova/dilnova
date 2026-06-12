@@ -9,6 +9,7 @@ interface OrgCheckoutOptionsFormProps {
   catalog: CheckoutOptionDefinition[];
   initialOptions: Record<string, boolean>;
   branchCount?: number;
+  bankTransferConfigured?: boolean;
 }
 
 export default function OrgCheckoutOptionsForm({
@@ -16,6 +17,7 @@ export default function OrgCheckoutOptionsForm({
   catalog,
   initialOptions,
   branchCount = 0,
+  bankTransferConfigured = false,
 }: OrgCheckoutOptionsFormProps) {
   const platformOptions = catalog.filter((o) => o.platformEnabled);
   const [options, setOptions] = useState<Record<string, boolean>>(() => {
@@ -47,6 +49,14 @@ export default function OrgCheckoutOptionsForm({
       setMessage({
         type: 'error',
         text: 'Enable at least one fulfillment method and one payment method before saving.',
+      });
+      return;
+    }
+
+    if (options.bank_transfer === true && !bankTransferConfigured) {
+      setMessage({
+        type: 'error',
+        text: 'Save bank name, account name, and account number in Public Page Setup before enabling bank transfer.',
       });
       return;
     }
@@ -119,12 +129,18 @@ export default function OrgCheckoutOptionsForm({
             Payment Methods
           </h4>
           {paymentOptions.map((option) => (
-            <OptionToggle
-              key={option.id}
-              option={option}
-              enabled={options[option.id] === true}
-              onToggle={() => toggleOption(option.id)}
-            />
+            <div key={option.id} className="space-y-1">
+              <OptionToggle
+                option={option}
+                enabled={options[option.id] === true}
+                onToggle={() => toggleOption(option.id)}
+              />
+              {option.id === 'bank_transfer' && options[option.id] === true && !bankTransferConfigured && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 px-1">
+                  Bank transfer requires bank name, account name, and account number in Public Page Setup above.
+                </p>
+              )}
+            </div>
           ))}
         </div>
       )}

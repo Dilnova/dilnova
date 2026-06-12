@@ -26,6 +26,22 @@ export async function updateOrganizationMemberRole(organizationId: string, userI
     }
 
     const client = await clerkClient();
+
+    if (parsed.data.newRole !== 'org:admin') {
+      const memberships = await client.organizations.getOrganizationMembershipList({
+        organizationId: parsed.data.organizationId,
+        limit: 100,
+      });
+      const adminCount = memberships.data.filter((m) => m.role === 'org:admin').length;
+      const targetIsAdmin = memberships.data.some(
+        (m) => m.publicUserData?.userId === parsed.data.userId && m.role === 'org:admin'
+      );
+
+      if (targetIsAdmin && adminCount <= 1) {
+        throw new Error('Cannot demote the last organization admin. Promote another member first.');
+      }
+    }
+
     await client.organizations.updateOrganizationMembership({
       organizationId: parsed.data.organizationId,
       userId: parsed.data.userId,

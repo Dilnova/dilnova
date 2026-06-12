@@ -8,6 +8,11 @@ import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { DEPRECATED_CHECKOUT_OPTION_IDS } from '@/utils/checkoutOptionsShared';
+import {
+  BANK_TRANSFER_PAYMENT_ID,
+  hasCompleteBankDetails,
+  parseBankTransferDetailsFromMetadata,
+} from '@/utils/bankTransfer';
 
 export async function updateOrgCheckoutOptionsAction(
   organizationId: string,
@@ -51,6 +56,15 @@ export async function updateOrgCheckoutOptionsAction(
     const client = await clerkClient();
     const org = await client.organizations.getOrganization({ organizationId: parsed.data.organizationId });
     const existingMeta = (org.publicMetadata || {}) as Record<string, unknown>;
+
+    if (sanitized[BANK_TRANSFER_PAYMENT_ID] === true) {
+      const bankDetails = parseBankTransferDetailsFromMetadata(existingMeta);
+      if (!hasCompleteBankDetails(bankDetails)) {
+        throw new Error(
+          'Complete bank name, account name, and account number in Public Page Setup before enabling bank transfer.'
+        );
+      }
+    }
 
     await client.organizations.updateOrganization(parsed.data.organizationId, {
       publicMetadata: {
