@@ -217,7 +217,55 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
           {/* Content rendering based on Tab */}
           {activeTab === 'catalog' && (
-            <ManageProductsClient initialProducts={vendorProducts} />
+            <>
+              <div className="mb-6 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-5 bg-zinc-50/10 dark:bg-zinc-900/5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Phase 2 — Catalog Checklist</h3>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      Build and verify listings before inventory and POS testing.
+                    </p>
+                  </div>
+                  <span
+                    className={`self-start text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                      totalProducts > 0
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
+                        : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400'
+                    }`}
+                  >
+                    {totalProducts > 0 ? 'Catalog started' : 'Add your first item'}
+                  </span>
+                </div>
+                <ul className="space-y-2 text-xs text-zinc-700 dark:text-zinc-300">
+                  <li className="flex items-start gap-2">
+                    <span className={totalProducts > 0 ? 'text-emerald-600' : 'text-zinc-400'}>{totalProducts > 0 ? '✓' : '○'}</span>
+                    At least one <strong>product</strong> listed ({totalProducts})
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className={totalServices > 0 ? 'text-emerald-600' : 'text-zinc-400'}>{totalServices > 0 ? '✓' : '○'}</span>
+                    At least one <strong>service</strong> listed ({totalServices}) <span className="text-zinc-400">(optional)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className={totalItems > 0 ? 'text-emerald-600' : 'text-zinc-400'}>{totalItems > 0 ? '✓' : '○'}</span>
+                    Verify on public catalog: <Link href="/products" className="text-purple-700 dark:text-purple-400 hover:underline">/products</Link>
+                  </li>
+                  {org.slug && (
+                    <li className="flex items-start gap-2">
+                      <span className={totalItems > 0 ? 'text-emerald-600' : 'text-zinc-400'}>{totalItems > 0 ? '✓' : '○'}</span>
+                      Verify on storefront:{' '}
+                      <Link href={`/vendors/${org.slug}`} className="text-purple-700 dark:text-purple-400 hover:underline">
+                        /vendors/{org.slug}
+                      </Link>
+                    </li>
+                  )}
+                  <li className="flex items-start gap-2">
+                    <span className="text-zinc-400">○</span>
+                    Member RBAC: member adds item at <Link href="/vendor/products/add" className="text-purple-700 dark:text-purple-400 hover:underline">/vendor/products/add</Link>; member cannot delete
+                  </li>
+                </ul>
+              </div>
+              <ManageProductsClient initialProducts={vendorProducts} orgSlug={org.slug} />
+            </>
           )}
 
           {activeTab === 'inventory' && (

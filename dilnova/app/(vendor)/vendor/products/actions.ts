@@ -143,6 +143,23 @@ export async function addProductAction(data: {
               throw new Error('Selected branch is not valid for this organization.');
             }
 
+            if (orgRole !== 'org:admin' && targetBranchId) {
+              const [membership] = await tx
+                .select({ id: schema.branchMembers.id })
+                .from(schema.branchMembers)
+                .where(
+                  and(
+                    eq(schema.branchMembers.branchId, targetBranchId),
+                    eq(schema.branchMembers.memberUserId, userId)
+                  )
+                )
+                .limit(1);
+
+              if (!membership) {
+                throw new Error('Not authorized: You are not assigned to the selected branch.');
+              }
+            }
+
             if (targetBranchId) {
               for (const ob of orgBranches) {
                 await tx.insert(schema.branchInventory).values({

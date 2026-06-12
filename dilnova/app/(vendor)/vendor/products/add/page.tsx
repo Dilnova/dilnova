@@ -83,8 +83,8 @@ export default async function AddProductPage() {
     })
     .from(schema.categories);
 
-  // 5. Fetch All Active Branches for allocation dropdown selection
-  const branches = await db
+  // 5. Fetch branches for allocation dropdown (members see assigned branches only in multi-branch mode)
+  let branches = await db
     .select({
       id: schema.branches.id,
       name: schema.branches.name,
@@ -92,6 +92,18 @@ export default async function AddProductPage() {
     })
     .from(schema.branches)
     .where(eq(schema.branches.orgId, orgId));
+
+  if (orgRole !== 'org:admin' && premiumStatus.multiBranchActive && branches.length > 0) {
+    const assignedRows = await db
+      .select({ branchId: schema.branchMembers.branchId })
+      .from(schema.branchMembers)
+      .where(eq(schema.branchMembers.memberUserId, userId));
+
+    const assignedBranchIds = new Set(assignedRows.map((row) => row.branchId));
+    if (assignedBranchIds.size > 0) {
+      branches = branches.filter((branch) => assignedBranchIds.has(branch.id));
+    }
+  }
 
   // 6. Fetch max media limit setting
   const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
