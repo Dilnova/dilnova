@@ -17,7 +17,7 @@ import { logger } from '@/utils/logger';
 import { isVideoUrl } from '@/utils/media';
 import { getSystemSetting } from '@/utils/settings';
 import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
-import { resolveEffectiveStockAvailability } from '@/utils/stockAvailabilityShared';
+import { resolveOnlineProductPurchaseState } from '@/utils/stockAvailabilityShared';
 import StockAvailabilityBadge from '@/app/components/StockAvailabilityBadge';
 import { DEFAULT_SUPPORT_EMAIL } from '@/utils/brand';
 import { getNormalizedClerkUserEmail } from '@/utils/customerEmail';
@@ -116,14 +116,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
       : Promise.resolve(null),
   ]);
 
-  const availabilityDef =
-    product.type === 'product'
-      ? resolveEffectiveStockAvailability(
-          stockAvailabilityCatalog,
-          inventoryRecord?.stockAvailability,
-          inventoryRecord?.quantity
-        )
-      : null;
+  const { canPurchase, availabilityDef } = resolveOnlineProductPurchaseState(
+    product.type,
+    stockAvailabilityCatalog,
+    inventoryRecord
+  );
 
   // 1.5. Fetch Auth context, Reviews, Questions and Wishlist status
   const { userId, orgId: userOrgId } = await auth();
@@ -428,7 +425,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     vendorName: vendorName,
                     type: product.type,
                   }}
-                  canPurchase={availabilityDef ? availabilityDef.allowsPurchase : true}
+                  canPurchase={canPurchase}
                   stockLabel={availabilityDef?.label}
                 />
               </div>

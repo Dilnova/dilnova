@@ -12,7 +12,7 @@ import AddToCartButton from '../components/AddToCartButton';
 import { getSystemSetting } from '../../utils/settings';
 import { getCachedOrganizations } from '../../utils/clerkCache';
 import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
-import { resolveEffectiveStockAvailability } from '@/utils/stockAvailabilityShared';
+import { resolveOnlineProductPurchaseState } from '@/utils/stockAvailabilityShared';
 import StockAvailabilityBadge from '../components/StockAvailabilityBadge';
 
 export const revalidate = 0; // Fresh load on each catalog query
@@ -220,14 +220,11 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                   : 0;
                 const isFavorited = wishlistSet.has(product.id);
                 const inventoryInfo = inventoryByProduct.get(product.id);
-                const availabilityDef =
-                  product.type === 'product'
-                    ? resolveEffectiveStockAvailability(
-                        stockAvailabilityCatalog,
-                        inventoryInfo?.stockAvailability,
-                        inventoryInfo?.quantity
-                      )
-                    : null;
+                const { canPurchase, availabilityDef } = resolveOnlineProductPurchaseState(
+                  product.type,
+                  stockAvailabilityCatalog,
+                  inventoryInfo
+                );
 
                 return (
                   <div
@@ -346,7 +343,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
                             vendorName: vendorName,
                             type: product.type,
                           }}
-                          canPurchase={availabilityDef ? availabilityDef.allowsPurchase : true}
+                          canPurchase={canPurchase}
                           showLabel={false}
                           className="h-8 w-8 text-xs rounded-lg"
                         />

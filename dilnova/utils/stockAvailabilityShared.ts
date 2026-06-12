@@ -166,6 +166,40 @@ export function resolveEffectiveStockAvailability(
   return stored;
 }
 
+export function resolveOnlineProductPurchaseState(
+  productType: string,
+  catalog: StockAvailabilityDefinition[],
+  inventory: {
+    stockAvailability?: string | null;
+    quantity?: number | null;
+  } | null | undefined
+): {
+  canPurchase: boolean;
+  availabilityDef: StockAvailabilityDefinition | null;
+} {
+  if (productType !== 'product') {
+    return { canPurchase: true, availabilityDef: null };
+  }
+
+  if (!inventory) {
+    return {
+      canPurchase: false,
+      availabilityDef: resolveStockAvailabilityDefinition(catalog, 'out_of_stock'),
+    };
+  }
+
+  const availabilityDef = resolveEffectiveStockAvailability(
+    catalog,
+    inventory.stockAvailability,
+    inventory.quantity
+  );
+
+  return {
+    canPurchase: availabilityDef?.allowsPurchase ?? false,
+    availabilityDef,
+  };
+}
+
 export function getBadgeToneClasses(tone: StockAvailabilityTone): string {
   switch (tone) {
     case 'emerald':

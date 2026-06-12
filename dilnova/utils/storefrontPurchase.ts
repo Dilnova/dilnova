@@ -2,7 +2,9 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { inArray } from 'drizzle-orm';
 import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
-import { resolveEffectiveStockAvailability } from '@/utils/stockAvailabilityShared';
+import {
+  resolveOnlineProductPurchaseState,
+} from '@/utils/stockAvailabilityShared';
 import type { VendorProduct } from '@/app/vendors/[slug]/custom/types';
 
 export async function enrichVendorProductsWithPurchaseFlags(
@@ -30,20 +32,15 @@ export async function enrichVendorProductsWithPurchaseFlags(
   );
 
   return products.map((product) => {
-    if (product.type !== 'product') {
-      return { ...product, canPurchase: true };
-    }
-
-    const inventory = inventoryByProductId.get(product.id);
-    const availability = resolveEffectiveStockAvailability(
+    const { canPurchase } = resolveOnlineProductPurchaseState(
+      product.type,
       stockAvailabilityCatalog,
-      inventory?.stockAvailability,
-      inventory?.quantity
+      inventoryByProductId.get(product.id)
     );
 
     return {
       ...product,
-      canPurchase: availability ? availability.allowsPurchase : true,
+      canPurchase,
     };
   });
 }
