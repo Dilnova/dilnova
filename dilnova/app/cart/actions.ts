@@ -81,7 +81,25 @@ export async function sendCartSummaryEmailAction(
       return { success: false, error: parsedInput.error.issues[0]?.message || 'Invalid input data.' };
     }
 
-    const { emailAddress: validatedEmail, cartItems: validatedItems, cartTotal: validatedTotal } = parsedInput.data;
+    const { cartItems: validatedItems, cartTotal: validatedTotal } = parsedInput.data;
+
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'Please sign in to email your cart summary.' };
+    }
+
+    const user = await currentUser();
+    if (!user) {
+      return { success: false, error: 'Authentication session is invalid. Please sign in again.' };
+    }
+
+    const validatedEmail = getNormalizedClerkUserEmail(user);
+    if (!validatedEmail) {
+      return {
+        success: false,
+        error: 'Your account does not have an email address. Please update your profile first.',
+      };
+    }
 
     // ── Rate Limiting ──
     // Max 3 emails per minute per IP to prevent spamming/abuse of the SMTP relay
@@ -495,21 +513,24 @@ export async function simulatedCheckoutAction(
     } = parsed.data;
 
     const { userId } = await auth();
-    if (userId) {
-      const user = await currentUser();
-      if (!user) {
-        return { success: false, error: 'Authentication session is invalid. Please sign in again.' };
-      }
-      const sessionEmail = getNormalizedClerkUserEmail(user);
-      if (!sessionEmail) {
-        return {
-          success: false,
-          error: 'Your account does not have an email address. Please update your profile before checkout.',
-        };
-      }
-      email = sessionEmail;
-      name = user.fullName || user.firstName || name;
+    if (!userId) {
+      return { success: false, error: 'Please sign in to place an order.' };
     }
+
+    const user = await currentUser();
+    if (!user) {
+      return { success: false, error: 'Authentication session is invalid. Please sign in again.' };
+    }
+
+    const sessionEmail = getNormalizedClerkUserEmail(user);
+    if (!sessionEmail) {
+      return {
+        success: false,
+        error: 'Your account does not have an email address. Please update your profile before checkout.',
+      };
+    }
+    email = sessionEmail;
+    name = user.fullName || user.firstName || name;
 
     // ── Rate Limiting ──
     await rateLimit(5, 60 * 1000); // Max 5 checkouts per minute
