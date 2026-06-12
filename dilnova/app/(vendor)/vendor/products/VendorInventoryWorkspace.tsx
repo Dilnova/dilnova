@@ -170,7 +170,7 @@ export default function VendorInventoryWorkspace({ initialData }: Props) {
       item.productName.toLowerCase().includes(stockSearch.toLowerCase()) ||
       (info.sku && info.sku.toLowerCase().includes(stockSearch.toLowerCase()));
 
-    const isLow = info.qty > 0 && info.qty <= item.lowStockThreshold;
+    const isLow = info.qty > 0 && info.qty <= (item.lowStockThreshold ?? 5);
     const isOut = info.qty === 0;
 
     const matchesFilter =

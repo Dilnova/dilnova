@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { getVendorInventoryData, processBillingCheckoutAction } from '../products/inventoryActions';
+import { getVendorBillingRegisterData, processBillingCheckoutAction, type VendorBillingRegisterData } from '../products/inventoryActions';
 import Image from 'next/image';
 import { resolveEffectiveStockAvailability } from '@/utils/stockAvailabilityShared';
 
 interface Props {
-  initialData: Awaited<ReturnType<typeof getVendorInventoryData>>;
+  initialData: VendorBillingRegisterData;
   systemName?: string;
 }
 
@@ -29,7 +29,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
   // Re-fetch helper to keep UI fully in sync
   const refreshData = async () => {
     try {
-      const fresh = await getVendorInventoryData({ allowMember: true });
+      const fresh = await getVendorBillingRegisterData();
       setData(fresh);
     } catch (err) {
       triggerNotification(false, 'Failed to refresh data.');
@@ -283,7 +283,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
                   <div>
                     <span className="text-[10px] text-zinc-450 block font-mono">SKU: {info.sku}</span>
                     <div className="flex justify-between items-center mt-1.5 pt-1.5 border-t border-zinc-50 dark:border-zinc-800">
-                      <span className="text-xs font-black font-mono text-zinc-850 dark:text-white">${(item.productPrice / 100).toFixed(2)}</span>
+                      <span className="text-xs font-black font-mono text-zinc-850 dark:text-white">${((item.productPrice ?? 0) / 100).toFixed(2)}</span>
                       {item.productType === 'service' ? (
                         <span className="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">Service</span>
                       ) : (

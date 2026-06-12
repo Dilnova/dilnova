@@ -19,7 +19,7 @@ import {
   removeBranchMemberSchema,
   processBillingCheckoutSchema,
 } from '@/utils/schemas';
-import { getPremiumStatus } from '@/utils/premiumLicense';
+import { getPremiumStatus, type PremiumStatus } from '@/utils/premiumLicense';
 import { validateStockAvailabilityId } from '@/utils/stockAvailability';
 import { reserveProductStock, applyStockReservation } from '@/utils/inventoryStock';
 import {
@@ -32,6 +32,7 @@ import {
 import {
   getStockAvailabilityCatalog,
   resolveEffectiveStockAvailability,
+  type StockAvailabilityDefinition,
 } from '@/utils/stockAvailability';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
@@ -64,11 +65,74 @@ async function verifyVendorAccess(options?: { allowMember?: boolean }) {
 
 // ── GET VENDOR IMS DATA ──────────────────────────────────────
 
-export async function getVendorInventoryData(options?: { allowMember?: boolean }) {
+export type VendorBillingRegisterData = {
+  inventoryItems: Array<{
+    id: string | null;
+    productId: string;
+    sku: string | null;
+    quantity: number | null;
+    lowStockThreshold: number | null;
+    binLocation: string | null;
+    supplierId: string | null;
+    stockAvailability: string | null;
+    updatedAt: Date | null;
+    productName: string;
+    productType: string;
+    productPrice: number | null;
+    supplierName: string | null;
+  }>;
+  branches: Array<(typeof schema.branches.$inferSelect)>;
+  branchInventory: Array<{
+    id: string;
+    branchId: string;
+    productId: string;
+    sku: string | null;
+    quantity: number | null;
+    binLocation: string | null;
+    productName: string;
+  }>;
+  stockAvailabilityCatalog: StockAvailabilityDefinition[];
+  premiumStatus: PremiumStatus;
+  billingReceiptCount: number;
+};
+
+type GetVendorInventoryDataOptions = {
+  allowMember?: boolean;
+};
+
+export type VendorInventoryFullData = {
+  inventoryItems: VendorBillingRegisterData['inventoryItems'];
+  branches: VendorBillingRegisterData['branches'];
+  branchInventory: VendorBillingRegisterData['branchInventory'];
+  stockAvailabilityCatalog: VendorBillingRegisterData['stockAvailabilityCatalog'];
+  premiumStatus: PremiumStatus;
+  suppliers: Array<(typeof schema.suppliers.$inferSelect)>;
+  movements: any[];
+  simulatedOrders: any[];
+  productsWithoutInventory: Array<{
+    id: string;
+    name: string;
+    type: string;
+    orgId: string;
+  }>;
+  branchMembers: Array<(typeof schema.branchMembers.$inferSelect)>;
+  billingReceipts: Array<(typeof schema.billingReceipts.$inferSelect)>;
+  orgMembers: Array<{ userId: string; name: string; email: string }>;
+  checkoutOptionsCatalog: Awaited<ReturnType<typeof getCheckoutOptionsCatalog>>;
+};
+
+async function loadVendorInventoryData(
+  scope: 'full' | 'billing',
+  options?: GetVendorInventoryDataOptions
+): Promise<VendorInventoryFullData | VendorBillingRegisterData> {
   return runWithCorrelationId(async () => {
     const { userId, orgId, orgRole, premiumStatus } = await verifyVendorAccess({
       allowMember: options?.allowMember === true,
     });
+
+    if (scope === 'billing' && !premiumStatus.billingActive) {
+      throw new Error('POS Billing Register feature is not unlocked on your account tier.');
+    }
 
     // 1. Fetch Products
     const vendorProducts = await db
@@ -139,18 +203,26 @@ export async function getVendorInventoryData(options?: { allowMember?: boolean }
         .where(eq(schema.products.orgId, orgId));
     }
 
-    const trackedProductIds = new Set(inventoryItems.map((i) => i.productId));
-    const productsWithoutInventory = vendorProducts.filter((p) => !trackedProductIds.has(p.id) && p.type === 'product');
+    let productsWithoutInventory: typeof vendorProducts = [];
+    if (scope === 'full') {
+      const trackedProductIds = new Set(inventoryItems.map((i) => i.productId));
+      productsWithoutInventory = vendorProducts.filter(
+        (p) => !trackedProductIds.has(p.id) && p.type === 'product'
+      );
+    }
 
-    // 3. Fetch Suppliers
-    const suppliers = await db
-      .select()
-      .from(schema.suppliers)
-      .where(eq(schema.suppliers.orgId, orgId));
+    // 3. Fetch Suppliers (full IMS workspace only)
+    let suppliers: (typeof schema.suppliers.$inferSelect)[] = [];
+    if (scope === 'full') {
+      suppliers = await db
+        .select()
+        .from(schema.suppliers)
+        .where(eq(schema.suppliers.orgId, orgId));
+    }
 
-    // 4. Fetch Inventory Movements
+    // 4. Fetch Inventory Movements (full IMS workspace only)
     let movements: any[] = [];
-    if (inventoryItems.length > 0) {
+    if (scope === 'full' && inventoryItems.length > 0) {
       const inventoryIds = inventoryItems.map((i) => i.id);
       movements = await db
         .select({
@@ -173,9 +245,9 @@ export async function getVendorInventoryData(options?: { allowMember?: boolean }
         .limit(100);
     }
 
-    // 5. Fetch Simulated Orders
+    // 5. Fetch Simulated Orders (full IMS workspace only)
     let simulatedOrders: any[] = [];
-    if (productIds.length > 0) {
+    if (scope === 'full' && productIds.length > 0) {
       // Find orders that contain at least one item from this vendor
       const relatedItems = await db
         .select()
@@ -305,11 +377,31 @@ export async function getVendorInventoryData(options?: { allowMember?: boolean }
           }));
         }
 
-        branchMembersList = await db
-          .select()
-          .from(schema.branchMembers)
-          .where(inArray(schema.branchMembers.branchId, branchIds));
+        if (scope === 'full') {
+          branchMembersList = await db
+            .select()
+            .from(schema.branchMembers)
+            .where(inArray(schema.branchMembers.branchId, branchIds));
+        }
       }
+    }
+
+    const stockAvailabilityCatalog = await getStockAvailabilityCatalog();
+
+    if (scope === 'billing') {
+      const [receiptCountRow] = await db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(schema.billingReceipts)
+        .where(eq(schema.billingReceipts.orgId, orgId));
+
+      return {
+        inventoryItems,
+        branches,
+        branchInventory: branchInventoryList,
+        stockAvailabilityCatalog,
+        premiumStatus,
+        billingReceiptCount: receiptCountRow?.count ?? 0,
+      } satisfies VendorBillingRegisterData;
     }
 
     // 7. Fetch Billing Receipts (Premium POS Register)
@@ -340,7 +432,6 @@ export async function getVendorInventoryData(options?: { allowMember?: boolean }
     }
 
     const checkoutOptionsCatalog = await getCheckoutOptionsCatalog();
-    const stockAvailabilityCatalog = await getStockAvailabilityCatalog();
 
     return {
       inventoryItems,
@@ -358,6 +449,16 @@ export async function getVendorInventoryData(options?: { allowMember?: boolean }
       stockAvailabilityCatalog,
     };
   });
+}
+
+export async function getVendorInventoryData(
+  options?: GetVendorInventoryDataOptions
+): Promise<VendorInventoryFullData> {
+  return loadVendorInventoryData('full', options) as Promise<VendorInventoryFullData>;
+}
+
+export async function getVendorBillingRegisterData(): Promise<VendorBillingRegisterData> {
+  return loadVendorInventoryData('billing', { allowMember: true }) as Promise<VendorBillingRegisterData>;
 }
 
 // ── VENDOR INVENTORY ADJUSTMENTS ─────────────────────────────
