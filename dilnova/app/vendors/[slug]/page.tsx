@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { customStorefronts } from './custom/registry';
 import DefaultStorefront from './DefaultStorefront';
 import { getVendorProducts } from './getVendorProducts';
+import { enrichVendorProductsWithPurchaseFlags } from '@/utils/storefrontPurchase';
 import type { VendorOrg } from './custom/types';
 import { getCachedOrganizations } from '../../../utils/clerkCache';
 import { getSystemSetting } from '../../../utils/settings';
@@ -204,6 +205,8 @@ export default async function VendorProfilePage({ params }: PageProps) {
   } else if (slug === 'dilstar-services') {
     products = products.filter(p => p.categorySlug === 'services');
   }
+
+  products = await enrichVendorProductsWithPurchaseFlags(products);
 
   // 4. Check registry for custom storefront
   const isCustomEnabled = (await getSystemSetting(`custom_storefront_${slug}`, 'true')) === 'true';

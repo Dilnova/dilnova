@@ -13,6 +13,7 @@ export interface VendorProduct {
   imageUrl: string | null;
   categoryName: string | null;
   categorySlug: string | null;
+  canPurchase?: boolean;
 }
 
 export interface VendorOrg {

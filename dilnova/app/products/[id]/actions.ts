@@ -97,11 +97,25 @@ export async function submitReviewAction(productId: string, rating: number, comm
       }
 
       await rateLimit(5, 60 * 1000); // Max 5 reviews per minute per IP
-      const { userId } = await auth();
+      const { userId, orgId } = await auth();
       const user = await currentUser();
 
       if (!userId || !user) {
         throw new Error('You must be signed in to submit a review.');
+      }
+
+      const [product] = await db
+        .select({ orgId: schema.products.orgId })
+        .from(schema.products)
+        .where(eq(schema.products.id, parsed.data.productId))
+        .limit(1);
+
+      if (!product) {
+        throw new Error('Product not found.');
+      }
+
+      if (orgId && orgId === product.orgId) {
+        throw new Error('Vendor members cannot review their own products.');
       }
 
       const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Anonymous';

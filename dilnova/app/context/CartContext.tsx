@@ -46,7 +46,7 @@ function mergeCartItems(local: CartItem[], remote: SyncedCartItem[]): CartItem[]
     if (existing) {
       byId.set(item.id, {
         ...existing,
-        quantity: existing.quantity + item.quantity,
+        quantity: Math.max(existing.quantity, item.quantity),
         name: item.name,
         price: item.price,
         imageUrl: item.imageUrl,

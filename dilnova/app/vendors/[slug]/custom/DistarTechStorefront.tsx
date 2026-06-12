@@ -226,6 +226,7 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
                             vendorName: org.name,
                             type: product.type,
                           }}
+                          canPurchase={product.canPurchase !== false}
                           showLabel={false}
                           className="h-8 w-8 text-xs rounded-lg border-zinc-700 bg-zinc-950 hover:bg-zinc-900"
                         />

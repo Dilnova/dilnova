@@ -369,6 +369,11 @@ export async function getCartCheckoutOptionsAction(
   cartLines: { id: string; quantity: number; price: number }[]
 ) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false as const, error: 'Please sign in to load checkout options.' };
+    }
+
     if (cartLines.length === 0) {
       return {
         success: true as const,

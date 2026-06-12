@@ -223,6 +223,7 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
                             vendorName: org.name,
                             type: product.type,
                           }}
+                          canPurchase={product.canPurchase !== false}
                           showLabel={false}
                           className="h-8 w-8 text-xs rounded-lg border-slate-700 bg-slate-900 hover:bg-slate-800"
                         />

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { StorefrontProps } from './types';
 import { isVideoUrl } from '@/utils/media';
+import AddToCartButton from '@/app/components/AddToCartButton';
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -193,12 +194,27 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                     <div className="px-5 pb-5">
                       <div className="flex items-center justify-between pt-4 border-t border-green-200/40">
                         <span className="text-lg font-extrabold text-emerald-800">{formattedPrice}</span>
-                        <Link
-                          href={`/products/${product.id}`}
-                          className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white transition-colors cursor-pointer text-center"
-                        >
-                          View Details
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <AddToCartButton
+                            product={{
+                              id: product.id,
+                              name: product.name,
+                              price: product.price,
+                              imageUrl: product.imageUrl,
+                              vendorName: org.name,
+                              type: product.type,
+                            }}
+                            canPurchase={product.canPurchase !== false}
+                            showLabel={false}
+                            className="h-8 w-8 text-xs rounded-lg"
+                          />
+                          <Link
+                            href={`/products/${product.id}`}
+                            className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white transition-colors cursor-pointer text-center"
+                          >
+                            View Details
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>

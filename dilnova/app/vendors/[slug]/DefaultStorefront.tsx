@@ -195,6 +195,7 @@ export default function DefaultStorefront({ org, products }: StorefrontProps) {
                           vendorName: org.name,
                           type: product.type,
                         }}
+                        canPurchase={product.canPurchase !== false}
                         showLabel={false}
                         className="h-8 w-8 text-xs rounded-lg"
                       />

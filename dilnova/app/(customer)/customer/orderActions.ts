@@ -58,7 +58,7 @@ export async function submitPaymentSlipAction(input: {
       return { success: false as const, error: 'Order not found.' };
     }
 
-    if (normalizeCustomerEmail(order.customerEmail) !== sessionEmail) {
+    if (order.customerUserId !== userId && normalizeCustomerEmail(order.customerEmail) !== sessionEmail) {
       return { success: false as const, error: 'You are not authorized to update this order.' };
     }
 

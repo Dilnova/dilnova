@@ -207,7 +207,7 @@ export default async function InvoicePage({ params }: PageProps) {
         </div>
 
         {bankTransferInstructions && (
-          <div className="pt-8 print:hidden">
+          <div className="pt-8">
             <BankTransferInstructions instructions={bankTransferInstructions} />
           </div>
         )}
