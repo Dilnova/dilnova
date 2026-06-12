@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { StorefrontProps } from './types';
 import { isVideoUrl } from '@/utils/media';
+import AddToCartButton from '@/app/components/AddToCartButton';
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -234,12 +235,26 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
                     {/* Price & CTA */}
                     <div className="px-5 pb-5 flex items-center justify-between border-t border-zinc-800/60 pt-4">
                       <span className="text-lg font-black text-white">{formattedPrice}</span>
-                      <Link
-                        href={`/products/${product.id}`}
-                        className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-xs font-bold text-white transition-colors cursor-pointer text-center"
-                      >
-                        View Details
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <AddToCartButton
+                          product={{
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            imageUrl: product.imageUrl,
+                            vendorName: org.name,
+                            type: product.type,
+                          }}
+                          showLabel={false}
+                          className="h-8 w-8 text-xs rounded-lg border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
+                        />
+                        <Link
+                          href={`/products/${product.id}`}
+                          className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-xs font-bold text-white transition-colors cursor-pointer text-center"
+                        >
+                          View Details
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 );

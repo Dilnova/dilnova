@@ -22,6 +22,11 @@ import {
 } from '@/utils/bankTransfer';
 import BankTransferInstructions from '@/app/components/BankTransferInstructions';
 import { CustomerPaymentSlipSection } from '@/app/components/OrderPaymentPanels';
+import {
+  clearCheckoutSuccessSnapshot,
+  loadCheckoutSuccessSnapshot,
+  saveCheckoutSuccessSnapshot,
+} from '@/utils/checkoutSuccessStorage';
 
 export default function CartPage() {
   const {
@@ -41,6 +46,7 @@ export default function CartPage() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success'>('idle');
   const [emailMessage, setEmailMessage] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [confirmedOrderEmail, setConfirmedOrderEmail] = useState('');
   const [confirmedOrderId, setConfirmedOrderId] = useState('');
   const [bankTransferInstructions, setBankTransferInstructions] =
@@ -70,6 +76,17 @@ export default function CartPage() {
   const [priceSyncNotice, setPriceSyncNotice] = useState<string | null>(null);
   const cartItemIds = cartItems.map((item) => item.id).join(',');
   const cartLinesKey = cartItems.map((item) => `${item.id}:${item.quantity}`).join(',');
+
+  useEffect(() => {
+    const saved = loadCheckoutSuccessSnapshot();
+    if (!saved) return;
+
+    setConfirmedOrderEmail(saved.confirmedOrderEmail);
+    setConfirmedOrderId(saved.orderId);
+    setBankTransferInstructions(saved.bankTransferInstructions);
+    setConfirmationEmailSent(saved.confirmationEmailSent);
+    setCheckoutStatus('success');
+  }, []);
 
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -259,6 +276,7 @@ export default function CartPage() {
     if (!targetEmail) return;
 
     setEmailStatus('sending');
+    setEmailError(null);
     try {
       const res = await sendCartSummaryEmailAction(
         targetEmail,
@@ -274,12 +292,12 @@ export default function CartPage() {
         }, 4000);
       } else {
         setEmailStatus('idle');
-        alert(res.error || 'Failed to send email.');
+        setEmailError(res.error || 'Failed to send email.');
       }
     } catch (err: unknown) {
       setEmailStatus('idle');
       const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
-      alert(errMsg);
+      setEmailError(errMsg);
     }
   };
 
@@ -353,6 +371,12 @@ export default function CartPage() {
         setConfirmedOrderId(result.orderId || '');
         setBankTransferInstructions(result.bankTransferInstructions || null);
         setConfirmationEmailSent(result.confirmationEmailSent === true);
+        saveCheckoutSuccessSnapshot({
+          orderId: result.orderId || '',
+          confirmedOrderEmail: customerEmail,
+          bankTransferInstructions: result.bankTransferInstructions || null,
+          confirmationEmailSent: result.confirmationEmailSent === true,
+        });
         setCheckoutStatus('success');
         setFulfillmentMethod('store_pickup');
         setPaymentMethod(BANK_TRANSFER_PAYMENT_ID);
@@ -368,6 +392,7 @@ export default function CartPage() {
   };
 
   const handleSuccessClose = () => {
+    clearCheckoutSuccessSnapshot();
     setCheckoutStatus('idle');
     router.push('/products');
   };
@@ -968,6 +993,12 @@ export default function CartPage() {
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
                       Email the list of these {cartCount} items to your registered address.
                     </p>
+
+                    {emailError && (
+                      <p className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+                        {emailError}
+                      </p>
+                    )}
 
                     <div className="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-900 truncate">
                       📧 {user?.primaryEmailAddress?.emailAddress}

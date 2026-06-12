@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { isVideoUrl } from '@/utils/media';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { eq, inArray, desc, sql, or } from 'drizzle-orm';
+import { eq, inArray, desc, sql, or, and } from 'drizzle-orm';
 import { getCachedOrganizations } from '@/utils/clerkCache';
 import { getClerkUserEmail, getNormalizedClerkUserEmail } from '@/utils/customerEmail';
 import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
@@ -13,6 +13,8 @@ import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
 import { formatOrderStatusLabel } from '@/utils/orderStatus';
 import { CustomerPaymentSlipSection } from '@/app/components/OrderPaymentPanels';
 import { isBankTransferPayment } from '@/utils/bankTransfer';
+import OrderBankTransferInstructions from './OrderBankTransferInstructions';
+import WishlistRemoveButton from './WishlistRemoveButton';
 
 interface PageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -22,19 +24,8 @@ export default async function CustomerPage({ searchParams }: PageProps) {
   const { orgRole, userId } = await auth();
   const user = await currentUser();
 
-  // If not logged in, return unauthorized layout or redirect
   if (!user) {
-    return (
-      <main className="p-8 max-w-4xl mx-auto font-sans">
-        <div className="border border-zinc-200 rounded-3xl p-12 bg-white dark:border-zinc-800 dark:bg-zinc-950 text-center shadow-md space-y-4">
-          <span className="text-5xl">🔒</span>
-          <h2 className="text-xl font-bold text-zinc-900 dark:text-white">Sign In Required</h2>
-          <p className="text-sm text-zinc-500 max-w-xs mx-auto">
-            Please sign in to access your personal Customer Portal, saved wishlist items, and billing details.
-          </p>
-        </div>
-      </main>
-    );
+    return null;
   }
 
   const userEmail = getClerkUserEmail(user) || 'No email';
@@ -86,7 +77,12 @@ export default async function CustomerPage({ searchParams }: PageProps) {
         })
         .from(schema.products)
         .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
-        .where(inArray(schema.products.id, userWishlist.map(w => w.productId)))
+        .where(
+          and(
+            inArray(schema.products.id, userWishlist.map((w) => w.productId)),
+            eq(schema.products.status, 'active')
+          )
+        )
     : [];
 
   // Retrieve simulated order items
@@ -266,6 +262,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                     key={product.id}
                     className="flex bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-200 group relative"
                   >
+                    <WishlistRemoveButton productId={product.id} />
                     {product.imageUrl ? (
                       <div className="w-28 h-28 relative flex-shrink-0 bg-zinc-50 dark:bg-zinc-900 overflow-hidden border-r border-zinc-100 dark:border-zinc-900">
                         {isVideoUrl(product.imageUrl) ? (
@@ -493,7 +490,9 @@ export default async function CustomerPage({ searchParams }: PageProps) {
 
                       {isBankTransferPayment(order.paymentMethod) &&
                         (order.status === 'pending_payment' || order.status === 'payment_submitted') && (
-                          <CustomerPaymentSlipSection
+                          <>
+                            <OrderBankTransferInstructions order={order} items={items} />
+                            <CustomerPaymentSlipSection
                             order={{
                               id: order.id,
                               paymentMethod: order.paymentMethod,
@@ -502,6 +501,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                               customerEmail: order.customerEmail,
                             }}
                           />
+                          </>
                         )}
 
                       {/* Invoice Print Link */}
@@ -511,7 +511,6 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                         </div>
                         <Link
                           href={`/customer/invoice/${order.id}`}
-                          target="_blank"
                           className="self-end sm:self-auto flex items-center gap-1.5 px-3 py-1.5 bg-zinc-150 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10px] font-bold tracking-wide transition-all border border-zinc-200 dark:border-zinc-800 cursor-pointer"
                         >
                           🖨️ View & Print Invoice

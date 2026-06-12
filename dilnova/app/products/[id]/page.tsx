@@ -1,4 +1,4 @@
-import { clerkClient, auth } from '@clerk/nextjs/server';
+import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -20,6 +20,11 @@ import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
 import { resolveEffectiveStockAvailability } from '@/utils/stockAvailabilityShared';
 import StockAvailabilityBadge from '@/app/components/StockAvailabilityBadge';
 import { DEFAULT_SUPPORT_EMAIL } from '@/utils/brand';
+import { getNormalizedClerkUserEmail } from '@/utils/customerEmail';
+import {
+  getVerifiedReviewerIdsForProduct,
+  hasCustomerPurchasedProduct,
+} from '@/utils/verifiedBuyer';
 
 interface PageProps {
   params: Promise<{
@@ -122,46 +127,65 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   // 1.5. Fetch Auth context, Reviews, Questions and Wishlist status
   const { userId, orgId: userOrgId } = await auth();
+  const viewer = await currentUser();
+  const normalizedUserEmail = viewer ? getNormalizedClerkUserEmail(viewer) : null;
 
-  const productReviews = await db
-    .select()
-    .from(schema.reviews)
-    .where(eq(schema.reviews.productId, id))
-    .orderBy(desc(schema.reviews.createdAt));
-
-  const productQuestions = await db
-    .select()
-    .from(schema.questions)
-    .where(eq(schema.questions.productId, id))
-    .orderBy(desc(schema.questions.createdAt));
+  const [productReviews, productQuestions, verifiedReviewerIds] = await Promise.all([
+    db
+      .select()
+      .from(schema.reviews)
+      .where(eq(schema.reviews.productId, id))
+      .orderBy(desc(schema.reviews.createdAt)),
+    db
+      .select()
+      .from(schema.questions)
+      .where(eq(schema.questions.productId, id))
+      .orderBy(desc(schema.questions.createdAt)),
+    getVerifiedReviewerIdsForProduct(id),
+  ]);
 
   let isFavorited = false;
   let userHasReviewed = false;
+  let isVerifiedBuyer = false;
+  let existingUserReview: { rating: number; comment: string | null } | null = null;
 
   if (userId) {
-    const [fav] = await db
-      .select()
-      .from(schema.wishlists)
-      .where(
-        and(
-          eq(schema.wishlists.userId, userId),
-          eq(schema.wishlists.productId, id)
+    const [fav, rev, purchased] = await Promise.all([
+      db
+        .select()
+        .from(schema.wishlists)
+        .where(
+          and(
+            eq(schema.wishlists.userId, userId),
+            eq(schema.wishlists.productId, id)
+          )
         )
-      )
-      .limit(1);
-    isFavorited = !!fav;
+        .limit(1)
+        .then((rows) => rows[0]),
+      db
+        .select()
+        .from(schema.reviews)
+        .where(
+          and(
+            eq(schema.reviews.userId, userId),
+            eq(schema.reviews.productId, id)
+          )
+        )
+        .limit(1)
+        .then((rows) => rows[0]),
+      hasCustomerPurchasedProduct(id, userId, normalizedUserEmail),
+    ]);
 
-    const [rev] = await db
-      .select()
-      .from(schema.reviews)
-      .where(
-        and(
-          eq(schema.reviews.userId, userId),
-          eq(schema.reviews.productId, id)
-        )
-      )
-      .limit(1);
+    isFavorited = !!fav;
     userHasReviewed = !!rev;
+    isVerifiedBuyer = purchased;
+
+    if (rev) {
+      existingUserReview = {
+        rating: rev.rating,
+        comment: rev.comment,
+      };
+    }
   }
 
   // Calculate review stats
@@ -446,6 +470,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
           reviews={productReviews}
           isLoggedIn={!!userId}
           userHasReviewed={userHasReviewed}
+          isVerifiedBuyer={isVerifiedBuyer}
+          existingReview={existingUserReview}
+          verifiedReviewerIds={[...verifiedReviewerIds]}
           productOrgId={product.orgId}
           userOrgId={userOrgId || null}
         />

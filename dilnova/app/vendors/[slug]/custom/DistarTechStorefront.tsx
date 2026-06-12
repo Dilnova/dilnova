@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { StorefrontProps } from './types';
 import { isVideoUrl } from '@/utils/media';
+import AddToCartButton from '@/app/components/AddToCartButton';
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -161,7 +162,7 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
                     key={product.id}
                     className="group relative bg-[#0b0f19] border border-zinc-800 rounded-xl overflow-hidden hover:border-cyan-500/40 hover:shadow-xl hover:shadow-cyan-500/5 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col">
+                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col group/item">
                       {/* Product Image */}
                       <div className="h-48 bg-zinc-900 relative overflow-hidden border-b border-zinc-800">
                         {product.imageUrl ? (
@@ -208,17 +209,34 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
                             </p>
                           )}
                         </div>
-
-                        <div className="mt-5 pt-4 border-t border-zinc-900 flex items-center justify-between">
-                          <span className="text-sm font-mono font-extrabold text-cyan-400">
-                            {formattedPrice}
-                          </span>
-                          <span className="text-[10px] font-mono text-zinc-500 hover:text-cyan-400 transition-colors">
-                            details // &gt;
-                          </span>
-                        </div>
                       </div>
                     </Link>
+
+                    <div className="px-5 pb-5 flex items-center justify-between border-t border-zinc-900 pt-4">
+                      <span className="text-sm font-mono font-extrabold text-cyan-400">
+                        {formattedPrice}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <AddToCartButton
+                          product={{
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            imageUrl: product.imageUrl,
+                            vendorName: org.name,
+                            type: product.type,
+                          }}
+                          showLabel={false}
+                          className="h-8 w-8 text-xs rounded-lg border-zinc-700 bg-zinc-950 hover:bg-zinc-900"
+                        />
+                        <Link
+                          href={`/products/${product.id}`}
+                          className="text-[10px] font-mono text-zinc-500 hover:text-cyan-400 transition-colors"
+                        >
+                          details // &gt;
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 );
               })}

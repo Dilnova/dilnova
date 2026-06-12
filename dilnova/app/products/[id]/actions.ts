@@ -15,6 +15,8 @@ import {
   incrementViewsSchema,
 } from '@/utils/schemas';
 import { runWithCorrelationId } from '@/utils/asyncContext';
+import { getNormalizedClerkUserEmail } from '@/utils/customerEmail';
+import { hasCustomerPurchasedProduct } from '@/utils/verifiedBuyer';
 
 /**
  * Toggles a product in/out of the user's wishlist.
@@ -130,6 +132,17 @@ export async function submitReviewAction(productId: string, rating: number, comm
           })
           .where(eq(schema.reviews.id, existing.id));
       } else {
+        const normalizedEmail = getNormalizedClerkUserEmail(user);
+        const purchased = await hasCustomerPurchasedProduct(
+          parsed.data.productId,
+          userId,
+          normalizedEmail
+        );
+
+        if (!purchased) {
+          throw new Error('Only verified buyers who have ordered this item can submit a review.');
+        }
+
         // Insert a new review
         await db.insert(schema.reviews).values({
           productId: parsed.data.productId,

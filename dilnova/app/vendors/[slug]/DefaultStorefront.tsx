@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import FollowButton from './FollowButton';
 import type { StorefrontProps } from './custom/types';
 import { isVideoUrl } from '@/utils/media';
 import AddToCartButton from '@/app/components/AddToCartButton';
@@ -75,7 +74,6 @@ export default function DefaultStorefront({ org, products }: StorefrontProps) {
               >
                 Inquire / Email
               </a>
-              <FollowButton orgName={org.name} />
             </div>
           </div>
 

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { StorefrontProps } from './types';
 import { isVideoUrl } from '@/utils/media';
+import AddToCartButton from '@/app/components/AddToCartButton';
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -158,7 +159,7 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
                     key={product.id}
                     className="group relative bg-[#0f172a] border border-slate-800 rounded-xl overflow-hidden hover:border-teal-500/40 hover:shadow-xl hover:shadow-teal-500/5 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col">
+                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col group/item">
                       {/* Product Image */}
                       <div className="h-48 bg-slate-900 relative overflow-hidden border-b border-slate-800">
                         {product.imageUrl ? (
@@ -205,17 +206,34 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
                             </p>
                           )}
                         </div>
-
-                        <div className="mt-5 pt-4 border-t border-slate-900 flex items-center justify-between">
-                          <span className="text-sm font-extrabold text-teal-400">
-                            {formattedPrice}
-                          </span>
-                          <span className="text-[10px] text-teal-400 group-hover:translate-x-1 transition-transform">
-                            Request Quote →
-                          </span>
-                        </div>
                       </div>
                     </Link>
+
+                    <div className="px-5 pb-5 flex items-center justify-between border-t border-slate-900 pt-4">
+                      <span className="text-sm font-extrabold text-teal-400">
+                        {formattedPrice}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <AddToCartButton
+                          product={{
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            imageUrl: product.imageUrl,
+                            vendorName: org.name,
+                            type: product.type,
+                          }}
+                          showLabel={false}
+                          className="h-8 w-8 text-xs rounded-lg border-slate-700 bg-slate-900 hover:bg-slate-800"
+                        />
+                        <Link
+                          href={`/products/${product.id}`}
+                          className="text-[10px] text-teal-400 hover:translate-x-1 transition-transform"
+                        >
+                          View Details →
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 );
               })}

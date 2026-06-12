@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { submitReviewAction } from './actions';
 import Image from 'next/image';
 import SignInPrompt from '@/app/components/SignInPrompt';
 
 interface Review {
   id: string;
+  userId: string;
   rating: number;
   comment: string | null;
   userName: string;
@@ -19,6 +21,9 @@ interface ReviewsSectionProps {
   reviews: Review[];
   isLoggedIn: boolean;
   userHasReviewed: boolean;
+  isVerifiedBuyer: boolean;
+  existingReview: { rating: number; comment: string | null } | null;
+  verifiedReviewerIds: string[];
   productOrgId: string;
   userOrgId: string | null;
 }
@@ -28,15 +33,26 @@ export default function ReviewsSection({
   reviews,
   isLoggedIn,
   userHasReviewed,
+  isVerifiedBuyer,
+  existingReview,
+  verifiedReviewerIds,
   productOrgId,
   userOrgId,
 }: ReviewsSectionProps) {
-  const [rating, setRating] = useState(0);
+  const router = useRouter();
+  const [rating, setRating] = useState(existingReview?.rating ?? 0);
   const [hoveredRating, setHoveredRating] = useState(0);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState(existingReview?.comment ?? '');
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    if (existingReview) {
+      setRating(existingReview.rating);
+      setComment(existingReview.comment ?? '');
+    }
+  }, [existingReview]);
 
   // Calculate statistics
   const totalReviews = reviews.length;
@@ -64,9 +80,12 @@ export default function ReviewsSection({
     startTransition(async () => {
       try {
         await submitReviewAction(productId, rating, comment);
-        setSuccessMessage('Thank you! Your review has been submitted successfully.');
-        setComment('');
-        setRating(0);
+        setSuccessMessage(
+          userHasReviewed
+            ? 'Your review has been updated.'
+            : 'Thank you! Your review has been submitted successfully.'
+        );
+        router.refresh();
       } catch (err) {
         console.error('Error submitting review:', err);
         setErrorMessage(err instanceof Error ? err.message : 'Something went wrong.');
@@ -74,8 +93,9 @@ export default function ReviewsSection({
     });
   };
 
-  // Check if user is the vendor who owns this product (typically vendors shouldn't review their own items)
   const isVendorOwner = productOrgId && userOrgId === productOrgId;
+  const verifiedReviewerIdSet = new Set(verifiedReviewerIds);
+  const canSubmitReview = isVerifiedBuyer || userHasReviewed;
 
   return (
     <div className="space-y-8 bg-white border border-zinc-200 rounded-3xl p-6 lg:p-10 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm mt-8">
@@ -174,6 +194,11 @@ export default function ReviewsSection({
                     <span className="text-xs font-bold text-zinc-800 dark:text-zinc-250">
                       {review.userName}
                     </span>
+                    {verifiedReviewerIdSet.has(review.userId) && (
+                      <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider">
+                        Verified Buyer
+                      </span>
+                    )}
                   </div>
                   <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
                     {new Date(review.createdAt).toLocaleDateString('en-US', {
@@ -210,7 +235,7 @@ export default function ReviewsSection({
       </div>
 
       {/* Review Writing Form */}
-      {isLoggedIn && !isVendorOwner && (
+      {isLoggedIn && !isVendorOwner && canSubmitReview && (
         <div className="border-t border-zinc-200 dark:border-zinc-800 pt-8 mt-8">
           <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 font-mono">
             {userHasReviewed ? 'Update Your Review' : 'Write a Review'}
@@ -280,6 +305,12 @@ export default function ReviewsSection({
             </button>
           </form>
         </div>
+      )}
+
+      {isLoggedIn && !isVendorOwner && !canSubmitReview && (
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-900 pt-4 font-mono">
+          Purchase this item before submitting a review. After your order is placed, you can share feedback here.
+        </p>
       )}
 
       {isLoggedIn && isVendorOwner && (

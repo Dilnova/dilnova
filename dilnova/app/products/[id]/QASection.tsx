@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { submitQuestionAction, submitAnswerAction } from './actions';
 import Image from 'next/image';
 import SignInPrompt from '@/app/components/SignInPrompt';
@@ -33,6 +34,7 @@ export default function QASection({
   productOrgId,
   userOrgId,
 }: QASectionProps) {
+  const router = useRouter();
   const [questionContent, setQuestionContent] = useState('');
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
@@ -61,6 +63,7 @@ export default function QASection({
         await submitQuestionAction(productId, questionContent);
         setSuccessMsg('Your question has been posted.');
         setQuestionContent('');
+        router.refresh();
       } catch (err) {
         console.error('Error posting question:', err);
         setErrorMsg(err instanceof Error ? err.message : 'Failed to post question.');
@@ -82,6 +85,7 @@ export default function QASection({
         await submitAnswerAction(questionId, replyContent);
         setReplyContent('');
         setActiveReplyId(null);
+        router.refresh();
       } catch (err) {
         console.error('Error replying to question:', err);
         setReplyErrorMsg((prev) => ({
