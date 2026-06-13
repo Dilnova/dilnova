@@ -12,6 +12,13 @@ const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const ratelimitCache = new Map<string, Ratelimit>();
 let hasLoggedUpstashWarning = false;
 
+const PRODUCTION_RATE_LIMIT_UNAVAILABLE_ERROR =
+  'Rate limiting is temporarily unavailable. Please try again later.';
+
+function isProductionEnvironment(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
 function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -19,7 +26,7 @@ function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
   if (!url || !token) {
     if (process.env.NODE_ENV === 'production' && !hasLoggedUpstashWarning) {
       hasLoggedUpstashWarning = true;
-      logger.warn('Upstash Redis credentials are not configured. Rate limiting is falling back to the local in-memory store.');
+      logger.error('Upstash Redis credentials are not configured in production. Rate limiting will reject requests.');
     }
     return null;
   }
@@ -80,12 +87,18 @@ export async function rateLimit(limit: number, windowMs: number): Promise<void> 
       if (error instanceof Error && error.message.includes('Rate limit exceeded')) {
         throw error;
       }
-      // Log connection or network errors, and proceed to the in-memory fallback
-      logger.error('Upstash rate limiting failed, falling back to in-memory limiter', error);
+      logger.error('Upstash rate limiting failed', error);
+      if (isProductionEnvironment()) {
+        throw new Error(PRODUCTION_RATE_LIMIT_UNAVAILABLE_ERROR);
+      }
     }
   }
 
-  // Fallback to in-memory sliding window rate limiting
+  if (isProductionEnvironment()) {
+    throw new Error(PRODUCTION_RATE_LIMIT_UNAVAILABLE_ERROR);
+  }
+
+  // Development/test fallback to in-memory sliding window rate limiting
   runInMemoryRateLimit(ip, limit, windowMs);
 }
 

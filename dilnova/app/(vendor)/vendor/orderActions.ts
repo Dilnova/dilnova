@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { and, eq, inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
@@ -25,6 +25,10 @@ import {
 } from '@/utils/simulatedOrderTransitions';
 import { sendPaymentVerifiedCustomerEmail, sendOrderCancelledCustomerEmail, sendPaymentSlipRejectedCustomerEmail } from '@/utils/paymentSlipEmail';
 import { logger } from '@/utils/logger';
+import {
+  MULTI_VENDOR_VENDOR_ACTION_ERROR,
+  orderSpansMultipleVendors,
+} from '@/utils/orderVendorScope';
 
 async function loadVendorOrder(orderId: string, orgId: string) {
   const [order] = await db
@@ -37,19 +41,19 @@ async function loadVendorOrder(orderId: string, orgId: string) {
     throw new Error('Order not found.');
   }
 
-  const vendorItems = await db
-    .select({ id: schema.simulatedOrderItems.id })
+  const vendorOrgRows = await db
+    .select({ vendorOrgId: schema.simulatedOrderItems.vendorOrgId })
     .from(schema.simulatedOrderItems)
-    .where(
-      and(
-        eq(schema.simulatedOrderItems.orderId, orderId),
-        eq(schema.simulatedOrderItems.vendorOrgId, orgId)
-      )
-    )
-    .limit(1);
+    .where(eq(schema.simulatedOrderItems.orderId, orderId));
 
-  if (vendorItems.length === 0) {
+  const vendorOrgIds = [...new Set(vendorOrgRows.map((row) => row.vendorOrgId))];
+
+  if (!vendorOrgIds.includes(orgId)) {
     throw new Error('This order does not include items from your organization.');
+  }
+
+  if (orderSpansMultipleVendors(vendorOrgIds)) {
+    throw new Error(MULTI_VENDOR_VENDOR_ACTION_ERROR);
   }
 
   return order;

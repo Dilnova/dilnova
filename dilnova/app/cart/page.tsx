@@ -409,6 +409,8 @@ export default function CartPage() {
     checkoutOptions.vendorCartSummary.some(
       (vendor) => !checkoutOptions.vendorBankTransferByOrg[vendor.orgId]?.configured
     );
+  const multiVendorPendingPaymentBlocked =
+    vendorCount > 1 && selectedPayment?.pendingPayment === true;
 
   if (checkoutStatus === 'success') {
     const isBankTransferOrder = Boolean(bankTransferInstructions);
@@ -771,6 +773,9 @@ export default function CartPage() {
                         {vendorCount > 1 && (
                           <p className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-500/5 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2">
                             Your cart includes items from {vendorCount} vendors. Only fulfillment and payment methods enabled by every vendor are shown. Store pickup is not available for multi-vendor carts.
+                            {multiVendorPendingPaymentBlocked && (
+                              <> Bank transfer and cash on delivery require a single-vendor cart — remove items from other vendors or place separate orders.</>
+                            )}
                           </p>
                         )}
 
@@ -894,6 +899,12 @@ export default function CartPage() {
                           </p>
                         ) : null}
 
+                        {multiVendorPendingPaymentBlocked && (
+                          <p className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+                            Bank transfer and cash on delivery are unavailable for multi-vendor carts. Remove items from other vendors or place separate orders.
+                          </p>
+                        )}
+
                         {bankTransferSelected && (
                           <div className="space-y-2">
                             {bankTransferMissingDetails ? (
@@ -940,6 +951,7 @@ export default function CartPage() {
                         !selectedFulfillment ||
                       !selectedPayment ||
                       bankTransferMissingDetails ||
+                      multiVendorPendingPaymentBlocked ||
                       (requiresDeliveryAddress && shippingAddress.trim().length < 5)
                       }
                       className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"

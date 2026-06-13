@@ -1,4 +1,5 @@
 import { z } from 'zod/v3';
+import { isAllowedCloudinaryDeliveryUrl } from '@/utils/cloudinaryUrl';
 
 // ═══════════════════════════════════════════════════════════
 // SHARED ZOD SCHEMAS — Enterprise Input Validation
@@ -226,7 +227,10 @@ export const submitPaymentSlipSchema = z.object({
     .string()
     .url('A valid slip image URL is required.')
     .max(2048)
-    .refine((url) => /^https:\/\//.test(url), 'Slip URL must use HTTPS.'),
+    .refine(
+      (url) => isAllowedCloudinaryDeliveryUrl(url),
+      'Payment slip must be uploaded through Cloudinary.'
+    ),
   customerEmail: z.string().email().max(255).optional(),
 });
 

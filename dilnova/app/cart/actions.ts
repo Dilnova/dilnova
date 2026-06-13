@@ -37,6 +37,7 @@ import {
 import { sendOrderConfirmationEmailForOrder } from '@/utils/orderConfirmationEmail';
 import { escapeHtml, sendRawSmtpEmail } from '@/utils/smtpClient';
 import { logger } from '@/utils/logger';
+import { MULTI_VENDOR_ORDER_CHECKOUT_ERROR } from '@/utils/orderVendorScope';
 
 interface CartItem {
   id: string;
@@ -635,6 +636,12 @@ export async function simulatedCheckoutAction(
       }
       if (!paymentOption) {
         return { success: false, error: 'Selected payment method is not available for this cart.' };
+      }
+      if (vendorOrgIds.length > 1 && paymentOption.pendingPayment === true) {
+        return {
+          success: false as const,
+          error: MULTI_VENDOR_ORDER_CHECKOUT_ERROR,
+        };
       }
       if (isBankTransferPayment(payment)) {
         const bankDetailsByOrg = await getBankTransferDetailsForOrgs(vendorOrgIds);

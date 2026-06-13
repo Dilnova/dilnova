@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll, afterEach } from 'vitest';
 import { rateLimit } from './rateLimit';
 import { headers } from 'next/headers';
 
@@ -106,7 +106,7 @@ describe('rateLimit Utility', () => {
     await expect(rateLimit(5, 5000)).rejects.toThrow('Rate limit exceeded');
   });
 
-  it('should fallback to in-memory limiting if Upstash Redis query throws', async () => {
+  it('should fallback to in-memory limiting if Upstash Redis query throws in non-production', async () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://mock.upstash.io';
     process.env.UPSTASH_REDIS_REST_TOKEN = 'mock-token';
     mockLimit.mockRejectedValue(new Error('Connection timed out'));
@@ -122,5 +122,28 @@ describe('rateLimit Utility', () => {
     // Third hit exceeds in-memory limit and throws
     await expect(rateLimit(2, 1000)).rejects.toThrow('Rate limit exceeded');
     expect(mockLimit).toHaveBeenCalledTimes(3); // Attempted Upstash 3 times, then fell back to local
+  });
+
+  it('should reject requests in production when Upstash is not configured', async () => {
+    process.env.NODE_ENV = 'production';
+
+    vi.mocked(headers).mockResolvedValue({
+      get: (name: string) => (name === 'x-forwarded-for' ? '192.168.1.7' : null),
+    } as any);
+
+    await expect(rateLimit(5, 5000)).rejects.toThrow('Rate limiting is temporarily unavailable');
+  });
+
+  it('should reject requests in production when Upstash query throws', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.UPSTASH_REDIS_REST_URL = 'https://mock.upstash.io';
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'mock-token';
+    mockLimit.mockRejectedValue(new Error('Connection timed out'));
+
+    vi.mocked(headers).mockResolvedValue({
+      get: (name: string) => (name === 'x-forwarded-for' ? '192.168.1.8' : null),
+    } as any);
+
+    await expect(rateLimit(5, 5000)).rejects.toThrow('Rate limiting is temporarily unavailable');
   });
 });
