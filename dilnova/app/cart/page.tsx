@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -28,6 +28,13 @@ import {
   loadCheckoutSuccessSnapshot,
   saveCheckoutSuccessSnapshot,
 } from '@/utils/checkoutSuccessStorage';
+import {
+  groupCartItemsByVendor,
+  resolveCheckoutCartItems,
+  syncSelectedProductIds,
+  toggleAllProductsInSelection,
+  toggleProductInSelection,
+} from '@/utils/cartVendorCheckout';
 
 export default function CartPage() {
   const {
@@ -87,9 +94,12 @@ export default function CartPage() {
   const [selectedCheckoutVendorOrgId, setSelectedCheckoutVendorOrgId] = useState('');
   const [requiresVendorSelection, setRequiresVendorSelection] = useState(false);
   const [remainingCartCount, setRemainingCartCount] = useState(0);
+  const [selectedCheckoutProductIds, setSelectedCheckoutProductIds] = useState<string[]>([]);
   const [priceSyncNotice, setPriceSyncNotice] = useState<string | null>(null);
   const cartItemIds = cartItems.map((item) => item.id).join(',');
   const cartLinesKey = cartItems.map((item) => `${item.id}:${item.quantity}`).join(',');
+  const prevCartItemIdsRef = useRef<string[]>([]);
+  const prevCheckoutVendorOrgIdRef = useRef('');
 
   useEffect(() => {
     const saved = loadCheckoutSuccessSnapshot();
@@ -136,6 +146,27 @@ export default function CartPage() {
   }, [cartItemIds, syncCartPrices]);
 
   useEffect(() => {
+    if (!isSignedIn) {
+      setSelectedCheckoutProductIds([]);
+      prevCartItemIdsRef.current = [];
+      prevCheckoutVendorOrgIdRef.current = '';
+      return;
+    }
+
+    const currentIds = cartItems.map((item) => item.id);
+    const previousIds = prevCartItemIdsRef.current;
+    prevCartItemIdsRef.current = currentIds;
+
+    setSelectedCheckoutProductIds((prev) =>
+      syncSelectedProductIds({
+        previousSelection: prev,
+        previousCartIds: previousIds,
+        currentCartIds: currentIds,
+      })
+    );
+  }, [cartLinesKey, isSignedIn, cartItems]);
+
+  useEffect(() => {
     if (!isSignedIn || cartItems.length === 0) {
       if (cartItems.length === 0) {
         setCheckoutOptions({
@@ -150,7 +181,10 @@ export default function CartPage() {
         setVendorCount(0);
         setSelectedCheckoutVendorOrgId('');
         setRequiresVendorSelection(false);
+        setSelectedCheckoutProductIds([]);
         setPickupBranchId('');
+        prevCartItemIdsRef.current = [];
+        prevCheckoutVendorOrgIdRef.current = '';
       }
       return;
     }
@@ -208,12 +242,18 @@ export default function CartPage() {
 
         if (result.checkoutVendorOrgId) {
           setSelectedCheckoutVendorOrgId(result.checkoutVendorOrgId);
+          if (!prevCheckoutVendorOrgIdRef.current) {
+            prevCheckoutVendorOrgIdRef.current = result.checkoutVendorOrgId;
+          }
         } else if (
           result.vendorCount > 1 &&
           result.vendorCartSummary.length > 0 &&
           !selectedCheckoutVendorOrgId
         ) {
-          setSelectedCheckoutVendorOrgId(result.vendorCartSummary[0].orgId);
+          const firstVendor = result.vendorCartSummary[0];
+          setSelectedCheckoutVendorOrgId(firstVendor.orgId);
+          setSelectedCheckoutProductIds(firstVendor.productIds);
+          prevCheckoutVendorOrgIdRef.current = firstVendor.orgId;
         }
 
         const nextFulfillmentId = result.fulfillment.some((o) => o.id === fulfillmentMethod)
@@ -264,67 +304,42 @@ export default function CartPage() {
     };
   }, [cartLinesKey, isSignedIn, selectedCheckoutVendorOrgId]);
 
+  const selectedCheckoutProductIdSet = new Set(selectedCheckoutProductIds);
   const selectedVendorSummary =
     checkoutOptions.vendorCartSummary.find((vendor) => vendor.orgId === selectedCheckoutVendorOrgId) ||
     checkoutOptions.vendorCartSummary[0];
-  const checkoutProductIds = new Set(selectedVendorSummary?.productIds || []);
-  const checkoutCartItems =
-    vendorCount > 1
-      ? cartItems.filter((item) => checkoutProductIds.has(item.id))
-      : cartItems;
+  const checkoutCartItems = resolveCheckoutCartItems(
+    cartItems,
+    selectedCheckoutProductIds,
+    vendorCount > 1 ? selectedVendorSummary?.productIds : null
+  );
   const checkoutSubtotal = checkoutCartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
   const checkoutItemCount = checkoutCartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const vendorCartGroups = (() => {
-    if (checkoutOptions.vendorCartSummary.length > 0) {
-      return checkoutOptions.vendorCartSummary
-        .map((summary) => ({
-          orgId: summary.orgId,
-          vendorName: summary.vendorName,
-          subtotalCents: summary.subtotalCents,
-          itemCount: summary.itemCount,
-          items: cartItems.filter((item) => summary.productIds.includes(item.id)),
-        }))
-        .filter((group) => group.items.length > 0);
-    }
-
-    const byVendorName = new Map<
-      string,
-      {
-        orgId: string;
-        vendorName: string;
-        subtotalCents: number;
-        itemCount: number;
-        items: typeof cartItems;
-      }
-    >();
-
-    for (const item of cartItems) {
-      const existing = byVendorName.get(item.vendorName);
-      if (existing) {
-        existing.items.push(item);
-        existing.subtotalCents += item.price * item.quantity;
-        existing.itemCount += item.quantity;
-      } else {
-        byVendorName.set(item.vendorName, {
-          orgId: item.vendorName,
-          vendorName: item.vendorName,
-          subtotalCents: item.price * item.quantity,
-          itemCount: item.quantity,
-          items: [item],
-        });
-      }
-    }
-
-    return [...byVendorName.values()];
-  })();
+  const vendorCartGroups = groupCartItemsByVendor(cartItems, checkoutOptions.vendorCartSummary);
+  const showProductCheckoutSelection = isSignedIn;
   const showVendorCheckoutSelection = isSignedIn && vendorCount > 1;
 
-  const handleSelectCheckoutVendor = (orgId: string) => {
+  const handleSelectCheckoutVendor = (orgId: string, productIds: string[]) => {
+    if (prevCheckoutVendorOrgIdRef.current === orgId) return;
+    prevCheckoutVendorOrgIdRef.current = orgId;
     setSelectedCheckoutVendorOrgId(orgId);
+    setSelectedCheckoutProductIds(productIds);
     setPickupBranchId('');
+    setCheckoutError(null);
+  };
+
+  const toggleProductCheckout = (productId: string) => {
+    setSelectedCheckoutProductIds((prev) => toggleProductInSelection(prev, productId));
+    setCheckoutError(null);
+  };
+
+  const toggleAllProductsInGroup = (productIds: string[], checked: boolean) => {
+    setSelectedCheckoutProductIds((prev) =>
+      toggleAllProductsInSelection(prev, productIds, checked)
+    );
     setCheckoutError(null);
   };
 
@@ -446,7 +461,7 @@ export default function CartPage() {
       return;
     }
     if (checkoutCartItems.length === 0) {
-      setCheckoutError('No items selected for checkout.');
+      setCheckoutError('Tick at least one product to checkout.');
       return;
     }
 
@@ -461,7 +476,7 @@ export default function CartPage() {
       const result = await simulatedCheckoutAction(
         customerName,
         customerEmail,
-        cartItems.map((item) => ({
+        checkoutCartItems.map((item) => ({
           id: item.id,
           name: item.name,
           price: item.price,
@@ -686,7 +701,12 @@ export default function CartPage() {
             <div className="lg:col-span-8 space-y-4">
               {showVendorCheckoutSelection && (
                 <p className="text-[11px] text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-900 rounded-xl px-4 py-3">
-                  Select a vendor below to checkout. Items from other vendors stay in your cart for a separate order.
+                  Select a vendor, tick the products you want, then checkout. Unticked items stay in your cart.
+                </p>
+              )}
+              {showProductCheckoutSelection && !showVendorCheckoutSelection && (
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-900 rounded-xl px-4 py-3">
+                  Tick the products you want to checkout. Unticked items stay in your cart.
                 </p>
               )}
 
@@ -694,6 +714,16 @@ export default function CartPage() {
                 {vendorCartGroups.map((group) => {
                   const isSelectedForCheckout =
                     !showVendorCheckoutSelection || selectedCheckoutVendorOrgId === group.orgId;
+                  const groupProductIds = group.items.map((item) => item.id);
+                  const groupSelectedCount = group.items.filter((item) =>
+                    selectedCheckoutProductIdSet.has(item.id)
+                  ).length;
+                  const allGroupProductsSelected =
+                    group.items.length > 0 &&
+                    group.items.every((item) => selectedCheckoutProductIdSet.has(item.id));
+                  const showProductTicks =
+                    showProductCheckoutSelection &&
+                    (isSelectedForCheckout || !showVendorCheckoutSelection);
 
                   return (
                     <section
@@ -714,7 +744,9 @@ export default function CartPage() {
                               name="checkout-vendor"
                               value={group.orgId}
                               checked={selectedCheckoutVendorOrgId === group.orgId}
-                              onChange={() => handleSelectCheckoutVendor(group.orgId)}
+                              onChange={() =>
+                                handleSelectCheckoutVendor(group.orgId, groupProductIds)
+                              }
                               className="mt-1"
                             />
                             <span className="min-w-0">
@@ -736,7 +768,7 @@ export default function CartPage() {
                             </span>
                           </label>
                         ) : (
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <span className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1">
                               Vendor
                             </span>
@@ -749,15 +781,50 @@ export default function CartPage() {
                             </p>
                           </div>
                         )}
+                        {showProductTicks && (
+                          <label className="flex items-center gap-2 shrink-0 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={allGroupProductsSelected}
+                              ref={(el) => {
+                                if (el) {
+                                  el.indeterminate =
+                                    groupSelectedCount > 0 && !allGroupProductsSelected;
+                                }
+                              }}
+                              onChange={() =>
+                                toggleAllProductsInGroup(groupProductIds, !allGroupProductsSelected)
+                              }
+                              className="rounded border-zinc-300 dark:border-zinc-700"
+                            />
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                              All
+                            </span>
+                          </label>
+                        )}
                       </div>
 
                       <div className="divide-y divide-zinc-100 dark:divide-zinc-900 space-y-6">
-                        {group.items.map((item) => (
+                        {group.items.map((item) => {
+                          const isProductSelected = selectedCheckoutProductIdSet.has(item.id);
+
+                          return (
                           <div
                             key={item.id}
-                            className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 first:pt-0 last:pb-0"
+                            className={`flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 first:pt-0 last:pb-0 ${
+                              showProductTicks && !isProductSelected ? 'opacity-50' : ''
+                            }`}
                           >
                             <div className="flex gap-4 items-center flex-1 min-w-0">
+                              {showProductTicks && (
+                                <input
+                                  type="checkbox"
+                                  checked={isProductSelected}
+                                  onChange={() => toggleProductCheckout(item.id)}
+                                  className="mt-1 shrink-0 rounded border-zinc-300 dark:border-zinc-700"
+                                  aria-label={`Include ${item.name} in checkout`}
+                                />
+                              )}
                               <div className="w-20 h-20 relative flex-shrink-0 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-900 rounded-2xl overflow-hidden shadow-sm">
                                 {item.imageUrl ? (
                                   isVideoUrl(item.imageUrl) ? (
@@ -852,7 +919,8 @@ export default function CartPage() {
                               </button>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </section>
                   );
@@ -875,7 +943,17 @@ export default function CartPage() {
                 )}
 
                 <div className="space-y-3 text-xs font-mono">
-                  {vendorCount > 1 && selectedVendorSummary && (
+                  {isSignedIn && checkoutItemCount > 0 && checkoutItemCount < cartCount && (
+                    <p className="text-[10px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
+                      Checkout totals for {checkoutItemCount} ticked{' '}
+                      {checkoutItemCount === 1 ? 'item' : 'items'}
+                      {vendorCount > 1 && selectedVendorSummary
+                        ? ` from ${selectedVendorSummary.vendorName}`
+                        : ''}
+                      . Unticked items stay in your cart.
+                    </p>
+                  )}
+                  {vendorCount > 1 && selectedVendorSummary && checkoutItemCount === cartCount && (
                     <p className="text-[10px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
                       Checkout totals for {selectedVendorSummary.vendorName} ({checkoutItemCount}{' '}
                       {checkoutItemCount === 1 ? 'item' : 'items'}). Other vendors stay in your cart.
@@ -977,7 +1055,12 @@ export default function CartPage() {
                       <>
                         {requiresVendorSelection && (
                           <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-                            Select a vendor on the left to load delivery and payment options for that order.
+                            Select a vendor on the left and tick products to load delivery and payment options.
+                          </p>
+                        )}
+                        {isSignedIn && selectedCheckoutProductIds.length === 0 && !requiresVendorSelection && (
+                          <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                            Tick at least one product on the left to checkout.
                           </p>
                         )}
 
@@ -1150,6 +1233,7 @@ export default function CartPage() {
                         optionsLoading ||
                         !!optionsError ||
                         requiresVendorSelection ||
+                        selectedCheckoutProductIds.length === 0 ||
                         !selectedFulfillment ||
                         !selectedPayment ||
                         bankTransferMissingDetails ||
