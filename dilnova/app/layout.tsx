@@ -14,6 +14,8 @@ import { CartProvider } from './context/CartContext'
 import CartIcon from './components/CartIcon'
 import LanguageSelector from './components/LanguageSelector'
 import LanguageSplash from './components/LanguageSplash'
+import LanguageInitializer from './components/LanguageInitializer'
+import CartMergeBanner from './components/CartMergeBanner'
 import FloatingLanguageButton from './components/FloatingLanguageButton'
 
 import { getSystemSetting } from '@/utils/settings'
@@ -187,7 +189,9 @@ export default async function RootLayout({
                 </div>
               </header>
               {children}
+              <LanguageInitializer />
               <LanguageSplash systemName={systemName} />
+              <CartMergeBanner />
               <FloatingLanguageButton />
             </CartProvider>
             <SpeedInsights />

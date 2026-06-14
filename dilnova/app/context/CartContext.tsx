@@ -7,6 +7,8 @@ import {
   saveCustomerCartAction,
   type SyncedCartItem,
 } from '@/app/cart/cartSyncActions';
+import { syncCartPricesAction } from '@/app/cart/actions';
+import { GUEST_CART_STORAGE_KEY } from '@/utils/guestCartStorage';
 
 export interface CartItem {
   id: string;
@@ -20,6 +22,9 @@ export interface CartItem {
 
 interface CartContextType {
   cartItems: CartItem[];
+  isCartReady: boolean;
+  cartMergeNotice: string | null;
+  clearCartMergeNotice: () => void;
   addToCart: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -46,12 +51,8 @@ function mergeCartItems(local: CartItem[], remote: SyncedCartItem[]): CartItem[]
     if (existing) {
       byId.set(item.id, {
         ...existing,
+        ...item,
         quantity: Math.max(existing.quantity, item.quantity),
-        name: item.name,
-        price: item.price,
-        imageUrl: item.imageUrl,
-        vendorName: item.vendorName,
-        type: item.type,
       });
     } else {
       byId.set(item.id, { ...item });
@@ -61,51 +62,128 @@ function mergeCartItems(local: CartItem[], remote: SyncedCartItem[]): CartItem[]
   return [...byId.values()];
 }
 
+function applyCatalogSync(
+  items: CartItem[],
+  updates: { id: string; name: string; price: number }[],
+  removedIds: string[]
+): CartItem[] {
+  const removedSet = new Set(removedIds);
+  const updateById = new Map(updates.map((item) => [item.id, item]));
+
+  return items
+    .filter((item) => !removedSet.has(item.id))
+    .map((item) => {
+      const update = updateById.get(item.id);
+      if (!update) return item;
+      return { ...item, name: update.name, price: update.price };
+    });
+}
+
+function buildCartMergeNotice(
+  previousCount: number,
+  nextCount: number,
+  removedCount: number
+): string | null {
+  if (nextCount <= 0) {
+    if (removedCount > 0) {
+      return 'Some unavailable items were removed from your cart during sync.';
+    }
+    return null;
+  }
+
+  if (removedCount > 0) {
+    return `Cart synced — ${nextCount} item${nextCount === 1 ? '' : 's'} ready (${removedCount} unavailable item${removedCount === 1 ? '' : 's'} removed).`;
+  }
+
+  if (previousCount === 0) {
+    return `Cart restored — ${nextCount} item${nextCount === 1 ? '' : 's'} ready for checkout.`;
+  }
+
+  return `Cart synced — ${nextCount} item${nextCount === 1 ? '' : 's'} ready for checkout.`;
+}
+
+function countCartLines(items: CartItem[]): number {
+  return items.reduce((sum, item) => sum + item.quantity, 0);
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useUser();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isCartReady, setIsCartReady] = useState(false);
   const [serverMerged, setServerMerged] = useState(false);
+  const [cartMergeNotice, setCartMergeNotice] = useState<string | null>(null);
   const saveTimerRef = useRef<number | null>(null);
+  const cartItemsRef = useRef<CartItem[]>([]);
 
   useEffect(() => {
-    const savedCart = localStorage.getItem('dilnova_cart');
-    if (savedCart) {
-      try {
+    cartItemsRef.current = cartItems;
+  }, [cartItems]);
+
+  useEffect(() => {
+    try {
+      const savedCart = localStorage.getItem(GUEST_CART_STORAGE_KEY);
+      if (savedCart) {
         const parsed = JSON.parse(savedCart) as CartItem[];
-        setCartItems(parsed);
-      } catch (e) {
-        console.error('Failed to parse cart items', e);
+        if (Array.isArray(parsed)) {
+          setCartItems(parsed);
+        }
       }
+    } catch (error) {
+      console.error('Failed to parse cart items', error);
+    } finally {
+      setIsCartReady(true);
     }
-    setIsLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('dilnova_cart', JSON.stringify(cartItems));
-    }
-  }, [cartItems, isLoaded]);
+    if (!isCartReady) return;
+    localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(cartItems));
+  }, [cartItems, isCartReady]);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || serverMerged) return;
+    if (!isCartReady || !isSignedIn || serverMerged) return;
 
     let cancelled = false;
 
-    loadCustomerCartAction().then((result) => {
-      if (cancelled || !result.success) {
-        if (!cancelled) setServerMerged(true);
+    const mergeSignedInCart = async () => {
+      const localSnapshot = cartItemsRef.current;
+      const previousLineCount = countCartLines(localSnapshot);
+
+      const result = await loadCustomerCartAction();
+      if (cancelled) return;
+
+      if (!result.success) {
+        setServerMerged(true);
         return;
       }
 
-      setCartItems((prev) => mergeCartItems(prev, result.items || []));
+      let merged = mergeCartItems(localSnapshot, result.items || []);
+
+      const syncResult = await syncCartPricesAction(merged.map((item) => item.id));
+      if (cancelled) return;
+
+      let removedCount = 0;
+      if (syncResult.success) {
+        removedCount = syncResult.removedIds.length;
+        merged = applyCatalogSync(merged, syncResult.items, syncResult.removedIds);
+      }
+
+      const nextLineCount = countCartLines(merged);
+      setCartItems(merged);
+      setCartMergeNotice(buildCartMergeNotice(previousLineCount, nextLineCount, removedCount));
       setServerMerged(true);
-    });
+
+      if (merged.length > 0) {
+        await saveCustomerCartAction(merged);
+      }
+    };
+
+    void mergeSignedInCart();
 
     return () => {
       cancelled = true;
     };
-  }, [isLoaded, isSignedIn, serverMerged]);
+  }, [isCartReady, isSignedIn, serverMerged]);
 
   const persistServerCart = useCallback(
     (items: CartItem[]) => {
@@ -123,9 +201,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn || !serverMerged) return;
+    if (!isCartReady || !isSignedIn || !serverMerged) return;
     persistServerCart(cartItems);
-  }, [cartItems, isLoaded, isSignedIn, serverMerged, persistServerCart]);
+  }, [cartItems, isCartReady, isSignedIn, serverMerged, persistServerCart]);
 
   useEffect(() => {
     if (!isSignedIn) {
@@ -161,6 +239,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     setCartItems([]);
+    setCartMergeNotice(null);
     if (isSignedIn) {
       void saveCustomerCartAction([]);
     }
@@ -170,27 +249,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     updates: { id: string; name: string; price: number }[],
     removedIds: string[] = []
   ) => {
-    const removedSet = new Set(removedIds);
-    const updateById = new Map(updates.map((item) => [item.id, item]));
-
-    setCartItems((prevItems) =>
-      prevItems
-        .filter((item) => !removedSet.has(item.id))
-        .map((item) => {
-          const update = updateById.get(item.id);
-          if (!update) return item;
-          return { ...item, name: update.name, price: update.price };
-        })
-    );
+    setCartItems((prevItems) => applyCatalogSync(prevItems, updates, removedIds));
   };
 
+  const clearCartMergeNotice = () => setCartMergeNotice(null);
+
   const cartTotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const cartCount = countCartLines(cartItems);
 
   return (
     <CartContext.Provider
       value={{
         cartItems,
+        isCartReady,
+        cartMergeNotice,
+        clearCartMergeNotice,
         addToCart,
         removeFromCart,
         updateQuantity,

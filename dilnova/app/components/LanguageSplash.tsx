@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import {
   LANGUAGES,
-  getLangPreference,
   detectBrowserLanguage,
   applyLanguage,
+  hasLanguageChoice,
+  initDefaultLanguageIfNeeded,
 } from './languageUtils';
 
 interface LanguageSplashProps {
@@ -19,9 +20,9 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
   const [detectedLang, setDetectedLang] = useState('en');
 
   useEffect(() => {
-    // Only show if user has never picked a language
-    const pref = getLangPreference();
-    if (pref) return; // Already chose before — don't show
+    initDefaultLanguageIfNeeded();
+
+    if (hasLanguageChoice()) return;
 
     const detected = detectBrowserLanguage();
     requestAnimationFrame(() => {
@@ -29,7 +30,6 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
       setVisible(true);
     });
 
-    // Lock body scroll while splash is open
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
@@ -47,7 +47,15 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
     }, 500);
   };
 
-  if (!visible) return null;  return (
+  const handleSkip = () => {
+    applyLanguage('en', false);
+    document.body.style.overflow = '';
+    setVisible(false);
+  };
+
+  if (!visible) return null;
+
+  return (
     <div
       className={`fixed inset-0 z-[99999] overflow-y-auto bg-zinc-950/90 backdrop-blur-2xl transition-opacity duration-500 ${
         animatingOut ? 'lang-splash-exit' : 'lang-splash-enter'
@@ -179,9 +187,18 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
           </div>
 
           {/* Subtle footer hint */}
-          <p className="text-[10px] text-zinc-400 text-center font-mono uppercase tracking-wider mt-2">
-            You can change your language anytime from the menu
-          </p>
+          <div className="flex flex-col items-center gap-3 mt-2">
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="text-[11px] text-zinc-300 hover:text-white font-semibold underline underline-offset-4"
+            >
+              Continue in English without translating
+            </button>
+            <p className="text-[10px] text-zinc-400 text-center font-mono uppercase tracking-wider">
+              You can change your language anytime from the menu
+            </p>
+          </div>
         </div>
       </div>
     </div>

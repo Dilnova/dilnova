@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { usePathname } from 'next/navigation';
 import { SignInButton, SignUpButton } from '@clerk/nextjs';
+import { useClerkAuthRedirectUrl } from '@/app/hooks/useClerkAuthRedirectUrl';
 
 const SignInTriggerButton = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
   (props, ref) => (
@@ -31,8 +31,7 @@ const SignUpTriggerButton = React.forwardRef<HTMLButtonElement, React.ButtonHTML
 SignUpTriggerButton.displayName = 'SignUpTriggerButton';
 
 export default function HeaderAuthButtons() {
-  const pathname = usePathname();
-  const redirectUrl = pathname && pathname !== '/' ? pathname : undefined;
+  const redirectUrl = useClerkAuthRedirectUrl();
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-xs font-semibold">

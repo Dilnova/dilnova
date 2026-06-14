@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { DEFAULT_APP_URL } from "./utils/brand";
 
 // Helper to extract the custom Clerk domain from the publishable key
 const getClerkDomain = (): string | null => {
@@ -57,6 +58,30 @@ const nextConfig: NextConfig = {
   // Allow next/image to optimize images from these external domains
   images: {
     remotePatterns,
+  },
+
+  async redirects() {
+    let canonicalHost: string | null = null;
+    try {
+      canonicalHost = new URL(DEFAULT_APP_URL).hostname;
+    } catch {
+      return [];
+    }
+
+    if (!canonicalHost.startsWith('www.') || canonicalHost.includes('localhost')) {
+      return [];
+    }
+
+    const bareHost = canonicalHost.replace(/^www\./, '');
+
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host' as const, value: bareHost }],
+        destination: `${DEFAULT_APP_URL}/:path*`,
+        permanent: true,
+      },
+    ];
   },
 
   async headers() {

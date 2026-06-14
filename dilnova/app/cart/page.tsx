@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SignInButton, SignUpButton, useUser } from '@clerk/nextjs';
+import { useClerkAuthRedirectUrl } from '@/app/hooks/useClerkAuthRedirectUrl';
 import { useCart } from '../context/CartContext';
 import { isVideoUrl } from '@/utils/media';
 import {
@@ -37,7 +38,10 @@ export default function CartPage() {
     syncCartPrices,
     cartTotal,
     cartCount,
+    isCartReady,
   } = useCart();
+
+  const authRedirectUrl = useClerkAuthRedirectUrl();
 
   const router = useRouter();
   const { isSignedIn, user } = useUser();
@@ -532,7 +536,12 @@ export default function CartPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-6">
-        {cartItems.length === 0 ? (
+        {!isCartReady ? (
+          <div className="text-center py-20 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-white dark:bg-zinc-900/10 shadow-sm max-w-xl mx-auto space-y-4">
+            <span className="text-4xl animate-pulse">🛒</span>
+            <p className="text-xs font-mono uppercase tracking-wider text-zinc-500">Loading your cart...</p>
+          </div>
+        ) : cartItems.length === 0 ? (
           <div className="text-center py-20 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-white dark:bg-zinc-900/10 shadow-sm max-w-xl mx-auto space-y-4">
             <span className="text-4xl">🛍️</span>
             <div className="space-y-1">
@@ -720,7 +729,7 @@ export default function CartPage() {
                         An account is required to place orders, track status, upload payment slips, and view invoices.
                       </p>
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 pt-1">
-                        <SignInButton mode="modal" forceRedirectUrl="/cart">
+                        <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? '/cart'}>
                           <button
                             type="button"
                             className="w-full sm:w-auto px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl transition-all cursor-pointer"
@@ -728,7 +737,7 @@ export default function CartPage() {
                             Sign In
                           </button>
                         </SignInButton>
-                        <SignUpButton mode="modal" forceRedirectUrl="/cart">
+                        <SignUpButton mode="modal" forceRedirectUrl={authRedirectUrl ?? '/cart'}>
                           <button
                             type="button"
                             className="w-full sm:w-auto px-5 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 text-xs font-bold font-mono uppercase tracking-wider rounded-xl transition-all cursor-pointer"
@@ -932,7 +941,7 @@ export default function CartPage() {
 
                 <div className="pt-2 space-y-3">
                   {!isSignedIn ? (
-                    <SignInButton mode="modal" forceRedirectUrl="/cart">
+                    <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? '/cart'}>
                       <button
                         type="button"
                         className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer"
@@ -991,7 +1000,7 @@ export default function CartPage() {
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
                       Sign in to email a summary of your cart items to your account address.
                     </p>
-                    <SignInButton mode="modal" forceRedirectUrl="/cart">
+                    <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? '/cart'}>
                       <button
                         type="button"
                         className="w-full text-center py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer"

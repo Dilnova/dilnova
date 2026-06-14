@@ -1,15 +1,14 @@
 'use client';
 
 import { SignInButton } from '@clerk/nextjs';
-import { usePathname } from 'next/navigation';
+import { useClerkAuthRedirectUrl } from '@/app/hooks/useClerkAuthRedirectUrl';
 
 interface FollowButtonProps {
   orgName: string;
 }
 
 export default function FollowButton({ orgName }: FollowButtonProps) {
-  const pathname = usePathname();
-  const redirectUrl = pathname && pathname !== '/' ? pathname : undefined;
+  const redirectUrl = useClerkAuthRedirectUrl();
 
   return (
     <SignInButton mode="modal" forceRedirectUrl={redirectUrl}>

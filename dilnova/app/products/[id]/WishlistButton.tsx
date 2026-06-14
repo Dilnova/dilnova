@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { SignInButton } from '@clerk/nextjs';
-import { usePathname } from 'next/navigation';
+import { useClerkAuthRedirectUrl } from '@/app/hooks/useClerkAuthRedirectUrl';
 import { toggleWishlistAction } from './actions';
 
 interface WishlistButtonProps {
@@ -20,7 +20,7 @@ export default function WishlistButton({
   className = '',
   showLabel = false,
 }: WishlistButtonProps) {
-  const pathname = usePathname();
+  const redirectUrl = useClerkAuthRedirectUrl();
   const [isFavorited, setIsFavorited] = useState(initialFavorited);
   const [isPending, startTransition] = useTransition();
 
@@ -73,8 +73,6 @@ export default function WishlistButton({
   };
 
   if (!isLoggedIn) {
-    const redirectUrl = pathname && pathname !== '/' ? pathname : undefined;
-
     return (
       <SignInButton mode="modal" forceRedirectUrl={redirectUrl}>
         <button

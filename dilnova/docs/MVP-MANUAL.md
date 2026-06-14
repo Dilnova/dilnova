@@ -549,7 +549,31 @@ Items identified in audits that are **not** fully closed:
 - P0: products without inventory rows no longer appear purchasable (`resolveOnlineProductPurchaseState`)
 - POS member data scope tightened (`getVendorBillingRegisterData`)
 - In-app vendor phase checklists (Phases 1–6)
+- **Phase 0 (guest → sign-in):** language persisted in cookie + localStorage, cart hydration/merge on sign-in, redirect to `/cart` when cart has items, canonical `www` redirect
 
 ---
 
-*Last updated: June 2026 — sign-in checkout, bank transfer slip flow, vendor order ops, phase checklists, inventory purchasability fix.*
+## Phase 0 — Guest cart & sign-in QA (5 minutes)
+
+Run in **incognito** unless noted.
+
+| Step | Action | Pass criteria |
+|------|--------|---------------|
+| 1 | Open site (use **`https://www.dilstar.pp.ua`** only — not bare domain) | No repeated full-screen language block after first visit |
+| 2 | Browse `/products`, add **2 in-stock items** to cart | Cart badge shows 2 |
+| 3 | Open `/cart` | Items visible; no flash of “empty cart” before load completes |
+| 4 | Click **Sign In to Checkout** and complete sign-in | Return to `/cart` with **both items** still present |
+| 5 | After sign-in | Green toast: “Cart restored / synced — N items ready” (if items merged) |
+| 6 | Refresh `/cart` while signed in | Same items remain |
+| 7 | Sign out, sign back in | Cart still merges from localStorage + server |
+
+**Failure signals to report:**
+
+- Language splash covers page again after sign-in
+- Cart empty after sign-in (but was full as guest)
+- Redirect lands on `/` instead of `/cart` when cart had items
+- `dilstar.pp.ua` (no www) behaves differently from `www.dilstar.pp.ua`
+
+---
+
+*Last updated: June 2026 — Phase 0 guest cart/sign-in, sign-in checkout, bank transfer slip flow, vendor order ops, phase checklists.*

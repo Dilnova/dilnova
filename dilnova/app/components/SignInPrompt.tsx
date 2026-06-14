@@ -1,7 +1,7 @@
 'use client';
 
 import { SignInButton, SignUpButton } from '@clerk/nextjs';
-import { usePathname } from 'next/navigation';
+import { useClerkAuthRedirectUrl } from '@/app/hooks/useClerkAuthRedirectUrl';
 
 interface SignInPromptProps {
   message: string;
@@ -9,8 +9,7 @@ interface SignInPromptProps {
 }
 
 export default function SignInPrompt({ message, className = '' }: SignInPromptProps) {
-  const pathname = usePathname();
-  const redirectUrl = pathname && pathname !== '/' ? pathname : undefined;
+  const redirectUrl = useClerkAuthRedirectUrl();
 
   return (
     <div
