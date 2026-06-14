@@ -25,19 +25,21 @@ features/<domain>/
 
 **Planned domains:** `auth`, `catalog`, `cart`, `orders`, `customer`, `vendor`, `inventory`, `billing`, `organization`, `superadmin`, `contact`, `storefront`
 
-**Migrated:** `vendor-org`, `cart`, `orders`, `inventory`, `catalog`, `billing`, `superadmin` (schema), `organization` (schema), `vendor` (schema), `admin` (schema)
+**Migrated:** `vendor-org`, `cart`, `orders`, `inventory`, `catalog`, `billing`, `auth`, `contact`, `customer`, `storefront`, `admin`, `organization`, `vendor`, `superadmin` (actions + infra; UI still in `app/` for some domains)
 
 ### `shared/` — infrastructure (no product rules)
 
 ```
 shared/
-├── db/             # client, schema (split over time)
+├── db/             # client + schema
 ├── auth/           # Clerk cache, superadmin guard
 ├── validation/     # uuidField, shared Zod primitives
-├── security/       # rate-limit, async context / correlation IDs
+├── security/       # rate-limit, async context, upstash health
 ├── audit/          # audit logger
-├── email/          # (planned)
-├── media/          # (planned)
+├── logging/        # structured logger
+├── platform/       # settings, brand constants
+├── email/          # SMTP client, delivery
+├── media/          # Cloudinary + video helpers
 └── ui/             # dumb / design-system components (planned)
 ```
 
@@ -95,6 +97,17 @@ import { rateLimit } from '@/shared/security/rate-limit';
 | **9** ✅ | Split `db/schema.ts` under `shared/db/schema/` |
 | **10** ✅ | Split `utils/schemas.ts` per feature |
 | **11** ✅ | Add Playwright E2E under `tests/e2e/` |
+| **12** ✅ | Structure cleanup: move remaining `app/` actions + `utils/` real code → `features/` / `shared/` (shims retained) |
+
+## Remaining optional cleanup (no logic changes)
+
+These are **structural only** — safe to do incrementally:
+
+1. Move domain **components** from `app/` → `features/*/components/` (23 app shims already exist for some)
+2. Extract **`queries.ts`** per domain for fat pages (`customer/page.tsx`, `vendor/page.tsx`, etc.)
+3. Move **`utils/*.test.ts`** → `tests/unit/features/` and `tests/unit/shared/`
+4. Update imports from `@/utils/*` / `@/db` → `@/shared/*` / `@/features/*` (grep until zero, then delete shims)
+5. Move storefront custom components from `app/vendors/[slug]/custom/` → `features/storefront/components/`
 
 ## Backward compatibility
 

@@ -1,8 +1,8 @@
 import { headers } from 'next/headers';
-import { logger } from '@/utils/logger';
+import { logger } from '@/shared/logging/logger';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
-import { readUpstashEnv } from '@/utils/upstashHealth';
+import { readUpstashEnv } from '@/shared/security/upstash-health';
 
 // In-memory fallback map for development/testing when Upstash env vars are not configured
 const memoryTracker = new Map<string, number[]>();

@@ -1,5 +1,5 @@
 import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
-import { logger } from '@/utils/logger';
+import { logger } from '@/shared/logging/logger';
 import { unstable_cache } from 'next/cache';
 
 export interface CachedOrg {

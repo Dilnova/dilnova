@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { incrementProductViewsAction } from '@/features/catalog/product-detail.actions';
-import { db } from '@/db';
+import { db } from '@/shared/db/client';
 import { rateLimit } from '@/utils/rateLimit';
 
 // Mock DB client
-vi.mock('@/db', () => ({
+vi.mock('@/shared/db/client', () => ({
   db: {
     update: vi.fn().mockReturnThis(),
     set: vi.fn().mockReturnThis(),

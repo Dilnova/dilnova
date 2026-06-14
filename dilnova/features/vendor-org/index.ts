@@ -24,3 +24,5 @@ export {
 export { reassignProductOrgAction, reassignVendorOrgAction } from '@/features/vendor-org/reassign.actions';
 
 export { default as VendorOrgIssuesTab } from '@/features/vendor-org/components/VendorOrgIssuesTab';
+
+export * from '@/features/vendor-org/emails';

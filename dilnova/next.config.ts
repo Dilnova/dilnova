@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { DEFAULT_APP_URL } from "./utils/brand";
+import { DEFAULT_APP_URL } from "./shared/platform/brand";
 
 // Helper to extract the custom Clerk domain from the publishable key
 const getClerkDomain = (): string | null => {

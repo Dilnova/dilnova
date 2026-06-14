@@ -28,14 +28,9 @@ tests/      → unit, integration, e2e
 | `inventory` | **Migrated** |
 | `catalog` | **Migrated** |
 | `billing` | **Migrated** |
-| `superadmin`, `organization`, `vendor`, `admin` | **Schema only** (actions still in `app/`) |
+| `superadmin`, `organization`, `vendor`, `admin` | **Migrated** (actions + schemas) |
+| `auth`, `contact`, `customer`, `storefront` | **Migrated** (core modules; some UI still in `app/`) |
 
-Legacy `@/utils/*` and `@/db/*` imports remain valid via shims until each domain is migrated.
+Legacy `@/utils/*` and `@/db/*` imports remain valid via shims.
 
-**Shared infra (Phase 8):** `@/shared/security/*`, `@/shared/audit/*`, `@/shared/auth/*` now contain real implementations; `@/utils/rateLimit`, `asyncContext`, `auditLogger`, `authGuards`, `clerkCache` are shims.
-
-**DB schema (Phase 9):** Canonical schema lives in `@/shared/db/schema/*` (platform, catalog, inventory, orders, billing); `@/db/schema` is a backward-compat shim.
-
-**Validation (Phase 10):** Zod schemas live in `@/features/<domain>/schema`; `@/utils/schemas` is a backward-compat re-export barrel.
-
-**E2E (Phase 11):** Playwright RBAC suites under `tests/e2e/rbac/` — run via `pnpm test:e2e`.
+**Shared infra (Phase 8–12):** Real code in `@/shared/security/*`, `@/shared/audit/*`, `@/shared/auth/*`, `@/shared/logging/*`, `@/shared/platform/*`, `@/shared/email/*`, `@/shared/media/*`, `@/shared/db/*`.

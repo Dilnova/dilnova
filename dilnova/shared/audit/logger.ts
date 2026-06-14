@@ -1,6 +1,6 @@
 import { db } from '@/shared/db/client';
 import { auditLogs } from '@/shared/db/schema';
-import { logger } from '@/utils/logger';
+import { logger } from '@/shared/logging/logger';
 
 export interface AuditLogParams {
   userId: string;
