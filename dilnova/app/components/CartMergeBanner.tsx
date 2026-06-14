@@ -1,9 +1,22 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useCart } from '@/app/context/CartContext';
+
+const AUTO_DISMISS_MS = 4000;
 
 export default function CartMergeBanner() {
   const { cartMergeNotice, clearCartMergeNotice } = useCart();
+
+  useEffect(() => {
+    if (!cartMergeNotice) return;
+
+    const timer = window.setTimeout(() => {
+      clearCartMergeNotice();
+    }, AUTO_DISMISS_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [cartMergeNotice, clearCartMergeNotice]);
 
   if (!cartMergeNotice) return null;
 

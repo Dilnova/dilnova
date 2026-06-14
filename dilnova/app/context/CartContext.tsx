@@ -258,7 +258,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCartItems((prevItems) => applyCatalogSync(prevItems, updates, removedIds));
   };
 
-  const clearCartMergeNotice = () => setCartMergeNotice(null);
+  const clearCartMergeNotice = useCallback(() => setCartMergeNotice(null), []);
 
   const cartTotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const cartCount = countCartLines(cartItems);
