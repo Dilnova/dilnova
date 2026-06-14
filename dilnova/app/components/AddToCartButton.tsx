@@ -63,7 +63,7 @@ export default function AddToCartButton({
       existingVendors.size >= 1
     ) {
       setVendorWarning(
-        'Adding items from another vendor. Store pickup will not be available at checkout.'
+        'Your cart already has items from another vendor. At checkout you can choose which vendor to order from first.'
       );
       window.setTimeout(() => setVendorWarning(null), 5000);
     }

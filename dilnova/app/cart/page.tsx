@@ -33,6 +33,7 @@ export default function CartPage() {
   const {
     cartItems,
     removeFromCart,
+    removeItemsByIds,
     updateQuantity,
     clearCart,
     syncCartPrices,
@@ -72,11 +73,20 @@ export default function CartPage() {
         configured: boolean;
       }
     >;
-    vendorCartSummary: { orgId: string; vendorName: string; subtotalCents: number }[];
+    vendorCartSummary: {
+      orgId: string;
+      vendorName: string;
+      subtotalCents: number;
+      productIds: string[];
+      itemCount: number;
+    }[];
   }>({ fulfillment: [], payment: [], pickupBranches: [], vendorBankTransferByOrg: {}, vendorCartSummary: [] });
   const [optionsLoading, setOptionsLoading] = useState(false);
   const [optionsError, setOptionsError] = useState<string | null>(null);
   const [vendorCount, setVendorCount] = useState(0);
+  const [selectedCheckoutVendorOrgId, setSelectedCheckoutVendorOrgId] = useState('');
+  const [requiresVendorSelection, setRequiresVendorSelection] = useState(false);
+  const [remainingCartCount, setRemainingCartCount] = useState(0);
   const [priceSyncNotice, setPriceSyncNotice] = useState<string | null>(null);
   const cartItemIds = cartItems.map((item) => item.id).join(',');
   const cartLinesKey = cartItems.map((item) => `${item.id}:${item.quantity}`).join(',');
@@ -138,6 +148,8 @@ export default function CartPage() {
         setOptionsError(null);
         setOptionsLoading(false);
         setVendorCount(0);
+        setSelectedCheckoutVendorOrgId('');
+        setRequiresVendorSelection(false);
         setPickupBranchId('');
       }
       return;
@@ -159,7 +171,10 @@ export default function CartPage() {
       setOptionsError('Checkout options timed out. Please refresh the page and try again.');
     }, 20000);
 
-    getCartCheckoutOptionsAction(lines)
+    getCartCheckoutOptionsAction(
+      lines,
+      selectedCheckoutVendorOrgId || null
+    )
       .then((result) => {
         if (!active) return;
 
@@ -173,6 +188,8 @@ export default function CartPage() {
             vendorCartSummary: [],
           });
           setVendorCount(0);
+          setSelectedCheckoutVendorOrgId('');
+          setRequiresVendorSelection(false);
           setFulfillmentMethod('');
           setPaymentMethod('');
           setPickupBranchId('');
@@ -187,6 +204,17 @@ export default function CartPage() {
           vendorCartSummary: result.vendorCartSummary || [],
         });
         setVendorCount(result.vendorCount);
+        setRequiresVendorSelection(result.requiresVendorSelection === true);
+
+        if (result.checkoutVendorOrgId) {
+          setSelectedCheckoutVendorOrgId(result.checkoutVendorOrgId);
+        } else if (
+          result.vendorCount > 1 &&
+          result.vendorCartSummary.length > 0 &&
+          !selectedCheckoutVendorOrgId
+        ) {
+          setSelectedCheckoutVendorOrgId(result.vendorCartSummary[0].orgId);
+        }
 
         const nextFulfillmentId = result.fulfillment.some((o) => o.id === fulfillmentMethod)
           ? fulfillmentMethod
@@ -222,6 +250,8 @@ export default function CartPage() {
           vendorCartSummary: [],
         });
         setVendorCount(0);
+        setSelectedCheckoutVendorOrgId('');
+        setRequiresVendorSelection(false);
       })
       .finally(() => {
         window.clearTimeout(loadTimeout);
@@ -232,7 +262,71 @@ export default function CartPage() {
       active = false;
       window.clearTimeout(loadTimeout);
     };
-  }, [cartLinesKey, isSignedIn]);
+  }, [cartLinesKey, isSignedIn, selectedCheckoutVendorOrgId]);
+
+  const selectedVendorSummary =
+    checkoutOptions.vendorCartSummary.find((vendor) => vendor.orgId === selectedCheckoutVendorOrgId) ||
+    checkoutOptions.vendorCartSummary[0];
+  const checkoutProductIds = new Set(selectedVendorSummary?.productIds || []);
+  const checkoutCartItems =
+    vendorCount > 1
+      ? cartItems.filter((item) => checkoutProductIds.has(item.id))
+      : cartItems;
+  const checkoutSubtotal = checkoutCartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const checkoutItemCount = checkoutCartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const vendorCartGroups = (() => {
+    if (checkoutOptions.vendorCartSummary.length > 0) {
+      return checkoutOptions.vendorCartSummary
+        .map((summary) => ({
+          orgId: summary.orgId,
+          vendorName: summary.vendorName,
+          subtotalCents: summary.subtotalCents,
+          itemCount: summary.itemCount,
+          items: cartItems.filter((item) => summary.productIds.includes(item.id)),
+        }))
+        .filter((group) => group.items.length > 0);
+    }
+
+    const byVendorName = new Map<
+      string,
+      {
+        orgId: string;
+        vendorName: string;
+        subtotalCents: number;
+        itemCount: number;
+        items: typeof cartItems;
+      }
+    >();
+
+    for (const item of cartItems) {
+      const existing = byVendorName.get(item.vendorName);
+      if (existing) {
+        existing.items.push(item);
+        existing.subtotalCents += item.price * item.quantity;
+        existing.itemCount += item.quantity;
+      } else {
+        byVendorName.set(item.vendorName, {
+          orgId: item.vendorName,
+          vendorName: item.vendorName,
+          subtotalCents: item.price * item.quantity,
+          itemCount: item.quantity,
+          items: [item],
+        });
+      }
+    }
+
+    return [...byVendorName.values()];
+  })();
+  const showVendorCheckoutSelection = isSignedIn && vendorCount > 1;
+
+  const handleSelectCheckoutVendor = (orgId: string) => {
+    setSelectedCheckoutVendorOrgId(orgId);
+    setPickupBranchId('');
+    setCheckoutError(null);
+  };
 
   const selectedFulfillment = checkoutOptions.fulfillment.find((o) => o.id === fulfillmentMethod);
   const requiresDeliveryAddress = Boolean(selectedFulfillment && !selectedFulfillment.requiresBranch);
@@ -347,6 +441,20 @@ export default function CartPage() {
       }
     }
 
+    if (vendorCount > 1 && !selectedCheckoutVendorOrgId) {
+      setCheckoutError('Select a vendor to checkout.');
+      return;
+    }
+    if (checkoutCartItems.length === 0) {
+      setCheckoutError('No items selected for checkout.');
+      return;
+    }
+
+    const checkoutTotalsForOrder = calculateCheckoutTotals(
+      checkoutSubtotal,
+      selectedFulfillment?.zeroShipping ?? false
+    );
+
     setCheckoutStatus('processing');
 
     try {
@@ -361,16 +469,22 @@ export default function CartPage() {
           vendorName: item.vendorName,
           type: item.type,
         })),
-        grandTotal,
+        checkoutTotalsForOrder.grandTotal,
         fulfillmentMethod,
         paymentMethod,
         selectedFulfillment.requiresBranch ? pickupBranchId : null,
         requiresDeliveryAddress ? shippingAddress.trim() : null,
-        requiresDeliveryAddress ? shippingPhone.trim() || null : null
+        requiresDeliveryAddress ? shippingPhone.trim() || null : null,
+        vendorCount > 1 ? selectedCheckoutVendorOrgId : null
       );
 
       if (result.success) {
-        clearCart();
+        const checkedOutIds = checkoutCartItems.map((item) => item.id);
+        const remainingItems = cartItems.filter((item) => !checkedOutIds.includes(item.id));
+        removeItemsByIds(checkedOutIds);
+        setRemainingCartCount(
+          remainingItems.reduce((sum, item) => sum + item.quantity, 0)
+        );
         setConfirmedOrderEmail(customerEmail);
         setConfirmedOrderId(result.orderId || '');
         setBankTransferInstructions(result.bankTransferInstructions || null);
@@ -398,23 +512,26 @@ export default function CartPage() {
   const handleSuccessClose = () => {
     clearCheckoutSuccessSnapshot();
     setCheckoutStatus('idle');
+    setRemainingCartCount(0);
+    if (remainingCartCount > 0) {
+      router.push('/cart');
+      return;
+    }
     router.push('/products');
   };
 
   const checkoutTotals = calculateCheckoutTotals(
-    cartTotal,
+    checkoutSubtotal,
     selectedFulfillment?.zeroShipping ?? false
   );
   const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = checkoutTotals;
   const bankTransferSelected =
-    isBankTransferPayment(paymentMethod) && checkoutOptions.vendorCartSummary.length > 0;
+    isBankTransferPayment(paymentMethod) &&
+    selectedCheckoutVendorOrgId.length > 0 &&
+    checkoutOptions.vendorBankTransferByOrg[selectedCheckoutVendorOrgId] != null;
   const bankTransferMissingDetails =
     bankTransferSelected &&
-    checkoutOptions.vendorCartSummary.some(
-      (vendor) => !checkoutOptions.vendorBankTransferByOrg[vendor.orgId]?.configured
-    );
-  const multiVendorPendingPaymentBlocked =
-    vendorCount > 1 && selectedPayment?.pendingPayment === true;
+    !checkoutOptions.vendorBankTransferByOrg[selectedCheckoutVendorOrgId]?.configured;
 
   if (checkoutStatus === 'success') {
     const isBankTransferOrder = Boolean(bankTransferInstructions);
@@ -465,6 +582,11 @@ export default function CartPage() {
                 Order ID: {confirmedOrderId.slice(0, 8).toUpperCase()}
               </p>
             )}
+            {remainingCartCount > 0 && (
+              <p className="text-[11px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
+                {remainingCartCount} item{remainingCartCount === 1 ? '' : 's'} from other vendors remain in your cart. Return to the cart to checkout the next vendor.
+              </p>
+            )}
           </div>
 
           {bankTransferInstructions && (
@@ -495,7 +617,7 @@ export default function CartPage() {
               onClick={handleSuccessClose}
               className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer"
             >
-              Continue Shopping
+              {remainingCartCount > 0 ? 'Back to Cart' : 'Continue Shopping'}
             </button>
           </div>
         </div>
@@ -560,116 +682,181 @@ export default function CartPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-            {/* Left side: Cart Items List */}
+            {/* Left side: Cart Items grouped by vendor */}
             <div className="lg:col-span-8 space-y-4">
-              <div className="bg-white border border-zinc-200/80 rounded-2xl p-6 dark:bg-zinc-950 dark:border-zinc-900 shadow-sm space-y-6">
-                <div className="divide-y divide-zinc-100 dark:divide-zinc-900 space-y-6">
-                  {cartItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 first:pt-0 last:pb-0"
+              {showVendorCheckoutSelection && (
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-900 rounded-xl px-4 py-3">
+                  Select a vendor below to checkout. Items from other vendors stay in your cart for a separate order.
+                </p>
+              )}
+
+              <div className="space-y-4">
+                {vendorCartGroups.map((group) => {
+                  const isSelectedForCheckout =
+                    !showVendorCheckoutSelection || selectedCheckoutVendorOrgId === group.orgId;
+
+                  return (
+                    <section
+                      key={group.orgId}
+                      className={`bg-white border rounded-2xl p-6 dark:bg-zinc-950 shadow-sm transition-all ${
+                        showVendorCheckoutSelection
+                          ? isSelectedForCheckout
+                            ? 'border-purple-500/50 bg-purple-500/[0.03] ring-1 ring-purple-500/20'
+                            : 'border-zinc-200/80 dark:border-zinc-900 opacity-75'
+                          : 'border-zinc-200/80 dark:border-zinc-900'
+                      }`}
                     >
-                      {/* Product Details Section */}
-                      <div className="flex gap-4 items-center flex-1 min-w-0">
-                        {/* Thumbnail */}
-                        <div className="w-20 h-20 relative flex-shrink-0 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-900 rounded-2xl overflow-hidden shadow-sm">
-                          {item.imageUrl ? (
-                            isVideoUrl(item.imageUrl) ? (
-                              <video
-                                src={item.imageUrl}
-                                muted
-                                loop
-                                playsInline
-                                autoPlay
-                                className="object-cover w-full h-full"
-                              />
-                            ) : (
-                              <Image
-                                src={item.imageUrl}
-                                alt={item.name}
-                                fill
-                                className="object-cover"
-                                sizes="80px"
-                              />
-                            )
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xl bg-zinc-100 dark:bg-zinc-900">
-                              📦
+                      <div className="flex items-start justify-between gap-4 pb-5 mb-5 border-b border-zinc-100 dark:border-zinc-900">
+                        {showVendorCheckoutSelection ? (
+                          <label className="flex items-start gap-3 cursor-pointer flex-1 min-w-0">
+                            <input
+                              type="radio"
+                              name="checkout-vendor"
+                              value={group.orgId}
+                              checked={selectedCheckoutVendorOrgId === group.orgId}
+                              onChange={() => handleSelectCheckoutVendor(group.orgId)}
+                              className="mt-1"
+                            />
+                            <span className="min-w-0">
+                              <span className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1">
+                                Checkout vendor
+                              </span>
+                              <span className="block text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
+                                {group.vendorName}
+                              </span>
+                              <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+                                {group.itemCount} {group.itemCount === 1 ? 'item' : 'items'} ·{' '}
+                                {formatPrice(group.subtotalCents)}
+                              </span>
+                              {isSelectedForCheckout && (
+                                <span className="inline-flex mt-2 text-[10px] font-mono font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                                  Selected for checkout
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                        ) : (
+                          <div className="min-w-0">
+                            <span className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1">
+                              Vendor
+                            </span>
+                            <h2 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
+                              {group.vendorName}
+                            </h2>
+                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
+                              {group.itemCount} {group.itemCount === 1 ? 'item' : 'items'} ·{' '}
+                              {formatPrice(group.subtotalCents)}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="divide-y divide-zinc-100 dark:divide-zinc-900 space-y-6">
+                        {group.items.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 first:pt-0 last:pb-0"
+                          >
+                            <div className="flex gap-4 items-center flex-1 min-w-0">
+                              <div className="w-20 h-20 relative flex-shrink-0 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-900 rounded-2xl overflow-hidden shadow-sm">
+                                {item.imageUrl ? (
+                                  isVideoUrl(item.imageUrl) ? (
+                                    <video
+                                      src={item.imageUrl}
+                                      muted
+                                      loop
+                                      playsInline
+                                      autoPlay
+                                      className="object-cover w-full h-full"
+                                    />
+                                  ) : (
+                                    <Image
+                                      src={item.imageUrl}
+                                      alt={item.name}
+                                      fill
+                                      className="object-cover"
+                                      sizes="80px"
+                                    />
+                                  )
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-xl bg-zinc-100 dark:bg-zinc-900">
+                                    📦
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <span
+                                  className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
+                                    item.type === 'service'
+                                      ? 'bg-teal-500/10 text-teal-650 dark:text-teal-400'
+                                      : 'bg-indigo-500/10 text-indigo-650 dark:text-indigo-400'
+                                  }`}
+                                >
+                                  {item.type}
+                                </span>
+
+                                <Link
+                                  href={`/products/${item.id}`}
+                                  className="block text-sm font-extrabold text-zinc-900 dark:text-zinc-50 hover:text-purple-650 dark:hover:text-purple-400 transition-colors line-clamp-1"
+                                >
+                                  {item.name}
+                                </Link>
+                              </div>
                             </div>
-                          )}
-                        </div>
 
-                        {/* Title and Vendor Metadata */}
-                        <div className="flex-1 min-w-0">
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                            item.type === 'service'
-                              ? 'bg-teal-500/10 text-teal-650 dark:text-teal-400'
-                              : 'bg-indigo-500/10 text-indigo-650 dark:text-indigo-400'
-                          }`}>
-                            {item.type}
-                          </span>
-                          
-                          <Link
-                            href={`/products/${item.id}`}
-                            className="block text-sm font-extrabold text-zinc-900 dark:text-zinc-50 hover:text-purple-650 dark:hover:text-purple-400 transition-colors line-clamp-1"
-                          >
-                            {item.name}
-                          </Link>
-                          
-                          <span className="text-xs text-zinc-400 dark:text-zinc-500 block mt-0.5 font-medium">
-                            Sold by {item.vendorName}
-                          </span>
-                        </div>
+                            <div className="flex items-center justify-between md:justify-end gap-6 md:gap-10">
+                              <div className="flex items-center border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-zinc-50/50 dark:bg-zinc-900/30">
+                                <button
+                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                  className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-855 dark:text-zinc-400 dark:hover:text-zinc-150 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold transition-all cursor-pointer"
+                                  aria-label="Decrease quantity"
+                                >
+                                  -
+                                </button>
+                                <span className="px-2 text-xs font-mono font-bold text-zinc-800 dark:text-zinc-200 select-none">
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                  className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-855 dark:text-zinc-400 dark:hover:text-zinc-150 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold transition-all cursor-pointer"
+                                  aria-label="Increase quantity"
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              <div className="text-right flex flex-col justify-center min-w-[90px]">
+                                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono block">
+                                  {formatPrice(item.price)} each
+                                </span>
+                                <span className="text-sm font-extrabold font-mono text-zinc-955 dark:text-zinc-50 mt-0.5">
+                                  {formatPrice(item.price * item.quantity)}
+                                </span>
+                              </div>
+
+                              <button
+                                onClick={() => removeFromCart(item.id)}
+                                className="text-zinc-400 hover:text-red-500 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-xl transition-all cursor-pointer"
+                                title="Remove item"
+                                aria-label="Remove item"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-
-                      {/* Interactive Controls & Price Section */}
-                      <div className="flex items-center justify-between md:justify-end gap-6 md:gap-10">
-                        {/* Quantity Selector */}
-                        <div className="flex items-center border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-zinc-50/50 dark:bg-zinc-900/30">
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-855 dark:text-zinc-400 dark:hover:text-zinc-150 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold transition-all cursor-pointer"
-                            aria-label="Decrease quantity"
-                          >
-                            -
-                          </button>
-                          <span className="px-2 text-xs font-mono font-bold text-zinc-800 dark:text-zinc-200 select-none">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-855 dark:text-zinc-400 dark:hover:text-zinc-150 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold transition-all cursor-pointer"
-                            aria-label="Increase quantity"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        {/* Pricing details */}
-                        <div className="text-right flex flex-col justify-center min-w-[90px]">
-                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono block">
-                            {formatPrice(item.price)} each
-                          </span>
-                          <span className="text-sm font-extrabold font-mono text-zinc-955 dark:text-zinc-50 mt-0.5">
-                            {formatPrice(item.price * item.quantity)}
-                          </span>
-                        </div>
-
-                        {/* Remove Action */}
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          className="text-zinc-400 hover:text-red-500 p-2 hover:bg-zinc-50 dark:hover:bg-zinc-900 rounded-xl transition-all cursor-pointer"
-                          title="Remove item"
-                          aria-label="Remove item"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    </section>
+                  );
+                })}
               </div>
             </div>
 
@@ -688,9 +875,18 @@ export default function CartPage() {
                 )}
 
                 <div className="space-y-3 text-xs font-mono">
+                  {vendorCount > 1 && selectedVendorSummary && (
+                    <p className="text-[10px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
+                      Checkout totals for {selectedVendorSummary.vendorName} ({checkoutItemCount}{' '}
+                      {checkoutItemCount === 1 ? 'item' : 'items'}). Other vendors stay in your cart.
+                    </p>
+                  )}
+
                   <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
                     <span>Subtotal</span>
-                    <span className="font-bold text-zinc-900 dark:text-zinc-200">{formatPrice(cartTotal)}</span>
+                    <span className="font-bold text-zinc-900 dark:text-zinc-200">
+                      {formatPrice(vendorCount > 1 ? checkoutSubtotal : cartTotal)}
+                    </span>
                   </div>
 
                   <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
@@ -707,7 +903,7 @@ export default function CartPage() {
 
                   {shippingFee > 0 && (
                     <p className="text-[10px] text-purple-600 dark:text-purple-400 block text-right mt-1">
-                      Add {formatPrice(5000 - cartTotal)} more for free shipping!
+                      Add {formatPrice(5000 - (vendorCount > 1 ? checkoutSubtotal : cartTotal))} more for free shipping!
                     </p>
                   )}
 
@@ -779,12 +975,9 @@ export default function CartPage() {
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Loading checkout options...</p>
                     ) : (
                       <>
-                        {vendorCount > 1 && (
-                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-500/5 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2">
-                            Your cart includes items from {vendorCount} vendors. Only fulfillment and payment methods enabled by every vendor are shown. Store pickup is not available for multi-vendor carts.
-                            {multiVendorPendingPaymentBlocked && (
-                              <> Bank transfer and cash on delivery require a single-vendor cart — remove items from other vendors or place separate orders.</>
-                            )}
+                        {requiresVendorSelection && (
+                          <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                            Select a vendor on the left to load delivery and payment options for that order.
                           </p>
                         )}
 
@@ -820,7 +1013,9 @@ export default function CartPage() {
                         ) : !optionsError ? (
                           <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
                             {vendorCount > 1
-                              ? 'No shared fulfillment methods are enabled across all vendors in your cart. Remove items from some vendors or ask them to enable matching options.'
+                              ? requiresVendorSelection
+                                ? 'Select a vendor on the left to see available fulfillment methods.'
+                                : 'No fulfillment methods are enabled for the selected vendor. Contact the store or try another vendor.'
                               : 'No fulfillment methods are enabled for this vendor. Contact the store or try again later.'}
                           </p>
                         ) : null}
@@ -903,22 +1098,18 @@ export default function CartPage() {
                             {checkoutOptions.payment.length > 0 && selectedFulfillment?.requiresBranch
                               ? 'No payment methods are available for store pickup with the current selection. Choose home delivery or another fulfillment option.'
                               : vendorCount > 1
-                                ? 'No shared payment methods are enabled across all vendors in your cart.'
+                                ? requiresVendorSelection
+                                  ? 'Select a vendor on the left to see available payment methods.'
+                                  : 'No payment methods are enabled for the selected vendor.'
                                 : 'No payment methods are enabled for this vendor. Contact the store or try again later.'}
                           </p>
                         ) : null}
-
-                        {multiVendorPendingPaymentBlocked && (
-                          <p className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
-                            Bank transfer and cash on delivery are unavailable for multi-vendor carts. Remove items from other vendors or place separate orders.
-                          </p>
-                        )}
 
                         {bankTransferSelected && (
                           <div className="space-y-2">
                             {bankTransferMissingDetails ? (
                               <p className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
-                                Bank transfer cannot be completed until all vendors configure their bank account details.
+                                Bank transfer cannot be completed until {selectedVendorSummary?.vendorName || 'this vendor'} configures bank account details.
                               </p>
                             ) : (
                               <p className="text-[11px] text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
@@ -955,13 +1146,15 @@ export default function CartPage() {
                       disabled={
                         checkoutStatus === 'processing' ||
                         cartItems.length === 0 ||
+                        checkoutCartItems.length === 0 ||
                         optionsLoading ||
                         !!optionsError ||
+                        requiresVendorSelection ||
                         !selectedFulfillment ||
-                      !selectedPayment ||
-                      bankTransferMissingDetails ||
-                      multiVendorPendingPaymentBlocked ||
-                      (requiresDeliveryAddress && shippingAddress.trim().length < 5)
+                        !selectedPayment ||
+                        bankTransferMissingDetails ||
+                        (vendorCount > 1 && !selectedCheckoutVendorOrgId) ||
+                        (requiresDeliveryAddress && shippingAddress.trim().length < 5)
                       }
                       className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
@@ -971,7 +1164,11 @@ export default function CartPage() {
                           <span>Processing...</span>
                         </>
                       ) : (
-                        <span>Proceed to Checkout</span>
+                        <span>
+                          {vendorCount > 1 && selectedVendorSummary
+                            ? `Checkout ${selectedVendorSummary.vendorName}`
+                            : 'Proceed to Checkout'}
+                        </span>
                       )}
                     </button>
                   )}

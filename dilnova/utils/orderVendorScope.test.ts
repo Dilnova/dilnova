@@ -13,7 +13,7 @@ describe('orderVendorScope', () => {
   });
 
   it('exports stable error messages', () => {
-    expect(MULTI_VENDOR_ORDER_CHECKOUT_ERROR).toContain('single vendor');
+    expect(MULTI_VENDOR_ORDER_CHECKOUT_ERROR).toContain('Select one vendor');
     expect(MULTI_VENDOR_VENDOR_ACTION_ERROR).toContain('multiple vendors');
   });
 });

@@ -37,6 +37,11 @@ import {
 import { sendOrderConfirmationEmailForOrder } from '@/utils/orderConfirmationEmail';
 import { escapeHtml, sendRawSmtpEmail } from '@/utils/smtpClient';
 import { logger } from '@/utils/logger';
+import {
+  buildVendorCartSummaries,
+  filterCartLinesByVendorOrg,
+  resolveCheckoutVendorOrgId,
+} from '@/utils/cartVendorCheckout';
 import { MULTI_VENDOR_ORDER_CHECKOUT_ERROR } from '@/utils/orderVendorScope';
 
 interface CartItem {
@@ -314,6 +319,7 @@ const checkoutSchema = z.object({
   pickupBranchId: z.string().uuid().nullable().optional(),
   shippingAddress: z.string().max(500).trim().optional().nullable(),
   shippingPhone: z.string().max(50).trim().optional().nullable(),
+  checkoutVendorOrgId: z.string().nullable().optional(),
 });
 
 function aggregateCheckoutItems(items: CheckoutItem[]): CheckoutItem[] {
@@ -367,7 +373,8 @@ export async function syncCartPricesAction(productIds: string[]) {
 }
 
 export async function getCartCheckoutOptionsAction(
-  cartLines: { id: string; quantity: number; price: number }[]
+  cartLines: { id: string; quantity: number; price: number }[],
+  checkoutVendorOrgId?: string | null
 ) {
   try {
     const { userId } = await auth();
@@ -399,21 +406,55 @@ export async function getCartCheckoutOptionsAction(
       .where(inArray(schema.products.id, uniqueIds));
 
     const productById = new Map(products.map((product) => [product.id, product]));
-    const vendorSubtotals = new Map<string, number>();
-    for (const line of cartLines) {
-      const product = productById.get(line.id);
-      if (!product) continue;
-      vendorSubtotals.set(
-        product.orgId,
-        (vendorSubtotals.get(product.orgId) || 0) + product.price * line.quantity
+    const uniqueOrgIds = [...new Set(products.map((product) => product.orgId))];
+    const resolvedCheckoutVendorOrgId = resolveCheckoutVendorOrgId(
+      buildVendorCartSummaries(cartLines, productById),
+      checkoutVendorOrgId
+    );
+
+    if (uniqueOrgIds.length > 1 && !resolvedCheckoutVendorOrgId) {
+      const bankDetailsByOrg = await getBankTransferDetailsForOrgs(uniqueOrgIds);
+      const vendorCartSummary = buildVendorCartSummaries(
+        cartLines,
+        productById,
+        Object.fromEntries(
+          uniqueOrgIds.map((orgId) => [orgId, bankDetailsByOrg[orgId]?.vendorName || 'Vendor'])
+        )
       );
+
+      return {
+        success: true as const,
+        fulfillment: [],
+        payment: [],
+        pickupBranches: [],
+        singleVendorOrgId: null,
+        vendorCount: uniqueOrgIds.length,
+        checkoutVendorOrgId: null,
+        requiresVendorSelection: true as const,
+        vendorBankTransferByOrg: Object.fromEntries(
+          uniqueOrgIds.map((orgId) => [
+            orgId,
+            toVendorBankTransferAvailability(
+              bankDetailsByOrg[orgId] ?? { vendorName: 'Vendor', bankDetails: null }
+            ),
+          ])
+        ),
+        vendorCartSummary,
+      };
     }
 
-    const orgIds = products.map((p) => p.orgId);
-    const uniqueOrgIds = [...new Set(orgIds)];
+    const linesForOptions = filterCartLinesByVendorOrg(
+      cartLines,
+      productById,
+      resolvedCheckoutVendorOrgId
+    );
+    const orgIdsForOptions =
+      resolvedCheckoutVendorOrgId != null
+        ? [resolvedCheckoutVendorOrgId]
+        : uniqueOrgIds;
 
     const branchRows =
-      uniqueOrgIds.length > 0
+      orgIdsForOptions.length > 0
         ? await db
             .select({
               id: schema.branches.id,
@@ -423,7 +464,7 @@ export async function getCartCheckoutOptionsAction(
               phone: schema.branches.phone,
             })
             .from(schema.branches)
-            .where(inArray(schema.branches.orgId, uniqueOrgIds))
+            .where(inArray(schema.branches.orgId, orgIdsForOptions))
         : [];
 
     const branchesByOrg = new Map<
@@ -441,11 +482,14 @@ export async function getCartCheckoutOptionsAction(
       branchesByOrg.set(branch.orgId, list);
     }
 
-    const resolved = await resolveCheckoutOptionsForOrgs(orgIds, branchesByOrg);
+    const resolved = await resolveCheckoutOptionsForOrgs(orgIdsForOptions, branchesByOrg);
     const bankTransferEnabled = resolved.payment.some((o) => o.id === BANK_TRANSFER_PAYMENT_ID);
     const bankDetailsByOrg = bankTransferEnabled
       ? await getBankTransferDetailsForOrgs(uniqueOrgIds)
       : {};
+    const vendorCartSummary = buildVendorCartSummaries(cartLines, productById, Object.fromEntries(
+      uniqueOrgIds.map((orgId) => [orgId, bankDetailsByOrg[orgId]?.vendorName || 'Vendor'])
+    ));
 
     return {
       success: true as const,
@@ -466,6 +510,8 @@ export async function getCartCheckoutOptionsAction(
       pickupBranches: resolved.pickupBranches,
       singleVendorOrgId: resolved.singleVendorOrgId,
       vendorCount: uniqueOrgIds.length,
+      checkoutVendorOrgId: resolvedCheckoutVendorOrgId,
+      requiresVendorSelection: false as const,
       vendorBankTransferByOrg: Object.fromEntries(
         uniqueOrgIds.map((orgId) => [
           orgId,
@@ -474,11 +520,7 @@ export async function getCartCheckoutOptionsAction(
           ),
         ])
       ),
-      vendorCartSummary: uniqueOrgIds.map((orgId) => ({
-        orgId,
-        vendorName: bankDetailsByOrg[orgId]?.vendorName || 'Vendor',
-        subtotalCents: vendorSubtotals.get(orgId) || 0,
-      })),
+      vendorCartSummary,
     };
   } catch (error) {
     console.error('Failed to load checkout options:', error);
@@ -495,7 +537,8 @@ export async function simulatedCheckoutAction(
   paymentMethod: string,
   pickupBranchId?: string | null,
   shippingAddress?: string | null,
-  shippingPhone?: string | null
+  shippingPhone?: string | null,
+  checkoutVendorOrgId?: string | null
 ) {
   try {
     // ── Input Validation ──
@@ -509,6 +552,7 @@ export async function simulatedCheckoutAction(
       pickupBranchId: pickupBranchId || null,
       shippingAddress: shippingAddress?.trim() || null,
       shippingPhone: shippingPhone?.trim() || null,
+      checkoutVendorOrgId: checkoutVendorOrgId || null,
     });
     if (!parsed.success) {
       return { success: false, error: parsed.error.issues[0]?.message || 'Invalid checkout data.' };
@@ -524,6 +568,7 @@ export async function simulatedCheckoutAction(
       pickupBranchId: pickupBranch,
       shippingAddress: shippingAddressInput,
       shippingPhone: shippingPhoneInput,
+      checkoutVendorOrgId: checkoutVendorOrgIdInput,
     } = parsed.data;
 
     const { userId } = await auth();
@@ -597,7 +642,49 @@ export async function simulatedCheckoutAction(
         });
       }
 
-      const vendorOrgIds = [...new Set(verifiedItems.map((item) => item.vendorOrgId))];
+      let vendorOrgIds = [...new Set(verifiedItems.map((item) => item.vendorOrgId))];
+      const resolvedCheckoutVendorOrgId = resolveCheckoutVendorOrgId(
+        buildVendorCartSummaries(
+          aggregatedItems.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          new Map(
+            verifiedItems.map((item) => [
+              item.id,
+              { id: item.id, orgId: item.vendorOrgId, price: item.price },
+            ])
+          )
+        ),
+        checkoutVendorOrgIdInput
+      );
+
+      if (vendorOrgIds.length > 1) {
+        if (!resolvedCheckoutVendorOrgId) {
+          return {
+            success: false as const,
+            error: MULTI_VENDOR_ORDER_CHECKOUT_ERROR,
+          };
+        }
+
+        const filteredItems = verifiedItems.filter(
+          (item) => item.vendorOrgId === resolvedCheckoutVendorOrgId
+        );
+        if (filteredItems.length === 0) {
+          return {
+            success: false as const,
+            error: 'No items found for the selected vendor.',
+          };
+        }
+
+        verifiedItems.splice(0, verifiedItems.length, ...filteredItems);
+        serverSubtotal = filteredItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        );
+        vendorOrgIds = [resolvedCheckoutVendorOrgId];
+      }
       const branchRows =
         vendorOrgIds.length > 0
           ? await tx

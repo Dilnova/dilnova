@@ -27,6 +27,7 @@ interface CartContextType {
   clearCartMergeNotice: () => void;
   addToCart: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
   removeFromCart: (id: string) => void;
+  removeItemsByIds: (ids: string[]) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   syncCartPrices: (
@@ -227,6 +228,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
   };
 
+  const removeItemsByIds = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setCartItems((prevItems) => prevItems.filter((item) => !idSet.has(item.id)));
+  };
+
   const updateQuantity = (id: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(id);
@@ -266,6 +272,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         clearCartMergeNotice,
         addToCart,
         removeFromCart,
+        removeItemsByIds,
         updateQuantity,
         clearCart,
         syncCartPrices,
