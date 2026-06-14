@@ -25,7 +25,7 @@ features/<domain>/
 
 **Planned domains:** `auth`, `catalog`, `cart`, `orders`, `customer`, `vendor`, `inventory`, `billing`, `organization`, `superadmin`, `contact`, `storefront`
 
-**Migrated:** `vendor-org`, `cart`, `orders`, `inventory`, `catalog`, `billing`
+**Migrated:** `vendor-org`, `cart`, `orders`, `inventory`, `catalog`, `billing`, `superadmin` (schema), `organization` (schema), `vendor` (schema), `admin` (schema)
 
 ### `shared/` — infrastructure (no product rules)
 
@@ -93,7 +93,7 @@ import { rateLimit } from '@/shared/security/rate-limit';
 | **7** ✅ | Migrate `features/billing/` |
 | **8** ✅ | Move `shared/security`, `shared/audit`, `shared/auth` (real code, not shims) |
 | **9** ✅ | Split `db/schema.ts` under `shared/db/schema/` |
-| **10** | Split `utils/schemas.ts` per feature |
+| **10** ✅ | Split `utils/schemas.ts` per feature |
 | **11** | Add Playwright E2E under `tests/e2e/` |
 
 ## Backward compatibility

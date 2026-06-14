@@ -5,7 +5,7 @@ import * as schema from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
-import { updateSystemSettingSchema } from '@/utils/schemas';
+import { updateSystemSettingSchema } from '@/features/superadmin/schema';
 import { checkSuperAdmin } from '@/utils/authGuards';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';

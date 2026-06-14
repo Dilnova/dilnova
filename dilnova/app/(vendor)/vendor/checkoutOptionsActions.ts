@@ -3,7 +3,7 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
-import { updateOrgCheckoutOptionsSchema } from '@/utils/schemas';
+import { updateOrgCheckoutOptionsSchema } from '@/features/organization/schema';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';

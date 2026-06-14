@@ -2,7 +2,7 @@
 
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
-import { updateMemberRoleSchema } from '@/utils/schemas';
+import { updateMemberRoleSchema } from '@/features/admin/schema';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 

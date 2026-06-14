@@ -13,7 +13,7 @@ import {
   buildCheckoutOptionsCatalogPayload,
   type CheckoutOptionDefinition,
 } from '@/utils/checkoutOptionsShared';
-import { updateCheckoutOptionsCatalogSchema } from '@/utils/schemas';
+import { updateCheckoutOptionsCatalogSchema } from '@/features/superadmin/schema';
 
 export async function updateCheckoutOptionsCatalogAction(options: CheckoutOptionDefinition[]) {
   return runWithCorrelationId(async () => {
