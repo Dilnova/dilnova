@@ -1,16 +1,14 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import { describeOrderCheckout } from '@/features/organization/checkout-options.shared';
 import { getNormalizedClerkUserEmail, normalizeCustomerEmail } from '@/features/customer/email';
+import { getOrderById, getOrderItems, getPickupBranchName } from '@/features/customer/queries';
 import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
 import { allocateVendorPaymentAmounts, isBankTransferPayment } from '@/features/billing/bank-transfer';
 import { buildBankTransferCheckoutInstructions } from '@/features/billing/bank-transfer.server';
-import BankTransferInstructions from '@/app/components/BankTransferInstructions';
+import BankTransferInstructions from '@/features/billing/components/BankTransferInstructions';
 import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
 import { formatOrderStatusLabel } from '@/features/orders/status';
 
@@ -29,12 +27,7 @@ export default async function InvoicePage({ params }: PageProps) {
   const { id } = await params;
   const normalizedUserEmail = getNormalizedClerkUserEmail(user);
 
-  // Retrieve the order
-  const [order] = await db
-    .select()
-    .from(schema.simulatedOrders)
-    .where(eq(schema.simulatedOrders.id, id))
-    .limit(1);
+  const order = await getOrderById(id);
 
   // Authorization check: Make sure order exists and email matches
   if (
@@ -47,18 +40,10 @@ export default async function InvoicePage({ params }: PageProps) {
   }
 
   const [items, checkoutOptionsCatalog, pickupBranch] = await Promise.all([
-    db
-      .select()
-      .from(schema.simulatedOrderItems)
-      .where(eq(schema.simulatedOrderItems.orderId, id)),
+    getOrderItems(id),
     getCheckoutOptionsCatalog(),
     order.pickupBranchId
-      ? db
-          .select({ name: schema.branches.name })
-          .from(schema.branches)
-          .where(eq(schema.branches.id, order.pickupBranchId))
-          .limit(1)
-          .then((rows) => rows[0]?.name ?? null)
+      ? getPickupBranchName(order.pickupBranchId)
       : Promise.resolve(null),
   ]);
 

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SignInButton, SignUpButton, useUser } from '@clerk/nextjs';
-import { useClerkAuthRedirectUrl } from '@/app/hooks/useClerkAuthRedirectUrl';
+import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/useClerkAuthRedirectUrl';
 import { useCart } from '@/features/cart/context/CartContext';
 import { isVideoUrl } from '@/shared/media/media';
 import {
@@ -21,7 +21,7 @@ import {
   isBankTransferPayment,
   type BankTransferCheckoutInstructions,
 } from '@/features/billing/bank-transfer';
-import BankTransferInstructions from '@/app/components/BankTransferInstructions';
+import BankTransferInstructions from '@/features/billing/components/BankTransferInstructions';
 import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
 import {
   clearCheckoutSuccessSnapshot,

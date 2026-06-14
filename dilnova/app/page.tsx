@@ -2,13 +2,11 @@ import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import { OrganizationList } from '@clerk/nextjs';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import RoleToggleButton from './RoleToggleButton';
-import ScrollRedirector from './ScrollRedirector';
-import { getCachedOrganizations } from '../utils/clerkCache';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { asc } from 'drizzle-orm';
+import RoleToggleButton from '@/features/auth/components/RoleToggleButton';
+import ScrollRedirector from '@/shared/ui/ScrollRedirector';
+import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
 import { getSystemSetting } from '@/shared/platform/settings';
+import { getPricingPlansOrderedByCreatedAtAsc } from '@/features/superadmin/queries';
 
 export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemSetting('system_name', 'Dilnova');
@@ -23,7 +21,7 @@ export default async function Home() {
 
   // Parallelize initial database and API fetches
   const clientPromise = clerkClient();
-  const plansPromise = db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt));
+  const plansPromise = getPricingPlansOrderedByCreatedAtAsc();
   const settingsPromise = Promise.all([
     getSystemSetting('system_name', 'Dilnova'),
     getSystemSetting('custom_storefront_distar-hardware', 'true'),

@@ -6,17 +6,17 @@ import { auth } from '@clerk/nextjs/server'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
 import { runWithCorrelationId } from '@/shared/security/async-context'
-import HeaderNav from './HeaderNav'
-import HeaderAuthButtons from './components/HeaderAuthButtons'
+import HeaderNav from '@/shared/ui/HeaderNav'
+import HeaderAuthButtons from '@/shared/ui/HeaderAuthButtons'
 import './globals.css'
 
 import { CartProvider } from '@/features/cart/context/CartContext'
 import CartIcon from '@/features/cart/components/CartIcon'
-import LanguageSelector from './components/LanguageSelector'
-import LanguageSplash from './components/LanguageSplash'
-import LanguageInitializer from './components/LanguageInitializer'
+import LanguageSelector from '@/shared/ui/language/LanguageSelector'
+import LanguageSplash from '@/shared/ui/language/LanguageSplash'
+import LanguageInitializer from '@/shared/ui/language/LanguageInitializer'
 import CartMergeBanner from '@/features/cart/components/CartMergeBanner'
-import FloatingLanguageButton from './components/FloatingLanguageButton'
+import FloatingLanguageButton from '@/shared/ui/language/FloatingLanguageButton'
 
 import { getSystemSetting } from '@/shared/platform/settings'
 import Image from 'next/image'

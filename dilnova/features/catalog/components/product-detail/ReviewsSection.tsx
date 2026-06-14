@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitReviewAction } from '@/features/catalog/product-detail.actions';
 import Image from 'next/image';
-import SignInPrompt from '@/app/components/SignInPrompt';
+import SignInPrompt from '@/shared/ui/SignInPrompt';
 
 interface Review {
   id: string;

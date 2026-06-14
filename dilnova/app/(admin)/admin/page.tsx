@@ -1,12 +1,10 @@
 import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
-import VendorProfileForm from '@/app/(vendor)/vendor/VendorProfileForm';
-import OrgCheckoutOptionsForm from '@/app/(vendor)/vendor/OrgCheckoutOptionsForm';
-import RoleSelector from './RoleSelector';
+import VendorProfileForm from '@/features/vendor/components/VendorProfileForm';
+import OrgCheckoutOptionsForm from '@/features/organization/components/OrgCheckoutOptionsForm';
+import RoleSelector from '@/features/admin/components/RoleSelector';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { getBranchCountForOrg } from '@/features/admin/queries';
 import {
   hasCompleteBankDetails,
   parseBankTransferDetailsFromMetadata,
@@ -29,11 +27,7 @@ export default async function AdminPage() {
       limit: 100,
     }).catch(() => ({ data: [] })),
     getCheckoutOptionsCatalog(),
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(schema.branches)
-      .where(eq(schema.branches.orgId, orgId))
-      .then((rows) => rows[0]?.count ?? 0),
+    getBranchCountForOrg(orgId),
   ]);
 
   const metadata = (org.publicMetadata || {}) as {

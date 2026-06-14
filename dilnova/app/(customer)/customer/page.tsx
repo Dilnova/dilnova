@@ -2,19 +2,23 @@ import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import Image from 'next/image';
 import { isVideoUrl } from '@/shared/media/media';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, inArray, desc, sql, or, and } from 'drizzle-orm';
 import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
 import { getClerkUserEmail, getNormalizedClerkUserEmail } from '@/features/customer/email';
+import {
+  getCustomerOrders,
+  getOrderItemsForOrders,
+  getPickupBranchNameByIdMap,
+  getUserWishlist,
+  getWishlistProducts,
+} from '@/features/customer/queries';
 import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import { describeOrderCheckout } from '@/features/organization/checkout-options.shared';
 import { formatOrderStatusLabel } from '@/features/orders/status';
 import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
 import { isBankTransferPayment } from '@/features/billing/bank-transfer';
-import OrderBankTransferInstructions from './OrderBankTransferInstructions';
-import WishlistRemoveButton from './WishlistRemoveButton';
+import OrderBankTransferInstructions from '@/features/customer/components/OrderBankTransferInstructions';
+import WishlistRemoveButton from '@/features/customer/components/WishlistRemoveButton';
 
 interface PageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -34,65 +38,23 @@ export default async function CustomerPage({ searchParams }: PageProps) {
   // Fetch Clerk organizations, wishlist, and simulated orders in parallel (reduce latency)
   const client = await clerkClient();
   const [userWishlist, organizations, orders, checkoutOptionsCatalog] = await Promise.all([
-    db
-      .select()
-      .from(schema.wishlists)
-      .where(eq(schema.wishlists.userId, user.id)),
+    getUserWishlist(user.id),
     getCachedOrganizations(client).catch(() => []),
-    normalizedUserEmail
-      ? db
-          .select()
-          .from(schema.simulatedOrders)
-          .where(
-            userId
-              ? or(
-                  eq(schema.simulatedOrders.customerUserId, userId),
-                  sql`lower(trim(${schema.simulatedOrders.customerEmail})) = ${normalizedUserEmail}`
-                )
-              : sql`lower(trim(${schema.simulatedOrders.customerEmail})) = ${normalizedUserEmail}`
-          )
-          .orderBy(desc(schema.simulatedOrders.createdAt))
-      : Promise.resolve([]),
+    getCustomerOrders(userId, normalizedUserEmail),
     getCheckoutOptionsCatalog(),
   ]);
 
   const pickupBranchIds = [
     ...new Set(orders.map((order) => order.pickupBranchId).filter((id): id is string => Boolean(id))),
   ];
-  const pickupBranchRows =
-    pickupBranchIds.length > 0
-      ? await db
-          .select({ id: schema.branches.id, name: schema.branches.name })
-          .from(schema.branches)
-          .where(inArray(schema.branches.id, pickupBranchIds))
-      : [];
-  const pickupBranchNameById = new Map(pickupBranchRows.map((branch) => [branch.id, branch.name]));
+  const pickupBranchNameById = await getPickupBranchNameByIdMap(pickupBranchIds);
 
-  // Retrieve products in wishlist
   const wishlistItems = userWishlist.length > 0
-    ? await db
-        .select({
-          product: schema.products,
-          category: schema.categories,
-        })
-        .from(schema.products)
-        .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
-        .where(
-          and(
-            inArray(schema.products.id, userWishlist.map((w) => w.productId)),
-            eq(schema.products.status, 'active')
-          )
-        )
+    ? await getWishlistProducts(userWishlist.map((w) => w.productId))
     : [];
 
-  // Retrieve simulated order items
   const orderIds = orders.map((o) => o.id);
-  const orderItems = orderIds.length > 0
-    ? await db
-        .select()
-        .from(schema.simulatedOrderItems)
-        .where(inArray(schema.simulatedOrderItems.orderId, orderIds))
-    : [];
+  const orderItems = await getOrderItemsForOrders(orderIds);
 
   // Group items by orderId
   const itemsByOrderId = orderItems.reduce((acc, item) => {

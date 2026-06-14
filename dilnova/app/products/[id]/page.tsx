@@ -2,17 +2,14 @@ import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
 import { getCachedOrganizations, type CachedOrg } from '@/shared/auth/clerk-cache';
 import type { Metadata } from 'next';
-import ProductGalleryPlayer from './ProductGalleryPlayer';
-import WishlistButton from './WishlistButton';
-import ReviewsSection from './ReviewsSection';
-import QASection from './QASection';
-import ProductViewTracker from './ProductViewTracker';
-import ProductDetailAddToCart from './ProductDetailAddToCart';
+import ProductGalleryPlayer from '@/features/catalog/components/product-detail/ProductGalleryPlayer';
+import WishlistButton from '@/features/catalog/components/product-detail/WishlistButton';
+import ReviewsSection from '@/features/catalog/components/product-detail/ReviewsSection';
+import QASection from '@/features/catalog/components/product-detail/QASection';
+import ProductViewTracker from '@/features/catalog/components/product-detail/ProductViewTracker';
+import ProductDetailAddToCart from '@/features/catalog/components/product-detail/ProductDetailAddToCart';
 import { logger } from '@/shared/logging/logger';
 import { isVideoUrl } from '@/shared/media/media';
 import { getSystemSetting } from '@/shared/platform/settings';
@@ -25,6 +22,16 @@ import {
   getVerifiedReviewerIdsForProduct,
   hasCustomerPurchasedProduct,
 } from '@/features/catalog/verified-buyer';
+import {
+  getCategoryById,
+  getInventoryForProduct,
+  getProductForMetadata,
+  getProductQuestions,
+  getProductReviews,
+  getProductWithCategory,
+  getUserReviewForProduct,
+  getWishlistEntryForUser,
+} from '@/features/catalog/queries';
 
 interface PageProps {
   params: Promise<{
@@ -39,13 +46,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const systemName = await getSystemSetting('system_name', 'Dilnova');
 
   try {
-    const [result] = await db
-      .select({
-        product: schema.products,
-      })
-      .from(schema.products)
-      .where(eq(schema.products.id, id))
-      .limit(1);
+    const result = await getProductForMetadata(id);
 
     if (!result || !result.product || result.product.status !== 'active') {
       return {
@@ -85,15 +86,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const { id } = await params;
 
   // 1. Fetch Product with joined Category details
-  const [result] = await db
-    .select({
-      product: schema.products,
-      category: schema.categories,
-    })
-    .from(schema.products)
-    .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
-    .where(eq(schema.products.id, id))
-    .limit(1);
+  const result = await getProductWithCategory(id);
 
   if (!result || !result.product || result.product.status !== 'active') {
     notFound();
@@ -104,15 +97,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const [stockAvailabilityCatalog, inventoryRecord] = await Promise.all([
     getStockAvailabilityCatalog(),
     product.type === 'product'
-      ? db
-          .select({
-            stockAvailability: schema.inventory.stockAvailability,
-            quantity: schema.inventory.quantity,
-          })
-          .from(schema.inventory)
-          .where(eq(schema.inventory.productId, id))
-          .limit(1)
-          .then((rows) => rows[0] || null)
+      ? getInventoryForProduct(id)
       : Promise.resolve(null),
   ]);
 
@@ -128,16 +113,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const normalizedUserEmail = viewer ? getNormalizedClerkUserEmail(viewer) : null;
 
   const [productReviews, productQuestions, verifiedReviewerIds] = await Promise.all([
-    db
-      .select()
-      .from(schema.reviews)
-      .where(eq(schema.reviews.productId, id))
-      .orderBy(desc(schema.reviews.createdAt)),
-    db
-      .select()
-      .from(schema.questions)
-      .where(eq(schema.questions.productId, id))
-      .orderBy(desc(schema.questions.createdAt)),
+    getProductReviews(id),
+    getProductQuestions(id),
     getVerifiedReviewerIdsForProduct(id),
   ]);
 
@@ -148,28 +125,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   if (userId) {
     const [fav, rev, purchased] = await Promise.all([
-      db
-        .select()
-        .from(schema.wishlists)
-        .where(
-          and(
-            eq(schema.wishlists.userId, userId),
-            eq(schema.wishlists.productId, id)
-          )
-        )
-        .limit(1)
-        .then((rows) => rows[0]),
-      db
-        .select()
-        .from(schema.reviews)
-        .where(
-          and(
-            eq(schema.reviews.userId, userId),
-            eq(schema.reviews.productId, id)
-          )
-        )
-        .limit(1)
-        .then((rows) => rows[0]),
+      getWishlistEntryForUser(userId, id),
+      getUserReviewForProduct(userId, id),
       hasCustomerPurchasedProduct(id, userId, normalizedUserEmail),
     ]);
 
@@ -194,12 +151,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   // Fetch parent category if this is a subcategory
   let parentCategory = null;
   if (category?.parentId) {
-    const [parentResult] = await db
-      .select()
-      .from(schema.categories)
-      .where(eq(schema.categories.id, category.parentId))
-      .limit(1);
-    parentCategory = parentResult || null;
+    parentCategory = await getCategoryById(category.parentId);
   }
 
 

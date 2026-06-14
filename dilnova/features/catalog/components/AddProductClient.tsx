@@ -5,7 +5,7 @@ import { addProductAction } from '@/features/catalog/vendor.actions';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import CategorySelector from '@/app/components/CategorySelector';
+import CategorySelector from '@/shared/ui/CategorySelector';
 import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
 
 interface Category {

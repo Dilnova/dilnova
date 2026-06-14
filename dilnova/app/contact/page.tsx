@@ -1,5 +1,5 @@
 import { getSystemSetting } from '@/shared/platform/settings';
-import ContactClientPage from './ContactClientPage';
+import ContactClientPage from '@/features/contact/components/ContactClientPage';
 
 export const revalidate = 0; // Fresh load on each visit
 

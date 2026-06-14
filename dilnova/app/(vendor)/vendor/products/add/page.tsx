@@ -1,14 +1,18 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import AddProductClient from './AddProductClient';
+import AddProductClient from '@/features/catalog/components/AddProductClient';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { getPremiumStatus } from '@/features/inventory/premium-license';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { getEnabledStockAvailabilityOptions } from '@/features/inventory/availability.shared';
-import { eq, and } from 'drizzle-orm';
+import {
+  getAllCategories,
+  getAssignedBranchIdsForUser,
+  getBranchesForOrg,
+  getDefaultBranchName,
+  getUserAssignedBranchNames,
+} from '@/features/catalog/queries';
 
 export default async function AddProductPage() {
   // 1. Authenticate & Obtain Organization Context & Role
@@ -30,76 +34,22 @@ export default async function AddProductPage() {
   
   let branchNames = '';
   if (premiumStatus.multiBranchActive) {
-    // Find user's assigned branches
-    const userBranches = await db
-      .select({ name: schema.branches.name })
-      .from(schema.branchMembers)
-      .innerJoin(schema.branches, eq(schema.branchMembers.branchId, schema.branches.id))
-      .where(
-        and(
-          eq(schema.branchMembers.memberUserId, userId),
-          eq(schema.branches.orgId, orgId)
-        )
-      );
-    
-    if (userBranches.length > 0) {
-      branchNames = userBranches.map((b) => b.name).join(', ');
+    const assignedNames = await getUserAssignedBranchNames(userId, orgId);
+    if (assignedNames) {
+      branchNames = assignedNames;
     }
   }
 
-  // Fallback to default/first branch if branchNames is empty
   if (!branchNames) {
-    const [defaultBranch] = await db
-      .select({ name: schema.branches.name })
-      .from(schema.branches)
-      .where(
-        and(
-          eq(schema.branches.orgId, orgId),
-          eq(schema.branches.isDefault, true)
-        )
-      )
-      .limit(1);
-
-    if (defaultBranch) {
-      branchNames = defaultBranch.name;
-    } else {
-      const [firstBranch] = await db
-        .select({ name: schema.branches.name })
-        .from(schema.branches)
-        .where(eq(schema.branches.orgId, orgId))
-        .limit(1);
-      
-      branchNames = firstBranch ? firstBranch.name : 'Main Register';
-    }
+    branchNames = await getDefaultBranchName(orgId);
   }
 
-  // 4. Fetch All Available Categories for selection
-  const categories = await db
-    .select({
-      id: schema.categories.id,
-      name: schema.categories.name,
-      slug: schema.categories.slug,
-      parentId: schema.categories.parentId,
-    })
-    .from(schema.categories);
+  const categories = await getAllCategories();
 
-  // 5. Fetch branches for allocation dropdown (members see assigned branches only in multi-branch mode)
-  let branches = await db
-    .select({
-      id: schema.branches.id,
-      name: schema.branches.name,
-      isDefault: schema.branches.isDefault,
-    })
-    .from(schema.branches)
-    .where(eq(schema.branches.orgId, orgId));
+  let branches = await getBranchesForOrg(orgId);
 
   if (orgRole !== 'org:admin' && premiumStatus.multiBranchActive && branches.length > 0) {
-    const assignedRows = await db
-      .select({ branchId: schema.branchMembers.branchId })
-      .from(schema.branchMembers)
-      .where(eq(schema.branchMembers.memberUserId, userId));
-
-    const assignedBranchIds = new Set(assignedRows.map((row) => row.branchId));
+    const assignedBranchIds = await getAssignedBranchIdsForUser(userId);
     if (assignedBranchIds.size > 0) {
       branches = branches.filter((branch) => assignedBranchIds.has(branch.id));
     }

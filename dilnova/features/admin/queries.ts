@@ -1,0 +1,11 @@
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
+import { eq, sql } from 'drizzle-orm';
+
+export async function getBranchCountForOrg(orgId: string) {
+  return db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(schema.branches)
+    .where(eq(schema.branches.orgId, orgId))
+    .then((rows) => rows[0]?.count ?? 0);
+}

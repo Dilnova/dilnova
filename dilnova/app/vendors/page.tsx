@@ -2,8 +2,8 @@ import { clerkClient } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
-import { getCachedOrganizations } from '../../utils/clerkCache';
-import { getSystemSetting } from '../../utils/settings';
+import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
+import { getSystemSetting } from '@/shared/platform/settings';
 
 export const revalidate = 30; // ISR: cache and regenerate in background
 

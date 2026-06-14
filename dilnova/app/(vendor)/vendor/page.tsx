@@ -2,12 +2,11 @@ import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import Image from 'next/image';
 import { redirect } from 'next/navigation';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, sql } from 'drizzle-orm';
 import ManageProductsClient, { type Product } from '@/features/catalog/components/ManageProductsClient';
 import VendorInventoryWorkspace from '@/features/inventory/components/VendorInventoryWorkspace';
 import { getVendorInventoryData } from '@/features/inventory/vendor.actions';
+import { getVendorProductsForOrg } from '@/features/catalog/queries';
+import { getBranchCountForOrg, getOnlineOrderCountForVendor } from '@/features/vendor/queries';
 import {
   hasCompleteBankDetails,
   parseBankTransferDetailsFromMetadata,
@@ -55,33 +54,13 @@ export default async function VendorPage({ searchParams }: PageProps) {
   if (orgRole === 'org:admin') {
     try {
       const [productsResult, inventoryResult, branchCountRow, onlineOrderCountRow] = await Promise.all([
-        db
-          .select({
-            id: schema.products.id,
-            name: schema.products.name,
-            type: schema.products.type,
-            description: schema.products.description,
-            price: schema.products.price,
-            imageUrl: schema.products.imageUrl,
-            media: schema.products.media,
-            categoryId: schema.products.categoryId,
-          })
-          .from(schema.products)
-          .where(eq(schema.products.orgId, orgId)),
+        getVendorProductsForOrg(orgId),
         getVendorInventoryData().catch((err: unknown) => {
           inventoryErrorMsg = err instanceof Error ? err.message : 'Unable to load inventory data.';
           return null;
         }),
-        db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(schema.branches)
-          .where(eq(schema.branches.orgId, orgId))
-          .then((rows) => rows[0]?.count ?? 0),
-        db
-          .select({ count: sql<number>`count(distinct ${schema.simulatedOrderItems.orderId})::int` })
-          .from(schema.simulatedOrderItems)
-          .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId))
-          .then((rows) => rows[0]?.count ?? 0),
+        getBranchCountForOrg(orgId),
+        getOnlineOrderCountForVendor(orgId),
       ]);
       vendorProducts = productsResult as Product[];
       inventoryData = inventoryResult;
