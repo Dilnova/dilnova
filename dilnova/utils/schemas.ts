@@ -74,9 +74,10 @@ export {
   allocateBranchStockSchema,
   assignBranchMemberSchema,
   removeBranchMemberSchema,
-  processBillingCheckoutSchema,
   updateImsLicenseSchema,
 } from '@/features/inventory/schema';
+
+export { processBillingCheckoutSchema } from '@/features/billing/schema';
 
 export {
   submitPaymentSlipSchema,

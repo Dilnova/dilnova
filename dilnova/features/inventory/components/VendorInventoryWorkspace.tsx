@@ -15,8 +15,8 @@ import {
   allocateBranchStockAction,
   assignBranchMemberAction,
   removeBranchMemberAction,
-  processBillingCheckoutAction,
 } from '@/features/inventory/vendor.actions';
+import { processBillingCheckoutAction } from '@/features/billing/checkout.actions';
 import { formatOrderStatusLabel, matchesOrderStatusFilter } from '@/features/orders/status';
 import { isCodPayment } from '@/features/orders/payment.rules';
 import { isBankTransferPayment } from '@/utils/bankTransfer';

@@ -1,8 +1,8 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import POSBillingClient from './POSBillingClient';
-import { getVendorBillingRegisterData } from '@/features/inventory/vendor.actions';
+import POSBillingClient from '@/features/billing/components/POSBillingClient';
+import { getVendorBillingRegisterData } from '@/features/billing/register.actions';
 import { getSystemSetting } from '@/utils/settings';
 import { resolveEffectiveStockAvailability } from '@/features/inventory/availability.shared';
 

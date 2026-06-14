@@ -1,45 +1,15 @@
 import type * as schema from '@/shared/db/schema';
-import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
-import type { PremiumStatus } from '@/utils/premiumLicense';
+import type { VendorBillingRegisterData } from '@/features/billing/types';
 import type { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 
-export type VendorBillingRegisterData = {
-  inventoryItems: Array<{
-    id: string | null;
-    productId: string;
-    sku: string | null;
-    quantity: number | null;
-    lowStockThreshold: number | null;
-    binLocation: string | null;
-    supplierId: string | null;
-    stockAvailability: string | null;
-    updatedAt: Date | null;
-    productName: string;
-    productType: string;
-    productPrice: number | null;
-    supplierName: string | null;
-  }>;
-  branches: Array<(typeof schema.branches.$inferSelect)>;
-  branchInventory: Array<{
-    id: string;
-    branchId: string;
-    productId: string;
-    sku: string | null;
-    quantity: number | null;
-    binLocation: string | null;
-    productName: string;
-  }>;
-  stockAvailabilityCatalog: StockAvailabilityDefinition[];
-  premiumStatus: PremiumStatus;
-  billingReceiptCount: number;
-};
+export type { VendorBillingRegisterData } from '@/features/billing/types';
 
 export type VendorInventoryFullData = {
   inventoryItems: VendorBillingRegisterData['inventoryItems'];
   branches: VendorBillingRegisterData['branches'];
   branchInventory: VendorBillingRegisterData['branchInventory'];
   stockAvailabilityCatalog: VendorBillingRegisterData['stockAvailabilityCatalog'];
-  premiumStatus: PremiumStatus;
+  premiumStatus: VendorBillingRegisterData['premiumStatus'];
   suppliers: Array<(typeof schema.suppliers.$inferSelect)>;
   movements: Array<{
     id: string;

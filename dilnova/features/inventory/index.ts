@@ -11,7 +11,6 @@ export {
 export * from '@/features/inventory/schema';
 export {
   getVendorInventoryData,
-  getVendorBillingRegisterData,
   vendorAdjustInventoryAction,
   vendorCreateSupplierAction,
   vendorUpdateSupplierAction,
@@ -23,12 +22,14 @@ export {
   allocateBranchStockAction,
   assignBranchMemberAction,
   removeBranchMemberAction,
-  processBillingCheckoutAction,
 } from '@/features/inventory/vendor.actions';
-export type {
-  VendorBillingRegisterData,
-  VendorInventoryFullData,
-} from '@/features/inventory/types';
+export type { VendorInventoryFullData } from '@/features/inventory/types';
+/** @deprecated Use `@/features/billing` */
+export {
+  getVendorBillingRegisterData,
+  processBillingCheckoutAction,
+} from '@/features/billing';
+export type { VendorBillingRegisterData } from '@/features/billing/types';
 export {
   createSupplierAction,
   updateSupplierAction,
