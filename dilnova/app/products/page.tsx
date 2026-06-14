@@ -1,7 +1,7 @@
 import { clerkClient, auth } from '@clerk/nextjs/server';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
-import { eq, and, ilike, or, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import Link from 'next/link';
 import Image from 'next/image';
 import { isVideoUrl } from '../../utils/media';
@@ -14,6 +14,13 @@ import { getCachedOrganizations } from '../../utils/clerkCache';
 import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
 import { resolveOnlineProductPurchaseState } from '@/utils/stockAvailabilityShared';
 import StockAvailabilityBadge from '../components/StockAvailabilityBadge';
+import {
+  buildCatalogOrderBy,
+  buildCatalogSearchParams,
+  buildCatalogWhereClauses,
+  parseCatalogQueryParams,
+  resolveVendorOrgId,
+} from '@/utils/catalogQuery';
 
 export const revalidate = 0; // Fresh load on each catalog query
 
@@ -23,6 +30,11 @@ interface PageProps {
     category?: string;
     type?: string;
     page?: string;
+    sort?: string;
+    vendor?: string;
+    minPrice?: string;
+    maxPrice?: string;
+    stock?: string;
   }>;
 }
 
@@ -74,59 +86,28 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const currentSearch = params.search || '';
-  const currentCategorySlug = params.category || '';
-  const currentType = params.type || 'all';
-  const currentPage = parseInt(params.page || '1', 10);
+  const catalogQuery = parseCatalogQueryParams(params);
   const itemsPerPage = 12;
 
-  // 1. Fetch categories and Clerk client concurrently
-  const clientPromise = clerkClient();
-  const categoriesPromise = db.select().from(schema.categories);
-
-  const [client, categoriesList, stockAvailabilityCatalog] = await Promise.all([
-    clientPromise,
-    categoriesPromise,
+  const [categoriesList, stockAvailabilityCatalog, organizations] = await Promise.all([
+    db.select().from(schema.categories),
     getStockAvailabilityCatalog(),
+    clerkClient().then((client) => getCachedOrganizations(client)),
   ]);
 
-  // 2. Fetch Organizations from Clerk (cached)
-  const organizations = await getCachedOrganizations(client);
-  const selectedCategory = categoriesList.find(c => c.slug === currentCategorySlug);
+  const vendorOrgId = resolveVendorOrgId(catalogQuery.vendorSlug, organizations);
+  const conditions = buildCatalogWhereClauses({
+    search: catalogQuery.search,
+    categorySlug: catalogQuery.categorySlug,
+    type: catalogQuery.type,
+    vendorOrgId,
+    minPriceCents: catalogQuery.minPriceCents,
+    maxPriceCents: catalogQuery.maxPriceCents,
+    stock: catalogQuery.stock,
+    categories: categoriesList,
+  });
+  const orderBy = buildCatalogOrderBy(catalogQuery.sort);
 
-  // 3. Build Drizzle query clauses dynamically
-  const whereClauses = [];
-
-  if (currentSearch) {
-    // Escape SQL LIKE wildcard characters to prevent unintended pattern matching
-    const sanitizedSearch = currentSearch.replace(/[%_]/g, '\\$&');
-    whereClauses.push(
-      or(
-        ilike(schema.products.name, `%${sanitizedSearch}%`),
-        ilike(schema.products.description, `%${sanitizedSearch}%`)
-      )
-    );
-  }
-
-  if (selectedCategory) {
-    if (!selectedCategory.parentId) {
-      const subCategoryIds = categoriesList.filter((c) => c.parentId === selectedCategory.id).map((c) => c.id);
-      const categoryIdsToFilter = [selectedCategory.id, ...subCategoryIds];
-      whereClauses.push(inArray(schema.products.categoryId, categoryIdsToFilter));
-    } else {
-      whereClauses.push(eq(schema.products.categoryId, selectedCategory.id));
-    }
-  }
-
-  if (currentType !== 'all') {
-    whereClauses.push(eq(schema.products.type, currentType));
-  }
-
-  whereClauses.push(eq(schema.products.status, 'active'));
-
-  const conditions = and(...whereClauses);
-  
-  // Calculate total count and retrieve paginated records in parallel
   const [countResult, results] = await Promise.all([
     db
       .select({ count: sql<number>`cast(count(*) as int)` })
@@ -140,8 +121,9 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
       .from(schema.products)
       .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
       .where(conditions)
+      .orderBy(...orderBy)
       .limit(itemsPerPage)
-      .offset((currentPage - 1) * itemsPerPage)
+      .offset((catalogQuery.page - 1) * itemsPerPage),
   ]);
 
   const totalCount = countResult[0]?.count || 0;
@@ -185,9 +167,16 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
         {/* Filters */}
         <CatalogFilters
           categories={categoriesList}
-          currentCategory={currentCategorySlug}
-          currentSearch={currentSearch}
-          currentType={currentType}
+          vendors={organizations}
+          currentCategory={catalogQuery.categorySlug}
+          currentSearch={catalogQuery.search}
+          currentType={catalogQuery.type}
+          currentSort={catalogQuery.sort}
+          currentVendor={catalogQuery.vendorSlug}
+          currentMinPrice={params.minPrice || ''}
+          currentMaxPrice={params.maxPrice || ''}
+          currentStock={catalogQuery.stock}
+          totalCount={totalCount}
         />
 
         {/* Results Grid */}
@@ -390,26 +379,20 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
             {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-2 mt-12">
-                {currentPage > 1 && (
+                {catalogQuery.page > 1 && (
                   <Link
-                    href={`/products?${new URLSearchParams({
-                      ...Object.fromEntries(Object.entries(params)),
-                      page: (currentPage - 1).toString(),
-                    }).toString()}`}
+                    href={`/products?${buildCatalogSearchParams(catalogQuery, catalogQuery.page - 1).toString()}`}
                     className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-xs font-mono"
                   >
                     &larr; Prev
                   </Link>
                 )}
                 <span className="text-xs font-mono text-zinc-400">
-                  Page {currentPage} of {totalPages}
+                  Page {catalogQuery.page} of {totalPages}
                 </span>
-                {currentPage < totalPages && (
+                {catalogQuery.page < totalPages && (
                   <Link
-                    href={`/products?${new URLSearchParams({
-                      ...Object.fromEntries(Object.entries(params)),
-                      page: (currentPage + 1).toString(),
-                    }).toString()}`}
+                    href={`/products?${buildCatalogSearchParams(catalogQuery, catalogQuery.page + 1).toString()}`}
                     className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-xs font-mono"
                   >
                     Next &rarr;
