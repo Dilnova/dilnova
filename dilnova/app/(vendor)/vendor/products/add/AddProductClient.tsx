@@ -6,7 +6,7 @@ import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import CategorySelector from '@/app/components/CategorySelector';
-import type { StockAvailabilityDefinition } from '@/utils/stockAvailabilityShared';
+import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
 
 interface Category {
   id: string;

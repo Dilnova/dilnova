@@ -5,11 +5,11 @@ import {
   reserveProductStock,
   applyStockReservation,
   type StockReservation,
-} from '@/utils/inventoryStock';
+} from '@/features/inventory/reservation';
 import {
   incrementDefaultBranchStock,
   reduceBranchAllocationsForCentralSale,
-} from '@/utils/stockLedger';
+} from '@/features/inventory/ledger';
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 

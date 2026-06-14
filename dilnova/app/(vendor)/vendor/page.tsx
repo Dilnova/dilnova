@@ -6,8 +6,8 @@ import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import ManageProductsClient, { type Product } from './products/ManageProductsClient';
-import VendorInventoryWorkspace from './products/VendorInventoryWorkspace';
-import { getVendorInventoryData } from './products/inventoryActions';
+import VendorInventoryWorkspace from '@/features/inventory/components/VendorInventoryWorkspace';
+import { getVendorInventoryData } from '@/features/inventory/vendor.actions';
 import {
   hasCompleteBankDetails,
   parseBankTransferDetailsFromMetadata,

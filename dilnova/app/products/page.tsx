@@ -11,9 +11,9 @@ import WishlistButton from './[id]/WishlistButton';
 import AddToCartButton from '../components/AddToCartButton';
 import { getSystemSetting } from '../../utils/settings';
 import { getCachedOrganizations } from '../../utils/clerkCache';
-import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
-import { resolveOnlineProductPurchaseState } from '@/utils/stockAvailabilityShared';
-import StockAvailabilityBadge from '../components/StockAvailabilityBadge';
+import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
+import { resolveOnlineProductPurchaseState } from '@/features/inventory/availability.shared';
+import StockAvailabilityBadge from '@/features/inventory/components/StockAvailabilityBadge';
 import {
   buildCatalogOrderBy,
   buildCatalogSearchParams,

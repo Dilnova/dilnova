@@ -12,7 +12,7 @@ import { addProductSchema, vendorDeleteProductSchema } from '@/utils/schemas';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { getPremiumStatus } from '@/utils/premiumLicense';
-import { validateStockAvailabilityId } from '@/utils/stockAvailability';
+import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
 
 /**
  * Enterprise-grade Server Action to securely insert a new product/service into PostgreSQL.

@@ -1,9 +1,13 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { getVendorBillingRegisterData, processBillingCheckoutAction, type VendorBillingRegisterData } from '../products/inventoryActions';
+import {
+  getVendorBillingRegisterData,
+  processBillingCheckoutAction,
+  type VendorBillingRegisterData,
+} from '@/features/inventory/vendor.actions';
 import Image from 'next/image';
-import { resolveEffectiveStockAvailability } from '@/utils/stockAvailabilityShared';
+import { resolveEffectiveStockAvailability } from '@/features/inventory/availability.shared';
 
 interface Props {
   initialData: VendorBillingRegisterData;

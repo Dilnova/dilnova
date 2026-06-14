@@ -6,8 +6,8 @@ import * as schema from '@/db/schema';
 import AddProductClient from './AddProductClient';
 import { getSystemSetting } from '@/utils/settings';
 import { getPremiumStatus } from '@/utils/premiumLicense';
-import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
-import { getEnabledStockAvailabilityOptions } from '@/utils/stockAvailabilityShared';
+import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
+import { getEnabledStockAvailabilityOptions } from '@/features/inventory/availability.shared';
 import { eq, and } from 'drizzle-orm';
 
 export default async function AddProductPage() {

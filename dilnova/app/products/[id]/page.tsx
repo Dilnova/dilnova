@@ -16,9 +16,9 @@ import ProductDetailAddToCart from './ProductDetailAddToCart';
 import { logger } from '@/utils/logger';
 import { isVideoUrl } from '@/utils/media';
 import { getSystemSetting } from '@/utils/settings';
-import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
-import { resolveOnlineProductPurchaseState } from '@/utils/stockAvailabilityShared';
-import StockAvailabilityBadge from '@/app/components/StockAvailabilityBadge';
+import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
+import { resolveOnlineProductPurchaseState } from '@/features/inventory/availability.shared';
+import StockAvailabilityBadge from '@/features/inventory/components/StockAvailabilityBadge';
 import { DEFAULT_SUPPORT_EMAIL } from '@/utils/brand';
 import { getNormalizedClerkUserEmail } from '@/utils/customerEmail';
 import {

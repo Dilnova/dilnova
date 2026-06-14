@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BUILTIN_STOCK_AVAILABILITY,
   resolveOnlineProductPurchaseState,
-} from './stockAvailabilityShared';
+} from '@/features/inventory/availability.shared';
 
 describe('resolveOnlineProductPurchaseState', () => {
   it('allows services without inventory', () => {

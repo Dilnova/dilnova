@@ -13,12 +13,12 @@ import {
   resolveInitialOrderStatus,
   isPaymentCompatibleWithFulfillment,
 } from '@/utils/checkoutOptionsShared';
-import { getStockAvailabilityCatalog, resolveEffectiveStockAvailability } from '@/utils/stockAvailability';
+import { getStockAvailabilityCatalog, resolveEffectiveStockAvailability } from '@/features/inventory/availability.server';
 import {
   reserveProductStock,
   applyStockReservation,
   type StockReservation,
-} from '@/utils/inventoryStock';
+} from '@/features/inventory/reservation';
 import { calculateCheckoutTotals } from '@/utils/checkoutTotals';
 import { applyOnlineOrderItemStock } from '@/features/orders/stock';
 import {

@@ -4,7 +4,7 @@ import { eq, desc, inArray } from 'drizzle-orm';
 import SuperAdminClient from './SuperAdminClient';
 import { getSystemSetting } from '@/utils/settings';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
-import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
+import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { fetchAllClerkOrganizations } from '@/shared/auth/clerk-cache';
 import { buildVendorOrgIntegrityReport } from '@/features/vendor-org';

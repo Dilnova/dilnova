@@ -2,9 +2,9 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import POSBillingClient from './POSBillingClient';
-import { getVendorBillingRegisterData } from '../products/inventoryActions';
+import { getVendorBillingRegisterData } from '@/features/inventory/vendor.actions';
 import { getSystemSetting } from '@/utils/settings';
-import { resolveEffectiveStockAvailability } from '@/utils/stockAvailabilityShared';
+import { resolveEffectiveStockAvailability } from '@/features/inventory/availability.shared';
 
 export const revalidate = 0; // Fresh load
 

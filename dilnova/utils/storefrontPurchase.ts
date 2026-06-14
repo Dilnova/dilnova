@@ -1,10 +1,10 @@
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 import { inArray } from 'drizzle-orm';
-import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
+import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import {
   resolveOnlineProductPurchaseState,
-} from '@/utils/stockAvailabilityShared';
+} from '@/features/inventory/availability.shared';
 import type { VendorProduct } from '@/app/vendors/[slug]/custom/types';
 
 export async function enrichVendorProductsWithPurchaseFlags(

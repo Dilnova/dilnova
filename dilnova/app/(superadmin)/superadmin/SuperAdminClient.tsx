@@ -16,13 +16,19 @@ import {
 } from './actions';
 import { updateSystemSettingAction } from './settingsActions';
 import CheckoutOptionsSettings from './CheckoutOptionsSettings';
-import StockAvailabilitySettings from './StockAvailabilitySettings';
-import InventoryTab from './InventoryTab';
+import StockAvailabilitySettings from '@/features/inventory/components/StockAvailabilitySettings';
+import InventoryTab from '@/features/inventory/components/InventoryTab';
 import VendorOrgIssuesTab from '@/features/vendor-org/components/VendorOrgIssuesTab';
 import type { CheckoutOptionDefinition } from '@/utils/checkoutOptionsShared';
-import type { StockAvailabilityDefinition } from '@/utils/stockAvailabilityShared';
+import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
 import type { VendorOrgIntegrityReport } from '@/features/vendor-org';
-import type { InventoryItem, Supplier as IMSSupplier, InventoryMovement, SimulatedOrder, ProductForInventory } from './InventoryTab';
+import type {
+  InventoryItem,
+  Supplier as IMSSupplier,
+  InventoryMovement,
+  SimulatedOrder,
+  ProductForInventory,
+} from '@/features/inventory/components/InventoryTab';
 
 interface Category {
   id: string;
