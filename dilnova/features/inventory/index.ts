@@ -1,3 +1,4 @@
+export * from '@/features/inventory/types';
 export * from '@/features/inventory/reservation';
 export * from '@/features/inventory/ledger';
 export * from '@/features/inventory/availability.shared';
@@ -23,9 +24,11 @@ export {
   assignBranchMemberAction,
   removeBranchMemberAction,
   processBillingCheckoutAction,
-  type VendorBillingRegisterData,
-  type VendorInventoryFullData,
 } from '@/features/inventory/vendor.actions';
+export type {
+  VendorBillingRegisterData,
+  VendorInventoryFullData,
+} from '@/features/inventory/types';
 export {
   createSupplierAction,
   updateSupplierAction,

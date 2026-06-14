@@ -38,8 +38,10 @@ import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { rateLimit } from '@/utils/rateLimit';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
-
-// Helper to authenticate vendor context and check premium status
+import type {
+  VendorBillingRegisterData,
+  VendorInventoryFullData,
+} from '@/features/inventory/types';
 async function verifyVendorAccess(options?: { allowMember?: boolean }) {
   const { userId, orgId, orgRole } = await auth();
   if (!userId || !orgId) {
@@ -63,63 +65,11 @@ async function verifyVendorAccess(options?: { allowMember?: boolean }) {
   return { userId, orgId, orgRole, premiumStatus };
 }
 
-// ── GET VENDOR IMS DATA ──────────────────────────────────────
-
-export type VendorBillingRegisterData = {
-  inventoryItems: Array<{
-    id: string | null;
-    productId: string;
-    sku: string | null;
-    quantity: number | null;
-    lowStockThreshold: number | null;
-    binLocation: string | null;
-    supplierId: string | null;
-    stockAvailability: string | null;
-    updatedAt: Date | null;
-    productName: string;
-    productType: string;
-    productPrice: number | null;
-    supplierName: string | null;
-  }>;
-  branches: Array<(typeof schema.branches.$inferSelect)>;
-  branchInventory: Array<{
-    id: string;
-    branchId: string;
-    productId: string;
-    sku: string | null;
-    quantity: number | null;
-    binLocation: string | null;
-    productName: string;
-  }>;
-  stockAvailabilityCatalog: StockAvailabilityDefinition[];
-  premiumStatus: PremiumStatus;
-  billingReceiptCount: number;
-};
-
 type GetVendorInventoryDataOptions = {
   allowMember?: boolean;
 };
 
-export type VendorInventoryFullData = {
-  inventoryItems: VendorBillingRegisterData['inventoryItems'];
-  branches: VendorBillingRegisterData['branches'];
-  branchInventory: VendorBillingRegisterData['branchInventory'];
-  stockAvailabilityCatalog: VendorBillingRegisterData['stockAvailabilityCatalog'];
-  premiumStatus: PremiumStatus;
-  suppliers: Array<(typeof schema.suppliers.$inferSelect)>;
-  movements: any[];
-  simulatedOrders: any[];
-  productsWithoutInventory: Array<{
-    id: string;
-    name: string;
-    type: string;
-    orgId: string;
-  }>;
-  branchMembers: Array<(typeof schema.branchMembers.$inferSelect)>;
-  billingReceipts: Array<(typeof schema.billingReceipts.$inferSelect)>;
-  orgMembers: Array<{ userId: string; name: string; email: string }>;
-  checkoutOptionsCatalog: Awaited<ReturnType<typeof getCheckoutOptionsCatalog>>;
-};
+// ── GET VENDOR IMS DATA ──────────────────────────────────────
 
 async function loadVendorInventoryData(
   scope: 'full' | 'billing',

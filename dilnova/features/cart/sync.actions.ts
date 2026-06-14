@@ -6,8 +6,6 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { syncedCartItemSchema, syncedCartSchema, type SyncedCartItem } from '@/features/cart/schema';
 
-export type { SyncedCartItem };
-
 export async function loadCustomerCartAction(): Promise<{
   success: boolean;
   items?: SyncedCartItem[];
@@ -76,6 +74,3 @@ export async function saveCustomerCartAction(
     return { success: false, error: 'Failed to save cart.' };
   }
 }
-
-// Re-export schema for callers that validate single items
-export { syncedCartItemSchema };

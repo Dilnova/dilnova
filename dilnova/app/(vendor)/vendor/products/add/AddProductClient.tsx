@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useRef, useEffect } from 'react';
-import { addProductAction } from '../actions';
+import { addProductAction } from '@/features/catalog/vendor.actions';
 import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';

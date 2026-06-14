@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { deleteProductAction } from './actions';
+import { deleteProductAction } from '@/features/catalog/vendor.actions';
 import Image from 'next/image';
 import Link from 'next/link';
 import { isVideoUrl } from '@/utils/media';

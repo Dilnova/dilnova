@@ -5,7 +5,7 @@ import {
   parseCatalogSort,
   parsePriceToCents,
   resolveVendorOrgId,
-} from './catalogQuery';
+} from '@/features/catalog/query';
 
 describe('catalogQuery', () => {
   it('parses catalog query params with defaults', () => {

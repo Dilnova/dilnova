@@ -2,5 +2,5 @@
 export {
   loadCustomerCartAction,
   saveCustomerCartAction,
-  type SyncedCartItem,
 } from '@/features/cart/sync.actions';
+export type { SyncedCartItem } from '@/features/cart/schema';

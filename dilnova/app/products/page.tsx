@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { isVideoUrl } from '../../utils/media';
 import type { Metadata } from 'next';
-import CatalogFilters from './CatalogFilters';
+import CatalogFilters from '@/features/catalog/components/CatalogFilters';
 import WishlistButton from './[id]/WishlistButton';
 import AddToCartButton from '../components/AddToCartButton';
 import { getSystemSetting } from '../../utils/settings';
@@ -20,7 +20,7 @@ import {
   buildCatalogWhereClauses,
   parseCatalogQueryParams,
   resolveVendorOrgId,
-} from '@/utils/catalogQuery';
+} from '@/features/catalog/query';
 
 export const revalidate = 0; // Fresh load on each catalog query
 

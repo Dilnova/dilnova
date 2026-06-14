@@ -1,4 +1,4 @@
-'use server';
+import 'server-only';
 
 import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
 import { logger } from './logger';

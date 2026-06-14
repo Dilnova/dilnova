@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { SignInButton } from '@clerk/nextjs';
 import { useClerkAuthRedirectUrl } from '@/app/hooks/useClerkAuthRedirectUrl';
-import { toggleWishlistAction } from './actions';
+import { toggleWishlistAction } from '@/features/catalog/product-detail.actions';
 
 interface WishlistButtonProps {
   productId: string;

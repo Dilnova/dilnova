@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { submitQuestionAction, submitAnswerAction } from './actions';
+import { submitQuestionAction, submitAnswerAction } from '@/features/catalog/product-detail.actions';
 import Image from 'next/image';
 import SignInPrompt from '@/app/components/SignInPrompt';
 

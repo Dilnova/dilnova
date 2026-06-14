@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { incrementProductViewsAction } from './actions';
+import { incrementProductViewsAction } from '@/features/catalog/product-detail.actions';
 import { db } from '@/db';
 import { rateLimit } from '@/utils/rateLimit';
 

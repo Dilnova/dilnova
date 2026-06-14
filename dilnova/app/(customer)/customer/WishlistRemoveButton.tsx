@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { toggleWishlistAction } from '@/app/products/[id]/actions';
+import { toggleWishlistAction } from '@/features/catalog/product-detail.actions';
 
 interface WishlistRemoveButtonProps {
   productId: string;

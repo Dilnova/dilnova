@@ -9,6 +9,8 @@ import {
   deleteCategoryAction,
   updateProductAction,
   deleteProductAction,
+} from '@/features/catalog/superadmin.actions';
+import {
   createPricingPlanAction,
   updatePricingPlanAction,
   deletePricingPlanAction,

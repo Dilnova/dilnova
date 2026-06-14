@@ -12,8 +12,8 @@ export {
 export {
   loadCustomerCartAction,
   saveCustomerCartAction,
-  type SyncedCartItem,
 } from '@/features/cart/sync.actions';
+export type { SyncedCartItem } from '@/features/cart/schema';
 export { CartProvider, useCart, type CartItem } from '@/features/cart/context/CartContext';
 export { default as AddToCartButton } from '@/features/cart/components/AddToCartButton';
 export { default as CartIcon } from '@/features/cart/components/CartIcon';

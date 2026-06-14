@@ -2,9 +2,11 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import {
+  type VendorBillingRegisterData,
+} from '@/features/inventory/types';
+import {
   getVendorBillingRegisterData,
   processBillingCheckoutAction,
-  type VendorBillingRegisterData,
 } from '@/features/inventory/vendor.actions';
 import Image from 'next/image';
 import { resolveEffectiveStockAvailability } from '@/features/inventory/availability.shared';

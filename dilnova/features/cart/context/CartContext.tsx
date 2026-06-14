@@ -5,8 +5,8 @@ import { useUser } from '@clerk/nextjs';
 import {
   loadCustomerCartAction,
   saveCustomerCartAction,
-  type SyncedCartItem,
 } from '@/features/cart/sync.actions';
+import type { SyncedCartItem } from '@/features/cart/schema';
 import { syncCartPricesAction } from '@/features/cart/checkout.actions';
 import { GUEST_CART_STORAGE_KEY } from '@/features/cart/guest-storage';
 import type { CartItem } from '@/features/cart/types';

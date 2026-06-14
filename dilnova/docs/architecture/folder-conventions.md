@@ -25,7 +25,7 @@ features/<domain>/
 
 **Planned domains:** `auth`, `catalog`, `cart`, `orders`, `customer`, `vendor`, `inventory`, `billing`, `organization`, `superadmin`, `contact`, `storefront`
 
-**Migrated:** `vendor-org`, `cart`, `orders`, `inventory`
+**Migrated:** `vendor-org`, `cart`, `orders`, `inventory`, `catalog`
 
 ### `shared/` — infrastructure (no product rules)
 
@@ -89,11 +89,12 @@ import { rateLimit } from '@/shared/security/rate-limit';
 | **3** ✅ | Migrate `features/cart/` |
 | **4** ✅ | Migrate `features/orders/` |
 | **5** ✅ | Migrate `features/inventory/` |
-| **6** | Move `shared/security`, `shared/audit`, `shared/auth` (real code, not shims) |
-| **7** | Migrate `catalog` + `billing` |
-| **8** | Split `db/schema.ts` under `shared/db/schema/` |
-| **9** | Split `utils/schemas.ts` per feature |
-| **10** | Add Playwright E2E under `tests/e2e/` |
+| **6** ✅ | Migrate `features/catalog/` |
+| **7** | Move `shared/security`, `shared/audit`, `shared/auth` (real code, not shims) |
+| **8** | Migrate `billing` |
+| **9** | Split `db/schema.ts` under `shared/db/schema/` |
+| **10** | Split `utils/schemas.ts` per feature |
+| **11** | Add Playwright E2E under `tests/e2e/` |
 
 ## Backward compatibility
 
@@ -105,5 +106,6 @@ During migration, legacy paths re-export from new locations:
 - `@/app/(vendor)/vendor/orderActions`, `@/app/(customer)/customer/orderActions` → `@/features/orders/*`
 - `@/utils/inventoryStock`, `stockLedger`, `stockAvailability*` → `@/features/inventory/*`
 - `@/app/(vendor)/vendor/products/inventoryActions` → `@/features/inventory/vendor.actions`
+- `@/utils/catalogQuery`, `@/app/products/CatalogFilters` → `@/features/catalog/*`
 
 Remove shims only after grep shows zero old imports.
