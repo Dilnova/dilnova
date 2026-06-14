@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { checkSuperAdmin } from './authGuards';
+import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
 import { currentUser } from '@clerk/nextjs/server';
 
 // Mock Clerk server methods

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterAll, afterEach } from 'vitest';
-import { rateLimit } from './rateLimit';
+import { rateLimit } from '@/shared/security/rate-limit';
 import { headers } from 'next/headers';
 
 // Mock next/headers

@@ -91,7 +91,7 @@ import { rateLimit } from '@/shared/security/rate-limit';
 | **5** ✅ | Migrate `features/inventory/` |
 | **6** ✅ | Migrate `features/catalog/` |
 | **7** ✅ | Migrate `features/billing/` |
-| **8** | Move `shared/security`, `shared/audit`, `shared/auth` (real code, not shims) |
+| **8** ✅ | Move `shared/security`, `shared/audit`, `shared/auth` (real code, not shims) |
 | **9** | Split `db/schema.ts` under `shared/db/schema/` |
 | **10** | Split `utils/schemas.ts` per feature |
 | **11** | Add Playwright E2E under `tests/e2e/` |
@@ -108,5 +108,6 @@ During migration, legacy paths re-export from new locations:
 - `@/app/(vendor)/vendor/products/inventoryActions` → `@/features/inventory/vendor.actions`
 - `@/utils/catalogQuery`, `@/app/products/CatalogFilters` → `@/features/catalog/*`
 - `@/app/(vendor)/vendor/billing/POSBillingClient` → `@/features/billing/components/POSBillingClient`
+- `@/utils/rateLimit`, `asyncContext`, `auditLogger`, `authGuards`, `clerkCache` → `@/shared/*`
 
 Remove shims only after grep shows zero old imports.

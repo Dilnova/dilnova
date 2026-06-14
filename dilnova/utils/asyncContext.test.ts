@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { runWithCorrelationId, getRequestId } from './asyncContext';
+import { runWithCorrelationId, getRequestId } from '@/shared/security/async-context';
 import { headers } from 'next/headers';
 import { logger } from './logger';
 

@@ -6,6 +6,8 @@ Enterprise folder layout using **`features/`** (business domains) and **`shared/
 |----------|---------|
 | [folder-conventions.md](./folder-conventions.md) | Rules, dependency boundaries, migration phases |
 | [roles-and-routes.md](./roles-and-routes.md) | RBAC map (routes → roles → actions) |
+| [server-actions.md](./server-actions.md) | `'use server'` export rules |
+| [../shared/README.md](../shared/README.md) | Shared infrastructure modules |
 
 ## Quick map
 
@@ -28,3 +30,5 @@ tests/      → unit, integration, e2e
 | `billing` | **Migrated** |
 
 Legacy `@/utils/*` and `@/db/*` imports remain valid via shims until each domain is migrated.
+
+**Shared infra (Phase 8):** `@/shared/security/*`, `@/shared/audit/*`, `@/shared/auth/*` now contain real implementations; `@/utils/rateLimit`, `asyncContext`, `auditLogger`, `authGuards`, `clerkCache` are shims.
