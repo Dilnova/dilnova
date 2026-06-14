@@ -1,7 +1,8 @@
 import { headers } from 'next/headers';
 import { logger } from '@/utils/logger';
-import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+import { readUpstashEnv } from '@/utils/upstashHealth';
 
 // In-memory fallback map for development/testing when Upstash env vars are not configured
 const memoryTracker = new Map<string, number[]>();
@@ -20,18 +21,21 @@ function isProductionEnvironment(): boolean {
 }
 
 function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const { url, token } = readUpstashEnv();
 
   if (!url || !token) {
     if (process.env.NODE_ENV === 'production' && !hasLoggedUpstashWarning) {
       hasLoggedUpstashWarning = true;
-      logger.error('Upstash Redis credentials are not configured in production. Rate limiting will reject requests.');
+      logger.error('Upstash Redis credentials are not configured in production. Rate limiting will reject requests.', {
+        urlPresent: Boolean(url),
+        tokenPresent: Boolean(token),
+      });
     }
     return null;
   }
 
-  const key = `${limit}:${windowMs}`;
+  const windowSeconds = Math.max(1, Math.ceil(windowMs / 1000));
+  const key = `${limit}:${windowSeconds}s`;
   if (ratelimitCache.has(key)) {
     return ratelimitCache.get(key)!;
   }
@@ -44,7 +48,7 @@ function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
 
     const client = new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+      limiter: Ratelimit.slidingWindow(limit, `${windowSeconds} s`),
       analytics: true,
       prefix: '@upstash/ratelimit',
     });
@@ -52,7 +56,7 @@ function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
     ratelimitCache.set(key, client);
     return client;
   } catch (error) {
-    logger.error('Failed to create Upstash Ratelimit instance, falling back to local memory', error);
+    logger.error('Failed to create Upstash Ratelimit instance', error, { limit, windowMs });
     return null;
   }
 }
@@ -87,7 +91,7 @@ export async function rateLimit(limit: number, windowMs: number): Promise<void> 
       if (error instanceof Error && error.message.includes('Rate limit exceeded')) {
         throw error;
       }
-      logger.error('Upstash rate limiting failed', error);
+      logger.error('Upstash rate limiting failed', error, { limit, windowMs });
       if (isProductionEnvironment()) {
         throw new Error(PRODUCTION_RATE_LIMIT_UNAVAILABLE_ERROR);
       }
