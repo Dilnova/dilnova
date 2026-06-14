@@ -9,6 +9,7 @@ import { checkSuperAdmin } from '@/utils/authGuards';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';
 import { rateLimit } from '@/utils/rateLimit';
+import { invalidateClerkCache } from '@/utils/clerkCache';
 import { reassignProductOrgSchema, reassignVendorOrgSchema } from '@/utils/schemas';
 
 async function assertClerkOrganizationExists(orgId: string) {
@@ -108,6 +109,15 @@ export async function reassignVendorOrgAction(input: {
       return updated;
     });
 
+    const totalUpdated = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    if (totalUpdated === 0) {
+      throw new Error(
+        'No records were updated. Confirm the orphan org ID still exists in the database and at least one selected record type has matches.'
+      );
+    }
+
+    invalidateClerkCache();
+
     await logAuditAction({
       userId: user.id,
       action: 'REASSIGN_VENDOR_ORG',
@@ -119,6 +129,8 @@ export async function reassignVendorOrgAction(input: {
     revalidatePath('/superadmin');
     revalidatePath('/products');
     revalidatePath('/vendor');
+    revalidatePath('/vendors');
+    revalidatePath('/');
 
     return { success: true as const, counts };
   });
@@ -154,6 +166,8 @@ export async function reassignProductOrgAction(productId: string, toOrgId: strin
       .update(schema.products)
       .set({ orgId: parsed.data.toOrgId, updatedAt: new Date() })
       .where(eq(schema.products.id, parsed.data.productId));
+
+    invalidateClerkCache();
 
     await logAuditAction({
       userId: user.id,

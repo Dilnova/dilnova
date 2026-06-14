@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildVendorOrgIntegrityReport } from './vendorOrgIntegrity';
+import {
+  buildVendorOrgIntegrityReport,
+  countSelectedScopeRecords,
+  formatReassignCounts,
+  getDefaultReassignScopesForGroup,
+} from './vendorOrgIntegrity';
 
 describe('vendorOrgIntegrity', () => {
   it('groups orphaned org references across entities', () => {
@@ -26,5 +31,35 @@ describe('vendorOrgIntegrity', () => {
     expect(report.totals.orderItems).toBe(1);
     expect(report.issueGroups[0]?.orgId).toBe('org_dead');
     expect(report.issueGroups[0]?.totalAffected).toBe(2);
+  });
+
+  it('derives default scopes and selected counts from issue groups', () => {
+    const group = {
+      orgId: 'org_dead',
+      products: [{ id: 'p1', name: 'Widget', type: 'product', orgId: 'org_dead', status: 'active' }],
+      orderItems: [],
+      suppliers: [{ id: 's1', name: 'Supplier', orgId: 'org_dead' }],
+      branches: [],
+      billingReceipts: [],
+      totalAffected: 2,
+    };
+
+    expect(getDefaultReassignScopesForGroup(group)).toEqual({
+      products: true,
+      orderItems: false,
+      suppliers: true,
+      branches: false,
+      billingReceipts: false,
+    });
+    expect(countSelectedScopeRecords(group, getDefaultReassignScopesForGroup(group))).toBe(2);
+    expect(
+      formatReassignCounts({
+        products: 1,
+        orderItems: 0,
+        suppliers: 1,
+        branches: 0,
+        billingReceipts: 0,
+      })
+    ).toBe('1 product, 1 supplier');
   });
 });

@@ -2,7 +2,14 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import type { VendorOrgIntegrityReport, VendorOrgIssueGroup } from '@/utils/vendorOrgIntegrity';
+import {
+  countSelectedScopeRecords,
+  formatReassignCounts,
+  getDefaultReassignScopesForGroup,
+  type VendorOrgIntegrityReport,
+  type VendorOrgIssueGroup,
+  type VendorOrgReassignScopes,
+} from '@/utils/vendorOrgIntegrity';
 import { reassignProductOrgAction, reassignVendorOrgAction } from './vendorOrgActions';
 
 interface OrganizationOption {
@@ -17,21 +24,17 @@ interface VendorOrgIssuesTabProps {
   triggerNotification: (success: boolean, message: string) => void;
 }
 
-type ReassignScopes = {
-  products: boolean;
-  orderItems: boolean;
-  suppliers: boolean;
-  branches: boolean;
-  billingReceipts: boolean;
-};
+type ReassignScopes = VendorOrgReassignScopes;
 
-const DEFAULT_SCOPES: ReassignScopes = {
-  products: true,
-  orderItems: true,
-  suppliers: true,
-  branches: true,
-  billingReceipts: true,
-};
+function getActionErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === 'string' && error.trim()) {
+    return error;
+  }
+  return fallback;
+}
 
 function IssueGroupCard({
   group,
@@ -45,21 +48,48 @@ function IssueGroupCard({
   onRefresh: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [isBulkReassigning, setIsBulkReassigning] = useState(false);
   const [targetOrgId, setTargetOrgId] = useState('');
-  const [scopes, setScopes] = useState<ReassignScopes>(DEFAULT_SCOPES);
+  const [scopes, setScopes] = useState<ReassignScopes>(() => getDefaultReassignScopesForGroup(group));
   const [expanded, setExpanded] = useState(false);
   const [productTargets, setProductTargets] = useState<Record<string, string>>({});
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const sortedOrganizations = useMemo(
     () => [...organizations].sort((a, b) => a.name.localeCompare(b.name)),
     [organizations]
   );
 
+  const selectedRecordCount = useMemo(
+    () => countSelectedScopeRecords(group, scopes),
+    [group, scopes]
+  );
+
+  const targetOrgName =
+    sortedOrganizations.find((org) => org.id === targetOrgId)?.name || 'the selected organization';
+
   const handleBulkReassign = () => {
     if (!targetOrgId) {
       onNotify(false, 'Select a target organization.');
       return;
     }
+
+    if (!Object.values(scopes).some(Boolean)) {
+      onNotify(false, 'Select at least one record type to reassign.');
+      return;
+    }
+
+    if (selectedRecordCount === 0) {
+      onNotify(false, 'No records match the selected record types for this orphan org.');
+      return;
+    }
+
+    setShowConfirm(true);
+  };
+
+  const executeBulkReassign = () => {
+    setShowConfirm(false);
+    setIsBulkReassigning(true);
 
     startTransition(async () => {
       try {
@@ -71,11 +101,15 @@ function IssueGroupCard({
         const { counts } = result;
         onNotify(
           true,
-          `Reassigned org ${group.orgId.slice(0, 8)}… → ${targetOrgId.slice(0, 8)}… (${counts.products} products, ${counts.orderItems} order lines).`
+          `Reassigned ${formatReassignCounts(counts)} from ${group.orgId.slice(0, 8)}… to ${targetOrgName}.`
         );
+        setTargetOrgId('');
+        setScopes(getDefaultReassignScopesForGroup(group));
         onRefresh();
       } catch (error) {
-        onNotify(false, error instanceof Error ? error.message : 'Reassignment failed.');
+        onNotify(false, getActionErrorMessage(error, 'Reassignment failed.'));
+      } finally {
+        setIsBulkReassigning(false);
       }
     });
   };
@@ -93,10 +127,20 @@ function IssueGroupCard({
         onNotify(true, `Updated vendor org for "${productName}".`);
         onRefresh();
       } catch (error) {
-        onNotify(false, error instanceof Error ? error.message : 'Product reassignment failed.');
+        onNotify(false, getActionErrorMessage(error, 'Product reassignment failed.'));
       }
     });
   };
+
+  const scopeOptions: Array<{ key: keyof ReassignScopes; label: string; count: number }> = [
+    { key: 'products', label: 'Products', count: group.products.length },
+    { key: 'orderItems', label: 'Order items', count: group.orderItems.length },
+    { key: 'suppliers', label: 'Suppliers', count: group.suppliers.length },
+    { key: 'branches', label: 'Branches', count: group.branches.length },
+    { key: 'billingReceipts', label: 'Billing receipts', count: group.billingReceipts.length },
+  ];
+
+  const isBusy = isPending || isBulkReassigning;
 
   return (
     <section className="bg-white dark:bg-zinc-950 border border-rose-200/70 dark:border-rose-900/40 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
@@ -152,35 +196,75 @@ function IssueGroupCard({
           </label>
 
           <div className="flex flex-wrap gap-3 text-[11px] text-zinc-600 dark:text-zinc-400">
-            {(Object.keys(scopes) as Array<keyof ReassignScopes>).map((scope) => (
-              <label key={scope} className="inline-flex items-center gap-2 cursor-pointer">
+            {scopeOptions.map(({ key, label, count }) => (
+              <label
+                key={key}
+                className={`inline-flex items-center gap-2 ${count === 0 ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
                 <input
                   type="checkbox"
-                  checked={scopes[scope]}
+                  disabled={count === 0 || isBusy}
+                  checked={count > 0 && scopes[key]}
                   onChange={(e) =>
                     setScopes((prev) => ({
                       ...prev,
-                      [scope]: e.target.checked,
+                      [key]: e.target.checked,
                     }))
                   }
                 />
-                <span className="capitalize">{scope.replace(/([A-Z])/g, ' $1')}</span>
+                <span>
+                  {label} ({count})
+                </span>
               </label>
             ))}
           </div>
+          <p className="text-[10px] font-mono text-zinc-500">
+            Selected for reassignment: {selectedRecordCount} record{selectedRecordCount === 1 ? '' : 's'}
+          </p>
         </div>
 
         <div className="flex items-end">
           <button
             type="button"
-            disabled={isPending}
+            disabled={isBusy || selectedRecordCount === 0}
             onClick={handleBulkReassign}
             className="w-full xl:w-auto px-5 py-2.5 bg-purple-700 hover:bg-purple-800 disabled:opacity-60 text-white text-xs font-bold rounded-xl cursor-pointer"
           >
-            {isPending ? 'Reassigning…' : 'Reassign selected records'}
+            {isBusy ? 'Reassigning…' : 'Reassign selected records'}
           </button>
         </div>
       </div>
+
+      {showConfirm && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/80 dark:bg-amber-950/20 p-4 space-y-3">
+          <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+            Confirm bulk reassignment
+          </p>
+          <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90">
+            Move {selectedRecordCount} record{selectedRecordCount === 1 ? '' : 's'} from orphan org{' '}
+            <span className="font-mono break-all">{group.orgId}</span> to{' '}
+            <span className="font-semibold">{targetOrgName}</span>?
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={executeBulkReassign}
+              className="px-4 py-2 text-[11px] font-bold rounded-lg bg-purple-700 text-white cursor-pointer disabled:opacity-60"
+            >
+              Yes, reassign now
+            </button>
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => setShowConfirm(false)}
+              className="px-4 py-2 text-[11px] font-semibold rounded-lg border border-zinc-300 dark:border-zinc-700 cursor-pointer disabled:opacity-60"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {expanded && (
         <div className="space-y-4 border-t border-zinc-100 dark:border-zinc-900 pt-4">
@@ -223,7 +307,7 @@ function IssueGroupCard({
                       </select>
                       <button
                         type="button"
-                        disabled={isPending}
+                        disabled={isBusy}
                         onClick={() => handleSingleProductReassign(product.id, product.name)}
                         className="px-3 py-2 text-[11px] font-semibold rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 cursor-pointer disabled:opacity-60"
                       >

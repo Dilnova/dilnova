@@ -1,25 +1,19 @@
 import { db } from '@/db';
 import * as schema from '@/db/schema';
-import { eq, desc, notInArray, inArray } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import SuperAdminClient from './SuperAdminClient';
 import { getSystemSetting } from '@/utils/settings';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
 import { clerkClient } from '@clerk/nextjs/server';
+import { fetchAllClerkOrganizations } from '@/utils/clerkCache';
 import { buildVendorOrgIntegrityReport } from '@/utils/vendorOrgIntegrity';
 
 export const revalidate = 0; // Fresh database query on each load
 
 export default async function SuperAdminDashboardPage() {
   const client = await clerkClient();
-  const orgsList = await client.organizations.getOrganizationList({ limit: 100 });
-  const organizations = orgsList.data.map((o) => ({
-    id: o.id,
-    name: o.name,
-    slug: o.slug,
-    imageUrl: o.imageUrl,
-    publicMetadata: o.publicMetadata || {},
-  }));
+  const organizations = await fetchAllClerkOrganizations(client);
 
   // 1. Fetch Categories
   const categories = await db

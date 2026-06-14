@@ -19,26 +19,54 @@ let cachedOrgs: CachedOrg[] | null = null;
 let lastCacheFetch = 0;
 const CACHE_TTL = 5 * 60 * 1000; // Cache for 5 minutes
 
+type ClerkOrganizationsClient = Awaited<ReturnType<typeof clerkClient>>;
+
+function mapClerkOrganization(o: {
+  id: string;
+  name: string;
+  slug: string | null;
+  imageUrl: string;
+  publicMetadata?: unknown;
+}): CachedOrg {
+  return {
+    id: o.id,
+    name: o.name,
+    slug: o.slug,
+    imageUrl: o.imageUrl,
+    publicMetadata: (o.publicMetadata as CachedOrg['publicMetadata']) || {},
+  };
+}
+
+/**
+ * Fetches every Clerk organization, paginating past the API's 100-item page size.
+ */
+export async function fetchAllClerkOrganizations(client: ClerkOrganizationsClient): Promise<CachedOrg[]> {
+  const all: CachedOrg[] = [];
+  const limit = 100;
+  let offset = 0;
+
+  while (true) {
+    const orgList = await client.organizations.getOrganizationList({ limit, offset });
+    all.push(...orgList.data.map(mapClerkOrganization));
+    if (orgList.data.length < limit) {
+      break;
+    }
+    offset += limit;
+  }
+
+  return all;
+}
 
 /**
  * Retrieves the list of Clerk organizations using an in-memory cache to bypass
  * slow network API requests.
  */
-export async function getCachedOrganizations(
-  client: Awaited<ReturnType<typeof clerkClient>>
-): Promise<CachedOrg[]> {
+export async function getCachedOrganizations(client: ClerkOrganizationsClient): Promise<CachedOrg[]> {
   // If cache is empty or expired, perform a fresh fetch
   if (!cachedOrgs || Date.now() - lastCacheFetch > CACHE_TTL) {
     logger.info('Clerk organization cache miss, fetching from API');
     try {
-      const orgList = await client.organizations.getOrganizationList({ limit: 100 });
-      cachedOrgs = orgList.data.map((o) => ({
-        id: o.id,
-        name: o.name,
-        slug: o.slug,
-        imageUrl: o.imageUrl,
-        publicMetadata: (o.publicMetadata as CachedOrg['publicMetadata']) || {},
-      }));
+      cachedOrgs = await fetchAllClerkOrganizations(client);
       lastCacheFetch = Date.now();
     } catch (err) {
       logger.error('Failed to fetch organizations from Clerk API', err);

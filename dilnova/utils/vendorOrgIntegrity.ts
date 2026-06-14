@@ -53,8 +53,57 @@ export interface VendorOrgIntegrityReport {
   };
 }
 
+export type VendorOrgReassignScopes = {
+  products: boolean;
+  orderItems: boolean;
+  suppliers: boolean;
+  branches: boolean;
+  billingReceipts: boolean;
+};
+
 export function isKnownVendorOrgId(orgId: string, knownOrgIds: ReadonlySet<string>): boolean {
   return Boolean(orgId) && knownOrgIds.has(orgId);
+}
+
+export function getDefaultReassignScopesForGroup(group: VendorOrgIssueGroup): VendorOrgReassignScopes {
+  return {
+    products: group.products.length > 0,
+    orderItems: group.orderItems.length > 0,
+    suppliers: group.suppliers.length > 0,
+    branches: group.branches.length > 0,
+    billingReceipts: group.billingReceipts.length > 0,
+  };
+}
+
+export function countSelectedScopeRecords(
+  group: VendorOrgIssueGroup,
+  scopes: VendorOrgReassignScopes
+): number {
+  let total = 0;
+  if (scopes.products) total += group.products.length;
+  if (scopes.orderItems) total += group.orderItems.length;
+  if (scopes.suppliers) total += group.suppliers.length;
+  if (scopes.branches) total += group.branches.length;
+  if (scopes.billingReceipts) total += group.billingReceipts.length;
+  return total;
+}
+
+export function formatReassignCounts(counts: {
+  products: number;
+  orderItems: number;
+  suppliers: number;
+  branches: number;
+  billingReceipts: number;
+}): string {
+  const parts: string[] = [];
+  if (counts.products > 0) parts.push(`${counts.products} product${counts.products === 1 ? '' : 's'}`);
+  if (counts.orderItems > 0) parts.push(`${counts.orderItems} order line${counts.orderItems === 1 ? '' : 's'}`);
+  if (counts.suppliers > 0) parts.push(`${counts.suppliers} supplier${counts.suppliers === 1 ? '' : 's'}`);
+  if (counts.branches > 0) parts.push(`${counts.branches} branch${counts.branches === 1 ? '' : 'es'}`);
+  if (counts.billingReceipts > 0) {
+    parts.push(`${counts.billingReceipts} receipt${counts.billingReceipts === 1 ? '' : 's'}`);
+  }
+  return parts.length > 0 ? parts.join(', ') : '0 records';
 }
 
 export function buildVendorOrgIntegrityReport(
