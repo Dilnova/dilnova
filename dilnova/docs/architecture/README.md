@@ -32,3 +32,5 @@ tests/      → unit, integration, e2e
 Legacy `@/utils/*` and `@/db/*` imports remain valid via shims until each domain is migrated.
 
 **Shared infra (Phase 8):** `@/shared/security/*`, `@/shared/audit/*`, `@/shared/auth/*` now contain real implementations; `@/utils/rateLimit`, `asyncContext`, `auditLogger`, `authGuards`, `clerkCache` are shims.
+
+**DB schema (Phase 9):** Canonical schema lives in `@/shared/db/schema/*` (platform, catalog, inventory, orders, billing); `@/db/schema` is a backward-compat shim.

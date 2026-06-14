@@ -9,7 +9,9 @@ Cross-cutting utilities used by all features. **Must not import from `features/`
 | `audit/logger.ts` | Audit trail persistence |
 | `auth/superadmin-guard.ts` | Global admin role check |
 | `auth/clerk-cache.ts` | Clerk org list + user role cache |
-| `db/client.ts`, `db/schema.ts` | Database access (shims → `@/db` until Phase 9) |
+| `db/client.ts` | Database client (shim → `@/db` until migrated) |
+| `db/schema/` | Drizzle schema split by domain (platform, catalog, inventory, orders, billing) |
+| `db/schema.ts` | Barrel re-export of `db/schema/` |
 | `validation/primitives.ts` | Shared Zod primitives |
 
 Import via `@/shared/...` in new code. Legacy `@/utils/*` shims remain during migration.
