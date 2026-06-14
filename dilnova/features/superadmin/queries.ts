@@ -2,6 +2,7 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, desc, inArray, asc } from 'drizzle-orm';
 import { buildVendorOrgIntegrityReport } from '@/features/vendor-org';
+import { attachPaymentSlipPreviews } from '@/features/orders/payment-slip-preview';
 
 export async function getPricingPlansOrderedByCreatedAtAsc() {
   return db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt));
@@ -125,20 +126,22 @@ export async function getSimulatedOrdersWithItems() {
       : [];
   const pickupBranchNameById = new Map(pickupBranchRows.map((branch) => [branch.id, branch.name]));
 
-  return Promise.all(
-    rawOrders.map(async (order) => {
-      const items = await db
-        .select()
-        .from(schema.simulatedOrderItems)
-        .where(eq(schema.simulatedOrderItems.orderId, order.id));
-      return {
-        ...order,
-        items,
-        pickupBranchName: order.pickupBranchId
-          ? pickupBranchNameById.get(order.pickupBranchId) ?? null
-          : null,
-      };
-    })
+  return attachPaymentSlipPreviews(
+    await Promise.all(
+      rawOrders.map(async (order) => {
+        const items = await db
+          .select()
+          .from(schema.simulatedOrderItems)
+          .where(eq(schema.simulatedOrderItems.orderId, order.id));
+        return {
+          ...order,
+          items,
+          pickupBranchName: order.pickupBranchId
+            ? pickupBranchNameById.get(order.pickupBranchId) ?? null
+            : null,
+        };
+      })
+    )
   );
 }
 

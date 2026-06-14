@@ -10,6 +10,7 @@ import { runWithCorrelationId } from '@/shared/security/async-context';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import type { VendorBillingRegisterData } from '@/features/billing/types';
 import type { VendorInventoryFullData } from '@/features/inventory/types';
+import { attachPaymentSlipPreviews } from '@/features/orders/payment-slip-preview';
 
 export async function verifyVendorAccess(options?: { allowMember?: boolean }) {
   const { userId, orgId, orgRole } = await auth();
@@ -191,11 +192,13 @@ export async function loadVendorInventoryData(
             .map((branch) => [branch.id, branch.name])
         );
 
-        simulatedOrders = ordersList.map((o) => ({
-          ...o,
-          items: relatedItems.filter((ri) => ri.orderId === o.id),
-          pickupBranchName: o.pickupBranchId ? branchNameById.get(o.pickupBranchId) ?? null : null,
-        }));
+        simulatedOrders = await attachPaymentSlipPreviews(
+          ordersList.map((o) => ({
+            ...o,
+            items: relatedItems.filter((ri) => ri.orderId === o.id),
+            pickupBranchName: o.pickupBranchId ? branchNameById.get(o.pickupBranchId) ?? null : null,
+          }))
+        );
       }
     }
 

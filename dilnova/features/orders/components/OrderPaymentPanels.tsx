@@ -16,6 +16,7 @@ interface VendorOrderPaymentPanelProps {
     paymentMethod: string;
     status: string;
     paymentSlipUrl?: string | null;
+    paymentSlipPreviewUrl?: string | null;
     customerEmail: string;
   };
   onVerify: (orderId: string) => void;
@@ -43,21 +44,22 @@ export function VendorOrderPaymentPanel({
 
   return (
     <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 mt-3 space-y-3">
-      {showSlip && order.paymentSlipUrl && (
+      {showSlip && order.paymentSlipPreviewUrl && (
         <div className="space-y-2">
           <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Payment slip</p>
           <a
-            href={order.paymentSlipUrl}
+            href={order.paymentSlipPreviewUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="block relative w-full max-w-[220px] aspect-[4/3] rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900"
           >
             <Image
-              src={order.paymentSlipUrl}
+              src={order.paymentSlipPreviewUrl}
               alt="Customer payment slip"
               fill
               className="object-contain"
               sizes="220px"
+              unoptimized
             />
           </a>
         </div>
@@ -119,6 +121,7 @@ interface CustomerPaymentSlipSectionProps {
     paymentMethod: string;
     status: string;
     paymentSlipUrl?: string | null;
+    paymentSlipPreviewUrl?: string | null;
     customerEmail: string;
   };
 }
@@ -139,7 +142,7 @@ export function CustomerPaymentSlipSection({ order }: CustomerPaymentSlipSection
     <PaymentSlipUpload
       orderId={order.id}
       customerEmail={order.customerEmail}
-      existingSlipUrl={order.paymentSlipUrl}
+      existingSlipPreviewUrl={order.paymentSlipPreviewUrl}
     />
   );
 }

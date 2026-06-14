@@ -2,13 +2,12 @@
 
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
-import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
-import { submitPaymentSlipAction } from '@/features/orders/customer.actions';
+import { uploadAndSubmitPaymentSlipAction } from '@/features/orders/customer.actions';
 
 interface PaymentSlipUploadProps {
   orderId: string;
   customerEmail: string;
-  existingSlipUrl?: string | null;
+  existingSlipPreviewUrl?: string | null;
   disabled?: boolean;
   compact?: boolean;
 }
@@ -16,12 +15,11 @@ interface PaymentSlipUploadProps {
 export default function PaymentSlipUpload({
   orderId,
   customerEmail,
-  existingSlipUrl,
+  existingSlipPreviewUrl,
   disabled = false,
   compact = false,
 }: PaymentSlipUploadProps) {
-  const [slipUrl, setSlipUrl] = useState(existingSlipUrl || '');
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [slipPreviewUrl, setSlipPreviewUrl] = useState(existingSlipPreviewUrl || '');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -40,28 +38,21 @@ export default function PaymentSlipUpload({
     }
 
     setMessage(null);
-    setUploadProgress(0);
 
-    const upload = await uploadToCloudinary(file, (progress) => {
-      setUploadProgress(progress.percent);
-    });
-
-    setUploadProgress(null);
-
-    if (!upload.success || !upload.publicUrl) {
-      setMessage({ type: 'error', text: upload.error || 'Failed to upload payment slip.' });
-      return;
+    const formData = new FormData();
+    formData.append('orderId', orderId);
+    formData.append('file', file);
+    if (customerEmail) {
+      formData.append('customerEmail', customerEmail);
     }
 
     startTransition(async () => {
-      const result = await submitPaymentSlipAction({
-        orderId,
-        slipUrl: upload.publicUrl!,
-        customerEmail,
-      });
+      const result = await uploadAndSubmitPaymentSlipAction(formData);
 
       if (result.success) {
-        setSlipUrl(upload.publicUrl!);
+        if (result.previewUrl) {
+          setSlipPreviewUrl(result.previewUrl);
+        }
         setMessage({
           type: 'success',
           text: result.vendorNotified
@@ -73,8 +64,6 @@ export default function PaymentSlipUpload({
       }
     });
   };
-
-  const isBusy = isPending || uploadProgress !== null;
 
   return (
     <div
@@ -91,15 +80,16 @@ export default function PaymentSlipUpload({
         </p>
       </div>
 
-      {slipUrl ? (
+      {slipPreviewUrl ? (
         <div className="space-y-3">
           <div className="relative w-full max-w-xs aspect-[4/3] rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white">
             <Image
-              src={slipUrl}
+              src={slipPreviewUrl}
               alt="Uploaded payment slip"
               fill
               className="object-contain"
               sizes="320px"
+              unoptimized
             />
           </div>
           <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
@@ -114,15 +104,15 @@ export default function PaymentSlipUpload({
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"
-            disabled={isBusy || disabled}
+            disabled={isPending || disabled}
             onChange={handleFileChange}
             className="block w-full text-xs text-zinc-600 dark:text-zinc-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-700 file:text-white hover:file:bg-purple-800 disabled:opacity-50"
           />
         </label>
       )}
 
-      {uploadProgress !== null && (
-        <p className="text-[11px] font-mono text-zinc-500">Uploading… {uploadProgress}%</p>
+      {isPending && (
+        <p className="text-[11px] font-mono text-zinc-500">Uploading and saving payment slip…</p>
       )}
 
       {message && (

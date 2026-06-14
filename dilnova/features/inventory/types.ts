@@ -33,6 +33,7 @@ export type VendorInventoryFullData = {
     paymentMethod: string;
     pickupBranchId: string | null;
     paymentSlipUrl?: string | null;
+    paymentSlipPreviewUrl?: string | null;
     createdAt: Date;
     updatedAt: Date;
     items: Array<{

@@ -4,7 +4,7 @@ import {
   submitReviewSchema,
   addProductSchema,
 } from '@/features/catalog/schema';
-import { submitPaymentSlipSchema } from '@/features/orders/schema';
+import { uploadPaymentSlipFormSchema } from '@/features/orders/schema';
 import { updateMemberRoleSchema } from '@/features/admin/schema';
 
 describe('Zod Input Schemas Validation', () => {
@@ -66,35 +66,12 @@ describe('Zod Input Schemas Validation', () => {
     });
   });
 
-  describe('submitPaymentSlipSchema', () => {
-    const originalCloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-
-    beforeEach(() => {
-      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = 'deg48jhcz';
-    });
-
-    afterEach(() => {
-      if (originalCloudName) {
-        process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = originalCloudName;
-      } else {
-        delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-      }
-    });
-
-    it('accepts Cloudinary delivery URLs from the configured cloud', () => {
-      const valid = submitPaymentSlipSchema.safeParse({
+  describe('uploadPaymentSlipFormSchema', () => {
+    it('accepts a valid order id', () => {
+      const valid = uploadPaymentSlipFormSchema.safeParse({
         orderId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-        slipUrl: 'https://res.cloudinary.com/deg48jhcz/image/upload/v1780290518/slip.jpg',
       });
       expect(valid.success).toBe(true);
-    });
-
-    it('rejects non-cloudinary slip URLs', () => {
-      const invalid = submitPaymentSlipSchema.safeParse({
-        orderId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-        slipUrl: 'https://evil-site.com/fake-receipt.png',
-      });
-      expect(invalid.success).toBe(false);
     });
   });
 

@@ -19,6 +19,7 @@ import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPa
 import { isBankTransferPayment } from '@/features/billing/bank-transfer';
 import OrderBankTransferInstructions from '@/features/customer/components/OrderBankTransferInstructions';
 import WishlistRemoveButton from '@/features/customer/components/WishlistRemoveButton';
+import { attachPaymentSlipPreviews } from '@/features/orders/payment-slip-preview';
 
 interface PageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -37,12 +38,13 @@ export default async function CustomerPage({ searchParams }: PageProps) {
 
   // Fetch Clerk organizations, wishlist, and simulated orders in parallel (reduce latency)
   const client = await clerkClient();
-  const [userWishlist, organizations, orders, checkoutOptionsCatalog] = await Promise.all([
+  const [userWishlist, organizations, rawOrders, checkoutOptionsCatalog] = await Promise.all([
     getUserWishlist(user.id),
     getCachedOrganizations(client).catch(() => []),
     getCustomerOrders(userId, normalizedUserEmail),
     getCheckoutOptionsCatalog(),
   ]);
+  const orders = await attachPaymentSlipPreviews(rawOrders);
 
   const pickupBranchIds = [
     ...new Set(orders.map((order) => order.pickupBranchId).filter((id): id is string => Boolean(id))),
@@ -460,6 +462,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                               paymentMethod: order.paymentMethod,
                               status: order.status,
                               paymentSlipUrl: order.paymentSlipUrl,
+                              paymentSlipPreviewUrl: order.paymentSlipPreviewUrl,
                               customerEmail: order.customerEmail,
                             }}
                           />

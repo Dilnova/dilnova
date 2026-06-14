@@ -1,5 +1,4 @@
 import { z } from 'zod/v3';
-import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
 import { uuidField } from '@/shared/validation/primitives';
 
 export const updateSimulatedOrderStatusSchema = z.object({
@@ -7,17 +6,8 @@ export const updateSimulatedOrderStatusSchema = z.object({
   status: z.enum(['pending', 'fulfilled', 'cancelled']),
 });
 
-export const submitPaymentSlipSchema = z.object({
+export const uploadPaymentSlipFormSchema = z.object({
   orderId: uuidField,
-  slipUrl: z
-    .string()
-    .url('A valid slip image URL is required.')
-    .max(2048)
-    .refine(
-      (url) => isAllowedCloudinaryDeliveryUrl(url),
-      'Payment slip must be uploaded through Cloudinary.'
-    ),
-  customerEmail: z.string().email().max(255).optional(),
 });
 
 export const vendorOrderActionSchema = z.object({
@@ -28,5 +18,5 @@ export const rejectPaymentSlipSchema = vendorOrderActionSchema.extend({
   reason: z.string().max(500).trim().optional(),
 });
 
-export type SubmitPaymentSlipInput = z.infer<typeof submitPaymentSlipSchema>;
+export type UploadPaymentSlipFormInput = z.infer<typeof uploadPaymentSlipFormSchema>;
 export type VendorOrderActionInput = z.infer<typeof vendorOrderActionSchema>;

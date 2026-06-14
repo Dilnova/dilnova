@@ -76,6 +76,7 @@ export interface SimulatedOrder {
   pickupBranchId: string | null;
   pickupBranchName?: string | null;
   paymentSlipUrl?: string | null;
+  paymentSlipPreviewUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
   items: {
@@ -734,21 +735,22 @@ export default function InventoryTab({
                     ))}
                   </div>
 
-                  {order.paymentSlipUrl && (
+                  {order.paymentSlipPreviewUrl && (
                     <div className="mb-3">
                       <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Payment slip</p>
                       <a
-                        href={order.paymentSlipUrl}
+                        href={order.paymentSlipPreviewUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="relative block w-full max-w-[220px] aspect-[4/3] rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900"
                       >
                         <Image
-                          src={order.paymentSlipUrl}
+                          src={order.paymentSlipPreviewUrl}
                           alt="Customer payment slip"
                           fill
                           className="object-contain"
                           sizes="220px"
+                          unoptimized
                         />
                       </a>
                     </div>

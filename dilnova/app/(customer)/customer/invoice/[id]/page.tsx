@@ -11,6 +11,7 @@ import { buildBankTransferCheckoutInstructions } from '@/features/billing/bank-t
 import BankTransferInstructions from '@/features/billing/components/BankTransferInstructions';
 import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
 import { formatOrderStatusLabel } from '@/features/orders/status';
+import { attachPaymentSlipPreview } from '@/features/orders/payment-slip-preview';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -27,17 +28,19 @@ export default async function InvoicePage({ params }: PageProps) {
   const { id } = await params;
   const normalizedUserEmail = getNormalizedClerkUserEmail(user);
 
-  const order = await getOrderById(id);
+  const rawOrder = await getOrderById(id);
 
   // Authorization check: Make sure order exists and email matches
   if (
-    !order ||
+    !rawOrder ||
     !normalizedUserEmail ||
-    (normalizeCustomerEmail(order.customerEmail) !== normalizedUserEmail &&
-      order.customerUserId !== userId)
+    (normalizeCustomerEmail(rawOrder.customerEmail) !== normalizedUserEmail &&
+      rawOrder.customerUserId !== userId)
   ) {
     notFound();
   }
+
+  const order = await attachPaymentSlipPreview(rawOrder);
 
   const [items, checkoutOptionsCatalog, pickupBranch] = await Promise.all([
     getOrderItems(id),
@@ -204,6 +207,7 @@ export default async function InvoicePage({ params }: PageProps) {
               paymentMethod: order.paymentMethod,
               status: order.status,
               paymentSlipUrl: order.paymentSlipUrl,
+              paymentSlipPreviewUrl: order.paymentSlipPreviewUrl,
               customerEmail: order.customerEmail,
             }}
           />

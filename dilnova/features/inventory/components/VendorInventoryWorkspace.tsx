@@ -901,6 +901,7 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
                           paymentMethod: o.paymentMethod,
                           status: o.status,
                           paymentSlipUrl: o.paymentSlipUrl,
+                          paymentSlipPreviewUrl: o.paymentSlipPreviewUrl,
                           customerEmail: o.customerEmail,
                         }}
                         onVerify={handleVerifyOrderPayment}

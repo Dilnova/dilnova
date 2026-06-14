@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { submitPaymentSlipSchema } from '@/features/orders/schema';
+import { uploadPaymentSlipFormSchema } from '@/features/orders/schema';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { getNormalizedClerkUserEmail, normalizeCustomerEmail } from '@/features/customer/email';
@@ -13,20 +13,54 @@ import { canUploadPaymentSlip } from '@/features/orders/payment.rules';
 import { logAuditAction } from '@/shared/audit/logger';
 import { sendPaymentSlipUploadedNotifications } from '@/features/orders/email/payment-slip';
 import { logger } from '@/shared/logging/logger';
+import { isSupabaseStorageConfigured } from '@/shared/storage/admin-client';
+import {
+  createPaymentSlipSignedUrl,
+  resolvePaymentSlipExtension,
+  uploadPaymentSlipToStorage,
+} from '@/shared/storage/payment-slip';
+import { PAYMENT_SLIP_MAX_BYTES } from '@/shared/storage/config';
 
-export async function submitPaymentSlipAction(input: {
-  orderId: string;
-  slipUrl: string;
-  customerEmail?: string;
-}) {
+export async function uploadAndSubmitPaymentSlipAction(formData: FormData) {
   return runWithCorrelationId(async () => {
     await rateLimit(10, 60 * 1000);
 
-    const parsed = submitPaymentSlipSchema.safeParse(input);
+    if (!isSupabaseStorageConfigured()) {
+      return {
+        success: false as const,
+        error: 'Payment slip storage is not configured. Contact support.',
+      };
+    }
+
+    const parsed = uploadPaymentSlipFormSchema.safeParse({
+      orderId: formData.get('orderId'),
+    });
+
     if (!parsed.success) {
       return {
         success: false as const,
         error: parsed.error.issues[0]?.message || 'Invalid payment slip submission.',
+      };
+    }
+
+    const fileEntry = formData.get('file');
+    if (!(fileEntry instanceof File)) {
+      return { success: false as const, error: 'Please choose a payment slip image to upload.' };
+    }
+
+    if (fileEntry.size === 0) {
+      return { success: false as const, error: 'The selected file is empty.' };
+    }
+
+    if (fileEntry.size > PAYMENT_SLIP_MAX_BYTES) {
+      return { success: false as const, error: 'Image must be 8 MB or smaller.' };
+    }
+
+    const contentType = resolvePaymentSlipExtension(fileEntry.type);
+    if (!contentType) {
+      return {
+        success: false as const,
+        error: 'Please upload an image file (JPG, PNG, WebP, or GIF).',
       };
     }
 
@@ -69,10 +103,26 @@ export async function submitPaymentSlipAction(input: {
       };
     }
 
+    let storagePath: string;
+    try {
+      const bytes = Buffer.from(await fileEntry.arrayBuffer());
+      storagePath = await uploadPaymentSlipToStorage({
+        orderId: order.id,
+        bytes,
+        contentType,
+      });
+    } catch (error) {
+      logger.error('Payment slip upload failed', { orderId: order.id, error });
+      return {
+        success: false as const,
+        error: error instanceof Error ? error.message : 'Failed to upload payment slip.',
+      };
+    }
+
     await db
       .update(schema.simulatedOrders)
       .set({
-        paymentSlipUrl: parsed.data.slipUrl,
+        paymentSlipUrl: storagePath,
         paymentSlipUploadedAt: new Date(),
         status: 'payment_submitted',
         updatedAt: new Date(),
@@ -84,7 +134,7 @@ export async function submitPaymentSlipAction(input: {
       action: 'SUBMIT_PAYMENT_SLIP',
       targetType: 'simulated_order',
       targetId: order.id,
-      metadata: { paymentMethod: order.paymentMethod },
+      metadata: { paymentMethod: order.paymentMethod, storage: 'supabase' },
     });
 
     revalidatePath('/cart');
@@ -102,9 +152,28 @@ export async function submitPaymentSlipAction(input: {
       });
     }
 
+    const previewUrl = await createPaymentSlipSignedUrl(storagePath);
+
     return {
       success: true as const,
+      previewUrl,
       vendorNotified: emailResult.success,
+    };
+  });
+}
+
+/** @deprecated Use uploadAndSubmitPaymentSlipAction — legacy Cloudinary URL path kept for compatibility. */
+export async function submitPaymentSlipAction(input: {
+  orderId: string;
+  slipUrl: string;
+  customerEmail?: string;
+}) {
+  return runWithCorrelationId(async () => {
+    await rateLimit(10, 60 * 1000);
+
+    return {
+      success: false as const,
+      error: 'Direct slip URL submission is deprecated. Upload the file through the payment slip form.',
     };
   });
 }
