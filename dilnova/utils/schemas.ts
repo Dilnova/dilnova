@@ -221,31 +221,12 @@ export const updateInventoryDetailsSchema = z.object({
   stockAvailability: z.string().min(1).max(50).optional(),
 });
 
-export const updateSimulatedOrderStatusSchema = z.object({
-  orderId: uuidField,
-  status: z.enum(['pending', 'fulfilled', 'cancelled']),
-});
-
-export const submitPaymentSlipSchema = z.object({
-  orderId: uuidField,
-  slipUrl: z
-    .string()
-    .url('A valid slip image URL is required.')
-    .max(2048)
-    .refine(
-      (url) => isAllowedCloudinaryDeliveryUrl(url),
-      'Payment slip must be uploaded through Cloudinary.'
-    ),
-  customerEmail: z.string().email().max(255).optional(),
-});
-
-export const vendorOrderActionSchema = z.object({
-  orderId: uuidField,
-});
-
-export const rejectPaymentSlipSchema = vendorOrderActionSchema.extend({
-  reason: z.string().max(500).trim().optional(),
-});
+export {
+  submitPaymentSlipSchema,
+  vendorOrderActionSchema,
+  rejectPaymentSlipSchema,
+  updateSimulatedOrderStatusSchema,
+} from '@/features/orders/schema';
 
 // ── Multi-Branch Management ──────────────────────────────
 

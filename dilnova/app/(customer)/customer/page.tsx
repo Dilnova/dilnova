@@ -10,8 +10,8 @@ import { getClerkUserEmail, getNormalizedClerkUserEmail } from '@/utils/customer
 import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
-import { formatOrderStatusLabel } from '@/utils/orderStatus';
-import { CustomerPaymentSlipSection } from '@/app/components/OrderPaymentPanels';
+import { formatOrderStatusLabel } from '@/features/orders/status';
+import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
 import { isBankTransferPayment } from '@/utils/bankTransfer';
 import OrderBankTransferInstructions from './OrderBankTransferInstructions';
 import WishlistRemoveButton from './WishlistRemoveButton';

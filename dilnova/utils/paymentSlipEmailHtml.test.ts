@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildPaymentSlipUploadedEmailHtml,
   buildPaymentVerifiedEmailHtml,
-} from './paymentSlipEmailHtml';
+} from '@/features/orders/email/payment-slip-html';
 
 describe('paymentSlipEmailHtml', () => {
   it('builds vendor notification email with review link', () => {

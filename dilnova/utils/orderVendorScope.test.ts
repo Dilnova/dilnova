@@ -3,7 +3,7 @@ import {
   MULTI_VENDOR_ORDER_CHECKOUT_ERROR,
   MULTI_VENDOR_VENDOR_ACTION_ERROR,
   orderSpansMultipleVendors,
-} from './orderVendorScope';
+} from '@/features/orders/vendor-scope';
 
 describe('orderVendorScope', () => {
   it('detects multi-vendor orders', () => {

@@ -22,7 +22,7 @@ import {
   type BankTransferCheckoutInstructions,
 } from '@/utils/bankTransfer';
 import BankTransferInstructions from '@/app/components/BankTransferInstructions';
-import { CustomerPaymentSlipSection } from '@/app/components/OrderPaymentPanels';
+import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
 import {
   clearCheckoutSuccessSnapshot,
   loadCheckoutSuccessSnapshot,

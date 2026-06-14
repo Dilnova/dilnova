@@ -22,6 +22,7 @@ tests/      → unit, integration, e2e
 |---------|--------|
 | `vendor-org` | **Migrated** (pilot) |
 | `cart` | **Migrated** |
-| `catalog`, `orders`, … | Planned — see folder-conventions.md |
+| `orders` | **Migrated** |
+| `catalog`, … | Planned — see folder-conventions.md |
 
 Legacy `@/utils/*` and `@/db/*` imports remain valid via shims until each domain is migrated.

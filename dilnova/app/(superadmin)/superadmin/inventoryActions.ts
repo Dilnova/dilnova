@@ -18,10 +18,11 @@ import {
   sumBranchAllocatedQuantity,
   validateCentralQuantityCoversBranches,
 } from '@/utils/stockLedger';
+import { applySimulatedOrderStatusChange } from '@/features/orders/transitions';
 import {
-  applySimulatedOrderStatusChange,
-} from '@/utils/simulatedOrderTransitions';
-import { sendPaymentVerifiedCustomerEmail, sendOrderCancelledCustomerEmail } from '@/utils/paymentSlipEmail';
+  sendPaymentVerifiedCustomerEmail,
+  sendOrderCancelledCustomerEmail,
+} from '@/features/orders/email/payment-slip';
 import { logger } from '@/utils/logger';
 import { logAuditAction } from '@/utils/auditLogger';
 import { runWithCorrelationId } from '@/utils/asyncContext';

@@ -20,7 +20,7 @@ import {
   type StockReservation,
 } from '@/utils/inventoryStock';
 import { calculateCheckoutTotals } from '@/utils/checkoutTotals';
-import { applyOnlineOrderItemStock } from '@/utils/onlineOrderStock';
+import { applyOnlineOrderItemStock } from '@/features/orders/stock';
 import {
   BANK_TRANSFER_PAYMENT_ID,
   allocateVendorPaymentAmounts,
@@ -33,7 +33,7 @@ import {
   buildBankTransferCheckoutInstructions,
   getBankTransferDetailsForOrgs,
 } from '@/utils/bankTransferServer';
-import { sendOrderConfirmationEmailForOrder } from '@/utils/orderConfirmationEmail';
+import { sendOrderConfirmationEmailForOrder } from '@/features/orders/email/confirmation';
 import { escapeHtml, sendRawSmtpEmail } from '@/utils/smtpClient';
 import { logger } from '@/utils/logger';
 import {
@@ -41,7 +41,7 @@ import {
   filterCartLinesByVendorOrg,
   resolveCheckoutVendorOrgId,
 } from '@/features/cart/vendor-checkout';
-import { MULTI_VENDOR_ORDER_CHECKOUT_ERROR } from '@/utils/orderVendorScope';
+import { MULTI_VENDOR_ORDER_CHECKOUT_ERROR } from '@/features/orders/vendor-scope';
 import {
   checkoutSchema,
   sendCartEmailSchema,

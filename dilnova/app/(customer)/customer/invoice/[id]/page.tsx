@@ -11,8 +11,8 @@ import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
 import { allocateVendorPaymentAmounts, isBankTransferPayment } from '@/utils/bankTransfer';
 import { buildBankTransferCheckoutInstructions } from '@/utils/bankTransferServer';
 import BankTransferInstructions from '@/app/components/BankTransferInstructions';
-import { CustomerPaymentSlipSection } from '@/app/components/OrderPaymentPanels';
-import { formatOrderStatusLabel } from '@/utils/orderStatus';
+import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
+import { formatOrderStatusLabel } from '@/features/orders/status';
 
 interface PageProps {
   params: Promise<{ id: string }>;

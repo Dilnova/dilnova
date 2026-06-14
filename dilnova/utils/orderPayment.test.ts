@@ -3,7 +3,7 @@ import {
   canFulfillCodOrder,
   canUploadPaymentSlip,
   canVerifyBankTransferPayment,
-} from './orderPayment';
+} from '@/features/orders/payment.rules';
 
 describe('orderPayment helpers', () => {
   it('allows slip upload only while payment is pending', () => {

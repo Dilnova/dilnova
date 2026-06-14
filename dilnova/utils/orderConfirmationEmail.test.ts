@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildOrderConfirmationEmailHtml } from './orderConfirmationEmailHtml';
+import { buildOrderConfirmationEmailHtml } from '@/features/orders/email/confirmation-html';
 
 describe('buildOrderConfirmationEmailHtml', () => {
   it('includes bank transfer reference and account details when provided', () => {

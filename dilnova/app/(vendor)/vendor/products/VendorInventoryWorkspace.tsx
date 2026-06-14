@@ -17,17 +17,17 @@ import {
   removeBranchMemberAction,
   processBillingCheckoutAction,
 } from './inventoryActions';
-import { formatOrderStatusLabel, matchesOrderStatusFilter } from '@/utils/orderStatus';
-import { isCodPayment } from '@/utils/orderPayment';
+import { formatOrderStatusLabel, matchesOrderStatusFilter } from '@/features/orders/status';
+import { isCodPayment } from '@/features/orders/payment.rules';
 import { isBankTransferPayment } from '@/utils/bankTransfer';
 import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
 import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
-import { VendorOrderPaymentPanel } from '@/app/components/OrderPaymentPanels';
+import { VendorOrderPaymentPanel } from '@/features/orders/components/OrderPaymentPanels';
 import {
   cancelVendorOrderAction,
   rejectPaymentSlipAction,
   verifyOrderPaymentAction,
-} from '../orderActions';
+} from '@/features/orders/vendor.actions';
 
 // ── Types ──
 type AdvancedTab = 'stock' | 'suppliers' | 'orders' | 'movements' | 'branches';

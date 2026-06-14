@@ -6,7 +6,7 @@ import {
   isActiveSimulatedOrder,
   formatOrderStatusLabel,
   matchesOrderStatusFilter,
-} from '@/utils/orderStatus';
+} from '@/features/orders/status';
 import { describeOrderCheckout, type CheckoutOptionDefinition } from '@/utils/checkoutOptionsShared';
 import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
 import {
