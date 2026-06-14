@@ -3,11 +3,11 @@
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { and, eq } from 'drizzle-orm';
-import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
+import { revalidateVendorConsole } from '@/features/vendor/revalidate';
 import { revalidatePath } from 'next/cache';
 import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
-import { logAuditAction } from '@/utils/auditLogger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
+import { logAuditAction } from '@/shared/audit/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
 import { auth } from '@clerk/nextjs/server';
 
 export async function updateProductStockAvailabilityAction(

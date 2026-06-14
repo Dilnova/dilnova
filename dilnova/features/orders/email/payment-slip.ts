@@ -3,21 +3,21 @@ import 'server-only';
 import { eq } from 'drizzle-orm';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { DEFAULT_APP_URL } from '@/utils/brand';
-import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
-import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
-import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
-import { sendSystemHtmlEmail, getEmailSenderConfig } from '@/utils/emailDelivery';
+import { DEFAULT_APP_URL } from '@/shared/platform/brand';
+import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
+import { describeOrderCheckout } from '@/features/organization/checkout-options.shared';
+import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
+import { sendSystemHtmlEmail, getEmailSenderConfig } from '@/shared/email/delivery';
 import {
   buildPaymentSlipUploadedEmailHtml,
   buildPaymentVerifiedEmailHtml,
   buildOrderCancelledEmailHtml,
   buildPaymentSlipRejectedEmailHtml,
 } from '@/features/orders/email/payment-slip-html';
-import { getOrgAdminEmails, getOrganizationName } from '@/utils/vendorOrgEmails';
-import { logger } from '@/utils/logger';
+import { getOrgAdminEmails, getOrganizationName } from '@/features/vendor-org/emails';
+import { logger } from '@/shared/logging/logger';
 import { isCodPayment } from '@/features/orders/payment.rules';
-import { escapeHtml } from '@/utils/smtpClient';
+import { escapeHtml } from '@/shared/email/smtp-client';
 
 export async function sendPaymentSlipUploadedNotifications(
   orderId: string

@@ -7,7 +7,7 @@ import {
   canUploadPaymentSlip,
   canVerifyBankTransferPayment,
 } from '@/features/orders/payment.rules';
-import { isBankTransferPayment } from '@/utils/bankTransfer';
+import { isBankTransferPayment } from '@/features/billing/bank-transfer';
 import PaymentSlipUpload from '@/features/orders/components/PaymentSlipUpload';
 
 interface VendorOrderPaymentPanelProps {

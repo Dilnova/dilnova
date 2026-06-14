@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import * as schema from '@/db/schema';
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
 import { and, eq, ne, or, sql } from 'drizzle-orm';
 
 export async function hasCustomerPurchasedProduct(

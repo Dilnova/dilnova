@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { getSystemSetting } from '@/utils/settings';
+import { getSystemSetting } from '@/shared/platform/settings';
 import {
   STOCK_AVAILABILITY_CATALOG_KEY,
   parseStockAvailabilityCatalog,

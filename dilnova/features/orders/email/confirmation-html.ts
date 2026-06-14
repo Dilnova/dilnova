@@ -1,5 +1,5 @@
-import { type BankTransferCheckoutInstructions } from '@/utils/bankTransfer';
-import { escapeHtml } from '@/utils/smtpClient';
+import { type BankTransferCheckoutInstructions } from '@/features/billing/bank-transfer';
+import { escapeHtml } from '@/shared/email/smtp-client';
 
 function formatPrice(cents: number): string {
   return (cents / 100).toLocaleString('en-US', {

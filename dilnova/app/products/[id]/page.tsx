@@ -2,10 +2,10 @@ import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { db } from '@/db';
-import * as schema from '@/db/schema';
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
-import { getCachedOrganizations, type CachedOrg } from '@/utils/clerkCache';
+import { getCachedOrganizations, type CachedOrg } from '@/shared/auth/clerk-cache';
 import type { Metadata } from 'next';
 import ProductGalleryPlayer from './ProductGalleryPlayer';
 import WishlistButton from './WishlistButton';
@@ -13,18 +13,18 @@ import ReviewsSection from './ReviewsSection';
 import QASection from './QASection';
 import ProductViewTracker from './ProductViewTracker';
 import ProductDetailAddToCart from './ProductDetailAddToCart';
-import { logger } from '@/utils/logger';
-import { isVideoUrl } from '@/utils/media';
-import { getSystemSetting } from '@/utils/settings';
+import { logger } from '@/shared/logging/logger';
+import { isVideoUrl } from '@/shared/media/media';
+import { getSystemSetting } from '@/shared/platform/settings';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { resolveOnlineProductPurchaseState } from '@/features/inventory/availability.shared';
 import StockAvailabilityBadge from '@/features/inventory/components/StockAvailabilityBadge';
-import { DEFAULT_SUPPORT_EMAIL } from '@/utils/brand';
-import { getNormalizedClerkUserEmail } from '@/utils/customerEmail';
+import { DEFAULT_SUPPORT_EMAIL } from '@/shared/platform/brand';
+import { getNormalizedClerkUserEmail } from '@/features/customer/email';
 import {
   getVerifiedReviewerIdsForProduct,
   hasCustomerPurchasedProduct,
-} from '@/utils/verifiedBuyer';
+} from '@/features/catalog/verified-buyer';
 
 interface PageProps {
   params: Promise<{

@@ -1,6 +1,6 @@
 import type * as schema from '@/shared/db/schema';
 import type { VendorBillingRegisterData } from '@/features/billing/types';
-import type { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
+import type { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 
 export type { VendorBillingRegisterData } from '@/features/billing/types';
 

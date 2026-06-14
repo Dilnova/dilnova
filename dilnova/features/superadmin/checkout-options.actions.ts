@@ -1,18 +1,18 @@
 'use server';
 
-import { db } from '@/db';
-import * as schema from '@/db/schema';
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { checkSuperAdmin } from '@/utils/authGuards';
-import { logAuditAction } from '@/utils/auditLogger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
-import { rateLimit } from '@/utils/rateLimit';
+import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
+import { logAuditAction } from '@/shared/audit/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
+import { rateLimit } from '@/shared/security/rate-limit';
 import {
   CHECKOUT_OPTIONS_CATALOG_KEY,
   buildCheckoutOptionsCatalogPayload,
   type CheckoutOptionDefinition,
-} from '@/utils/checkoutOptionsShared';
+} from '@/features/organization/checkout-options.shared';
 import { updateCheckoutOptionsCatalogSchema } from '@/features/superadmin/schema';
 
 export async function updateCheckoutOptionsCatalogAction(options: CheckoutOptionDefinition[]) {

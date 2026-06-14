@@ -98,16 +98,14 @@ import { rateLimit } from '@/shared/security/rate-limit';
 | **10** ✅ | Split `utils/schemas.ts` per feature |
 | **11** ✅ | Add Playwright E2E under `tests/e2e/` |
 | **12** ✅ | Structure cleanup: move remaining `app/` actions + `utils/` real code → `features/` / `shared/` (shims retained) |
+| **13** ✅ | Import cutover to `@/shared/*` / `@/features/*`; move domain UI → `features/*/components/` |
 
 ## Remaining optional cleanup (no logic changes)
 
-These are **structural only** — safe to do incrementally:
-
-1. Move domain **components** from `app/` → `features/*/components/` (23 app shims already exist for some)
-2. Extract **`queries.ts`** per domain for fat pages (`customer/page.tsx`, `vendor/page.tsx`, etc.)
-3. Move **`utils/*.test.ts`** → `tests/unit/features/` and `tests/unit/shared/`
-4. Update imports from `@/utils/*` / `@/db` → `@/shared/*` / `@/features/*` (grep until zero, then delete shims)
-5. Move storefront custom components from `app/vendors/[slug]/custom/` → `features/storefront/components/`
+1. Extract **`queries.ts`** per domain for fat pages (`customer/page.tsx`, `vendor/page.tsx`, etc.)
+2. Move **`utils/*.test.ts`** → `tests/unit/features/` and `tests/unit/shared/`
+3. Move generic **`app/components/*`** (SignInPrompt, CategorySelector, LanguageSelector) → `shared/ui/` when ready
+4. Delete **`utils/`** and **`app/` shims** after grep shows zero legacy imports
 
 ## Backward compatibility
 

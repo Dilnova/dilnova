@@ -9,7 +9,7 @@ import { rejectPaymentSlipSchema, vendorOrderActionSchema } from '@/features/ord
 import { rateLimit } from '@/shared/security/rate-limit';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { logAuditAction } from '@/shared/audit/logger';
-import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
+import { revalidateVendorConsole } from '@/features/vendor/revalidate';
 import { canFulfillCodOrder, canVerifyBankTransferPayment } from '@/features/orders/payment.rules';
 import { isActiveSimulatedOrder } from '@/features/orders/status';
 import {
@@ -22,7 +22,7 @@ import {
   sendOrderCancelledCustomerEmail,
   sendPaymentSlipRejectedCustomerEmail,
 } from '@/features/orders/email/payment-slip';
-import { logger } from '@/utils/logger';
+import { logger } from '@/shared/logging/logger';
 import {
   MULTI_VENDOR_VENDOR_ACTION_ERROR,
   orderSpansMultipleVendors,

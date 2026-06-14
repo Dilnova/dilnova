@@ -2,24 +2,24 @@
 
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { rateLimit } from '@/shared/security/rate-limit';
-import { getSystemSetting } from '@/utils/settings';
-import { DEFAULT_APP_URL } from '@/utils/brand';
+import { getSystemSetting } from '@/shared/platform/settings';
+import { DEFAULT_APP_URL } from '@/shared/platform/brand';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, inArray } from 'drizzle-orm';
-import { normalizeCustomerEmail, getNormalizedClerkUserEmail } from '@/utils/customerEmail';
-import { resolveCheckoutOptionsForOrgs } from '@/utils/checkoutOptions';
+import { normalizeCustomerEmail, getNormalizedClerkUserEmail } from '@/features/customer/email';
+import { resolveCheckoutOptionsForOrgs } from '@/features/organization/checkout-options';
 import {
   resolveInitialOrderStatus,
   isPaymentCompatibleWithFulfillment,
-} from '@/utils/checkoutOptionsShared';
+} from '@/features/organization/checkout-options.shared';
 import { getStockAvailabilityCatalog, resolveEffectiveStockAvailability } from '@/features/inventory/availability.server';
 import {
   reserveProductStock,
   applyStockReservation,
   type StockReservation,
 } from '@/features/inventory/reservation';
-import { calculateCheckoutTotals } from '@/utils/checkoutTotals';
+import { calculateCheckoutTotals } from '@/features/billing/checkout-totals';
 import { applyOnlineOrderItemStock } from '@/features/orders/stock';
 import {
   BANK_TRANSFER_PAYMENT_ID,
@@ -28,14 +28,14 @@ import {
   isBankTransferPayment,
   toVendorBankTransferAvailability,
   type BankTransferCheckoutInstructions,
-} from '@/utils/bankTransfer';
+} from '@/features/billing/bank-transfer';
 import {
   buildBankTransferCheckoutInstructions,
   getBankTransferDetailsForOrgs,
-} from '@/utils/bankTransferServer';
+} from '@/features/billing/bank-transfer.server';
 import { sendOrderConfirmationEmailForOrder } from '@/features/orders/email/confirmation';
-import { escapeHtml, sendRawSmtpEmail } from '@/utils/smtpClient';
-import { logger } from '@/utils/logger';
+import { escapeHtml, sendRawSmtpEmail } from '@/shared/email/smtp-client';
+import { logger } from '@/shared/logging/logger';
 import {
   buildVendorCartSummaries,
   filterCartLinesByVendorOrg,

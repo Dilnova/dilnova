@@ -1,18 +1,18 @@
 import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import Image from 'next/image';
-import { isVideoUrl } from '@/utils/media';
-import { db } from '@/db';
-import * as schema from '@/db/schema';
+import { isVideoUrl } from '@/shared/media/media';
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
 import { eq, inArray, desc, sql, or, and } from 'drizzle-orm';
-import { getCachedOrganizations } from '@/utils/clerkCache';
-import { getClerkUserEmail, getNormalizedClerkUserEmail } from '@/utils/customerEmail';
-import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
-import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
-import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
+import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
+import { getClerkUserEmail, getNormalizedClerkUserEmail } from '@/features/customer/email';
+import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
+import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
+import { describeOrderCheckout } from '@/features/organization/checkout-options.shared';
 import { formatOrderStatusLabel } from '@/features/orders/status';
 import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
-import { isBankTransferPayment } from '@/utils/bankTransfer';
+import { isBankTransferPayment } from '@/features/billing/bank-transfer';
 import OrderBankTransferInstructions from './OrderBankTransferInstructions';
 import WishlistRemoveButton from './WishlistRemoveButton';
 

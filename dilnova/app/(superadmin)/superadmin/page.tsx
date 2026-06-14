@@ -1,9 +1,9 @@
-import { db } from '@/db';
-import * as schema from '@/db/schema';
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
 import { eq, desc, inArray } from 'drizzle-orm';
 import SuperAdminClient from './SuperAdminClient';
-import { getSystemSetting } from '@/utils/settings';
-import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
+import { getSystemSetting } from '@/shared/platform/settings';
+import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { fetchAllClerkOrganizations } from '@/shared/auth/clerk-cache';

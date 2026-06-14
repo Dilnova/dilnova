@@ -3,15 +3,15 @@ import 'server-only';
 import { eq } from 'drizzle-orm';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { DEFAULT_APP_URL } from '@/utils/brand';
-import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
-import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
-import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
-import { type BankTransferCheckoutInstructions, isBankTransferPayment } from '@/utils/bankTransfer';
+import { DEFAULT_APP_URL } from '@/shared/platform/brand';
+import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
+import { describeOrderCheckout } from '@/features/organization/checkout-options.shared';
+import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
+import { type BankTransferCheckoutInstructions, isBankTransferPayment } from '@/features/billing/bank-transfer';
 import { buildOrderConfirmationEmailHtml } from '@/features/orders/email/confirmation-html';
-import { sendRawSmtpEmail } from '@/utils/smtpClient';
-import { getSystemSetting } from '@/utils/settings';
-import { logger } from '@/utils/logger';
+import { sendRawSmtpEmail } from '@/shared/email/smtp-client';
+import { getSystemSetting } from '@/shared/platform/settings';
+import { logger } from '@/shared/logging/logger';
 
 export interface OrderConfirmationEmailContext {
   customerName: string;

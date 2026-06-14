@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import POSBillingClient from '@/features/billing/components/POSBillingClient';
 import { getVendorBillingRegisterData } from '@/features/billing/register.actions';
-import { getSystemSetting } from '@/utils/settings';
+import { getSystemSetting } from '@/shared/platform/settings';
 import { resolveEffectiveStockAvailability } from '@/features/inventory/availability.shared';
 
 export const revalidate = 0; // Fresh load

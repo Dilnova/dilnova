@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { incrementProductViewsAction } from '@/features/catalog/product-detail.actions';
 import { db } from '@/shared/db/client';
-import { rateLimit } from '@/utils/rateLimit';
+import { rateLimit } from '@/shared/security/rate-limit';
 
 // Mock DB client
 vi.mock('@/shared/db/client', () => ({
@@ -13,7 +13,7 @@ vi.mock('@/shared/db/client', () => ({
 }));
 
 // Mock rate limiting
-vi.mock('@/utils/rateLimit', () => ({
+vi.mock('@/shared/security/rate-limit', () => ({
   rateLimit: vi.fn(),
 }));
 

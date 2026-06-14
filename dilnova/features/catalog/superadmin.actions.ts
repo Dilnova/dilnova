@@ -11,10 +11,10 @@ import {
   updateProductSchema,
   deleteProductSchema,
 } from '@/features/catalog/schema';
-import { checkSuperAdmin } from '@/utils/authGuards';
-import { logAuditAction } from '@/utils/auditLogger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
-import { rateLimit } from '@/utils/rateLimit';
+import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
+import { logAuditAction } from '@/shared/audit/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
+import { rateLimit } from '@/shared/security/rate-limit';
 
 export async function createCategoryAction(name: string, slug: string, parentId?: string | null) {
   return runWithCorrelationId(async () => {

@@ -2,17 +2,17 @@
 
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
+import { revalidateVendorConsole } from '@/features/vendor/revalidate';
 import { updateOrgCheckoutOptionsSchema } from '@/features/organization/schema';
-import { logAuditAction } from '@/utils/auditLogger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
-import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
-import { DEPRECATED_CHECKOUT_OPTION_IDS } from '@/utils/checkoutOptionsShared';
+import { logAuditAction } from '@/shared/audit/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
+import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
+import { DEPRECATED_CHECKOUT_OPTION_IDS } from '@/features/organization/checkout-options.shared';
 import {
   BANK_TRANSFER_PAYMENT_ID,
   hasCompleteBankDetails,
   parseBankTransferDetailsFromMetadata,
-} from '@/utils/bankTransfer';
+} from '@/features/billing/bank-transfer';
 
 export async function updateOrgCheckoutOptionsAction(
   organizationId: string,

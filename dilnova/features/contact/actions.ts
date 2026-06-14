@@ -2,11 +2,11 @@
 
 import tls from 'tls';
 import net from 'net';
-import { db } from '@/db';
-import * as schema from '@/db/schema';
-import { rateLimit } from '@/utils/rateLimit';
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
+import { rateLimit } from '@/shared/security/rate-limit';
 import { z } from 'zod';
-import { getSystemSetting } from '@/utils/settings';
+import { getSystemSetting } from '@/shared/platform/settings';
 
 function sendRawSmtpEmail(options: {
   host: string;

@@ -5,8 +5,8 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { rateLimit } from '@/utils/rateLimit';
-import { logger } from '@/utils/logger';
+import { rateLimit } from '@/shared/security/rate-limit';
+import { logger } from '@/shared/logging/logger';
 import {
   toggleWishlistSchema,
   submitReviewSchema,
@@ -14,9 +14,9 @@ import {
   submitAnswerSchema,
   incrementViewsSchema,
 } from '@/features/catalog/schema';
-import { runWithCorrelationId } from '@/utils/asyncContext';
-import { getNormalizedClerkUserEmail } from '@/utils/customerEmail';
-import { hasCustomerPurchasedProduct } from '@/utils/verifiedBuyer';
+import { runWithCorrelationId } from '@/shared/security/async-context';
+import { getNormalizedClerkUserEmail } from '@/features/customer/email';
+import { hasCustomerPurchasedProduct } from '@/features/catalog/verified-buyer';
 
 /**
  * Toggles a product in/out of the user's wishlist.

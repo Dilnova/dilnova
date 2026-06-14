@@ -1,15 +1,15 @@
 'use server';
 
-import { db } from '@/db';
-import * as schema from '@/db/schema';
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
+import { revalidateVendorConsole } from '@/features/vendor/revalidate';
 import { updateSystemSettingSchema } from '@/features/superadmin/schema';
-import { checkSuperAdmin } from '@/utils/authGuards';
-import { logAuditAction } from '@/utils/auditLogger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
-import { rateLimit } from '@/utils/rateLimit';
+import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
+import { logAuditAction } from '@/shared/audit/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
+import { rateLimit } from '@/shared/security/rate-limit';
 
 /**
  * Enterprise Server Action to configure system-wide parameters (e.g., max media upload limit).

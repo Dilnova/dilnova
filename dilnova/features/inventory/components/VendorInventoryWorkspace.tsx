@@ -19,9 +19,9 @@ import {
 import { processBillingCheckoutAction } from '@/features/billing/checkout.actions';
 import { formatOrderStatusLabel, matchesOrderStatusFilter } from '@/features/orders/status';
 import { isCodPayment } from '@/features/orders/payment.rules';
-import { isBankTransferPayment } from '@/utils/bankTransfer';
-import { describeOrderCheckout } from '@/utils/checkoutOptionsShared';
-import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
+import { isBankTransferPayment } from '@/features/billing/bank-transfer';
+import { describeOrderCheckout } from '@/features/organization/checkout-options.shared';
+import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
 import { VendorOrderPaymentPanel } from '@/features/orders/components/OrderPaymentPanels';
 import {
   cancelVendorOrderAction,

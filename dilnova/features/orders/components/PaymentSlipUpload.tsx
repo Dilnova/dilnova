@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
-import { uploadToCloudinary } from '@/utils/cloudinaryUpload';
+import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
 import { submitPaymentSlipAction } from '@/features/orders/customer.actions';
 
 interface PaymentSlipUploadProps {

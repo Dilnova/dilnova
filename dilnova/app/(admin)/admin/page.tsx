@@ -3,14 +3,14 @@ import Link from 'next/link';
 import VendorProfileForm from '@/app/(vendor)/vendor/VendorProfileForm';
 import OrgCheckoutOptionsForm from '@/app/(vendor)/vendor/OrgCheckoutOptionsForm';
 import RoleSelector from './RoleSelector';
-import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
-import { db } from '@/db';
-import * as schema from '@/db/schema';
+import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import {
   hasCompleteBankDetails,
   parseBankTransferDetailsFromMetadata,
-} from '@/utils/bankTransfer';
+} from '@/features/billing/bank-transfer';
 
 export default async function AdminPage() {
   const { orgId, orgRole } = await auth();

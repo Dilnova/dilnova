@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
-import { db } from '@/db';
-import { products, categories } from '@/db/schema';
-import { DEFAULT_APP_URL } from '@/utils/brand';
+import { db } from '@/shared/db/client';
+import { products, categories } from '@/shared/db/schema';
+import { DEFAULT_APP_URL } from '@/shared/platform/brand';
 
 export const dynamic = 'force-dynamic';
 

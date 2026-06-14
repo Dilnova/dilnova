@@ -8,11 +8,11 @@ import * as schema from '@/shared/db/schema';
 import { submitPaymentSlipSchema } from '@/features/orders/schema';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { runWithCorrelationId } from '@/shared/security/async-context';
-import { getNormalizedClerkUserEmail, normalizeCustomerEmail } from '@/utils/customerEmail';
+import { getNormalizedClerkUserEmail, normalizeCustomerEmail } from '@/features/customer/email';
 import { canUploadPaymentSlip } from '@/features/orders/payment.rules';
 import { logAuditAction } from '@/shared/audit/logger';
 import { sendPaymentSlipUploadedNotifications } from '@/features/orders/email/payment-slip';
-import { logger } from '@/utils/logger';
+import { logger } from '@/shared/logging/logger';
 
 export async function submitPaymentSlipAction(input: {
   orderId: string;

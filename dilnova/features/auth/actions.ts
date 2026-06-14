@@ -2,7 +2,7 @@
 
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
-import { runWithCorrelationId } from '@/utils/asyncContext';
+import { runWithCorrelationId } from '@/shared/security/async-context';
 
 /**
  * Toggles the user's metadata role between 'customer' and 'vendor' to simulate different user accounts.

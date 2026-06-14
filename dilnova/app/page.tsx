@@ -5,10 +5,10 @@ import type { Metadata } from 'next';
 import RoleToggleButton from './RoleToggleButton';
 import ScrollRedirector from './ScrollRedirector';
 import { getCachedOrganizations } from '../utils/clerkCache';
-import { db } from '@/db';
-import * as schema from '@/db/schema';
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
 import { asc } from 'drizzle-orm';
-import { getSystemSetting } from '@/utils/settings';
+import { getSystemSetting } from '@/shared/platform/settings';
 
 export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemSetting('system_name', 'Dilnova');

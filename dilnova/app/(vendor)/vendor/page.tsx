@@ -2,16 +2,16 @@ import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import Image from 'next/image';
 import { redirect } from 'next/navigation';
-import { db } from '@/db';
-import * as schema from '@/db/schema';
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
 import { eq, sql } from 'drizzle-orm';
-import ManageProductsClient, { type Product } from './products/ManageProductsClient';
+import ManageProductsClient, { type Product } from '@/features/catalog/components/ManageProductsClient';
 import VendorInventoryWorkspace from '@/features/inventory/components/VendorInventoryWorkspace';
 import { getVendorInventoryData } from '@/features/inventory/vendor.actions';
 import {
   hasCompleteBankDetails,
   parseBankTransferDetailsFromMetadata,
-} from '@/utils/bankTransfer';
+} from '@/features/billing/bank-transfer';
 
 const IMS_WORKSPACE_TABS = ['stock', 'suppliers', 'orders', 'movements', 'branches'] as const;
 type ImsWorkspaceTab = (typeof IMS_WORKSPACE_TABS)[number];

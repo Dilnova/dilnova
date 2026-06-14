@@ -1,11 +1,11 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { db } from '@/db';
-import * as schema from '@/db/schema';
+import { db } from '@/shared/db/client';
+import * as schema from '@/shared/db/schema';
 import AddProductClient from './AddProductClient';
-import { getSystemSetting } from '@/utils/settings';
-import { getPremiumStatus } from '@/utils/premiumLicense';
+import { getSystemSetting } from '@/shared/platform/settings';
+import { getPremiumStatus } from '@/features/inventory/premium-license';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { getEnabledStockAvailabilityOptions } from '@/features/inventory/availability.shared';
 import { eq, and } from 'drizzle-orm';

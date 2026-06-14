@@ -1,5 +1,5 @@
 import { z } from 'zod/v3';
-import { isAllowedCloudinaryDeliveryUrl } from '@/utils/cloudinaryUrl';
+import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
 import { uuidField } from '@/shared/validation/primitives';
 
 export const updateSimulatedOrderStatusSchema = z.object({

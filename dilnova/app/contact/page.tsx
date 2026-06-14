@@ -1,4 +1,4 @@
-import { getSystemSetting } from '@/utils/settings';
+import { getSystemSetting } from '@/shared/platform/settings';
 import ContactClientPage from './ContactClientPage';
 
 export const revalidate = 0; // Fresh load on each visit

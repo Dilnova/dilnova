@@ -2,11 +2,11 @@
 
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
-import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
+import { revalidateVendorConsole } from '@/features/vendor/revalidate';
 import { vendorMetadataSchema } from '@/features/vendor/schema';
-import { logAuditAction } from '@/utils/auditLogger';
-import { logger } from '@/utils/logger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
+import { logAuditAction } from '@/shared/audit/logger';
+import { logger } from '@/shared/logging/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
 
 interface VendorMetadataInput {
   description: string;

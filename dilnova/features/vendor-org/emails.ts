@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { createClerkClient } from '@clerk/nextjs/server';
-import { logger } from '@/utils/logger';
+import { logger } from '@/shared/logging/logger';
 
 export async function getOrgAdminEmails(orgId: string): Promise<string[]> {
   try {

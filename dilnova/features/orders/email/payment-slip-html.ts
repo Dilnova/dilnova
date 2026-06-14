@@ -1,4 +1,4 @@
-import { escapeHtml } from '@/utils/smtpClient';
+import { escapeHtml } from '@/shared/email/smtp-client';
 
 function formatPrice(cents: number): string {
   return (cents / 100).toLocaleString('en-US', {

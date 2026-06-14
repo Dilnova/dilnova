@@ -13,7 +13,7 @@ import {
   updateImsLicenseSchema,
 } from '@/features/inventory/schema';
 import { updateSimulatedOrderStatusSchema } from '@/features/orders/schema';
-import { checkSuperAdmin } from '@/utils/authGuards';
+import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
 import {
   sumBranchAllocatedQuantity,
   validateCentralQuantityCoversBranches,
@@ -23,11 +23,11 @@ import {
   sendPaymentVerifiedCustomerEmail,
   sendOrderCancelledCustomerEmail,
 } from '@/features/orders/email/payment-slip';
-import { logger } from '@/utils/logger';
-import { logAuditAction } from '@/utils/auditLogger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
+import { logger } from '@/shared/logging/logger';
+import { logAuditAction } from '@/shared/audit/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
 import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
-import { rateLimit } from '@/utils/rateLimit';
+import { rateLimit } from '@/shared/security/rate-limit';
 
 // ── SUPPLIER CRUD ─────────────────────────────────────────────
 
@@ -425,7 +425,7 @@ export async function updateOrgImsLicenseAction(data: {
       throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
     }
 
-    const { updateOrgImsLicense } = await import('@/utils/premiumLicense');
+    const { updateOrgImsLicense } = await import('@/features/inventory/premium-license');
 
     await updateOrgImsLicense(parsed.data.organizationId, {
       imsEnabled: parsed.data.imsEnabled,

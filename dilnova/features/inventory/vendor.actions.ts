@@ -3,7 +3,7 @@
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
-import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
+import { revalidateVendorConsole } from '@/features/vendor/revalidate';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import {
   createSupplierSchema,
@@ -31,9 +31,9 @@ import {
   incrementDefaultBranchStock,
   decrementDefaultBranchStock,
 } from '@/features/inventory/ledger';
-import { logAuditAction } from '@/utils/auditLogger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
-import { rateLimit } from '@/utils/rateLimit';
+import { logAuditAction } from '@/shared/audit/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
+import { rateLimit } from '@/shared/security/rate-limit';
 import {
   verifyVendorAccess,
   loadVendorInventoryData,

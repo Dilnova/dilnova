@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import { clerkClient } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
-import { customStorefronts } from './custom/registry';
-import DefaultStorefront from './DefaultStorefront';
-import { getVendorProducts } from './getVendorProducts';
-import { enrichVendorProductsWithPurchaseFlags } from '@/utils/storefrontPurchase';
-import type { VendorOrg } from './custom/types';
-import { getCachedOrganizations } from '../../../utils/clerkCache';
-import { getSystemSetting } from '../../../utils/settings';
+import { customStorefronts } from '@/features/storefront/components/custom/registry';
+import DefaultStorefront from '@/features/storefront/components/DefaultStorefront';
+import { getVendorProducts } from '@/features/storefront/get-vendor-products';
+import { enrichVendorProductsWithPurchaseFlags } from '@/features/storefront/purchase';
+import type { VendorOrg } from '@/features/storefront/components/custom/types';
+import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
+import { getSystemSetting } from '@/shared/platform/settings';
 
 interface PageProps {
   params: Promise<{ slug: string }>;

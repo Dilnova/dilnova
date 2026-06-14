@@ -7,27 +7,27 @@ import { useRouter } from 'next/navigation';
 import { SignInButton, SignUpButton, useUser } from '@clerk/nextjs';
 import { useClerkAuthRedirectUrl } from '@/app/hooks/useClerkAuthRedirectUrl';
 import { useCart } from '@/features/cart/context/CartContext';
-import { isVideoUrl } from '@/utils/media';
+import { isVideoUrl } from '@/shared/media/media';
 import {
   getCartCheckoutOptionsAction,
   sendCartSummaryEmailAction,
   simulatedCheckoutAction,
   syncCartPricesAction,
 } from '@/features/cart/checkout.actions';
-import { isPaymentCompatibleWithFulfillment } from '@/utils/checkoutOptionsShared';
-import { calculateCheckoutTotals } from '@/utils/checkoutTotals';
+import { isPaymentCompatibleWithFulfillment } from '@/features/organization/checkout-options.shared';
+import { calculateCheckoutTotals } from '@/features/billing/checkout-totals';
 import {
   BANK_TRANSFER_PAYMENT_ID,
   isBankTransferPayment,
   type BankTransferCheckoutInstructions,
-} from '@/utils/bankTransfer';
+} from '@/features/billing/bank-transfer';
 import BankTransferInstructions from '@/app/components/BankTransferInstructions';
 import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
 import {
   clearCheckoutSuccessSnapshot,
   loadCheckoutSuccessSnapshot,
   saveCheckoutSuccessSnapshot,
-} from '@/utils/checkoutSuccessStorage';
+} from '@/features/cart/checkout-success-storage';
 import {
   groupCartItemsByVendor,
   resolveCheckoutCartItems,

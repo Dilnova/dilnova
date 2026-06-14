@@ -3,8 +3,8 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { updateMemberRoleSchema } from '@/features/admin/schema';
-import { logAuditAction } from '@/utils/auditLogger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
+import { logAuditAction } from '@/shared/audit/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
 
 /**
  * Updates a member's role inside the active Clerk organization.

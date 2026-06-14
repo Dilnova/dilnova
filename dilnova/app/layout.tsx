@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { auth } from '@clerk/nextjs/server'
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"
-import { runWithCorrelationId } from '@/utils/asyncContext'
+import { runWithCorrelationId } from '@/shared/security/async-context'
 import HeaderNav from './HeaderNav'
 import HeaderAuthButtons from './components/HeaderAuthButtons'
 import './globals.css'
@@ -18,10 +18,10 @@ import LanguageInitializer from './components/LanguageInitializer'
 import CartMergeBanner from '@/features/cart/components/CartMergeBanner'
 import FloatingLanguageButton from './components/FloatingLanguageButton'
 
-import { getSystemSetting } from '@/utils/settings'
+import { getSystemSetting } from '@/shared/platform/settings'
 import Image from 'next/image'
-import { getPremiumStatus } from '@/utils/premiumLicense'
-import { getCachedUserRole } from '@/utils/clerkCache'
+import { getPremiumStatus } from '@/features/inventory/premium-license'
+import { getCachedUserRole } from '@/shared/auth/clerk-cache'
 
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting('system_favicon', '');

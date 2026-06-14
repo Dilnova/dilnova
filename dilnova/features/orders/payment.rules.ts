@@ -1,5 +1,5 @@
 import { SIMULATED_ORDER_STATUSES, type SimulatedOrderStatus } from '@/features/orders/status';
-import { isBankTransferPayment } from '@/utils/bankTransfer';
+import { isBankTransferPayment } from '@/features/billing/bank-transfer';
 
 export const COD_PAYMENT_ID = 'cash_on_delivery';
 

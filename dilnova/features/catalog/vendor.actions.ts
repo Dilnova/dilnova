@@ -5,13 +5,13 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath, updateTag } from 'next/cache';
-import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
-import { getSystemSetting } from '@/utils/settings';
-import { logger } from '@/utils/logger';
+import { revalidateVendorConsole } from '@/features/vendor/revalidate';
+import { getSystemSetting } from '@/shared/platform/settings';
+import { logger } from '@/shared/logging/logger';
 import { addProductSchema, vendorDeleteProductSchema } from '@/features/catalog/schema';
-import { logAuditAction } from '@/utils/auditLogger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
-import { getPremiumStatus } from '@/utils/premiumLicense';
+import { logAuditAction } from '@/shared/audit/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
+import { getPremiumStatus } from '@/features/inventory/premium-license';
 import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
 
 /**

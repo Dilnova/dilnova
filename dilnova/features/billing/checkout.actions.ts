@@ -3,7 +3,7 @@
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { revalidateVendorConsole } from '@/utils/revalidateVendorConsole';
+import { revalidateVendorConsole } from '@/features/vendor/revalidate';
 import { processBillingCheckoutSchema } from '@/features/billing/schema';
 import {
   getStockAvailabilityCatalog,
@@ -11,9 +11,9 @@ import {
 } from '@/features/inventory/availability.server';
 import { reserveProductStock, applyStockReservation } from '@/features/inventory/reservation';
 import { verifyVendorAccess } from '@/features/inventory/vendor-data';
-import { logAuditAction } from '@/utils/auditLogger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
-import { rateLimit } from '@/utils/rateLimit';
+import { logAuditAction } from '@/shared/audit/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
+import { rateLimit } from '@/shared/security/rate-limit';
 
 // ── POS BILLING CHECKOUT (Premium POS Register) ──────────────
 

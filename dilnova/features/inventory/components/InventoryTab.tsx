@@ -7,8 +7,8 @@ import {
   formatOrderStatusLabel,
   matchesOrderStatusFilter,
 } from '@/features/orders/status';
-import { describeOrderCheckout, type CheckoutOptionDefinition } from '@/utils/checkoutOptionsShared';
-import { getOrderDisplayTotals } from '@/utils/checkoutTotals';
+import { describeOrderCheckout, type CheckoutOptionDefinition } from '@/features/organization/checkout-options.shared';
+import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
 import {
   createSupplierAction,
   updateSupplierAction,

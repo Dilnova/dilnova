@@ -1,6 +1,6 @@
 import type * as schema from '@/shared/db/schema';
 import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
-import type { PremiumStatus } from '@/utils/premiumLicense';
+import type { PremiumStatus } from '@/features/inventory/premium-license';
 
 export type VendorBillingRegisterData = {
   inventoryItems: Array<{

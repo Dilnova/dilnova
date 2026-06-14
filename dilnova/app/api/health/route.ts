@@ -1,8 +1,8 @@
-import { db } from '@/db';
+import { db } from '@/shared/db/client';
 import { sql } from 'drizzle-orm';
-import { logger } from '@/utils/logger';
-import { runWithCorrelationId } from '@/utils/asyncContext';
-import { probeUpstashRateLimit } from '@/utils/upstashHealth';
+import { logger } from '@/shared/logging/logger';
+import { runWithCorrelationId } from '@/shared/security/async-context';
+import { probeUpstashRateLimit } from '@/shared/security/upstash-health';
 
 export const dynamic = 'force-dynamic';
 

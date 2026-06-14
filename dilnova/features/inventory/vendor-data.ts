@@ -4,10 +4,10 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { getPremiumStatus } from '@/utils/premiumLicense';
+import { getPremiumStatus } from '@/features/inventory/premium-license';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
-import { runWithCorrelationId } from '@/utils/asyncContext';
-import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
+import { runWithCorrelationId } from '@/shared/security/async-context';
+import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import type { VendorBillingRegisterData } from '@/features/billing/types';
 import type { VendorInventoryFullData } from '@/features/inventory/types';
 

@@ -1,4 +1,4 @@
-import type { BankTransferCheckoutInstructions } from '@/utils/bankTransfer';
+import type { BankTransferCheckoutInstructions } from '@/features/billing/bank-transfer';
 
 export const CHECKOUT_SUCCESS_STORAGE_KEY = 'dilnova_checkout_success';
 
