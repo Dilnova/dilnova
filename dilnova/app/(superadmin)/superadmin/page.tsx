@@ -6,6 +6,7 @@ import { getSystemSetting } from '@/utils/settings';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
 import { clerkClient } from '@clerk/nextjs/server';
+import { buildVendorOrgIntegrityReport } from '@/utils/vendorOrgIntegrity';
 
 export const revalidate = 0; // Fresh database query on each load
 
@@ -183,6 +184,63 @@ export default async function SuperAdminDashboardPage() {
   const allProducts = await db.select({ id: schema.products.id, name: schema.products.name, type: schema.products.type, orgId: schema.products.orgId }).from(schema.products);
   const productsWithoutInventory = allProducts.filter((p) => !inventoriedProductIds.includes(p.id));
 
+  const [
+    integrityProducts,
+    integrityOrderItems,
+    integritySuppliers,
+    integrityBranches,
+    integrityBillingReceipts,
+  ] = await Promise.all([
+    db
+      .select({
+        id: schema.products.id,
+        name: schema.products.name,
+        type: schema.products.type,
+        orgId: schema.products.orgId,
+        status: schema.products.status,
+      })
+      .from(schema.products),
+    db
+      .select({
+        id: schema.simulatedOrderItems.id,
+        orderId: schema.simulatedOrderItems.orderId,
+        productName: schema.simulatedOrderItems.productName,
+        vendorOrgId: schema.simulatedOrderItems.vendorOrgId,
+      })
+      .from(schema.simulatedOrderItems),
+    db
+      .select({
+        id: schema.suppliers.id,
+        name: schema.suppliers.name,
+        orgId: schema.suppliers.orgId,
+      })
+      .from(schema.suppliers),
+    db
+      .select({
+        id: schema.branches.id,
+        name: schema.branches.name,
+        orgId: schema.branches.orgId,
+      })
+      .from(schema.branches),
+    db
+      .select({
+        id: schema.billingReceipts.id,
+        orgId: schema.billingReceipts.orgId,
+      })
+      .from(schema.billingReceipts),
+  ]);
+
+  const vendorOrgIntegrity = buildVendorOrgIntegrityReport(
+    new Set(organizations.map((org) => org.id)),
+    {
+      products: integrityProducts,
+      orderItems: integrityOrderItems,
+      suppliers: integritySuppliers,
+      branches: integrityBranches,
+      billingReceipts: integrityBillingReceipts,
+    }
+  );
+
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
       <SuperAdminClient
@@ -207,6 +265,7 @@ export default async function SuperAdminDashboardPage() {
         simulatedOrders={simulatedOrders}
         productsWithoutInventory={productsWithoutInventory}
         organizations={organizations}
+        vendorOrgIntegrity={vendorOrgIntegrity}
       />
     </main>
   );

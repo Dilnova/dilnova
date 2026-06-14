@@ -18,8 +18,10 @@ import { updateSystemSettingAction } from './settingsActions';
 import CheckoutOptionsSettings from './CheckoutOptionsSettings';
 import StockAvailabilitySettings from './StockAvailabilitySettings';
 import InventoryTab from './InventoryTab';
+import VendorOrgIssuesTab from './VendorOrgIssuesTab';
 import type { CheckoutOptionDefinition } from '@/utils/checkoutOptionsShared';
 import type { StockAvailabilityDefinition } from '@/utils/stockAvailabilityShared';
+import type { VendorOrgIntegrityReport } from '@/utils/vendorOrgIntegrity';
 import type { InventoryItem, Supplier as IMSSupplier, InventoryMovement, SimulatedOrder, ProductForInventory } from './InventoryTab';
 
 interface Category {
@@ -105,6 +107,7 @@ interface SuperAdminClientProps {
     imageUrl: string;
     publicMetadata: Record<string, any>;
   }[];
+  vendorOrgIntegrity: VendorOrgIntegrityReport;
 }
 
 export default function SuperAdminClient({
@@ -129,8 +132,11 @@ export default function SuperAdminClient({
   simulatedOrders,
   productsWithoutInventory,
   organizations,
+  vendorOrgIntegrity,
 }: SuperAdminClientProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'categories' | 'products' | 'inventory' | 'pricing' | 'contacts' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'categories' | 'products' | 'inventory' | 'vendor-issues' | 'pricing' | 'contacts' | 'settings'
+  >('overview');
   const [isPending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -621,11 +627,20 @@ export default function SuperAdminClient({
     });
   };
 
+  const knownOrgIds = new Set(organizations.map((org) => org.id));
+  const orgNameById = new Map(organizations.map((org) => [org.id, org.name]));
+
   const tabConfig = [
     { key: 'overview' as const, label: 'Overview', icon: '📊' },
     { key: 'categories' as const, label: 'Categories', icon: '🏷️' },
     { key: 'products' as const, label: 'Products', icon: '📦' },
     { key: 'inventory' as const, label: 'Inventory', icon: '🏭' },
+    {
+      key: 'vendor-issues' as const,
+      label: 'Vendor Issues',
+      icon: '🏢',
+      badge: vendorOrgIntegrity.totals.orphanOrgIds,
+    },
     { key: 'pricing' as const, label: 'Pricing Plans', icon: '💳' },
     { key: 'contacts' as const, label: 'Contact Requests', icon: '📨' },
     { key: 'settings' as const, label: 'Settings', icon: '⚙️' },
@@ -700,6 +715,11 @@ export default function SuperAdminClient({
             >
               <span className="text-sm">{tab.icon}</span>
               {tab.label}
+              {'badge' in tab && typeof tab.badge === 'number' && tab.badge > 0 && (
+                <span className="ml-1 inline-flex min-w-[1.25rem] h-5 px-1 items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-black">
+                  {tab.badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -1022,7 +1042,19 @@ export default function SuperAdminClient({
                       </td>
                       <td className="py-4 px-4 font-mono font-bold">${(p.price / 100).toFixed(2)}</td>
                       <td className="py-4 px-4 font-mono text-zinc-600 dark:text-zinc-400">👀 {p.views}</td>
-                      <td className="py-4 px-4 font-mono text-[10px] text-zinc-400 truncate max-w-[120px]">{p.orgId}</td>
+                      <td className="py-4 px-4">
+                        <div className="font-mono text-[10px] text-zinc-600 dark:text-zinc-400 truncate max-w-[140px]">
+                          {orgNameById.get(p.orgId) || 'Unknown Vendor'}
+                        </div>
+                        <div className="text-[10px] font-mono text-zinc-400 truncate max-w-[140px]">
+                          {p.orgId}
+                        </div>
+                        {!knownOrgIds.has(p.orgId) && (
+                          <span className="inline-flex mt-1 text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-700 dark:text-rose-300">
+                            Missing org
+                          </span>
+                        )}
+                      </td>
                       <td className="py-4 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
@@ -1117,6 +1149,14 @@ export default function SuperAdminClient({
           checkoutOptionsCatalog={checkoutOptionsCatalog}
           triggerNotification={triggerNotification}
           organizations={organizations}
+        />
+      )}
+
+      {activeTab === 'vendor-issues' && (
+        <VendorOrgIssuesTab
+          integrityReport={vendorOrgIntegrity}
+          organizations={organizations}
+          triggerNotification={triggerNotification}
         />
       )}
 
