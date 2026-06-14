@@ -37,3 +37,5 @@ Legacy `@/utils/*` and `@/db/*` imports remain valid via shims until each domain
 **DB schema (Phase 9):** Canonical schema lives in `@/shared/db/schema/*` (platform, catalog, inventory, orders, billing); `@/db/schema` is a backward-compat shim.
 
 **Validation (Phase 10):** Zod schemas live in `@/features/<domain>/schema`; `@/utils/schemas` is a backward-compat re-export barrel.
+
+**E2E (Phase 11):** Playwright RBAC suites under `tests/e2e/rbac/` — run via `pnpm test:e2e`.

@@ -94,7 +94,7 @@ import { rateLimit } from '@/shared/security/rate-limit';
 | **8** ✅ | Move `shared/security`, `shared/audit`, `shared/auth` (real code, not shims) |
 | **9** ✅ | Split `db/schema.ts` under `shared/db/schema/` |
 | **10** ✅ | Split `utils/schemas.ts` per feature |
-| **11** | Add Playwright E2E under `tests/e2e/` |
+| **11** ✅ | Add Playwright E2E under `tests/e2e/` |
 
 ## Backward compatibility
 
