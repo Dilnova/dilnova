@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useCart } from '@/app/context/CartContext';
+import { useCart } from '@/features/cart/context/CartContext';
 
 /**
  * After sign-in/up, send shoppers with items to /cart; otherwise return to the current page.

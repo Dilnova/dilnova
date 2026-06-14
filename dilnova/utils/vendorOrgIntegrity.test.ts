@@ -4,7 +4,7 @@ import {
   countSelectedScopeRecords,
   formatReassignCounts,
   getDefaultReassignScopesForGroup,
-} from './vendorOrgIntegrity';
+} from '@/features/vendor-org/integrity';
 
 describe('vendorOrgIntegrity', () => {
   it('groups orphaned org references across entities', () => {

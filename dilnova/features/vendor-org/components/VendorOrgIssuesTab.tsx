@@ -9,8 +9,8 @@ import {
   type VendorOrgIntegrityReport,
   type VendorOrgIssueGroup,
   type VendorOrgReassignScopes,
-} from '@/utils/vendorOrgIntegrity';
-import { reassignProductOrgAction, reassignVendorOrgAction } from './vendorOrgActions';
+} from '@/features/vendor-org/integrity';
+import { reassignProductOrgAction, reassignVendorOrgAction } from '@/features/vendor-org/reassign.actions';
 
 interface OrganizationOption {
   id: string;

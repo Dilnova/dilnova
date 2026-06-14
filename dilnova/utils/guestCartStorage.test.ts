@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { getGuestCartLineCount, GUEST_CART_STORAGE_KEY } from './guestCartStorage';
+import { getGuestCartLineCount, GUEST_CART_STORAGE_KEY } from '@/features/cart/guest-storage';
 
 describe('guestCartStorage', () => {
   afterEach(() => {

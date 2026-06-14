@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useCart } from '../../context/CartContext';
+import { useCart } from '@/features/cart/context/CartContext';
 
 interface ProductDetailAddToCartProps {
   product: {

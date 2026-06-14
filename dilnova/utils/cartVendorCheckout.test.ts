@@ -3,7 +3,7 @@ import {
   buildVendorCartSummaries,
   filterCartLinesByVendorOrg,
   resolveCheckoutVendorOrgId,
-} from './cartVendorCheckout';
+} from '@/features/cart/vendor-checkout';
 
 describe('cartVendorCheckout', () => {
   const productById = new Map([

@@ -5,7 +5,7 @@ import {
   syncSelectedProductIds,
   toggleAllProductsInSelection,
   toggleProductInSelection,
-} from './cartVendorCheckout';
+} from '@/features/cart/vendor-checkout';
 
 describe('cart checkout selection', () => {
   const cartItems = [

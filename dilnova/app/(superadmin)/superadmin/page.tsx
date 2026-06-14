@@ -6,8 +6,8 @@ import { getSystemSetting } from '@/utils/settings';
 import { getCheckoutOptionsCatalog } from '@/utils/checkoutOptions';
 import { getStockAvailabilityCatalog } from '@/utils/stockAvailability';
 import { clerkClient } from '@clerk/nextjs/server';
-import { fetchAllClerkOrganizations } from '@/utils/clerkCache';
-import { buildVendorOrgIntegrityReport } from '@/utils/vendorOrgIntegrity';
+import { fetchAllClerkOrganizations } from '@/shared/auth/clerk-cache';
+import { buildVendorOrgIntegrityReport } from '@/features/vendor-org';
 
 export const revalidate = 0; // Fresh database query on each load
 

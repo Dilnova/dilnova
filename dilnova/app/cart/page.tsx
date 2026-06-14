@@ -6,14 +6,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SignInButton, SignUpButton, useUser } from '@clerk/nextjs';
 import { useClerkAuthRedirectUrl } from '@/app/hooks/useClerkAuthRedirectUrl';
-import { useCart } from '../context/CartContext';
+import { useCart } from '@/features/cart/context/CartContext';
 import { isVideoUrl } from '@/utils/media';
 import {
   getCartCheckoutOptionsAction,
   sendCartSummaryEmailAction,
   simulatedCheckoutAction,
   syncCartPricesAction,
-} from './actions';
+} from '@/features/cart/checkout.actions';
 import { isPaymentCompatibleWithFulfillment } from '@/utils/checkoutOptionsShared';
 import { calculateCheckoutTotals } from '@/utils/checkoutTotals';
 import {
@@ -34,7 +34,7 @@ import {
   syncSelectedProductIds,
   toggleAllProductsInSelection,
   toggleProductInSelection,
-} from '@/utils/cartVendorCheckout';
+} from '@/features/cart/vendor-checkout';
 
 export default function CartPage() {
   const {

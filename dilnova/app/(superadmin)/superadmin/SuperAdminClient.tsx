@@ -18,10 +18,10 @@ import { updateSystemSettingAction } from './settingsActions';
 import CheckoutOptionsSettings from './CheckoutOptionsSettings';
 import StockAvailabilitySettings from './StockAvailabilitySettings';
 import InventoryTab from './InventoryTab';
-import VendorOrgIssuesTab from './VendorOrgIssuesTab';
+import VendorOrgIssuesTab from '@/features/vendor-org/components/VendorOrgIssuesTab';
 import type { CheckoutOptionDefinition } from '@/utils/checkoutOptionsShared';
 import type { StockAvailabilityDefinition } from '@/utils/stockAvailabilityShared';
-import type { VendorOrgIntegrityReport } from '@/utils/vendorOrgIntegrity';
+import type { VendorOrgIntegrityReport } from '@/features/vendor-org';
 import type { InventoryItem, Supplier as IMSSupplier, InventoryMovement, SimulatedOrder, ProductForInventory } from './InventoryTab';
 
 interface Category {
