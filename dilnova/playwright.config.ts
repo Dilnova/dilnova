@@ -80,6 +80,48 @@ export default defineConfig({
         storageState: path.join(AUTH_DIR, 'superadmin.json'),
       },
     },
+    {
+      name: 'security-unauthenticated',
+      testMatch: /security\/unauthenticated-actions\.spec\.ts/,
+      dependencies: ['setup'],
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'security-customer',
+      testMatch: /security\/customer-idor\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: path.join(AUTH_DIR, 'customer.json'),
+      },
+    },
+    {
+      name: 'security-vendor-member',
+      testMatch: /security\/vendor-member-actions\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: path.join(AUTH_DIR, 'vendor-member.json'),
+      },
+    },
+    {
+      name: 'security-vendor-admin',
+      testMatch: /security\/vendor-admin-actions\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: path.join(AUTH_DIR, 'vendor-admin.json'),
+      },
+    },
+    {
+      name: 'security-superadmin',
+      testMatch: /security\/superadmin-actions\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: path.join(AUTH_DIR, 'superadmin.json'),
+      },
+    },
   ],
   webServer: {
     command: `node ./node_modules/next/dist/bin/next dev --port ${PORT}`,

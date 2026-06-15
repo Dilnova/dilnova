@@ -28,6 +28,8 @@ E2E_CUSTOMER_EMAIL=customer@test.example
 E2E_SUPERADMIN_EMAIL=superadmin@test.example
 ```
 
+**Security IDOR suites** also need `DATABASE_URL` and seeded data from **at least two customers and two vendor orgs** (orders + products). If cross-tenant rows are missing, those tests skip with a clear message.
+
 Clerk's `clerk.signIn({ emailAddress })` uses `CLERK_SECRET_KEY` — no password needed when configured in dev.
 
 ## What is tested
@@ -39,4 +41,14 @@ Clerk's `clerk.signIn({ emailAddress })` uses `CLERK_SECRET_KEY` — no password
 - **Customer** — `/customer` allowed; vendor/superadmin denied.
 - **Superadmin** — `/superadmin` allowed; vendor denied without org membership.
 
-Layout guards only — server-action IDOR tests belong in `e2e/security/` (future).
+### Security (`e2e/security/`)
+
+Direct **server-action IDOR** and **invoice route IDOR** checks (requires E2E users + seeded multi-tenant data):
+
+- Customer — foreign invoice URL, foreign payment slip upload, blocked vendor mutations
+- Vendor member — blocked delete/verify/cancel/reject order actions
+- Vendor admin — cross-tenant product delete and order actions; blocked superadmin mutations
+- Superadmin — blocked vendor org actions without membership; org role mutation guard
+- Unauthenticated — key mutations rejected without session
+
+Helpers: `helpers/server-action.ts` (manifest lookup + RSC `encodeReply`), `helpers/security-fixtures.ts` (DB cross-tenant ids).

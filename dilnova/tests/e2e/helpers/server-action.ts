@@ -1,0 +1,193 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import type { Page } from '@playwright/test';
+
+const MANIFEST_PATH = path.join(process.cwd(), '.next/server/server-reference-manifest.json');
+
+type RscClient = {
+  encodeReply: (value: unknown, options: { temporaryReferences: unknown }) => Promise<string | FormData>;
+  createTemporaryReferenceSet: () => unknown;
+};
+
+function getRscClient(): RscClient {
+  // Lazy-load CJS encoder so Playwright ESM test files can import this module safely.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return require('./rsc-encode.cjs') as RscClient;
+}
+
+type ManifestBucket = Record<
+  string,
+  {
+    exportedName?: string;
+    filename?: string;
+  }
+>;
+
+interface ServerReferenceManifest {
+  node?: ManifestBucket;
+  edge?: ManifestBucket;
+}
+
+const DENIAL_PATTERNS = [
+  /not authorized/i,
+  /Unauthorized/i,
+  /does not belong/i,
+  /You must be signed in/i,
+  /Please sign in/i,
+  /Only organization admins/i,
+  /Only administrators/i,
+  /Only global administrators/i,
+  /Item not found or does not belong/i,
+  /Order not found/i,
+  /You are not authorized to update this order/i,
+  /This order does not include items from your organization/i,
+  /Invalid payment slip submission/i,
+  /Payment slip storage is not configured/i,
+];
+
+export interface ServerActionInvokeResult {
+  status: number;
+  text: string;
+  denied: boolean;
+  actionNotFound: boolean;
+}
+
+export interface InvokeServerActionOptions {
+  /** POST target path (include query string when the action is bound to that page). */
+  postPath: string;
+  /** Partial module path, e.g. `catalog/vendor.actions`. */
+  moduleFileSuffix: string;
+  exportName: string;
+  args: unknown[];
+}
+
+function readManifest(): ServerReferenceManifest | null {
+  if (!fs.existsSync(MANIFEST_PATH)) {
+    return null;
+  }
+  try {
+    return JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8')) as ServerReferenceManifest;
+  } catch {
+    return null;
+  }
+}
+
+/** Resolve a Next.js server action id from the build/dev manifest. */
+export function resolveServerActionId(moduleFileSuffix: string, exportName: string): string | null {
+  const manifest = readManifest();
+  if (!manifest) {
+    return null;
+  }
+
+  for (const bucket of [manifest.node, manifest.edge]) {
+    if (!bucket) {
+      continue;
+    }
+    for (const [id, meta] of Object.entries(bucket)) {
+      if (meta.exportedName === exportName && meta.filename?.includes(moduleFileSuffix)) {
+        return id;
+      }
+    }
+  }
+
+  return null;
+}
+
+export function isSecurityDenial(text: string, status: number): boolean {
+  if (status === 401 || status === 403 || status === 404) {
+    return true;
+  }
+  if (DENIAL_PATTERNS.some((pattern) => pattern.test(text))) {
+    return true;
+  }
+  // Unsigned sessions often receive an HTML document instead of an RSC action payload.
+  if (
+    text.includes('<!DOCTYPE html>') &&
+    !/"success"\s*:\s*true/i.test(text) &&
+    !text.includes('text/x-component')
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Wait until Next has emitted the server action manifest (dev server compiles on boot). */
+export async function waitForServerActionManifest(timeoutMs = 60_000): Promise<void> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const manifest = readManifest();
+    if (manifest?.node && Object.keys(manifest.node).length > 0) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(`Server action manifest not found at ${MANIFEST_PATH} within ${timeoutMs}ms`);
+}
+
+/** Invoke a server action over HTTP with the current Playwright page session cookies. */
+export async function invokeServerAction(
+  page: Page,
+  options: InvokeServerActionOptions,
+): Promise<ServerActionInvokeResult> {
+  const actionId = resolveServerActionId(options.moduleFileSuffix, options.exportName);
+  if (!actionId) {
+    throw new Error(
+      `Server action "${options.exportName}" (${options.moduleFileSuffix}) was not found in ${MANIFEST_PATH}`,
+    );
+  }
+
+  const rscClient = getRscClient();
+  const temporaryReferences = rscClient.createTemporaryReferenceSet();
+  const body = await rscClient.encodeReply(options.args, { temporaryReferences });
+
+  const headers = {
+    Accept: 'text/x-component',
+    'next-action': actionId,
+  };
+
+  let response;
+  if (typeof body === 'string') {
+    response = await page.request.post(options.postPath, { headers, data: body });
+  } else if (body instanceof FormData) {
+    const multipart: Record<
+      string,
+      string | { name: string; mimeType: string; buffer: Buffer }
+    > = {};
+    for (const [key, value] of body.entries()) {
+      if (typeof value === 'string') {
+        multipart[key] = value;
+        continue;
+      }
+      const blob = value as Blob;
+      multipart[key] = {
+        name: value instanceof File && value.name ? value.name : `${key}.bin`,
+        mimeType: blob.type || 'application/octet-stream',
+        buffer: Buffer.from(await blob.arrayBuffer()),
+      };
+    }
+    response = await page.request.post(options.postPath, { headers, multipart });
+  } else {
+    response = await page.request.post(options.postPath, {
+      headers,
+      data: Buffer.from(await new Response(body as BodyInit).arrayBuffer()),
+    });
+  }
+
+  const text = await response.text();
+  const actionNotFound = response.headers()['next-action-not-found'] === '1';
+
+  return {
+    status: response.status(),
+    text,
+    actionNotFound,
+    denied: actionNotFound || isSecurityDenial(text, response.status()),
+  };
+}
+
+export function expectActionDenied(result: ServerActionInvokeResult): void {
+  if (!result.denied) {
+    throw new Error(
+      `Expected server action to be denied, but got status ${result.status}. Body preview: ${result.text.slice(0, 400)}`,
+    );
+  }
+}

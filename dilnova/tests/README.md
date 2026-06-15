@@ -7,7 +7,7 @@
 | `e2e/helpers/` | Route constants, env helpers |
 | `unit/features/` | Vitest tests colocated by feature (migrate from `utils/*.test.ts`) |
 | `integration/` | DB + server actions together |
-| `e2e/security/` | (planned) IDOR, cross-tenant attack scenarios |
+| `e2e/security/` | Server-action IDOR + invoice route IDOR (cross-tenant) |
 
 ## Commands
 
