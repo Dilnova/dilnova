@@ -112,7 +112,7 @@ export function createCustomStockAvailability(
   existingIds: string[],
   allowsPurchase = true
 ): StockAvailabilityDefinition {
-  let baseId = slugifyAvailabilityId(label) || 'custom_availability';
+  const baseId = slugifyAvailabilityId(label) || 'custom_availability';
   let id = baseId;
   let counter = 1;
   while (existingIds.includes(id)) {

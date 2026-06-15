@@ -199,7 +199,7 @@ export function createCustomCheckoutOption(
   type: CheckoutOptionType,
   existingIds: string[]
 ): CheckoutOptionDefinition {
-  let baseId = slugifyOptionId(label) || 'custom_option';
+  const baseId = slugifyOptionId(label) || 'custom_option';
   let id = baseId;
   let counter = 1;
   while (existingIds.includes(id)) {
