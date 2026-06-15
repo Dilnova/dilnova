@@ -7,6 +7,12 @@ import { vendorMetadataSchema } from '@/features/vendor/schema';
 import { logAuditAction } from '@/shared/audit/logger';
 import { logger } from '@/shared/logging/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
+import {
+  buildBankPrivateMetadataFromVendorData,
+  buildPublicProfileMetadataFromVendorData,
+  hasBankTransferConfiguredForOrg,
+  stripBankFieldsFromPublic,
+} from '@/features/billing/bank-transfer-metadata';
 
 interface VendorMetadataInput {
   description: string;
@@ -22,12 +28,11 @@ interface VendorMetadataInput {
 }
 
 /**
- * Secures and updates the organization's public metadata (company profile fields) in Clerk.
- * Restricted to users who belong to the organization and hold either an admin or vendor role.
+ * Secures and updates organization profile in Clerk.
+ * Storefront fields live in publicMetadata; bank transfer details in privateMetadata (server-only).
  */
 export async function updateVendorMetadata(organizationId: string, data: VendorMetadataInput) {
   return runWithCorrelationId(async () => {
-    // ── Schema Validation ──
     const parsed = vendorMetadataSchema.safeParse({ organizationId, data });
     if (!parsed.success) {
       throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
@@ -35,38 +40,33 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
 
     const { orgId, orgRole, userId } = await auth();
 
-    // 1. Authenticate: Verify the user is logged in and belongs to the requested organization
     if (!orgId || orgId !== parsed.data.organizationId) {
       throw new Error('Not authorized: You do not belong to this organization.');
     }
 
-    // 2. Authorize: Only organization admins can update storefront profile settings
     if (orgRole !== 'org:admin') {
       throw new Error('Not authorized: Only organization admins can configure profile settings.');
     }
 
     const client = await clerkClient();
     const org = await client.organizations.getOrganization({ organizationId: parsed.data.organizationId });
-    const existingMeta = (org.publicMetadata || {}) as Record<string, unknown>;
+    const existingPublic = stripBankFieldsFromPublic((org.publicMetadata || {}) as Record<string, unknown>);
+    const existingPrivate = (org.privateMetadata || {}) as Record<string, unknown>;
 
-    // 3. Merge profile fields into existing organization metadata
+    const publicMetadata = {
+      ...existingPublic,
+      ...buildPublicProfileMetadataFromVendorData(parsed.data.data),
+    };
+    const privateMetadata = {
+      ...existingPrivate,
+      ...buildBankPrivateMetadataFromVendorData(parsed.data.data),
+    };
+
     await client.organizations.updateOrganization(parsed.data.organizationId, {
-      publicMetadata: {
-        ...existingMeta,
-        description: parsed.data.data.description,
-        address: parsed.data.data.address,
-        phone: parsed.data.data.phone,
-        bannerUrl: parsed.data.data.bannerUrl,
-        stockAllocationMode: parsed.data.data.stockAllocationMode,
-        bankName: parsed.data.data.bankName,
-        bankAccountName: parsed.data.data.bankAccountName,
-        bankAccountNumber: parsed.data.data.bankAccountNumber,
-        bankBranchCode: parsed.data.data.bankBranchCode,
-        bankTransferInstructions: parsed.data.data.bankTransferInstructions,
-      },
+      publicMetadata,
+      privateMetadata,
     });
 
-    // 4. Audit Logging
     if (userId) {
       await logAuditAction({
         userId,
@@ -79,23 +79,24 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
           phone: parsed.data.data.phone,
           bannerUrl: parsed.data.data.bannerUrl,
           stockAllocationMode: parsed.data.data.stockAllocationMode,
-          bankName: parsed.data.data.bankName,
-          bankAccountName: parsed.data.data.bankAccountName,
-          bankAccountNumber: parsed.data.data.bankAccountNumber,
+          bankTransferConfigured: hasBankTransferConfiguredForOrg({
+            publicMetadata,
+            privateMetadata,
+          }),
         },
       });
     }
 
-    // 5. Cache Revalidation: ensure changes are immediately visible
     revalidatePath('/');
     revalidateVendorConsole();
     revalidatePath('/vendors');
-    
-    // Revalidate the vendor's profile page using its slug
+
     try {
-      const org = await client.organizations.getOrganization({ organizationId: parsed.data.organizationId });
-      if (org.slug) {
-        revalidatePath(`/vendors/${org.slug}`);
+      const refreshedOrg = await client.organizations.getOrganization({
+        organizationId: parsed.data.organizationId,
+      });
+      if (refreshedOrg.slug) {
+        revalidatePath(`/vendors/${refreshedOrg.slug}`);
       }
     } catch (err) {
       logger.error('Error fetching org slug for path revalidation:', err);
