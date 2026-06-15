@@ -1,11 +1,15 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import {
   loadSecurityFixtureContext,
   loadSecurityFixtures,
 } from '../helpers/security-fixtures';
 import { NON_EXISTENT_UUID } from '../helpers/security-constants';
 import { skipUnlessSecurityEnv } from '../helpers/security-skip';
-import { invokeServerAction, waitForServerActionManifest } from '../helpers/server-action';
+import {
+  expectSecurityDenied,
+  invokeServerAction,
+  waitForServerActionManifest,
+} from '../helpers/server-action';
 
 let fixtures: Awaited<ReturnType<typeof loadSecurityFixtures>>;
 
@@ -16,7 +20,7 @@ test.beforeAll(async () => {
 });
 
 test.describe('Vendor member server-action restrictions', () => {
-  test.beforeEach(({ page }, testInfo) => {
+  test.beforeEach(({}, testInfo) => {
     skipUnlessSecurityEnv(testInfo, 'vendor-member', fixtures);
   });
 
@@ -27,9 +31,7 @@ test.describe('Vendor member server-action restrictions', () => {
       exportName: 'deleteProductAction',
       args: [NON_EXISTENT_UUID],
     });
-
-    expect(result.denied).toBe(true);
-    expect(result.text).toMatch(/Only administrators|not belong|Item not found/i);
+    expectSecurityDenied(result);
   });
 
   test('cannot verify an order payment', async ({ page }) => {
@@ -39,9 +41,7 @@ test.describe('Vendor member server-action restrictions', () => {
       exportName: 'verifyOrderPaymentAction',
       args: [fixtures!.foreignVendorOrderId],
     });
-
-    expect(result.denied).toBe(true);
-    expect(result.text).toMatch(/Only organization admins|does not include items|Order not found/i);
+    expectSecurityDenied(result);
   });
 
   test('cannot cancel a vendor order', async ({ page }) => {
@@ -51,9 +51,7 @@ test.describe('Vendor member server-action restrictions', () => {
       exportName: 'cancelVendorOrderAction',
       args: [fixtures!.foreignVendorOrderId],
     });
-
-    expect(result.denied).toBe(true);
-    expect(result.text).toMatch(/Only organization admins|does not include items|Order not found/i);
+    expectSecurityDenied(result);
   });
 
   test('cannot reject a payment slip', async ({ page }) => {
@@ -63,8 +61,6 @@ test.describe('Vendor member server-action restrictions', () => {
       exportName: 'rejectPaymentSlipAction',
       args: [fixtures!.foreignVendorOrderId, 'E2E rejection attempt'],
     });
-
-    expect(result.denied).toBe(true);
-    expect(result.text).toMatch(/Only organization admins|does not include items|Order not found/i);
+    expectSecurityDenied(result);
   });
 });

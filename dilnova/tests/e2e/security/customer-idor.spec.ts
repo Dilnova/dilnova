@@ -6,7 +6,11 @@ import {
 } from '../helpers/security-fixtures';
 import { NON_EXISTENT_UUID } from '../helpers/security-constants';
 import { skipUnlessSecurityEnv } from '../helpers/security-skip';
-import { invokeServerAction, waitForServerActionManifest } from '../helpers/server-action';
+import {
+  expectSecurityDenied,
+  invokeServerAction,
+  waitForServerActionManifest,
+} from '../helpers/server-action';
 
 let fixtures: Awaited<ReturnType<typeof loadSecurityFixtures>>;
 
@@ -34,8 +38,7 @@ test.describe('Customer server-action IDOR', () => {
       args: [formData],
     });
 
-    expect(result.denied).toBe(true);
-    expect(result.text).toMatch(/not authorized|Order not found|not accepting/i);
+    expectSecurityDenied(result);
   });
 
   test('cannot upload a payment slip for a non-existent order', async ({ page }) => {
@@ -50,7 +53,7 @@ test.describe('Customer server-action IDOR', () => {
       args: [formData],
     });
 
-    expect(result.denied).toBe(true);
+    expectSecurityDenied(result);
   });
 });
 
@@ -78,9 +81,7 @@ test.describe('Customer blocked from vendor/admin mutations', () => {
       exportName: 'verifyOrderPaymentAction',
       args: [fixtures?.foreignVendorOrderId ?? NON_EXISTENT_UUID],
     });
-
-    expect(result.denied).toBe(true);
-    expect(result.text).not.toContain(`"success":true`);
+    expectSecurityDenied(result);
   });
 
   test('cannot delete a vendor catalog product', async ({ page }) => {
@@ -92,7 +93,6 @@ test.describe('Customer blocked from vendor/admin mutations', () => {
       exportName: 'deleteProductAction',
       args: [productId],
     });
-
-    expect(result.denied).toBe(true);
+    expectSecurityDenied(result);
   });
 });

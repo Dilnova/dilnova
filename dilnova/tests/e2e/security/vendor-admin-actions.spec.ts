@@ -1,11 +1,15 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import {
   loadSecurityFixtureContext,
   loadSecurityFixtures,
 } from '../helpers/security-fixtures';
 import { NON_EXISTENT_UUID } from '../helpers/security-constants';
 import { skipUnlessSecurityEnv } from '../helpers/security-skip';
-import { invokeServerAction, waitForServerActionManifest } from '../helpers/server-action';
+import {
+  expectSecurityDenied,
+  invokeServerAction,
+  waitForServerActionManifest,
+} from '../helpers/server-action';
 
 let fixtures: Awaited<ReturnType<typeof loadSecurityFixtures>>;
 
@@ -16,7 +20,7 @@ test.beforeAll(async () => {
 });
 
 test.describe('Vendor admin cross-tenant server-action IDOR', () => {
-  test.beforeEach(({ page }, testInfo) => {
+  test.beforeEach(({}, testInfo) => {
     skipUnlessSecurityEnv(testInfo, 'vendor-admin', fixtures);
   });
 
@@ -27,9 +31,7 @@ test.describe('Vendor admin cross-tenant server-action IDOR', () => {
       exportName: 'deleteProductAction',
       args: [fixtures!.foreignVendorProductId],
     });
-
-    expect(result.denied).toBe(true);
-    expect(result.text).toMatch(/does not belong|Item not found|Not authorized/i);
+    expectSecurityDenied(result);
   });
 
   test('cannot verify payment for an order outside their org', async ({ page }) => {
@@ -39,9 +41,7 @@ test.describe('Vendor admin cross-tenant server-action IDOR', () => {
       exportName: 'verifyOrderPaymentAction',
       args: [fixtures!.foreignVendorOrderId],
     });
-
-    expect(result.denied).toBe(true);
-    expect(result.text).toMatch(/does not include items|Order not found|Not authorized/i);
+    expectSecurityDenied(result);
   });
 
   test('cannot cancel an order outside their org', async ({ page }) => {
@@ -51,9 +51,7 @@ test.describe('Vendor admin cross-tenant server-action IDOR', () => {
       exportName: 'cancelVendorOrderAction',
       args: [fixtures!.foreignVendorOrderId],
     });
-
-    expect(result.denied).toBe(true);
-    expect(result.text).toMatch(/does not include items|Order not found|Not authorized/i);
+    expectSecurityDenied(result);
   });
 
   test('cannot reject a payment slip for an order outside their org', async ({ page }) => {
@@ -63,14 +61,12 @@ test.describe('Vendor admin cross-tenant server-action IDOR', () => {
       exportName: 'rejectPaymentSlipAction',
       args: [fixtures!.foreignVendorOrderId, 'E2E cross-tenant reject'],
     });
-
-    expect(result.denied).toBe(true);
-    expect(result.text).toMatch(/does not include items|Order not found|Not authorized/i);
+    expectSecurityDenied(result);
   });
 });
 
 test.describe('Vendor admin blocked from platform admin mutations', () => {
-  test.beforeEach(({ page }, testInfo) => {
+  test.beforeEach(({}, testInfo) => {
     skipUnlessSecurityEnv(testInfo, 'vendor-admin');
   });
 
@@ -91,9 +87,7 @@ test.describe('Vendor admin blocked from platform admin mutations', () => {
         },
       ],
     });
-
-    expect(result.denied).toBe(true);
-    expect(result.text).toMatch(/global administrators|Unauthorized|Not authorized/i);
+    expectSecurityDenied(result);
   });
 
   test('cannot delete a product via superadmin action endpoint', async ({ page }) => {
@@ -103,8 +97,6 @@ test.describe('Vendor admin blocked from platform admin mutations', () => {
       exportName: 'deleteProductAction',
       args: [fixtures?.foreignVendorProductId ?? NON_EXISTENT_UUID],
     });
-
-    expect(result.denied).toBe(true);
-    expect(result.text).toMatch(/global administrators|Unauthorized|Not authorized/i);
+    expectSecurityDenied(result);
   });
 });

@@ -8,6 +8,24 @@ const AUTH_DIR = path.join(__dirname, 'playwright/.clerk');
 const PORT = process.env.PLAYWRIGHT_PORT ?? '3000';
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`;
 
+const webServerEnv: Record<string, string> = {
+  PORT,
+  DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://ci:ci@localhost:5432/ci',
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? 'pk_test_ci_dummy',
+  CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY ?? 'sk_test_ci_dummy',
+  UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL ?? 'https://dummy.upstash.io',
+  UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ?? 'dummy-token',
+  NEXT_PUBLIC_APP_URL: baseURL,
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'ci_dummy',
+  NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET:
+    process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? 'ci_dummy',
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://example.supabase.co',
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? 'sb_dummy',
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'sb_service_dummy',
+};
+
 export default defineConfig({
   testDir: path.join(__dirname, 'tests/e2e'),
   fullyParallel: true,
@@ -31,6 +49,7 @@ export default defineConfig({
       name: 'auth-setup',
       testMatch: /auth\.setup\.ts/,
       dependencies: ['setup'],
+      fullyParallel: false,
     },
     {
       name: 'public',
@@ -124,9 +143,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `node ./node_modules/next/dist/bin/next dev --port ${PORT}`,
+    // Production server keeps server-action IDs aligned with server-reference-manifest.json.
+    command: `sh -c 'pnpm build && exec node ./node_modules/next/dist/bin/next start --port ${PORT}'`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    reuseExistingServer: false,
+    timeout: 300_000,
+    env: webServerEnv,
   },
 });
