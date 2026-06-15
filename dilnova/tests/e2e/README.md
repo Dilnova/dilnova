@@ -6,7 +6,7 @@
 2. `pnpm test:e2e:install` (once).
 3. `pnpm test:e2e`
 
-### GitHub Actions
+### GitHub Actions (optional)
 
 CI runs on every push/PR to `main`/`master` (`.github/workflows/ci.yml`):
 
@@ -14,9 +14,17 @@ CI runs on every push/PR to `main`/`master` (`.github/workflows/ci.yml`):
 |-----|-----------|
 | **quality** | `pnpm lint`, `tsc`, `pnpm test`, Drizzle verify |
 | **build** | `pnpm build` (dummy env) |
-| **e2e** | `pnpm test:e2e` (public + unauthenticated always; full matrix when secrets are set) |
+| **e2e** | `pnpm test:e2e` smoke (public + unauthenticated) |
 
-Optional repository **secrets** for the full RBAC/security matrix in CI:
+**Vercel environment variables** are what your live app uses — you do **not** need to duplicate them in GitHub unless you want full RBAC/security E2E on every PR in CI.
+
+**Recommended workflow without GitHub secrets:**
+
+1. Keep secrets in **Vercel** only (production + preview).
+2. Before deploy, run locally: `pnpm test:e2e` (all four `E2E_*_EMAIL` in `.env.local`).
+3. Let CI enforce lint, typecheck, unit tests, and build.
+
+Optional GitHub secrets (only if you want authenticated E2E in CI):
 
 | Secret | Purpose |
 |--------|---------|
@@ -29,7 +37,7 @@ Optional repository **secrets** for the full RBAC/security matrix in CI:
 | `E2E_CUSTOMER_EMAIL` | Pre-created customer test user |
 | `E2E_SUPERADMIN_EMAIL` | User with `publicMetadata.role = admin` |
 
-Without E2E secrets, authenticated suites **skip** (CI still passes on smoke coverage).
+Without GitHub secrets, CI runs **smoke E2E** only (authenticated suites skip). Run `pnpm test:e2e` locally before deploy for the full 47-test matrix.
 
 Public + unauthenticated RBAC tests run with Clerk keys only.
 

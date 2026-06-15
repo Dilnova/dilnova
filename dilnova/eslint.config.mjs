@@ -23,6 +23,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "dist/**",
     "scratch/**",
+    // CJS helper for Playwright RSC server-action encoding (must use require()).
+    "tests/e2e/helpers/rsc-encode.cjs",
   ]),
 ]);
 

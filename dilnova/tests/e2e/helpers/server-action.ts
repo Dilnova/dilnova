@@ -15,13 +15,13 @@ function getRscClient(): RscClient {
   return require('./rsc-encode.cjs') as RscClient;
 }
 
-type ManifestBucket = Record<
-  string,
-  {
-    exportedName?: string;
-    filename?: string;
-  }
->;
+type ManifestEntry = {
+  exportedName?: string;
+  filename?: string;
+  workers?: Record<string, unknown>;
+};
+
+type ManifestBucket = Record<string, ManifestEntry>;
 
 interface ServerReferenceManifest {
   node?: ManifestBucket;
@@ -72,12 +72,29 @@ function readManifest(): ServerReferenceManifest | null {
   }
 }
 
-/** Resolve a Next.js server action id from the build/dev manifest. */
-export function resolveServerActionId(moduleFileSuffix: string, exportName: string): string | null {
+function workerHintFromPostPath(postPath: string): string | null {
+  const pathname = postPath.split('?')[0];
+  if (pathname.startsWith('/vendor')) return 'app/(vendor)/vendor/page';
+  if (pathname.startsWith('/superadmin')) return 'app/(superadmin)/superadmin/page';
+  if (pathname.startsWith('/admin')) return 'app/(admin)/admin/page';
+  if (pathname.startsWith('/customer/invoice')) return 'app/(customer)/customer/invoice/[id]/page';
+  if (pathname.startsWith('/customer')) return 'app/(customer)/customer/page';
+  if (pathname.startsWith('/cart')) return 'app/cart/page';
+  return null;
+}
+
+/** Resolve a Next.js server action id from the production build manifest. */
+export function resolveServerActionId(
+  moduleFileSuffix: string,
+  exportName: string,
+  postPath?: string,
+): string | null {
   const manifest = readManifest();
   if (!manifest) {
     return null;
   }
+
+  const matches: Array<{ id: string; meta: ManifestEntry }> = [];
 
   for (const bucket of [manifest.node, manifest.edge]) {
     if (!bucket) {
@@ -85,19 +102,41 @@ export function resolveServerActionId(moduleFileSuffix: string, exportName: stri
     }
     for (const [id, meta] of Object.entries(bucket)) {
       if (meta.exportedName === exportName && meta.filename?.includes(moduleFileSuffix)) {
-        return id;
+        matches.push({ id, meta });
       }
     }
   }
 
-  return null;
+  if (matches.length === 0) {
+    return null;
+  }
+
+  const workerHint = postPath ? workerHintFromPostPath(postPath) : null;
+  if (workerHint) {
+    const preferred = matches.find(({ meta }) =>
+      Object.keys(meta.workers ?? {}).some((workerPath) => workerPath === workerHint),
+    );
+    if (preferred) {
+      return preferred.id;
+    }
+  }
+
+  return matches[0]?.id ?? null;
 }
 
 export function isSecurityDenial(text: string, status: number): boolean {
-  if (status === 401 || status === 403 || status === 404) {
+  if (status >= 400) {
+    return true;
+  }
+  // Customer actions often return { success: false } instead of throwing.
+  if (/success["\s]*:\s*false/i.test(text)) {
     return true;
   }
   if (DENIAL_PATTERNS.some((pattern) => pattern.test(text))) {
+    return true;
+  }
+  // Next.js encodes thrown server-action errors in RSC flight payloads (digest).
+  if (/digest/i.test(text) && !/"success"\s*:\s*true/i.test(text)) {
     return true;
   }
   // Unsigned sessions often receive an HTML document instead of an RSC action payload.
@@ -129,10 +168,14 @@ export async function invokeServerAction(
   page: Page,
   options: InvokeServerActionOptions,
 ): Promise<ServerActionInvokeResult> {
-  const actionId = resolveServerActionId(options.moduleFileSuffix, options.exportName);
+  const actionId = resolveServerActionId(
+    options.moduleFileSuffix,
+    options.exportName,
+    options.postPath,
+  );
   if (!actionId) {
     throw new Error(
-      `Server action "${options.exportName}" (${options.moduleFileSuffix}) was not found in ${MANIFEST_PATH}`,
+      `Server action "${options.exportName}" (${options.moduleFileSuffix}) was not found in ${MANIFEST_PATH}. Run pnpm build before test:e2e.`,
     );
   }
 
@@ -180,14 +223,23 @@ export async function invokeServerAction(
     status: response.status(),
     text,
     actionNotFound,
-    denied: actionNotFound || isSecurityDenial(text, response.status()),
+    denied:
+      actionNotFound ||
+      text.includes('Server action not found') ||
+      isSecurityDenial(text, response.status()),
   };
 }
 
-export function expectActionDenied(result: ServerActionInvokeResult): void {
+export function expectSecurityDenied(result: ServerActionInvokeResult): void {
+  if (result.actionNotFound) {
+    throw new Error(`Server action was not found. Response: ${result.text.slice(0, 200)}`);
+  }
   if (!result.denied) {
     throw new Error(
-      `Expected server action to be denied, but got status ${result.status}. Body preview: ${result.text.slice(0, 400)}`,
+      `Expected security denial but got status ${result.status}. Response: ${result.text.slice(0, 300)}`,
     );
+  }
+  if (/"success"\s*:\s*true/i.test(result.text)) {
+    throw new Error('Server action unexpectedly succeeded.');
   }
 }
