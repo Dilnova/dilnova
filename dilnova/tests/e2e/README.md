@@ -50,7 +50,7 @@ Create four test users in your **Clerk dev instance**:
 | Vendor admin | Active org, role `org:admin` |
 | Vendor member | Same org, role `org:member` |
 | Customer | Signed-in user, no vendor org (or different org) |
-| Superadmin | `publicMetadata.role = "admin"` |
+| Superadmin | `privateMetadata.platformRole = "superadmin"` (or legacy `publicMetadata.role = "admin"` until migrated) |
 
 Add to `.env.local`:
 

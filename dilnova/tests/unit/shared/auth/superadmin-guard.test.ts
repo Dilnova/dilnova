@@ -1,45 +1,52 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
-import { currentUser } from '@clerk/nextjs/server';
+import { checkSuperAdmin, getCurrentSuperAdminUser } from '@/shared/auth/superadmin-guard';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 
-// Mock Clerk server methods
 vi.mock('@clerk/nextjs/server', () => ({
-  currentUser: vi.fn(),
+  auth: vi.fn(),
+  clerkClient: vi.fn(),
 }));
 
-describe('authGuards - checkSuperAdmin', () => {
+describe('superadmin-guard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should throw when user is not logged in (session is null)', async () => {
-    vi.mocked(currentUser).mockResolvedValue(null);
-
-    await expect(checkSuperAdmin()).rejects.toThrow('Unauthorized: You must be logged in.');
-  });
-
-  it('should throw when user is logged in but role is not admin', async () => {
-    const mockUser = {
-      id: 'user_customer_123',
-      publicMetadata: {
-        role: 'customer',
+  it('checkSuperAdmin loads the user from Clerk and validates privateMetadata', async () => {
+    vi.mocked(auth).mockResolvedValue({ userId: 'user_admin' } as never);
+    vi.mocked(clerkClient).mockResolvedValue({
+      users: {
+        getUser: vi.fn().mockResolvedValue({
+          id: 'user_admin',
+          privateMetadata: { platformRole: 'superadmin' },
+          publicMetadata: { role: 'vendor' },
+        }),
       },
-    };
-    vi.mocked(currentUser).mockResolvedValue(mockUser as any);
-
-    await expect(checkSuperAdmin()).rejects.toThrow('Unauthorized: Only global administrators can perform this action.');
-  });
-
-  it('should return user details successfully when user has the admin role', async () => {
-    const mockUser = {
-      id: 'user_admin_999',
-      publicMetadata: {
-        role: 'admin',
-      },
-    };
-    vi.mocked(currentUser).mockResolvedValue(mockUser as any);
+    } as never);
 
     const user = await checkSuperAdmin();
-    expect(user).toEqual(mockUser);
+    expect(user.id).toBe('user_admin');
+  });
+
+  it('checkSuperAdmin rejects users without a superadmin grant', async () => {
+    vi.mocked(auth).mockResolvedValue({ userId: 'user_customer' } as never);
+    vi.mocked(clerkClient).mockResolvedValue({
+      users: {
+        getUser: vi.fn().mockResolvedValue({
+          id: 'user_customer',
+          privateMetadata: {},
+          publicMetadata: { role: 'customer' },
+        }),
+      },
+    } as never);
+
+    await expect(checkSuperAdmin()).rejects.toThrow(
+      'Unauthorized: Only global administrators can perform this action.'
+    );
+  });
+
+  it('getCurrentSuperAdminUser returns null when unauthenticated', async () => {
+    vi.mocked(auth).mockResolvedValue({ userId: null } as never);
+    await expect(getCurrentSuperAdminUser()).resolves.toBeNull();
   });
 });

@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { clerkClient } from '@clerk/nextjs/server';
 import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
+import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { rateLimit } from '@/shared/security/rate-limit';
@@ -166,8 +167,7 @@ export async function updateContactStatusAction(
 
       const clerkUser = userList.data?.[0];
       if (clerkUser) {
-        const existingRole = clerkUser.publicMetadata?.role as string | undefined;
-        if (existingRole === 'admin') {
+        if (isSuperAdminUser(clerkUser)) {
           console.log(`Skipped role sync for superadmin user ${clerkUser.id}.`);
         } else if (status !== 'pending') {
           const nextRole = status === 'connected' ? 'vendor' : 'customer';
@@ -177,6 +177,7 @@ export async function updateContactStatusAction(
             },
           });
           revalidateTag('clerk-user-role', 'max');
+          revalidateTag('clerk-user-superadmin', 'max');
           console.log(`Successfully updated Clerk user ${clerkUser.id} role to ${nextRole}`);
         }
       } else {
