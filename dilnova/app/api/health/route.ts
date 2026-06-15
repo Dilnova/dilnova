@@ -20,7 +20,9 @@ export async function GET(request: Request) {
       await db.execute(sql`SELECT 1`);
 
       const productionNeedsUpstash =
-        process.env.NODE_ENV === 'production' && rateLimit?.status !== 'ok';
+        showDetails &&
+        process.env.NODE_ENV === 'production' &&
+        rateLimit?.status !== 'ok';
       const status = productionNeedsUpstash ? 'degraded' : 'ok';
 
       if (!showDetails) {

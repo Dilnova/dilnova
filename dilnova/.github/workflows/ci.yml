@@ -95,7 +95,9 @@ jobs:
           UPSTASH_REDIS_REST_TOKEN: ${{ env.DUMMY_UPSTASH_TOKEN }}
           NEXT_PUBLIC_APP_URL: http://localhost:3000
           NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ci_dummy
-          NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: ci_dummy
+          CLOUDINARY_API_KEY: ci_dummy_api_key
+          CLOUDINARY_API_SECRET: ci_dummy_api_secret
+          HEALTH_CHECK_SECRET: ci_health_secret
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_dummy
           SUPABASE_SERVICE_ROLE_KEY: sb_service_dummy
@@ -161,7 +163,9 @@ jobs:
             echo "UPSTASH_REDIS_REST_TOKEN=${UPSTASH_TOKEN:-$DUMMY_UPSTASH_TOKEN}"
             echo "NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000"
             echo "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=ci_dummy"
-            echo "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=ci_dummy"
+            echo "CLOUDINARY_API_KEY=ci_dummy_api_key"
+            echo "CLOUDINARY_API_SECRET=ci_dummy_api_secret"
+            echo "HEALTH_CHECK_SECRET=ci_health_secret"
             echo "NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co"
             echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_dummy"
             echo "SUPABASE_SERVICE_ROLE_KEY=sb_service_dummy"
