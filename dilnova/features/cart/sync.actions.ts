@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { syncedCartItemSchema, syncedCartSchema, type SyncedCartItem } from '@/features/cart/schema';
+import { rateLimit } from '@/shared/security/rate-limit';
 
 export async function loadCustomerCartAction(): Promise<{
   success: boolean;
@@ -16,6 +17,8 @@ export async function loadCustomerCartAction(): Promise<{
     if (!userId) {
       return { success: false, error: 'Not signed in.' };
     }
+
+    await rateLimit(30, 60 * 1000);
 
     const [row] = await db
       .select()
@@ -52,6 +55,8 @@ export async function saveCustomerCartAction(
     if (!parsed.success) {
       return { success: false, error: 'Invalid cart data.' };
     }
+
+    await rateLimit(30, 60 * 1000);
 
     await db
       .insert(schema.customerCarts)

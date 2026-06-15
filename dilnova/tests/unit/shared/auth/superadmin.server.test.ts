@@ -50,19 +50,14 @@ describe('superadmin.server', () => {
     expect(getSuperAdminAllowlistFromEnv().has('user_allow_2')).toBe(true);
   });
 
-  it('supports legacy publicMetadata.role=admin during migration', () => {
+  it('denies legacy publicMetadata.role=admin without privateMetadata or allowlist', () => {
     expect(
       isSuperAdminUser({
         id: 'user_legacy',
         publicMetadata: { role: 'admin' },
         privateMetadata: {},
       })
-    ).toBe(true);
-
-    expect(readSuperAdminGrant({
-      id: 'user_legacy',
-      publicMetadata: { role: 'admin' },
-    }).source).toBe('legacy-public');
+    ).toBe(false);
   });
 
   it('denies regular customers and vendors', () => {

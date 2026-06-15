@@ -11,6 +11,7 @@ import { logger } from '@/shared/logging/logger';
 import { addProductSchema, vendorDeleteProductSchema } from '@/features/catalog/schema';
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
+import { rateLimit } from '@/shared/security/rate-limit';
 import { getPremiumStatus } from '@/features/inventory/premium-license';
 import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
 
@@ -32,6 +33,8 @@ export async function addProductAction(data: {
 }) {
   return runWithCorrelationId(async () => {
     try {
+      await rateLimit(20, 60 * 1000);
+
       // ── Schema Validation ──
       const parsed = addProductSchema.safeParse(data);
       if (!parsed.success) {
@@ -213,6 +216,8 @@ export async function addProductAction(data: {
 export async function deleteProductAction(productId: string) {
   return runWithCorrelationId(async () => {
     try {
+      await rateLimit(20, 60 * 1000);
+
       // ── Schema Validation ──
       const parsed = vendorDeleteProductSchema.safeParse({ productId });
       if (!parsed.success) {
