@@ -1,32 +1,12 @@
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { and, eq, ne, or, sql } from 'drizzle-orm';
+import { buildCustomerOrderAccessWhere } from '@/features/orders/customer-ownership';
+import { and, eq, ne } from 'drizzle-orm';
 
 export async function hasCustomerPurchasedProduct(
   productId: string,
-  userId: string,
-  normalizedEmail: string | null
+  userId: string
 ): Promise<boolean> {
-  if (!normalizedEmail) {
-    const [purchaseByUserId] = await db
-      .select({ id: schema.simulatedOrderItems.id })
-      .from(schema.simulatedOrderItems)
-      .innerJoin(
-        schema.simulatedOrders,
-        eq(schema.simulatedOrderItems.orderId, schema.simulatedOrders.id)
-      )
-      .where(
-        and(
-          eq(schema.simulatedOrderItems.productId, productId),
-          eq(schema.simulatedOrders.customerUserId, userId),
-          ne(schema.simulatedOrders.status, 'cancelled')
-        )
-      )
-      .limit(1);
-
-    return Boolean(purchaseByUserId);
-  }
-
   const [purchase] = await db
     .select({ id: schema.simulatedOrderItems.id })
     .from(schema.simulatedOrderItems)
@@ -37,10 +17,7 @@ export async function hasCustomerPurchasedProduct(
     .where(
       and(
         eq(schema.simulatedOrderItems.productId, productId),
-        or(
-          eq(schema.simulatedOrders.customerUserId, userId),
-          sql`lower(trim(${schema.simulatedOrders.customerEmail})) = ${normalizedEmail}`
-        ),
+        buildCustomerOrderAccessWhere(userId),
         ne(schema.simulatedOrders.status, 'cancelled')
       )
     )

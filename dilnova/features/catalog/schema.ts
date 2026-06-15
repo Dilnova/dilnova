@@ -1,5 +1,9 @@
 import { z } from 'zod/v3';
 import { uuidField } from '@/shared/validation/primitives';
+import {
+  optionalCloudinaryUrlSchema,
+  productMediaItemSchema,
+} from '@/shared/media/validate-cloudinary-media';
 
 export const toggleWishlistSchema = z.object({
   productId: uuidField,
@@ -44,13 +48,8 @@ export const updateProductSchema = z.object({
     categoryId: z.string().uuid().nullable().optional(),
     description: z.string().max(5000).nullable().optional(),
     type: z.enum(['product', 'service']).optional(),
-    imageUrl: z.string().trim().optional(),
-    media: z.array(
-      z.object({
-        url: z.string().url('Invalid media URL.'),
-        type: z.enum(['image', 'video']),
-      })
-    ).optional(),
+    imageUrl: optionalCloudinaryUrlSchema.optional(),
+    media: z.array(productMediaItemSchema).optional(),
   }),
 });
 
@@ -63,13 +62,8 @@ export const addProductSchema = z.object({
   type: z.enum(['product', 'service']),
   description: z.string().max(1000, 'Description cannot exceed 1000 characters.').trim().default(''),
   priceInDollars: z.number().positive('Price must be a positive number.'),
-  imageUrl: z.string().trim().default(''),
-  media: z.array(
-    z.object({
-      url: z.string().url('Invalid media URL.'),
-      type: z.enum(['image', 'video']),
-    })
-  ).default([]),
+  imageUrl: optionalCloudinaryUrlSchema,
+  media: z.array(productMediaItemSchema).default([]),
   categoryId: z.string().uuid('Invalid category ID.').or(z.literal('')).default(''),
   quantity: z.number().int('Quantity must be a whole number.').nonnegative('Quantity cannot be negative.').optional().default(0),
   branchId: z.string().uuid('Invalid branch ID.').or(z.literal('')).optional().default(''),

@@ -117,7 +117,7 @@ setup('prepare authenticated storage states', async ({ browser }) => {
             (role.requiresOrg
               ? 'Ensure the user has the correct org role and an active organization.'
               : role.key === 'superadmin'
-                ? 'Set publicMetadata.role = "admin" on this Clerk user.'
+                ? 'Set privateMetadata.platformRole = "superadmin" on this Clerk user (see scripts/migrate-superadmin-metadata.mjs).'
                 : 'Ensure this user can access the customer portal.'),
         );
       }

@@ -1,4 +1,4 @@
-import { clerkClient, auth, currentUser } from '@clerk/nextjs/server';
+import { clerkClient, auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -17,7 +17,6 @@ import { getStockAvailabilityCatalog } from '@/features/inventory/availability.s
 import { resolveOnlineProductPurchaseState } from '@/features/inventory/availability.shared';
 import StockAvailabilityBadge from '@/features/inventory/components/StockAvailabilityBadge';
 import { DEFAULT_SUPPORT_EMAIL } from '@/shared/platform/brand';
-import { getNormalizedClerkUserEmail } from '@/features/customer/email';
 import {
   getVerifiedReviewerIdsForProduct,
   hasCustomerPurchasedProduct,
@@ -109,8 +108,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   // 1.5. Fetch Auth context, Reviews, Questions and Wishlist status
   const { userId, orgId: userOrgId } = await auth();
-  const viewer = await currentUser();
-  const normalizedUserEmail = viewer ? getNormalizedClerkUserEmail(viewer) : null;
 
   const [productReviews, productQuestions, verifiedReviewerIds] = await Promise.all([
     getProductReviews(id),
@@ -127,7 +124,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     const [fav, rev, purchased] = await Promise.all([
       getWishlistEntryForUser(userId, id),
       getUserReviewForProduct(userId, id),
-      hasCustomerPurchasedProduct(id, userId, normalizedUserEmail),
+      hasCustomerPurchasedProduct(id, userId),
     ]);
 
     isFavorited = !!fav;

@@ -1,3 +1,8 @@
+import {
+  createCloudinaryUploadSignatureAction,
+  type CloudinaryUploadKind,
+} from '@/features/media/cloudinary.actions';
+
 interface UploadProgressEvent {
   percent: number;
   loaded: number;
@@ -11,35 +16,48 @@ interface UploadResult {
   error?: string;
 }
 
+export interface CloudinaryUploadOptions {
+  uploadKind?: CloudinaryUploadKind;
+  onProgress?: (progress: UploadProgressEvent) => void;
+}
+
 /**
- * Uploads a file directly from the browser to Cloudinary using their Unsigned Upload Preset API.
- * Keeps upload credentials secure and supports real-time upload progress.
+ * Uploads media via Cloudinary signed uploads (server-issued signature, no public preset).
  */
 export async function uploadToCloudinary(
   file: File,
-  onProgress?: (progress: UploadProgressEvent) => void
+  options?: CloudinaryUploadOptions | ((progress: UploadProgressEvent) => void)
 ): Promise<UploadResult> {
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
+  const normalizedOptions: CloudinaryUploadOptions =
+    typeof options === 'function' ? { onProgress: options } : (options ?? {});
 
-  if (!cloudName) {
-    console.error('Error: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is not set in environment variables.');
+  const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
+  const signatureResult = await createCloudinaryUploadSignatureAction({
+    uploadKind: normalizedOptions.uploadKind ?? 'catalog',
+    resourceType,
+  });
+
+  if (!signatureResult.success) {
     return {
       success: false,
-      error: 'Upload configuration error: Cloud name is missing.',
+      error: signatureResult.error,
     };
   }
 
+  const { cloudName, apiKey, timestamp, signature, folder } = signatureResult.data;
+
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', uploadPreset);
+  formData.append('api_key', apiKey);
+  formData.append('timestamp', String(timestamp));
+  formData.append('signature', signature);
+  formData.append('folder', folder);
 
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
-    const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
     xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, true);
 
-    // Track upload progress
+    const onProgress = normalizedOptions.onProgress;
     if (onProgress && xhr.upload) {
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -56,23 +74,26 @@ export async function uploadToCloudinary(
     xhr.onload = () => {
       if (xhr.status === 200) {
         try {
-          const response = JSON.parse(xhr.responseText);
+          const response = JSON.parse(xhr.responseText) as {
+            secure_url?: string;
+            public_id?: string;
+          };
           resolve({
             success: true,
-            publicUrl: response.secure_url, // Direct HTTPS URL
-            publicId: response.public_id,   // Cloudinary public ID for custom transforms
+            publicUrl: response.secure_url,
+            publicId: response.public_id,
           });
-        } catch (e) {
-          console.error('Error parsing Cloudinary response:', e);
+        } catch {
           resolve({
             success: false,
             error: 'Failed to process server response.',
           });
         }
       } else {
-        console.error(`Cloudinary upload failed with status ${xhr.status}. Response: ${xhr.responseText}`);
         try {
-          const response = JSON.parse(xhr.responseText);
+          const response = JSON.parse(xhr.responseText) as {
+            error?: { message?: string };
+          };
           resolve({
             success: false,
             error: response.error?.message || `Upload failed with status ${xhr.status}`,

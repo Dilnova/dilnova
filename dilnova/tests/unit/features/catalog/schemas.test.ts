@@ -8,6 +8,22 @@ import { uploadPaymentSlipFormSchema } from '@/features/orders/schema';
 import { updateMemberRoleSchema } from '@/features/admin/schema';
 
 describe('Zod Input Schemas Validation', () => {
+  const originalCloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const sampleCloudinaryUrl =
+    'https://res.cloudinary.com/deg48jhcz/image/upload/v1780290518/catalog/product.jpg';
+
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = 'deg48jhcz';
+  });
+
+  afterEach(() => {
+    if (originalCloudName) {
+      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = originalCloudName;
+    } else {
+      delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    }
+  });
+
   describe('createCategorySchema', () => {
     it('should validate categories with proper slugs and names', () => {
       const valid = createCategorySchema.safeParse({
@@ -108,12 +124,25 @@ describe('Zod Input Schemas Validation', () => {
         type: 'product',
         description: 'High power motor circular saw',
         priceInDollars: 99.99,
-        imageUrl: 'https://example.com/saw.jpg',
+        imageUrl: sampleCloudinaryUrl,
         media: [],
         categoryId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
         quantity: 10,
       });
       expect(valid.success).toBe(true);
+    });
+
+    it('should reject non-Cloudinary image URLs', () => {
+      const invalid = addProductSchema.safeParse({
+        name: 'Circular Saw 15A',
+        type: 'product',
+        description: 'High power motor circular saw',
+        priceInDollars: 99.99,
+        imageUrl: 'https://evil.example/tracker.gif',
+        media: [],
+        categoryId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+      });
+      expect(invalid.success).toBe(false);
     });
 
     it('should reject negative price values', () => {

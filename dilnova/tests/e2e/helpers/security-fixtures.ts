@@ -5,6 +5,7 @@ import * as schema from '@/shared/db/schema';
 import { getRoleTestEmail, hasClerkApiKeys } from './env';
 import { loadE2EEnv } from './load-env';
 import { normalizeCustomerEmail } from '@/features/customer/email';
+import { customerOwnsOrder } from '@/features/orders/customer-ownership';
 
 export interface SecurityFixtures {
   /** Order owned by a different customer than the E2E customer account. */
@@ -74,13 +75,9 @@ export async function loadSecurityFixtures(
     .orderBy(sql`${schema.simulatedOrders.createdAt} desc`)
     .limit(50);
 
-  const foreignCustomerOrder = orders.find((order) => {
-    const email = normalizeCustomerEmail(order.customerEmail);
-    const ownedByUser =
-      context.customerUserId && order.customerUserId === context.customerUserId;
-    const ownedByEmail = context.customerEmail && email === context.customerEmail;
-    return !ownedByUser && !ownedByEmail;
-  });
+  const foreignCustomerOrder = orders.find(
+    (order) => !customerOwnsOrder(order, context.customerUserId)
+  );
 
   const products = await db
     .select({

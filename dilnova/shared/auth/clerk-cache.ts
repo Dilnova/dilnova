@@ -1,18 +1,18 @@
 import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
 import { logger } from '@/shared/logging/logger';
 import { unstable_cache } from 'next/cache';
+import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
+import {
+  sanitizeVendorPublicMetadata,
+  type StorefrontPublicMetadata,
+} from '@/shared/media/sanitize-vendor-public-metadata';
 
 export interface CachedOrg {
   id: string;
   name: string;
   slug: string | null;
   imageUrl: string;
-  publicMetadata: {
-    description?: string;
-    address?: string;
-    phone?: string;
-    theme?: string;
-  };
+  publicMetadata: StorefrontPublicMetadata;
 }
 
 let cachedOrgs: CachedOrg[] | null = null;
@@ -33,7 +33,9 @@ function mapClerkOrganization(o: {
     name: o.name,
     slug: o.slug,
     imageUrl: o.imageUrl,
-    publicMetadata: (o.publicMetadata as CachedOrg['publicMetadata']) || {},
+    publicMetadata: sanitizeVendorPublicMetadata(
+      (o.publicMetadata as Record<string, unknown> | undefined) ?? {}
+    ),
   };
 }
 
@@ -108,5 +110,23 @@ export const getCachedUserRole = unstable_cache(
   {
     tags: ['clerk-user-role'],
     revalidate: 300, // Cache for 5 minutes (300 seconds)
+  }
+);
+
+export const getCachedIsSuperAdmin = unstable_cache(
+  async (userId: string): Promise<boolean> => {
+    try {
+      const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      const user = await client.users.getUser(userId);
+      return isSuperAdminUser(user);
+    } catch (err) {
+      logger.error(`Failed to fetch superadmin grant for ${userId} from Clerk`, err);
+      return false;
+    }
+  },
+  ['clerk-user-superadmin'],
+  {
+    tags: ['clerk-user-superadmin'],
+    revalidate: 300,
   }
 );

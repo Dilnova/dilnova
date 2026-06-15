@@ -7,6 +7,7 @@ import { getVendorProducts } from '@/features/storefront/get-vendor-products';
 import { enrichVendorProductsWithPurchaseFlags } from '@/features/storefront/purchase';
 import type { VendorOrg } from '@/features/storefront/components/custom/types';
 import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
+import { sanitizeVendorPublicMetadata } from '@/shared/media/sanitize-vendor-public-metadata';
 import { getSystemSetting } from '@/shared/platform/settings';
 
 interface PageProps {
@@ -189,7 +190,9 @@ export default async function VendorProfilePage({ params }: PageProps) {
     name: displayName,
     slug: clerkOrg.slug,
     imageUrl: clerkOrg.imageUrl,
-    publicMetadata: (clerkOrg.publicMetadata || {}) as VendorOrg['publicMetadata'],
+    publicMetadata: sanitizeVendorPublicMetadata(
+      (clerkOrg.publicMetadata || {}) as Record<string, unknown>
+    ),
   };
 
   // 3. Fetch vendor products from Supabase

@@ -63,8 +63,11 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
     setMessage(null);
 
     try {
-      const result = await uploadToCloudinary(file, (progress) => {
-        setBannerUploadProgress(progress.percent);
+      const result = await uploadToCloudinary(file, {
+        uploadKind: 'vendor-profile',
+        onProgress: (progress) => {
+          setBannerUploadProgress(progress.percent);
+        },
       });
 
       if (result.success && result.publicUrl) {
@@ -274,7 +277,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
           <div>
             <h4 className="text-sm font-bold text-zinc-805 dark:text-zinc-150">Bank Transfer Details</h4>
             <p className="text-[11px] text-zinc-400 mt-0.5">
-              Shown to customers when they pay by bank transfer. Bank name, account name, and account number are required.
+              Shown to customers after checkout when they pay by bank transfer. Stored in private organization metadata — not visible to cashiers or other org members.
             </p>
           </div>
 

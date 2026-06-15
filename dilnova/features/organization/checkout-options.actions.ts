@@ -11,8 +11,8 @@ import { DEPRECATED_CHECKOUT_OPTION_IDS } from '@/features/organization/checkout
 import {
   BANK_TRANSFER_PAYMENT_ID,
   hasCompleteBankDetails,
-  parseBankTransferDetailsFromMetadata,
 } from '@/features/billing/bank-transfer';
+import { parseBankDetailsFromClerkOrg } from '@/features/billing/bank-transfer-metadata';
 
 export async function updateOrgCheckoutOptionsAction(
   organizationId: string,
@@ -58,7 +58,7 @@ export async function updateOrgCheckoutOptionsAction(
     const existingMeta = (org.publicMetadata || {}) as Record<string, unknown>;
 
     if (sanitized[BANK_TRANSFER_PAYMENT_ID] === true) {
-      const bankDetails = parseBankTransferDetailsFromMetadata(existingMeta);
+      const bankDetails = parseBankDetailsFromClerkOrg(org);
       if (!hasCompleteBankDetails(bankDetails)) {
         throw new Error(
           'Complete bank name, account name, and account number in Public Page Setup before enabling bank transfer.'

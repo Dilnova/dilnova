@@ -261,7 +261,9 @@ export async function sendCartSummaryEmailAction(
 
 export async function syncCartPricesAction(productIds: string[]) {
   try {
-    const uniqueIds = [...new Set(productIds.filter(Boolean))];
+    await rateLimit(60, 60 * 1000);
+
+    const uniqueIds = [...new Set(productIds.filter(Boolean))].slice(0, 50);
     if (uniqueIds.length === 0) {
       return { success: true as const, items: [], removedIds: [] };
     }

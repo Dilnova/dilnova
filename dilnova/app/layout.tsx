@@ -21,7 +21,7 @@ import FloatingLanguageButton from '@/shared/ui/language/FloatingLanguageButton'
 import { getSystemSetting } from '@/shared/platform/settings'
 import Image from 'next/image'
 import { getPremiumStatus } from '@/features/inventory/premium-license'
-import { getCachedUserRole } from '@/shared/auth/clerk-cache'
+import { getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-cache'
 
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting('system_favicon', '');
@@ -57,14 +57,18 @@ export default async function RootLayout({
   return runWithCorrelationId(async () => {
     const { orgId, orgRole, userId } = await auth();
     let userRole: string | undefined = undefined;
+    let isSuperAdmin = false;
     if (userId) {
-      userRole = await getCachedUserRole(userId);
+      [userRole, isSuperAdmin] = await Promise.all([
+        getCachedUserRole(userId),
+        getCachedIsSuperAdmin(userId),
+      ]);
     }
 
     // RBAC check: can the user create organizations?
     // 1. If user is in an active organization context, check if they are an admin or vendor
-    // 2. If user is not in an organization context, check if their user-level metadata role is admin or vendor
-    const isUserVendorOrAdmin = userRole === 'admin' || userRole === 'vendor';
+    // 2. If user is not in an organization context, check if their user-level metadata role is vendor or they are superadmin
+    const isUserVendorOrAdmin = userRole === 'vendor' || isSuperAdmin;
 
     let canCreateOrg = false;
     if (orgId) {
@@ -126,7 +130,7 @@ export default async function RootLayout({
       });
     }
 
-    if (userRole === 'admin') {
+    if (isSuperAdmin) {
       links.push({
         href: '/superadmin',
         label: 'Superadmin Console',

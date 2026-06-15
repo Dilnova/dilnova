@@ -6,9 +6,10 @@ import RoleSelector from '@/features/admin/components/RoleSelector';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import { getBranchCountForOrg } from '@/features/admin/queries';
 import {
-  hasCompleteBankDetails,
-  parseBankTransferDetailsFromMetadata,
-} from '@/features/billing/bank-transfer';
+  bankDetailsToProfileFormFields,
+  hasBankTransferConfiguredForOrg,
+  parseBankDetailsFromClerkOrg,
+} from '@/features/billing/bank-transfer-metadata';
 
 export default async function AdminPage() {
   const { orgId, orgRole } = await auth();
@@ -30,18 +31,18 @@ export default async function AdminPage() {
     getBranchCountForOrg(orgId),
   ]);
 
-  const metadata = (org.publicMetadata || {}) as {
+  const publicMetadata = (org.publicMetadata || {}) as {
     description?: string;
     address?: string;
     phone?: string;
     bannerUrl?: string;
     stockAllocationMode?: 'target_branch' | 'central_intake';
     checkout_options?: Record<string, boolean>;
-    bankName?: string;
-    bankAccountName?: string;
-    bankAccountNumber?: string;
-    bankBranchCode?: string;
-    bankTransferInstructions?: string;
+  };
+  const bankDetails = parseBankDetailsFromClerkOrg(org);
+  const metadata = {
+    ...publicMetadata,
+    ...bankDetailsToProfileFormFields(bankDetails),
   };
   const memberships = membershipsResponse.data;
 
@@ -61,7 +62,7 @@ export default async function AdminPage() {
     }
   });
   const completionPercent = Math.round((fieldsCompleted / fieldsChecked) * 100);
-  const bankTransferConfigured = hasCompleteBankDetails(parseBankTransferDetailsFromMetadata(metadata));
+  const bankTransferConfigured = hasBankTransferConfiguredForOrg(org);
   const checkoutOptions = metadata.checkout_options || {};
   const hasSavedCheckoutOptions = Object.values(checkoutOptions).some((enabled) => enabled === true);
 
@@ -210,7 +211,7 @@ export default async function AdminPage() {
               </span>
             </div>
             <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-              These fields are saved to Clerk Organization Metadata. They will be displayed publicly on your store page at <code className="bg-zinc-100 dark:bg-zinc-850 px-1 py-0.5 rounded text-[10px] font-mono">/vendors/{org.slug || 'slug'}</code>.
+              Storefront fields are saved to public organization metadata. Bank transfer details are stored privately and are only visible to organization admins.
             </p>
           </div>
 

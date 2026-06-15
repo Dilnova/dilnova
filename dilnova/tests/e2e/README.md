@@ -35,7 +35,7 @@ Optional GitHub secrets (only if you want authenticated E2E in CI):
 | `E2E_VENDOR_ADMIN_EMAIL` | Pre-created vendor admin test user |
 | `E2E_VENDOR_MEMBER_EMAIL` | Pre-created vendor member test user |
 | `E2E_CUSTOMER_EMAIL` | Pre-created customer test user |
-| `E2E_SUPERADMIN_EMAIL` | User with `publicMetadata.role = admin` |
+| `E2E_SUPERADMIN_EMAIL` | User with `privateMetadata.platformRole = "superadmin"` (or listed in `SUPERADMIN_USER_IDS`) |
 
 Without GitHub secrets, CI runs **smoke E2E** only (authenticated suites skip). Run `pnpm test:e2e` locally before deploy for the full 47-test matrix.
 
@@ -50,7 +50,7 @@ Create four test users in your **Clerk dev instance**:
 | Vendor admin | Active org, role `org:admin` |
 | Vendor member | Same org, role `org:member` |
 | Customer | Signed-in user, no vendor org (or different org) |
-| Superadmin | `publicMetadata.role = "admin"` |
+| Superadmin | `privateMetadata.platformRole = "superadmin"` (required; run `scripts/migrate-superadmin-metadata.mjs`) |
 
 Add to `.env.local`:
 

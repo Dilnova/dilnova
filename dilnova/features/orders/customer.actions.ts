@@ -8,8 +8,9 @@ import * as schema from '@/shared/db/schema';
 import { uploadPaymentSlipFormSchema } from '@/features/orders/schema';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { runWithCorrelationId } from '@/shared/security/async-context';
-import { getNormalizedClerkUserEmail, normalizeCustomerEmail } from '@/features/customer/email';
+import { getNormalizedClerkUserEmail } from '@/features/customer/email';
 import { canUploadPaymentSlip } from '@/features/orders/payment.rules';
+import { customerOwnsOrder } from '@/features/orders/customer-ownership';
 import { logAuditAction } from '@/shared/audit/logger';
 import { sendPaymentSlipUploadedNotifications } from '@/features/orders/email/payment-slip';
 import { logger } from '@/shared/logging/logger';
@@ -98,7 +99,7 @@ export async function uploadAndSubmitPaymentSlipAction(formData: FormData) {
       return { success: false as const, error: 'Order not found.' };
     }
 
-    if (order.customerUserId !== userId && normalizeCustomerEmail(order.customerEmail) !== sessionEmail) {
+    if (!customerOwnsOrder(order, userId)) {
       return { success: false as const, error: 'You are not authorized to update this order.' };
     }
 

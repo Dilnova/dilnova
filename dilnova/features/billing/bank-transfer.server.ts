@@ -6,8 +6,8 @@ import {
   type BankTransferCheckoutInstructions,
   type BankTransferVendorInstruction,
   formatBankTransferReference,
-  parseBankTransferDetailsFromMetadata,
 } from './bank-transfer';
+import { parseBankDetailsFromClerkOrg } from './bank-transfer-metadata';
 import { logger } from '@/shared/logging/logger';
 
 export async function getBankTransferDetailsForOrg(
@@ -18,7 +18,7 @@ export async function getBankTransferDetailsForOrg(
     const org = await client.organizations.getOrganization({ organizationId: orgId });
     return {
       vendorName: org.name,
-      bankDetails: parseBankTransferDetailsFromMetadata(org.publicMetadata as Record<string, unknown>),
+      bankDetails: parseBankDetailsFromClerkOrg(org),
     };
   } catch (error) {
     logger.error('Failed to load bank transfer details for org', error, { orgId });

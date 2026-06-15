@@ -18,8 +18,8 @@ const webServerEnv: Record<string, string> = {
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ?? 'dummy-token',
   NEXT_PUBLIC_APP_URL: baseURL,
   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'ci_dummy',
-  NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET:
-    process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? 'ci_dummy',
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ?? 'ci_dummy_api_key',
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ?? 'ci_dummy_api_secret',
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://example.supabase.co',
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? 'sb_dummy',

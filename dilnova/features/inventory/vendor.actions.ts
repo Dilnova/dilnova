@@ -99,7 +99,9 @@ export async function vendorAdjustInventoryAction(data: {
       await tx
         .update(schema.inventory)
         .set({ quantity: nextQuantity, updatedAt: new Date() })
-        .where(eq(schema.inventory.id, parsed.data.inventoryId));
+        .where(
+          and(eq(schema.inventory.id, inv.id), eq(schema.inventory.productId, inv.productId))
+        );
 
       await tx.insert(schema.inventoryMovements).values({
         inventoryId: parsed.data.inventoryId,
@@ -223,7 +225,7 @@ export async function vendorUpdateSupplierAction(data: {
         phone: parsed.data.phone || null,
         address: parsed.data.address || null,
       })
-      .where(eq(schema.suppliers.id, parsed.data.id));
+      .where(and(eq(schema.suppliers.id, parsed.data.id), eq(schema.suppliers.orgId, orgId)));
 
     await logAuditAction({
       userId,
@@ -295,6 +297,18 @@ export async function vendorInitInventoryAction(data: {
 
     if (!prod) {
       throw new Error('Product not found or access denied.');
+    }
+
+    if (data.supplierId) {
+      const [supplier] = await db
+        .select({ id: schema.suppliers.id })
+        .from(schema.suppliers)
+        .where(and(eq(schema.suppliers.id, data.supplierId), eq(schema.suppliers.orgId, orgId)))
+        .limit(1);
+
+      if (!supplier) {
+        throw new Error('Supplier not found or access denied.');
+      }
     }
 
     // Check if inventory already exists for this product
@@ -466,7 +480,9 @@ export async function deleteBranchAction(id: string) {
       throw new Error('Cannot delete the default Main Warehouse branch.');
     }
 
-    await db.delete(schema.branches).where(eq(schema.branches.id, parsed.data.id));
+    await db
+      .delete(schema.branches)
+      .where(and(eq(schema.branches.id, parsed.data.id), eq(schema.branches.orgId, orgId)));
 
     await logAuditAction({
       userId,
@@ -561,7 +577,12 @@ export async function allocateBranchStockAction(data: {
           binLocation: parsed.data.binLocation || null,
           updatedAt: new Date(),
         })
-        .where(eq(schema.branchInventory.id, existing.id));
+        .where(
+          and(
+            eq(schema.branchInventory.id, existing.id),
+            eq(schema.branchInventory.branchId, parsed.data.branchId)
+          )
+        );
     } else {
       await db.insert(schema.branchInventory).values({
         branchId: parsed.data.branchId,
@@ -625,7 +646,12 @@ export async function assignBranchMemberAction(data: { branchId: string; memberU
       await db
         .update(schema.branchMembers)
         .set({ role: parsed.data.role })
-        .where(eq(schema.branchMembers.id, existing.id));
+        .where(
+          and(
+            eq(schema.branchMembers.id, existing.id),
+            eq(schema.branchMembers.branchId, parsed.data.branchId)
+          )
+        );
     } else {
       await db.insert(schema.branchMembers).values({
         branchId: parsed.data.branchId,
@@ -653,7 +679,10 @@ export async function removeBranchMemberAction(id: string) {
 
     // Verify branch belongs to vendor org
     const [member] = await db
-      .select({ id: schema.branchMembers.id })
+      .select({
+        id: schema.branchMembers.id,
+        branchId: schema.branchMembers.branchId,
+      })
       .from(schema.branchMembers)
       .innerJoin(schema.branches, eq(schema.branchMembers.branchId, schema.branches.id))
       .where(and(eq(schema.branchMembers.id, parsed.data.id), eq(schema.branches.orgId, orgId)))
@@ -663,7 +692,11 @@ export async function removeBranchMemberAction(id: string) {
       throw new Error('Record not found or access denied.');
     }
 
-    await db.delete(schema.branchMembers).where(eq(schema.branchMembers.id, parsed.data.id));
+    await db
+      .delete(schema.branchMembers)
+      .where(
+        and(eq(schema.branchMembers.id, member.id), eq(schema.branchMembers.branchId, member.branchId))
+      );
 
     revalidateVendorConsole();
     return { success: true };

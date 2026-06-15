@@ -7,10 +7,7 @@ import VendorInventoryWorkspace from '@/features/inventory/components/VendorInve
 import { getVendorInventoryData } from '@/features/inventory/vendor.actions';
 import { getVendorProductsForOrg } from '@/features/catalog/queries';
 import { getBranchCountForOrg, getOnlineOrderCountForVendor } from '@/features/vendor/queries';
-import {
-  hasCompleteBankDetails,
-  parseBankTransferDetailsFromMetadata,
-} from '@/features/billing/bank-transfer';
+import { hasBankTransferConfiguredForOrg } from '@/features/billing/bank-transfer-metadata';
 
 const IMS_WORKSPACE_TABS = ['stock', 'suppliers', 'orders', 'movements', 'branches'] as const;
 type ImsWorkspaceTab = (typeof IMS_WORKSPACE_TABS)[number];
@@ -83,14 +80,9 @@ export default async function VendorPage({ searchParams }: PageProps) {
     phone?: string;
     bannerUrl?: string;
     checkout_options?: Record<string, boolean>;
-    bankName?: string;
-    bankAccountName?: string;
-    bankAccountNumber?: string;
-    bankBranchCode?: string;
-    bankTransferInstructions?: string;
   };
   const checkoutOptions = orgMetadata.checkout_options || {};
-  const bankTransferConfigured = hasCompleteBankDetails(parseBankTransferDetailsFromMetadata(orgMetadata));
+  const bankTransferConfigured = hasBankTransferConfiguredForOrg(org);
   const pickupEnabled = checkoutOptions.store_pickup === true;
   const bankTransferEnabled = checkoutOptions.bank_transfer === true;
   const codEnabled = checkoutOptions.cash_on_delivery === true;

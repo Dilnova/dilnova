@@ -1,6 +1,7 @@
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq, inArray, desc, sql, or, and } from 'drizzle-orm';
+import { buildCustomerOrderAccessWhere } from '@/features/orders/customer-ownership';
+import { eq, inArray, desc, and } from 'drizzle-orm';
 
 export async function getOrderById(id: string) {
   const [order] = await db
@@ -36,25 +37,15 @@ export async function getUserWishlist(userId: string) {
     .where(eq(schema.wishlists.userId, userId));
 }
 
-export async function getCustomerOrders(
-  userId: string | null,
-  normalizedUserEmail: string | null
-) {
-  if (!normalizedUserEmail) {
+export async function getCustomerOrders(userId: string | null) {
+  if (!userId) {
     return [];
   }
 
   return db
     .select()
     .from(schema.simulatedOrders)
-    .where(
-      userId
-        ? or(
-            eq(schema.simulatedOrders.customerUserId, userId),
-            sql`lower(trim(${schema.simulatedOrders.customerEmail})) = ${normalizedUserEmail}`
-          )
-        : sql`lower(trim(${schema.simulatedOrders.customerEmail})) = ${normalizedUserEmail}`
-    )
+    .where(buildCustomerOrderAccessWhere(userId))
     .orderBy(desc(schema.simulatedOrders.createdAt));
 }
 

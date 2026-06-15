@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { isVideoUrl } from '@/shared/media/media';
 import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
-import { getClerkUserEmail, getNormalizedClerkUserEmail } from '@/features/customer/email';
+import { getClerkUserEmail } from '@/features/customer/email';
 import {
   getCustomerOrders,
   getOrderItemsForOrders,
@@ -34,14 +34,13 @@ export default async function CustomerPage({ searchParams }: PageProps) {
   }
 
   const userEmail = getClerkUserEmail(user) || 'No email';
-  const normalizedUserEmail = getNormalizedClerkUserEmail(user);
 
   // Fetch Clerk organizations, wishlist, and simulated orders in parallel (reduce latency)
   const client = await clerkClient();
   const [userWishlist, organizations, rawOrders, checkoutOptionsCatalog] = await Promise.all([
     getUserWishlist(user.id),
     getCachedOrganizations(client).catch(() => []),
-    getCustomerOrders(userId, normalizedUserEmail),
+    getCustomerOrders(userId),
     getCheckoutOptionsCatalog(),
   ]);
   const orders = await attachPaymentSlipPreviews(rawOrders);
