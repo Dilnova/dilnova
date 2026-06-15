@@ -17,6 +17,7 @@ import {
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { getNormalizedClerkUserEmail } from '@/features/customer/email';
 import { hasCustomerPurchasedProduct } from '@/features/catalog/verified-buyer';
+import { isUserMemberOfOrganization } from '@/shared/auth/org-membership.server';
 
 /**
  * Toggles a product in/out of the user's wishlist.
@@ -97,7 +98,7 @@ export async function submitReviewAction(productId: string, rating: number, comm
       }
 
       await rateLimit(5, 60 * 1000); // Max 5 reviews per minute per IP
-      const { userId, orgId } = await auth();
+      const { userId } = await auth();
       const user = await currentUser();
 
       if (!userId || !user) {
@@ -114,7 +115,8 @@ export async function submitReviewAction(productId: string, rating: number, comm
         throw new Error('Product not found.');
       }
 
-      if (orgId && orgId === product.orgId) {
+      const isVendorMember = await isUserMemberOfOrganization(userId, product.orgId);
+      if (isVendorMember) {
         throw new Error('Vendor members cannot review their own products.');
       }
 
