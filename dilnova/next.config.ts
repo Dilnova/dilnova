@@ -62,6 +62,15 @@ if (clerkDomain) {
 
 const nextConfig: NextConfig = {
   /**
+   * Payment slip uploads accept files up to 8 MB — default Server Action limit is 1 MB.
+   */
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
+
+  /**
    * ═══════════════════════════════════════════════════════════
    * PERFORMANCE OPTIMIZATIONS
    * ═══════════════════════════════════════════════════════════

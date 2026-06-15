@@ -12,6 +12,13 @@ interface PaymentSlipUploadProps {
   compact?: boolean;
 }
 
+function isAllowedPaymentSlipFile(file: File): boolean {
+  if (file.type.startsWith('image/')) {
+    return true;
+  }
+  return /\.(jpe?g|png|webp|gif)$/i.test(file.name);
+}
+
 export default function PaymentSlipUpload({
   orderId,
   customerEmail,
@@ -23,17 +30,19 @@ export default function PaymentSlipUpload({
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      setMessage({ type: 'error', text: 'Please upload an image file (JPG, PNG, or WebP).' });
+    if (!isAllowedPaymentSlipFile(file)) {
+      setMessage({ type: 'error', text: 'Please upload an image file (JPG, PNG, WebP, or GIF).' });
+      event.target.value = '';
       return;
     }
 
     if (file.size > 8 * 1024 * 1024) {
       setMessage({ type: 'error', text: 'Image must be 8 MB or smaller.' });
+      event.target.value = '';
       return;
     }
 
@@ -47,20 +56,30 @@ export default function PaymentSlipUpload({
     }
 
     startTransition(async () => {
-      const result = await uploadAndSubmitPaymentSlipAction(formData);
+      try {
+        const result = await uploadAndSubmitPaymentSlipAction(formData);
 
-      if (result.success) {
-        if (result.previewUrl) {
-          setSlipPreviewUrl(result.previewUrl);
+        if (result.success) {
+          if (result.previewUrl) {
+            setSlipPreviewUrl(result.previewUrl);
+          }
+          setMessage({
+            type: 'success',
+            text: 'Payment slip submitted. The vendor will review your transfer shortly.',
+          });
+        } else {
+          setMessage({ type: 'error', text: result.error || 'Failed to save payment slip.' });
         }
+      } catch (error) {
         setMessage({
-          type: 'success',
-          text: result.vendorNotified
-            ? 'Payment slip submitted. Vendor admins were notified by email.'
-            : 'Payment slip submitted. The vendor will review your transfer shortly.',
+          type: 'error',
+          text:
+            error instanceof Error
+              ? error.message
+              : 'Upload failed. Try a smaller image or refresh the page.',
         });
-      } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to save payment slip.' });
+      } finally {
+        event.target.value = '';
       }
     });
   };
@@ -103,7 +122,7 @@ export default function PaymentSlipUpload({
           <span className="sr-only">Choose payment slip image</span>
           <input
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
             disabled={isPending || disabled}
             onChange={handleFileChange}
             className="block w-full text-xs text-zinc-600 dark:text-zinc-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-700 file:text-white hover:file:bg-purple-800 disabled:opacity-50"

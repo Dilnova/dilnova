@@ -18,6 +18,7 @@ export {
   isLegacyPaymentSlipUrl,
   isPaymentSlipStoragePath,
   resolvePaymentSlipExtension,
+  resolvePaymentSlipExtensionFromFilename,
 } from '@/shared/storage/payment-slip.shared';
 
 export async function uploadPaymentSlipToStorage(input: {

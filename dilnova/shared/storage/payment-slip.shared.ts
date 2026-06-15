@@ -18,8 +18,25 @@ export function buildPaymentSlipStoragePath(orderId: string, extension: string):
 }
 
 export function resolvePaymentSlipExtension(contentType: string): PaymentSlipMimeType | null {
-  if (!PAYMENT_SLIP_ALLOWED_MIME_TYPES.includes(contentType as PaymentSlipMimeType)) {
-    return null;
+  if (PAYMENT_SLIP_ALLOWED_MIME_TYPES.includes(contentType as PaymentSlipMimeType)) {
+    return contentType as PaymentSlipMimeType;
   }
-  return contentType as PaymentSlipMimeType;
+  return null;
+}
+
+export function resolvePaymentSlipExtensionFromFilename(filename: string): PaymentSlipMimeType | null {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'webp':
+      return 'image/webp';
+    case 'gif':
+      return 'image/gif';
+    default:
+      return null;
+  }
 }

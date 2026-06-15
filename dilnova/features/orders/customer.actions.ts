@@ -17,6 +17,7 @@ import { isSupabaseStorageConfigured } from '@/shared/storage/admin-client';
 import {
   createPaymentSlipSignedUrl,
   resolvePaymentSlipExtension,
+  resolvePaymentSlipExtensionFromFilename,
   uploadPaymentSlipToStorage,
 } from '@/shared/storage/payment-slip';
 import { PAYMENT_SLIP_MAX_BYTES } from '@/shared/storage/config';
@@ -44,19 +45,24 @@ export async function uploadAndSubmitPaymentSlipAction(formData: FormData) {
     }
 
     const fileEntry = formData.get('file');
-    if (!(fileEntry instanceof File)) {
+    if (!(fileEntry instanceof Blob)) {
       return { success: false as const, error: 'Please choose a payment slip image to upload.' };
     }
 
-    if (fileEntry.size === 0) {
+    const fileName = fileEntry instanceof File ? fileEntry.name : '';
+    const fileSize = fileEntry.size;
+
+    if (fileSize === 0) {
       return { success: false as const, error: 'The selected file is empty.' };
     }
 
-    if (fileEntry.size > PAYMENT_SLIP_MAX_BYTES) {
+    if (fileSize > PAYMENT_SLIP_MAX_BYTES) {
       return { success: false as const, error: 'Image must be 8 MB or smaller.' };
     }
 
-    const contentType = resolvePaymentSlipExtension(fileEntry.type);
+    const contentType =
+      resolvePaymentSlipExtension(fileEntry.type) ??
+      resolvePaymentSlipExtensionFromFilename(fileName);
     if (!contentType) {
       return {
         success: false as const,
@@ -143,21 +149,23 @@ export async function uploadAndSubmitPaymentSlipAction(formData: FormData) {
     revalidatePath('/vendor');
     revalidatePath('/superadmin');
 
-    const emailResult = await sendPaymentSlipUploadedNotifications(order.id);
-    if (!emailResult.success) {
-      logger.warn('Payment slip saved but vendor notification email was not sent', {
-        orderId: order.id,
-        error: emailResult.error,
-        notifiedCount: emailResult.notifiedCount,
-      });
-    }
+    // Notify vendors in the background — do not block the upload response on SMTP.
+    void sendPaymentSlipUploadedNotifications(order.id).then((emailResult) => {
+      if (!emailResult.success) {
+        logger.warn('Payment slip saved but vendor notification email was not sent', {
+          orderId: order.id,
+          error: emailResult.error,
+          notifiedCount: emailResult.notifiedCount,
+        });
+      }
+    });
 
     const previewUrl = await createPaymentSlipSignedUrl(storagePath);
 
     return {
       success: true as const,
       previewUrl,
-      vendorNotified: emailResult.success,
+      vendorNotified: false,
     };
   });
 }
