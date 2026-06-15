@@ -15,7 +15,6 @@ import {
   incrementViewsSchema,
 } from '@/features/catalog/schema';
 import { runWithCorrelationId } from '@/shared/security/async-context';
-import { getNormalizedClerkUserEmail } from '@/features/customer/email';
 import { hasCustomerPurchasedProduct } from '@/features/catalog/verified-buyer';
 import { isUserMemberOfOrganization } from '@/shared/auth/org-membership.server';
 
@@ -148,12 +147,7 @@ export async function submitReviewAction(productId: string, rating: number, comm
           })
           .where(eq(schema.reviews.id, existing.id));
       } else {
-        const normalizedEmail = getNormalizedClerkUserEmail(user);
-        const purchased = await hasCustomerPurchasedProduct(
-          parsed.data.productId,
-          userId,
-          normalizedEmail
-        );
+        const purchased = await hasCustomerPurchasedProduct(parsed.data.productId, userId);
 
         if (!purchased) {
           throw new Error('Only verified buyers who have ordered this item can submit a review.');

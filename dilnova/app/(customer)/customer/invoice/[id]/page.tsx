@@ -3,8 +3,12 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import { describeOrderCheckout } from '@/features/organization/checkout-options.shared';
-import { getNormalizedClerkUserEmail, normalizeCustomerEmail } from '@/features/customer/email';
-import { getOrderById, getOrderItems, getPickupBranchName } from '@/features/customer/queries';
+import {
+  getOrderById,
+  getOrderItems,
+  getPickupBranchName,
+} from '@/features/customer/queries';
+import { customerOwnsOrder } from '@/features/orders/customer-ownership';
 import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
 import { allocateVendorPaymentAmounts, isBankTransferPayment } from '@/features/billing/bank-transfer';
 import { buildBankTransferCheckoutInstructions } from '@/features/billing/bank-transfer.server';
@@ -26,17 +30,10 @@ export default async function InvoicePage({ params }: PageProps) {
   }
 
   const { id } = await params;
-  const normalizedUserEmail = getNormalizedClerkUserEmail(user);
 
   const rawOrder = await getOrderById(id);
 
-  // Authorization check: Make sure order exists and email matches
-  if (
-    !rawOrder ||
-    !normalizedUserEmail ||
-    (normalizeCustomerEmail(rawOrder.customerEmail) !== normalizedUserEmail &&
-      rawOrder.customerUserId !== userId)
-  ) {
+  if (!rawOrder || !customerOwnsOrder(rawOrder, userId)) {
     notFound();
   }
 

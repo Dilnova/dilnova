@@ -87,11 +87,7 @@ describe('submitReviewAction', () => {
     const result = await submitReviewAction(productId, 5, 'Legit review');
 
     expect(result).toEqual({ success: true });
-    expect(hasCustomerPurchasedProduct).toHaveBeenCalledWith(
-      productId,
-      'user_vendor',
-      'vendor@example.com'
-    );
+    expect(hasCustomerPurchasedProduct).toHaveBeenCalledWith(productId, 'user_vendor');
     expect(db.insert).toHaveBeenCalled();
   });
 });
