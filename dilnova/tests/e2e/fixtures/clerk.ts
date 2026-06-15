@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import { test as base } from '@playwright/test';
 import { clerkSetup, setupClerkTestingToken } from '@clerk/testing/playwright';
 import { loadE2EEnv } from '../helpers/load-env';

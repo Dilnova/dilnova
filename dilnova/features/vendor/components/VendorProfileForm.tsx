@@ -383,7 +383,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
             >
               <span className="font-bold text-xs">🎯 Destination Branch Selector</span>
               <span className="text-[10px] opacity-80 mt-1 leading-relaxed">
-                A "Destination Branch" dropdown shows on the Add Item page. Initial stock goes directly to the chosen branch registry.
+                {"A 'Destination Branch' dropdown shows on the Add Item page. Initial stock goes directly to the chosen branch registry."}
               </span>
             </button>
           </div>
