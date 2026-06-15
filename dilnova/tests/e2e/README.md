@@ -6,6 +6,31 @@
 2. `pnpm test:e2e:install` (once).
 3. `pnpm test:e2e`
 
+### GitHub Actions
+
+CI runs on every push/PR to `main`/`master` (`.github/workflows/ci.yml`):
+
+| Job | What runs |
+|-----|-----------|
+| **quality** | `pnpm lint`, `tsc`, `pnpm test`, Drizzle verify |
+| **build** | `pnpm build` (dummy env) |
+| **e2e** | `pnpm test:e2e` (public + unauthenticated always; full matrix when secrets are set) |
+
+Optional repository **secrets** for the full RBAC/security matrix in CI:
+
+| Secret | Purpose |
+|--------|---------|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk dev publishable key |
+| `CLERK_SECRET_KEY` | Clerk dev secret (Clerk testing token) |
+| `DATABASE_URL` | Staging DB for cross-tenant IDOR fixtures |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Rate limit parity with prod |
+| `E2E_VENDOR_ADMIN_EMAIL` | Pre-created vendor admin test user |
+| `E2E_VENDOR_MEMBER_EMAIL` | Pre-created vendor member test user |
+| `E2E_CUSTOMER_EMAIL` | Pre-created customer test user |
+| `E2E_SUPERADMIN_EMAIL` | User with `publicMetadata.role = admin` |
+
+Without E2E secrets, authenticated suites **skip** (CI still passes on smoke coverage).
+
 Public + unauthenticated RBAC tests run with Clerk keys only.
 
 ## Full RBAC (optional)

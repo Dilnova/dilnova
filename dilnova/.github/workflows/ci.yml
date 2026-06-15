@@ -1,45 +1,55 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DUMMY_DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+  DUMMY_UPSTASH_URL: https://dummy.upstash.io
+  DUMMY_UPSTASH_TOKEN: dummy-token
+  DUMMY_CLERK_PUBLISHABLE_KEY: pk_test_ci_dummy
+  DUMMY_CLERK_SECRET_KEY: sk_test_ci_dummy
 
 jobs:
-  build-and-test:
-    name: Build & Test
+  quality:
+    name: Lint, typecheck & unit tests
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
-          version: 10 # Matches the local pnpm version (v10.28.0)
+          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: pnpm
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Linting
+      - name: Lint
         run: pnpm lint
 
-      - name: TypeScript Type Check
+      - name: TypeScript
         run: pnpm exec tsc --noEmit
 
-      - name: Run Unit Tests
+      - name: Unit tests
         run: pnpm test
         env:
-          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
-          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          UPSTASH_REDIS_REST_URL: ${{ env.DUMMY_UPSTASH_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ env.DUMMY_UPSTASH_TOKEN }}
 
       - name: Verify Drizzle migration journal
         run: pnpm db:verify
@@ -47,17 +57,129 @@ jobs:
       - name: Verify Drizzle schema snapshot
         run: pnpm exec drizzle-kit check
         env:
-          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
 
-      - name: Security Audit
+      - name: Security audit
         run: pnpm audit --audit-level moderate
-        continue-on-error: true # Don't block deploys for low-severity issues
+        continue-on-error: true
 
-      - name: Verify Next.js Build
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
         run: pnpm build
         env:
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_dummy
-          CLERK_SECRET_KEY: sk_test_dummy
-          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
-          UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
-          UPSTASH_REDIS_REST_TOKEN: dummy-token
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ env.DUMMY_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ env.DUMMY_CLERK_SECRET_KEY }}
+          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
+          UPSTASH_REDIS_REST_URL: ${{ env.DUMMY_UPSTASH_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ env.DUMMY_UPSTASH_TOKEN }}
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ci_dummy
+          NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: ci_dummy
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_dummy
+          SUPABASE_SERVICE_ROLE_KEY: sb_service_dummy
+
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Get Playwright version
+        run: echo "PLAYWRIGHT_VERSION=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_ENV"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ env.PLAYWRIGHT_VERSION }}
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium --with-deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+      - name: Install Playwright OS deps (cache hit)
+        run: pnpm exec playwright install-deps chromium
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+
+      - name: Write CI env for Playwright
+        env:
+          CLERK_PK: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SK: ${{ secrets.CLERK_SECRET_KEY }}
+          DB_URL: ${{ secrets.DATABASE_URL }}
+          UPSTASH_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          E2E_VENDOR_ADMIN: ${{ secrets.E2E_VENDOR_ADMIN_EMAIL }}
+          E2E_VENDOR_MEMBER: ${{ secrets.E2E_VENDOR_MEMBER_EMAIL }}
+          E2E_CUSTOMER: ${{ secrets.E2E_CUSTOMER_EMAIL }}
+          E2E_SUPERADMIN: ${{ secrets.E2E_SUPERADMIN_EMAIL }}
+        run: |
+          {
+            echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${CLERK_PK:-$DUMMY_CLERK_PUBLISHABLE_KEY}"
+            echo "CLERK_SECRET_KEY=${CLERK_SK:-$DUMMY_CLERK_SECRET_KEY}"
+            echo "DATABASE_URL=${DB_URL:-$DUMMY_DATABASE_URL}"
+            echo "UPSTASH_REDIS_REST_URL=${UPSTASH_URL:-$DUMMY_UPSTASH_URL}"
+            echo "UPSTASH_REDIS_REST_TOKEN=${UPSTASH_TOKEN:-$DUMMY_UPSTASH_TOKEN}"
+            echo "NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000"
+            echo "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=ci_dummy"
+            echo "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=ci_dummy"
+            echo "NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_dummy"
+            echo "SUPABASE_SERVICE_ROLE_KEY=sb_service_dummy"
+            echo "E2E_VENDOR_ADMIN_EMAIL=${E2E_VENDOR_ADMIN:-}"
+            echo "E2E_VENDOR_MEMBER_EMAIL=${E2E_VENDOR_MEMBER:-}"
+            echo "E2E_CUSTOMER_EMAIL=${E2E_CUSTOMER:-}"
+            echo "E2E_SUPERADMIN_EMAIL=${E2E_SUPERADMIN:-}"
+          } > .env.local
+
+      - name: Run Playwright E2E
+        run: pnpm test:e2e
+        env:
+          CI: true
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
