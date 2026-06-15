@@ -133,7 +133,6 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
         {bannerUrl ? (
           <div className="space-y-3">
             <div className="relative h-32 w-full rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={bannerUrl}
                 alt="Storefront Banner Preview"
