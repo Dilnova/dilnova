@@ -19,8 +19,24 @@ describe('guestCartStorage', () => {
       getItem: (key: string) =>
         key === GUEST_CART_STORAGE_KEY
           ? JSON.stringify([
-              { id: 'a', quantity: 2 },
-              { id: 'b', quantity: 1 },
+              {
+                id: 'a',
+                name: 'A',
+                price: 100,
+                imageUrl: null,
+                quantity: 2,
+                vendorName: 'Vendor',
+                type: 'product',
+              },
+              {
+                id: 'b',
+                name: 'B',
+                price: 200,
+                imageUrl: null,
+                quantity: 1,
+                vendorName: 'Vendor',
+                type: 'product',
+              },
             ])
           : null,
     });

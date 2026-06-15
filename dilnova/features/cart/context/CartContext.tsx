@@ -8,7 +8,19 @@ import {
 } from '@/features/cart/sync.actions';
 import type { SyncedCartItem } from '@/features/cart/schema';
 import { syncCartPricesAction } from '@/features/cart/checkout.actions';
-import { GUEST_CART_STORAGE_KEY } from '@/features/cart/guest-storage';
+import {
+  clearGuestCartStorage,
+  readGuestCartFromStorage,
+  writeGuestCartToStorage,
+} from '@/features/cart/guest-storage';
+import {
+  applyCatalogSync,
+  buildCartMergeNotice,
+  countCartLines,
+  getCartAccountKey,
+  mergeCartItems,
+  type CartAccountKey,
+} from '@/features/cart/cart-session';
 import type { CartItem } from '@/features/cart/types';
 
 export type { CartItem };
@@ -33,128 +45,72 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-function mergeCartItems(local: CartItem[], remote: SyncedCartItem[]): CartItem[] {
-  const byId = new Map<string, CartItem>();
-
-  for (const item of remote) {
-    byId.set(item.id, { ...item });
-  }
-
-  for (const item of local) {
-    const existing = byId.get(item.id);
-    if (existing) {
-      byId.set(item.id, {
-        ...existing,
-        ...item,
-        quantity: Math.max(existing.quantity, item.quantity),
-      });
-    } else {
-      byId.set(item.id, { ...item });
-    }
-  }
-
-  return [...byId.values()];
-}
-
-function applyCatalogSync(
-  items: CartItem[],
-  updates: { id: string; name: string; price: number }[],
-  removedIds: string[]
-): CartItem[] {
-  const removedSet = new Set(removedIds);
-  const updateById = new Map(updates.map((item) => [item.id, item]));
-
-  return items
-    .filter((item) => !removedSet.has(item.id))
-    .map((item) => {
-      const update = updateById.get(item.id);
-      if (!update) return item;
-      return { ...item, name: update.name, price: update.price };
-    });
-}
-
-function buildCartMergeNotice(
-  previousCount: number,
-  nextCount: number,
-  removedCount: number
-): string | null {
-  if (nextCount <= 0) {
-    if (removedCount > 0) {
-      return 'Some unavailable items were removed from your cart during sync.';
-    }
-    return null;
-  }
-
-  if (removedCount > 0) {
-    return `Cart synced — ${nextCount} item${nextCount === 1 ? '' : 's'} ready (${removedCount} unavailable item${removedCount === 1 ? '' : 's'} removed).`;
-  }
-
-  if (previousCount === 0) {
-    return `Cart restored — ${nextCount} item${nextCount === 1 ? '' : 's'} ready for checkout.`;
-  }
-
-  return `Cart synced — ${nextCount} item${nextCount === 1 ? '' : 's'} ready for checkout.`;
-}
-
-function countCartLines(items: CartItem[]): number {
-  return items.reduce((sum, item) => sum + item.quantity, 0);
-}
-
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user, isLoaded } = useUser();
+  const userId = user?.id ?? null;
+  const accountKey = getCartAccountKey(Boolean(isSignedIn), userId);
+
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartReady, setIsCartReady] = useState(false);
-  const [serverMerged, setServerMerged] = useState(false);
+  const [serverSynced, setServerSynced] = useState(false);
   const [cartMergeNotice, setCartMergeNotice] = useState<string | null>(null);
+
   const saveTimerRef = useRef<number | null>(null);
   const cartItemsRef = useRef<CartItem[]>([]);
+  const activeAccountKeyRef = useRef<CartAccountKey | null>(null);
+  const hydrateRequestRef = useRef(0);
 
   useEffect(() => {
     cartItemsRef.current = cartItems;
   }, [cartItems]);
 
+  // Load the correct cart whenever Clerk account changes (guest ↔ user, or user A ↔ user B).
   useEffect(() => {
-    try {
-      const savedCart = localStorage.getItem(GUEST_CART_STORAGE_KEY);
-      if (savedCart) {
-        const parsed = JSON.parse(savedCart) as CartItem[];
-        if (Array.isArray(parsed)) {
-          setCartItems(parsed);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to parse cart items', error);
-    } finally {
+    if (!isLoaded) return;
+
+    const previousAccountKey = activeAccountKeyRef.current;
+    if (previousAccountKey === accountKey) return;
+
+    const wasGuest = previousAccountKey === 'guest';
+    const isGuest = accountKey === 'guest';
+    activeAccountKeyRef.current = accountKey;
+
+    const requestId = ++hydrateRequestRef.current;
+    setServerSynced(false);
+    setCartMergeNotice(null);
+    setIsCartReady(false);
+
+    if (isGuest) {
+      setCartItems(readGuestCartFromStorage());
       setIsCartReady(true);
+      return;
     }
-  }, []);
 
-  useEffect(() => {
-    if (!isCartReady) return;
-    localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(cartItems));
-  }, [cartItems, isCartReady]);
+    // Signed-in: never reuse in-memory items from a previous account.
+    setCartItems([]);
 
-  useEffect(() => {
-    if (!isCartReady || !isSignedIn || serverMerged) return;
+    const guestItemsForMerge = wasGuest ? readGuestCartFromStorage() : [];
+    if (wasGuest) {
+      clearGuestCartStorage();
+    }
 
-    let cancelled = false;
-
-    const mergeSignedInCart = async () => {
-      const localSnapshot = cartItemsRef.current;
-      const previousLineCount = countCartLines(localSnapshot);
+    void (async () => {
+      const previousLineCount = countCartLines(guestItemsForMerge);
 
       const result = await loadCustomerCartAction();
-      if (cancelled) return;
+      if (hydrateRequestRef.current !== requestId) return;
 
       if (!result.success) {
-        setServerMerged(true);
+        setCartItems(guestItemsForMerge);
+        setIsCartReady(true);
+        setServerSynced(true);
         return;
       }
 
-      let merged = mergeCartItems(localSnapshot, result.items || []);
+      let merged = mergeCartItems(guestItemsForMerge, result.items || []);
 
       const syncResult = await syncCartPricesAction(merged.map((item) => item.id));
-      if (cancelled) return;
+      if (hydrateRequestRef.current !== requestId) return;
 
       let removedCount = 0;
       if (syncResult.success) {
@@ -165,23 +121,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const nextLineCount = countCartLines(merged);
       setCartItems(merged);
       setCartMergeNotice(buildCartMergeNotice(previousLineCount, nextLineCount, removedCount));
-      setServerMerged(true);
+      setServerSynced(true);
+      setIsCartReady(true);
 
       if (merged.length > 0) {
         await saveCustomerCartAction(merged);
       }
-    };
+    })();
+  }, [accountKey, isLoaded]);
 
-    void mergeSignedInCart();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isCartReady, isSignedIn, serverMerged]);
+  // Guest carts only: persist to localStorage. Signed-in carts persist to PostgreSQL only.
+  useEffect(() => {
+    if (!isCartReady || accountKey !== 'guest') return;
+    writeGuestCartToStorage(cartItems);
+  }, [cartItems, isCartReady, accountKey]);
 
   const persistServerCart = useCallback(
-    (items: CartItem[]) => {
-      if (!isSignedIn) return;
+    (items: SyncedCartItem[]) => {
+      if (accountKey === 'guest' || !serverSynced) return;
 
       if (saveTimerRef.current) {
         window.clearTimeout(saveTimerRef.current);
@@ -191,19 +148,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         void saveCustomerCartAction(items);
       }, 600);
     },
-    [isSignedIn]
+    [accountKey, serverSynced]
   );
 
   useEffect(() => {
-    if (!isCartReady || !isSignedIn || !serverMerged) return;
+    if (!isCartReady || accountKey === 'guest' || !serverSynced) return;
     persistServerCart(cartItems);
-  }, [cartItems, isCartReady, isSignedIn, serverMerged, persistServerCart]);
-
-  useEffect(() => {
-    if (!isSignedIn) {
-      setServerMerged(false);
-    }
-  }, [isSignedIn]);
+  }, [cartItems, isCartReady, accountKey, serverSynced, persistServerCart]);
 
   const addToCart = (item: Omit<CartItem, 'quantity'>, quantity = 1) => {
     setCartItems((prevItems) => {
@@ -239,7 +190,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = () => {
     setCartItems([]);
     setCartMergeNotice(null);
-    if (isSignedIn) {
+    if (accountKey === 'guest') {
+      clearGuestCartStorage();
+    } else {
       void saveCustomerCartAction([]);
     }
   };
