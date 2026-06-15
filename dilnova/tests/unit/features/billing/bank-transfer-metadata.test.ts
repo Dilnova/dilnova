@@ -27,7 +27,7 @@ describe('bank-transfer-metadata', () => {
     expect(details?.accountNumber).toBe('111');
   });
 
-  it('falls back to legacy publicMetadata when private is incomplete', () => {
+  it('ignores legacy publicMetadata bank fields', () => {
     const details = parseBankDetailsFromClerkOrg({
       privateMetadata: {},
       publicMetadata: {
@@ -37,8 +37,7 @@ describe('bank-transfer-metadata', () => {
       },
     });
 
-    expect(details?.bankName).toBe('Legacy Bank');
-    expect(details?.accountNumber).toBe('222');
+    expect(details).toBeNull();
   });
 
   it('strips bank fields from public metadata', () => {

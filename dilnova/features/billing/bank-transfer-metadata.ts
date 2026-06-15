@@ -66,20 +66,13 @@ export function buildPublicProfileMetadataFromVendorData(
 }
 
 /**
- * Reads bank transfer details from Clerk org metadata.
- * Prefers privateMetadata; falls back to publicMetadata for legacy rows until migrated.
+ * Reads bank transfer details from Clerk org privateMetadata only.
  */
 export function parseBankDetailsFromClerkOrg(
   org: ClerkOrgMetadataSource
 ): BankTransferDetails | null {
   const privateMeta = (org.privateMetadata || {}) as Record<string, unknown>;
-  const fromPrivate = parseBankTransferDetailsFromMetadata(privateMeta);
-  if (fromPrivate) {
-    return fromPrivate;
-  }
-
-  const publicMeta = (org.publicMetadata || {}) as Record<string, unknown>;
-  return parseBankTransferDetailsFromMetadata(publicMeta);
+  return parseBankTransferDetailsFromMetadata(privateMeta);
 }
 
 export function hasBankTransferConfiguredForOrg(org: ClerkOrgMetadataSource): boolean {

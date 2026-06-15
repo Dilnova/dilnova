@@ -363,8 +363,11 @@ export default function SuperAdminClient({
     const fileType = file.type.startsWith('video/') ? ('video' as const) : ('image' as const);
 
     try {
-      const result = await uploadToCloudinary(file, (progress) => {
-        setUploadProgress(progress.percent);
+      const result = await uploadToCloudinary(file, {
+        uploadKind: 'platform',
+        onProgress: (progress) => {
+          setUploadProgress(progress.percent);
+        },
       });
 
       if (result.success && result.publicUrl) {
@@ -444,8 +447,11 @@ export default function SuperAdminClient({
     setLogoUploadProgress(0);
 
     try {
-      const result = await uploadToCloudinary(file, (progress) => {
-        setLogoUploadProgress(progress.percent);
+      const result = await uploadToCloudinary(file, {
+        uploadKind: 'platform',
+        onProgress: (progress) => {
+          setLogoUploadProgress(progress.percent);
+        },
       });
 
       if (result.success && result.publicUrl) {
@@ -477,8 +483,11 @@ export default function SuperAdminClient({
     setFaviconUploadProgress(0);
 
     try {
-      const result = await uploadToCloudinary(file, (progress) => {
-        setFaviconUploadProgress(progress.percent);
+      const result = await uploadToCloudinary(file, {
+        uploadKind: 'platform',
+        onProgress: (progress) => {
+          setFaviconUploadProgress(progress.percent);
+        },
       });
 
       if (result.success && result.publicUrl) {

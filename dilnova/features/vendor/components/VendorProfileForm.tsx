@@ -63,8 +63,11 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
     setMessage(null);
 
     try {
-      const result = await uploadToCloudinary(file, (progress) => {
-        setBannerUploadProgress(progress.percent);
+      const result = await uploadToCloudinary(file, {
+        uploadKind: 'vendor-profile',
+        onProgress: (progress) => {
+          setBannerUploadProgress(progress.percent);
+        },
       });
 
       if (result.success && result.publicUrl) {

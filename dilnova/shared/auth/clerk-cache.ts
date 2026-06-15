@@ -2,18 +2,17 @@ import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
 import { logger } from '@/shared/logging/logger';
 import { unstable_cache } from 'next/cache';
 import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
+import {
+  sanitizeVendorPublicMetadata,
+  type StorefrontPublicMetadata,
+} from '@/shared/media/sanitize-vendor-public-metadata';
 
 export interface CachedOrg {
   id: string;
   name: string;
   slug: string | null;
   imageUrl: string;
-  publicMetadata: {
-    description?: string;
-    address?: string;
-    phone?: string;
-    theme?: string;
-  };
+  publicMetadata: StorefrontPublicMetadata;
 }
 
 let cachedOrgs: CachedOrg[] | null = null;
@@ -34,7 +33,9 @@ function mapClerkOrganization(o: {
     name: o.name,
     slug: o.slug,
     imageUrl: o.imageUrl,
-    publicMetadata: (o.publicMetadata as CachedOrg['publicMetadata']) || {},
+    publicMetadata: sanitizeVendorPublicMetadata(
+      (o.publicMetadata as Record<string, unknown> | undefined) ?? {}
+    ),
   };
 }
 
