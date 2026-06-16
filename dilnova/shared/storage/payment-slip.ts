@@ -67,7 +67,8 @@ export async function resolvePaymentSlipPreviewUrl(
   }
 
   if (isLegacyPaymentSlipUrl(storedValue)) {
-    return storedValue;
+    // Stop returning raw public URLs to prevent unauthorized public access
+    return null;
   }
 
   if (!isSupabaseStorageConfigured()) {

@@ -28,6 +28,32 @@ describe('cloudinaryUrl', () => {
     ).toBe(true);
   });
 
+  it('enforces orgId folders when orgId is provided', () => {
+    // Valid URL matching orgId
+    expect(
+      isAllowedCloudinaryDeliveryUrl(
+        'https://res.cloudinary.com/deg48jhcz/image/upload/v1780290518/dilnova/vendors/org_123/catalog/product.jpg',
+        'org_123'
+      )
+    ).toBe(true);
+
+    // Invalid URL matching different orgId
+    expect(
+      isAllowedCloudinaryDeliveryUrl(
+        'https://res.cloudinary.com/deg48jhcz/image/upload/v1780290518/dilnova/vendors/org_456/catalog/product.jpg',
+        'org_123'
+      )
+    ).toBe(false);
+
+    // Invalid URL missing dilnova prefix
+    expect(
+      isAllowedCloudinaryDeliveryUrl(
+        'https://res.cloudinary.com/deg48jhcz/image/upload/v1780290518/vendors/org_123/catalog/product.jpg',
+        'org_123'
+      )
+    ).toBe(false);
+  });
+
   it('rejects other cloud names', () => {
     expect(
       isAllowedCloudinaryDeliveryUrl('https://res.cloudinary.com/demo/image/upload/slip.jpg')

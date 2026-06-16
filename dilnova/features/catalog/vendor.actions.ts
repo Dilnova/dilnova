@@ -14,6 +14,7 @@ import { runWithCorrelationId } from '@/shared/security/async-context';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { getPremiumStatus } from '@/features/inventory/premium-license';
 import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
+import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
 
 /**
  * Enterprise-grade Server Action to securely insert a new product/service into PostgreSQL.
@@ -47,7 +48,19 @@ export async function addProductAction(data: {
         throw new Error('Not authorized: You must be signed in with an active organization.');
       }
 
-      // 2. Authorization Check: Must be admin or vendor member of the organization
+      // 2. Validate that all Cloudinary URLs belong to the current vendor organization
+      if (parsed.data.imageUrl) {
+        if (!isAllowedCloudinaryDeliveryUrl(parsed.data.imageUrl, orgId)) {
+          throw new Error('Invalid product image: The image must belong to your organization folder.');
+        }
+      }
+      for (const item of parsed.data.media) {
+        if (!isAllowedCloudinaryDeliveryUrl(item.url, orgId)) {
+          throw new Error('Invalid product media: The media must belong to your organization folder.');
+        }
+      }
+
+      // 3. Authorization Check: Must be admin or vendor member of the organization
       if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
         throw new Error('Not authorized: You do not have permissions to manage this catalog.');
       }

@@ -13,6 +13,7 @@ import {
   hasBankTransferConfiguredForOrg,
   stripBankFieldsFromPublic,
 } from '@/features/billing/bank-transfer-metadata';
+import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
 
 interface VendorMetadataInput {
   description: string;
@@ -42,6 +43,12 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
 
     if (!orgId || orgId !== parsed.data.organizationId) {
       throw new Error('Not authorized: You do not belong to this organization.');
+    }
+
+    if (parsed.data.data.bannerUrl) {
+      if (!isAllowedCloudinaryDeliveryUrl(parsed.data.data.bannerUrl, orgId)) {
+        throw new Error('Invalid banner image: The image must belong to your organization folder.');
+      }
     }
 
     if (orgRole !== 'org:admin') {

@@ -15,6 +15,7 @@ import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { rateLimit } from '@/shared/security/rate-limit';
+import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
 
 export async function createCategoryAction(name: string, slug: string, parentId?: string | null) {
   return runWithCorrelationId(async () => {
@@ -146,6 +147,30 @@ export async function updateProductAction(
     const parsed = updateProductSchema.safeParse({ id, updates });
     if (!parsed.success) {
       throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+    }
+
+    // Fetch existing product to resolve its orgId for folder validation
+    const existing = await db
+      .select({ orgId: schema.products.orgId })
+      .from(schema.products)
+      .where(eq(schema.products.id, parsed.data.id))
+      .limit(1);
+    const productOrgId = existing[0]?.orgId;
+    if (!productOrgId) {
+      throw new Error('Product not found.');
+    }
+
+    if (parsed.data.updates.imageUrl) {
+      if (!isAllowedCloudinaryDeliveryUrl(parsed.data.updates.imageUrl, productOrgId)) {
+        throw new Error('Invalid product image: The image must belong to the product organization folder.');
+      }
+    }
+    if (parsed.data.updates.media) {
+      for (const item of parsed.data.updates.media) {
+        if (!isAllowedCloudinaryDeliveryUrl(item.url, productOrgId)) {
+          throw new Error('Invalid product media: The media must belong to the product organization folder.');
+        }
+      }
     }
 
     const setClause: Partial<typeof schema.products.$inferInsert> = {

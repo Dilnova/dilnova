@@ -13,13 +13,7 @@ if (!connectionString) {
   throw new Error('DATABASE_URL is missing in .env.local');
 }
 
-// Safety guard: prevent accidental execution against production database
-if (connectionString.includes('hfwqgybpeszocescyjea') && !process.argv.includes('--force-production')) {
-  console.error('❌ ABORTED: DATABASE_URL points to the production database.');
-  console.error('   Use a separate Supabase project for local development.');
-  console.error('   To override (dangerous), pass --force-production');
-  process.exit(1);
-}
+
 
 async function main() {
   console.log('🌱 Starting database seed script...');

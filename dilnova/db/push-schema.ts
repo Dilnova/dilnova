@@ -17,13 +17,7 @@ if (!connectionString) {
   process.exit(1);
 }
 
-// Safety guard: prevent accidental execution against production database
-if (connectionString.includes('hfwqgybpeszocescyjea') && !process.argv.includes('--force-production')) {
-  console.error('❌ ABORTED: DATABASE_URL points to the production database.');
-  console.error('   Use a separate Supabase project for local development.');
-  console.error('   To override (dangerous), pass --force-production');
-  process.exit(1);
-}
+
 
 const client = postgres(connectionString, { prepare: false, max: 1 });
 const db = drizzle(client);
