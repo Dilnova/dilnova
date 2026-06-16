@@ -101,6 +101,10 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_dummy
           SUPABASE_SERVICE_ROLE_KEY: sb_service_dummy
+          SMTP_USER: ci_smtp_user@example.com
+          SMTP_PASSWORD: ci_smtp_password
+          EMAIL_FROM_ADDRESS: ci@example.com
+          EMAIL_FROM_NAME: CI Dilnova
 
   e2e:
     name: Playwright E2E
@@ -169,6 +173,10 @@ jobs:
             echo "NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co"
             echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_dummy"
             echo "SUPABASE_SERVICE_ROLE_KEY=sb_service_dummy"
+            echo "SMTP_USER=ci_smtp_user@example.com"
+            echo "SMTP_PASSWORD=ci_smtp_password"
+            echo "EMAIL_FROM_ADDRESS=ci@example.com"
+            echo "EMAIL_FROM_NAME=CI Dilnova"
             echo "E2E_VENDOR_ADMIN_EMAIL=${E2E_VENDOR_ADMIN:-}"
             echo "E2E_VENDOR_MEMBER_EMAIL=${E2E_VENDOR_MEMBER:-}"
             echo "E2E_CUSTOMER_EMAIL=${E2E_CUSTOMER:-}"

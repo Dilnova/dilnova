@@ -1,5 +1,18 @@
 import { getRequestId } from '@/shared/security/async-context';
 
+async function captureSentryError(error: unknown, context?: Record<string, unknown>) {
+  if (!process.env.SENTRY_DSN) {
+    return;
+  }
+
+  try {
+    const Sentry = await import('@sentry/node');
+    Sentry.captureException(error, { extra: context });
+  } catch {
+    // Sentry is optional; never block application flow.
+  }
+}
+
 /**
  * Structured JSON Logger for enterprise production environments.
  * Outputs raw JSON in production environments (perfect for Datadog, Axiom, Sentry, Cloudwatch)
@@ -58,6 +71,7 @@ export const logger = {
           timestamp: new Date().toISOString(),
         })
       );
+      void captureSentryError(error ?? new Error(message), { ...context, requestId, logMessage: message });
     } else {
       const idPrefix = requestId ? ` [${requestId}]` : '';
       console.error(

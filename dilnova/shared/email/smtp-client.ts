@@ -175,11 +175,30 @@ export function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
   });
 }
 
+/** Strip CR/LF and other header-breaking characters from SMTP header values. */
+export function sanitizeSmtpHeader(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ').trim();
+}
+
+/** Validate a single RFC5322 mailbox for RCPT TO / envelope use. */
+export function sanitizeSmtpMailbox(value: string): string {
+  const cleaned = sanitizeSmtpHeader(value);
+  if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(cleaned)) {
+    throw new Error('Invalid email address.');
+  }
+  return cleaned;
+}
+
 function buildEmailPayload(options: SmtpEmailOptions): string {
+  const fromName = sanitizeSmtpHeader(options.fromName);
+  const from = sanitizeSmtpMailbox(options.from);
+  const to = sanitizeSmtpMailbox(options.to);
+  const subject = sanitizeSmtpHeader(options.subject);
+
   return [
-    `From: "${options.fromName}" <${options.from}>`,
-    `To: ${options.to}`,
-    `Subject: ${options.subject}`,
+    `From: "${fromName}" <${from}>`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
     'MIME-Version: 1.0',
     'Content-Type: text/html; charset="UTF-8"',
     '',

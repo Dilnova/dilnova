@@ -15,7 +15,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:verify": "node scripts/verify-migrations.mjs"
+    "db:verify": "node scripts/verify-migrations.mjs",
+    "pre-launch": "node scripts/pre-launch-check.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.3.0",
@@ -31,7 +32,8 @@
     "postgres": "^3.4.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "@sentry/node": "^9.47.0"
   },
   "devDependencies": {
     "@clerk/testing": "^1.13.7",
@@ -46,6 +48,6 @@
     "tailwindcss": "^4",
     "tsx": "^4.22.3",
     "typescript": "^5",
-    "vitest": "^3.0.7"
+    "vitest": "^3.2.6"
   }
 }

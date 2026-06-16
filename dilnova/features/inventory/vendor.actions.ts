@@ -516,82 +516,86 @@ export async function allocateBranchStockAction(data: {
     }
 
     // Verify branch belongs to vendor org
-    const [branch] = await db
-      .select({ id: schema.branches.id })
-      .from(schema.branches)
-      .where(and(eq(schema.branches.id, parsed.data.branchId), eq(schema.branches.orgId, orgId)))
-      .limit(1);
+    await db.transaction(async (tx) => {
+      const [branch] = await tx
+        .select({ id: schema.branches.id })
+        .from(schema.branches)
+        .where(and(eq(schema.branches.id, parsed.data.branchId), eq(schema.branches.orgId, orgId)))
+        .limit(1);
 
-    if (!branch) {
-      throw new Error('Branch not found or access denied.');
-    }
+      if (!branch) {
+        throw new Error('Branch not found or access denied.');
+      }
 
-    // Verify product belongs to vendor org
-    const [product] = await db
-      .select({ id: schema.products.id })
-      .from(schema.products)
-      .where(and(eq(schema.products.id, parsed.data.productId), eq(schema.products.orgId, orgId)))
-      .limit(1);
+      const [product] = await tx
+        .select({ id: schema.products.id })
+        .from(schema.products)
+        .where(and(eq(schema.products.id, parsed.data.productId), eq(schema.products.orgId, orgId)))
+        .limit(1);
 
-    if (!product) {
-      throw new Error('Product not found or access denied.');
-    }
+      if (!product) {
+        throw new Error('Product not found or access denied.');
+      }
 
-    const [centralInv] = await db
-      .select({ quantity: schema.inventory.quantity })
-      .from(schema.inventory)
-      .where(eq(schema.inventory.productId, parsed.data.productId))
-      .limit(1);
+      const [centralInv] = await tx
+        .select({ quantity: schema.inventory.quantity })
+        .from(schema.inventory)
+        .where(eq(schema.inventory.productId, parsed.data.productId))
+        .for('update')
+        .limit(1);
 
-    if (!centralInv) {
-      throw new Error('Central inventory record not found for this product.');
-    }
+      if (!centralInv) {
+        throw new Error('Central inventory record not found for this product.');
+      }
 
-    const otherBranchesAllocated = await sumBranchAllocatedQuantity(
-      db,
-      parsed.data.productId,
-      { excludeBranchId: parsed.data.branchId }
-    );
-    const allocationCheck = validateBranchAllocationAgainstCentral(
-      centralInv.quantity,
-      otherBranchesAllocated,
-      parsed.data.quantity
-    );
-    if (!allocationCheck.ok) {
-      throw new Error(allocationCheck.error);
-    }
+      const otherBranchesAllocated = await sumBranchAllocatedQuantity(tx, parsed.data.productId, {
+        excludeBranchId: parsed.data.branchId,
+      });
+      const allocationCheck = validateBranchAllocationAgainstCentral(
+        centralInv.quantity,
+        otherBranchesAllocated,
+        parsed.data.quantity
+      );
+      if (!allocationCheck.ok) {
+        throw new Error(allocationCheck.error);
+      }
 
-    // Upsert branch inventory
-    const [existing] = await db
-      .select()
-      .from(schema.branchInventory)
-      .where(and(eq(schema.branchInventory.branchId, parsed.data.branchId), eq(schema.branchInventory.productId, parsed.data.productId)))
-      .limit(1);
+      const [existing] = await tx
+        .select()
+        .from(schema.branchInventory)
+        .where(
+          and(
+            eq(schema.branchInventory.branchId, parsed.data.branchId),
+            eq(schema.branchInventory.productId, parsed.data.productId)
+          )
+        )
+        .limit(1);
 
-    if (existing) {
-      await db
-        .update(schema.branchInventory)
-        .set({
+      if (existing) {
+        await tx
+          .update(schema.branchInventory)
+          .set({
+            quantity: parsed.data.quantity,
+            sku: parsed.data.sku || null,
+            binLocation: parsed.data.binLocation || null,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(schema.branchInventory.id, existing.id),
+              eq(schema.branchInventory.branchId, parsed.data.branchId)
+            )
+          );
+      } else {
+        await tx.insert(schema.branchInventory).values({
+          branchId: parsed.data.branchId,
+          productId: parsed.data.productId,
           quantity: parsed.data.quantity,
           sku: parsed.data.sku || null,
           binLocation: parsed.data.binLocation || null,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(schema.branchInventory.id, existing.id),
-            eq(schema.branchInventory.branchId, parsed.data.branchId)
-          )
-        );
-    } else {
-      await db.insert(schema.branchInventory).values({
-        branchId: parsed.data.branchId,
-        productId: parsed.data.productId,
-        quantity: parsed.data.quantity,
-        sku: parsed.data.sku || null,
-        binLocation: parsed.data.binLocation || null,
-      });
-    }
+        });
+      }
+    });
 
     revalidateVendorConsole();
     return { success: true };
