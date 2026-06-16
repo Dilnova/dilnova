@@ -6,6 +6,16 @@
  *   node scripts/pre-launch-check.mjs
  *   node scripts/pre-launch-check.mjs --strict   # fail on optional warnings
  */
+import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load .env.local (higher priority overrides)
+config({ path: resolve(__dirname, '..', '.env.local'), override: true });
+
 const strict = process.argv.includes('--strict');
 
 const required = [
