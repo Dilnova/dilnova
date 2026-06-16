@@ -36,9 +36,10 @@ const required = [
   'SMTP_PASSWORD',
   'EMAIL_FROM_ADDRESS',
   'EMAIL_FROM_NAME',
+  'SUPERADMIN_USER_IDS',
 ];
 
-const recommended = ['SENTRY_DSN', 'SUPERADMIN_USER_IDS'];
+const recommended = ['SENTRY_DSN'];
 
 let failed = 0;
 
