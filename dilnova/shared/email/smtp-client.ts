@@ -14,7 +14,7 @@ export interface SmtpEmailOptions {
 }
 
 /** Custom SMTP transaction client using Node net/tls modules, supporting STARTTLS. */
-export function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
+function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const useTlsDirectly = options.port === 465;
 
@@ -22,8 +22,39 @@ export function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
     let step = 0;
     const responseLog: string[] = [];
 
+    const overallTimeout = setTimeout(() => {
+      if (socket) {
+        socket.destroy();
+      }
+      fail(new Error('SMTP transaction overall deadline exceeded (30 seconds).'));
+    }, 30000);
+
+    const cleanup = () => {
+      clearTimeout(overallTimeout);
+    };
+
+    const succeed = (val: boolean) => {
+      cleanup();
+      resolve(val);
+    };
+
+    const fail = (err: Error) => {
+      cleanup();
+      reject(err);
+    };
+
+    const setupSocketTimeout = (sock: net.Socket | tls.TLSSocket) => {
+      sock.setTimeout(30000);
+      sock.on('timeout', () => {
+        sock.destroy();
+        fail(new Error('SMTP socket inactivity timeout exceeded (30 seconds).'));
+      });
+    };
+
     const send = (data: string) => {
-      socket.write(`${data}\r\n`);
+      if (socket && !socket.destroyed) {
+        socket.write(`${data}\r\n`);
+      }
     };
 
     const handleData = (chunk: Buffer) => {
@@ -36,7 +67,7 @@ export function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
 
       if (code >= 400) {
         socket.destroy();
-        reject(new Error(`SMTP Error at step ${step}: ${lastLine}`));
+        fail(new Error(`SMTP Error at step ${step}: ${lastLine}`));
         return;
       }
 
@@ -70,7 +101,7 @@ export function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
           step = 9;
         } else if (step === 9) {
           socket.destroy();
-          resolve(true);
+          succeed(true);
         }
       } else if (step === 0 && code === 220) {
         send('EHLO localhost');
@@ -80,6 +111,7 @@ export function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
         step = 1.5;
       } else if (step === 1.5 && code === 220) {
         socket.removeAllListeners('data');
+        socket.removeAllListeners('timeout');
         const secureSocket = tls.connect(
           {
             socket,
@@ -92,8 +124,9 @@ export function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
           }
         );
 
+        setupSocketTimeout(secureSocket);
         secureSocket.on('data', handleSecureData);
-        secureSocket.on('error', (err) => reject(err));
+        secureSocket.on('error', (err) => fail(err));
         socket = secureSocket;
       }
     };
@@ -108,7 +141,7 @@ export function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
 
       if (code >= 400) {
         socket.destroy();
-        reject(new Error(`SMTP Error at step ${step}: ${lastLine}`));
+        fail(new Error(`SMTP Error at step ${step}: ${lastLine}`));
         return;
       }
 
@@ -138,7 +171,7 @@ export function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
         step = 9;
       } else if (step === 9) {
         socket.destroy();
-        resolve(true);
+        succeed(true);
       }
     };
 
@@ -148,11 +181,12 @@ export function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
         port: options.port,
         rejectUnauthorized: true,
       });
+      setupSocketTimeout(socket);
       socket.on('data', handleData);
-      socket.on('error', (err) => reject(err));
+      socket.on('error', (err) => fail(err));
       socket.on('end', () => {
         if (step < 9) {
-          reject(
+          fail(
             new Error(`SMTP connection closed prematurely at step ${step}. Log: ${responseLog.join('\n')}`)
           );
         }
@@ -162,17 +196,28 @@ export function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
         host: options.host,
         port: options.port,
       });
+      setupSocketTimeout(socket);
       socket.on('data', handleData);
-      socket.on('error', (err) => reject(err));
+      socket.on('error', (err) => fail(err));
       socket.on('end', () => {
         if (step < 9) {
-          reject(
+          fail(
             new Error(`SMTP connection closed prematurely at step ${step}. Log: ${responseLog.join('\n')}`)
           );
         }
       });
     }
   });
+}
+
+/** Custom SMTP transaction client using Node net/tls modules, supporting STARTTLS. With socket timeouts and single retry. */
+export async function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
+  try {
+    return await sendRawSmtpEmailAttempt(options);
+  } catch (error) {
+    console.warn('First SMTP attempt failed, retrying once...', error);
+    return await sendRawSmtpEmailAttempt(options);
+  }
 }
 
 /** Strip CR/LF and other header-breaking characters from SMTP header values. */

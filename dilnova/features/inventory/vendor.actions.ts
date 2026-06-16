@@ -75,6 +75,7 @@ export async function vendorAdjustInventoryAction(data: {
         .from(schema.inventory)
         .innerJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
         .where(and(eq(schema.inventory.id, parsed.data.inventoryId), eq(schema.products.orgId, orgId)))
+        .for('update')
         .limit(1);
 
       if (!inv) {
@@ -569,6 +570,7 @@ export async function allocateBranchStockAction(data: {
             eq(schema.branchInventory.productId, parsed.data.productId)
           )
         )
+        .for('update')
         .limit(1);
 
       if (existing) {

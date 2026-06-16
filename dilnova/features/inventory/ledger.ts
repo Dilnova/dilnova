@@ -87,7 +87,8 @@ export async function reduceBranchAllocationsForCentralSale(
     .innerJoin(schema.branches, eq(schema.branchInventory.branchId, schema.branches.id))
     .where(
       and(eq(schema.branchInventory.productId, productId), eq(schema.branches.orgId, orgId))
-    );
+    )
+    .for('update');
 
   const sorted = [...rows].sort((a, b) => {
     if (a.isDefault && !b.isDefault) return -1;
@@ -144,6 +145,7 @@ export async function decrementDefaultBranchStock(
         eq(schema.branchInventory.productId, productId)
       )
     )
+    .for('update')
     .limit(1);
 
   if (!existing || existing.quantity <= 0) return;
@@ -181,6 +183,7 @@ export async function incrementDefaultBranchStock(
         eq(schema.branchInventory.productId, productId)
       )
     )
+    .for('update')
     .limit(1);
 
   if (existing) {

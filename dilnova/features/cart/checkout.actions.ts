@@ -521,212 +521,217 @@ export async function simulatedCheckoutAction(
     await rateLimit(5, 60 * 1000); // Max 5 checkouts per minute
 
     // ── Concurrency Safe Stock Validation & Checkout ──
-    const txResult: CheckoutTransactionResult = await db.transaction(async (tx) => {
-      const stockErrors: string[] = [];
-      const stockReservations: { productId: string; quantity: number; reservation: StockReservation }[] = [];
-      const verifiedItems: {
-        id: string;
-        name: string;
-        price: number;
-        quantity: number;
-        vendorOrgId: string;
-        type: string;
-      }[] = [];
-      let serverSubtotal = 0;
-      const availabilityCatalog = await getStockAvailabilityCatalog();
+    // ── Verify products, prices, and availability flags server-side (outside transaction) ──
+    const verifiedItems: {
+      id: string;
+      name: string;
+      price: number;
+      quantity: number;
+      vendorOrgId: string;
+      type: string;
+    }[] = [];
+    let serverSubtotal = 0;
+    const availabilityCatalog = await getStockAvailabilityCatalog();
 
-      // ── Verify products, prices, and availability flags server-side ──
-      for (const item of aggregatedItems) {
-        const [product] = await tx
-          .select({
-            id: schema.products.id,
-            name: schema.products.name,
-            price: schema.products.price,
-            orgId: schema.products.orgId,
-            type: schema.products.type,
-            status: schema.products.status,
-          })
-          .from(schema.products)
-          .where(eq(schema.products.id, item.id))
-          .limit(1);
+    for (const item of aggregatedItems) {
+      const [product] = await db
+        .select({
+          id: schema.products.id,
+          name: schema.products.name,
+          price: schema.products.price,
+          orgId: schema.products.orgId,
+          type: schema.products.type,
+          status: schema.products.status,
+        })
+        .from(schema.products)
+        .where(eq(schema.products.id, item.id))
+        .limit(1);
 
-        if (!product) {
-          return { success: false, error: `Product not found in catalog: ${item.name}` };
-        }
-        if (product.status !== 'active') {
-          return { success: false, error: `"${product.name}" is no longer available for purchase.` };
-        }
+      if (!product) {
+        return { success: false, error: `Product not found in catalog: ${item.name}` };
+      }
+      if (product.status !== 'active') {
+        return { success: false, error: `"${product.name}" is no longer available for purchase.` };
+      }
 
-        serverSubtotal += product.price * item.quantity;
-        verifiedItems.push({
-          id: product.id,
-          name: product.name,
-          price: product.price,
+      serverSubtotal += product.price * item.quantity;
+      verifiedItems.push({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: item.quantity,
+        vendorOrgId: product.orgId,
+        type: product.type,
+      });
+    }
+
+    let vendorOrgIds = [...new Set(verifiedItems.map((item) => item.vendorOrgId))];
+    const resolvedCheckoutVendorOrgId = resolveCheckoutVendorOrgId(
+      buildVendorCartSummaries(
+        aggregatedItems.map((item) => ({
+          id: item.id,
           quantity: item.quantity,
-          vendorOrgId: product.orgId,
-          type: product.type,
-        });
-      }
+          price: item.price,
+        })),
+        new Map(
+          verifiedItems.map((item) => [
+            item.id,
+            { id: item.id, orgId: item.vendorOrgId, price: item.price },
+          ])
+        )
+      ),
+      checkoutVendorOrgIdInput
+    );
 
-      let vendorOrgIds = [...new Set(verifiedItems.map((item) => item.vendorOrgId))];
-      const resolvedCheckoutVendorOrgId = resolveCheckoutVendorOrgId(
-        buildVendorCartSummaries(
-          aggregatedItems.map((item) => ({
-            id: item.id,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-          new Map(
-            verifiedItems.map((item) => [
-              item.id,
-              { id: item.id, orgId: item.vendorOrgId, price: item.price },
-            ])
-          )
-        ),
-        checkoutVendorOrgIdInput
-      );
-
-      if (vendorOrgIds.length > 1) {
-        if (!resolvedCheckoutVendorOrgId) {
-          return {
-            success: false as const,
-            error: MULTI_VENDOR_ORDER_CHECKOUT_ERROR,
-          };
-        }
-
-        const filteredItems = verifiedItems.filter(
-          (item) => item.vendorOrgId === resolvedCheckoutVendorOrgId
-        );
-        if (filteredItems.length === 0) {
-          return {
-            success: false as const,
-            error: 'No items found for the selected vendor.',
-          };
-        }
-
-        verifiedItems.splice(0, verifiedItems.length, ...filteredItems);
-        serverSubtotal = filteredItems.reduce(
-          (sum, item) => sum + item.price * item.quantity,
-          0
-        );
-        vendorOrgIds = [resolvedCheckoutVendorOrgId];
-      }
-      const branchRows =
-        vendorOrgIds.length > 0
-          ? await tx
-              .select({
-                id: schema.branches.id,
-                orgId: schema.branches.orgId,
-                name: schema.branches.name,
-                address: schema.branches.address,
-                phone: schema.branches.phone,
-              })
-              .from(schema.branches)
-              .where(inArray(schema.branches.orgId, vendorOrgIds))
-          : [];
-
-      const branchesByOrg = new Map<
-        string,
-        { id: string; name: string; address: string | null; phone: string | null }[]
-      >();
-      for (const branch of branchRows) {
-        const list = branchesByOrg.get(branch.orgId) || [];
-        list.push({
-          id: branch.id,
-          name: branch.name,
-          address: branch.address,
-          phone: branch.phone,
-        });
-        branchesByOrg.set(branch.orgId, list);
-      }
-
-      const resolvedOptions = await resolveCheckoutOptionsForOrgs(vendorOrgIds, branchesByOrg);
-      const fulfillmentOption = resolvedOptions.fulfillment.find((o) => o.id === fulfillment);
-      const paymentOption = resolvedOptions.payment.find((o) => o.id === payment);
-
-      if (!fulfillmentOption) {
-        return { success: false, error: 'Selected fulfillment method is not available for this cart.' };
-      }
-      if (!paymentOption) {
-        return { success: false, error: 'Selected payment method is not available for this cart.' };
-      }
-      if (vendorOrgIds.length > 1 && paymentOption.pendingPayment === true) {
+    if (vendorOrgIds.length > 1) {
+      if (!resolvedCheckoutVendorOrgId) {
         return {
           success: false as const,
           error: MULTI_VENDOR_ORDER_CHECKOUT_ERROR,
         };
       }
-      if (isBankTransferPayment(payment)) {
-        const bankDetailsByOrg = await getBankTransferDetailsForOrgs(vendorOrgIds);
-        const vendorsMissingBankDetails = vendorOrgIds.filter(
-          (orgId) => !hasCompleteBankDetails(bankDetailsByOrg[orgId]?.bankDetails)
-        );
-        if (vendorsMissingBankDetails.length > 0) {
-          const vendorNames = vendorsMissingBankDetails.map(
-            (orgId) => bankDetailsByOrg[orgId]?.vendorName || 'A vendor'
-          );
-          return {
-            success: false as const,
-            error: `Bank transfer is unavailable because bank details are not configured for: ${vendorNames.join(', ')}. Please contact the store or choose another payment method.`,
-          };
-        }
-      }
-      if (!isPaymentCompatibleWithFulfillment(paymentOption, fulfillmentOption)) {
-        return {
-          success: false,
-          error: `${paymentOption.label} is only available for delivery orders, not store pickup.`,
-        };
-      }
 
-      if (fulfillmentOption.requiresBranch) {
-        if (!pickupBranch) {
-          return { success: false, error: 'Please select a pickup branch to continue.' };
-        }
-        const validBranch = branchRows.find(
-          (branch) => branch.id === pickupBranch && vendorOrgIds.includes(branch.orgId)
-        );
-        if (!validBranch) {
-          return { success: false, error: 'Selected pickup branch is invalid.' };
-        }
-        if (vendorOrgIds.length > 1) {
-          return {
-            success: false,
-            error: 'Store pickup is only available when all items are from the same vendor.',
-          };
-        }
-      } else if (pickupBranch) {
-        return { success: false, error: 'Pickup branch is only required for store pickup orders.' };
-      }
-
-      const normalizedShippingAddress = shippingAddressInput?.trim() || null;
-      const normalizedShippingPhone = shippingPhoneInput?.trim() || null;
-
-      if (!fulfillmentOption.requiresBranch) {
-        if (!normalizedShippingAddress || normalizedShippingAddress.length < 5) {
-          return {
-            success: false,
-            error: 'Please enter a complete delivery address for home delivery orders.',
-          };
-        }
-      } else if (normalizedShippingAddress || normalizedShippingPhone) {
-        return {
-          success: false,
-          error: 'Shipping address is only required for home delivery orders.',
-        };
-      }
-
-      const checkoutTotals = calculateCheckoutTotals(
-        serverSubtotal,
-        fulfillmentOption.zeroShipping === true
+      const filteredItems = verifiedItems.filter(
+        (item) => item.vendorOrgId === resolvedCheckoutVendorOrgId
       );
-      if (checkoutTotals.grandTotal !== clientGrandTotal) {
+      if (filteredItems.length === 0) {
         return {
-          success: false,
-          error: `Checkout total mismatch. Expected ${checkoutTotals.grandTotal}, received ${clientGrandTotal}. Please refresh your cart and try again.`,
+          success: false as const,
+          error: 'No items found for the selected vendor.',
         };
       }
 
-      const pickupBranchForStock = fulfillmentOption.requiresBranch ? pickupBranch : null;
+      verifiedItems.splice(0, verifiedItems.length, ...filteredItems);
+      serverSubtotal = filteredItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+      vendorOrgIds = [resolvedCheckoutVendorOrgId];
+    }
+
+    const branchRows =
+      vendorOrgIds.length > 0
+        ? await db
+            .select({
+              id: schema.branches.id,
+              orgId: schema.branches.orgId,
+              name: schema.branches.name,
+              address: schema.branches.address,
+              phone: schema.branches.phone,
+            })
+            .from(schema.branches)
+            .where(inArray(schema.branches.orgId, vendorOrgIds))
+        : [];
+
+    const branchesByOrg = new Map<
+      string,
+      { id: string; name: string; address: string | null; phone: string | null }[]
+    >();
+    for (const branch of branchRows) {
+      const list = branchesByOrg.get(branch.orgId) || [];
+      list.push({
+        id: branch.id,
+        name: branch.name,
+        address: branch.address,
+        phone: branch.phone,
+      });
+      branchesByOrg.set(branch.orgId, list);
+    }
+
+    const resolvedOptions = await resolveCheckoutOptionsForOrgs(vendorOrgIds, branchesByOrg);
+    const fulfillmentOption = resolvedOptions.fulfillment.find((o) => o.id === fulfillment);
+    const paymentOption = resolvedOptions.payment.find((o) => o.id === payment);
+
+    if (!fulfillmentOption) {
+      return { success: false, error: 'Selected fulfillment method is not available for this cart.' };
+    }
+    if (!paymentOption) {
+      return { success: false, error: 'Selected payment method is not available for this cart.' };
+    }
+    if (vendorOrgIds.length > 1 && paymentOption.pendingPayment === true) {
+      return {
+        success: false as const,
+        error: MULTI_VENDOR_ORDER_CHECKOUT_ERROR,
+      };
+    }
+
+    if (isBankTransferPayment(payment)) {
+      const bankDetailsByOrg = await getBankTransferDetailsForOrgs(vendorOrgIds);
+      const vendorsMissingBankDetails = vendorOrgIds.filter(
+        (orgId) => !hasCompleteBankDetails(bankDetailsByOrg[orgId]?.bankDetails)
+      );
+      if (vendorsMissingBankDetails.length > 0) {
+        const vendorNames = vendorsMissingBankDetails.map(
+          (orgId) => bankDetailsByOrg[orgId]?.vendorName || 'A vendor'
+        );
+        return {
+          success: false as const,
+          error: `Bank transfer is unavailable because bank details are not configured for: ${vendorNames.join(', ')}. Please contact the store or choose another payment method.`,
+        };
+      }
+    }
+
+    if (!isPaymentCompatibleWithFulfillment(paymentOption, fulfillmentOption)) {
+      return {
+        success: false,
+        error: `${paymentOption.label} is only available for delivery orders, not store pickup.`,
+      };
+    }
+
+    if (fulfillmentOption.requiresBranch) {
+      if (!pickupBranch) {
+        return { success: false, error: 'Please select a pickup branch to continue.' };
+      }
+      const validBranch = branchRows.find(
+        (branch) => branch.id === pickupBranch && vendorOrgIds.includes(branch.orgId)
+      );
+      if (!validBranch) {
+        return { success: false, error: 'Selected pickup branch is invalid.' };
+      }
+      if (vendorOrgIds.length > 1) {
+        return {
+          success: false,
+          error: 'Store pickup is only available when all items are from the same vendor.',
+        };
+      }
+    } else if (pickupBranch) {
+      return { success: false, error: 'Pickup branch is only required for store pickup orders.' };
+    }
+
+    const normalizedShippingAddress = shippingAddressInput?.trim() || null;
+    const normalizedShippingPhone = shippingPhoneInput?.trim() || null;
+
+    if (!fulfillmentOption.requiresBranch) {
+      if (!normalizedShippingAddress || normalizedShippingAddress.length < 5) {
+        return {
+          success: false,
+          error: 'Please enter a complete delivery address for home delivery orders.',
+        };
+      }
+    } else if (normalizedShippingAddress || normalizedShippingPhone) {
+      return {
+        success: false,
+        error: 'Shipping address is only required for home delivery orders.',
+      };
+    }
+
+    const checkoutTotals = calculateCheckoutTotals(
+      serverSubtotal,
+      fulfillmentOption.zeroShipping === true
+    );
+    if (checkoutTotals.grandTotal !== clientGrandTotal) {
+      return {
+        success: false,
+        error: `Checkout total mismatch. Expected ${checkoutTotals.grandTotal}, received ${clientGrandTotal}. Please refresh your cart and try again.`,
+      };
+    }
+
+    const pickupBranchForStock = fulfillmentOption.requiresBranch ? pickupBranch : null;
+
+    // ── Concurrency Safe Stock Validation & Checkout (inside transaction) ──
+    const txResult: CheckoutTransactionResult = await db.transaction(async (tx) => {
+      const stockErrors: string[] = [];
+      const stockReservations: { productId: string; quantity: number; reservation: StockReservation }[] = [];
 
       for (const item of verifiedItems) {
         if (item.type !== 'product') {
@@ -740,6 +745,7 @@ export async function simulatedCheckoutAction(
           })
           .from(schema.inventory)
           .where(eq(schema.inventory.productId, item.id))
+          .for('update')
           .limit(1);
 
         if (!invMeta) {

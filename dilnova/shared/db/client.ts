@@ -11,7 +11,7 @@ if (!connectionString) {
 // Disable prefetch because Supabase/Neon connection poolers do not support it in transaction mode
 const client = postgres(connectionString, {
   prepare: false,
-  max: 10,
+  max: process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' ? 2 : 10,
   idle_timeout: 20,
   connect_timeout: 10,
 });

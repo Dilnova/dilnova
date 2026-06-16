@@ -17,12 +17,14 @@ export function isAllowedCloudinaryDeliveryUrl(url: string, orgId?: string | nul
     const pathCloudName = parts[0];
     if (pathCloudName !== cloudName) return false;
 
-    if (orgId) {
-      const dilnovaIndex = parts.indexOf('dilnova');
-      if (dilnovaIndex === -1) return false;
-      if (parts[dilnovaIndex + 1] !== 'vendors' || parts[dilnovaIndex + 2] !== orgId) {
+    const dilnovaIndex = parts.indexOf('dilnova');
+    if (dilnovaIndex !== -1 && parts[dilnovaIndex + 1] === 'vendors') {
+      const urlOrgId = parts[dilnovaIndex + 2];
+      if (!orgId || urlOrgId !== orgId) {
         return false;
       }
+    } else if (orgId) {
+      return false;
     }
 
     return true;
