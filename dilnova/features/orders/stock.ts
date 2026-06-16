@@ -88,6 +88,7 @@ export async function restoreOnlineOrderItemStock(
     .select({ id: schema.inventory.id, quantity: schema.inventory.quantity })
     .from(schema.inventory)
     .where(eq(schema.inventory.productId, params.productId))
+    .for('update')
     .limit(1);
 
   if (!inv) return;
@@ -120,6 +121,7 @@ export async function restoreOnlineOrderItemStock(
           eq(schema.branchInventory.productId, params.productId)
         )
       )
+      .for('update')
       .limit(1);
 
     if (branchInv) {

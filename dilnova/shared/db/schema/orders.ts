@@ -1,10 +1,23 @@
-import { pgTable, text, timestamp, integer, uuid, index, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, uuid, index, boolean, customType } from 'drizzle-orm/pg-core';
 import { products } from './catalog';
+import { encryptString, decryptString } from '@/shared/security/encryption';
+
+const encryptedText = customType<{ data: string }>({
+  dataType() {
+    return 'text';
+  },
+  toDriver(value: unknown): string {
+    return encryptString(String(value));
+  },
+  fromDriver(value: unknown): string {
+    return decryptString(typeof value === 'string' ? value : '');
+  },
+});
 
 export const simulatedOrders = pgTable('simulated_orders', {
   id: uuid('id').defaultRandom().primaryKey(),
-  customerName: text('customer_name').notNull(),
-  customerEmail: text('customer_email').notNull(),
+  customerName: encryptedText('customer_name').notNull(),
+  customerEmail: encryptedText('customer_email').notNull(),
   customerUserId: text('customer_user_id'),
   subtotalAmount: integer('subtotal_amount').default(0).notNull(),
   taxAmount: integer('tax_amount').default(0).notNull(),
@@ -19,8 +32,8 @@ export const simulatedOrders = pgTable('simulated_orders', {
   paymentSlipUploadedAt: timestamp('payment_slip_uploaded_at'),
   paymentVerifiedAt: timestamp('payment_verified_at'),
   paymentVerifiedBy: text('payment_verified_by'),
-  shippingAddress: text('shipping_address'),
-  shippingPhone: text('shipping_phone'),
+  shippingAddress: encryptedText('shipping_address'),
+  shippingPhone: encryptedText('shipping_phone'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => [

@@ -3,7 +3,7 @@ import { getSystemSetting } from '@/shared/platform/settings';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { fetchAllClerkOrganizations } from '@/shared/auth/clerk-cache';
+import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
 import {
   getCategoriesOrderedByCreatedAtDesc,
   getContactSubmissionsOrderedByCreatedAtDesc,
@@ -21,7 +21,7 @@ export const revalidate = 0; // Fresh database query on each load
 
 export default async function SuperAdminDashboardPage() {
   const client = await clerkClient();
-  const organizations = await fetchAllClerkOrganizations(client);
+  const organizations = await getCachedOrganizations(client);
 
   const categories = await getCategoriesOrderedByCreatedAtDesc();
   const products = await getProductsWithCategoryDetails();

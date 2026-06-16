@@ -1,6 +1,6 @@
 import { db } from '@/shared/db/client';
 import { auditLogs } from '@/shared/db/schema';
-import { logger } from '@/shared/logging/logger';
+import { logger, redactSensitiveData } from '@/shared/logging/logger';
 
 export interface AuditLogParams {
   userId: string;
@@ -21,13 +21,15 @@ export async function logAuditAction({
   targetId,
   metadata = null,
 }: AuditLogParams) {
+  const redactedMetadata = metadata ? redactSensitiveData(metadata) : null;
+
   try {
     await db.insert(auditLogs).values({
       userId,
       action,
       targetType,
       targetId,
-      metadata,
+      metadata: redactedMetadata,
     });
 
     logger.info(`Audit log created: ${action}`, {
@@ -35,7 +37,7 @@ export async function logAuditAction({
       action,
       targetType,
       targetId,
-      metadata,
+      metadata: redactedMetadata,
     });
   } catch (error) {
     logger.error(`Failed to write audit log for ${action}`, error, {
@@ -43,7 +45,7 @@ export async function logAuditAction({
       action,
       targetType,
       targetId,
-      metadata,
+      metadata: redactedMetadata,
     });
   }
 }

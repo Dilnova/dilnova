@@ -71,10 +71,11 @@ function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
  */
 export async function rateLimit(limit: number, windowMs: number): Promise<void> {
   const reqHeaders = await headers();
-  // Get IP address from proxy headers, fallback to localhost
+  // Get IP address prioritizing x-real-ip (injected securely by Vercel/Cloudflare at edge)
+  // to prevent client header spoofing via custom X-Forwarded-For inputs.
   const ip =
-    reqHeaders.get('x-forwarded-for')?.split(',')[0].trim() ||
-    reqHeaders.get('x-real-ip') ||
+    reqHeaders.get('x-real-ip')?.trim() ||
+    reqHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     '127.0.0.1';
 
   const client = getRatelimitClient(limit, windowMs);

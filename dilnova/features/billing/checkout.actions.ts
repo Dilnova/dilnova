@@ -78,7 +78,10 @@ export async function processBillingCheckoutAction(data: {
         aggregatedItems.set(item.productId, { ...item });
       }
     }
-    const checkoutItems = [...aggregatedItems.values()];
+    // Sort items by product ID to prevent deadlock during concurrent lock acquisition
+    const checkoutItems = [...aggregatedItems.values()].sort((a, b) =>
+      a.productId.localeCompare(b.productId)
+    );
 
     return await db.transaction(async (tx) => {
       let totalAmount = 0;

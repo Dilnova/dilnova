@@ -728,6 +728,9 @@ export async function simulatedCheckoutAction(
 
     const pickupBranchForStock = fulfillmentOption.requiresBranch ? pickupBranch : null;
 
+    // Sort items by product ID to prevent deadlock during concurrent lock acquisition
+    verifiedItems.sort((a, b) => a.id.localeCompare(b.id));
+
     // ── Concurrency Safe Stock Validation & Checkout (inside transaction) ──
     const txResult: CheckoutTransactionResult = await db.transaction(async (tx) => {
       const stockErrors: string[] = [];
