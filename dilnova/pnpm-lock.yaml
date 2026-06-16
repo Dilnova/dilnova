@@ -1399,10 +1399,6 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-<<<<<<< HEAD
-  '@rollup/rollup-android-arm-eabi@4.62.0':
-    resolution: {integrity: sha512-IPIQ55ythEHkfEd9jMEi32OQ7SxURsGA43JI22lj01OLZNt2NUbJX8YUHxkVWyQ6daHPNn0truF5nSj3DQp6YQ==}
-=======
   '@prisma/instrumentation@6.11.1':
     resolution: {integrity: sha512-mrZOev24EDhnefmnZX7WVVT7v+r9LttPRqf54ONvj6re4XMF7wFTpK2tLJi4XHB7fFp/6xhYbgRel8YV7gQiyA==}
     peerDependencies:
@@ -1426,9 +1422,8 @@ packages:
       rollup:
         optional: true
 
-  '@rollup/rollup-android-arm-eabi@4.60.4':
-    resolution: {integrity: sha512-F5QXMSiFebS9hKZj02XhWLLnRpJ3B3AROP0tWbFBSj+6kCbg5m9j5JoHKd4mmSVy5mS/IMQloYgYxCuJC0fxEQ==}
->>>>>>> 7775cdd (feat: add Sentry SDK integration and configure environment loading in pre-launch check)
+  '@rollup/rollup-android-arm-eabi@4.62.0':
+    resolution: {integrity: sha512-IPIQ55ythEHkfEd9jMEi32OQ7SxURsGA43JI22lj01OLZNt2NUbJX8YUHxkVWyQ6daHPNn0truF5nSj3DQp6YQ==}
     cpu: [arm]
     os: [android]
 
@@ -2181,8 +2176,6 @@ packages:
   '@vitest/utils@3.2.6':
     resolution: {integrity: sha512-lI23nIs4bnT3T8NIoh+vFaz5s2/DdP0Jgt2jxwgWljvwn82cLJtyi/If+fjFyoLMGIOz0U/fKvWE0d4jsNQEfg==}
 
-<<<<<<< HEAD
-=======
   '@webassemblyjs/ast@1.14.1':
     resolution: {integrity: sha512-nuBEDgQfm1ccRp/8bCQrx1frohyufl4JlbMMZ4P1wpeOfDhF6FQkxZJ1b/e+PLwr6X1Nhw6OLme5usuBWYBvuQ==}
 
@@ -2245,7 +2238,6 @@ packages:
     peerDependencies:
       acorn: ^8.14.0
 
->>>>>>> 7775cdd (feat: add Sentry SDK integration and configure environment loading in pre-launch check)
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
@@ -5193,9 +5185,6 @@ snapshots:
     dependencies:
       playwright: 1.60.0
 
-<<<<<<< HEAD
-  '@rollup/rollup-android-arm-eabi@4.62.0':
-=======
   '@prisma/instrumentation@6.11.1(@opentelemetry/api@1.9.1)':
     dependencies:
       '@opentelemetry/api': 1.9.1
@@ -5203,9 +5192,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@rollup/plugin-commonjs@28.0.1(rollup@4.60.4)':
+  '@rollup/plugin-commonjs@28.0.1(rollup@4.62.0)':
     dependencies:
-      '@rollup/pluginutils': 5.4.0(rollup@4.60.4)
+      '@rollup/pluginutils': 5.4.0(rollup@4.62.0)
       commondir: 1.0.1
       estree-walker: 2.0.2
       fdir: 6.5.0(picomatch@4.0.4)
@@ -5213,18 +5202,17 @@ snapshots:
       magic-string: 0.30.21
       picomatch: 4.0.4
     optionalDependencies:
-      rollup: 4.60.4
+      rollup: 4.62.0
 
-  '@rollup/pluginutils@5.4.0(rollup@4.60.4)':
+  '@rollup/pluginutils@5.4.0(rollup@4.62.0)':
     dependencies:
       '@types/estree': 1.0.8
       estree-walker: 2.0.2
       picomatch: 4.0.4
     optionalDependencies:
-      rollup: 4.60.4
+      rollup: 4.62.0
 
-  '@rollup/rollup-android-arm-eabi@4.60.4':
->>>>>>> 7775cdd (feat: add Sentry SDK integration and configure environment loading in pre-launch check)
+  '@rollup/rollup-android-arm-eabi@4.62.0':
     optional: true
 
   '@rollup/rollup-android-arm64@4.62.0':
@@ -5398,7 +5386,7 @@ snapshots:
     dependencies:
       '@opentelemetry/api': 1.9.1
       '@opentelemetry/semantic-conventions': 1.41.1
-      '@rollup/plugin-commonjs': 28.0.1(rollup@4.60.4)
+      '@rollup/plugin-commonjs': 28.0.1(rollup@4.62.0)
       '@sentry-internal/browser-utils': 10.57.0
       '@sentry/bundler-plugin-core': 5.3.0
       '@sentry/core': 10.57.0
@@ -5408,7 +5396,7 @@ snapshots:
       '@sentry/vercel-edge': 10.57.0
       '@sentry/webpack-plugin': 5.3.0(webpack@5.107.2(lightningcss@1.32.0))
       next: 16.2.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.60.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      rollup: 4.60.4
+      rollup: 4.62.0
       stacktrace-parser: 0.1.11
     transitivePeerDependencies:
       - '@opentelemetry/core'
@@ -5883,21 +5871,13 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 2.0.0
 
-<<<<<<< HEAD
-  '@vitest/mocker@3.2.6(vite@7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3))':
-=======
-  '@vitest/mocker@3.2.6(vite@7.3.3(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3))':
->>>>>>> 7775cdd (feat: add Sentry SDK integration and configure environment loading in pre-launch check)
+  '@vitest/mocker@3.2.6(vite@7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3))':
     dependencies:
       '@vitest/spy': 3.2.6
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-<<<<<<< HEAD
-      vite: 7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3)
-=======
-      vite: 7.3.3(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3)
->>>>>>> 7775cdd (feat: add Sentry SDK integration and configure environment loading in pre-launch check)
+      vite: 7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3)
 
   '@vitest/pretty-format@3.2.6':
     dependencies:
@@ -7984,11 +7964,7 @@ snapshots:
       debug: 4.4.3
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-<<<<<<< HEAD
-      vite: 7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3)
-=======
-      vite: 7.3.3(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3)
->>>>>>> 7775cdd (feat: add Sentry SDK integration and configure environment loading in pre-launch check)
+      vite: 7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -8003,11 +7979,7 @@ snapshots:
       - tsx
       - yaml
 
-<<<<<<< HEAD
-  vite@7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3):
-=======
-  vite@7.3.3(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3):
->>>>>>> 7775cdd (feat: add Sentry SDK integration and configure environment loading in pre-launch check)
+  vite@7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3):
     dependencies:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.4)
@@ -8027,11 +7999,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.6
-<<<<<<< HEAD
-      '@vitest/mocker': 3.2.6(vite@7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3))
-=======
-      '@vitest/mocker': 3.2.6(vite@7.3.3(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3))
->>>>>>> 7775cdd (feat: add Sentry SDK integration and configure environment loading in pre-launch check)
+      '@vitest/mocker': 3.2.6(vite@7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3))
       '@vitest/pretty-format': 3.2.6
       '@vitest/runner': 3.2.6
       '@vitest/snapshot': 3.2.6
@@ -8049,13 +8017,8 @@ snapshots:
       tinyglobby: 0.2.17
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
-<<<<<<< HEAD
-      vite: 7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3)
-      vite-node: 3.2.4(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.3)
-=======
-      vite: 7.3.3(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3)
+      vite: 7.3.5(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3)
       vite-node: 3.2.4(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.3)
->>>>>>> 7775cdd (feat: add Sentry SDK integration and configure environment loading in pre-launch check)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.39
@@ -8083,7 +8046,7 @@ snapshots:
 
   webpack@5.107.2(lightningcss@1.32.0):
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       '@types/json-schema': 7.0.15
       '@webassemblyjs/ast': 1.14.1
       '@webassemblyjs/wasm-edit': 1.14.1
