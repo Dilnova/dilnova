@@ -8,7 +8,7 @@ import {
   CATALOG_STOCK_FILTER_VALUES,
   type CatalogSort,
   type CatalogStockFilter,
-} from '@/features/catalog/query';
+} from '@/features/catalog/types';
 
 interface Category {
   id: string;
