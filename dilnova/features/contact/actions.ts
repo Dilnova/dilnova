@@ -6,6 +6,7 @@ import { rateLimit } from '@/shared/security/rate-limit';
 import { z } from 'zod';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { escapeHtml, sanitizeSmtpHeader, sendRawSmtpEmail } from '@/shared/email/smtp-client';
+import { logger } from '@/shared/logging/logger';
 
 const contactFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -67,7 +68,7 @@ export async function submitContactFormAction(prevState: any, formData: FormData
     const emailFromName = process.env.EMAIL_FROM_NAME || `${systemName} Contact Form`;
 
     if (!smtpUser || !smtpPassword) {
-      console.error('SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing');
+      logger.error('SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing');
       return { success: false, error: 'SMTP configuration is incomplete on the server.' };
     }
 
@@ -132,7 +133,9 @@ export async function submitContactFormAction(prevState: any, formData: FormData
 
     return { success: true, error: null };
   } catch (error: unknown) {
-    console.error('Failed to send contact email:', error);
+    logger.error('Failed to send contact email', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     const errorMsg = error instanceof Error ? error.message : 'Unknown server error.';
     return { success: false, error: errorMsg };
   }

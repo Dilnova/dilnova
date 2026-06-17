@@ -3,6 +3,7 @@ import * as schema from '@/shared/db/schema';
 import { eq, and } from 'drizzle-orm';
 import type { VendorProduct } from './types';
 import { unstable_cache } from 'next/cache';
+import { logger } from '@/shared/logging/logger';
 
 /**
  * Fetch all products belonging to a specific vendor organization (cached).
@@ -10,7 +11,7 @@ import { unstable_cache } from 'next/cache';
 export async function getVendorProducts(orgId: string): Promise<VendorProduct[]> {
   const fetchProducts = unstable_cache(
     async (id: string) => {
-      console.log(`[Database Cache] Cache miss, querying database products for org: ${id}...`);
+      logger.info('Database Cache miss, querying database products for org', { orgId: id });
       const results = await db
         .select({
           id: schema.products.id,

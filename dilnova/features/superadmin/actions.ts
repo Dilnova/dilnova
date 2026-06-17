@@ -12,6 +12,7 @@ import { runWithCorrelationId } from '@/shared/security/async-context';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { createPricingPlanSchema, updatePricingPlanSchema } from './schema';
 import { uuidField } from '@/shared/validation/primitives';
+import { logger } from '@/shared/logging/logger';
 
 // ── PRICING PLANS CRUD ─────────────────────────────────────────
 
@@ -173,7 +174,7 @@ export async function updateContactStatusAction(
       const clerkUser = userList.data?.[0];
       if (clerkUser) {
         if (isSuperAdminUser(clerkUser)) {
-          console.log(`Skipped role sync for superadmin user ${clerkUser.id}.`);
+          logger.info('Skipped role sync for superadmin user', { userId: clerkUser.id });
         } else if (status !== 'pending') {
           const nextRole = status === 'connected' ? 'vendor' : 'customer';
           await client.users.updateUserMetadata(clerkUser.id, {
@@ -183,13 +184,16 @@ export async function updateContactStatusAction(
           });
           revalidateTag('clerk-user-role', 'max');
           revalidateTag('clerk-user-superadmin', 'max');
-          console.log(`Successfully updated Clerk user ${clerkUser.id} role to ${nextRole}`);
+          logger.info('Successfully updated Clerk user role', { userId: clerkUser.id, role: nextRole });
         }
       } else {
-        console.log(`No Clerk user found with email ${submission.email} to sync role.`);
+        logger.info('No Clerk user found with email to sync role', { email: submission.email });
       }
     } catch (clerkErr) {
-      console.error('Failed to update user role in Clerk:', clerkErr);
+      logger.error('Failed to update user role in Clerk', {
+        error: clerkErr instanceof Error ? clerkErr.message : String(clerkErr),
+        email: submission.email,
+      });
       // We don't fail the whole request, but log it so the superadmin knows.
     }
 

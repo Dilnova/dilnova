@@ -6,6 +6,7 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { syncedCartItemSchema, syncedCartSchema, type SyncedCartItem } from '@/features/cart/schema';
 import { rateLimit } from '@/shared/security/rate-limit';
+import { logger } from '@/shared/logging/logger';
 
 export async function loadCustomerCartAction(): Promise<{
   success: boolean;
@@ -37,7 +38,9 @@ export async function loadCustomerCartAction(): Promise<{
 
     return { success: true, items: parsed.data };
   } catch (error) {
-    console.error('Failed to load customer cart:', error);
+    logger.error('Failed to load customer cart', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return { success: false, error: 'Failed to load saved cart.' };
   }
 }
@@ -75,7 +78,9 @@ export async function saveCustomerCartAction(
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to save customer cart:', error);
+    logger.error('Failed to save customer cart', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return { success: false, error: 'Failed to save cart.' };
   }
 }

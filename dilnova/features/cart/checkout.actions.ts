@@ -102,7 +102,7 @@ export async function sendCartSummaryEmailAction(
     const emailFromName = process.env.EMAIL_FROM_NAME || `${systemName} Hub`;
 
     if (!smtpUser || !smtpPassword) {
-      console.error('SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing');
+      logger.error('SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing');
       return { success: false, error: 'SMTP configuration is incomplete on the server.' };
     }
 
@@ -249,7 +249,9 @@ export async function sendCartSummaryEmailAction(
 
     return { success: true };
   } catch (error: unknown) {
-    console.error('Failed to send cart summary email:', error);
+    logger.error('Failed to send cart summary email', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     const errorMsg = error instanceof Error ? error.message : 'Unknown server error sending email.';
     return { success: false, error: errorMsg };
   }
@@ -293,7 +295,9 @@ export async function syncCartPricesAction(productIds: string[]) {
       removedIds: [...missingIds, ...inactiveIds],
     };
   } catch (error) {
-    console.error('Failed to sync cart prices:', error);
+    logger.error('Failed to sync cart prices', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return { success: false as const, error: 'Failed to refresh cart prices.' };
   }
 }
@@ -449,7 +453,9 @@ export async function getCartCheckoutOptionsAction(
       vendorCartSummary,
     };
   } catch (error) {
-    console.error('Failed to load checkout options:', error);
+    logger.error('Failed to load checkout options', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return { success: false as const, error: 'Failed to load checkout options.' };
   }
 }
@@ -910,7 +916,9 @@ export async function simulatedCheckoutAction(
       confirmationEmailSent: emailResult.success,
     };
   } catch (error: unknown) {
-    console.error('Checkout failed:', error);
+    logger.error('Checkout failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     const errorMsg = error instanceof Error ? error.message : 'Unknown server error during checkout.';
     return { success: false, error: errorMsg };
   }
