@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql, type SQL } from 'drizzle-orm';
 import * as schema from '@/shared/db/schema';
 
-export {
+import {
   CATALOG_SORT_VALUES,
   type CatalogSort,
   CATALOG_STOCK_FILTER_VALUES,
@@ -11,6 +11,17 @@ export {
   type CatalogVendorRef,
   CATALOG_SORT_LABELS,
 } from './types';
+
+export {
+  CATALOG_SORT_VALUES,
+  type CatalogSort,
+  CATALOG_STOCK_FILTER_VALUES,
+  type CatalogStockFilter,
+  type CatalogQueryParams,
+  type CatalogCategoryRef,
+  type CatalogVendorRef,
+  CATALOG_SORT_LABELS,
+};
 
 const DEFAULT_SORT: CatalogSort = 'newest';
 
