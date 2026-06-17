@@ -10,38 +10,43 @@ import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { rateLimit } from '@/shared/security/rate-limit';
+import { createPricingPlanSchema, updatePricingPlanSchema } from './schema';
+import { uuidField } from '@/shared/validation/primitives';
 
 // ── PRICING PLANS CRUD ─────────────────────────────────────────
 
-export async function createPricingPlanAction(planData: {
-  name: string;
-  price: string;
-  period: string;
-  description?: string;
-  features: string[];
-  isPopular: boolean;
-  buttonText: string;
-  buttonLink: string;
-}) {
+export async function createPricingPlanAction(planData: unknown) {
   return runWithCorrelationId(async () => {
     await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
 
-    if (!planData.name || !planData.price) {
-      throw new Error('Name and Price are required.');
+    const parsed = createPricingPlanSchema.safeParse(planData);
+    if (!parsed.success) {
+      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
     }
+
+    const {
+      name,
+      price,
+      period,
+      description,
+      features,
+      isPopular,
+      buttonText,
+      buttonLink,
+    } = parsed.data;
 
     const [plan] = await db
       .insert(schema.pricingPlans)
       .values({
-        name: planData.name,
-        price: planData.price,
-        period: planData.period,
-        description: planData.description || null,
-        features: planData.features,
-        isPopular: planData.isPopular,
-        buttonText: planData.buttonText,
-        buttonLink: planData.buttonLink,
+        name,
+        price,
+        period,
+        description: description || null,
+        features,
+        isPopular,
+        buttonText,
+        buttonLink,
       })
       .returning();
 
@@ -61,47 +66,42 @@ export async function createPricingPlanAction(planData: {
   });
 }
 
-export async function updatePricingPlanAction(
-  id: string,
-  updates: {
-    name?: string;
-    price?: string;
-    period?: string;
-    description?: string | null;
-    features?: string[];
-    isPopular?: boolean;
-    buttonText?: string;
-    buttonLink?: string;
-  }
-) {
+export async function updatePricingPlanAction(id: string, updates: unknown) {
   return runWithCorrelationId(async () => {
     await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+
+    const parsed = updatePricingPlanSchema.safeParse({ id, updates });
+    if (!parsed.success) {
+      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+    }
 
     const setClause: Partial<typeof schema.pricingPlans.$inferInsert> = {
       updatedAt: new Date(),
     };
 
-    if (updates.name !== undefined) setClause.name = updates.name;
-    if (updates.price !== undefined) setClause.price = updates.price;
-    if (updates.period !== undefined) setClause.period = updates.period;
-    if (updates.description !== undefined) setClause.description = updates.description;
-    if (updates.features !== undefined) setClause.features = updates.features;
-    if (updates.isPopular !== undefined) setClause.isPopular = updates.isPopular;
-    if (updates.buttonText !== undefined) setClause.buttonText = updates.buttonText;
-    if (updates.buttonLink !== undefined) setClause.buttonLink = updates.buttonLink;
+    const validatedUpdates = parsed.data.updates;
+
+    if (validatedUpdates.name !== undefined) setClause.name = validatedUpdates.name;
+    if (validatedUpdates.price !== undefined) setClause.price = validatedUpdates.price;
+    if (validatedUpdates.period !== undefined) setClause.period = validatedUpdates.period;
+    if (validatedUpdates.description !== undefined) setClause.description = validatedUpdates.description;
+    if (validatedUpdates.features !== undefined) setClause.features = validatedUpdates.features;
+    if (validatedUpdates.isPopular !== undefined) setClause.isPopular = validatedUpdates.isPopular;
+    if (validatedUpdates.buttonText !== undefined) setClause.buttonText = validatedUpdates.buttonText;
+    if (validatedUpdates.buttonLink !== undefined) setClause.buttonLink = validatedUpdates.buttonLink;
 
     await db
       .update(schema.pricingPlans)
       .set(setClause)
-      .where(eq(schema.pricingPlans.id, id));
+      .where(eq(schema.pricingPlans.id, parsed.data.id));
 
     await logAuditAction({
       userId: user.id,
       action: 'UPDATE_PRICING_PLAN',
       targetType: 'pricing_plan',
-      targetId: id,
-      metadata: { updates },
+      targetId: parsed.data.id,
+      metadata: { updates: validatedUpdates },
     });
 
     revalidatePath('/');
@@ -115,13 +115,18 @@ export async function deletePricingPlanAction(id: string) {
     await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
 
-    await db.delete(schema.pricingPlans).where(eq(schema.pricingPlans.id, id));
+    const parsedId = uuidField.safeParse(id);
+    if (!parsedId.success) {
+      throw new Error('Invalid ID format.');
+    }
+
+    await db.delete(schema.pricingPlans).where(eq(schema.pricingPlans.id, parsedId.data));
 
     await logAuditAction({
       userId: user.id,
       action: 'DELETE_PRICING_PLAN',
       targetType: 'pricing_plan',
-      targetId: id,
+      targetId: parsedId.data,
     });
 
     revalidatePath('/');
