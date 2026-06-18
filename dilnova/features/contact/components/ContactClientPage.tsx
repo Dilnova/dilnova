@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useRef } from 'react';
 import { submitContactFormAction } from '@/features/contact/actions';
 
 type CategoryType = 'collaboration' | 'registration' | 'info';
@@ -15,6 +15,47 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
     success: null,
     error: null,
   });
+
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Load Turnstile script dynamically
+    const scriptId = 'cloudflare-turnstile-script';
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Poll for Turnstile to load and render widget
+    let checkCount = 0;
+    const checkTurnstile = setInterval(() => {
+      checkCount++;
+      if (typeof window !== 'undefined' && (window as any).turnstile && turnstileRef.current) {
+        clearInterval(checkTurnstile);
+        try {
+          (window as any).turnstile.render(turnstileRef.current, {
+            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
+            callback: (token: string) => {
+              setTurnstileToken(token);
+            },
+          });
+        } catch (err) {
+          console.error('Failed to render Turnstile widget:', err);
+        }
+      } else if (checkCount > 50) { // Stop polling after 5 seconds
+        clearInterval(checkTurnstile);
+      }
+    }, 100);
+
+    return () => clearInterval(checkTurnstile);
+  }, []);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -64,6 +105,9 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
     submissionData.append('subject', formData.subject);
     submissionData.append('message', formData.message);
     submissionData.append('middleName', formData.middleName);
+    if (turnstileToken) {
+      submissionData.append('cf-turnstile-response', turnstileToken);
+    }
 
     startTransition(async () => {
       const result = await submitContactFormAction(null, submissionData);
@@ -72,6 +116,11 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
         setFormData({ name: '', email: '', category: 'info', subject: '', message: '', middleName: '' });
       } else {
         setState({ success: false, error: result.error });
+      }
+
+      if (typeof window !== 'undefined' && (window as any).turnstile) {
+        (window as any).turnstile.reset();
+        setTurnstileToken(null);
       }
     });
   };
@@ -303,6 +352,11 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
                     <span>{state.error}</span>
                   </div>
                 )}
+
+                {/* Turnstile widget container */}
+                <div className="flex justify-center my-4">
+                  <div ref={turnstileRef} />
+                </div>
 
                 <button
                   type="submit"

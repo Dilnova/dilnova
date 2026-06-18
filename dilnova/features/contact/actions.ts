@@ -27,6 +27,38 @@ export async function submitContactFormAction(prevState: any, formData: FormData
       return { success: true, error: null };
     }
 
+    // Cloudflare Turnstile CAPTCHA Verification
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+    if (turnstileSecret) {
+      const turnstileToken = formData.get('cf-turnstile-response') as string;
+      if (!turnstileToken) {
+        return { success: false, error: 'Please complete the CAPTCHA.' };
+      }
+
+      try {
+        const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `secret=${encodeURIComponent(turnstileSecret)}&response=${encodeURIComponent(turnstileToken)}`,
+        });
+
+        const verifyData = await verifyResponse.json();
+        if (!verifyData.success) {
+          logger.warn('Turnstile CAPTCHA verification failed', {
+            errorCodes: verifyData['error-codes'],
+          });
+          return { success: false, error: 'CAPTCHA verification failed. Please try again.' };
+        }
+      } catch (error) {
+        logger.error('Failed to verify Turnstile CAPTCHA due to network error', error);
+        if (process.env.NODE_ENV === 'production') {
+          return { success: false, error: 'CAPTCHA verification service is unavailable. Please try again later.' };
+        }
+      }
+    }
+
     const rawName = formData.get('name') as string;
     const rawEmail = formData.get('email') as string;
     const rawCategory = formData.get('category') as string;
