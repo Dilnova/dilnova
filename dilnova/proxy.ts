@@ -14,6 +14,7 @@ const isPublicRoute = createRouteMatcher([
   '/cart',           // Allows cart viewing; checkout requires sign-in
   '/contact',        // Allows public contact form submissions
   '/api/health(.*)', // Allows public access to the health check endpoint
+  '/api/csp-report(.*)', // Allows public access to CSP violation reports
   '/_next(.*)',      // Allows public access to Next.js static files/image optimization
   '/sitemap.xml',    // Allow public access to sitemap.xml
   '/robots.txt'      // Allow public access to robots.txt
@@ -53,10 +54,21 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   }
 
   const isProd = process.env.NODE_ENV === 'production';
-  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com http://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:;${isProd ? ' upgrade-insecure-requests;' : ''}`;
+  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com http://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:; report-uri /api/csp-report; report-to csp-endpoint;${isProd ? ' upgrade-insecure-requests;' : ''}`;
+
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000';
+  const protocol = req.headers.get('x-forwarded-proto') || 'http';
+  const reportToUrl = `${protocol}://${host}/api/csp-report`;
+  
+  const reportToHeader = JSON.stringify({
+    group: 'csp-endpoint',
+    max_age: 10886400,
+    endpoints: [{ url: reportToUrl }],
+  });
 
   response.headers.set('x-request-id', requestId);
   response.headers.set('Content-Security-Policy', cspHeader);
+  response.headers.set('Report-To', reportToHeader);
   return response;
 });
 
