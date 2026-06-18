@@ -31,8 +31,9 @@ export function encryptString(text: string): string {
   }
 
   try {
-    // Generate a cryptographically strong 32-byte key from the configured key using SHA-256
-    const hashedKey = crypto.createHash('sha256').update(key).digest();
+    // Derive secure 32-byte key using HKDF
+    const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v1', 'aes-256-gcm', 32);
+    const hashedKey = Buffer.from(keyArrayBuffer);
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(ALGORITHM, hashedKey, iv);
     
@@ -42,8 +43,8 @@ export function encryptString(text: string): string {
     ]);
     const tag = cipher.getAuthTag();
 
-    // Return packaged IV, cipher, and Auth tag separated by colons
-    return `${iv.toString('hex')}:${encrypted.toString('hex')}:${tag.toString('hex')}`;
+    // Package with "v1" prefix to support key rotation/versioning
+    return `v1:${iv.toString('hex')}:${encrypted.toString('hex')}:${tag.toString('hex')}`;
   } catch (error) {
     if (isProduction()) {
       throw new Error('Encryption failed. Refusing to store PII in cleartext.');
@@ -73,31 +74,52 @@ export function decryptString(encryptedText: string): string {
     return encryptedText;
   }
 
-  const parts = encryptedText.split(':');
-  if (parts.length !== 3) {
-    // Return unchanged if it doesn't match iv:encrypted:tag format
-    return encryptedText;
-  }
+  const hasVersion = encryptedText.startsWith('v1:');
 
   try {
-    const [ivHex, encryptedHex, tagHex] = parts;
-    const hashedKey = crypto.createHash('sha256').update(key).digest();
-    const iv = Buffer.from(ivHex, 'hex');
-    const encrypted = Buffer.from(encryptedHex, 'hex');
-    const tag = Buffer.from(tagHex, 'hex');
+    if (hasVersion) {
+      const parts = encryptedText.split(':');
+      if (parts.length !== 4) {
+        return encryptedText;
+      }
+      const [, ivHex, encryptedHex, tagHex] = parts;
+      const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v1', 'aes-256-gcm', 32);
+      const hashedKey = Buffer.from(keyArrayBuffer);
+      const iv = Buffer.from(ivHex, 'hex');
+      const encrypted = Buffer.from(encryptedHex, 'hex');
+      const tag = Buffer.from(tagHex, 'hex');
 
-    const decipher = crypto.createDecipheriv(ALGORITHM, hashedKey, iv);
-    decipher.setAuthTag(tag);
+      const decipher = crypto.createDecipheriv(ALGORITHM, hashedKey, iv);
+      decipher.setAuthTag(tag);
 
-    return Buffer.concat([
-      decipher.update(encrypted),
-      decipher.final()
-    ]).toString('utf8');
+      return Buffer.concat([
+        decipher.update(encrypted),
+        decipher.final()
+      ]).toString('utf8');
+    } else {
+      // Legacy unversioned (v0) decryption using SHA-256 key derivation
+      const parts = encryptedText.split(':');
+      if (parts.length !== 3) {
+        return encryptedText;
+      }
+      const [ivHex, encryptedHex, tagHex] = parts;
+      const hashedKey = crypto.createHash('sha256').update(key).digest();
+      const iv = Buffer.from(ivHex, 'hex');
+      const encrypted = Buffer.from(encryptedHex, 'hex');
+      const tag = Buffer.from(tagHex, 'hex');
+
+      const decipher = crypto.createDecipheriv(ALGORITHM, hashedKey, iv);
+      decipher.setAuthTag(tag);
+
+      return Buffer.concat([
+        decipher.update(encrypted),
+        decipher.final()
+      ]).toString('utf8');
+    }
   } catch (error) {
     if (isProduction()) {
       throw new Error('Decryption failed. The PII_ENCRYPTION_KEY may have changed or the data is corrupted.');
     }
-    // In dev/test: return the encrypted string unchanged to avoid breaking local workflows
     return encryptedText;
   }
 }

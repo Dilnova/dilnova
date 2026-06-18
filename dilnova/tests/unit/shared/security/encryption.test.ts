@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import crypto from 'node:crypto';
 
 // Must mock 'server-only' before importing the module
 vi.mock('server-only', () => ({}));
@@ -49,6 +50,41 @@ describe('Encryption Utilities', () => {
     expect(encrypted).not.toBe(rawText);
     expect(encrypted).toContain(':'); // Ensure iv:encrypted:tag format
     
+    const decrypted = decryptString(encrypted);
+    expect(decrypted).toBe(rawText);
+  });
+
+  it('should support backward compatibility by decrypting legacy unversioned (v0) ciphertext', () => {
+    const key = 'super-secret-key-123456789012345';
+    process.env.PII_ENCRYPTION_KEY = key;
+    const rawText = 'Legacy plaintext secret data.';
+
+    // Manually encrypt using the old v0 method: SHA-256 derived key, iv:encrypted:tag (no v1: prefix)
+    const hashedKey = crypto.createHash('sha256').update(key).digest();
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', hashedKey, iv);
+    const encrypted = Buffer.concat([
+      cipher.update(rawText, 'utf8'),
+      cipher.final()
+    ]);
+    const tag = cipher.getAuthTag();
+    const legacyCiphertext = `${iv.toString('hex')}:${encrypted.toString('hex')}:${tag.toString('hex')}`;
+
+    // Verify it is recognized as legacy (has no v1: prefix)
+    expect(legacyCiphertext.startsWith('v1:')).toBe(false);
+
+    // Verify decryptString successfully decrypts it
+    const decrypted = decryptString(legacyCiphertext);
+    expect(decrypted).toBe(rawText);
+  });
+
+  it('should prefix newly encrypted ciphertext with v1:', () => {
+    process.env.PII_ENCRYPTION_KEY = 'super-secret-key-123456789012345';
+    const rawText = 'Fresh plaintext data to encrypt.';
+    
+    const encrypted = encryptString(rawText);
+    expect(encrypted.startsWith('v1:')).toBe(true);
+
     const decrypted = decryptString(encrypted);
     expect(decrypted).toBe(rawText);
   });
