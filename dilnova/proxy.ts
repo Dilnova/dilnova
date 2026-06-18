@@ -15,6 +15,7 @@ const isPublicRoute = createRouteMatcher([
   '/contact',        // Allows public contact form submissions
   '/api/health(.*)', // Allows public access to the health check endpoint
   '/api/csp-report(.*)', // Allows public access to CSP violation reports
+  '/api/webhooks/clerk(.*)', // Allows public access to Clerk webhooks (secured by signature verification)
   '/_next(.*)',      // Allows public access to Next.js static files/image optimization
   '/sitemap.xml',    // Allow public access to sitemap.xml
   '/robots.txt'      // Allow public access to robots.txt

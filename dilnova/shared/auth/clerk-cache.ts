@@ -99,8 +99,8 @@ export function invalidateClerkCache() {
  * Retrieves the user's public metadata role using Next.js unstable_cache
  * to bypass slow Clerk API lookups on every request.
  */
-export const getCachedUserRole = unstable_cache(
-  async (userId: string): Promise<string | undefined> => {
+export const getCachedUserRole = (userId: string) => unstable_cache(
+  async (): Promise<string | undefined> => {
     try {
       logger.info(`Fetching role for user ${userId} from Clerk API`);
       const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
@@ -111,15 +111,15 @@ export const getCachedUserRole = unstable_cache(
       return undefined;
     }
   },
-  ['clerk-user-role'],
+  ['clerk-user-role', userId],
   {
-    tags: ['clerk-user-role'],
-    revalidate: 300, // Cache for 5 minutes (300 seconds)
+    tags: ['clerk-user-role', `clerk-user-role-${userId}`],
+    revalidate: 60, // Reduce TTL to 60 seconds
   }
-);
+)();
 
-export const getCachedIsSuperAdmin = unstable_cache(
-  async (userId: string): Promise<boolean> => {
+export const getCachedIsSuperAdmin = (userId: string) => unstable_cache(
+  async (): Promise<boolean> => {
     try {
       const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
       const user = await client.users.getUser(userId);
@@ -129,15 +129,15 @@ export const getCachedIsSuperAdmin = unstable_cache(
       return false;
     }
   },
-  ['clerk-user-superadmin'],
+  ['clerk-user-superadmin', userId],
   {
-    tags: ['clerk-user-superadmin'],
-    revalidate: 300,
+    tags: ['clerk-user-superadmin', `clerk-user-superadmin-${userId}`],
+    revalidate: 60, // Reduce TTL to 60 seconds
   }
-);
+)();
 
-export const getCachedOrgMembers = unstable_cache(
-  async (orgId: string): Promise<{ userId: string; name: string; email: string }[]> => {
+export const getCachedOrgMembers = (orgId: string) => unstable_cache(
+  async (): Promise<{ userId: string; name: string; email: string }[]> => {
     try {
       logger.info(`Fetching organization memberships for org ${orgId} from Clerk API`);
       const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
@@ -157,9 +157,28 @@ export const getCachedOrgMembers = unstable_cache(
       throw err;
     }
   },
-  ['clerk-org-members'],
+  ['clerk-org-members', orgId],
   {
-    tags: ['clerk-org-members'],
+    tags: ['clerk-org-members', `clerk-org-members-${orgId}`],
     revalidate: 300, // Cache for 5 minutes
   }
-);
+)();
+
+/**
+ * Invalidates the Clerk cache for a specific user role/superadmin check.
+ */
+export function invalidateClerkUserCache(userId: string) {
+  logger.info(`Invalidating Clerk cache for user ${userId}`);
+  revalidateTag(`clerk-user-role-${userId}`, 'max');
+  revalidateTag(`clerk-user-superadmin-${userId}`, 'max');
+}
+
+/**
+ * Invalidates the Clerk cache for organization memberships.
+ */
+export function invalidateClerkOrgCache(orgId: string) {
+  logger.info(`Invalidating Clerk cache for organization ${orgId}`);
+  revalidateTag(`clerk-org-members-${orgId}`, 'max');
+  revalidateTag('clerk-organizations', 'max');
+}
+

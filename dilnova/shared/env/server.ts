@@ -22,6 +22,7 @@ const productionServerEnvSchema = z.object({
   EMAIL_FROM_ADDRESS: nonEmpty.email(),
   EMAIL_FROM_NAME: nonEmpty,
   SUPERADMIN_USER_IDS: nonEmpty,
+  CLERK_WEBHOOK_SECRET: nonEmpty,
 });
 
 export type ProductionServerEnv = z.infer<typeof productionServerEnvSchema>;
