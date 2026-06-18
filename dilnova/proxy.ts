@@ -38,6 +38,32 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 });
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
+  // CSRF protection for Server Actions:
+  // Enforce that POST requests with a Next-Action header have a valid Origin matching Host or X-Forwarded-Host.
+  if (request.method === 'POST' && request.headers.has('next-action')) {
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+
+    if (!origin || !host) {
+      return new NextResponse('CSRF Verification Failed: Missing Origin or Host header.', {
+        status: 403,
+      });
+    }
+
+    try {
+      const originUrl = new URL(origin);
+      if (originUrl.host !== host) {
+        return new NextResponse('CSRF Verification Failed: Mismatched Origin and Host.', {
+          status: 403,
+        });
+      }
+    } catch {
+      return new NextResponse('CSRF Verification Failed: Invalid Origin header.', {
+        status: 403,
+      });
+    }
+  }
+
   return clerkHandler(request, event);
 }
 
