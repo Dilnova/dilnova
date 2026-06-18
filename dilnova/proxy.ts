@@ -21,8 +21,11 @@ const isPublicRoute = createRouteMatcher([
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
   const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
+  const nonce = crypto.randomUUID();
+
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-request-id', requestId);
+  requestHeaders.set('x-nonce', nonce);
 
   if (!isPublicRoute(req)) {
     await auth.protect();
@@ -33,7 +36,27 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
       headers: requestHeaders,
     },
   });
+
+  const clerkDomains = [
+    'https://img.clerk.com',
+    'https://*.clerk.com',
+    'https://*.clerk.accounts.dev',
+  ];
+  const clerkDomainsStr = clerkDomains.join(' ');
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  let supabaseHostCsp = '';
+  if (supabaseUrl) {
+    try {
+      supabaseHostCsp = ` https://${new URL(supabaseUrl).hostname}`;
+    } catch {}
+  }
+
+  const isProd = process.env.NODE_ENV === 'production';
+  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com http://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:;${isProd ? ' upgrade-insecure-requests;' : ''}`;
+
   response.headers.set('x-request-id', requestId);
+  response.headers.set('Content-Security-Policy', cspHeader);
   return response;
 });
 

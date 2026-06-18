@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import React from 'react'
 import { ClerkProvider, Show, UserButton, OrganizationSwitcher } from '@clerk/nextjs'
+import { headers } from 'next/headers'
 import Link from 'next/link'
 import { auth } from '@clerk/nextjs/server'
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -56,6 +57,8 @@ export default async function RootLayout({
 }>) {
   return runWithCorrelationId(async () => {
     const { orgId, orgRole, userId } = await auth();
+    const requestHeaders = await headers();
+    const nonce = requestHeaders.get('x-nonce') || undefined;
     let userRole: string | undefined = undefined;
     let isSuperAdmin = false;
     if (userId) {
@@ -144,7 +147,7 @@ export default async function RootLayout({
     return (
       <html lang="en">
         <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-x-hidden">
-          <ClerkProvider>
+          <ClerkProvider nonce={nonce}>
             <CartProvider>
               <header className="relative flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-14 sm:h-16 overflow-visible max-w-full">
                 <div className="flex items-center gap-2 sm:gap-3 md:gap-5 min-w-0 flex-1 overflow-hidden">
