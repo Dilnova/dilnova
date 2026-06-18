@@ -3,7 +3,7 @@ import type { User } from '@clerk/nextjs/server';
 /** Stored in Clerk user privateMetadata — server-only, not client-readable. */
 export const SUPERADMIN_PLATFORM_ROLE = 'superadmin';
 
-export type SuperAdminGrantSource = 'private' | 'allowlist';
+export type SuperAdminGrantSource = 'dual_gate';
 
 export interface SuperAdminGrant {
   granted: boolean;
@@ -30,12 +30,11 @@ export function readSuperAdminGrant(user: {
   privateMetadata?: unknown;
 }): SuperAdminGrant {
   const privateMeta = (user.privateMetadata || {}) as Record<string, unknown>;
-  if (privateMeta.platformRole === SUPERADMIN_PLATFORM_ROLE) {
-    return { granted: true, source: 'private' };
-  }
+  const isPrivateSuper = privateMeta.platformRole === SUPERADMIN_PLATFORM_ROLE;
+  const isAllowlisted = getSuperAdminAllowlistFromEnv().has(user.id);
 
-  if (getSuperAdminAllowlistFromEnv().has(user.id)) {
-    return { granted: true, source: 'allowlist' };
+  if (isPrivateSuper && isAllowlisted) {
+    return { granted: true, source: 'dual_gate' };
   }
 
   return { granted: false, source: null };

@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
-  getSuperAdminAllowlistFromEnv,
   isSuperAdminUser,
   readSuperAdminGrant,
   SUPERADMIN_PLATFORM_ROLE,
@@ -21,7 +20,9 @@ describe('superadmin.server', () => {
     }
   });
 
-  it('grants access from privateMetadata.platformRole', () => {
+  it('grants access when BOTH Clerk privateMetadata is correct and user ID is listed in environment allowlist', () => {
+    process.env.SUPERADMIN_USER_IDS = 'user_1,user_2';
+
     expect(
       isSuperAdminUser({
         id: 'user_1',
@@ -30,27 +31,48 @@ describe('superadmin.server', () => {
       })
     ).toBe(true);
 
-    expect(readSuperAdminGrant({
-      id: 'user_1',
-      privateMetadata: { platformRole: SUPERADMIN_PLATFORM_ROLE },
-    }).source).toBe('private');
+    expect(
+      readSuperAdminGrant({
+        id: 'user_1',
+        privateMetadata: { platformRole: SUPERADMIN_PLATFORM_ROLE },
+      })
+    ).toEqual({ granted: true, source: 'dual_gate' });
   });
 
-  it('grants access from SUPERADMIN_USER_IDS allowlist', () => {
-    process.env.SUPERADMIN_USER_IDS = 'user_allow_1,user_allow_2';
+  it('denies access when user has Clerk privateMetadata but is NOT in environment allowlist', () => {
+    process.env.SUPERADMIN_USER_IDS = 'user_other';
 
     expect(
       isSuperAdminUser({
-        id: 'user_allow_2',
-        publicMetadata: {},
-        privateMetadata: {},
+        id: 'user_1',
+        privateMetadata: { platformRole: SUPERADMIN_PLATFORM_ROLE },
+        publicMetadata: { role: 'customer' },
       })
-    ).toBe(true);
+    ).toBe(false);
 
-    expect(getSuperAdminAllowlistFromEnv().has('user_allow_2')).toBe(true);
+    expect(
+      readSuperAdminGrant({
+        id: 'user_1',
+        privateMetadata: { platformRole: SUPERADMIN_PLATFORM_ROLE },
+      })
+    ).toEqual({ granted: false, source: null });
   });
 
-  it('denies legacy publicMetadata.role=admin without privateMetadata or allowlist', () => {
+  it('denies access when user is in environment allowlist but lacks Clerk privateMetadata', () => {
+    process.env.SUPERADMIN_USER_IDS = 'user_1';
+
+    expect(
+      isSuperAdminUser({
+        id: 'user_1',
+        privateMetadata: {},
+        publicMetadata: {},
+      })
+    ).toBe(false);
+  });
+
+  it('denies legacy publicMetadata.role=admin', () => {
+    process.env.SUPERADMIN_USER_IDS = 'user_legacy';
+
     expect(
       isSuperAdminUser({
         id: 'user_legacy',
@@ -61,6 +83,8 @@ describe('superadmin.server', () => {
   });
 
   it('denies regular customers and vendors', () => {
+    process.env.SUPERADMIN_USER_IDS = 'user_customer,user_vendor';
+
     expect(
       isSuperAdminUser({
         id: 'user_customer',

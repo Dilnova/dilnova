@@ -3,7 +3,7 @@ import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
 
 /**
  * Validates that the current user is authenticated and holds platform superadmin access.
- * Authorization is resolved server-side from privateMetadata, SUPERADMIN_USER_IDS, or legacy public role.
+ * Authorization is resolved server-side from both privateMetadata and the environment-variable allowlist (dual-gate).
  */
 export async function checkSuperAdmin(): Promise<User> {
   const { userId } = await auth();

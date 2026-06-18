@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { checkSuperAdmin, getCurrentSuperAdminUser } from '@/shared/auth/superadmin-guard';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 
@@ -8,8 +8,19 @@ vi.mock('@clerk/nextjs/server', () => ({
 }));
 
 describe('superadmin-guard', () => {
+  const originalAllowlist = process.env.SUPERADMIN_USER_IDS;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.SUPERADMIN_USER_IDS = 'user_admin';
+  });
+
+  afterEach(() => {
+    if (originalAllowlist) {
+      process.env.SUPERADMIN_USER_IDS = originalAllowlist;
+    } else {
+      delete process.env.SUPERADMIN_USER_IDS;
+    }
   });
 
   it('checkSuperAdmin loads the user from Clerk and validates privateMetadata', async () => {
