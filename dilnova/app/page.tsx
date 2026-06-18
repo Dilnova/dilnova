@@ -2,7 +2,6 @@ import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import { OrganizationList } from '@clerk/nextjs';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import RoleToggleButton from '@/features/auth/components/RoleToggleButton';
 import ScrollRedirector from '@/shared/ui/ScrollRedirector';
 import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
 import { getSystemSetting } from '@/shared/platform/settings';
