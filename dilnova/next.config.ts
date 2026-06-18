@@ -29,15 +29,11 @@ const remotePatterns: Array<{ protocol: 'https' | 'http'; hostname: string }> = 
   },
   {
     protocol: 'https',
-    hostname: '**.clerk.com',
-  },
-  {
-    protocol: 'https',
     hostname: 'res.cloudinary.com',
   },
   {
     protocol: 'https',
-    hostname: '**.backblazeb2.com',
+    hostname: '*.backblazeb2.com',
   },
 ];
 
