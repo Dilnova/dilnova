@@ -163,7 +163,7 @@ const nextConfig: NextConfig = {
     if (isProd) {
       headersList.push({
         key: 'Strict-Transport-Security',
-        value: 'max-age=63072000; includeSubDomains',
+        value: 'max-age=63072000; includeSubDomains; preload',
       });
     }
 
