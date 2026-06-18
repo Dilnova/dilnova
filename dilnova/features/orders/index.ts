@@ -8,6 +8,7 @@ export {
   createPaymentSlipUploadPresignedUrlAction,
   submitPaymentSlipPathAction,
   submitPaymentSlipAction,
+  uploadAndSubmitPaymentSlipAction,
 } from '@/features/orders/customer.actions';
 export {
   verifyOrderPaymentAction,
