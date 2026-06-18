@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, uuid, jsonb, index, boolean } from 'drizzle-orm/pg-core';
+import { encryptedText } from './orders';
 
 export const systemSettings = pgTable('system_settings', {
   key: text('key').primaryKey(),
@@ -36,8 +37,8 @@ export const pricingPlans = pgTable('pricing_plans', {
 
 export const contactSubmissions = pgTable('contact_submissions', {
   id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  email: text('email').notNull(),
+  name: encryptedText('name').notNull(),
+  email: encryptedText('email').notNull(),
   category: text('category').notNull(),
   subject: text('subject').notNull(),
   message: text('message').notNull(),
@@ -45,6 +46,5 @@ export const contactSubmissions = pgTable('contact_submissions', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => [
-  index('idx_contact_submissions_email').on(t.email),
   index('idx_contact_submissions_status').on(t.status),
 ]);

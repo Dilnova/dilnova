@@ -2,7 +2,7 @@ import { pgTable, text, timestamp, integer, uuid, index, boolean, customType } f
 import { products } from './catalog';
 import { encryptString, decryptString } from '@/shared/security/encryption';
 
-const encryptedText = customType<{ data: string }>({
+export const encryptedText = customType<{ data: string }>({
   dataType() {
     return 'text';
   },
