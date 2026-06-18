@@ -20,6 +20,13 @@ const contactFormSchema = z.object({
 
 export async function submitContactFormAction(prevState: any, formData: FormData) {
   try {
+    const rawHoneypot = formData.get('middleName') as string;
+    if (rawHoneypot && rawHoneypot.trim().length > 0) {
+      logger.warn('Spam contact submission detected and blocked via honeypot field.');
+      // Silently succeed to trick automated spam bots
+      return { success: true, error: null };
+    }
+
     const rawName = formData.get('name') as string;
     const rawEmail = formData.get('email') as string;
     const rawCategory = formData.get('category') as string;

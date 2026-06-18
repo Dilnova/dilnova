@@ -22,6 +22,7 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
     category: 'info' as CategoryType,
     subject: '',
     message: '',
+    middleName: '', // Honeypot field for anti-spam
   });
 
   useEffect(() => {
@@ -62,12 +63,13 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
     submissionData.append('category', formData.category);
     submissionData.append('subject', formData.subject);
     submissionData.append('message', formData.message);
+    submissionData.append('middleName', formData.middleName);
 
     startTransition(async () => {
       const result = await submitContactFormAction(null, submissionData);
       if (result.success) {
         setState({ success: true, error: null });
-        setFormData({ name: '', email: '', category: 'info', subject: '', message: '' });
+        setFormData({ name: '', email: '', category: 'info', subject: '', message: '', middleName: '' });
       } else {
         setState({ success: false, error: result.error });
       }
@@ -219,6 +221,20 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
                       className="w-full h-11 px-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-purple-500/40 dark:focus:ring-purple-500/30 transition-all duration-200"
                     />
                   </div>
+                </div>
+
+                {/* Honeypot field (hidden from users, targeted at spam bots) */}
+                <div className="hidden" aria-hidden="true">
+                  <label htmlFor="middleName" className="sr-only">Middle Name</label>
+                  <input
+                    type="text"
+                    id="middleName"
+                    name="middleName"
+                    tabIndex={-1}
+                    value={formData.middleName}
+                    onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
+                    autoComplete="off"
+                  />
                 </div>
 
                 <div>
