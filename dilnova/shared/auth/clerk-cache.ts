@@ -92,7 +92,7 @@ export async function getCachedOrganizations(client?: ClerkOrganizationsClient):
  * Forces invalidation/clear of the cache (useful for admin actions).
  */
 export function invalidateClerkCache() {
-  revalidateTag('clerk-organizations');
+  revalidateTag('clerk-organizations', 'max');
 }
 
 /**
