@@ -109,13 +109,23 @@ export async function verifyOrderPaymentAction(orderId: string) {
         orderId: order.id,
         error: emailResult.error,
       });
+      await logAuditAction({
+        userId: userId!,
+        action: 'EMAIL_DELIVERY_FAILURE',
+        targetType: 'simulated_order',
+        targetId: order.id,
+        metadata: {
+          emailType: 'payment_verified',
+          error: emailResult.error,
+        },
+      });
     }
 
     revalidateVendorConsole();
     revalidatePath('/customer');
     revalidatePath('/superadmin');
 
-    return { success: true as const };
+    return { success: true as const, emailSent: emailResult.success };
   });
 }
 
@@ -154,13 +164,24 @@ export async function rejectPaymentSlipAction(orderId: string, reason?: string) 
         orderId: order.id,
         error: emailResult.error,
       });
+      await logAuditAction({
+        userId: userId!,
+        action: 'EMAIL_DELIVERY_FAILURE',
+        targetType: 'simulated_order',
+        targetId: order.id,
+        metadata: {
+          emailType: 'payment_slip_rejected',
+          reason: parsed.data.reason || null,
+          error: emailResult.error,
+        },
+      });
     }
 
     revalidateVendorConsole();
     revalidatePath('/customer');
     revalidatePath(`/customer/invoice/${order.id}`);
 
-    return { success: true as const };
+    return { success: true as const, emailSent: emailResult.success };
   });
 }
 
@@ -202,13 +223,23 @@ export async function cancelVendorOrderAction(orderId: string) {
         orderId: order.id,
         error: emailResult.error,
       });
+      await logAuditAction({
+        userId: userId!,
+        action: 'EMAIL_DELIVERY_FAILURE',
+        targetType: 'simulated_order',
+        targetId: order.id,
+        metadata: {
+          emailType: 'order_cancelled',
+          error: emailResult.error,
+        },
+      });
     }
 
     revalidateVendorConsole();
     revalidatePath('/customer');
     revalidatePath('/superadmin');
 
-    return { success: true as const };
+    return { success: true as const, emailSent: emailResult.success };
   });
 }
 
