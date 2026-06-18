@@ -5,7 +5,8 @@ export * from '@/features/orders/stock';
 export * from '@/features/orders/transitions';
 export * from '@/features/orders/schema';
 export {
-  uploadAndSubmitPaymentSlipAction,
+  createPaymentSlipUploadPresignedUrlAction,
+  submitPaymentSlipPathAction,
   submitPaymentSlipAction,
 } from '@/features/orders/customer.actions';
 export {

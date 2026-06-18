@@ -81,3 +81,47 @@ export async function resolvePaymentSlipPreviewUrl(
     return null;
   }
 }
+
+export async function createPaymentSlipSignedUploadUrl(input: {
+  orderId: string;
+  contentType: PaymentSlipMimeType;
+}): Promise<{ signedUrl: string; storagePath: string }> {
+  const extension = PAYMENT_SLIP_MIME_TO_EXT[input.contentType];
+  const storagePath = buildPaymentSlipStoragePath(input.orderId, extension);
+  const supabase = createSupabaseAdminClient();
+
+  const { data, error } = await supabase.storage
+    .from(PAYMENT_SLIPS_BUCKET)
+    .createSignedUploadUrl(storagePath);
+
+  if (error || !data?.signedUrl) {
+    throw new Error(error?.message || 'Failed to generate signed upload URL.');
+  }
+
+  return {
+    signedUrl: data.signedUrl,
+    storagePath,
+  };
+}
+
+export async function verifyPaymentSlipFileExists(storagePath: string): Promise<boolean> {
+  if (!isPaymentSlipStoragePath(storagePath)) {
+    return false;
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const parts = storagePath.split('/');
+  const folderPath = parts.slice(0, -1).join('/');
+  const fileName = parts[parts.length - 1];
+
+  const { data, error } = await supabase.storage
+    .from(PAYMENT_SLIPS_BUCKET)
+    .list(folderPath, { search: fileName });
+
+  if (error || !data) {
+    return false;
+  }
+
+  return data.some((file) => file.name === fileName);
+}
+
