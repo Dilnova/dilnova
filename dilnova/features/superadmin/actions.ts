@@ -146,11 +146,16 @@ export async function updateContactStatusAction(
     await rateLimit(20, 60 * 1000);
     const adminUser = await checkSuperAdmin();
 
+    const parsedId = uuidField.safeParse(id);
+    if (!parsedId.success) {
+      throw new Error('Invalid ID format.');
+    }
+
     // 1. Fetch the contact submission
     const [submission] = await db
       .select()
       .from(schema.contactSubmissions)
-      .where(eq(schema.contactSubmissions.id, id))
+      .where(eq(schema.contactSubmissions.id, parsedId.data))
       .limit(1);
 
     if (!submission) {
@@ -161,7 +166,7 @@ export async function updateContactStatusAction(
     await db
       .update(schema.contactSubmissions)
       .set({ status, updatedAt: new Date() })
-      .where(eq(schema.contactSubmissions.id, id));
+      .where(eq(schema.contactSubmissions.id, parsedId.data));
 
     // 3. Search and Sync Clerk user role
     try {
@@ -201,7 +206,7 @@ export async function updateContactStatusAction(
       userId: adminUser.id,
       action: 'UPDATE_CONTACT_STATUS',
       targetType: 'contact',
-      targetId: id,
+      targetId: parsedId.data,
       metadata: { status, email: submission.email },
     });
 
