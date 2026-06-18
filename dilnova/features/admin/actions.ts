@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { updateMemberRoleSchema } from '@/features/admin/schema';
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
+import { rateLimit } from '@/shared/security/rate-limit';
 
 /**
  * Updates a member's role inside the active Clerk organization.
@@ -12,6 +13,8 @@ import { runWithCorrelationId } from '@/shared/security/async-context';
  */
 export async function updateOrganizationMemberRole(organizationId: string, userId: string, newRole: string) {
   return runWithCorrelationId(async () => {
+    await rateLimit(10, 60 * 1000);
+
     // ── Schema Validation ──
     const parsed = updateMemberRoleSchema.safeParse({ organizationId, userId, newRole });
     if (!parsed.success) {
