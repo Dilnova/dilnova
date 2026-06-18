@@ -127,7 +127,13 @@ const nextConfig: NextConfig = {
       }
     }
 
+    const fallbackCsp = `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com http://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:;${isProd ? ' upgrade-insecure-requests;' : ''}`;
+
     const headersList = [
+      {
+        key: 'Content-Security-Policy',
+        value: fallbackCsp,
+      },
       {
         key: 'X-Frame-Options',
         value: 'DENY',
