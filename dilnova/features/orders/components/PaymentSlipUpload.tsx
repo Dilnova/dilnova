@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
-import { uploadAndSubmitPaymentSlipAction } from '@/features/orders/customer.actions';
+import { createPaymentSlipUploadPresignedUrlAction, submitPaymentSlipPathAction } from '@/features/orders/customer.actions';
 
 interface PaymentSlipUploadProps {
   orderId: string;
@@ -48,27 +48,53 @@ export default function PaymentSlipUpload({
 
     setMessage(null);
 
-    const formData = new FormData();
-    formData.append('orderId', orderId);
-    formData.append('file', file);
-    if (customerEmail) {
-      formData.append('customerEmail', customerEmail);
-    }
-
     startTransition(async () => {
       try {
-        const result = await uploadAndSubmitPaymentSlipAction(formData);
+        // 1. Request a pre-signed upload URL from the server
+        const presignResult = await createPaymentSlipUploadPresignedUrlAction({
+          orderId,
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+        });
 
-        if (result.success) {
-          if (result.previewUrl) {
-            setSlipPreviewUrl(result.previewUrl);
+        if (!presignResult.success) {
+          setMessage({ type: 'error', text: presignResult.error || 'Failed to initialize upload.' });
+          return;
+        }
+
+        const { signedUrl, storagePath } = presignResult;
+
+        // 2. Upload file binary directly to Supabase storage
+        const uploadResponse = await fetch(signedUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': file.type,
+          },
+          body: file,
+        });
+
+        if (!uploadResponse.ok) {
+          const errText = await uploadResponse.text();
+          throw new Error(errText || 'Failed to upload file to storage.');
+        }
+
+        // 3. Confirm path and submit the change to the database
+        const submitResult = await submitPaymentSlipPathAction({
+          orderId,
+          storagePath,
+        });
+
+        if (submitResult.success) {
+          if (submitResult.previewUrl) {
+            setSlipPreviewUrl(submitResult.previewUrl);
           }
           setMessage({
             type: 'success',
             text: 'Payment slip submitted. The vendor will review your transfer shortly.',
           });
         } else {
-          setMessage({ type: 'error', text: result.error || 'Failed to save payment slip.' });
+          setMessage({ type: 'error', text: submitResult.error || 'Failed to save payment slip.' });
         }
       } catch (error) {
         setMessage({

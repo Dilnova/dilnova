@@ -58,11 +58,12 @@ if (clerkDomain) {
 
 const nextConfig: NextConfig = {
   /**
-   * Payment slip uploads accept files up to 8 MB — default Server Action limit is 1 MB.
+   * Safe default size limit for server actions to prevent large payloads and memory exhaustion.
+   * Large file uploads (like payment slips) bypass Next.js server actions and go directly to cloud storage.
    */
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb',
+      bodySizeLimit: '2mb',
     },
   },
 
