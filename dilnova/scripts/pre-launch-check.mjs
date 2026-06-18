@@ -20,6 +20,7 @@ const strict = process.argv.includes('--strict');
 
 const required = [
   'DATABASE_URL',
+  'PII_ENCRYPTION_KEY',
   'CLERK_SECRET_KEY',
   'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
   'NEXT_PUBLIC_APP_URL',

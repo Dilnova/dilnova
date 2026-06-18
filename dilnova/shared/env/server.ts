@@ -4,6 +4,7 @@ const nonEmpty = z.string().trim().min(1);
 
 const productionServerEnvSchema = z.object({
   DATABASE_URL: nonEmpty,
+  PII_ENCRYPTION_KEY: nonEmpty,
   CLERK_SECRET_KEY: nonEmpty,
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: nonEmpty,
   NEXT_PUBLIC_APP_URL: nonEmpty.url(),
