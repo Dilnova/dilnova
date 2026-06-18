@@ -10,6 +10,10 @@ vi.mock('@/shared/logging/logger', () => ({
   },
 }));
 
+vi.mock('@/shared/security/rate-limit', () => ({
+  rateLimit: vi.fn(() => Promise.resolve()),
+}));
+
 describe('POST /api/csp-report', () => {
   beforeEach(() => {
     vi.clearAllMocks();

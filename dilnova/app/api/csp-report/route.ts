@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/shared/logging/logger';
+import { rateLimit } from '@/shared/security/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    // Aggressive rate limiting for CSP reports to prevent DoS (max 5 reports per minute per IP)
+    await rateLimit(5, 60 * 1000);
     const contentType = req.headers.get('content-type') || '';
     
     let body: any;

@@ -20,6 +20,21 @@ const isPublicRoute = createRouteMatcher([
   '/robots.txt'      // Allow public access to robots.txt
 ]);
 
+function getSentryCspReportUri(): string | null {
+  const dsn = process.env.SENTRY_DSN;
+  if (!dsn) return null;
+  try {
+    const url = new URL(dsn);
+    const publicKey = url.username;
+    const projectId = url.pathname.replace(/^\//, '');
+    const host = url.host;
+    if (publicKey && projectId && host) {
+      return `https://${host}/api/${projectId}/security/?sentry_key=${publicKey}`;
+    }
+  } catch {}
+  return null;
+}
+
 const clerkHandler = clerkMiddleware(async (auth, req) => {
   const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
   const nonce = crypto.randomUUID();
@@ -54,21 +69,31 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   }
 
   const isProd = process.env.NODE_ENV === 'production';
-  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:${isProd ? '' : " 'unsafe-eval'"}; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com http://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:; report-uri /api/csp-report; report-to csp-endpoint;${isProd ? ' upgrade-insecure-requests;' : ''}`;
+  const sentryCspUrl = getSentryCspReportUri();
+  
+  const reportingDirectives = sentryCspUrl
+    ? `report-uri ${sentryCspUrl};`
+    : `report-uri /api/csp-report; report-to csp-endpoint;`;
+
+  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:${isProd ? '' : " 'unsafe-eval'"}; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com http://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:; ${reportingDirectives}${isProd ? ' upgrade-insecure-requests;' : ''}`;
 
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000';
   const protocol = req.headers.get('x-forwarded-proto') || 'http';
   const reportToUrl = `${protocol}://${host}/api/csp-report`;
   
-  const reportToHeader = JSON.stringify({
-    group: 'csp-endpoint',
-    max_age: 10886400,
-    endpoints: [{ url: reportToUrl }],
-  });
+  const reportToHeader = sentryCspUrl
+    ? null
+    : JSON.stringify({
+        group: 'csp-endpoint',
+        max_age: 10886400,
+        endpoints: [{ url: reportToUrl }],
+      });
 
   response.headers.set('x-request-id', requestId);
   response.headers.set('Content-Security-Policy', cspHeader);
-  response.headers.set('Report-To', reportToHeader);
+  if (reportToHeader) {
+    response.headers.set('Report-To', reportToHeader);
+  }
   return response;
 });
 
