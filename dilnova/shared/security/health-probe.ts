@@ -7,12 +7,7 @@ export function isAuthorizedHealthDetailRequest(request: Request): boolean {
   }
 
   const authHeader = request.headers.get('authorization');
-  if (authHeader === `Bearer ${secret}`) {
-    return true;
-  }
-
-  const headerToken = request.headers.get('x-health-check-secret');
-  return headerToken === secret;
+  return authHeader === `Bearer ${secret}`;
 }
 
 export interface PublicHealthResponse {
