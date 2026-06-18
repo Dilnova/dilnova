@@ -24,14 +24,16 @@ export async function logAuditAction({
   const redactedMetadata = metadata ? redactSensitiveData(metadata) : null;
 
   try {
+    // Write raw metadata to the database for forensic auditing
     await db.insert(auditLogs).values({
       userId,
       action,
       targetType,
       targetId,
-      metadata: redactedMetadata,
+      metadata: metadata,
     });
 
+    // Log redacted metadata to avoid leaking PII into monitoring systems
     logger.info(`Audit log created: ${action}`, {
       userId,
       action,
