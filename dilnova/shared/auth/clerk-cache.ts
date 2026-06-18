@@ -135,3 +135,31 @@ export const getCachedIsSuperAdmin = unstable_cache(
     revalidate: 300,
   }
 );
+
+export const getCachedOrgMembers = unstable_cache(
+  async (orgId: string): Promise<{ userId: string; name: string; email: string }[]> => {
+    try {
+      logger.info(`Fetching organization memberships for org ${orgId} from Clerk API`);
+      const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      const memberships = await client.organizations.getOrganizationMembershipList({
+        organizationId: orgId,
+        limit: 100, // Max page size
+      });
+      return memberships.data
+        .filter((m) => m.role !== 'org:admin' && m.publicUserData?.userId)
+        .map((m) => ({
+          userId: m.publicUserData?.userId || '',
+          name: `${m.publicUserData?.firstName || ''} ${m.publicUserData?.lastName || ''}`.trim() || m.publicUserData?.identifier || 'Unknown Member',
+          email: m.publicUserData?.identifier || '',
+        }));
+    } catch (err) {
+      logger.error(`Failed to fetch organization memberships for ${orgId} from Clerk`, err);
+      throw err;
+    }
+  },
+  ['clerk-org-members'],
+  {
+    tags: ['clerk-org-members'],
+    revalidate: 300, // Cache for 5 minutes
+  }
+);

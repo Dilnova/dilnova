@@ -4,6 +4,7 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { auth, clerkClient } from '@clerk/nextjs/server';
+import { getCachedOrgMembers } from '@/shared/auth/clerk-cache';
 import { getPremiumStatus } from '@/features/inventory/premium-license';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { runWithCorrelationId } from '@/shared/security/async-context';
@@ -37,6 +38,11 @@ export async function verifyVendorAccess(options?: { allowMember?: boolean }) {
 
 export type GetVendorInventoryDataOptions = {
   allowMember?: boolean;
+  productsLimit?: number;
+  productsOffset?: number;
+  movementsLimit?: number;
+  ordersLimit?: number;
+  ordersOffset?: number;
 };
 
 // ── GET VENDOR IMS DATA ──────────────────────────────────────
@@ -54,6 +60,9 @@ export async function loadVendorInventoryData(
       throw new Error('POS Billing Register feature is not unlocked on your account tier.');
     }
 
+    const productsLimit = options?.productsLimit ?? 200;
+    const productsOffset = options?.productsOffset ?? 0;
+
     // 1. Fetch Products
     const vendorProducts = await db
       .select({
@@ -63,7 +72,9 @@ export async function loadVendorInventoryData(
         orgId: schema.products.orgId,
       })
       .from(schema.products)
-      .where(eq(schema.products.orgId, orgId));
+      .where(eq(schema.products.orgId, orgId))
+      .limit(productsLimit)
+      .offset(productsOffset);
 
     const productIds = vendorProducts.map((p) => p.id);
 
@@ -120,7 +131,9 @@ export async function loadVendorInventoryData(
         .from(schema.products)
         .leftJoin(schema.inventory, eq(schema.products.id, schema.inventory.productId))
         .leftJoin(schema.suppliers, eq(schema.inventory.supplierId, schema.suppliers.id))
-        .where(eq(schema.products.orgId, orgId));
+        .where(eq(schema.products.orgId, orgId))
+        .limit(productsLimit)
+        .offset(productsOffset);
     }
 
     let productsWithoutInventory: typeof vendorProducts = [];
@@ -144,6 +157,7 @@ export async function loadVendorInventoryData(
     let movements: any[] = [];
     if (scope === 'full' && inventoryItems.length > 0) {
       const inventoryIds = inventoryItems.map((i) => i.id);
+      const movementsLimit = options?.movementsLimit ?? 100;
       movements = await db
         .select({
           id: schema.inventoryMovements.id,
@@ -162,7 +176,7 @@ export async function loadVendorInventoryData(
         .innerJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
         .where(inArray(schema.inventoryMovements.inventoryId, inventoryIds))
         .orderBy(desc(schema.inventoryMovements.createdAt))
-        .limit(100);
+        .limit(movementsLimit);
     }
 
     // 5. Fetch Simulated Orders (full IMS workspace only)
@@ -176,12 +190,17 @@ export async function loadVendorInventoryData(
 
       const orderIds = Array.from(new Set(relatedItems.map((item) => item.orderId)));
 
+      const ordersLimit = options?.ordersLimit ?? 50;
+      const ordersOffset = options?.ordersOffset ?? 0;
+
       if (orderIds.length > 0) {
         const ordersList = await db
           .select()
           .from(schema.simulatedOrders)
           .where(inArray(schema.simulatedOrders.id, orderIds))
-          .orderBy(desc(schema.simulatedOrders.createdAt));
+          .orderBy(desc(schema.simulatedOrders.createdAt))
+          .limit(ordersLimit)
+          .offset(ordersOffset);
 
         // Attach items
         const branchNameById = new Map(
@@ -337,18 +356,10 @@ export async function loadVendorInventoryData(
         .limit(50);
     }
 
-    // Fetch org members list from Clerk for display in branch mapping (filter out org admins)
+    // Fetch org members list from Clerk for display in branch mapping (cached)
     let orgMembers: { userId: string; name: string; email: string }[] = [];
     try {
-      const client = await clerkClient();
-      const memberships = await client.organizations.getOrganizationMembershipList({ organizationId: orgId });
-      orgMembers = memberships.data
-        .filter((m) => m.role !== 'org:admin' && m.publicUserData?.userId)
-        .map((m) => ({
-          userId: m.publicUserData?.userId || '',
-          name: `${m.publicUserData?.firstName || ''} ${m.publicUserData?.lastName || ''}`.trim() || m.publicUserData?.identifier || 'Unknown Member',
-          email: m.publicUserData?.identifier || '',
-        }));
+      orgMembers = await getCachedOrgMembers(orgId);
     } catch (err) {
       // Graceful degradation
     }
