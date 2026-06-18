@@ -1,6 +1,6 @@
 import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
 import { logger } from '@/shared/logging/logger';
-import { unstable_cache } from 'next/cache';
+import { unstable_cache, revalidateTag } from 'next/cache';
 import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
 import {
   sanitizeVendorPublicMetadata,
@@ -15,9 +15,7 @@ export interface CachedOrg {
   publicMetadata: StorefrontPublicMetadata;
 }
 
-let cachedOrgs: CachedOrg[] | null = null;
-let lastCacheFetch = 0;
-const CACHE_TTL = 5 * 60 * 1000; // Cache for 5 minutes
+
 
 type ClerkOrganizationsClient = Awaited<ReturnType<typeof clerkClient>>;
 
@@ -59,35 +57,42 @@ export async function fetchAllClerkOrganizations(client: ClerkOrganizationsClien
   return all;
 }
 
-/**
- * Retrieves the list of Clerk organizations using an in-memory cache to bypass
- * slow network API requests.
- */
-export async function getCachedOrganizations(client: ClerkOrganizationsClient): Promise<CachedOrg[]> {
-  // If cache is empty or expired, perform a fresh fetch
-  if (!cachedOrgs || Date.now() - lastCacheFetch > CACHE_TTL) {
+const getCachedOrganizationsInternal = unstable_cache(
+  async (): Promise<CachedOrg[]> => {
     logger.info('Clerk organization cache miss, fetching from API');
     try {
-      cachedOrgs = await fetchAllClerkOrganizations(client);
-      lastCacheFetch = Date.now();
+      const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      return await fetchAllClerkOrganizations(client);
     } catch (err) {
-      logger.error('Failed to fetch organizations from Clerk API', err);
-      // Return stale cache if available, otherwise empty array
-      return cachedOrgs || [];
+      logger.error('Failed to fetch organizations from Clerk API in unstable_cache', err);
+      throw err;
     }
-  } else {
-    logger.info('Clerk organization cache hit, reusing cached list');
+  },
+  ['clerk-organizations'],
+  {
+    tags: ['clerk-organizations'],
+    revalidate: 300, // 5 minutes
   }
+);
 
-  return cachedOrgs || [];
+/**
+ * Retrieves the list of Clerk organizations using Next.js unstable_cache
+ * to bypass slow network API requests.
+ */
+export async function getCachedOrganizations(client?: ClerkOrganizationsClient): Promise<CachedOrg[]> {
+  try {
+    return await getCachedOrganizationsInternal();
+  } catch (err) {
+    logger.error('Error fetching cached organizations, returning empty fallback', err);
+    return [];
+  }
 }
 
 /**
  * Forces invalidation/clear of the cache (useful for admin actions).
  */
 export function invalidateClerkCache() {
-  cachedOrgs = null;
-  lastCacheFetch = 0;
+  revalidateTag('clerk-organizations');
 }
 
 /**
