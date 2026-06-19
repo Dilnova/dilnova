@@ -30,8 +30,8 @@ export function encryptString(text: string): string {
   }
 
   try {
-    // Derive secure 32-byte key using HKDF
-    const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v1', 'aes-256-gcm', 32);
+    // Derive secure 32-byte key using HKDF for version 2 (v2)
+    const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v2', 'aes-256-gcm', 32);
     const hashedKey = Buffer.from(keyArrayBuffer);
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(ALGORITHM, hashedKey, iv);
@@ -42,8 +42,8 @@ export function encryptString(text: string): string {
     ]);
     const tag = cipher.getAuthTag();
 
-    // Package with "v1" prefix to support key rotation/versioning
-    return `v1:${iv.toString('hex')}:${encrypted.toString('hex')}:${tag.toString('hex')}`;
+    // Package with "v2" prefix
+    return `v2:${iv.toString('hex')}:${encrypted.toString('hex')}:${tag.toString('hex')}`;
   } catch (error) {
     if (isProduction()) {
       throw new Error('Encryption failed. Refusing to store PII in cleartext.');
@@ -55,15 +55,17 @@ export function encryptString(text: string): string {
 
 /**
  * Decrypts a ciphertext string created by encryptString.
+ * Supports v2, v1, and legacy unversioned decryptions using key fallback.
  *
- * In production, throws if PII_ENCRYPTION_KEY is not configured.
- * In development/test, falls back to returning the input string when the key
- * is absent so local workflows are not disrupted.
+ * In production, throws if appropriate key is not configured.
+ * In development/test, falls back to returning the input string when keys are absent.
  */
 export function decryptString(encryptedText: string): string {
   if (!encryptedText) return encryptedText;
 
   const key = process.env.PII_ENCRYPTION_KEY?.trim();
+  const fallbackKeyV1 = process.env.PII_ENCRYPTION_KEY_V1?.trim();
+
   if (!key) {
     if (isProduction()) {
       throw new Error(
@@ -73,16 +75,39 @@ export function decryptString(encryptedText: string): string {
     return encryptedText;
   }
 
-  const hasVersion = encryptedText.startsWith('v1:');
+  const isV2 = encryptedText.startsWith('v2:');
+  const isV1 = encryptedText.startsWith('v1:');
 
   try {
-    if (hasVersion) {
+    if (isV2) {
       const parts = encryptedText.split(':');
       if (parts.length !== 4) {
         return encryptedText;
       }
       const [, ivHex, encryptedHex, tagHex] = parts;
-      const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v1', 'aes-256-gcm', 32);
+      const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v2', 'aes-256-gcm', 32);
+      const hashedKey = Buffer.from(keyArrayBuffer);
+      const iv = Buffer.from(ivHex, 'hex');
+      const encrypted = Buffer.from(encryptedHex, 'hex');
+      const tag = Buffer.from(tagHex, 'hex');
+
+      const decipher = crypto.createDecipheriv(ALGORITHM, hashedKey, iv);
+      decipher.setAuthTag(tag);
+
+      return Buffer.concat([
+        decipher.update(encrypted),
+        decipher.final()
+      ]).toString('utf8');
+    } else if (isV1) {
+      const parts = encryptedText.split(':');
+      if (parts.length !== 4) {
+        return encryptedText;
+      }
+      const [, ivHex, encryptedHex, tagHex] = parts;
+      
+      // Use fallback v1 key if configured, otherwise fall back to primary key
+      const decryptionKey = fallbackKeyV1 || key;
+      const keyArrayBuffer = crypto.hkdfSync('sha256', decryptionKey, 'dilnova-pii-v1', 'aes-256-gcm', 32);
       const hashedKey = Buffer.from(keyArrayBuffer);
       const iv = Buffer.from(ivHex, 'hex');
       const encrypted = Buffer.from(encryptedHex, 'hex');
@@ -96,13 +121,16 @@ export function decryptString(encryptedText: string): string {
         decipher.final()
       ]).toString('utf8');
     } else {
-      // Legacy unversioned (v0) decryption using SHA-256 key derivation
+      // Legacy unversioned (v0) decryption
       const parts = encryptedText.split(':');
       if (parts.length !== 3) {
         return encryptedText;
       }
       const [ivHex, encryptedHex, tagHex] = parts;
-      const hashedKey = crypto.createHash('sha256').update(key).digest();
+
+      // Use fallback v1 key if configured, otherwise fall back to primary key
+      const decryptionKey = fallbackKeyV1 || key;
+      const hashedKey = crypto.createHash('sha256').update(decryptionKey).digest();
       const iv = Buffer.from(ivHex, 'hex');
       const encrypted = Buffer.from(encryptedHex, 'hex');
       const tag = Buffer.from(tagHex, 'hex');

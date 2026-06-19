@@ -78,14 +78,41 @@ describe('Encryption Utilities', () => {
     expect(decrypted).toBe(rawText);
   });
 
-  it('should prefix newly encrypted ciphertext with v1:', () => {
+  it('should prefix newly encrypted ciphertext with v2:', () => {
     process.env.PII_ENCRYPTION_KEY = 'super-secret-key-123456789012345';
     const rawText = 'Fresh plaintext data to encrypt.';
     
     const encrypted = encryptString(rawText);
-    expect(encrypted.startsWith('v1:')).toBe(true);
+    expect(encrypted.startsWith('v2:')).toBe(true);
 
     const decrypted = decryptString(encrypted);
+    expect(decrypted).toBe(rawText);
+  });
+
+  it('should decrypt v1 ciphertext using fallback PII_ENCRYPTION_KEY_V1 key', () => {
+    const oldKey = 'old-key-v1-super-secret-12345';
+    const newKey = 'new-key-v2-super-secret-67890';
+    
+    process.env.PII_ENCRYPTION_KEY = oldKey;
+    const rawText = 'V1 encrypted data.';
+    
+    // Manually encrypt with v1 (using old HKDF salt 'dilnova-pii-v1')
+    const keyArrayBuffer = crypto.hkdfSync('sha256', oldKey, 'dilnova-pii-v1', 'aes-256-gcm', 32);
+    const hashedKey = Buffer.from(keyArrayBuffer);
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', hashedKey, iv);
+    const encrypted = Buffer.concat([
+      cipher.update(rawText, 'utf8'),
+      cipher.final()
+    ]);
+    const tag = cipher.getAuthTag();
+    const v1Ciphertext = `v1:${iv.toString('hex')}:${encrypted.toString('hex')}:${tag.toString('hex')}`;
+
+    // Set new key as active, and old key as fallback
+    process.env.PII_ENCRYPTION_KEY = newKey;
+    process.env.PII_ENCRYPTION_KEY_V1 = oldKey;
+
+    const decrypted = decryptString(v1Ciphertext);
     expect(decrypted).toBe(rawText);
   });
 

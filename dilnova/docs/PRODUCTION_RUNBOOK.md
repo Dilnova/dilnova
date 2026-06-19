@@ -217,5 +217,33 @@ Findings discovered during penetration tests or automated scanners must be remed
 - **Medium findings**: Remediated within **30 days** of disclosure.
 - **Low findings**: Remediated within **90 days** or recorded as documented business-accepted risks.
 
+---
 
+## PII Encryption Key Rotation Procedure
 
+To safeguard customer and submission data against potential key compromises, follow this key rotation protocol. The platform supports seamless rotation from `v1` to `v2` (and subsequent versions) without downtime using environment-configured fallback keys.
+
+### Key Rotation Steps
+
+1. **Generate a New 256-bit Key**:
+   Create a new random 32-byte hex key:
+   ```bash
+   node -e "console.log(crypto.randomBytes(32).toString('hex'))"
+   ```
+
+2. **Configure Environment Variables in Vercel**:
+   * Set `PII_ENCRYPTION_KEY_V1` to the **old** key (currently in use).
+   * Set `PII_ENCRYPTION_KEY` to the **newly generated** key.
+   * Save and deploy. The application will now encrypt all new data with the new key (`v2` prefix) while decrypting existing `v1` and legacy data using the fallback key.
+
+3. **Perform Database Migration (Re-encryption)**:
+   Run the batch re-encryption script to scan the database, decrypt all old PII records using the old key, and re-encrypt them with the new key:
+   ```bash
+   npx tsx scripts/rotate-pii-keys.ts
+   ```
+
+4. **Verify Rotation**:
+   Ensure all database PII records are updated to `v2` (no rows remain starting with `v1:` or legacy unversioned formatting).
+
+5. **Clean Up Fallback Key**:
+   Once all data has been re-encrypted to the latest version, remove the `PII_ENCRYPTION_KEY_V1` environment variable from Vercel.
