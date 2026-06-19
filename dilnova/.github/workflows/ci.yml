@@ -66,6 +66,8 @@ jobs:
           EMAIL_FROM_NAME: "Placeholder"
           SUPERADMIN_USER_IDS: "user_placeholder"
           CLERK_WEBHOOK_SECRET: "whsec_placeholder"
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
+          TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
 
 
   secrets-scan:
@@ -150,5 +152,7 @@ jobs:
           EMAIL_FROM_NAME: "Placeholder"
           SUPERADMIN_USER_IDS: "user_placeholder"
           CLERK_WEBHOOK_SECRET: "whsec_placeholder"
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
+          TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
 
 

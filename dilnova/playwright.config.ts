@@ -24,6 +24,16 @@ const webServerEnv: Record<string, string> = {
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? 'sb_dummy',
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'sb_service_dummy',
+  PII_ENCRYPTION_KEY: process.env.PII_ENCRYPTION_KEY ?? 'placeholder_key_at_least_32_characters_long',
+  HEALTH_CHECK_SECRET: process.env.HEALTH_CHECK_SECRET ?? 'placeholder',
+  SMTP_USER: process.env.SMTP_USER ?? 'placeholder',
+  SMTP_PASSWORD: process.env.SMTP_PASSWORD ?? 'placeholder',
+  EMAIL_FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS ?? 'info@example.com',
+  EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME ?? 'Placeholder',
+  SUPERADMIN_USER_IDS: process.env.SUPERADMIN_USER_IDS ?? 'user_placeholder',
+  CLERK_WEBHOOK_SECRET: process.env.CLERK_WEBHOOK_SECRET ?? 'whsec_placeholder',
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '1x00000000000000000000AA',
+  TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY ?? '1x00000000000000000000AA',
 };
 
 export default defineConfig({
