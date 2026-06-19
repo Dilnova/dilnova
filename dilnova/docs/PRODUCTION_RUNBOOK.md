@@ -45,17 +45,32 @@ node scripts/pre-launch-check.mjs
 1. Vercel → Project → Deployments
 2. Find last known-good deployment → **Promote to Production**
 
-### Database (slow — use only if schema/data bad)
+### Database Disaster Recovery (RTO / RPO & Restore Procedures)
 
-1. Supabase → Database → Backups / Point-in-time recovery
-2. Restore to timestamp before bad migration or data incident
-3. **Note:** Drizzle migrations are forward-only; app rollback does not undo SQL
+#### Disaster Recovery Targets
+- **Recovery Time Objective (RTO)**: 4 hours (target maximum time to restore full service).
+- **Recovery Point Objective (RPO)**: 1 hour (target maximum data loss window, achieved via PITR).
 
-### Clerk metadata migrations
+#### Backup Strategy
+- **PITR (Point-in-Time Recovery)**: Must be enabled in Supabase Dashboard (Database → Backups) to allow physical backups and logical log recovery to any given second.
+- **Daily Backups**: Supabase automatically captures daily logical dumps (retained for 7 days on free/Pro, up to 30 days on Enterprise).
 
-- Bank/superadmin migrations are **not auto-reversible**
-- Keep dry-run output before applying
-- Revert manually in Clerk Dashboard if needed
+#### Database Restore Runbook
+1. Log into the [Supabase Dashboard](https://supabase.com/dashboard).
+2. Navigate to your project -> **Database** -> **Backups**.
+3. Under **Point-in-Time Recovery (PITR)**, select the target timestamp you wish to restore to (choose a time immediately prior to the data corruption or migration failure).
+4. Click **Restore Database**. Note that the restore process takes the database offline temporarily.
+5. **Important Note**: Drizzle migrations are forward-only. A code/application rollback does not automatically undo SQL schema changes, so a database restore is the primary method to revert destructive DDL changes.
+
+#### Quarterly Restore Drills
+- DevOps / Database Admin must schedule and execute restore drills every quarter.
+- **Procedure**: Restore a production snapshot onto a temporary staging database clone, apply migrations, and verify integrity of tables, data decryption (using `PII_ENCRYPTION_KEY`), and core application queries.
+
+### Clerk Metadata Recovery
+
+- Clerk metadata migrations are **not auto-reversible**.
+- Before applying clerk metadata updates, always keep a copy of the migration dry-run output.
+- In case of failures, revert values manually inside the Clerk Dashboard (Users -> click User -> edit privateMetadata).
 
 ---
 
