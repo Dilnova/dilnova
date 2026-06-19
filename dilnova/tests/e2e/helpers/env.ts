@@ -4,9 +4,13 @@ import path from 'node:path';
 const AUTH_DIR = path.join(process.cwd(), 'playwright/.clerk');
 
 export function hasClerkApiKeys(): boolean {
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  const publishableKey = process.env.CLERK_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   return Boolean(
-    process.env.CLERK_SECRET_KEY &&
-    (process.env.CLERK_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
+    secretKey &&
+    !secretKey.includes('placeholder') &&
+    publishableKey &&
+    !publishableKey.includes('placeholder')
   );
 }
 

@@ -154,7 +154,9 @@ export default defineConfig({
   ],
   webServer: {
     // Production server keeps server-action IDs aligned with server-reference-manifest.json.
-    command: `sh -c 'pnpm build && exec node ./node_modules/next/dist/bin/next start --port ${PORT}'`,
+    command: process.env.CI
+      ? `node ./node_modules/next/dist/bin/next start --port ${PORT}`
+      : `sh -c 'pnpm build && exec node ./node_modules/next/dist/bin/next start --port ${PORT}'`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 300_000,
