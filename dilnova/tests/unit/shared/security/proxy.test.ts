@@ -42,8 +42,26 @@ describe('Proxy Middleware CSRF Protection', () => {
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 
-  it('allows POST requests without next-action header', () => {
-    const request = new NextRequest('http://localhost:3000/api/contact', {
+  it('rejects POST requests without next-action header when origin/host are missing', () => {
+    const request = new NextRequest('http://localhost:3000/api/some-custom-post', {
+      method: 'POST',
+    });
+    const result = proxy(request, {} as any) as any;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain('Missing Origin or Host header');
+  });
+
+  it('allows POST requests to webhooks without CSRF check', () => {
+    const request = new NextRequest('http://localhost:3000/api/webhooks/clerk', {
+      method: 'POST',
+    });
+    const result = proxy(request, {} as any);
+    expect(result).not.toBeInstanceOf(NextResponse);
+  });
+
+  it('allows POST requests to csp-report without CSRF check', () => {
+    const request = new NextRequest('http://localhost:3000/api/csp-report', {
       method: 'POST',
     });
     const result = proxy(request, {} as any);
