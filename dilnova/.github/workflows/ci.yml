@@ -37,6 +37,9 @@ jobs:
       - name: Validate TypeScript
         run: pnpm exec tsc --noEmit
 
+      - name: Verify Database Migrations
+        run: pnpm run db:verify
+
       - name: Run Unit Tests
         run: pnpm run test
 
