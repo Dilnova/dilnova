@@ -40,10 +40,26 @@ node scripts/pre-launch-check.mjs
 
 ## Rollback
 
-### Application (fast — minutes)
+### Application Rollback (Fast - Minutes)
 
-1. Vercel → Project → Deployments
-2. Find last known-good deployment → **Promote to Production**
+To revert the application to a previous stable state on Vercel:
+
+1.  **Navigate to the Vercel Dashboard**:
+    *   Open the [Vercel Dashboard](https://vercel.com).
+    *   Select the **Dilnova** project console.
+2.  **Go to Deployments**:
+    *   Click on the **Deployments** tab at the top of the project view.
+3.  **Identify the Target Stable Deployment**:
+    *   Locate the last known-good/stable deployment from the chronological list (verify the commit hash and compile timestamp).
+4.  **Promote to Production**:
+    *   Click the triple-dot menu (`...`) next to the target deployment, or click to open the deployment details screen.
+    *   Select **Promote to Production** (or **Rollback** in some Vercel layouts).
+    *   Confirm the action. Production traffic will instantly route to the promoted deployment (takes less than 1 minute).
+5.  **Post-Rollback Verification**:
+    *   Query the public health check endpoint: `GET https://www.dilstar.pp.ua/api/health` and verify the output is `{"status":"ok"}`.
+    *   Verify the build ID or active commit hash on the live site matches the rolled-back deployment.
+    *   Monitor error rates and trace latency via the Vercel logs and Sentry alerts to ensure stability.
+
 
 ### Database Disaster Recovery (RTO / RPO & Restore Procedures)
 
