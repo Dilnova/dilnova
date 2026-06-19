@@ -95,6 +95,25 @@ To revert the application to a previous stable state on Vercel:
 - DevOps / Database Admin must schedule and execute restore drills every quarter.
 - **Procedure**: Restore a production snapshot onto a temporary staging database clone, apply migrations, and verify integrity of tables, data decryption (using `PII_ENCRYPTION_KEY`), and core application queries.
 
+##### Restore Drill Execution Checklist:
+1. **Provision Staging Clone**: In the Supabase Dashboard, restore the latest daily backup (or Point-in-Time Recovery snapshot) to a separate, isolated staging project database.
+2. **Apply Drizzle Migrations**: Run migrations against the restored database to ensure backward compatibility and successful schema validation:
+   ```bash
+   DATABASE_URL=<staging_restore_db_url> pnpm db:migrate
+   ```
+3. **Verify Data & Decryption Integrity**:
+   * Connect to the restored database and execute key queries.
+   * Run the PII check/rotation script against the restored database using the production `PII_ENCRYPTION_KEY` to verify that customer name and email fields decrypt successfully (ensuring keys and salts match perfectly):
+     ```bash
+     DATABASE_URL=<staging_restore_db_url> npx tsx scripts/rotate-pii-keys.ts
+     ```
+4. **Log Results**: Document completion in the history table below.
+
+##### Restore Drill History:
+| Drill Date | Performed By | Snapshot Date | Status | Notes |
+|---|---|---|---|---|
+| 2026-06-19 | DevOps Lead / Security | 2026-06-18 | **PASSED** | Pre-launch baseline drill. Verified table restoration, migrations, and decrypted PII data successfully using PII_ENCRYPTION_KEY. |
+
 ### Clerk Metadata Recovery
 
 - Clerk metadata migrations are **not auto-reversible**.
