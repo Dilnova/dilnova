@@ -38,6 +38,7 @@ const required = [
   'EMAIL_FROM_ADDRESS',
   'EMAIL_FROM_NAME',
   'SUPERADMIN_USER_IDS',
+  'CLERK_WEBHOOK_SECRET',
 ];
 
 const recommended = ['SENTRY_DSN'];
