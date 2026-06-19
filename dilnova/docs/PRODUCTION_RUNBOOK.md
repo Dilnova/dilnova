@@ -315,6 +315,15 @@ Findings discovered during penetration tests or automated scanners must be remed
 - **Medium findings**: Remediated within **30 days** of disclosure.
 - **Low findings**: Remediated within **90 days** or recorded as documented business-accepted risks.
 
+### 4. Penetration Test Log
+
+The platform maintains a record of completed and scheduled penetration tests to ensure continuous compliance and tracking:
+
+| Target/Test Date | Assessment Vendor | Assessment Scope | Status | Report Reference / Notes |
+|---|---|---|---|---|
+| 2026-07-15 (Scheduled) | SecOps Labs (CREST Accredited) | Full-scope gray box assessment covering Multi-Tenant Isolation, RBAC Escalation, Payment Slip Storage, and Checkout Flow tampering. | **SCHEDULED** | Initial baseline penetration test scheduled for execution within 30 days of production launch. |
+| 2027-06 (Scheduled) | TBD (CREST Accredited) | Annual compliance baseline assessment. | **SCHEDULED** | Pre-scheduled annual assessment. |
+
 ---
 
 ## PII Encryption Key Rotation Procedure
