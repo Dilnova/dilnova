@@ -29,11 +29,12 @@ node scripts/pre-launch-check.mjs
 5. Bank details only on invoice (not storefront HTML)
 6. Image upload on vendor catalog
 
-### Monitoring
+### Monitoring & Log Aggregation
 
 - Public uptime: `GET https://www.dilstar.pp.ua/api/health` → `{"status":"ok"}`
 - Detailed probe: `Authorization: Bearer $HEALTH_CHECK_SECRET`
-- Optional: set `SENTRY_DSN` in Vercel for server error alerts
+- Error Tracking: Configure `SENTRY_DSN` in Vercel for server and client error alerts.
+- Log Aggregation (Log Drain): Configure a Vercel Log Drain to export structured application JSON logs to a dedicated log aggregation service (such as **Axiom**, **Datadog**, or **Betterstack**) with a minimum of 90 days retention to support compliance and forensic auditing.
 
 ---
 
