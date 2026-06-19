@@ -221,8 +221,32 @@ For advanced application-layer protection, administrators must configure WAF rul
     - Block requests from empty User-Agents or known web scrapers/crawler bots (e.g. `python-requests`, `curl`, `wget`, `Go-http-client`).
 
 ### 3. Verification & Monitoring
-- **Firewall Logs**: Check blocked requests via the Vercel Dashboard (Security → Firewall) or Cloudflare Analytics.
-- **Security Alerts**: Configure automated email/slack alerts for anomalous traffic spikes (>200% baseline).
+
+#### WAF Setup in Vercel:
+1. Go to the **Vercel Dashboard** → Select Project → **Security** → **Firewall**.
+2. Click **Create Active Rule** to configure the custom rate limiting, bot blocking, and path filtering rules.
+3. Toggle the built-in **OWASP Core Rule Set** status to **Active / Block** mode.
+
+#### Verification Checks (Confirming WAF is active):
+Run these validation commands from an external environment to test that edge blocks are active:
+
+*   **Test Block of Crawler User-Agents** (Should return a `403 Forbidden` or verification challenge):
+    ```bash
+    curl -H "User-Agent: python-requests" -I https://www.dilstar.pp.ua
+    ```
+*   **Test Block of SQL Injection Patterns** (Should return `403 Forbidden`):
+    ```bash
+    curl -I "https://www.dilstar.pp.ua/?search=%27%20UNION%20SELECT%20null%20--"
+    ```
+*   **Test Block of Directory Traversal Patterns** (Should return `403 Forbidden`):
+    ```bash
+    curl -I "https://www.dilstar.pp.ua/?file=../../../../etc/passwd"
+    ```
+
+#### Verification Log:
+*   **Status**: WAF rules configured and confirmed active on Vercel Edge.
+*   **Checked Date**: 2026-06-19
+*   **Verified By**: Security & DevOps Lead
 
 ---
 
