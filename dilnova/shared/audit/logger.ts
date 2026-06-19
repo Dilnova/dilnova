@@ -24,13 +24,13 @@ export async function logAuditAction({
   const redactedMetadata = metadata ? redactSensitiveData(metadata) : null;
 
   try {
-    // Write raw metadata to the database for forensic auditing
+    // Write redacted metadata to the database to avoid storing raw PII
     await db.insert(auditLogs).values({
       userId,
       action,
       targetType,
       targetId,
-      metadata: metadata,
+      metadata: redactedMetadata,
     });
 
     // Log redacted metadata to avoid leaking PII into monitoring systems

@@ -30,7 +30,7 @@ describe('logAuditAction', () => {
     vi.clearAllMocks();
   });
 
-  it('persists raw unredacted metadata to the database but logs redacted metadata to stdout', async () => {
+  it('persists redacted metadata to the database and logs redacted metadata to stdout', async () => {
     const mockValues = vi.fn().mockResolvedValue(undefined);
     vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
 
@@ -47,14 +47,17 @@ describe('logAuditAction', () => {
       metadata: sensitiveMetadata,
     });
 
-    // Verify raw metadata went to the database
+    // Verify redacted metadata went to the database
     expect(db.insert).toHaveBeenCalledWith(auditLogs);
     expect(mockValues).toHaveBeenCalledWith({
       userId: 'user_test',
       action: 'test_action',
       targetType: 'product',
       targetId: 'prod_123',
-      metadata: sensitiveMetadata, // raw / unredacted
+      metadata: {
+        email: '[REDACTED]',
+        itemId: 'item_123',
+      },
     });
 
     // Verify redacted metadata went to stdout logger

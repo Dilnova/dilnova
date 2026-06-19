@@ -13,6 +13,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './'),
       'next/cache': path.resolve(__dirname, './tests/mocks/next-cache.ts'),
       'next/headers': path.resolve(__dirname, './tests/mocks/next-headers.ts'),
+      'server-only': path.resolve(__dirname, './tests/mocks/server-only.ts'),
     },
   },
 });
