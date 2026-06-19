@@ -14,6 +14,8 @@ export const auditLogs = pgTable('audit_logs', {
   targetType: text('target_type').notNull(),
   targetId: text('target_id').notNull(),
   metadata: jsonb('metadata'),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => [
   index('idx_audit_logs_user_id').on(t.userId),

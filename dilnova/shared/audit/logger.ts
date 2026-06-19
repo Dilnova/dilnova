@@ -1,6 +1,7 @@
 import { db } from '@/shared/db/client';
 import { auditLogs } from '@/shared/db/schema';
 import { logger, redactSensitiveData } from '@/shared/logging/logger';
+import { headers } from 'next/headers';
 
 export interface AuditLogParams {
   userId: string;
@@ -22,6 +23,19 @@ export async function logAuditAction({
   metadata = null,
 }: AuditLogParams) {
   const redactedMetadata = metadata ? redactSensitiveData(metadata) : null;
+  let ipAddress: string | null = null;
+  let userAgent: string | null = null;
+
+  try {
+    const headersList = await headers();
+    const forwardedFor = headersList.get('x-forwarded-for');
+    ipAddress = forwardedFor
+      ? forwardedFor.split(',')[0].trim()
+      : headersList.get('x-real-ip') || null;
+    userAgent = headersList.get('user-agent') || null;
+  } catch {
+    // Ignore error if headers() is called outside of request context (e.g. background tasks or tests)
+  }
 
   try {
     // Write redacted metadata to the database to avoid storing raw PII
@@ -31,6 +45,8 @@ export async function logAuditAction({
       targetType,
       targetId,
       metadata: redactedMetadata,
+      ipAddress,
+      userAgent,
     });
 
     // Log redacted metadata to avoid leaking PII into monitoring systems
@@ -40,6 +56,8 @@ export async function logAuditAction({
       targetType,
       targetId,
       metadata: redactedMetadata,
+      ipAddress,
+      userAgent,
     });
   } catch (error) {
     logger.error(`Failed to write audit log for ${action}`, error, {
@@ -48,6 +66,8 @@ export async function logAuditAction({
       targetType,
       targetId,
       metadata: redactedMetadata,
+      ipAddress,
+      userAgent,
     });
   }
 }
