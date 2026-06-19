@@ -192,4 +192,30 @@ For advanced application-layer protection, administrators must configure WAF rul
 - **Firewall Logs**: Check blocked requests via the Vercel Dashboard (Security → Firewall) or Cloudflare Analytics.
 - **Security Alerts**: Configure automated email/slack alerts for anomalous traffic spikes (>200% baseline).
 
+---
+
+## Penetration Testing & Vulnerability Assessment
+
+To maintain compliance and validate application-layer defenses against sophisticated attacks, the platform enforces periodic independent security assessments.
+
+### 1. Penetration Testing Cadence
+- **Frequency**: A formal external penetration test must be conducted at least **annually**, or upon **major architectural modifications** (e.g. migration to a different auth provider, custom billing engine changes).
+- **Vendor Requirements**: Penetration tests must be performed by an independent, CREST-accredited third-party cybersecurity firm.
+
+### 2. Scoping Guidelines
+Penetration tests must cover, at a minimum, the following critical scopes:
+- **Multi-Tenant Isolation (Cross-Tenant Access)**: Verifying that vendor members or customers cannot access, read, or modify orders, logs, or listings belonging to another organization.
+- **Privilege Escalation**: Testing boundaries between standard Customers, Vendor Managers/Admins, and the Superadmin portal.
+- **Secure File Storage (Payment Slips)**: Verifying time-limited signed URL safety and checking that private Supabase storage buckets cannot be scanned or accessed anonymously.
+- **Encryption & Key Management**: Inspecting AES-256-GCM cipher setups, environment key exposure, and PII storage.
+- **Checkout & Financial Workflows**: Testing checkout tampering, invoice enumeration, and rate limiting robustness.
+
+### 3. Vulnerability Remediation SLA
+Findings discovered during penetration tests or automated scanners must be remediated in accordance with the following SLAs:
+- **Critical findings**: Remediated within **7 days** of disclosure.
+- **High findings**: Remediated within **14 days** of disclosure.
+- **Medium findings**: Remediated within **30 days** of disclosure.
+- **Low findings**: Remediated within **90 days** or recorded as documented business-accepted risks.
+
+
 
