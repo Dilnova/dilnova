@@ -1,0 +1,5 @@
+# OWASP ZAP rules configuration file.
+# Format: <rule_id> <action> <reason>
+# Actions: IGNORE, INFO, WARN, FAIL
+# Example:
+# 10020   IGNORE  (X-Frame-Options Header Scanner)
