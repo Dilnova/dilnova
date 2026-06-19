@@ -462,11 +462,6 @@ export default async function Home() {
 
       {/* 5. Automatic End-of-Scroll Redirector */}
       <ScrollRedirector />
-
-      {/* Footer */}
-      <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-950">
-        <p>&copy; {new Date().getFullYear()} {systemName} Marketplace. All rights reserved.</p>
-      </footer>
     </div>
   );
 }

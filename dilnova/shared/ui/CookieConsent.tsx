@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
@@ -87,7 +88,7 @@ export default function CookieConsent() {
 
       {/* Description */}
       <div className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-        We use cookies to improve your experience, protect user sessions, and analyze site performance. Choose which cookies you allow us to use.
+        We use cookies to improve your experience, protect user sessions, and analyze site performance. Choose which cookies you allow us to use. Read our <Link href="/privacy" className="text-indigo-650 dark:text-indigo-400 hover:underline">Privacy Policy</Link> for details.
       </div>
 
       {/* Preference settings drawer */}
