@@ -9,6 +9,7 @@ export interface AuditLogParams {
   targetType: 'category' | 'product' | 'system_setting' | 'membership' | 'vendor' | 'pricing_plan' | 'contact' | 'supplier' | 'inventory' | 'simulated_order' | 'branch' | 'billing_receipt';
   targetId: string;
   metadata?: Record<string, unknown> | null;
+  strict?: boolean;
 }
 
 /**
@@ -21,6 +22,7 @@ export async function logAuditAction({
   targetType,
   targetId,
   metadata = null,
+  strict = false,
 }: AuditLogParams) {
   const redactedMetadata = metadata ? redactSensitiveData(metadata) : null;
   let ipAddress: string | null = null;
@@ -69,5 +71,9 @@ export async function logAuditAction({
       ipAddress,
       userAgent,
     });
+
+    if (strict) {
+      throw new Error(`Audit Log Failure: Failed to persist audit trail for critical action '${action}'.`);
+    }
   }
 }

@@ -58,6 +58,7 @@ export async function createPricingPlanAction(planData: unknown) {
         targetType: 'pricing_plan',
         targetId: plan.id,
         metadata: { name: plan.name },
+        strict: true,
       });
     }
 
@@ -103,6 +104,7 @@ export async function updatePricingPlanAction(id: string, updates: unknown) {
       targetType: 'pricing_plan',
       targetId: parsed.data.id,
       metadata: { updates: validatedUpdates },
+      strict: true,
     });
 
     revalidatePath('/');
@@ -128,6 +130,7 @@ export async function deletePricingPlanAction(id: string) {
       action: 'DELETE_PRICING_PLAN',
       targetType: 'pricing_plan',
       targetId: parsedId.data,
+      strict: true,
     });
 
     revalidatePath('/');
@@ -208,6 +211,7 @@ export async function updateContactStatusAction(
       targetType: 'contact',
       targetId: parsedId.data,
       metadata: { status, email: submission.email },
+      strict: true,
     });
 
     revalidatePath('/superadmin');
@@ -256,6 +260,7 @@ export async function getCustomerDsarDataAction(email: string) {
       targetType: 'simulated_order',
       targetId: normalizedEmailInput,
       metadata: { ordersCount: matchingOrders.length, contactSubmissionsCount: matchingSubmissions.length },
+      strict: true,
     });
 
     return {
@@ -317,6 +322,7 @@ export async function anonymizeCustomerDataAction(email: string) {
       targetType: 'simulated_order',
       targetId: normalizedEmailInput,
       metadata: { ordersAnonymized, submissionsDeleted },
+      strict: true,
     });
 
     revalidatePath('/superadmin');

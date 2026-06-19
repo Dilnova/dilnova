@@ -150,4 +150,22 @@ describe('logAuditAction', () => {
       })
     );
   });
+
+  it('throws an error on database insertion failure when strict is true', async () => {
+    const dbError = new Error('Database connection failed');
+    const mockValues = vi.fn().mockRejectedValue(dbError);
+    vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
+
+    await expect(
+      logAuditAction({
+        userId: 'user_test',
+        action: 'test_action',
+        targetType: 'product',
+        targetId: 'prod_123',
+        strict: true,
+      })
+    ).rejects.toThrowError(/Audit Log Failure/);
+
+    expect(logger.error).toHaveBeenCalled();
+  });
 });

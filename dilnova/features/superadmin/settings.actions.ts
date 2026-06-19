@@ -56,6 +56,7 @@ export async function updateSystemSettingAction(key: string, value: string) {
       targetType: 'system_setting',
       targetId: parsed.data.key,
       metadata: { value: parsed.data.value },
+      strict: true,
     });
 
     // Clear cache for admin panels and vendor portals to reflect configuration updates immediately
