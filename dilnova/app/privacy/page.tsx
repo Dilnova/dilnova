@@ -128,7 +128,18 @@ export default async function PrivacyPolicy() {
               </li>
             </ul>
             <p>
-              To execute these rights, please contact our Hub administrators. Fulfilling an erasure request permanently redacts your shipping address, phone number, name, and email from database logs, severing Clerk identity links.
+              To execute these rights, you can submit a request directly through our support channels:
+            </p>
+            <ul className="list-disc pl-5 space-y-1.5">
+              <li>
+                Submit a request using our <Link href="/contact" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">Contact Support Form</Link> and select the <strong>General Inquiry</strong> category.
+              </li>
+              <li>
+                Or email our data protection administrators directly at <a href="mailto:info@dilstar.pp.ua" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">info@dilstar.pp.ua</a>.
+              </li>
+            </ul>
+            <p>
+              Upon verification of your identity, a platform superadmin will process your request (typically within 30 days). Fulfilling an erasure request permanently redacts your shipping address, phone number, name, and email from database logs, severing Clerk identity links.
             </p>
           </section>
 
