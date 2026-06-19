@@ -62,7 +62,6 @@ export function redactSensitiveData(obj: any, seen = new WeakSet()): any {
     'bankaccountname',
     'bankaccountnumber',
     'bankbranchcode',
-    'bankdetails',
     'bankname',
     'shippingaddress',
     'shippingphone',

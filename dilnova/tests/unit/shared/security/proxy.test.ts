@@ -3,7 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Mock clerkMiddleware
 vi.mock('@clerk/nextjs/server', () => ({
-  clerkMiddleware: vi.fn((handler) => handler),
+  clerkMiddleware: vi.fn((handler) => {
+    return (req: any, event: any) => {
+      const mockAuth = {
+        protect: vi.fn(),
+      };
+      return handler(mockAuth, req, event);
+    };
+  }),
   createRouteMatcher: vi.fn(() => () => true),
 }));
 

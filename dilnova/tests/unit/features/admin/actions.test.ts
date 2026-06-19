@@ -29,10 +29,23 @@ describe('updateOrganizationMemberRole', () => {
       userId: 'user_caller',
     });
 
+    const mockGetOrganizationMembershipList = vi.fn().mockResolvedValue({
+      data: [
+        {
+          role: 'org:admin',
+          publicUserData: { userId: 'user_target' },
+        },
+        {
+          role: 'org:admin',
+          publicUserData: { userId: 'other_user' },
+        },
+      ],
+    });
     const mockUpdateOrganizationMembership = vi.fn().mockResolvedValue({});
     const mockClerkClient = clerkClient as any;
     mockClerkClient.mockResolvedValue({
       organizations: {
+        getOrganizationMembershipList: mockGetOrganizationMembershipList,
         updateOrganizationMembership: mockUpdateOrganizationMembership,
       },
     });
