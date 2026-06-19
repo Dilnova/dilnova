@@ -214,3 +214,119 @@ export async function updateContactStatusAction(
     return { success: true };
   });
 }
+
+// ── GDPR COMPLIANCE (DSAR & RIGHT TO BE FORGOTTEN) ─────────────
+
+export async function getCustomerDsarDataAction(email: string) {
+  return runWithCorrelationId(async () => {
+    await rateLimit(20, 60 * 1000);
+    const user = await checkSuperAdmin();
+
+    const normalizedEmailInput = email.trim().toLowerCase();
+    if (!normalizedEmailInput) {
+      throw new Error('Email address is required.');
+    }
+
+    // 1. Fetch all orders & decrypt customerEmail in memory to filter
+    const allOrders = await db.select().from(schema.simulatedOrders);
+    const matchingOrders = [];
+    for (const order of allOrders) {
+      if (order.customerEmail && order.customerEmail.trim().toLowerCase() === normalizedEmailInput) {
+        // Fetch order items
+        const items = await db
+          .select()
+          .from(schema.simulatedOrderItems)
+          .where(eq(schema.simulatedOrderItems.orderId, order.id));
+        matchingOrders.push({
+          ...order,
+          items,
+        });
+      }
+    }
+
+    // 2. Fetch all contact submissions & filter by email
+    const allSubmissions = await db.select().from(schema.contactSubmissions);
+    const matchingSubmissions = allSubmissions.filter(
+      (sub) => sub.email && sub.email.trim().toLowerCase() === normalizedEmailInput
+    );
+
+    await logAuditAction({
+      userId: user.id,
+      action: 'GDPR_DSAR_EXPORT',
+      targetType: 'simulated_order',
+      targetId: normalizedEmailInput,
+      metadata: { ordersCount: matchingOrders.length, contactSubmissionsCount: matchingSubmissions.length },
+    });
+
+    return {
+      success: true,
+      data: {
+        email: normalizedEmailInput,
+        orders: matchingOrders,
+        contactSubmissions: matchingSubmissions,
+      },
+    };
+  });
+}
+
+export async function anonymizeCustomerDataAction(email: string) {
+  return runWithCorrelationId(async () => {
+    await rateLimit(20, 60 * 1000);
+    const user = await checkSuperAdmin();
+
+    const normalizedEmailInput = email.trim().toLowerCase();
+    if (!normalizedEmailInput) {
+      throw new Error('Email address is required.');
+    }
+
+    // 1. Fetch all orders and find matching ones
+    const allOrders = await db.select().from(schema.simulatedOrders);
+    let ordersAnonymized = 0;
+    for (const order of allOrders) {
+      if (order.customerEmail && order.customerEmail.trim().toLowerCase() === normalizedEmailInput) {
+        await db
+          .update(schema.simulatedOrders)
+          .set({
+            customerName: 'GDPR REDACTED',
+            customerEmail: 'redacted@example.com',
+            customerUserId: null,
+            shippingAddress: 'REDACTED',
+            shippingPhone: 'REDACTED',
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.simulatedOrders.id, order.id));
+        ordersAnonymized++;
+      }
+    }
+
+    // 2. Fetch matching contact submissions and delete them
+    const allSubmissions = await db.select().from(schema.contactSubmissions);
+    let submissionsDeleted = 0;
+    for (const sub of allSubmissions) {
+      if (sub.email && sub.email.trim().toLowerCase() === normalizedEmailInput) {
+        await db
+          .delete(schema.contactSubmissions)
+          .where(eq(schema.contactSubmissions.id, sub.id));
+        submissionsDeleted++;
+      }
+    }
+
+    await logAuditAction({
+      userId: user.id,
+      action: 'GDPR_ERASURE_ANONYMIZE',
+      targetType: 'simulated_order',
+      targetId: normalizedEmailInput,
+      metadata: { ordersAnonymized, submissionsDeleted },
+    });
+
+    revalidatePath('/superadmin');
+    return {
+      success: true as const,
+      count: {
+        ordersAnonymized,
+        submissionsDeleted,
+      },
+    };
+  });
+}
+
