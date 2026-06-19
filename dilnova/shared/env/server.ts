@@ -2,8 +2,17 @@ import { z } from 'zod';
 
 const nonEmpty = z.string().trim().min(1);
 
-const productionServerEnvSchema = z.object({
+export const productionServerEnvSchema = z.object({
   DATABASE_URL: nonEmpty,
+  DATABASE_POOL_SIZE: z
+    .string()
+    .optional()
+    .refine(
+      (val) => val === undefined || (/^\d+$/.test(val) && parseInt(val, 10) > 0),
+      {
+        message: 'DATABASE_POOL_SIZE must be a positive integer',
+      }
+    ),
   PII_ENCRYPTION_KEY: nonEmpty,
   CLERK_SECRET_KEY: nonEmpty,
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: nonEmpty,

@@ -33,4 +33,49 @@ describe('validateServerEnv', () => {
     const { validateServerEnv } = await import('@/shared/env/server');
     expect(() => validateServerEnv()).toThrow('Server environment validation failed');
   });
+
+  it('validates DATABASE_POOL_SIZE when present', async () => {
+    const { productionServerEnvSchema } = await import('@/shared/env/server');
+
+    const baseEnv = {
+      DATABASE_URL: 'postgres://...',
+      PII_ENCRYPTION_KEY: 'key',
+      CLERK_SECRET_KEY: 'key',
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: 'key',
+      NEXT_PUBLIC_APP_URL: 'https://example.com',
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: 'cloud',
+      CLOUDINARY_API_KEY: 'key',
+      CLOUDINARY_API_SECRET: 'secret',
+      NEXT_PUBLIC_SUPABASE_URL: 'https://supabase.com',
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'key',
+      SUPABASE_SERVICE_ROLE_KEY: 'key',
+      UPSTASH_REDIS_REST_URL: 'https://upstash.com',
+      UPSTASH_REDIS_REST_TOKEN: 'token',
+      HEALTH_CHECK_SECRET: 'secret',
+      SMTP_USER: 'user',
+      SMTP_PASSWORD: 'password',
+      EMAIL_FROM_ADDRESS: 'sender@example.com',
+      EMAIL_FROM_NAME: 'sender',
+      SUPERADMIN_USER_IDS: '123',
+      CLERK_WEBHOOK_SECRET: 'secret',
+    };
+
+    // Valid cases
+    expect(productionServerEnvSchema.safeParse({ ...baseEnv, DATABASE_POOL_SIZE: '10' }).success).toBe(true);
+    expect(productionServerEnvSchema.safeParse({ ...baseEnv, DATABASE_POOL_SIZE: undefined }).success).toBe(true);
+
+    // Invalid cases
+    const parseInvalid = (val: string) => {
+      const res = productionServerEnvSchema.safeParse({ ...baseEnv, DATABASE_POOL_SIZE: val });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        expect(res.error.flatten().fieldErrors.DATABASE_POOL_SIZE).toEqual(['DATABASE_POOL_SIZE must be a positive integer']);
+      }
+    };
+
+    parseInvalid('0');
+    parseInvalid('-5');
+    parseInvalid('abc');
+    parseInvalid('5.5');
+  });
 });
