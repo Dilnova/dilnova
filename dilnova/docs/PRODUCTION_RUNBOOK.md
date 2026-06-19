@@ -194,6 +194,24 @@ For advanced application-layer protection, administrators must configure WAF rul
 
 ---
 
+## Infrastructure Security & Serverless Shared Responsibility Model
+
+Since the application is deployed on Vercel's serverless runtime (Next.js serverless functions), traditional container hardening, OS-level configuration, and Docker registry scanning are managed entirely by the hosting provider. Security is governed by a **Shared Responsibility Model**:
+
+### 1. Vercel's Security Responsibilities
+* **Host & OS Hardening**: Automatic provisioning, security updates, and patching of host operating systems and hypervisors.
+* **Serverless Isolation**: Execution of Serverless Functions in isolated, short-lived micro-environments (microVMs), ensuring total sandboxing between requests and tenants.
+* **Node.js Runtime Management**: Ensuring underlying Node.js runtime engines are secure and kept up-to-date.
+* **Physical & Infrastructure Security**: Ensuring compliance of underlying AWS/GCP data centers (SOC 2, ISO 27001).
+
+### 2. Application Team's Security Responsibilities
+* **Dependency Security**: Regularly scanning and upgrading dependencies listed in `package.json` (such as npm module vulnerabilities via `pnpm audit` in the CI pipeline).
+* **Secrets Management**: Keeping production credentials (such as API keys, Supabase credentials, and encryption keys) out of the codebase and configuring them exclusively via Vercel Project Environment Variables.
+* **Application Configurations**: Enforcing security policies at the application layer, including CSP configuration (`proxy.ts`), security headers (`next.config.ts`), and CORS configurations.
+* **Access Control & Code Safety**: Correctly implementing authentication verification (Clerk), RBAC rules, input validations (Zod), and database queries.
+
+---
+
 ## Penetration Testing & Vulnerability Assessment
 
 To maintain compliance and validate application-layer defenses against sophisticated attacks, the platform enforces periodic independent security assessments.
