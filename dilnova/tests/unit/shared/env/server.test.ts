@@ -58,6 +58,8 @@ describe('validateServerEnv', () => {
       EMAIL_FROM_NAME: 'sender',
       SUPERADMIN_USER_IDS: '123',
       CLERK_WEBHOOK_SECRET: 'secret',
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: 'sitekey',
+      TURNSTILE_SECRET_KEY: 'secret',
     };
 
     // Valid cases
@@ -103,6 +105,8 @@ describe('validateServerEnv', () => {
       EMAIL_FROM_NAME: 'sender',
       SUPERADMIN_USER_IDS: '123',
       CLERK_WEBHOOK_SECRET: 'secret',
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: 'sitekey',
+      TURNSTILE_SECRET_KEY: 'secret',
     };
 
     // Valid cases

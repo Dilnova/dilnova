@@ -39,6 +39,8 @@ const required = [
   'EMAIL_FROM_NAME',
   'SUPERADMIN_USER_IDS',
   'CLERK_WEBHOOK_SECRET',
+  'NEXT_PUBLIC_TURNSTILE_SITE_KEY',
+  'TURNSTILE_SECRET_KEY',
 ];
 
 const recommended = ['SENTRY_DSN'];
