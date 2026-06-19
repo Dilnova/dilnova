@@ -4,8 +4,8 @@ import { ClerkProvider, Show, UserButton, OrganizationSwitcher } from '@clerk/ne
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { auth } from '@clerk/nextjs/server'
-import { SpeedInsights } from "@vercel/speed-insights/next"
-import { Analytics } from "@vercel/analytics/next"
+import ConsentTracking from '@/shared/ui/ConsentTracking'
+import CookieConsent from '@/shared/ui/CookieConsent'
 import { runWithCorrelationId } from '@/shared/security/async-context'
 import HeaderNav from '@/shared/ui/HeaderNav'
 import HeaderAuthButtons from '@/shared/ui/HeaderAuthButtons'
@@ -212,8 +212,8 @@ export default async function RootLayout({
               <CartMergeBanner />
               <FloatingLanguageButton />
             </CartProvider>
-            <SpeedInsights />
-            <Analytics />
+            <ConsentTracking />
+            <CookieConsent />
           </ClerkProvider>
         </body>
       </html>
