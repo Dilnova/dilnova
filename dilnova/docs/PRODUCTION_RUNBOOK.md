@@ -244,6 +244,30 @@ Since the application is deployed on Vercel's serverless runtime (Next.js server
 
 ---
 
+## CI/CD & Deployment Integrity (Build Signing & Attestation)
+
+To secure the platform's deployment pipeline against supply chain attacks, code injection, or unauthorized Vercel project access, the team must configure build integrity controls:
+
+### 1. Vercel Deployment Protection
+Ensure the following configurations are active in the Vercel Dashboard (**Settings → Deployment Protection**):
+* **Standard Protection**: Restrict access to preview deployments to team members or via password protection to prevent pre-launch exposure.
+* **Secured Compute**: For enterprise-grade isolated functions, ensure database connections and API endpoints route through designated static IP proxies to support firewall security.
+
+### 2. GitHub Actions Deployment Attestations
+To build trust and verify that the source code compiled on GitHub Actions is identical to the build deployed onto Vercel, the release workflow must sign the build artifacts:
+* **SLSA Provenance**: Add build provenance attestations using GitHub's official attestation actions.
+* **Verification Workflow**:
+  Before triggering the deployment, execute:
+  ```yaml
+  - name: Generate build attestation
+    uses: actions/attest-build-provenance@v1
+    with:
+      subject-path: 'next.config.ts'
+  ```
+  This creates a cryptographically signed attestation verifying that the deployment originates from an approved workflow in your official repository, preventing execution of rogue builds.
+
+---
+
 ## Penetration Testing & Vulnerability Assessment
 
 To maintain compliance and validate application-layer defenses against sophisticated attacks, the platform enforces periodic independent security assessments.
