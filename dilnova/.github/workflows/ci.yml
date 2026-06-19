@@ -43,6 +43,31 @@ jobs:
       - name: Run Unit Tests
         run: pnpm run test
 
+      - name: Run Production Build
+        run: pnpm run build
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_Y2xlcmsuYWNjb3VudHMuZGV2JA=="
+          CLERK_SECRET_KEY: "sk_test_placeholder"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+          CLOUDINARY_API_KEY: "placeholder"
+          CLOUDINARY_API_SECRET: "placeholder"
+          NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "placeholder"
+          SUPABASE_SERVICE_ROLE_KEY: "placeholder"
+          UPSTASH_REDIS_REST_URL: "https://placeholder.upstash.io"
+          UPSTASH_REDIS_REST_TOKEN: "placeholder"
+          PII_ENCRYPTION_KEY: "placeholder_key_at_least_32_characters_long"
+          HEALTH_CHECK_SECRET: "placeholder"
+          SMTP_USER: "placeholder"
+          SMTP_PASSWORD: "placeholder"
+          EMAIL_FROM_ADDRESS: "info@example.com"
+          EMAIL_FROM_NAME: "Placeholder"
+          SUPERADMIN_USER_IDS: "user_placeholder"
+          CLERK_WEBHOOK_SECRET: "whsec_placeholder"
+
+
   secrets-scan:
     name: Secrets Scan
     runs-on: ubuntu-latest
