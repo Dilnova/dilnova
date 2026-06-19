@@ -39,7 +39,6 @@ export const simulatedOrders = pgTable('simulated_orders', {
 }, (t) => [
   index('idx_simulated_orders_status').on(t.status),
   index('idx_simulated_orders_created_at').on(t.createdAt),
-  index('idx_simulated_orders_email').on(t.customerEmail),
   index('idx_simulated_orders_customer_user_id').on(t.customerUserId),
 ]);
 
