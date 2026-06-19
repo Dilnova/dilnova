@@ -161,3 +161,35 @@ Note that write-path endpoints (e.g. submitting a contact form or finalizing a c
 2.  **Authentication & CAPTCHA**: Finalizing checkout requires Clerk authentication (unauthenticated requests will be denied with an authentication error). Submitting a contact form requires Cloudflare Turnstile verification.
 Therefore, automated load testing scripts (`load-test-k6.js`) focus primarily on public read paths and static/SSR page rendering.
 
+---
+
+## Edge Security (WAF & DDoS Protection)
+
+To protect the multi-vendor commerce hub against application-layer attacks, brute-force exploits, and Distributed Denial of Service (DDoS) events, the platform leverages Vercel's edge security and optional Cloudflare proxy integration.
+
+### 1. Built-in DDoS Mitigation
+The application is hosted on Vercel, which provides native, automated Layer 3, 4, and 7 DDoS protection:
+- **Anycast Network Routing**: Inbound traffic is distributed across Vercel’s global network, preventing single-point resource exhaustion.
+- **Traffic Scrubbing**: Automated edge filtering drops invalid TCP/UDP packets, SYN floods, and UDP amplification requests before reaching the origin.
+- **Anomalous Traffic Detection**: Vercel dynamically limits request volumes from source IPs exhibiting patterns consistent with botnets.
+
+### 2. Web Application Firewall (WAF) Configuration
+For advanced application-layer protection, administrators must configure WAF rules in the hosting console (Vercel Firewall / WAF or Cloudflare proxy):
+
+#### Recommended WAF Rules Checklist:
+1.  **Rate Limiting at Edge**:
+    - **Read paths (`/*`)**: Limit to 100 requests per 10 seconds per IP.
+    - **Write paths (`/api/*`, `/contact`, `/cart`)**: Limit to 5 requests per 10 seconds per IP.
+2.  **OWASP Top 10 Protections**:
+    - Enable SQL injection (SQLi) and Cross-Site Scripting (XSS) mitigation rule groups.
+    - Block or challenge requests containing patterns like `UNION SELECT`, `<script>`, or directory traversal characters (`../../`).
+3.  **Geo-Blocking**:
+    - Restrict traffic or require interactive challenges (Managed Challenge) for regions outside the platform's commercial operating footprint.
+4.  **User-Agent Filtering**:
+    - Block requests from empty User-Agents or known web scrapers/crawler bots (e.g. `python-requests`, `curl`, `wget`, `Go-http-client`).
+
+### 3. Verification & Monitoring
+- **Firewall Logs**: Check blocked requests via the Vercel Dashboard (Security → Firewall) or Cloudflare Analytics.
+- **Security Alerts**: Configure automated email/slack alerts for anomalous traffic spikes (>200% baseline).
+
+
