@@ -11,10 +11,14 @@ export async function register() {
 
     try {
       const Sentry = await import('@sentry/node');
+      const tracesSampleRate = process.env.SENTRY_TRACES_SAMPLE_RATE
+        ? parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE)
+        : 1.0;
+
       Sentry.init({
         dsn,
         environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
-        tracesSampleRate: 0.1,
+        tracesSampleRate,
       });
     } catch (error) {
       console.error(

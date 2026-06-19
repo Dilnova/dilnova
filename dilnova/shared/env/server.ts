@@ -13,6 +13,19 @@ export const productionServerEnvSchema = z.object({
         message: 'DATABASE_POOL_SIZE must be a positive integer',
       }
     ),
+  SENTRY_TRACES_SAMPLE_RATE: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (val === undefined) return true;
+        const num = parseFloat(val);
+        return !isNaN(num) && num >= 0 && num <= 1;
+      },
+      {
+        message: 'SENTRY_TRACES_SAMPLE_RATE must be a float between 0 and 1',
+      }
+    ),
   PII_ENCRYPTION_KEY: nonEmpty,
   CLERK_SECRET_KEY: nonEmpty,
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: nonEmpty,
