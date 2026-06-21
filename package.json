@@ -1,1 +1,54 @@
-{}
+{
+  "name": "dilnova",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:e2e": "node ./node_modules/@playwright/test/cli.js test",
+    "test:e2e:ui": "node ./node_modules/@playwright/test/cli.js test --ui",
+    "test:e2e:install": "node ./node_modules/@playwright/test/cli.js install chromium",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:verify": "node scripts/verify-migrations.mjs",
+    "pre-launch": "node scripts/pre-launch-check.mjs",
+    "prepare": "node scripts/setup-git-hooks.mjs"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^7.3.0",
+    "@sentry/node": "^10.57.0",
+    "@supabase/supabase-js": "^2.108.1",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "next": "16.2.6",
+    "next-cloudinary": "^6.17.5",
+    "postgres": "^3.4.9",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@clerk/testing": "^1.13.7",
+    "@playwright/test": "^1.57.0",
+    "@tailwindcss/postcss": "^4.3.1",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.4",
+    "tailwindcss": "^4",
+    "tsx": "^4.22.3",
+    "typescript": "^5",
+    "vitest": "^3.2.6"
+  }
+}
