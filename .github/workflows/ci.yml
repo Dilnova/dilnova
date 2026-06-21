@@ -150,6 +150,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Create service_role database role
+        run: node -e "const postgres = require('postgres'); const sql = postgres(process.env.DATABASE_URL); sql\`CREATE ROLE service_role;\`.then(() => console.log('Created service_role role')).catch(err => { if (err.message.includes('already exists')) { console.log('role already exists'); } else { console.error(err); process.exit(1); } }).finally(() => sql.end())"
+        env:
+          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
+
       - name: Run Database Migrations
         run: pnpm run db:migrate
         env:
