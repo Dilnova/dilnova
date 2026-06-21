@@ -154,6 +154,27 @@ jobs:
         run: pnpm exec playwright install-deps chromium
         if: steps.playwright-cache.outputs.cache-hit == 'true'
 
+      - name: Build
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ env.DUMMY_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ env.DUMMY_CLERK_SECRET_KEY }}
+          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
+          UPSTASH_REDIS_REST_URL: ${{ env.DUMMY_UPSTASH_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ env.DUMMY_UPSTASH_TOKEN }}
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ci_dummy
+          CLOUDINARY_API_KEY: ci_dummy_api_key
+          CLOUDINARY_API_SECRET: ci_dummy_api_secret
+          HEALTH_CHECK_SECRET: ci_health_secret
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_dummy
+          SUPABASE_SERVICE_ROLE_KEY: sb_service_dummy
+          SMTP_USER: ci_smtp_user@example.com
+          SMTP_PASSWORD: ci_smtp_password
+          EMAIL_FROM_ADDRESS: ci@example.com
+          EMAIL_FROM_NAME: CI Dilnova
+
       - name: Write CI env for Playwright
         env:
           CLERK_PK: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
