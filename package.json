@@ -19,8 +19,13 @@
     "pre-launch": "node scripts/pre-launch-check.mjs",
     "prepare": "node scripts/setup-git-hooks.mjs"
   },
+  "pnpm.overrides": {
+    "postcss": ">=8.5.10",
+    "js-cookie": ">=3.0.6",
+    "esbuild": ">=0.24.3"
+  },
   "dependencies": {
-    "@clerk/nextjs": "^7.3.0",
+    "@clerk/nextjs": "^7.5.7",
     "@sentry/node": "^10.57.0",
     "@supabase/supabase-js": "^2.108.1",
     "@upstash/ratelimit": "^2.0.8",
@@ -29,7 +34,7 @@
     "@vercel/speed-insights": "^2.0.0",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
-    "next": "16.2.6",
+    "next": "16.2.9",
     "next-cloudinary": "^6.17.5",
     "postgres": "^3.4.9",
     "react": "19.2.4",
