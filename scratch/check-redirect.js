@@ -1,7 +1,9 @@
 const https = require('https');
 
 function sanitizeForLog(value) {
-  return String(value).replace(/[\r\n]/g, ' ');
+  return String(value)
+    .replace(/[\r\n\u2028\u2029]/g, ' ')
+    .replace(/[\x00-\x1F\x7F]/g, ' ');
 }
 
 function checkRedirect(url) {
