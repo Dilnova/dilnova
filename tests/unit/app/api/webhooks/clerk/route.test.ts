@@ -23,7 +23,7 @@ vi.mock('next/headers', () => ({
 }));
 
 describe('POST /api/webhooks/clerk', () => {
-  const secretKey = 'test_secret_key_1234567890';
+  const secretKey = 'not_a_real_secret_do_not_use';
   const webhookSecret = `whsec_${Buffer.from(secretKey).toString('base64')}`;
 
   beforeEach(() => {

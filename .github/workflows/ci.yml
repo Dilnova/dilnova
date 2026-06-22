@@ -46,8 +46,8 @@ jobs:
       - name: Run Production Build
         run: pnpm run build
         env:
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_key_for_testing"
-          CLERK_SECRET_KEY: "sk_test_placeholder"
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "dummy_public_key_for_testing"
+          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
           NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
@@ -105,8 +105,8 @@ jobs:
 
     env:
       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_key_for_testing"
-      CLERK_SECRET_KEY: "sk_test_placeholder"
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "dummy_public_key_for_testing"
+      CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
       CLOUDINARY_API_KEY: "placeholder"
@@ -144,9 +144,6 @@ jobs:
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Setup Supabase Roles
-        run: psql "$DATABASE_URL" -c "CREATE ROLE service_role NOLOGIN;" || true
 
       - name: Run Database Migrations
         run: pnpm run db:migrate
