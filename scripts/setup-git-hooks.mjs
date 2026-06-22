@@ -26,17 +26,16 @@ if (!gitDir) {
 // If .git is a file (e.g. in a worktree or git submodule), we resolve the real git dir path
 let hooksDir = path.join(gitDir, 'hooks');
 try {
-  const stat = fs.statSync(gitDir);
-  if (stat.isFile()) {
-    const content = fs.readFileSync(gitDir, 'utf8');
-    const match = content.match(/^gitdir:\s*(.+)$/m);
-    if (match && match[1]) {
-      const gitRefPath = match[1].trim();
-      const resolvedGitDir = path.isAbsolute(gitRefPath) 
-        ? gitRefPath 
-        : path.resolve(path.dirname(gitDir), gitRefPath);
-      hooksDir = path.join(resolvedGitDir, 'hooks');
-    }
+  // Directly attempt to read to avoid TOCTOU (Time-of-check to time-of-use) race condition.
+  // If gitDir is a directory, readFileSync will throw an EISDIR error which is safely caught.
+  const content = fs.readFileSync(gitDir, 'utf8');
+  const match = content.match(/^gitdir:\s*(.+)$/m);
+  if (match && match[1]) {
+    const gitRefPath = match[1].trim();
+    const resolvedGitDir = path.isAbsolute(gitRefPath) 
+      ? gitRefPath 
+      : path.resolve(path.dirname(gitDir), gitRefPath);
+    hooksDir = path.join(resolvedGitDir, 'hooks');
   }
 } catch (e) {
   // Fall back to standard gitDir/hooks if resolution fails

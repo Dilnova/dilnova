@@ -90,6 +90,11 @@ export function redactSensitiveData(obj: any, seen = new WeakSet()): any {
   return redacted;
 }
 
+function sanitizeLogString(val: string | undefined | null): string {
+  if (!val) return '';
+  return String(val).replace(/[\r\n]+/g, ' ');
+}
+
 /**
  * Structured JSON Logger for enterprise production environments.
  * Outputs raw JSON in production environments (perfect for Datadog, Axiom, Sentry, Cloudwatch)
@@ -98,42 +103,60 @@ export function redactSensitiveData(obj: any, seen = new WeakSet()): any {
 export const logger = {
   info: (message: string, context?: Record<string, unknown>) => {
     const requestId = getRequestId();
+    const safeMessage = sanitizeLogString(message);
+    const safeRequestId = sanitizeLogString(requestId);
     const redactedContext = context ? redactSensitiveData(context) : undefined;
+    
     if (process.env.NODE_ENV === 'production') {
       console.log(
         JSON.stringify({
           level: 'info',
-          message,
-          requestId,
+          message: safeMessage,
+          requestId: safeRequestId || undefined,
           context: redactedContext,
           timestamp: new Date().toISOString(),
         })
       );
     } else {
-      const idPrefix = requestId ? ` [${requestId}]` : '';
-      console.log(`[INFO]${idPrefix} ${message}`, redactedContext ? JSON.stringify(redactedContext, null, 2) : '');
+      const idPrefix = safeRequestId ? ` [${safeRequestId}]` : '';
+      console.log(
+        '%s %s %s',
+        `[INFO]${idPrefix}`,
+        safeMessage,
+        redactedContext ? JSON.stringify(redactedContext, null, 2) : ''
+      );
     }
   },
   warn: (message: string, context?: Record<string, unknown>) => {
     const requestId = getRequestId();
+    const safeMessage = sanitizeLogString(message);
+    const safeRequestId = sanitizeLogString(requestId);
     const redactedContext = context ? redactSensitiveData(context) : undefined;
+    
     if (process.env.NODE_ENV === 'production') {
       console.warn(
         JSON.stringify({
           level: 'warn',
-          message,
-          requestId,
+          message: safeMessage,
+          requestId: safeRequestId || undefined,
           context: redactedContext,
           timestamp: new Date().toISOString(),
         })
       );
     } else {
-      const idPrefix = requestId ? ` [${requestId}]` : '';
-      console.warn(`[WARN]${idPrefix} ${message}`, redactedContext ? JSON.stringify(redactedContext, null, 2) : '');
+      const idPrefix = safeRequestId ? ` [${safeRequestId}]` : '';
+      console.warn(
+        '%s %s %s',
+        `[WARN]${idPrefix}`,
+        safeMessage,
+        redactedContext ? JSON.stringify(redactedContext, null, 2) : ''
+      );
     }
   },
   error: (message: string, error?: unknown, context?: Record<string, unknown>) => {
     const requestId = getRequestId();
+    const safeMessage = sanitizeLogString(message);
+    const safeRequestId = sanitizeLogString(requestId);
     const redactedContext = context ? redactSensitiveData(context) : undefined;
     
     let redactedError = error;
@@ -149,24 +172,26 @@ export const logger = {
       console.error(
         JSON.stringify({
           level: 'error',
-          message,
-          requestId,
+          message: safeMessage,
+          requestId: safeRequestId || undefined,
           error: redactedError,
           context: redactedContext,
           timestamp: new Date().toISOString(),
         })
       );
       
-      const sentryErr = error instanceof Error ? error : new Error(message);
+      const sentryErr = error instanceof Error ? error : new Error(safeMessage);
       void captureSentryError(sentryErr, {
         ...redactedContext,
-        requestId,
-        logMessage: message,
+        requestId: safeRequestId || undefined,
+        logMessage: safeMessage,
       });
     } else {
-      const idPrefix = requestId ? ` [${requestId}]` : '';
+      const idPrefix = safeRequestId ? ` [${safeRequestId}]` : '';
       console.error(
-        `[ERROR]${idPrefix} ${message}`,
+        '%s %s %s %s',
+        `[ERROR]${idPrefix}`,
+        safeMessage,
         redactedError || '',
         redactedContext ? JSON.stringify(redactedContext, null, 2) : ''
       );

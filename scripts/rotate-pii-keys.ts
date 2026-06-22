@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { db } from '../shared/db/client';
 import { simulatedOrders } from '../shared/db/schema/orders';
 import { contactSubmissions } from '../shared/db/schema/platform';
-import { decryptString, encryptString } from '../shared/security/encryption';
+import { decryptString } from '../shared/security/encryption';
 import { sql, eq } from 'drizzle-orm';
 
 async function main() {
