@@ -107,8 +107,21 @@ export async function POST(req: NextRequest) {
 
   try {
     const event = JSON.parse(payload);
-    const eventType = event.type;
+    const eventTypeRaw = event.type;
     const data = event.data;
+    const allowedEventTypes = new Set([
+      'user.updated',
+      'user.created',
+      'organizationMembership.created',
+      'organizationMembership.updated',
+      'organizationMembership.deleted',
+      'organization.updated',
+      'organization.deleted',
+    ]);
+    const eventType =
+      typeof eventTypeRaw === 'string' && allowedEventTypes.has(eventTypeRaw)
+        ? eventTypeRaw
+        : 'unknown';
 
     logger.info(`Received Clerk webhook: ${eventType}`, { eventId: svixId });
 
