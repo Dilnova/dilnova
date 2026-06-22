@@ -70,7 +70,12 @@ describe('asyncContext Utility & Correlation ID Logging', () => {
 
     await runWithCorrelationId(async () => {
       logger.info('Test log message');
-      expect(logSpy).toHaveBeenCalledWith(`[INFO] [${customId}] Test log message`, '');
+      expect(logSpy).toHaveBeenCalledWith(
+        '%s %s %s',
+        `[INFO] [${customId}]`,
+        'Test log message',
+        ''
+      );
     });
 
     logSpy.mockRestore();
