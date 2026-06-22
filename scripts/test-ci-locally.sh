@@ -26,7 +26,7 @@ echo "2. Testing E2E Database & Build"
 echo "========================================="
 # Set up CI-like environment variables
 export CI=true
-export NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="dummy_public_key_for_testing"
+export NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_dummy_public_key_for_testing"
 export CLERK_SECRET_KEY="dummy_secret_key_placeholder"
 export NEXT_PUBLIC_APP_URL="http://localhost:3005"
 export PLAYWRIGHT_PORT=3005

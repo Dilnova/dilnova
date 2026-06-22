@@ -192,7 +192,7 @@ export const logger = {
         '%s %s %s %s',
         `[ERROR]${idPrefix}`,
         safeMessage,
-        redactedError || '',
+        redactedError ? (typeof redactedError === 'string' ? sanitizeLogString(redactedError) : JSON.stringify(redactedError, null, 2)) : '',
         redactedContext ? JSON.stringify(redactedContext, null, 2) : ''
       );
     }
