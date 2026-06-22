@@ -20,7 +20,7 @@ function checkDns() {
           console.log('Found TXT records:');
           result.Answer.forEach((record, index) => {
             // Remove wrapping quotes if present
-            const cleanData = record.data.replace(/^"|"$/g, '');
+            const cleanData = record.data.replace(/^"|"$/g, '').replace(/[\r\n]/g, ' ');
             console.log(`${index + 1}. ${cleanData}`);
           });
         } else {

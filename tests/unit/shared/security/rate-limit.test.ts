@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { headers } from 'next/headers';
 

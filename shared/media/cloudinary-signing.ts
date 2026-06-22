@@ -11,5 +11,5 @@ export function signCloudinaryUploadParams(
     .map((key) => `${key}=${params[key]}`)
     .join('&');
 
-  return crypto.createHash('sha1').update(payload + apiSecret).digest('hex');
+  return crypto.createHash('sha256').update(payload + apiSecret).digest('hex');
 }

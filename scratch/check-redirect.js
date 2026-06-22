@@ -14,7 +14,7 @@ function checkRedirect(url) {
       }
     }
   }).on('error', (e) => {
-    console.error(`Got error: ${e.message}`);
+    console.error(`Got error: ${e.message.replace(/[\r\n]/g, ' ')}`);
   });
 }
 

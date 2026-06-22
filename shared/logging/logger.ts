@@ -92,7 +92,7 @@ export function redactSensitiveData(obj: any, seen = new WeakSet()): any {
 
 function sanitizeLogString(val: string | undefined | null): string {
   if (!val) return '';
-  return String(val).replace(/\r|\n/g, ' ');
+  return String(val).replace(/[\r\n]/g, ' ');
 }
 
 /**

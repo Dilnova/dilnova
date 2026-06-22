@@ -34,7 +34,7 @@ export function readUpstashEnv(): { url?: string; token?: string } {
 export function isValidUpstashRestUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'https:' && parsed.hostname.includes('upstash.io');
+    return parsed.protocol === 'https:' && (parsed.hostname === 'upstash.io' || parsed.hostname.endsWith('.upstash.io'));
   } catch {
     return false;
   }
