@@ -1,5 +1,9 @@
 const https = require('https');
 
+function sanitizeForLog(value) {
+  return String(value).replace(/[\r\n]/g, ' ');
+}
+
 function checkRedirect(url) {
   console.log(`Checking URL: ${url}`);
   https.get(url, (res) => {
@@ -14,7 +18,7 @@ function checkRedirect(url) {
       }
     }
   }).on('error', (e) => {
-    console.error(`Got error: ${e.message.replace(/[\r\n]/g, ' ')}`);
+    console.error(`Got error: ${sanitizeForLog(e && e.message)}`);
   });
 }
 
