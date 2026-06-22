@@ -11,7 +11,7 @@ describe('signCloudinaryUploadParams', () => {
       'test_api_secret'
     );
 
-    expect(signature).toMatch(/^[a-f0-9]{40}$/);
+    expect(signature).toMatch(/^[a-f0-9]{64}$/);
     expect(signature).toBe(
       signCloudinaryUploadParams(
         {
