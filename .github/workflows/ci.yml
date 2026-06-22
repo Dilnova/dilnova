@@ -143,9 +143,6 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Schema Init Script
-        run: pnpm exec tsx db/push-schema.ts
-
       - name: Run Database Migrations
         run: pnpm run db:migrate
 
