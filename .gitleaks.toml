@@ -1,0 +1,5 @@
+[allowlist]
+description = "Global allowlist for files that contain example or template secrets"
+paths = [
+    '''^\.env\.example$'''
+]

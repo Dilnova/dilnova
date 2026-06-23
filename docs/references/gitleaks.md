@@ -19,7 +19,7 @@
 
 ## How Dilnova Uses Gitleaks
 
-- **CI Integration**: Runs on every push/PR via `gitleaks/gitleaks-action@v2`
+- **CI Integration**: Runs on every push/PR via a pinned raw Docker image (`zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb`)
 - **Config file**: `.gitleaks.toml`
 - **Allowlist**: `.env.example` is excluded (contains template secrets, not real ones)
 
@@ -39,7 +39,5 @@ paths = [
 ```yaml
 # .github/workflows/ci.yml → secrets-scan job
 - name: Gitleaks Secrets Scan
-  uses: gitleaks/gitleaks-action@v2
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb detect --source /src -v
 ```
