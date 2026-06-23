@@ -153,7 +153,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // Production server keeps server-action IDs aligned with server-reference-manifest.json.
+    // Let Playwright start the production server on CI and wait for it.
     command: process.env.CI
       ? `node ./node_modules/next/dist/bin/next start --port ${PORT}`
       : `sh -c 'pnpm exec next build --webpack && exec node ./node_modules/next/dist/bin/next start --port ${PORT}'`,
