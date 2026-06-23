@@ -154,7 +154,17 @@ export default async function PrivacyPolicy() {
 
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              7. Updates to This Policy
+              7. Third-Party Subprocessors
+            </h2>
+            <p>
+              We rely on enterprise-grade vendors to host our infrastructure securely. All core service providers are vetted for strict compliance frameworks, including SOC 2 Type 2. 
+              You can review our <Link href="/privacy/subprocessors" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">Subprocessor Inventory</Link> to see the complete list of vendors, their DPA status, and data residency information.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+              8. Updates to This Policy
             </h2>
             <p>
               We reserve the right to modify this privacy policy at any time. Changes will be posted to this page with an updated timestamp. We encourage you to review this policy periodically.
