@@ -5,6 +5,7 @@ const nonEmpty = z.string().trim().min(1);
 
 export const productionServerEnvSchema = z.object({
   DATABASE_URL: nonEmpty,
+  SENTRY_DSN: nonEmpty,
   DATABASE_POOL_SIZE: z
     .string()
     .optional()
