@@ -97,7 +97,7 @@ jobs:
     needs: validate
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15@sha256:67d4ae1588f5a4170a8480fa0bd55a6e0de359830cc2fbed0cf6677ef194eec9
         env:
           POSTGRES_USER: ci
           POSTGRES_DB: ci
