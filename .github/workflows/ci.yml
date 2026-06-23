@@ -149,10 +149,27 @@ jobs:
       - name: Build Application
         run: pnpm run build
 
+      - name: Wait for Postgres
+        run: npx wait-on tcp:5432 --timeout 60000
+
+      - name: Start production server (background) and wait
+        run: |
+          # Start Next.js using the built output in background and capture logs
+          pnpm exec next start -p 3000 > server.log 2>&1 &
+          echo $! > server.pid
+          # Wait up to 2 minutes for the server to be available
+          npx wait-on http://127.0.0.1:3000 --timeout 120000
+
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run Playwright E2E Tests
         run: pnpm run test:e2e
 
-
+      - name: Dump server log (on failure)
+        if: failure()
+        run: |
+          echo "=== server.log ==="
+          tail -n +1 server.log || true
+          echo "=== server processes ==="
+          ps aux | grep -E "next|node" || true
