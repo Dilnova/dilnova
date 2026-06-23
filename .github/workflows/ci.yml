@@ -9,6 +9,10 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
 
     steps:
       - name: Checkout Code
@@ -68,6 +72,11 @@ jobs:
           CLERK_WEBHOOK_SECRET: "whsec_placeholder"
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
+
+      - name: Generate build attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: 'next.config.ts'
 
 
   secrets-scan:
