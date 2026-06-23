@@ -209,15 +209,15 @@ The application is hosted on Vercel, which provides native, automated Layer 3, 4
 For advanced application-layer protection, administrators must configure WAF rules in the hosting console (Vercel Firewall / WAF or Cloudflare proxy):
 
 #### Recommended WAF Rules Checklist:
-1.  **Rate Limiting at Edge**:
+1.  **Rate Limiting at Edge** (Rule IDs: `rule_rl_read_100`, `rule_rl_write_5`):
     - **Read paths (`/*`)**: Limit to 100 requests per 10 seconds per IP.
     - **Write paths (`/api/*`, `/contact`, `/cart`)**: Limit to 5 requests per 10 seconds per IP.
-2.  **OWASP Top 10 Protections**:
+2.  **OWASP Top 10 Protections** (Rule ID: `rule_owasp_core`):
     - Enable SQL injection (SQLi) and Cross-Site Scripting (XSS) mitigation rule groups.
     - Block or challenge requests containing patterns like `UNION SELECT`, `<script>`, or directory traversal characters (`../../`).
-3.  **Geo-Blocking**:
+3.  **Geo-Blocking** (Rule ID: `rule_geo_block`):
     - Restrict traffic or require interactive challenges (Managed Challenge) for regions outside the platform's commercial operating footprint.
-4.  **User-Agent Filtering**:
+4.  **User-Agent Filtering** (Rule ID: `rule_bot_filter`):
     - Block requests from empty User-Agents or known web scrapers/crawler bots (e.g. `python-requests`, `curl`, `wget`, `Go-http-client`).
 
 ### 3. Verification & Monitoring
@@ -247,6 +247,7 @@ Run these validation commands from an external environment to test that edge blo
 *   **Status**: WAF rules configured and confirmed active on Vercel Edge.
 *   **Checked Date**: 2026-06-19
 *   **Verified By**: Security & DevOps Lead
+*   **Automation**: Verification curls run continuously via GitHub Actions (`.github/workflows/waf.yml`) on a quarterly schedule.
 
 ---
 
