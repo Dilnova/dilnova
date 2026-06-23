@@ -1,4 +1,3 @@
-import { headers } from 'next/headers';
 import type { AsyncLocalStorage } from 'node:async_hooks';
 
 let requestStore: AsyncLocalStorage<RequestContext> | null = null;
@@ -38,6 +37,7 @@ export async function runWithCorrelationId<T>(fn: () => Promise<T>): Promise<T> 
   
   if (typeof window === 'undefined') {
     try {
+      const { headers } = await import('next/headers');
       const headersList = await headers();
       requestId = headersList.get('x-request-id') || '';
     } catch {
