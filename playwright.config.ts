@@ -158,7 +158,7 @@ export default defineConfig({
       ? `node ./node_modules/next/dist/bin/next start --port ${PORT}`
       : `sh -c 'pnpm exec next build --webpack && exec node ./node_modules/next/dist/bin/next start --port ${PORT}'`,
     url: baseURL,
-    reuseExistingServer: process.env.CI ? true : false,
+    reuseExistingServer: false,
     timeout: 300_000,
     env: webServerEnv,
   },

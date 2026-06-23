@@ -149,18 +149,6 @@ jobs:
       - name: Build Application
         run: pnpm run build
 
-      - name: Start production server (background) and wait
-        run: |
-          pnpm exec next start -p 3000 > server.log 2>&1 &
-          echo $! > server.pid
-          pnpm dlx wait-on http://127.0.0.1:3000 -t 120000
-
-      - name: Dump server log on failure
-        if: failure()
-        run: |
-          echo "=== server.log ==="
-          cat server.log || true
-
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps chromium
 
