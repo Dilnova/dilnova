@@ -9,12 +9,14 @@ import { validateStockAvailabilityId } from '@/features/inventory/availability.s
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { auth } from '@clerk/nextjs/server';
+import { rateLimit } from '@/shared/security/rate-limit';
 
 export async function updateProductStockAvailabilityAction(
   productId: string,
   stockAvailability: string
 ) {
   return runWithCorrelationId(async () => {
+    await rateLimit(30, 60 * 1000);
     const { userId, orgId, orgRole } = await auth();
     if (!userId || !orgId) {
       throw new Error('Not authorized.');

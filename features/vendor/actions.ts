@@ -14,6 +14,7 @@ import {
   stripBankFieldsFromPublic,
 } from '@/features/billing/bank-transfer-metadata';
 import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
+import { rateLimit } from '@/shared/security/rate-limit';
 
 interface VendorMetadataInput {
   description: string;
@@ -34,6 +35,7 @@ interface VendorMetadataInput {
  */
 export async function updateVendorMetadata(organizationId: string, data: VendorMetadataInput) {
   return runWithCorrelationId(async () => {
+    await rateLimit(30, 60 * 1000);
     const parsed = vendorMetadataSchema.safeParse({ organizationId, data });
     if (!parsed.success) {
       throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');

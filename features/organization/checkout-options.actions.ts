@@ -13,12 +13,14 @@ import {
   hasCompleteBankDetails,
 } from '@/features/billing/bank-transfer';
 import { parseBankDetailsFromClerkOrg } from '@/features/billing/bank-transfer-metadata';
+import { rateLimit } from '@/shared/security/rate-limit';
 
 export async function updateOrgCheckoutOptionsAction(
   organizationId: string,
   checkoutOptions: Record<string, boolean>
 ) {
   return runWithCorrelationId(async () => {
+    await rateLimit(30, 60 * 1000);
     const parsed = updateOrgCheckoutOptionsSchema.safeParse({ organizationId, checkoutOptions });
     if (!parsed.success) {
       throw new Error(parsed.error.issues[0]?.message || 'Invalid checkout options.');
