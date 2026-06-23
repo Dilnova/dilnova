@@ -114,7 +114,7 @@ export const getCachedUserRole = (userId: string) => unstable_cache(
   ['clerk-user-role', userId],
   {
     tags: ['clerk-user-role', `clerk-user-role-${userId}`],
-    revalidate: 60, // Reduce TTL to 60 seconds
+    revalidate: 15, // Reduce TTL to 15 seconds for security
   }
 )();
 
@@ -132,7 +132,7 @@ export const getCachedIsSuperAdmin = (userId: string) => unstable_cache(
   ['clerk-user-superadmin', userId],
   {
     tags: ['clerk-user-superadmin', `clerk-user-superadmin-${userId}`],
-    revalidate: 60, // Reduce TTL to 60 seconds
+    revalidate: 15, // Reduce TTL to 15 seconds for security
   }
 )();
 
