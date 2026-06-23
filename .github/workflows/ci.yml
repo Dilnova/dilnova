@@ -104,7 +104,7 @@ jobs:
     env:
       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
-      CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+      CLERK_SECRET_KEY: "sk_test_ci_dummy"
       NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
       CLOUDINARY_API_KEY: "placeholder"
@@ -152,13 +152,22 @@ jobs:
       - name: Wait for Postgres
         run: npx wait-on tcp:5432 --timeout 60000
 
-      - name: Start production server (background) and wait
+      - name: Start production server (background), detect its URL and wait
         run: |
           # Start Next.js using the built output in background and capture logs
           pnpm exec next start -p 3000 > server.log 2>&1 &
           echo $! > server.pid
-          # Wait up to 2 minutes for the server to be available
-          npx wait-on http://127.0.0.1:3000 --timeout 120000
+          # Wait up to 2 minutes for localhost to be available (may still fail if Next binds to another IP)
+          npx wait-on http://127.0.0.1:3000 --timeout 120000 || true
+          # Determine the served URL from the server output. Next prints a line like: "Network:       http://10.1.0.86:3000"
+          SERVED_URL=$(grep -m1 -Eo 'http://[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+' server.log || true)
+          if [ -z "$SERVED_URL" ]; then
+            echo "PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000" >> $GITHUB_ENV
+            echo "Detected no explicit network URL; using http://127.0.0.1:3000"
+          else
+            echo "PLAYWRIGHT_BASE_URL=${SERVED_URL}" >> $GITHUB_ENV
+            echo "Detected server URL: ${SERVED_URL}"
+          fi
 
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps chromium
@@ -173,3 +182,8 @@ jobs:
           tail -n +1 server.log || true
           echo "=== server processes ==="
           ps aux | grep -E "next|node" || true
+
+      - name: Stop server (cleanup)
+        if: always()
+        run: |
+          if [ -f server.pid ]; then kill $(cat server.pid) || true; rm -f server.pid; fi
