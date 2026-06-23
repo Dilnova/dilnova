@@ -153,13 +153,13 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // Let Playwright start the production server on CI and wait for it.
+    // On CI we start Next.js in the workflow; reuse that server. Locally Playwright can start the server.
     command: process.env.CI
       ? `node ./node_modules/next/dist/bin/next start --port ${PORT}`
       : `sh -c 'pnpm exec next build --webpack && exec node ./node_modules/next/dist/bin/next start --port ${PORT}'`,
     url: baseURL,
-    reuseExistingServer: false,
-    timeout: 300_000,
+    reuseExistingServer: process.env.CI ? true : false,
+    timeout: 600_000,
     env: webServerEnv,
   },
 });
