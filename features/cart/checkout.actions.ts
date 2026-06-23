@@ -49,6 +49,9 @@ import {
   type CheckoutItemInput,
 } from '@/features/cart/schema';
 import { aggregateCheckoutItems, type CheckoutTransactionResult } from '@/features/cart/checkout.helpers';
+import { z } from 'zod';
+
+const syncCartSchema = z.array(z.string().uuid()).max(50);
 
 export async function sendCartSummaryEmailAction(
   emailAddress: string,
@@ -263,9 +266,19 @@ export async function sendCartSummaryEmailAction(
 
 export async function syncCartPricesAction(productIds: string[]) {
   try {
-    await rateLimit(60, 60 * 1000);
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false as const, error: 'Unauthorized. Please sign in.' };
+    }
 
-    const uniqueIds = [...new Set(productIds.filter(Boolean))].slice(0, 50);
+    await rateLimit(3, 60 * 1000);
+
+    const parsed = syncCartSchema.safeParse(productIds.filter(Boolean));
+    if (!parsed.success) {
+      return { success: false as const, error: 'Invalid product IDs provided.' };
+    }
+
+    const uniqueIds = [...new Set(parsed.data)];
     if (uniqueIds.length === 0) {
       return { success: true as const, items: [], removedIds: [] };
     }
