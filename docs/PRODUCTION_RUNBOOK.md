@@ -271,6 +271,10 @@ Since the application is deployed on Vercel's serverless runtime (Next.js server
 * **Access Control & Code Safety**: Correctly implementing authentication verification (Clerk), RBAC rules, input validations (Zod), and database queries.
 * **Database Row-Level Security (RLS)**: Maintaining Supabase RLS policies (e.g. `drizzle/0014_tenant_rls_policies.sql`) to provide defense-in-depth tenant isolation against direct Data API or PostgREST exploits.
 
+### 3. API & Network Security (CORS)
+* **Same-Origin Policy**: The platform currently operates on a strict same-origin architecture. Cross-Origin Resource Sharing (CORS) is intentionally disabled (no `Access-Control-Allow-Origin` headers are emitted).
+* **Future SPA/Mobile Clients**: If future standalone SPA or mobile clients are introduced, an explicit CORS middleware allowlist must be implemented in `next.config.ts` or `middleware.ts` to permit trusted cross-origin requests. Until then, external client integrations are unsupported.
+
 ---
 
 ## CI/CD & Deployment Integrity (Build Signing & Attestation)
