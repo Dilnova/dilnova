@@ -79,16 +79,29 @@ jobs:
         run: pnpm run build
 
       - name: Start Production Server
-        run: pnpm run start &
+        run: |
+          pnpm exec next start -p 3000 -H 127.0.0.1 > server.log 2>&1 &
+          echo $! > server.pid
 
       - name: Wait for Server to be Ready
         run: |
-          npx wait-on http://localhost:3000 --timeout 60000
+          npx wait-on http://127.0.0.1:3000 --timeout 120000
 
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.11.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          target: 'http://localhost:3000'
+          target: 'http://127.0.0.1:3000'
           rules_file_name: '.zap/rules.tsv'
           fail_action: true
+
+      - name: Dump server log (on failure)
+        if: failure()
+        run: |
+          echo "=== server.log ==="
+          cat server.log || true
+
+      - name: Stop server (cleanup)
+        if: always()
+        run: |
+          if [ -f server.pid ]; then kill $(cat server.pid) || true; rm -f server.pid; fi
