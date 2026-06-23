@@ -139,7 +139,6 @@ See `.env.example`. Runtime validation runs on server start in production.
 
 - Run `pnpm test:e2e` with real `E2E_*_EMAIL` GitHub secrets
 - Review Vercel logs daily
-- Plan PostgreSQL RLS if multi-tenant DB defense-in-depth is required
 
 ---
 
@@ -261,6 +260,7 @@ Since the application is deployed on Vercel's serverless runtime (Next.js server
 * **Secrets Management**: Keeping production credentials (such as API keys, Supabase credentials, and encryption keys) out of the codebase and configuring them exclusively via Vercel Project Environment Variables.
 * **Application Configurations**: Enforcing security policies at the application layer, including CSP configuration (`proxy.ts`), security headers (`next.config.ts`), and CORS configurations.
 * **Access Control & Code Safety**: Correctly implementing authentication verification (Clerk), RBAC rules, input validations (Zod), and database queries.
+* **Database Row-Level Security (RLS)**: Maintaining Supabase RLS policies (e.g. `drizzle/0014_tenant_rls_policies.sql`) to provide defense-in-depth tenant isolation against direct Data API or PostgREST exploits.
 
 ---
 
