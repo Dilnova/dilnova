@@ -6,6 +6,8 @@ on:
     - cron: '0 0 * * 0'
   workflow_dispatch:
     # Allow manual triggering from GitHub Actions tab
+  pull_request:
+    branches: [ main ]
 
 jobs:
   zap-scan:
@@ -88,4 +90,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           target: 'http://localhost:3000'
           rules_file_name: '.zap/rules.tsv'
-          fail_action: false
+          fail_action: true
