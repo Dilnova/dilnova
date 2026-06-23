@@ -20,8 +20,9 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Approve and auto-merge Dependabot PR
-        # Only auto-merge patch and minor updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        # Only auto-merge patch updates. Minor/Major updates require human review.
+        # Note: --auto flag ensures the merge happens ONLY after CI status checks pass.
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
         run: |
           gh pr review --approve "$PR_URL"
           gh pr merge --auto --merge "$PR_URL"
