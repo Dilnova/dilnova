@@ -3,6 +3,10 @@ import { headers } from 'next/headers';
 import crypto from 'crypto';
 import { logger } from '@/shared/logging/logger';
 import { invalidateClerkUserCache, invalidateClerkOrgCache } from '@/shared/auth/clerk-cache';
+import { Redis } from '@upstash/redis';
+import { readUpstashEnv } from '@/shared/security/upstash-health';
+
+const processedWebhooks = new Set<string>();
 
 function verifyClerkWebhookSignature(
   rawBody: string,
@@ -103,6 +107,29 @@ export async function POST(req: NextRequest) {
       { error: 'Invalid webhook signature.' },
       { status: 401 }
     );
+  }
+
+  // Idempotency check
+  const { url, token } = readUpstashEnv();
+  if (url && token) {
+    try {
+      const redis = new Redis({ url, token });
+      const redisKey = `clerk_webhook_processed:${svixId}`;
+      const setCmd = await redis.set(redisKey, '1', { ex: 600, nx: true });
+      if (!setCmd) {
+        logger.warn('Clerk webhook duplicate detected via Redis, ignoring replay', { svixId });
+        return NextResponse.json({ success: true, message: 'Already processed' });
+      }
+    } catch (e) {
+      logger.error('Redis idempotency check failed, proceeding anyway', e);
+    }
+  } else {
+    if (processedWebhooks.has(svixId)) {
+      logger.warn('Clerk webhook duplicate detected via memory, ignoring replay', { svixId });
+      return NextResponse.json({ success: true, message: 'Already processed' });
+    }
+    processedWebhooks.add(svixId);
+    setTimeout(() => processedWebhooks.delete(svixId), 10 * 60 * 1000);
   }
 
   try {
