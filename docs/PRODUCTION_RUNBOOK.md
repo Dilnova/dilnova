@@ -115,6 +115,15 @@ To revert the application to a previous stable state on Vercel:
 - Before applying clerk metadata updates, always keep a copy of the migration dry-run output.
 - In case of failures, revert values manually inside the Clerk Dashboard (Users -> click User -> edit privateMetadata).
 
+## Data Privacy & GDPR (Right to Erasure)
+
+To comply with global data privacy frameworks (e.g. GDPR Right to be Forgotten), the platform provides a system-wide anonymization action.
+
+### Lawful Basis of Retention
+When a user requests data erasure, the system destroys authentication profiles, redacts reviews, deletes wishlists, and destroys physical storage assets (e.g., payment slips). However, certain records are retained under a **Lawful Basis**:
+1. **Financial & Tax Records (Simulated Orders)**: Transactional data is not hard-deleted. Instead, all Personal Identifiable Information (PII) including Name, Email, Address, and Phone numbers are permanently redacted to `[REDACTED]`. The transactional metadata (amounts, products, dates) is retained for up to 7 years to comply with financial auditing regulations.
+2. **Security & Audit Logs**: The `auditLogs` table retains records of platform activities. Upon an erasure request, the associated PII (such as `ipAddress` and `userAgent`) is nullified, and the `userId` is masked to `gdpr_redacted`. This preserves chronological system integrity for forensic auditing while respecting user privacy.
+
 ---
 
 ## Incident response

@@ -697,7 +697,7 @@ export default function SuperAdminClient({
   const handleAnonymizeData = async () => {
     if (!searchedEmail) return;
     const confirmed = confirm(
-      `WARNING: This will permanently redact/anonymize all PII (name, email, phone, address) across simulated orders and permanently delete all contact submissions for "${searchedEmail}".\n\nThis action cannot be undone. Are you sure you want to proceed?`
+      `WARNING: This will permanently redact/anonymize all PII across simulated orders, redact reviews/questions, delete wishlists/contact submissions, and completely delete the Clerk authentication profile for "${searchedEmail}".\n\nThis action cannot be undone. Are you sure you want to proceed?`
     );
     if (!confirmed) return;
 
@@ -708,7 +708,7 @@ export default function SuperAdminClient({
         if (result.success && result.count) {
           triggerNotification(
             true,
-            `Successfully anonymized ${result.count.ordersAnonymized} orders and deleted ${result.count.submissionsDeleted} contact submissions.`
+            `Successfully anonymized ${result.count.ordersAnonymized} orders, deleted ${result.count.submissionsDeleted} contact submissions, and wiped Clerk profile (${result.count.clerkProfileDeleted ? 'Yes' : 'No'}).`
           );
           // Re-fetch search to update display
           await handleSearchCustomerData();

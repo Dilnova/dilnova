@@ -284,11 +284,43 @@ export async function anonymizeCustomerDataAction(email: string) {
       throw new Error('Email address is required.');
     }
 
+    // 0. Fetch Clerk user and optionally delete them
+    const client = await clerkClient();
+    const clerkUserList = await client.users.getUserList({ emailAddress: [normalizedEmailInput], limit: 1 });
+    const clerkUser = clerkUserList.data?.[0];
+    let clerkUserId = null;
+    let clerkProfileDeleted = false;
+    
+    if (clerkUser) {
+      clerkUserId = clerkUser.id;
+      if (!isSuperAdminUser(clerkUser)) {
+        await client.users.deleteUser(clerkUserId);
+        clerkProfileDeleted = true;
+      }
+    }
+
     // 1. Fetch all orders and find matching ones
     const allOrders = await db.select().from(schema.simulatedOrders);
     let ordersAnonymized = 0;
+    let paymentSlipsDeleted = 0;
+    
+    // Lazy load supabase admin if needed
+    let supabase: any = null;
+    const { createSupabaseAdminClient, isSupabaseStorageConfigured } = await import('@/shared/storage/admin-client');
+    const { PAYMENT_SLIPS_BUCKET } = await import('@/shared/storage/config');
+
     for (const order of allOrders) {
-      if (order.customerEmail && order.customerEmail.trim().toLowerCase() === normalizedEmailInput) {
+      if (
+        (order.customerEmail && order.customerEmail.trim().toLowerCase() === normalizedEmailInput) ||
+        (clerkUserId && order.customerUserId === clerkUserId)
+      ) {
+        // Remove Supabase payment slip if exists
+        if (order.paymentSlipUrl && isSupabaseStorageConfigured()) {
+          if (!supabase) supabase = createSupabaseAdminClient();
+          await supabase.storage.from(PAYMENT_SLIPS_BUCKET).remove([order.paymentSlipUrl]);
+          paymentSlipsDeleted++;
+        }
+
         await db
           .update(schema.simulatedOrders)
           .set({
@@ -297,6 +329,7 @@ export async function anonymizeCustomerDataAction(email: string) {
             customerUserId: null,
             shippingAddress: 'REDACTED',
             shippingPhone: 'REDACTED',
+            paymentSlipUrl: null,
             updatedAt: new Date(),
           })
           .where(eq(schema.simulatedOrders.id, order.id));
@@ -316,12 +349,68 @@ export async function anonymizeCustomerDataAction(email: string) {
       }
     }
 
+    let reviewsRedacted = 0;
+    let wishlistsDeleted = 0;
+    let questionsRedacted = 0;
+    let auditLogsRedacted = 0;
+
+    // 3. Scrub secondary PII tables using clerkUserId
+    if (clerkUserId) {
+      // Reviews
+      const userReviews = await db.select().from(schema.reviews).where(eq(schema.reviews.userId, clerkUserId));
+      for (const review of userReviews) {
+        await db.update(schema.reviews).set({
+          userName: 'GDPR REDACTED',
+          userImageUrl: null,
+          comment: '[REDACTED]',
+        }).where(eq(schema.reviews.id, review.id));
+        reviewsRedacted++;
+      }
+
+      // Wishlists
+      const userWishlists = await db.select().from(schema.wishlists).where(eq(schema.wishlists.userId, clerkUserId));
+      for (const wl of userWishlists) {
+        await db.delete(schema.wishlists).where(eq(schema.wishlists.id, wl.id));
+        wishlistsDeleted++;
+      }
+
+      // Questions
+      const userQuestions = await db.select().from(schema.questions).where(eq(schema.questions.userId, clerkUserId));
+      for (const q of userQuestions) {
+        await db.update(schema.questions).set({
+          userName: 'GDPR REDACTED',
+          userImageUrl: null,
+        }).where(eq(schema.questions.id, q.id));
+        questionsRedacted++;
+      }
+
+      // Audit Logs
+      const userLogs = await db.select().from(schema.auditLogs).where(eq(schema.auditLogs.userId, clerkUserId));
+      for (const log of userLogs) {
+        await db.update(schema.auditLogs).set({
+          userId: 'gdpr_redacted',
+          ipAddress: null,
+          userAgent: null,
+        }).where(eq(schema.auditLogs.id, log.id));
+        auditLogsRedacted++;
+      }
+    }
+
     await logAuditAction({
       userId: user.id,
       action: 'GDPR_ERASURE_ANONYMIZE',
       targetType: 'simulated_order',
       targetId: normalizedEmailInput,
-      metadata: { ordersAnonymized, submissionsDeleted },
+      metadata: { 
+        ordersAnonymized, 
+        submissionsDeleted, 
+        clerkProfileDeleted, 
+        paymentSlipsDeleted, 
+        reviewsRedacted, 
+        wishlistsDeleted, 
+        questionsRedacted, 
+        auditLogsRedacted 
+      },
       strict: true,
     });
 
@@ -331,6 +420,12 @@ export async function anonymizeCustomerDataAction(email: string) {
       count: {
         ordersAnonymized,
         submissionsDeleted,
+        clerkProfileDeleted,
+        paymentSlipsDeleted,
+        reviewsRedacted,
+        wishlistsDeleted,
+        questionsRedacted,
+        auditLogsRedacted
       },
     };
   });
