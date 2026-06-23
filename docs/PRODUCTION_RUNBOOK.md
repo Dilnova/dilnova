@@ -177,7 +177,7 @@ Under normal operating conditions, the application must meet the following perfo
 
 ### Monitoring & Alerting Thresholds
 
-Alerts should be configured in the monitoring platform (e.g. Vercel Analytics, Sentry, or custom Log Drain alerting rules) based on the following limits:
+Alerts are automatically provisioned as Infrastructure-as-Code via Terraform (`monitoring/sentry-alerts.tf`) and trigger based on the following limits:
 
 *   **Warning Alert (Degraded Performance)**:
     *   Error rate: `> 1.0%` of all requests over a 5-minute window.
