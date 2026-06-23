@@ -15,6 +15,7 @@ import { rateLimit } from '@/shared/security/rate-limit';
 import { getPremiumStatus } from '@/features/inventory/premium-license';
 import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
 import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
+import { requireVendorRole } from '@/shared/auth/vendor-guard';
 
 /**
  * Enterprise-grade Server Action to securely insert a new product/service into PostgreSQL.
@@ -47,6 +48,7 @@ export async function addProductAction(data: {
       if (!userId || !orgId) {
         throw new Error('Not authorized: You must be signed in with an active organization.');
       }
+      await requireVendorRole(userId);
 
       // 2. Validate that all Cloudinary URLs belong to the current vendor organization
       if (parsed.data.imageUrl) {
@@ -242,6 +244,7 @@ export async function deleteProductAction(productId: string) {
       if (!userId || !orgId) {
         throw new Error('Not authorized: You must be signed in with an active organization.');
       }
+      await requireVendorRole(userId);
 
       // 2. Authorization Check
       if (orgRole !== 'org:admin') {

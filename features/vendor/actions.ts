@@ -15,6 +15,7 @@ import {
 } from '@/features/billing/bank-transfer-metadata';
 import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
 import { rateLimit } from '@/shared/security/rate-limit';
+import { requireVendorRole } from '@/shared/auth/vendor-guard';
 
 interface VendorMetadataInput {
   description: string;
@@ -43,9 +44,10 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
 
     const { orgId, orgRole, userId } = await auth();
 
-    if (!orgId || orgId !== parsed.data.organizationId) {
+    if (!userId || !orgId || orgId !== parsed.data.organizationId) {
       throw new Error('Not authorized: You do not belong to this organization.');
     }
+    await requireVendorRole(userId);
 
     if (parsed.data.data.bannerUrl) {
       if (!isAllowedCloudinaryDeliveryUrl(parsed.data.data.bannerUrl, orgId)) {

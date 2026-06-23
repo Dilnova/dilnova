@@ -27,6 +27,7 @@ import {
   MULTI_VENDOR_VENDOR_ACTION_ERROR,
   orderSpansMultipleVendors,
 } from '@/features/orders/vendor-scope';
+import { requireVendorRole } from '@/shared/auth/vendor-guard';
 
 async function loadVendorOrder(orderId: string, orgId: string) {
   const [order] = await db
@@ -57,20 +58,21 @@ async function loadVendorOrder(orderId: string, orgId: string) {
   return order;
 }
 
-function assertVendorAdmin(orgId: string | null | undefined, orgRole: string | null | undefined) {
-  if (!orgId) {
+async function assertVendorAdmin(userId: string | null | undefined, orgId: string | null | undefined, orgRole: string | null | undefined) {
+  if (!userId || !orgId) {
     throw new Error('Not authorized: You must be signed in with an active organization.');
   }
   if (orgRole !== 'org:admin') {
     throw new Error('Not authorized: Only organization admins can manage orders.');
   }
+  await requireVendorRole(userId);
 }
 
 export async function verifyOrderPaymentAction(orderId: string) {
   return runWithCorrelationId(async () => {
     await rateLimit(30, 60 * 1000);
     const { userId, orgId, orgRole } = await auth();
-    assertVendorAdmin(orgId, orgRole);
+    await assertVendorAdmin(userId, orgId, orgRole);
 
     const parsed = vendorOrderActionSchema.safeParse({ orderId });
     if (!parsed.success) {
@@ -133,7 +135,7 @@ export async function rejectPaymentSlipAction(orderId: string, reason?: string) 
   return runWithCorrelationId(async () => {
     await rateLimit(20, 60 * 1000);
     const { userId, orgId, orgRole } = await auth();
-    assertVendorAdmin(orgId, orgRole);
+    await assertVendorAdmin(userId, orgId, orgRole);
 
     const parsed = rejectPaymentSlipSchema.safeParse({ orderId, reason });
     if (!parsed.success) {
@@ -189,7 +191,7 @@ export async function cancelVendorOrderAction(orderId: string) {
   return runWithCorrelationId(async () => {
     await rateLimit(20, 60 * 1000);
     const { userId, orgId, orgRole } = await auth();
-    assertVendorAdmin(orgId, orgRole);
+    await assertVendorAdmin(userId, orgId, orgRole);
 
     const parsed = vendorOrderActionSchema.safeParse({ orderId });
     if (!parsed.success) {
@@ -245,11 +247,12 @@ export async function cancelVendorOrderAction(orderId: string) {
 
 export async function getVendorPendingPaymentOrderIds(orgId: string): Promise<string[]> {
   return runWithCorrelationId(async () => {
-    const { orgId: sessionOrgId, orgRole } = await auth();
+    const { userId, orgId: sessionOrgId, orgRole } = await auth();
 
-    if (!sessionOrgId || orgRole !== 'org:admin' || sessionOrgId !== orgId) {
+    if (!userId || !sessionOrgId || orgRole !== 'org:admin' || sessionOrgId !== orgId) {
       throw new Error('Not authorized: Only organization admins can view pending payment orders.');
     }
+    await requireVendorRole(userId);
 
     const rows = await db
       .select({ orderId: schema.simulatedOrderItems.orderId })

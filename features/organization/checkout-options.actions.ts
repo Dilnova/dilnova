@@ -14,6 +14,7 @@ import {
 } from '@/features/billing/bank-transfer';
 import { parseBankDetailsFromClerkOrg } from '@/features/billing/bank-transfer-metadata';
 import { rateLimit } from '@/shared/security/rate-limit';
+import { requireVendorRole } from '@/shared/auth/vendor-guard';
 
 export async function updateOrgCheckoutOptionsAction(
   organizationId: string,
@@ -28,9 +29,10 @@ export async function updateOrgCheckoutOptionsAction(
 
     const { orgId, orgRole, userId } = await auth();
 
-    if (!orgId || orgId !== parsed.data.organizationId) {
+    if (!userId || !orgId || orgId !== parsed.data.organizationId) {
       throw new Error('Not authorized: You do not belong to this organization.');
     }
+    await requireVendorRole(userId);
 
     if (orgRole !== 'org:admin') {
       throw new Error('Not authorized: Only organization admins can manage checkout options.');

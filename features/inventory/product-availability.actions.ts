@@ -10,6 +10,7 @@ import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { auth } from '@clerk/nextjs/server';
 import { rateLimit } from '@/shared/security/rate-limit';
+import { requireVendorRole } from '@/shared/auth/vendor-guard';
 
 export async function updateProductStockAvailabilityAction(
   productId: string,
@@ -21,6 +22,7 @@ export async function updateProductStockAvailabilityAction(
     if (!userId || !orgId) {
       throw new Error('Not authorized.');
     }
+    await requireVendorRole(userId);
     if (orgRole !== 'org:admin') {
       throw new Error('Not authorized: Only organization admins can update stock availability.');
     }
