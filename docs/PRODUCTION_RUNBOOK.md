@@ -191,7 +191,7 @@ Alerts should be configured in the monitoring platform (e.g. Vercel Analytics, S
 Note that write-path endpoints (e.g. submitting a contact form or finalizing a checkout order) are protected by rate limiters and external systems:
 1.  **Rate Limiting**: Contact form submission is capped at 2 requests/min per IP. Checkout is capped at 5 requests/min per IP. Under concurrent load tests, these endpoints will return rate limit errors by design.
 2.  **Authentication & CAPTCHA**: Finalizing checkout requires Clerk authentication (unauthenticated requests will be denied with an authentication error). Submitting a contact form requires Cloudflare Turnstile verification.
-Therefore, automated load testing scripts (`load-test-k6.js`) focus primarily on public read paths and static/SSR page rendering.
+Therefore, automated load testing scripts (`load-test-k6.js`) now include dedicated `write_paths` scenarios that utilize `TEST_AUTH_TOKEN` and `TEST_TURNSTILE_TOKEN` to explicitly validate our rate-limiter defense and database write capacity under high concurrency.
 
 ---
 
