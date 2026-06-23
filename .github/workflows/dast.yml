@@ -47,7 +47,6 @@ jobs:
       SMTP_USER: "placeholder"
       SMTP_PASSWORD: "placeholder"
       SENTRY_DSN: "placeholder"
-          SENTRY_DSN: "placeholder"
       EMAIL_FROM_ADDRESS: "info@example.com"
       EMAIL_FROM_NAME: "Placeholder"
       SUPERADMIN_USER_IDS: "user_placeholder"
