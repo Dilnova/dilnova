@@ -1,6 +1,6 @@
 import { z } from 'zod/v3';
 
-const ALLOWED_ORG_ROLES = ['org:member', 'org:admin', 'org:vendor', 'org:customer'] as const;
+const ALLOWED_ORG_ROLES = ['org:member', 'org:admin'] as const;
 
 export const updateMemberRoleSchema = z.object({
   organizationId: z.string().min(1, 'Organization ID is required.'),
