@@ -1,5 +1,6 @@
 import tls from 'tls';
 import net from 'net';
+import { logger } from '@/shared/logging/logger';
 
 export interface SmtpEmailOptions {
   host: string;
@@ -215,7 +216,7 @@ export async function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boole
   try {
     return await sendRawSmtpEmailAttempt(options);
   } catch (error) {
-    console.warn('First SMTP attempt failed, retrying once...', error);
+    logger.warn('First SMTP attempt failed, retrying once...', { error });
     return await sendRawSmtpEmailAttempt(options);
   }
 }

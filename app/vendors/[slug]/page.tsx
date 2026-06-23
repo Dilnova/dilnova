@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logging/logger';
 import type { Metadata } from 'next';
 import { clerkClient } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
@@ -147,7 +148,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
       }
     }
   } catch (e) {
-    console.error(`[Vendor Page] Failed to resolve org for slug: ${slug}`, e);
+    logger.error(`[Vendor Page] Failed to resolve org for slug: ${slug}`, e);
   }
 
   if (!clerkOrg) {
@@ -168,7 +169,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
         },
       };
     } else {
-      console.error(`[Vendor Page] No organization found for slug: "${slug}"`);
+      logger.error(`[Vendor Page] No organization found for slug: "${slug}"`);
       return notFound();
     }
   }

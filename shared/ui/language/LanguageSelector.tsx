@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/shared/logging/logger';
 import { useEffect, useState, useRef } from 'react';
 import {
   LANGUAGES,
@@ -58,7 +59,7 @@ export default function LanguageSelector() {
         try {
           (window as any).googleTranslateElementInit();
         } catch (e) {
-          console.warn('Google Translate re-init deferred:', e);
+          logger.warn('Google Translate re-init deferred:', { error: e });
         }
       }
     }

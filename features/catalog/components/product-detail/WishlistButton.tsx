@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/shared/logging/logger';
 import { useState, useTransition } from 'react';
 import { SignInButton } from '@clerk/nextjs';
 import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/useClerkAuthRedirectUrl';
@@ -65,7 +66,7 @@ export default function WishlistButton({
         const res = await toggleWishlistAction(productId);
         setIsFavorited(res.isFavorited);
       } catch (err) {
-        console.error('Failed to toggle wishlist:', err);
+        logger.error('Failed to toggle wishlist:', err);
         // Rollback state on error
         setIsFavorited(previousState);
       }

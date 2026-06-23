@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logging/logger';
 import { MetadataRoute } from 'next';
 import { db } from '@/shared/db/client';
 import { products, categories } from '@/shared/db/schema';
@@ -27,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
   } catch (error) {
-    console.error('Sitemap: Failed to load products for sitemap', error);
+    logger.error('Sitemap: Failed to load products for sitemap', error);
   }
 
   try {
@@ -46,7 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
   } catch (error) {
-    console.error('Sitemap: Failed to load categories for sitemap', error);
+    logger.error('Sitemap: Failed to load categories for sitemap', error);
   }
 
   return [

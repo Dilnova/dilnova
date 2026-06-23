@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/shared/logging/logger';
 import { useState, useTransition, useEffect, useRef } from 'react';
 import { submitContactFormAction } from '@/features/contact/actions';
 
@@ -47,7 +48,7 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
             },
           });
         } catch (err) {
-          console.error('Failed to render Turnstile widget:', err);
+          logger.error('Failed to render Turnstile widget:', err);
         }
       } else if (checkCount > 50) { // Stop polling after 5 seconds
         clearInterval(checkTurnstile);

@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logging/logger';
 import { z } from 'zod';
 
 const nonEmpty = z.string().trim().min(1);
@@ -64,7 +65,7 @@ export function validateServerEnv(): void {
   const result = productionServerEnvSchema.safeParse(process.env);
   if (!result.success) {
     const formatted = result.error.flatten().fieldErrors;
-    console.error(
+    logger.error(
       JSON.stringify({
         level: 'error',
         message: 'Server environment validation failed',

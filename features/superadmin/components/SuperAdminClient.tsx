@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/shared/logging/logger';
 import { useState, useTransition, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
@@ -386,7 +387,7 @@ export default function SuperAdminClient({
         triggerNotification(false, result.error || 'Upload failed');
       }
     } catch (err) {
-      console.error(err);
+      logger.error('Error', err);
       triggerNotification(false, 'An error occurred during media upload.');
     } finally {
       setIsUploading(false);
@@ -469,7 +470,7 @@ export default function SuperAdminClient({
         triggerNotification(false, result.error || 'Upload failed');
       }
     } catch (err) {
-      console.error(err);
+      logger.error('Error', err);
       triggerNotification(false, 'An error occurred during logo upload.');
     } finally {
       setIsLogoUploading(false);
@@ -505,7 +506,7 @@ export default function SuperAdminClient({
         triggerNotification(false, result.error || 'Upload failed');
       }
     } catch (err) {
-      console.error(err);
+      logger.error('Error', err);
       triggerNotification(false, 'An error occurred during favicon upload.');
     } finally {
       setIsFaviconUploading(false);

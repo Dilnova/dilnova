@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/shared/logging/logger';
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitReviewAction } from '@/features/catalog/product-detail.actions';
@@ -87,7 +88,7 @@ export default function ReviewsSection({
         );
         router.refresh();
       } catch (err) {
-        console.error('Error submitting review:', err);
+        logger.error('Error submitting review:', err);
         setErrorMessage(err instanceof Error ? err.message : 'Something went wrong.');
       }
     });

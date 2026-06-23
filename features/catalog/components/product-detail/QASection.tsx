@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/shared/logging/logger';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitQuestionAction, submitAnswerAction } from '@/features/catalog/product-detail.actions';
@@ -65,7 +66,7 @@ export default function QASection({
         setQuestionContent('');
         router.refresh();
       } catch (err) {
-        console.error('Error posting question:', err);
+        logger.error('Error posting question:', err);
         setErrorMsg(err instanceof Error ? err.message : 'Failed to post question.');
       }
     });
@@ -87,7 +88,7 @@ export default function QASection({
         setActiveReplyId(null);
         router.refresh();
       } catch (err) {
-        console.error('Error replying to question:', err);
+        logger.error('Error replying to question:', err);
         setReplyErrorMsg((prev) => ({
           ...prev,
           [questionId]: err instanceof Error ? err.message : 'Failed to save answer.',

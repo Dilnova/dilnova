@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logging/logger';
 import crypto from 'node:crypto';
 
 const ALGORITHM = 'aes-256-gcm';
@@ -47,7 +48,7 @@ export function encryptString(text: string): string {
     if (isProduction()) {
       throw new Error('Encryption failed. Refusing to store PII in cleartext.');
     }
-    console.error('Encryption failed, returning cleartext:', error);
+    logger.error('Encryption failed, returning cleartext:', error);
     return text;
   }
 }
