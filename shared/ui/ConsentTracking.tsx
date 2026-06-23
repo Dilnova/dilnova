@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
-export default function ConsentTracking() {
-  const [consent, setConsent] = useState<boolean | null>(null);
+export default function ConsentTracking({ initialConsent }: { initialConsent?: boolean }) {
+  const [consent, setConsent] = useState<boolean>(!!initialConsent);
 
   useEffect(() => {
     const checkConsent = () => {
-      const stored = localStorage.getItem('dilnova_cookie_consent');
-      setConsent(stored === 'accepted');
+      const match = document.cookie.match(new RegExp('(^| )dilnova_cookie_consent=([^;]+)'));
+      setConsent(match ? match[2] === 'accepted' : false);
     };
 
     // Check initial consent state on mount

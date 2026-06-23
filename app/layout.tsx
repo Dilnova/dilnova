@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import React from 'react'
 import { ClerkProvider, Show, UserButton, OrganizationSwitcher } from '@clerk/nextjs'
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import Link from 'next/link'
 import { auth } from '@clerk/nextjs/server'
 import ConsentTracking from '@/shared/ui/ConsentTracking'
@@ -58,7 +58,9 @@ export default async function RootLayout({
   return runWithCorrelationId(async () => {
     const { orgId, orgRole, userId } = await auth();
     const requestHeaders = await headers();
+    const cookieStore = await cookies();
     const nonce = requestHeaders.get('x-nonce') || undefined;
+    const initialConsent = cookieStore.get('dilnova_cookie_consent')?.value === 'accepted';
     let userRole: string | undefined = undefined;
     let isSuperAdmin = false;
     if (userId) {
@@ -221,7 +223,7 @@ export default async function RootLayout({
               <CartMergeBanner />
               <FloatingLanguageButton />
             </CartProvider>
-            <ConsentTracking />
+            <ConsentTracking initialConsent={initialConsent} />
             <CookieConsent />
           </ClerkProvider>
         </body>

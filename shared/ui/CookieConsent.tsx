@@ -10,8 +10,8 @@ export default function CookieConsent() {
 
   useEffect(() => {
     // Check if consent has already been given or declined
-    const storedConsent = localStorage.getItem('dilnova_cookie_consent');
-    if (!storedConsent) {
+    const match = document.cookie.match(new RegExp('(^| )dilnova_cookie_consent=([^;]+)'));
+    if (!match) {
       // Delay slightly for smooth fade-in entrance
       const timer = setTimeout(() => setIsVisible(true), 1000);
       return () => clearTimeout(timer);
@@ -19,7 +19,7 @@ export default function CookieConsent() {
   }, []);
 
   const saveConsent = (status: 'accepted' | 'declined') => {
-    localStorage.setItem('dilnova_cookie_consent', status);
+    document.cookie = `dilnova_cookie_consent=${status}; path=/; max-age=31536000; samesite=lax`;
     
     // Dispatch custom event to notify ConsentTracking component immediately
     window.dispatchEvent(new Event('cookie-consent-changed'));
