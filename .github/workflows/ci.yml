@@ -46,7 +46,7 @@ jobs:
       - name: Run Production Build
         run: pnpm run build
         env:
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_public_key_for_testing"
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
           CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
@@ -103,7 +103,7 @@ jobs:
 
     env:
       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_public_key_for_testing"
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
       CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
       NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"

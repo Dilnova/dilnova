@@ -25,32 +25,38 @@ test.describe('Customer server-action IDOR', () => {
     skipUnlessSecurityEnv(testInfo, 'customer', fixtures);
   });
 
-  test('cannot upload a payment slip for another customer order', async ({ page }) => {
+  test('cannot initialize a payment slip upload for another customer order', async ({ page }) => {
     const orderId = fixtures!.foreignCustomerOrderId;
-    const formData = new FormData();
-    formData.append('orderId', orderId);
-    formData.append('file', new Blob(['fake-slip'], { type: 'image/png' }), 'slip.png');
 
     const result = await invokeServerAction(page, {
       postPath: `/customer/invoice/${orderId}`,
       moduleFileSuffix: 'orders/customer.actions',
-      exportName: 'uploadAndSubmitPaymentSlipAction',
-      args: [formData],
+      exportName: 'createPaymentSlipUploadPresignedUrlAction',
+      args: [{ orderId, fileName: 'slip.png', fileSize: 1024, fileType: 'image/png' }],
     });
 
     expectSecurityDenied(result);
   });
 
-  test('cannot upload a payment slip for a non-existent order', async ({ page }) => {
-    const formData = new FormData();
-    formData.append('orderId', NON_EXISTENT_UUID);
-    formData.append('file', new Blob(['fake-slip'], { type: 'image/png' }), 'slip.png');
+  test('cannot submit a payment slip path for another customer order', async ({ page }) => {
+    const orderId = fixtures!.foreignCustomerOrderId;
 
+    const result = await invokeServerAction(page, {
+      postPath: `/customer/invoice/${orderId}`,
+      moduleFileSuffix: 'orders/customer.actions',
+      exportName: 'submitPaymentSlipPathAction',
+      args: [{ orderId, storagePath: `orders/${orderId}/slip.png` }],
+    });
+
+    expectSecurityDenied(result);
+  });
+
+  test('cannot initialize a payment slip upload for a non-existent order', async ({ page }) => {
     const result = await invokeServerAction(page, {
       postPath: '/customer',
       moduleFileSuffix: 'orders/customer.actions',
-      exportName: 'uploadAndSubmitPaymentSlipAction',
-      args: [formData],
+      exportName: 'createPaymentSlipUploadPresignedUrlAction',
+      args: [{ orderId: NON_EXISTENT_UUID, fileName: 'slip.png', fileSize: 1024, fileType: 'image/png' }],
     });
 
     expectSecurityDenied(result);

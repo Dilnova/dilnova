@@ -58,16 +58,12 @@ test.describe('Unauthenticated server-action hardening', () => {
     expect(result.denied).toBe(true);
   });
 
-  test('cannot upload a payment slip', async ({ page }) => {
-    const formData = new FormData();
-    formData.append('orderId', NON_EXISTENT_UUID);
-    formData.append('file', new Blob(['guest-slip'], { type: 'image/png' }), 'slip.png');
-
+  test('cannot initialize a payment slip upload', async ({ page }) => {
     const result = await invokeServerAction(page, {
       postPath: '/customer',
       moduleFileSuffix: 'orders/customer.actions',
-      exportName: 'uploadAndSubmitPaymentSlipAction',
-      args: [formData],
+      exportName: 'createPaymentSlipUploadPresignedUrlAction',
+      args: [{ orderId: NON_EXISTENT_UUID, fileName: 'slip.png', fileSize: 1024, fileType: 'image/png' }],
     });
 
     expect(result.denied).toBe(true);

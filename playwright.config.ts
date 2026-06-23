@@ -12,7 +12,7 @@ const webServerEnv: Record<string, string> = {
   PORT,
   DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://ci:ci@localhost:5432/ci',
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? 'pk_test_ci_dummy',
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? 'pk_test_dGVzdC5jbGVyay5kZXYk',
   CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY ?? 'sk_test_ci_dummy',
   UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL ?? 'https://dummy.upstash.io',
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ?? 'dummy-token',

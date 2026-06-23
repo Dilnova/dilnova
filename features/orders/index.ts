@@ -7,8 +7,6 @@ export * from '@/features/orders/schema';
 export {
   createPaymentSlipUploadPresignedUrlAction,
   submitPaymentSlipPathAction,
-  submitPaymentSlipAction,
-  uploadAndSubmitPaymentSlipAction,
 } from '@/features/orders/customer.actions';
 export {
   verifyOrderPaymentAction,
