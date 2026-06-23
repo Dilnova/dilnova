@@ -18,7 +18,9 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks/clerk(.*)', // Allows public access to Clerk webhooks (secured by signature verification)
   '/_next(.*)',      // Allows public access to Next.js static files/image optimization
   '/sitemap.xml',    // Allow public access to sitemap.xml
-  '/robots.txt'      // Allow public access to robots.txt
+  '/robots.txt',     // Allow public access to robots.txt
+  '/privacy(.*)',    // Allow public access to privacy policy
+  '/terms(.*)'       // Allow public access to terms of service
 ]);
 
 function getSentryCspReportUri(): string | null {
