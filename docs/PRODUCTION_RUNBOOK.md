@@ -198,6 +198,22 @@ Therefore, automated load testing scripts (`load-test-k6.js`) now include dedica
 
 ---
 
+## Authentication Security & Brute-Force Protection
+
+The application relies on Clerk for robust identity management, which natively handles credential security and brute-force mitigation at their edge before traffic ever reaches our servers.
+
+### 1. Clerk Native Protections (Verify in Production)
+To ensure `/sign-in` and `/sign-up` are protected against automated credential stuffing and dictionary attacks, the following settings must be confirmed active in the **Clerk Production Dashboard**:
+- **Bot Protection (CAPTCHA)**: Enabled. Clerk automatically presents a CAPTCHA challenge for suspicious or high-velocity login attempts.
+- **Enhanced Password Protection**: Enabled. Automatically checks passwords against known breached databases (HaveIBeenPwned).
+- **Account Lockout Thresholds**: The default lockout threshold restricts an account after 100 consecutive failed login attempts to prevent brute-force iteration without causing aggressive Denial of Wallet/Service lockouts for legitimate users.
+
+### 2. Supplemental Edge WAF (Optional)
+While Clerk handles the actual authentication mutation, our custom Next.js `/sign-in` and `/sign-up` routing pages are public. If application-layer bot traffic causes excessive Vercel Edge function invocations (costing money), administrators can configure a specific Vercel WAF rule to rate-limit access to the authentication UI:
+- **Auth Page Rate Limiting** (Rule ID: `rule_auth_rl`): Limit `/sign-in` and `/sign-up` paths to 20 requests per 60 seconds per IP.
+
+---
+
 ## Edge Security (WAF & DDoS Protection)
 
 To protect the multi-vendor commerce hub against application-layer attacks, brute-force exploits, and Distributed Denial of Service (DDoS) events, the platform leverages Vercel's edge security and optional Cloudflare proxy integration.
