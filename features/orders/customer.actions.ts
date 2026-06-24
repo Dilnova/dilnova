@@ -21,6 +21,7 @@ import {
   resolvePaymentSlipExtensionFromFilename,
   createPaymentSlipSignedUploadUrl,
   verifyPaymentSlipFileExists,
+  verifyPaymentSlipMagicBytes,
   isPaymentSlipStoragePath,
   uploadPaymentSlipToStorage,
 } from '@/shared/storage/payment-slip';
@@ -212,6 +213,14 @@ export async function submitPaymentSlipPathAction(input: {
       return {
         success: false as const,
         error: 'Uploaded payment slip could not be verified in storage. Please try uploading again.',
+      };
+    }
+
+    const hasValidMagicBytes = await verifyPaymentSlipMagicBytes(input.storagePath);
+    if (!hasValidMagicBytes) {
+      return {
+        success: false as const,
+        error: 'Uploaded file appears to be corrupted or is not a valid image format.',
       };
     }
 
