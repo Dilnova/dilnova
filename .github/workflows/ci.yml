@@ -172,7 +172,7 @@ jobs:
       - name: Start production server (background), detect its URL and wait
         run: |
           # Start Next.js using the built output in background and capture logs
-          pnpm exec next start -p 3000 > server.log 2>&1 &
+          pnpm exec next start -H 127.0.0.1 -p 3000 > server.log 2>&1 &
           echo $! > server.pid
           # Wait up to 2 minutes for localhost to be available (may still fail if Next binds to another IP)
           npx wait-on http://127.0.0.1:3000 --timeout 120000 || (

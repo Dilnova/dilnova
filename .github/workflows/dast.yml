@@ -84,9 +84,12 @@ jobs:
       - name: Build Application
         run: pnpm run build
 
+      - name: Get Host IP
+        run: echo "HOST_IP=$(hostname -I | awk '{print $1}')" >> $GITHUB_ENV
+
       - name: Start Production Server
         run: |
-          pnpm exec next start -p 3000 -H 127.0.0.1 > server.log 2>&1 &
+          pnpm exec next start -H 0.0.0.0 -p 3000 > server.log 2>&1 &
           echo $! > server.pid
 
       - name: Wait for Server to be Ready
@@ -102,7 +105,7 @@ jobs:
         uses: zaproxy/action-baseline@v0.11.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          target: 'http://127.0.0.1:3000'
+          target: 'http://${{ env.HOST_IP }}:3000'
           rules_file_name: '.zap/rules.tsv'
           fail_action: true
 
