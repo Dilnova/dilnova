@@ -104,8 +104,9 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
   // CSRF protection:
-  // Enforce that POST requests (except webhook and csp-report endpoints) have a valid Origin matching Host or X-Forwarded-Host.
-  if (request.method === 'POST') {
+  // Enforce that mutating requests (except webhook and csp-report endpoints) have a valid Origin matching Host or X-Forwarded-Host.
+  const MUTATING_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  if (MUTATING_METHODS.includes(request.method)) {
     const pathname = request.nextUrl.pathname;
     const isWebhook = pathname.startsWith('/api/webhooks/');
     const isCspReport = pathname === '/api/csp-report';
