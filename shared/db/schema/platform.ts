@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, uuid, jsonb, index, boolean } from 'drizzle-orm/pg-core';
-import { encryptedText } from './orders';
+import { encryptedText } from './custom-types';
 
 export const systemSettings = pgTable('system_settings', {
   key: text('key').primaryKey(),

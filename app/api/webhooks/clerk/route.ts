@@ -121,9 +121,17 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, message: 'Already processed' });
       }
     } catch (e) {
+      if (process.env.NODE_ENV === 'production') {
+        logger.error('Redis idempotency check failed, failing closed in production', e);
+        return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+      }
       logger.error('Redis idempotency check failed, proceeding anyway', e);
     }
   } else {
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('Redis required for webhook idempotency in production');
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+    }
     if (processedWebhooks.has(svixId)) {
       logger.warn('Clerk webhook duplicate detected via memory, ignoring replay', { svixId });
       return NextResponse.json({ success: true, message: 'Already processed' });

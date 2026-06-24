@@ -1,14 +1,15 @@
 import { pgTable, text, timestamp, integer, uuid, index, real, unique } from 'drizzle-orm/pg-core';
 import { products } from './catalog';
+import { encryptedText } from './custom-types';
 
 export const suppliers = pgTable('suppliers', {
   id: uuid('id').defaultRandom().primaryKey(),
   orgId: text('org_id').notNull(),
   name: text('name').notNull(),
-  contactName: text('contact_name'),
-  email: text('email'),
-  phone: text('phone'),
-  address: text('address'),
+  contactName: encryptedText('contact_name'),
+  email: encryptedText('email'),
+  phone: encryptedText('phone'),
+  address: encryptedText('address'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => [
   index('idx_suppliers_org_id').on(t.orgId),

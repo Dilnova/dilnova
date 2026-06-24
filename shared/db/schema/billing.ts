@@ -1,12 +1,13 @@
 import { pgTable, text, timestamp, integer, uuid, index, boolean, unique } from 'drizzle-orm/pg-core';
 import { products } from './catalog';
+import { encryptedText } from './custom-types';
 
 export const branches = pgTable('branches', {
   id: uuid('id').defaultRandom().primaryKey(),
   orgId: text('org_id').notNull(),
   name: text('name').notNull(),
-  address: text('address'),
-  phone: text('phone'),
+  address: encryptedText('address'),
+  phone: encryptedText('phone'),
   isDefault: boolean('is_default').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -47,7 +48,7 @@ export const billingReceipts = pgTable('billing_receipts', {
   cashierUserId: text('cashier_user_id').notNull(),
   totalAmount: integer('total_amount').notNull(),
   paymentMethod: text('payment_method').default('cash').notNull(),
-  customerName: text('customer_name'),
+  customerName: encryptedText('customer_name'),
   notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => [

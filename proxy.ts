@@ -80,6 +80,9 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     ? `report-uri ${sentryCspUrl};`
     : `report-uri /api/csp-report; report-to csp-endpoint;`;
 
+  // ACCEPTED RISK: 'unsafe-inline' in style-src is maintained as a trade-off for 
+  // Tailwind CSS and React inline style compatibility. The practical risk of CSS 
+  // exfiltration is low given React's rendering model and strict script-src policies.
   const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:${excludeEval ? '' : " 'unsafe-eval'"}; style-src 'self' 'unsafe-inline' 'nonce-${nonce}' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com http://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:; ${reportingDirectives}${isProd ? ' upgrade-insecure-requests;' : ''}`;
 
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000';
@@ -104,8 +107,9 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
   // CSRF protection:
-  // Enforce that POST requests (except webhook and csp-report endpoints) have a valid Origin matching Host or X-Forwarded-Host.
-  if (request.method === 'POST') {
+  // Enforce that mutating requests (except webhook and csp-report endpoints) have a valid Origin matching Host or X-Forwarded-Host.
+  const MUTATING_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  if (MUTATING_METHODS.includes(request.method)) {
     const pathname = request.nextUrl.pathname;
     const isWebhook = pathname.startsWith('/api/webhooks/');
     const isCspReport = pathname === '/api/csp-report';

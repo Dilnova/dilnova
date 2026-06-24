@@ -13,6 +13,11 @@ variable "vercel_api_token" {
   description = "Vercel API Token for provisioning the log drain"
 }
 
+variable "vercel_project_id" {
+  type        = string
+  description = "The Vercel Project ID to attach the log drain to"
+}
+
 variable "axiom_drain_url" {
   type        = string
   sensitive   = true
@@ -24,7 +29,7 @@ provider "vercel" {
 }
 
 resource "vercel_log_drain" "axiom_compliance_drain" {
-  project_id   = "prj_dilnova_production_id" # Replace with actual Vercel Project ID
+  project_id   = var.vercel_project_id
   name         = "Axiom Forensic Log Drain (90-Day Retention)"
   endpoint     = var.axiom_drain_url
   environments = ["production"]
