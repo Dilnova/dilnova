@@ -19,7 +19,8 @@ export default function CookieConsent() {
   }, []);
 
   const saveConsent = (status: 'accepted' | 'declined') => {
-    document.cookie = `dilnova_cookie_consent=${status}; path=/; max-age=31536000; samesite=lax`;
+    const secure = process.env.NODE_ENV === 'production' ? '; secure' : '';
+    document.cookie = `dilnova_cookie_consent=${status}; path=/; max-age=31536000; samesite=lax${secure}`;
     
     // Dispatch custom event to notify ConsentTracking component immediately
     window.dispatchEvent(new Event('cookie-consent-changed'));
