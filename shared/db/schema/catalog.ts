@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, integer, uuid, AnyPgColumn, unique, jsonb, index, boolean, real } from 'drizzle-orm/pg-core';
+import { encryptedText } from './custom-types';
 
 export const taxClasses = pgTable('tax_classes', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -64,7 +65,7 @@ export const reviews = pgTable('reviews', {
   id: uuid('id').defaultRandom().primaryKey(),
   productId: uuid('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   userId: text('user_id').notNull(),
-  userName: text('user_name').notNull(),
+  userName: encryptedText('user_name').notNull(),
   userImageUrl: text('user_image_url'),
   rating: integer('rating').notNull(),
   comment: text('comment'),
@@ -88,7 +89,7 @@ export const questions = pgTable('questions', {
   id: uuid('id').defaultRandom().primaryKey(),
   productId: uuid('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
   userId: text('user_id').notNull(),
-  userName: text('user_name').notNull(),
+  userName: encryptedText('user_name').notNull(),
   userImageUrl: text('user_image_url'),
   content: text('content').notNull(),
   answer: text('answer'),

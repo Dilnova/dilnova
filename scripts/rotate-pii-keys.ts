@@ -2,6 +2,9 @@ import 'dotenv/config';
 import { db } from '../shared/db/client';
 import { simulatedOrders } from '../shared/db/schema/orders';
 import { contactSubmissions } from '../shared/db/schema/platform';
+import { suppliers } from '../shared/db/schema/inventory';
+import { billingReceipts, branches } from '../shared/db/schema/billing';
+import { reviews, questions } from '../shared/db/schema/catalog';
 import { decryptString } from '../shared/security/encryption';
 import { sql, eq } from 'drizzle-orm';
 
@@ -94,6 +97,144 @@ async function main() {
       updatedSubmissionsCount++;
     }
     console.log(`Successfully updated ${updatedSubmissionsCount} contact submission(s).`);
+
+    // 3. Process suppliers
+    console.log('\nScanning suppliers...');
+    const staleSuppliers = await db.execute(sql`
+      SELECT id, contact_name, email, phone, address
+      FROM suppliers
+      WHERE (contact_name IS NOT NULL AND contact_name NOT LIKE 'v2:%')
+         OR (email IS NOT NULL AND email NOT LIKE 'v2:%')
+         OR (phone IS NOT NULL AND phone NOT LIKE 'v2:%')
+         OR (address IS NOT NULL AND address NOT LIKE 'v2:%')
+    `);
+
+    console.log(`Found ${staleSuppliers.length} supplier(s) requiring re-encryption.`);
+    let updatedSuppliersCount = 0;
+
+    for (const row of staleSuppliers) {
+      const id = row.id as string;
+      const rawContactName = row.contact_name as string | null;
+      const rawEmail = row.email as string | null;
+      const rawPhone = row.phone as string | null;
+      const rawAddress = row.address as string | null;
+
+      await db.update(suppliers)
+        .set({
+          contactName: rawContactName ? decryptString(rawContactName) : null,
+          email: rawEmail ? decryptString(rawEmail) : null,
+          phone: rawPhone ? decryptString(rawPhone) : null,
+          address: rawAddress ? decryptString(rawAddress) : null,
+        })
+        .where(eq(suppliers.id, id));
+
+      updatedSuppliersCount++;
+    }
+    console.log(`Successfully updated ${updatedSuppliersCount} supplier(s).`);
+
+    // 4. Process billing_receipts
+    console.log('\nScanning billing_receipts...');
+    const staleReceipts = await db.execute(sql`
+      SELECT id, customer_name
+      FROM billing_receipts
+      WHERE (customer_name IS NOT NULL AND customer_name NOT LIKE 'v2:%')
+    `);
+
+    console.log(`Found ${staleReceipts.length} billing receipt(s) requiring re-encryption.`);
+    let updatedReceiptsCount = 0;
+
+    for (const row of staleReceipts) {
+      const id = row.id as string;
+      const rawCustomerName = row.customer_name as string | null;
+
+      await db.update(billingReceipts)
+        .set({
+          customerName: rawCustomerName ? decryptString(rawCustomerName) : null,
+        })
+        .where(eq(billingReceipts.id, id));
+
+      updatedReceiptsCount++;
+    }
+    console.log(`Successfully updated ${updatedReceiptsCount} billing receipt(s).`);
+
+    // 5. Process branches
+    console.log('\nScanning branches...');
+    const staleBranches = await db.execute(sql`
+      SELECT id, address, phone
+      FROM branches
+      WHERE (address IS NOT NULL AND address NOT LIKE 'v2:%')
+         OR (phone IS NOT NULL AND phone NOT LIKE 'v2:%')
+    `);
+
+    console.log(`Found ${staleBranches.length} branch(es) requiring re-encryption.`);
+    let updatedBranchesCount = 0;
+
+    for (const row of staleBranches) {
+      const id = row.id as string;
+      const rawAddress = row.address as string | null;
+      const rawPhone = row.phone as string | null;
+
+      await db.update(branches)
+        .set({
+          address: rawAddress ? decryptString(rawAddress) : null,
+          phone: rawPhone ? decryptString(rawPhone) : null,
+        })
+        .where(eq(branches.id, id));
+
+      updatedBranchesCount++;
+    }
+    console.log(`Successfully updated ${updatedBranchesCount} branch(es).`);
+
+    // 6. Process reviews
+    console.log('\nScanning reviews...');
+    const staleReviews = await db.execute(sql`
+      SELECT id, user_name
+      FROM reviews
+      WHERE (user_name IS NOT NULL AND user_name NOT LIKE 'v2:%')
+    `);
+
+    console.log(`Found ${staleReviews.length} review(s) requiring re-encryption.`);
+    let updatedReviewsCount = 0;
+
+    for (const row of staleReviews) {
+      const id = row.id as string;
+      const rawUserName = row.user_name as string;
+
+      await db.update(reviews)
+        .set({
+          userName: rawUserName ? decryptString(rawUserName) : rawUserName,
+        })
+        .where(eq(reviews.id, id));
+
+      updatedReviewsCount++;
+    }
+    console.log(`Successfully updated ${updatedReviewsCount} review(s).`);
+
+    // 7. Process questions
+    console.log('\nScanning questions...');
+    const staleQuestions = await db.execute(sql`
+      SELECT id, user_name
+      FROM questions
+      WHERE (user_name IS NOT NULL AND user_name NOT LIKE 'v2:%')
+    `);
+
+    console.log(`Found ${staleQuestions.length} question(s) requiring re-encryption.`);
+    let updatedQuestionsCount = 0;
+
+    for (const row of staleQuestions) {
+      const id = row.id as string;
+      const rawUserName = row.user_name as string;
+
+      await db.update(questions)
+        .set({
+          userName: rawUserName ? decryptString(rawUserName) : rawUserName,
+        })
+        .where(eq(questions.id, id));
+
+      updatedQuestionsCount++;
+    }
+    console.log(`Successfully updated ${updatedQuestionsCount} question(s).`);
+
     console.log('\nPII Key Rotation Completed successfully.');
   } catch (error) {
     console.error('Error executing key rotation:', error);
