@@ -135,6 +135,11 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
     }
   }
 
+  // Bypass Clerk entirely in CI when dummy keys are present to prevent NXDOMAIN redirect/hangs
+  if (process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy') {
+    return NextResponse.next();
+  }
+
   return clerkHandler(request, event);
 }
 
