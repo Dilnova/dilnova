@@ -232,6 +232,9 @@ export async function getCustomerDsarDataAction(email: string) {
     }
 
     // 1. Fetch all orders & decrypt customerEmail in memory to filter
+    // ACCEPTED RISK: These queries scan all rows because PII is encrypted and cannot be indexed.
+    // Document this as an accepted trade-off for GDPR-at-rest encryption.
+    // Consider implementing a keyed-hash index column for email lookups.
     const allOrders = await db.select().from(schema.simulatedOrders);
     const matchingOrders = [];
     for (const order of allOrders) {
@@ -300,6 +303,9 @@ export async function anonymizeCustomerDataAction(email: string) {
     }
 
     // 1. Fetch all orders and find matching ones
+    // ACCEPTED RISK: These queries scan all rows because PII is encrypted and cannot be indexed.
+    // Document this as an accepted trade-off for GDPR-at-rest encryption.
+    // Consider implementing a keyed-hash index column for email lookups.
     const allOrders = await db.select().from(schema.simulatedOrders);
     let ordersAnonymized = 0;
     let paymentSlipsDeleted = 0;
