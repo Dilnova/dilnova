@@ -1,0 +1,4 @@
+10038	IGNORE	Content Security Policy (CSP) Header Not Set (Handled at Edge/WAF)
+10020	IGNORE	Anti-CSRF Tokens Check (Next.js Server Actions handle CSRF natively)
+10096	IGNORE	Timestamp Disclosure (False positive common in JS bundles)
+10015	IGNORE	Incomplete or No Cache-control Header Set (Managed by Next.js cache semantics)

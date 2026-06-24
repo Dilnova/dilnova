@@ -1,0 +1,44 @@
+name: WAF / Edge Security Verification
+
+on:
+  schedule:
+    # Run quarterly on the 1st of Jan, Apr, Jul, Oct at 00:00 UTC
+    - cron: '0 0 1 1,4,7,10 *'
+  workflow_dispatch:
+
+jobs:
+  verify-waf:
+    name: Verify WAF Rules on Staging
+    runs-on: ubuntu-latest
+
+    env:
+      # Testing against the staging/production domain to ensure edge protections are active
+      STAGING_URL: "https://www.dilstar.pp.ua"
+
+    steps:
+      - name: Verify Bot Protection (Crawler User-Agent)
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "User-Agent: python-requests" $STAGING_URL)
+          if [ "$HTTP_STATUS" != "403" ]; then
+            echo "Failed: WAF did not block python-requests user-agent (Got $HTTP_STATUS)"
+            exit 1
+          fi
+          echo "Passed: Bot protection active."
+
+      - name: Verify SQLi Protection
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/?search=%27%20UNION%20SELECT%20null%20--")
+          if [ "$HTTP_STATUS" != "403" ]; then
+            echo "Failed: WAF did not block SQLi payload (Got $HTTP_STATUS)"
+            exit 1
+          fi
+          echo "Passed: SQLi protection active."
+
+      - name: Verify Directory Traversal Protection
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/?file=../../../../etc/passwd")
+          if [ "$HTTP_STATUS" != "403" ]; then
+            echo "Failed: WAF did not block directory traversal payload (Got $HTTP_STATUS)"
+            exit 1
+          fi
+          echo "Passed: Directory traversal protection active."
