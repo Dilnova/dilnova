@@ -75,7 +75,7 @@ jobs:
           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
 
       - name: Generate build attestation
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: 'next.config.ts'
 
