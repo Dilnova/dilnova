@@ -33,3 +33,14 @@ Detects mass data extraction (like rapid or unauthorized GDPR exports).
 | where action == "GDPR_DSAR_EXPORT" or action == "API_GDPR_EXPORT"
 ```
 **Monitor Threshold:** Trigger when results > 0 (or > 1 in a 5-minute window if some legitimate usage is expected).
+
+## 4. WAF Configuration Modified
+Detects changes to the Vercel Web Application Firewall (WAF) or firewall rules that might weaken security posture.
+
+```kusto
+['vercel']
+| where source == "external" or source == "audit"
+| where message contains "firewall" or message contains "waf"
+| where action == "update" or action == "delete" or action == "disable"
+```
+**Monitor Threshold:** Trigger when results > 0. Route directly to #alerts-critical in Slack.
