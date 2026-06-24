@@ -200,6 +200,10 @@ jobs:
       - name: Dump server log (on failure)
         if: failure()
         run: |
+          if [ -f server.log ]; then
+            echo "::error::Next.js server logs:"
+            tail -n 100 server.log | awk '{printf "::error::%s%%0A", $0}'
+          fi
           echo "=== server.log ==="
           tail -n +1 server.log || true
           echo "=== server processes ==="
