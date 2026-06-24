@@ -54,3 +54,10 @@ next-env.d.ts
 /test-results/
 /playwright/.clerk/
 
+
+# terraform
+*.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
