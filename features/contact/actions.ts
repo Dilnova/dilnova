@@ -175,7 +175,9 @@ export async function submitContactFormAction(prevState: any, formData: FormData
     logger.error('Failed to send contact email', {
       error: error instanceof Error ? error.message : String(error),
     });
-    const errorMsg = error instanceof Error ? error.message : 'Unknown server error.';
+    const errorMsg = process.env.NODE_ENV === 'production' 
+      ? 'An unexpected error occurred. Please try again.'
+      : error instanceof Error ? error.message : 'Unknown error';
     return { success: false, error: errorMsg };
   }
 }
