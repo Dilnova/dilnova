@@ -6,7 +6,7 @@ import { headers } from 'next/headers';
 export interface AuditLogParams {
   userId: string;
   action: string;
-  targetType: 'category' | 'product' | 'system_setting' | 'membership' | 'vendor' | 'pricing_plan' | 'contact' | 'supplier' | 'inventory' | 'simulated_order' | 'branch' | 'billing_receipt';
+  targetType: 'category' | 'product' | 'system_setting' | 'membership' | 'vendor' | 'pricing_plan' | 'contact' | 'supplier' | 'inventory' | 'simulated_order' | 'branch' | 'billing_receipt' | 'data_subject_request';
   targetId: string;
   metadata?: Record<string, unknown> | null;
   strict?: boolean;

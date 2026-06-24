@@ -158,6 +158,12 @@ export default function SuperAdminClient({
   const [complianceData, setComplianceData] = useState<{ orders: any[]; contactSubmissions: any[] } | null>(null);
   const [isSearchingCompliance, setIsSearchingCompliance] = useState(false);
 
+  const [complianceSearchUserId, setComplianceSearchUserId] = useState('');
+  const [searchedUserId, setSearchedUserId] = useState('');
+  const [complianceApiData, setComplianceApiData] = useState<any | null>(null);
+  const [isSearchingApi, setIsSearchingApi] = useState(false);
+  const [isApiErasing, setIsApiErasing] = useState(false);
+
   // Settings State
   const [mediaLimitInput, setMediaLimitInput] = useState(maxMediaLimit);
   const [logoInput, setLogoInput] = useState(systemLogo);
@@ -718,6 +724,73 @@ export default function SuperAdminClient({
         triggerNotification(false, msg);
       }
     });
+  };
+
+  const handleSearchByUserId = async () => {
+    if (!complianceSearchUserId.trim()) {
+      triggerNotification(false, 'Please enter a valid User ID.');
+      return;
+    }
+    setErrorMsg(null);
+    setIsSearchingApi(true);
+
+    try {
+      const res = await fetch(`/api/admin/data-subject-request/export?userId=${encodeURIComponent(complianceSearchUserId)}`);
+      const data = await res.json();
+      if (res.ok && !data.error) {
+        setComplianceApiData(data);
+        setSearchedUserId(complianceSearchUserId);
+      } else {
+        triggerNotification(false, data.error || 'Search failed.');
+      }
+    } catch (err: unknown) {
+      triggerNotification(false, 'Search failed due to network error.');
+    } finally {
+      setIsSearchingApi(false);
+    }
+  };
+
+  const handleExportByUserId = () => {
+    if (!complianceApiData) return;
+    try {
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(complianceApiData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', `GDPR_DSAR_USER_${searchedUserId}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      triggerNotification(true, 'Data exported successfully via API.');
+    } catch (err) {
+      triggerNotification(false, 'Failed to export data.');
+    }
+  };
+
+  const handleAnonymizeByUserId = async () => {
+    if (!searchedUserId) return;
+    const confirmed = confirm(
+      `WARNING: This will permanently redact/anonymize all PII across tables for User ID "${searchedUserId}" via API.\n\nThis action cannot be undone. Are you sure you want to proceed?`
+    );
+    if (!confirmed) return;
+
+    setErrorMsg(null);
+    setIsApiErasing(true);
+    try {
+      const res = await fetch(`/api/admin/data-subject-request/erase?userId=${encodeURIComponent(searchedUserId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        triggerNotification(true, data.message || `Successfully anonymized data for ${searchedUserId}.`);
+        await handleSearchByUserId();
+      } else {
+        triggerNotification(false, data.error || 'Erasure request failed.');
+      }
+    } catch (err: unknown) {
+      triggerNotification(false, 'Erasure request failed due to network error.');
+    } finally {
+      setIsApiErasing(false);
+    }
   };
 
   const knownOrgIds = new Set(organizations.map((org) => org.id));
@@ -1733,6 +1806,76 @@ export default function SuperAdminClient({
               </button>
             </div>
           </div>
+
+          <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+              <span>🆔</span> Search Customer PII by User ID (API)
+            </h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                required
+                placeholder="user_2b3c4d5e6f7g8h9i0j1k2l3m4n5"
+                value={complianceSearchUserId}
+                onChange={(e) => setComplianceSearchUserId(e.target.value)}
+                className="flex-1 px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+              />
+              <button
+                type="button"
+                onClick={handleSearchByUserId}
+                disabled={isSearchingApi}
+                className="px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-xs font-bold hover:bg-zinc-800 disabled:opacity-50 cursor-pointer"
+              >
+                {isSearchingApi ? 'Searching API...' : 'Search API'}
+              </button>
+            </div>
+          </div>
+
+          {searchedUserId && (
+            <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-6">
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                <div>
+                  <span className="text-[10px] uppercase font-mono text-zinc-400">API Results for User ID</span>
+                  <h4 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50 font-mono">{searchedUserId}</h4>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleExportByUserId}
+                    disabled={!complianceApiData}
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[11px] font-bold hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                  >
+                    Export Data (API JSON)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAnonymizeByUserId}
+                    disabled={!complianceApiData || isApiErasing}
+                    className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-[11px] font-bold hover:bg-red-700 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isApiErasing ? 'Erasing...' : 'Anonymize/Delete PII'}
+                  </button>
+                </div>
+              </div>
+              
+              {complianceApiData && (
+                <div className="space-y-4">
+                  <div className="p-3 bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-lg text-[11px]">
+                    <p className="font-mono text-zinc-600 dark:text-zinc-400">
+                      <strong>API Response Summary:</strong><br/>
+                      Orders: {complianceApiData.orders?.length || 0}<br/>
+                      Contact Submissions: {complianceApiData.contactSubmissions?.length || 0}<br/>
+                      Carts: {complianceApiData.cart ? 1 : 0}<br/>
+                      Reviews: {complianceApiData.reviews?.length || 0}<br/>
+                      Questions: {complianceApiData.questions?.length || 0}<br/>
+                      Wishlists: {complianceApiData.wishlists?.length || 0}<br/>
+                      Audit Logs: {complianceApiData.auditLogs?.length || 0}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {searchedEmail && (
             <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-6">
