@@ -73,7 +73,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Database Migrations
-        run: pnpm run db:migrate
+        run: |
+          pnpm run db:migrate > migrate.log 2>&1 || (
+            ERR=$(tail -n 40 migrate.log | awk '{printf "%s%%0A", $0}')
+            echo "::error::Migration failed! Logs:"
+            echo "::error::$ERR"
+            exit 1
+          )
 
       - name: Build Application
         run: pnpm run build
@@ -85,7 +91,12 @@ jobs:
 
       - name: Wait for Server to be Ready
         run: |
-          npx wait-on http://127.0.0.1:3000 --timeout 120000
+          npx wait-on http://127.0.0.1:3000 --timeout 120000 || (
+            echo "::error::Next.js Server failed to start! Last logs:"
+            ERR=$(tail -n 40 server.log | awk '{printf "%s%%0A", $0}')
+            echo "::error::$ERR"
+            exit 1
+          )
 
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.11.0
