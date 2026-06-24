@@ -29,7 +29,9 @@ export const productionServerEnvSchema = z.object({
       }
     ),
   PII_ENCRYPTION_KEY: nonEmpty,
-  CLERK_SECRET_KEY: nonEmpty,
+  CLERK_SECRET_KEY: nonEmpty.refine((val) => val !== 'sk_test_ci_dummy', {
+    message: 'CLERK_SECRET_KEY must not be the CI dummy key in production',
+  }),
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: nonEmpty,
   NEXT_PUBLIC_APP_URL: nonEmpty.url(),
   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: nonEmpty,
