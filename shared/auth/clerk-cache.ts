@@ -160,7 +160,7 @@ export const getCachedOrgMembers = (orgId: string) => unstable_cache(
   ['clerk-org-members', orgId],
   {
     tags: ['clerk-org-members', `clerk-org-members-${orgId}`],
-    revalidate: 300, // Cache for 5 minutes
+    revalidate: 60, // Cache for 1 minute
   }
 )();
 

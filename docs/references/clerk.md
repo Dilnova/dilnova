@@ -62,6 +62,18 @@ const user = await currentUser();
 const isSuperadmin = user?.publicMetadata?.role === 'admin';
 ```
 
+### Security Model & Caching
+
+To reduce Clerk API rate limits and latency, role and organization checks are cached using Next.js `unstable_cache` (`shared/auth/clerk-cache.ts`):
+
+- **User Global Role Cache (`getCachedUserRole`)**: 15 seconds TTL
+- **Superadmin Cache (`getCachedIsSuperAdmin`)**: 15 seconds TTL
+- **Organization Members Cache (`getCachedOrgMembers`)**: 60 seconds TTL (reduced from 300s to limit access windows)
+
+**Important**: Because of these cache windows, a revoked admin or removed organization member may retain access for up to 15 seconds (for global roles) or 60 seconds (for org roles). 
+
+**Best Practice**: For critical operations (e.g., financial transactions, billing changes, payouts), **bypass the cache** and make a fresh Clerk API call (e.g. `client.users.getUser(userId)`) to verify the user's role and membership in real-time.
+
 ---
 
 ## Environment Variables
