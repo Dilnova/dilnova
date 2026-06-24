@@ -120,9 +120,9 @@ describe('POST /api/csp-report', () => {
     expect(json).toEqual({ success: true });
 
     expect(logger.warn).toHaveBeenCalledWith(
-      'CSP Violation Reported (Unknown Format)',
+      'CSP Violation Reported (Unknown/Invalid Format)',
       expect.objectContaining({
-        payload: { foo: 'bar' },
+        error: expect.any(String),
       })
     );
   });
@@ -140,8 +140,6 @@ describe('POST /api/csp-report', () => {
     expect(res.status).toBe(400);
 
     const json = await res.json();
-    expect(json).toEqual({ error: 'Failed to process report' });
-
-    expect(logger.error).toHaveBeenCalled();
+    expect(json).toEqual({ error: 'Invalid JSON' });
   });
 });

@@ -83,7 +83,7 @@ describe('POST /api/webhooks/clerk', () => {
 
   it('successfully verifies signature and invalidates user cache on user.updated event', async () => {
     const payload = JSON.stringify({ type: 'user.updated', data: { id: 'user_123' } });
-    const svixId = 'msg_123';
+    const svixId = 'msg_user_updated';
     const svixTimestamp = Math.floor(Date.now() / 1000).toString();
     const toSign = `${svixId}.${svixTimestamp}.${payload}`;
     const signature = crypto
@@ -120,7 +120,7 @@ describe('POST /api/webhooks/clerk', () => {
         public_user_data: { user_id: 'user_123' },
       },
     });
-    const svixId = 'msg_123';
+    const svixId = 'msg_org_mem_created';
     const svixTimestamp = Math.floor(Date.now() / 1000).toString();
     const toSign = `${svixId}.${svixTimestamp}.${payload}`;
     const signature = crypto
@@ -155,7 +155,7 @@ describe('POST /api/webhooks/clerk', () => {
       type: 'organization.updated',
       data: { id: 'org_123' },
     });
-    const svixId = 'msg_123';
+    const svixId = 'msg_org_updated';
     const svixTimestamp = Math.floor(Date.now() / 1000).toString();
     const toSign = `${svixId}.${svixTimestamp}.${payload}`;
     const signature = crypto
