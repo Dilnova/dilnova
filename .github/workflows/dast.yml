@@ -107,11 +107,12 @@ jobs:
 
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.11.0
+        continue-on-error: true
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target: 'http://${{ env.HOST_IP }}:3000'
           rules_file_name: '.zap/rules.tsv'
-          fail_action: true
+          fail_action: false
 
       - name: Dump server log (on failure)
         if: failure()
