@@ -15,7 +15,6 @@ import { CartProvider } from '@/features/cart/context/CartContext'
 import CartIcon from '@/features/cart/components/CartIcon'
 import LanguageSelector from '@/shared/ui/language/LanguageSelector'
 import LanguageSplash from '@/shared/ui/language/LanguageSplash'
-import LanguageInitializer from '@/shared/ui/language/LanguageInitializer'
 import CartMergeBanner from '@/features/cart/components/CartMergeBanner'
 
 import { getSystemSetting } from '@/shared/platform/settings'
@@ -217,7 +216,6 @@ export default async function RootLayout({
                   </div>
                 </div>
               </footer>
-              <LanguageInitializer />
               <LanguageSplash systemName={systemName} />
               <CartMergeBanner />
             </CartProvider>
