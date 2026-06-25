@@ -49,6 +49,7 @@ import {
   type CheckoutItemInput,
 } from '@/features/cart/schema';
 import { aggregateCheckoutItems, type CheckoutTransactionResult } from '@/features/cart/checkout.helpers';
+import { hashPii } from '@/shared/security/encryption';
 import { z } from 'zod';
 
 const syncCartSchema = z.array(z.string().uuid()).max(50);
@@ -818,6 +819,7 @@ export async function simulatedCheckoutAction(
         .values({
           customerName: name,
           customerEmail: email,
+          customerEmailHash: hashPii(email),
           customerUserId: userId,
           subtotalAmount: checkoutTotals.subtotalAmount,
           taxAmount: checkoutTotals.taxAmount,

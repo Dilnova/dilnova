@@ -3,6 +3,7 @@
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { rateLimit } from '@/shared/security/rate-limit';
+import { hashPii } from '@/shared/security/encryption';
 import { z } from 'zod';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { escapeHtml, sanitizeSmtpHeader, sendRawSmtpEmail } from '@/shared/email/smtp-client';
@@ -96,6 +97,7 @@ export async function submitContactFormAction(prevState: any, formData: FormData
     await db.insert(schema.contactSubmissions).values({
       name: sanitizedName,
       email: sanitizedEmail,
+      emailHash: hashPii(sanitizedEmail),
       category,
       subject: sanitizedSubject,
       message,
