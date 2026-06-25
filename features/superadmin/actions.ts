@@ -2,7 +2,7 @@
 
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { clerkClient } from '@clerk/nextjs/server';
 import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
@@ -13,6 +13,7 @@ import { rateLimit } from '@/shared/security/rate-limit';
 import { createPricingPlanSchema, updatePricingPlanSchema } from './schema';
 import { uuidField } from '@/shared/validation/primitives';
 import { logger } from '@/shared/logging/logger';
+import { hashPii } from '@/shared/security/encryption';
 
 // ── PRICING PLANS CRUD ─────────────────────────────────────────
 
@@ -231,28 +232,30 @@ export async function getCustomerDsarDataAction(email: string) {
       throw new Error('Email address is required.');
     }
 
-    // 1. Fetch all orders & decrypt customerEmail in memory to filter
-    const allOrders = await db.select().from(schema.simulatedOrders);
+    // 1. Fetch matching orders using the blind index (keyed-hash)
+    const targetHash = hashPii(normalizedEmailInput);
+    const orders = await db
+      .select()
+      .from(schema.simulatedOrders)
+      .where(eq(schema.simulatedOrders.customerEmailHash, targetHash!));
+      
     const matchingOrders = [];
-    for (const order of allOrders) {
-      if (order.customerEmail && order.customerEmail.trim().toLowerCase() === normalizedEmailInput) {
-        // Fetch order items
-        const items = await db
-          .select()
-          .from(schema.simulatedOrderItems)
-          .where(eq(schema.simulatedOrderItems.orderId, order.id));
-        matchingOrders.push({
-          ...order,
-          items,
-        });
-      }
+    for (const order of orders) {
+      const items = await db
+        .select()
+        .from(schema.simulatedOrderItems)
+        .where(eq(schema.simulatedOrderItems.orderId, order.id));
+      matchingOrders.push({
+        ...order,
+        items,
+      });
     }
 
-    // 2. Fetch all contact submissions & filter by email
-    const allSubmissions = await db.select().from(schema.contactSubmissions);
-    const matchingSubmissions = allSubmissions.filter(
-      (sub) => sub.email && sub.email.trim().toLowerCase() === normalizedEmailInput
-    );
+    // 2. Fetch matching contact submissions using the blind index
+    const matchingSubmissions = await db
+      .select()
+      .from(schema.contactSubmissions)
+      .where(eq(schema.contactSubmissions.emailHash, targetHash!));
 
     await logAuditAction({
       userId: user.id,
@@ -299,8 +302,16 @@ export async function anonymizeCustomerDataAction(email: string) {
       }
     }
 
-    // 1. Fetch all orders and find matching ones
-    const allOrders = await db.select().from(schema.simulatedOrders);
+    // 1. Fetch matching orders
+    const targetHash = hashPii(normalizedEmailInput);
+    const conditions = [];
+    if (targetHash) conditions.push(eq(schema.simulatedOrders.customerEmailHash, targetHash!));
+    if (clerkUserId) conditions.push(eq(schema.simulatedOrders.customerUserId, clerkUserId));
+    
+    const matchingOrders = conditions.length > 0 
+      ? await db.select().from(schema.simulatedOrders).where(or(...conditions))
+      : [];
+      
     let ordersAnonymized = 0;
     let paymentSlipsDeleted = 0;
     
@@ -309,11 +320,7 @@ export async function anonymizeCustomerDataAction(email: string) {
     const { createSupabaseAdminClient, isSupabaseStorageConfigured } = await import('@/shared/storage/admin-client');
     const { PAYMENT_SLIPS_BUCKET } = await import('@/shared/storage/config');
 
-    for (const order of allOrders) {
-      if (
-        (order.customerEmail && order.customerEmail.trim().toLowerCase() === normalizedEmailInput) ||
-        (clerkUserId && order.customerUserId === clerkUserId)
-      ) {
+    for (const order of matchingOrders) {
         // Remove Supabase payment slip if exists
         if (order.paymentSlipUrl && isSupabaseStorageConfigured()) {
           if (!supabase) supabase = createSupabaseAdminClient();
@@ -334,19 +341,19 @@ export async function anonymizeCustomerDataAction(email: string) {
           })
           .where(eq(schema.simulatedOrders.id, order.id));
         ordersAnonymized++;
-      }
     }
 
     // 2. Fetch matching contact submissions and delete them
-    const allSubmissions = await db.select().from(schema.contactSubmissions);
+    const matchingSubmissions = targetHash 
+      ? await db.select().from(schema.contactSubmissions).where(eq(schema.contactSubmissions.emailHash, targetHash!))
+      : [];
+      
     let submissionsDeleted = 0;
-    for (const sub of allSubmissions) {
-      if (sub.email && sub.email.trim().toLowerCase() === normalizedEmailInput) {
-        await db
-          .delete(schema.contactSubmissions)
-          .where(eq(schema.contactSubmissions.id, sub.id));
-        submissionsDeleted++;
-      }
+    for (const sub of matchingSubmissions) {
+      await db
+        .delete(schema.contactSubmissions)
+        .where(eq(schema.contactSubmissions.id, sub.id));
+      submissionsDeleted++;
     }
 
     let reviewsRedacted = 0;

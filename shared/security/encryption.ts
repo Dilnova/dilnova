@@ -54,6 +54,33 @@ export function encryptString(text: string): string {
 }
 
 /**
+ * Creates a deterministic, keyed hash of a string for blind indexing.
+ * The input is lowercased to ensure case-insensitive matching.
+ */
+export function hashPii(text: string | null | undefined): string | null {
+  if (!text) return null;
+  
+  const key = process.env.PII_ENCRYPTION_KEY?.trim();
+  if (!key) {
+    if (isProduction()) {
+      throw new Error(
+        'PII_ENCRYPTION_KEY is not configured. Cannot hash sensitive data in production.'
+      );
+    }
+    // Fallback for dev without key: just sha256 without a secret key
+    return crypto.createHash('sha256').update(text.trim().toLowerCase()).digest('hex');
+  }
+
+  // Derive secure 32-byte hash key using HKDF (different context than encryption)
+  const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-hash-v1', 'sha256', 32);
+  const hashKey = Buffer.from(keyArrayBuffer);
+  
+  return crypto.createHmac('sha256', hashKey)
+    .update(text.trim().toLowerCase())
+    .digest('hex');
+}
+
+/**
  * Decrypts a ciphertext string created by encryptString.
  * Supports v2, v1, and legacy unversioned decryptions using key fallback.
  *

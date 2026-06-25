@@ -41,6 +41,7 @@ export const contactSubmissions = pgTable('contact_submissions', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: encryptedText('name').notNull(),
   email: encryptedText('email').notNull(),
+  emailHash: text('email_hash'),
   category: text('category').notNull(),
   subject: text('subject').notNull(),
   message: text('message').notNull(),
@@ -49,4 +50,5 @@ export const contactSubmissions = pgTable('contact_submissions', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => [
   index('idx_contact_submissions_status').on(t.status),
+  index('idx_contact_submissions_email_hash').on(t.emailHash),
 ]);

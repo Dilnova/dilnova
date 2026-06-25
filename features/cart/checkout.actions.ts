@@ -49,6 +49,7 @@ import {
   type CheckoutItemInput,
 } from '@/features/cart/schema';
 import { aggregateCheckoutItems, type CheckoutTransactionResult } from '@/features/cart/checkout.helpers';
+import { hashPii } from '@/shared/security/encryption';
 import { z } from 'zod';
 
 const syncCartSchema = z.array(z.string().uuid()).max(50);
@@ -109,20 +110,23 @@ export async function sendCartSummaryEmailAction(
       return { success: false, error: 'SMTP configuration is incomplete on the server.' };
     }
 
-    const pricedItems = await Promise.all(
-      validatedItems.map(async (item) => {
-        const [product] = await db
-          .select({ price: schema.products.price, name: schema.products.name })
+    const uniqueItemIds = [...new Set(validatedItems.map((item) => item.id))];
+    const products = uniqueItemIds.length > 0
+      ? await db
+          .select({ id: schema.products.id, price: schema.products.price, name: schema.products.name })
           .from(schema.products)
-          .where(eq(schema.products.id, item.id))
-          .limit(1);
-        return {
-          ...item,
-          name: product?.name || item.name,
-          price: product?.price ?? item.price,
-        };
-      })
-    );
+          .where(inArray(schema.products.id, uniqueItemIds))
+      : [];
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
+    const pricedItems = validatedItems.map((item) => {
+      const product = productMap.get(item.id);
+      return {
+        ...item,
+        name: product?.name || item.name,
+        price: product?.price ?? item.price,
+      };
+    });
     const syncedSubtotal = pricedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = calculateCheckoutTotals(
       syncedSubtotal,
@@ -552,19 +556,24 @@ export async function simulatedCheckoutAction(
     let serverSubtotal = 0;
     const availabilityCatalog = await getStockAvailabilityCatalog();
 
+    const uniqueItemIds = [...new Set(aggregatedItems.map((item) => item.id))];
+    const products = uniqueItemIds.length > 0
+      ? await db
+          .select({
+            id: schema.products.id,
+            name: schema.products.name,
+            price: schema.products.price,
+            orgId: schema.products.orgId,
+            type: schema.products.type,
+            status: schema.products.status,
+          })
+          .from(schema.products)
+          .where(inArray(schema.products.id, uniqueItemIds))
+      : [];
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
     for (const item of aggregatedItems) {
-      const [product] = await db
-        .select({
-          id: schema.products.id,
-          name: schema.products.name,
-          price: schema.products.price,
-          orgId: schema.products.orgId,
-          type: schema.products.type,
-          status: schema.products.status,
-        })
-        .from(schema.products)
-        .where(eq(schema.products.id, item.id))
-        .limit(1);
+      const product = productMap.get(item.id);
 
       if (!product) {
         return { success: false, error: `Product not found in catalog: ${item.name}` };
@@ -818,6 +827,7 @@ export async function simulatedCheckoutAction(
         .values({
           customerName: name,
           customerEmail: email,
+          customerEmailHash: hashPii(email),
           customerUserId: userId,
           subtotalAmount: checkoutTotals.subtotalAmount,
           taxAmount: checkoutTotals.taxAmount,

@@ -3,6 +3,7 @@
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { rateLimit } from '@/shared/security/rate-limit';
+import { hashPii } from '@/shared/security/encryption';
 import { z } from 'zod';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { escapeHtml, sanitizeSmtpHeader, sendRawSmtpEmail } from '@/shared/email/smtp-client';
@@ -36,13 +37,19 @@ export async function submitContactFormAction(prevState: any, formData: FormData
       }
 
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        
         const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: `secret=${encodeURIComponent(turnstileSecret)}&response=${encodeURIComponent(turnstileToken)}`,
+          signal: controller.signal,
         });
+        
+        clearTimeout(timeout);
 
         const verifyData = await verifyResponse.json();
         if (!verifyData.success) {
@@ -90,6 +97,7 @@ export async function submitContactFormAction(prevState: any, formData: FormData
     await db.insert(schema.contactSubmissions).values({
       name: sanitizedName,
       email: sanitizedEmail,
+      emailHash: hashPii(sanitizedEmail),
       category,
       subject: sanitizedSubject,
       message,
@@ -175,7 +183,9 @@ export async function submitContactFormAction(prevState: any, formData: FormData
     logger.error('Failed to send contact email', {
       error: error instanceof Error ? error.message : String(error),
     });
-    const errorMsg = error instanceof Error ? error.message : 'Unknown server error.';
+    const errorMsg = process.env.NODE_ENV === 'production' 
+      ? 'An unexpected error occurred. Please try again.'
+      : error instanceof Error ? error.message : 'Unknown error';
     return { success: false, error: errorMsg };
   }
 }

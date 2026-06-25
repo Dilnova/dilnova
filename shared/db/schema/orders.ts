@@ -6,6 +6,7 @@ export const simulatedOrders = pgTable('simulated_orders', {
   id: uuid('id').defaultRandom().primaryKey(),
   customerName: encryptedText('customer_name').notNull(),
   customerEmail: encryptedText('customer_email').notNull(),
+  customerEmailHash: text('customer_email_hash'),
   customerUserId: text('customer_user_id'),
   subtotalAmount: integer('subtotal_amount').default(0).notNull(),
   taxAmount: integer('tax_amount').default(0).notNull(),
@@ -28,6 +29,7 @@ export const simulatedOrders = pgTable('simulated_orders', {
   index('idx_simulated_orders_status').on(t.status),
   index('idx_simulated_orders_created_at').on(t.createdAt),
   index('idx_simulated_orders_customer_user_id').on(t.customerUserId),
+  index('idx_simulated_orders_email_hash').on(t.customerEmailHash),
 ]);
 
 export const customerCarts = pgTable('customer_carts', {
