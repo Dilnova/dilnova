@@ -60,6 +60,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     'https://img.clerk.com',
     'https://*.clerk.com',
     'https://*.clerk.accounts.dev',
+    'https://clerk.dilstar.pp.ua',
   ];
   const clerkDomainsStr = clerkDomains.join(' ');
 
