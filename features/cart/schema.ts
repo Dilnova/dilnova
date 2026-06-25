@@ -5,7 +5,7 @@ export const cartLineSchema = z.object({
   name: z.string(),
   price: z.number(),
   imageUrl: z.string().nullable(),
-  quantity: z.number().int().positive(),
+  quantity: z.number().int().min(1, 'Quantity must be at least 1'),
   vendorName: z.string(),
   type: z.string(),
 });
@@ -20,7 +20,7 @@ export const checkoutItemSchema = z.object({
   id: z.string(),
   name: z.string(),
   price: z.number(),
-  quantity: z.number().int().positive(),
+  quantity: z.number().int().min(1, 'Quantity must be at least 1'),
   vendorName: z.string(),
   type: z.string(),
   vendorOrgId: z.string().optional(),
@@ -44,7 +44,7 @@ export const syncedCartItemSchema = z.object({
   name: z.string(),
   price: z.number().int().nonnegative(),
   imageUrl: z.string().nullable(),
-  quantity: z.number().int().positive(),
+  quantity: z.number().int().min(1, 'Quantity must be at least 1'),
   vendorName: z.string(),
   type: z.string(),
 });
