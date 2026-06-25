@@ -237,7 +237,7 @@ export async function getCustomerDsarDataAction(email: string) {
     const orders = await db
       .select()
       .from(schema.simulatedOrders)
-      .where(eq(schema.simulatedOrders.customerEmailHash, targetHash));
+      .where(eq(schema.simulatedOrders.customerEmailHash, targetHash!));
       
     const matchingOrders = [];
     for (const order of orders) {
@@ -255,7 +255,7 @@ export async function getCustomerDsarDataAction(email: string) {
     const matchingSubmissions = await db
       .select()
       .from(schema.contactSubmissions)
-      .where(eq(schema.contactSubmissions.emailHash, targetHash));
+      .where(eq(schema.contactSubmissions.emailHash, targetHash!));
 
     await logAuditAction({
       userId: user.id,
@@ -305,7 +305,7 @@ export async function anonymizeCustomerDataAction(email: string) {
     // 1. Fetch matching orders
     const targetHash = hashPii(normalizedEmailInput);
     const conditions = [];
-    if (targetHash) conditions.push(eq(schema.simulatedOrders.customerEmailHash, targetHash));
+    if (targetHash) conditions.push(eq(schema.simulatedOrders.customerEmailHash, targetHash!));
     if (clerkUserId) conditions.push(eq(schema.simulatedOrders.customerUserId, clerkUserId));
     
     const matchingOrders = conditions.length > 0 
@@ -345,7 +345,7 @@ export async function anonymizeCustomerDataAction(email: string) {
 
     // 2. Fetch matching contact submissions and delete them
     const matchingSubmissions = targetHash 
-      ? await db.select().from(schema.contactSubmissions).where(eq(schema.contactSubmissions.emailHash, targetHash))
+      ? await db.select().from(schema.contactSubmissions).where(eq(schema.contactSubmissions.emailHash, targetHash!))
       : [];
       
     let submissionsDeleted = 0;
