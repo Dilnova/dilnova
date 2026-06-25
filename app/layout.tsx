@@ -173,10 +173,7 @@ export default async function RootLayout({
                 </div>
 
                 <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0">
-                  {/* Language Selector Dropdown - hidden on very small screens since FloatingLanguageButton covers it */}
-                  <div className="hidden sm:block">
-                    <LanguageSelector />
-                  </div>
+                  <LanguageSelector />
 
                   {/* Shopping Cart Icon (Link to page) */}
                   <CartIcon />
