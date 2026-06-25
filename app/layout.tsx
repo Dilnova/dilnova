@@ -15,9 +15,7 @@ import { CartProvider } from '@/features/cart/context/CartContext'
 import CartIcon from '@/features/cart/components/CartIcon'
 import LanguageSelector from '@/shared/ui/language/LanguageSelector'
 import LanguageSplash from '@/shared/ui/language/LanguageSplash'
-import LanguageInitializer from '@/shared/ui/language/LanguageInitializer'
 import CartMergeBanner from '@/features/cart/components/CartMergeBanner'
-import FloatingLanguageButton from '@/shared/ui/language/FloatingLanguageButton'
 
 import { getSystemSetting } from '@/shared/platform/settings'
 import Image from 'next/image'
@@ -218,10 +216,8 @@ export default async function RootLayout({
                   </div>
                 </div>
               </footer>
-              <LanguageInitializer />
               <LanguageSplash systemName={systemName} />
               <CartMergeBanner />
-              <FloatingLanguageButton />
             </CartProvider>
             <ConsentTracking initialConsent={initialConsent} />
             <CookieConsent />

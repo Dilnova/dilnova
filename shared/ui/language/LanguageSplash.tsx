@@ -6,7 +6,6 @@ import {
   detectBrowserLanguage,
   applyLanguage,
   hasLanguageChoice,
-  initDefaultLanguageIfNeeded,
 } from './languageUtils';
 
 interface LanguageSplashProps {
@@ -20,8 +19,6 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
   const [detectedLang, setDetectedLang] = useState('en');
 
   useEffect(() => {
-    initDefaultLanguageIfNeeded();
-
     if (hasLanguageChoice()) return;
 
     const detected = detectBrowserLanguage();
