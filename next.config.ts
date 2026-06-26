@@ -35,6 +35,10 @@ const remotePatterns: Array<{ protocol: 'https' | 'http'; hostname: string }> = 
     protocol: 'https',
     hostname: '*.backblazeb2.com',
   },
+  {
+    protocol: 'https',
+    hostname: 'clerk.dilstar.pp.ua',
+  },
 ];
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -111,6 +115,7 @@ const nextConfig: NextConfig = {
       'https://img.clerk.com',
       'https://*.clerk.com',
       'https://*.clerk.accounts.dev',
+      'https://clerk.dilstar.pp.ua',
     ];
     if (clerkDomain) {
       clerkDomains.push(`https://${clerkDomain}`);
