@@ -27,8 +27,40 @@ export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemSetting('system_name', 'Dilnova Commerce Hub');
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dilstar.pp.ua';
   return {
-    title: systemName,
+    title: {
+      template: `%s | ${systemName}`,
+      default: systemName,
+    },
     description: 'Enterprise RBAC sandbox with multi-vendor isolation',
+    keywords: ['marketplace', 'multi-vendor', 'ecommerce', 'b2b', 'platform'],
+    authors: [{ name: systemName }],
+    creator: systemName,
+    publisher: systemName,
+    openGraph: {
+      title: systemName,
+      description: 'Enterprise RBAC sandbox with multi-vendor isolation',
+      url: baseUrl,
+      siteName: systemName,
+      locale: 'en_US',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: systemName,
+      description: 'Enterprise RBAC sandbox with multi-vendor isolation',
+      creator: '@dilnova',
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
     icons: faviconUrl
       ? { icon: faviconUrl }
       : {
@@ -143,10 +175,40 @@ export default async function RootLayout({
 
     const logoUrl = await getSystemSetting('system_logo', '');
     const systemName = await getSystemSetting('system_name', 'Dilnova');
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dilstar.pp.ua';
 
     return (
       <html lang="en">
         <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-x-hidden">
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                '@context': 'https://schema.org',
+                '@graph': [
+                  {
+                    '@type': 'WebSite',
+                    '@id': `${baseUrl}/#website`,
+                    url: baseUrl,
+                    name: systemName,
+                    publisher: {
+                      '@id': `${baseUrl}/#organization`
+                    },
+                  },
+                  {
+                    '@type': 'Organization',
+                    '@id': `${baseUrl}/#organization`,
+                    name: systemName,
+                    url: baseUrl,
+                    logo: {
+                      '@type': 'ImageObject',
+                      url: logoUrl || `${baseUrl}/apple-touch-icon.png`
+                    }
+                  }
+                ]
+              })
+            }}
+          />
           <ClerkProvider nonce={nonce}>
             <CartProvider>
               <header className="relative flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-14 sm:h-16 overflow-visible max-w-full">
