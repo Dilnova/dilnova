@@ -32,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
       default: systemName,
     },
     description: 'Enterprise RBAC sandbox with multi-vendor isolation',
-    keywords: ['marketplace', 'multi-vendor', 'ecommerce', 'b2b', 'platform'],
+    keywords: ['dilstar', 'dilstar marketplace', 'marketplace', 'multi-vendor', 'ecommerce', 'b2b', 'platform'],
     authors: [{ name: systemName }],
     creator: systemName,
     publisher: systemName,
@@ -268,7 +268,7 @@ export default async function RootLayout({
               {children}
               <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-950 mt-auto">
                 <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <p>&copy; {new Date().getFullYear()} {systemName} Marketplace. All rights reserved.</p>
+                  <p>&copy; {new Date().getFullYear()} {systemName}. All rights reserved.</p>
                   <div className="flex items-center gap-6 font-medium">
                     <Link href="/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Privacy Policy</Link>
                     <Link href="/terms" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Terms of Service</Link>
