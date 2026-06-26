@@ -211,17 +211,20 @@ export default async function RootLayout({
           />
           <ClerkProvider nonce={nonce}>
             <CartProvider>
-              <header className="relative flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-14 sm:h-16 overflow-visible max-w-full">
-                <div className="flex items-center gap-2 sm:gap-3 md:gap-5 min-w-0 flex-1 overflow-hidden">
-                  <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center shrink-0">
+              <header className="relative flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 sticky top-0 z-50 min-h-[3.5rem] sm:min-h-[4rem] max-w-full">
+                {/* Background layer to prevent backdrop-blur from creating a containing block for fixed children */}
+                <div className="absolute inset-0 backdrop-blur-md -z-10 pointer-events-none" aria-hidden="true" />
+                
+                <div className="flex items-center gap-2 sm:gap-3 md:gap-5 min-w-0 flex-1">
+                  <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center shrink min-w-[5rem]">
                     {logoUrl ? (
-                      <div className="relative h-8 w-28 sm:h-9 sm:w-32 rounded-lg bg-white px-2 py-1 shadow-sm ring-1 ring-zinc-200/80 dark:ring-zinc-700/60">
+                      <div className="relative h-8 w-20 sm:h-9 sm:w-32 max-w-full rounded-lg bg-white px-2 py-1 shadow-sm ring-1 ring-zinc-200/80 dark:ring-zinc-700/60">
                         <Image
                           src={logoUrl}
                           alt={`${systemName} Logo`}
                           fill
                           className="object-contain object-center"
-                          sizes="(max-width: 640px) 112px, 128px"
+                          sizes="(max-width: 640px) 80px, 128px"
                           priority
                         />
                       </div>
@@ -229,14 +232,15 @@ export default async function RootLayout({
                       systemName.toUpperCase()
                     )}
                   </Link>
-                  <div className="min-w-0 flex-1 overflow-hidden">
+                  {/* Removed overflow-hidden to prevent clipping the mobile hamburger menu */}
+                  <div className="flex-1 flex items-center min-w-0">
                     <HeaderNav links={links} />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0">
+                <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0 ml-2">
                   <LanguageSelector />
-
+                  
                   {/* Shopping Cart Icon (Link to page) */}
                   <CartIcon />
 
