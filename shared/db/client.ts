@@ -17,10 +17,12 @@ const poolSize = process.env.DATABASE_POOL_SIZE
   : defaultPoolSize;
 
 const client = postgres(connectionString, {
-  prepare: false,
+  prepare: false, // Required for Supabase/Neon connection poolers (Transaction Mode)
   max: poolSize,
   idle_timeout: 20,
   connect_timeout: 10,
+  // Force SSL in production to prevent abrupt "Connection closed" drops
+  ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
 });
 
 export const db = drizzle(client, { schema });

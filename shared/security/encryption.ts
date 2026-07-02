@@ -4,8 +4,41 @@ import crypto from 'node:crypto';
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
 
+let cachedV2Key: Buffer | null = null;
+let cachedV1Key: Buffer | null = null;
+let cachedV0Key: Buffer | null = null;
+let cachedHashKey: Buffer | null = null;
+let hasLoggedDecryptionError = false;
+
 function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';
+}
+
+function getV2Key(key: string): Buffer {
+  if (cachedV2Key) return cachedV2Key;
+  const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v2', 'aes-256-gcm', 32);
+  cachedV2Key = Buffer.from(keyArrayBuffer);
+  return cachedV2Key;
+}
+
+function getV1Key(key: string): Buffer {
+  if (cachedV1Key) return cachedV1Key;
+  const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v1', 'aes-256-gcm', 32);
+  cachedV1Key = Buffer.from(keyArrayBuffer);
+  return cachedV1Key;
+}
+
+function getV0Key(key: string): Buffer {
+  if (cachedV0Key) return cachedV0Key;
+  cachedV0Key = crypto.createHash('sha256').update(key).digest();
+  return cachedV0Key;
+}
+
+function getHashKey(key: string): Buffer {
+  if (cachedHashKey) return cachedHashKey;
+  const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-hash-v1', 'sha256', 32);
+  cachedHashKey = Buffer.from(keyArrayBuffer);
+  return cachedHashKey;
 }
 
 /**
@@ -30,9 +63,7 @@ export function encryptString(text: string): string {
   }
 
   try {
-    // Derive secure 32-byte key using HKDF for version 2 (v2)
-    const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v2', 'aes-256-gcm', 32);
-    const hashedKey = Buffer.from(keyArrayBuffer);
+    const hashedKey = getV2Key(key);
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(ALGORITHM, hashedKey, iv);
     
@@ -71,9 +102,7 @@ export function hashPii(text: string | null | undefined): string | null {
     return crypto.createHash('sha256').update(text.trim().toLowerCase()).digest('hex');
   }
 
-  // Derive secure 32-byte hash key using HKDF (different context than encryption)
-  const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-hash-v1', 'sha256', 32);
-  const hashKey = Buffer.from(keyArrayBuffer);
+  const hashKey = getHashKey(key);
   
   return crypto.createHmac('sha256', hashKey)
     .update(text.trim().toLowerCase())
@@ -112,8 +141,7 @@ export function decryptString(encryptedText: string): string {
         return encryptedText;
       }
       const [, ivHex, encryptedHex, tagHex] = parts;
-      const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v2', 'aes-256-gcm', 32);
-      const hashedKey = Buffer.from(keyArrayBuffer);
+      const hashedKey = getV2Key(key);
       const iv = Buffer.from(ivHex, 'hex');
       const encrypted = Buffer.from(encryptedHex, 'hex');
       const tag = Buffer.from(tagHex, 'hex');
@@ -132,10 +160,8 @@ export function decryptString(encryptedText: string): string {
       }
       const [, ivHex, encryptedHex, tagHex] = parts;
       
-      // Use fallback v1 key if configured, otherwise fall back to primary key
       const decryptionKey = fallbackKeyV1 || key;
-      const keyArrayBuffer = crypto.hkdfSync('sha256', decryptionKey, 'dilnova-pii-v1', 'aes-256-gcm', 32);
-      const hashedKey = Buffer.from(keyArrayBuffer);
+      const hashedKey = getV1Key(decryptionKey);
       const iv = Buffer.from(ivHex, 'hex');
       const encrypted = Buffer.from(encryptedHex, 'hex');
       const tag = Buffer.from(tagHex, 'hex');
@@ -155,9 +181,8 @@ export function decryptString(encryptedText: string): string {
       }
       const [ivHex, encryptedHex, tagHex] = parts;
 
-      // Use fallback v1 key if configured, otherwise fall back to primary key
       const decryptionKey = fallbackKeyV1 || key;
-      const hashedKey = crypto.createHash('sha256').update(decryptionKey).digest();
+      const hashedKey = getV0Key(decryptionKey);
       const iv = Buffer.from(ivHex, 'hex');
       const encrypted = Buffer.from(encryptedHex, 'hex');
       const tag = Buffer.from(tagHex, 'hex');
@@ -172,7 +197,11 @@ export function decryptString(encryptedText: string): string {
     }
   } catch (error) {
     if (isProduction()) {
-      throw new Error('Decryption failed. The PII_ENCRYPTION_KEY may have changed or the data is corrupted.');
+      if (!hasLoggedDecryptionError) {
+        console.error('Decryption failed. The PII_ENCRYPTION_KEY may have changed or the data is corrupted. Suppressing further identical logs.', error);
+        hasLoggedDecryptionError = true;
+      }
+      return '[Decryption Failed]';
     }
     return encryptedText;
   }
