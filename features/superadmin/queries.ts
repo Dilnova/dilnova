@@ -2,10 +2,9 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, desc, inArray, asc } from 'drizzle-orm';
 import { buildVendorOrgIntegrityReport } from '@/features/vendor-org';
-import { attachPaymentSlipPreviews } from '@/features/orders/payment-slip-preview';
 
 export async function getPricingPlansOrderedByCreatedAtAsc() {
-  return db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt)).limit(500);
+  return db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt)).limit(200);
 }
 
 export async function getPricingPlansOrderedByCreatedAtDesc() {
@@ -13,7 +12,7 @@ export async function getPricingPlansOrderedByCreatedAtDesc() {
     .select()
     .from(schema.pricingPlans)
     .orderBy(desc(schema.pricingPlans.createdAt))
-    .limit(500);
+    .limit(200);
 }
 
 export async function getCategoriesOrderedByCreatedAtDesc() {
@@ -21,7 +20,7 @@ export async function getCategoriesOrderedByCreatedAtDesc() {
     .select()
     .from(schema.categories)
     .orderBy(desc(schema.categories.createdAt))
-    .limit(500);
+    .limit(200);
 }
 
 export async function getProductsWithCategoryDetails() {
@@ -33,7 +32,7 @@ export async function getProductsWithCategoryDetails() {
     .from(schema.products)
     .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
     .orderBy(desc(schema.products.createdAt))
-    .limit(500);
+    .limit(200);
 
   return rawProducts.map((row) => ({
     ...row.product,
@@ -46,7 +45,7 @@ export async function getContactSubmissionsOrderedByCreatedAtDesc() {
     .select()
     .from(schema.contactSubmissions)
     .orderBy(desc(schema.contactSubmissions.createdAt))
-    .limit(500);
+    .limit(100); // PII decryption is expensive — keep this low
 }
 
 export async function getImsSuppliersOrderedByCreatedAtDesc() {
@@ -54,7 +53,7 @@ export async function getImsSuppliersOrderedByCreatedAtDesc() {
     .select()
     .from(schema.suppliers)
     .orderBy(desc(schema.suppliers.createdAt))
-    .limit(500);
+    .limit(200);
 }
 
 export async function getInventoryItemsWithDetails() {
@@ -74,7 +73,7 @@ export async function getInventoryItemsWithDetails() {
     .leftJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
     .leftJoin(schema.suppliers, eq(schema.inventory.supplierId, schema.suppliers.id))
     .orderBy(desc(schema.inventory.updatedAt))
-    .limit(500);
+    .limit(200);
 
   return rawInventory.map((row) => ({
     id: row.inventory.id,
@@ -105,7 +104,7 @@ export async function getInventoryMovementsWithProductName() {
     .leftJoin(schema.inventory, eq(schema.inventoryMovements.inventoryId, schema.inventory.id))
     .leftJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
     .orderBy(desc(schema.inventoryMovements.createdAt))
-    .limit(200);
+    .limit(100);
 
   return rawMovements.map((row) => ({
     ...row.movement,
@@ -113,12 +112,20 @@ export async function getInventoryMovementsWithProductName() {
   }));
 }
 
+/**
+ * Fetches simulated orders with their items and pickup branch names.
+ *
+ * NOTE: `attachPaymentSlipPreviews` was removed because it made up to 20
+ * sequential Supabase API calls for signed URLs, consuming ~20-40s of the
+ * 60-second serverless budget. Payment slip preview URLs are now resolved
+ * on-demand client-side via a dedicated API route.
+ */
 export async function getSimulatedOrdersWithItems() {
   const rawOrders = await db
     .select()
     .from(schema.simulatedOrders)
     .orderBy(desc(schema.simulatedOrders.createdAt))
-    .limit(100);
+    .limit(50);
 
   if (rawOrders.length === 0) {
     return [];
@@ -149,33 +156,37 @@ export async function getSimulatedOrdersWithItems() {
     itemsByOrderId.set(item.orderId, arr);
   }
 
-  return attachPaymentSlipPreviews(
-    rawOrders.map((order) => ({
-      ...order,
-      items: itemsByOrderId.get(order.id) || [],
-      pickupBranchName: order.pickupBranchId
-        ? pickupBranchNameById.get(order.pickupBranchId) ?? null
-        : null,
-    }))
-  );
+  // Return orders WITHOUT payment slip preview URLs — they are resolved
+  // on-demand client-side to avoid blocking the SSR render.
+  return rawOrders.map((order) => ({
+    ...order,
+    items: itemsByOrderId.get(order.id) || [],
+    pickupBranchName: order.pickupBranchId
+      ? pickupBranchNameById.get(order.pickupBranchId) ?? null
+      : null,
+    paymentSlipPreviewUrl: null as string | null,
+  }));
 }
 
-export async function getProductsWithoutInventory(inventoryItems: { productId: string }[]) {
+/**
+ * Compute products without inventory in-memory.
+ * This avoids an extra DB round-trip since both products and inventory
+ * are already fetched by the dashboard.
+ */
+export function computeProductsWithoutInventory(
+  products: { id: string; name: string; type: string; orgId: string }[],
+  inventoryItems: { productId: string }[],
+) {
   const inventoriedProductIds = new Set(inventoryItems.map((i) => i.productId));
-  const allProducts = await db.select({ id: schema.products.id, name: schema.products.name, type: schema.products.type, orgId: schema.products.orgId }).from(schema.products);
-  return allProducts.filter((p) => !inventoriedProductIds.has(p.id));
+  return products.filter((p) => !inventoriedProductIds.has(p.id));
 }
 
 export async function getVendorOrgIntegrityReport(
   organizations: { id: string }[]
 ) {
-  const [
-    integrityProducts,
-    integrityOrderItems,
-    integritySuppliers,
-    integrityBranches,
-    integrityBillingReceipts,
-  ] = await Promise.all([
+  // Run integrity queries sequentially in pairs to avoid exhausting the
+  // 5-connection pool. Each query has a safety limit to cap row count.
+  const [integrityProducts, integrityOrderItems] = await Promise.all([
     db
       .select({
         id: schema.products.id,
@@ -184,7 +195,8 @@ export async function getVendorOrgIntegrityReport(
         orgId: schema.products.orgId,
         status: schema.products.status,
       })
-      .from(schema.products),
+      .from(schema.products)
+      .limit(1000),
     db
       .select({
         id: schema.simulatedOrderItems.id,
@@ -192,27 +204,34 @@ export async function getVendorOrgIntegrityReport(
         productName: schema.simulatedOrderItems.productName,
         vendorOrgId: schema.simulatedOrderItems.vendorOrgId,
       })
-      .from(schema.simulatedOrderItems),
+      .from(schema.simulatedOrderItems)
+      .limit(1000),
+  ]);
+
+  const [integritySuppliers, integrityBranches, integrityBillingReceipts] = await Promise.all([
     db
       .select({
         id: schema.suppliers.id,
         name: schema.suppliers.name,
         orgId: schema.suppliers.orgId,
       })
-      .from(schema.suppliers),
+      .from(schema.suppliers)
+      .limit(1000),
     db
       .select({
         id: schema.branches.id,
         name: schema.branches.name,
         orgId: schema.branches.orgId,
       })
-      .from(schema.branches),
+      .from(schema.branches)
+      .limit(1000),
     db
       .select({
         id: schema.billingReceipts.id,
         orgId: schema.billingReceipts.orgId,
       })
-      .from(schema.billingReceipts),
+      .from(schema.billingReceipts)
+      .limit(1000),
   ]);
 
   return buildVendorOrgIntegrityReport(
