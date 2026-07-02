@@ -40,17 +40,33 @@ async function fetchAllData() {
   const client = await clerkClient();
   const organizations = await getCachedOrganizations(client);
 
-  // Execute ALL queries concurrently. The postgres driver (max: 5) will automatically 
-  // queue and pipeline them optimally without artificial bottlenecking.
+  // Execute queries in smaller batches. The postgres driver (max: 5) can deadlock 
+  // or timeout in Vercel Serverless Functions if we fire 18 queries simultaneously.
   const [
     categoriesResult,
     productsResult,
     pricingPlansResult,
     inventoryItemsResult,
     inventoryMovementsResult,
+  ] = await Promise.all([
+    safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []),
+    safeQuery('Products', getProductsWithCategoryDetails, []),
+    safeQuery('Pricing Plans', getPricingPlansOrderedByCreatedAtDesc, []),
+    safeQuery('Inventory Items', getInventoryItemsWithDetails, []),
+    safeQuery('Inventory Movements', getInventoryMovementsWithProductName, []),
+  ]);
+
+  const [
     suppliersResult,
     contactsResult,
     ordersResult,
+  ] = await Promise.all([
+    safeQuery('Suppliers', getImsSuppliersOrderedByCreatedAtDesc, []),
+    safeQuery('Contact Submissions', getContactSubmissionsOrderedByCreatedAtDesc, []),
+    safeQuery('Simulated Orders', getSimulatedOrdersWithItems, []),
+  ]);
+
+  const [
     maxMediaLimitSetting,
     systemLogo,
     systemFavicon,
@@ -59,17 +75,7 @@ async function fetchAllData() {
     nurseryCustomSetting,
     techCustomSetting,
     servicesCustomSetting,
-    checkoutOptionsCatalog,
-    stockAvailabilityCatalog,
   ] = await Promise.all([
-    safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []),
-    safeQuery('Products', getProductsWithCategoryDetails, []),
-    safeQuery('Pricing Plans', getPricingPlansOrderedByCreatedAtDesc, []),
-    safeQuery('Inventory Items', getInventoryItemsWithDetails, []),
-    safeQuery('Inventory Movements', getInventoryMovementsWithProductName, []),
-    safeQuery('Suppliers', getImsSuppliersOrderedByCreatedAtDesc, []),
-    safeQuery('Contact Submissions', getContactSubmissionsOrderedByCreatedAtDesc, []),
-    safeQuery('Simulated Orders', getSimulatedOrdersWithItems, []),
     getSystemSetting('max_media_limit', '5'),
     getSystemSetting('system_logo', ''),
     getSystemSetting('system_favicon', ''),
@@ -78,6 +84,9 @@ async function fetchAllData() {
     getSystemSetting('custom_storefront_distar-nursery', 'true'),
     getSystemSetting('custom_storefront_distar-tech', 'true'),
     getSystemSetting('custom_storefront_dilstar-services', 'true'),
+  ]);
+
+  const [checkoutOptionsCatalog, stockAvailabilityCatalog] = await Promise.all([
     getCheckoutOptionsCatalog(),
     getStockAvailabilityCatalog(),
   ]);
