@@ -122,15 +122,15 @@ export default async function RootLayout({
 
     // Build responsive links dynamically based on user session status and permissions
     const links: { href: string; label: string; colorClass?: string }[] = [
-      { href: '/vendors', label: 'Browse Vendors' },
-      { href: '/products', label: 'Products & Services' },
-      { href: '/contact', label: 'Contact Us' },
+      { href: '/vendors', label: 'Vendors' },
+      { href: '/products', label: 'Products' },
+      { href: '/contact', label: 'Support' },
     ];
 
     if (orgId && (orgRole === 'org:admin' || orgRole === 'org:member')) {
       links.push({
         href: '/vendor',
-        label: 'Storefront Console',
+        label: 'Dashboard',
         colorClass: 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-semibold',
       });
     }
@@ -138,7 +138,7 @@ export default async function RootLayout({
     if (orgId && orgRole === 'org:admin') {
       links.push({
         href: '/admin',
-        label: 'Org Admin Console',
+        label: 'Admin',
         colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold',
       });
     }
@@ -146,7 +146,7 @@ export default async function RootLayout({
     if (orgId && (orgRole === 'org:admin' || orgRole === 'org:member')) {
       links.push({
         href: '/vendor/products/add',
-        label: '+ Add Item',
+        label: 'Create',
         colorClass: 'text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300',
       });
     }
@@ -154,7 +154,7 @@ export default async function RootLayout({
     if (userId) {
       links.push({
         href: '/customer',
-        label: 'Customer Portal',
+        label: 'Account',
         colorClass: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-semibold',
       });
     }
@@ -170,7 +170,7 @@ export default async function RootLayout({
     if (isSuperAdmin) {
       links.push({
         href: '/superadmin',
-        label: 'Superadmin Console',
+        label: 'Superadmin',
         colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-bold',
       });
     }
@@ -236,12 +236,14 @@ export default async function RootLayout({
                   </Link>
                   {/* Removed overflow-hidden to prevent clipping the mobile hamburger menu */}
                   <div className="flex-1 flex items-center min-w-0">
-                    <HeaderNav links={links} />
+                    <HeaderNav links={links} mobileExtra={<LanguageSelector />} />
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0 ml-2">
-                  <LanguageSelector />
+                  <div className="hidden lg:block">
+                    <LanguageSelector />
+                  </div>
                   
                   {/* Shopping Cart Icon (Link to page) */}
                   <CartIcon />

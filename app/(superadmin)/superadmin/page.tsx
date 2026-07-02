@@ -40,24 +40,46 @@ async function fetchAllData() {
   const client = await clerkClient();
   const organizations = await getCachedOrganizations(client);
 
-  // BATCH 1: Basic Catalog & Pricing
-  const [categoriesResult, productsResult, pricingPlansResult] = await Promise.all([
+  // Execute ALL queries concurrently. The postgres driver (max: 5) will automatically 
+  // queue and pipeline them optimally without artificial bottlenecking.
+  const [
+    categoriesResult,
+    productsResult,
+    pricingPlansResult,
+    inventoryItemsResult,
+    inventoryMovementsResult,
+    suppliersResult,
+    contactsResult,
+    ordersResult,
+    maxMediaLimitSetting,
+    systemLogo,
+    systemFavicon,
+    systemName,
+    hardwareCustomSetting,
+    nurseryCustomSetting,
+    techCustomSetting,
+    servicesCustomSetting,
+    checkoutOptionsCatalog,
+    stockAvailabilityCatalog,
+  ] = await Promise.all([
     safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []),
     safeQuery('Products', getProductsWithCategoryDetails, []),
     safeQuery('Pricing Plans', getPricingPlansOrderedByCreatedAtDesc, []),
-  ]);
-
-  // BATCH 2: Inventory & Movements
-  const [inventoryItemsResult, inventoryMovementsResult] = await Promise.all([
     safeQuery('Inventory Items', getInventoryItemsWithDetails, []),
     safeQuery('Inventory Movements', getInventoryMovementsWithProductName, []),
-  ]);
-
-  // BATCH 3: PII & Encrypted Data
-  const [suppliersResult, contactsResult, ordersResult] = await Promise.all([
     safeQuery('Suppliers', getImsSuppliersOrderedByCreatedAtDesc, []),
     safeQuery('Contact Submissions', getContactSubmissionsOrderedByCreatedAtDesc, []),
     safeQuery('Simulated Orders', getSimulatedOrdersWithItems, []),
+    getSystemSetting('max_media_limit', '5'),
+    getSystemSetting('system_logo', ''),
+    getSystemSetting('system_favicon', ''),
+    getSystemSetting('system_name', 'Dilnova'),
+    getSystemSetting('custom_storefront_distar-hardware', 'true'),
+    getSystemSetting('custom_storefront_distar-nursery', 'true'),
+    getSystemSetting('custom_storefront_distar-tech', 'true'),
+    getSystemSetting('custom_storefront_dilstar-services', 'true'),
+    getCheckoutOptionsCatalog(),
+    getStockAvailabilityCatalog(),
   ]);
 
   const categories = categoriesResult.data;
@@ -78,38 +100,13 @@ async function fetchAllData() {
     totalViews: totalViewsCount,
   };
 
-  // BATCH 4: System Settings
-  const [
-    maxMediaLimitSetting,
-    systemLogo,
-    systemFavicon,
-    systemName,
-    hardwareCustomSetting,
-    nurseryCustomSetting,
-    techCustomSetting,
-    servicesCustomSetting,
-    checkoutOptionsCatalog,
-    stockAvailabilityCatalog,
-  ] = await Promise.all([
-    getSystemSetting('max_media_limit', '5'),
-    getSystemSetting('system_logo', ''),
-    getSystemSetting('system_favicon', ''),
-    getSystemSetting('system_name', 'Dilnova'),
-    getSystemSetting('custom_storefront_distar-hardware', 'true'),
-    getSystemSetting('custom_storefront_distar-nursery', 'true'),
-    getSystemSetting('custom_storefront_distar-tech', 'true'),
-    getSystemSetting('custom_storefront_dilstar-services', 'true'),
-    getCheckoutOptionsCatalog(),
-    getStockAvailabilityCatalog(),
-  ]);
-
   const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
   const hardwareCustomEnabled = hardwareCustomSetting === 'true';
   const nurseryCustomEnabled = nurseryCustomSetting === 'true';
   const techCustomEnabled = techCustomSetting === 'true';
   const servicesCustomEnabled = servicesCustomSetting === 'true';
 
-  // BATCH 5: Dependent Reports
+  // Dependent queries that require results from previous queries
   const [productsWithoutInventoryResult, vendorOrgIntegrityResult] = await Promise.all([
     safeQuery('Products w/o Inventory', () => getProductsWithoutInventory(inventoryItems), []),
     safeQuery('Vendor Org Integrity', () => getVendorOrgIntegrityReport(organizations), {
