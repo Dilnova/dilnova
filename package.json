@@ -2,6 +2,11 @@
   "name": "dilnova",
   "version": "0.1.0",
   "private": true,
+  "overrides": {
+    "postcss": ">=8.5.10",
+    "js-cookie": ">=3.0.6",
+    "esbuild": "^0.28.1"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
