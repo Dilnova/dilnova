@@ -11,17 +11,16 @@ const mockLimit = vi.fn();
 
 // Mock Upstash Redis and Ratelimit
 vi.mock('@upstash/redis', () => ({
-  Redis: vi.fn().mockImplementation(() => ({})),
+  Redis: class { constructor() {} },
 }));
 
 vi.mock('@upstash/ratelimit', () => {
-  const mockRatelimitClass = vi.fn().mockImplementation(() => ({
-    limit: mockLimit,
-  }));
-  (mockRatelimitClass as any).slidingWindow = vi.fn().mockReturnValue({});
-  
+  class Ratelimit {
+    limit = mockLimit;
+    static slidingWindow = vi.fn().mockReturnValue({});
+  }
   return {
-    Ratelimit: mockRatelimitClass,
+    Ratelimit,
   };
 });
 

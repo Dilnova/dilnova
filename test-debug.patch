@@ -1,0 +1,14 @@
+--- shared/security/rate-limit.ts
++++ shared/security/rate-limit.ts
+@@ -82,2 +82,3 @@
+   const client = getRatelimitClient(limit, windowMs);
++  console.log('client:', client !== null, 'cache size:', ratelimitCache.size, 'mockLimit:', client?.limit === mockLimit);
+ 
+@@ -34,2 +35,3 @@
+     }
++    console.log('Missing env vars, returning null');
+     return null;
+@@ -60,2 +62,3 @@
+   } catch (error) {
++    console.log('Failed to create client:', error);
+     logger.error('Failed to create Upstash Ratelimit instance', error, { limit, windowMs });
