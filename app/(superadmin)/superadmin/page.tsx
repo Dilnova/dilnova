@@ -39,17 +39,26 @@ export default async function SuperAdminDashboardPage() {
   const client = await clerkClient();
   const organizations = await getCachedOrganizations(client);
 
-  // These queries do NOT touch encrypted columns — safe to call directly
-  const categories = await getCategoriesOrderedByCreatedAtDesc();
-  const products = await getProductsWithCategoryDetails();
-  const pricingPlans = await getPricingPlansOrderedByCreatedAtDesc();
-  const inventoryItems = await getInventoryItemsWithDetails();
-  const inventoryMovements = await getInventoryMovementsWithProductName();
+  const [
+    categories,
+    products,
+    pricingPlans,
+    inventoryItems,
+    inventoryMovements,
+  ] = await Promise.all([
+    getCategoriesOrderedByCreatedAtDesc(),
+    getProductsWithCategoryDetails(),
+    getPricingPlansOrderedByCreatedAtDesc(),
+    getInventoryItemsWithDetails(),
+    getInventoryMovementsWithProductName(),
+  ]);
 
   // These queries touch encrypted columns (encryptedText) — wrap in safeQuery
-  const suppliersResult = await safeQuery('Suppliers', getImsSuppliersOrderedByCreatedAtDesc, []);
-  const contactsResult = await safeQuery('Contact Submissions', getContactSubmissionsOrderedByCreatedAtDesc, []);
-  const ordersResult = await safeQuery('Simulated Orders', getSimulatedOrdersWithItems, []);
+  const [suppliersResult, contactsResult, ordersResult] = await Promise.all([
+    safeQuery('Suppliers', getImsSuppliersOrderedByCreatedAtDesc, []),
+    safeQuery('Contact Submissions', getContactSubmissionsOrderedByCreatedAtDesc, []),
+    safeQuery('Simulated Orders', getSimulatedOrdersWithItems, []),
+  ]);
 
   const totalProductsCount = products.filter((p) => p.type === 'product').length;
   const totalServicesCount = products.filter((p) => p.type === 'service').length;
@@ -63,22 +72,40 @@ export default async function SuperAdminDashboardPage() {
     totalViews: totalViewsCount,
   };
 
-  const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
+  const [
+    maxMediaLimitSetting,
+    systemLogo,
+    systemFavicon,
+    systemName,
+    hardwareCustomSetting,
+    nurseryCustomSetting,
+    techCustomSetting,
+    servicesCustomSetting,
+    checkoutOptionsCatalog,
+    stockAvailabilityCatalog,
+  ] = await Promise.all([
+    getSystemSetting('max_media_limit', '5'),
+    getSystemSetting('system_logo', ''),
+    getSystemSetting('system_favicon', ''),
+    getSystemSetting('system_name', 'Dilnova'),
+    getSystemSetting('custom_storefront_distar-hardware', 'true'),
+    getSystemSetting('custom_storefront_distar-nursery', 'true'),
+    getSystemSetting('custom_storefront_distar-tech', 'true'),
+    getSystemSetting('custom_storefront_dilstar-services', 'true'),
+    getCheckoutOptionsCatalog(),
+    getStockAvailabilityCatalog(),
+  ]);
+
   const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
+  const hardwareCustomEnabled = hardwareCustomSetting === 'true';
+  const nurseryCustomEnabled = nurseryCustomSetting === 'true';
+  const techCustomEnabled = techCustomSetting === 'true';
+  const servicesCustomEnabled = servicesCustomSetting === 'true';
 
-  const systemLogo = await getSystemSetting('system_logo', '');
-  const systemFavicon = await getSystemSetting('system_favicon', '');
-  const systemName = await getSystemSetting('system_name', 'Dilnova');
-
-  const hardwareCustomEnabled = (await getSystemSetting('custom_storefront_distar-hardware', 'true')) === 'true';
-  const nurseryCustomEnabled = (await getSystemSetting('custom_storefront_distar-nursery', 'true')) === 'true';
-  const techCustomEnabled = (await getSystemSetting('custom_storefront_distar-tech', 'true')) === 'true';
-  const servicesCustomEnabled = (await getSystemSetting('custom_storefront_dilstar-services', 'true')) === 'true';
-  const checkoutOptionsCatalog = await getCheckoutOptionsCatalog();
-  const stockAvailabilityCatalog = await getStockAvailabilityCatalog();
-
-  const productsWithoutInventory = await getProductsWithoutInventory(inventoryItems);
-  const vendorOrgIntegrity = await getVendorOrgIntegrityReport(organizations);
+  const [productsWithoutInventory, vendorOrgIntegrity] = await Promise.all([
+    getProductsWithoutInventory(inventoryItems),
+    getVendorOrgIntegrityReport(organizations),
+  ]);
 
   // Collect any query errors to display a warning banner
   const queryErrors = [suppliersResult.error, contactsResult.error, ordersResult.error].filter(Boolean) as string[];
