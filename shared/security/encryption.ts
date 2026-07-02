@@ -171,8 +171,11 @@ export function decryptString(encryptedText: string): string {
       ]).toString('utf8');
     }
   } catch (error) {
+    // Instead of completely crashing the query (which breaks the whole page), 
+    // we log the error and return a safe placeholder.
     if (isProduction()) {
-      throw new Error('Decryption failed. The PII_ENCRYPTION_KEY may have changed or the data is corrupted.');
+      console.error('Decryption failed. The PII_ENCRYPTION_KEY may have changed or the data is corrupted.', error);
+      return '[Decryption Failed]';
     }
     return encryptedText;
   }
