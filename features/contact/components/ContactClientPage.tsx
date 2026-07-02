@@ -36,17 +36,20 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
   useEffect(() => {
     // Poll for Turnstile to load and render widget
     let checkCount = 0;
+    let widgetId: string | null = null;
     const checkTurnstile = setInterval(() => {
       checkCount++;
       if (typeof window !== 'undefined' && (window as any).turnstile && turnstileRef.current) {
         clearInterval(checkTurnstile);
         try {
-          (window as any).turnstile.render(turnstileRef.current, {
-            sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
-            callback: (token: string) => {
-              setTurnstileToken(token);
-            },
-          });
+          if (turnstileRef.current.innerHTML === '') {
+            widgetId = (window as any).turnstile.render(turnstileRef.current, {
+              sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
+              callback: (token: string) => {
+                setTurnstileToken(token);
+              },
+            });
+          }
         } catch (err) {
           logger.error('Failed to render Turnstile widget:', err);
         }
@@ -55,7 +58,16 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
       }
     }, 100);
 
-    return () => clearInterval(checkTurnstile);
+    return () => {
+      clearInterval(checkTurnstile);
+      if (widgetId !== null && typeof window !== 'undefined' && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.remove(widgetId);
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+    };
   }, []);
 
   const [formData, setFormData] = useState({

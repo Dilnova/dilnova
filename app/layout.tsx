@@ -23,6 +23,7 @@ import { getPremiumStatus } from '@/features/inventory/premium-license'
 import { getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-cache'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
+
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting('system_favicon', '');
   const systemName = await getSystemSetting('system_name', 'Dilnova Commerce Hub');
@@ -121,23 +122,31 @@ export default async function RootLayout({
 
     // Build responsive links dynamically based on user session status and permissions
     const links: { href: string; label: string; colorClass?: string }[] = [
-      { href: '/vendors', label: 'Vendors' },
-      { href: '/products', label: 'Products' },
-      { href: '/contact', label: 'Support' },
+      { href: '/vendors', label: 'Browse Vendors' },
+      { href: '/products', label: 'Products & Services' },
+      { href: '/contact', label: 'Contact Us' },
     ];
 
     if (orgId && (orgRole === 'org:admin' || orgRole === 'org:member')) {
       links.push({
         href: '/vendor',
-        label: 'Dashboard',
+        label: 'Storefront Console',
         colorClass: 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-semibold',
+      });
+    }
+
+    if (orgId && orgRole === 'org:admin') {
+      links.push({
+        href: '/admin',
+        label: 'Org Admin Console',
+        colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold',
       });
     }
 
     if (orgId && (orgRole === 'org:admin' || orgRole === 'org:member')) {
       links.push({
         href: '/vendor/products/add',
-        label: 'Create',
+        label: '+ Add Item',
         colorClass: 'text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300',
       });
     }
@@ -145,7 +154,7 @@ export default async function RootLayout({
     if (userId) {
       links.push({
         href: '/customer',
-        label: 'Account',
+        label: 'Customer Portal',
         colorClass: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-semibold',
       });
     }
@@ -158,18 +167,10 @@ export default async function RootLayout({
       });
     }
 
-    if (orgId && orgRole === 'org:admin') {
-      links.push({
-        href: '/admin',
-        label: 'Admin',
-        colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold',
-      });
-    }
-
     if (isSuperAdmin) {
       links.push({
         href: '/superadmin',
-        label: 'Superadmin',
+        label: 'Superadmin Console',
         colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-bold',
       });
     }
@@ -235,14 +236,12 @@ export default async function RootLayout({
                   </Link>
                   {/* Removed overflow-hidden to prevent clipping the mobile hamburger menu */}
                   <div className="flex-1 flex items-center min-w-0">
-                    <HeaderNav links={links} mobileExtra={<LanguageSelector />} />
+                    <HeaderNav links={links} />
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0 ml-2">
-                  <div className="hidden lg:block">
-                    <LanguageSelector />
-                  </div>
+                  <LanguageSelector />
                   
                   {/* Shopping Cart Icon (Link to page) */}
                   <CartIcon />
@@ -288,7 +287,6 @@ export default async function RootLayout({
             <ConsentTracking initialConsent={initialConsent} />
             <CookieConsent />
           </ClerkProvider>
-          <SpeedInsights />
         </body>
       </html>
     );

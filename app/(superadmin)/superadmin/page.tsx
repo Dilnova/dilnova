@@ -39,26 +39,31 @@ export default async function SuperAdminDashboardPage() {
   const client = await clerkClient();
   const organizations = await getCachedOrganizations(client);
 
-  const [
-    categories,
-    products,
-    pricingPlans,
-    inventoryItems,
-    inventoryMovements,
-  ] = await Promise.all([
-    getCategoriesOrderedByCreatedAtDesc(),
-    getProductsWithCategoryDetails(),
-    getPricingPlansOrderedByCreatedAtDesc(),
-    getInventoryItemsWithDetails(),
-    getInventoryMovementsWithProductName(),
+  // BATCH 1: Basic Catalog & Pricing
+  const [categoriesResult, productsResult, pricingPlansResult] = await Promise.all([
+    safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []),
+    safeQuery('Products', getProductsWithCategoryDetails, []),
+    safeQuery('Pricing Plans', getPricingPlansOrderedByCreatedAtDesc, []),
   ]);
 
-  // These queries touch encrypted columns (encryptedText) — wrap in safeQuery
+  // BATCH 2: Inventory & Movements
+  const [inventoryItemsResult, inventoryMovementsResult] = await Promise.all([
+    safeQuery('Inventory Items', getInventoryItemsWithDetails, []),
+    safeQuery('Inventory Movements', getInventoryMovementsWithProductName, []),
+  ]);
+
+  // BATCH 3: PII & Encrypted Data
   const [suppliersResult, contactsResult, ordersResult] = await Promise.all([
     safeQuery('Suppliers', getImsSuppliersOrderedByCreatedAtDesc, []),
     safeQuery('Contact Submissions', getContactSubmissionsOrderedByCreatedAtDesc, []),
     safeQuery('Simulated Orders', getSimulatedOrdersWithItems, []),
   ]);
+
+  const categories = categoriesResult.data;
+  const products = productsResult.data;
+  const pricingPlans = pricingPlansResult.data;
+  const inventoryItems = inventoryItemsResult.data;
+  const inventoryMovements = inventoryMovementsResult.data;
 
   const totalProductsCount = products.filter((p) => p.type === 'product').length;
   const totalServicesCount = products.filter((p) => p.type === 'service').length;
@@ -72,6 +77,7 @@ export default async function SuperAdminDashboardPage() {
     totalViews: totalViewsCount,
   };
 
+  // BATCH 4: System Settings
   const [
     maxMediaLimitSetting,
     systemLogo,
@@ -102,13 +108,39 @@ export default async function SuperAdminDashboardPage() {
   const techCustomEnabled = techCustomSetting === 'true';
   const servicesCustomEnabled = servicesCustomSetting === 'true';
 
-  const [productsWithoutInventory, vendorOrgIntegrity] = await Promise.all([
-    getProductsWithoutInventory(inventoryItems),
-    getVendorOrgIntegrityReport(organizations),
+  // BATCH 5: Dependent Reports
+  const [productsWithoutInventoryResult, vendorOrgIntegrityResult] = await Promise.all([
+    safeQuery('Products w/o Inventory', () => getProductsWithoutInventory(inventoryItems), []),
+    safeQuery('Vendor Org Integrity', () => getVendorOrgIntegrityReport(organizations), {
+      knownOrgCount: 0,
+      issueGroups: [],
+      totals: {
+        orphanOrgIds: 0,
+        products: 0,
+        orderItems: 0,
+        suppliers: 0,
+        branches: 0,
+        billingReceipts: 0,
+      }
+    }),
   ]);
 
+  const productsWithoutInventory = productsWithoutInventoryResult.data;
+  const vendorOrgIntegrity = vendorOrgIntegrityResult.data;
+
   // Collect any query errors to display a warning banner
-  const queryErrors = [suppliersResult.error, contactsResult.error, ordersResult.error].filter(Boolean) as string[];
+  const queryErrors = [
+    categoriesResult.error,
+    productsResult.error,
+    pricingPlansResult.error,
+    inventoryItemsResult.error,
+    inventoryMovementsResult.error,
+    suppliersResult.error,
+    contactsResult.error,
+    ordersResult.error,
+    productsWithoutInventoryResult.error,
+    vendorOrgIntegrityResult.error,
+  ].filter(Boolean) as string[];
 
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
