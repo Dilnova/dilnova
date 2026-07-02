@@ -13,7 +13,6 @@ import {
   getImsSuppliersOrderedByCreatedAtDesc,
   getPricingPlansOrderedByCreatedAtDesc,
   getProductsWithCategoryDetails,
-  getProductsWithoutInventory,
   getSimulatedOrdersWithItems,
   getVendorOrgIntegrityReport,
 } from '@/features/superadmin/queries';
@@ -40,32 +39,33 @@ async function fetchAllData() {
   const client = await clerkClient();
   const organizations = await getCachedOrganizations(client);
 
-  // Execute queries in smaller batches. The postgres driver (max: 5) can deadlock 
-  // or timeout in Vercel Serverless Functions if we fire 18 queries simultaneously.
+  // BATCH 1: Core catalog data (4 queries)
   const [
     categoriesResult,
     productsResult,
     pricingPlansResult,
     inventoryItemsResult,
-    inventoryMovementsResult,
   ] = await Promise.all([
     safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []),
     safeQuery('Products', getProductsWithCategoryDetails, []),
     safeQuery('Pricing Plans', getPricingPlansOrderedByCreatedAtDesc, []),
     safeQuery('Inventory Items', getInventoryItemsWithDetails, []),
-    safeQuery('Inventory Movements', getInventoryMovementsWithProductName, []),
   ]);
 
+  // BATCH 2: Operational data (4 queries)
   const [
+    inventoryMovementsResult,
     suppliersResult,
     contactsResult,
     ordersResult,
   ] = await Promise.all([
+    safeQuery('Inventory Movements', getInventoryMovementsWithProductName, []),
     safeQuery('Suppliers', getImsSuppliersOrderedByCreatedAtDesc, []),
     safeQuery('Contact Submissions', getContactSubmissionsOrderedByCreatedAtDesc, []),
     safeQuery('Simulated Orders', getSimulatedOrdersWithItems, []),
   ]);
 
+  // BATCH 3: System settings (8 queries to settings table)
   const [
     maxMediaLimitSetting,
     systemLogo,
@@ -86,9 +86,26 @@ async function fetchAllData() {
     getSystemSetting('custom_storefront_dilstar-services', 'true'),
   ]);
 
-  const [checkoutOptionsCatalog, stockAvailabilityCatalog] = await Promise.all([
+  // BATCH 4: Catalogs and heavy reports
+  const [
+    checkoutOptionsCatalog,
+    stockAvailabilityCatalog,
+    vendorOrgIntegrityResult,
+  ] = await Promise.all([
     getCheckoutOptionsCatalog(),
     getStockAvailabilityCatalog(),
+    safeQuery('Vendor Org Integrity', () => getVendorOrgIntegrityReport(organizations), {
+      knownOrgCount: 0,
+      issueGroups: [],
+      totals: {
+        orphanOrgIds: 0,
+        products: 0,
+        orderItems: 0,
+        suppliers: 0,
+        branches: 0,
+        billingReceipts: 0,
+      }
+    }),
   ]);
 
   const categories = categoriesResult.data;
@@ -115,24 +132,11 @@ async function fetchAllData() {
   const techCustomEnabled = techCustomSetting === 'true';
   const servicesCustomEnabled = servicesCustomSetting === 'true';
 
-  // Dependent queries that require results from previous queries
-  const [productsWithoutInventoryResult, vendorOrgIntegrityResult] = await Promise.all([
-    safeQuery('Products w/o Inventory', () => getProductsWithoutInventory(inventoryItems), []),
-    safeQuery('Vendor Org Integrity', () => getVendorOrgIntegrityReport(organizations), {
-      knownOrgCount: 0,
-      issueGroups: [],
-      totals: {
-        orphanOrgIds: 0,
-        products: 0,
-        orderItems: 0,
-        suppliers: 0,
-        branches: 0,
-        billingReceipts: 0,
-      }
-    }),
-  ]);
+  // Compute products without inventory in-memory
+  const productsWithoutInventory = products.filter((p) => {
+    return !inventoryItems.some((i) => i.productId === p.id);
+  });
 
-  const productsWithoutInventory = productsWithoutInventoryResult.data;
   const vendorOrgIntegrity = vendorOrgIntegrityResult.data;
 
   // Collect any query errors to display a warning banner
@@ -145,7 +149,6 @@ async function fetchAllData() {
     suppliersResult.error,
     contactsResult.error,
     ordersResult.error,
-    productsWithoutInventoryResult.error,
     vendorOrgIntegrityResult.error,
   ].filter(Boolean) as string[];
 
