@@ -114,6 +114,10 @@ export async function getSimulatedOrdersWithItems() {
     .orderBy(desc(schema.simulatedOrders.createdAt))
     .limit(100);
 
+  if (rawOrders.length === 0) {
+    return [];
+  }
+
   const pickupBranchIds = [
     ...new Set(rawOrders.map((order) => order.pickupBranchId).filter((id): id is string => Boolean(id))),
   ];
@@ -126,29 +130,34 @@ export async function getSimulatedOrdersWithItems() {
       : [];
   const pickupBranchNameById = new Map(pickupBranchRows.map((branch) => [branch.id, branch.name]));
 
+  const orderIds = rawOrders.map((o) => o.id);
+  const allItems = await db
+    .select()
+    .from(schema.simulatedOrderItems)
+    .where(inArray(schema.simulatedOrderItems.orderId, orderIds));
+
+  const itemsByOrderId = new Map<string, typeof allItems>();
+  for (const item of allItems) {
+    const arr = itemsByOrderId.get(item.orderId) || [];
+    arr.push(item);
+    itemsByOrderId.set(item.orderId, arr);
+  }
+
   return attachPaymentSlipPreviews(
-    await Promise.all(
-      rawOrders.map(async (order) => {
-        const items = await db
-          .select()
-          .from(schema.simulatedOrderItems)
-          .where(eq(schema.simulatedOrderItems.orderId, order.id));
-        return {
-          ...order,
-          items,
-          pickupBranchName: order.pickupBranchId
-            ? pickupBranchNameById.get(order.pickupBranchId) ?? null
-            : null,
-        };
-      })
-    )
+    rawOrders.map((order) => ({
+      ...order,
+      items: itemsByOrderId.get(order.id) || [],
+      pickupBranchName: order.pickupBranchId
+        ? pickupBranchNameById.get(order.pickupBranchId) ?? null
+        : null,
+    }))
   );
 }
 
 export async function getProductsWithoutInventory(inventoryItems: { productId: string }[]) {
-  const inventoriedProductIds = inventoryItems.map((i) => i.productId);
+  const inventoriedProductIds = new Set(inventoryItems.map((i) => i.productId));
   const allProducts = await db.select({ id: schema.products.id, name: schema.products.name, type: schema.products.type, orgId: schema.products.orgId }).from(schema.products);
-  return allProducts.filter((p) => !inventoriedProductIds.includes(p.id));
+  return allProducts.filter((p) => !inventoriedProductIds.has(p.id));
 }
 
 export async function getVendorOrgIntegrityReport(
