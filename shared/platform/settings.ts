@@ -6,8 +6,8 @@ import { unstable_cache } from 'next/cache';
 /**
  * Cached database fetch helper for system settings.
  */
-const getCachedSettingValue = unstable_cache(
-  async (key: string) => {
+const getCachedSettingValue = (key: string) => unstable_cache(
+  async () => {
     const [setting] = await db
       .select()
       .from(schema.systemSettings)
@@ -15,11 +15,11 @@ const getCachedSettingValue = unstable_cache(
       .limit(1);
     return setting ? setting.value : null;
   },
-  ['system-settings'],
+  ['system-settings', key],
   {
-    tags: ['system-settings'],
+    tags: ['system-settings', `system-settings-${key}`],
   }
-);
+)();
 
 /**
  * Safely fetches a system setting value by its configuration key.
