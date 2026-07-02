@@ -23,14 +23,23 @@ export async function checkSuperAdmin(): Promise<User> {
 
 /**
  * Non-throwing superadmin check for layouts and navigation.
+ * Returns null on any Clerk API failure so the layout can redirect
+ * instead of crashing the entire page with the error boundary.
  */
 export async function getCurrentSuperAdminUser(): Promise<User | null> {
-  const { userId } = await auth();
-  if (!userId) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return null;
+    }
+
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
+    return isSuperAdminUser(user) ? user : null;
+  } catch (error) {
+    // Clerk API timeout / network error — return null so the layout
+    // redirects to /unauthorized instead of triggering the error boundary.
+    console.error('[getCurrentSuperAdminUser] Clerk API error, treating as unauthenticated:', error);
     return null;
   }
-
-  const client = await clerkClient();
-  const user = await client.users.getUser(userId);
-  return isSuperAdminUser(user) ? user : null;
 }
