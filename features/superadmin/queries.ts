@@ -5,21 +5,23 @@ import { buildVendorOrgIntegrityReport } from '@/features/vendor-org';
 import { attachPaymentSlipPreviews } from '@/features/orders/payment-slip-preview';
 
 export async function getPricingPlansOrderedByCreatedAtAsc() {
-  return db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt));
+  return db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt)).limit(500);
 }
 
 export async function getPricingPlansOrderedByCreatedAtDesc() {
   return db
     .select()
     .from(schema.pricingPlans)
-    .orderBy(desc(schema.pricingPlans.createdAt));
+    .orderBy(desc(schema.pricingPlans.createdAt))
+    .limit(500);
 }
 
 export async function getCategoriesOrderedByCreatedAtDesc() {
   return db
     .select()
     .from(schema.categories)
-    .orderBy(desc(schema.categories.createdAt));
+    .orderBy(desc(schema.categories.createdAt))
+    .limit(500);
 }
 
 export async function getProductsWithCategoryDetails() {
@@ -30,7 +32,8 @@ export async function getProductsWithCategoryDetails() {
     })
     .from(schema.products)
     .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
-    .orderBy(desc(schema.products.createdAt));
+    .orderBy(desc(schema.products.createdAt))
+    .limit(500);
 
   return rawProducts.map((row) => ({
     ...row.product,
@@ -42,14 +45,16 @@ export async function getContactSubmissionsOrderedByCreatedAtDesc() {
   return db
     .select()
     .from(schema.contactSubmissions)
-    .orderBy(desc(schema.contactSubmissions.createdAt));
+    .orderBy(desc(schema.contactSubmissions.createdAt))
+    .limit(500);
 }
 
 export async function getImsSuppliersOrderedByCreatedAtDesc() {
   return db
     .select()
     .from(schema.suppliers)
-    .orderBy(desc(schema.suppliers.createdAt));
+    .orderBy(desc(schema.suppliers.createdAt))
+    .limit(500);
 }
 
 export async function getInventoryItemsWithDetails() {
@@ -68,7 +73,8 @@ export async function getInventoryItemsWithDetails() {
     .from(schema.inventory)
     .leftJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
     .leftJoin(schema.suppliers, eq(schema.inventory.supplierId, schema.suppliers.id))
-    .orderBy(desc(schema.inventory.updatedAt));
+    .orderBy(desc(schema.inventory.updatedAt))
+    .limit(500);
 
   return rawInventory.map((row) => ({
     id: row.inventory.id,

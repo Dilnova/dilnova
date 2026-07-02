@@ -10,7 +10,7 @@ if (!connectionString) {
 
 // Disable prefetch because Supabase/Neon connection poolers do not support it in transaction mode
 const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY);
-const defaultPoolSize = isServerless ? 2 : 10;
+const defaultPoolSize = isServerless ? 5 : 10;
 
 const poolSize = process.env.DATABASE_POOL_SIZE
   ? parseInt(process.env.DATABASE_POOL_SIZE, 10)

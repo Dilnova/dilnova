@@ -18,5 +18,16 @@ export async function attachPaymentSlipPreview<T extends { paymentSlipUrl?: stri
 export async function attachPaymentSlipPreviews<T extends { paymentSlipUrl?: string | null }>(
   orders: T[]
 ): Promise<WithPaymentSlipPreview<T>[]> {
-  return Promise.all(orders.map((order) => attachPaymentSlipPreview(order)));
+  const BATCH_SIZE = 5;
+  const results: WithPaymentSlipPreview<T>[] = [];
+  
+  for (let i = 0; i < orders.length; i += BATCH_SIZE) {
+    const batch = orders.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.all(
+      batch.map((order) => attachPaymentSlipPreview(order))
+    );
+    results.push(...batchResults);
+  }
+  
+  return results;
 }
