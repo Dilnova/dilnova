@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 
 interface LinkItem {
@@ -11,9 +11,10 @@ interface LinkItem {
 
 interface HeaderNavProps {
   links: LinkItem[];
+  mobileExtra?: ReactNode;
 }
 
-export default function HeaderNav({ links }: HeaderNavProps) {
+export default function HeaderNav({ links, mobileExtra }: HeaderNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -135,6 +136,14 @@ export default function HeaderNav({ links }: HeaderNavProps) {
                 {link.label}
               </Link>
             ))}
+            {mobileExtra && (
+              <>
+                <div className="border-t border-zinc-200/60 dark:border-zinc-800 my-1" />
+                <div className="px-3 py-2">
+                  {mobileExtra}
+                </div>
+              </>
+            )}
           </div>
         </>
       )}
