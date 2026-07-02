@@ -19,6 +19,7 @@ import {
 } from '@/features/superadmin/queries';
 
 export const revalidate = 0; // Fresh database query on each load
+export const maxDuration = 60; // Allow up to 60s for this heavy page (Vercel serverless)
 
 /**
  * Safely execute a data-fetching function, returning a fallback value if it fails.
