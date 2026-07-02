@@ -21,6 +21,7 @@ import { getSystemSetting } from '@/shared/platform/settings'
 import Image from 'next/image'
 import { getPremiumStatus } from '@/features/inventory/premium-license'
 import { getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-cache'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting('system_favicon', '');
@@ -285,6 +286,7 @@ export default async function RootLayout({
             <ConsentTracking initialConsent={initialConsent} />
             <CookieConsent />
           </ClerkProvider>
+          <SpeedInsights />
         </body>
       </html>
     );
