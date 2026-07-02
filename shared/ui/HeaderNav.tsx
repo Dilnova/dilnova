@@ -62,7 +62,7 @@ export default function HeaderNav({ links }: HeaderNavProps) {
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="hidden md:flex items-center gap-6">
+      <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
         {links.map((link) => (
           <Link
             key={link.href}
@@ -80,7 +80,7 @@ export default function HeaderNav({ links }: HeaderNavProps) {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-600/50 flex-shrink-0"
+        className="lg:hidden flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-600/50 flex-shrink-0"
         aria-label="Toggle navigation menu"
         aria-expanded={isOpen}
       >
@@ -113,14 +113,14 @@ export default function HeaderNav({ links }: HeaderNavProps) {
         <>
           {/* Backdrop overlay */}
           <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
             onClick={() => setIsOpen(false)}
             aria-hidden="true"
           />
           {/* Menu panel - fixed below header */}
           <div
             ref={menuRef}
-            className="fixed top-14 sm:top-16 left-0 right-0 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/98 dark:bg-zinc-950/98 backdrop-blur-xl shadow-2xl py-3 px-5 flex flex-col gap-1 md:hidden z-50"
+            className="fixed top-14 sm:top-16 left-0 right-0 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/98 dark:bg-zinc-950/98 backdrop-blur-xl shadow-2xl py-3 px-5 flex flex-col gap-1 lg:hidden z-50"
             style={{ animation: 'mobileMenuSlideDown 0.2s ease-out' }}
           >
             {links.map((link) => (
@@ -128,7 +128,7 @@ export default function HeaderNav({ links }: HeaderNavProps) {
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
-                className={`text-sm font-semibold transition-colors py-3 px-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900/60 ${
+                className={`block truncate text-sm font-semibold transition-colors py-3 px-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900/60 ${
                   link.colorClass || 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
                 }`}
               >

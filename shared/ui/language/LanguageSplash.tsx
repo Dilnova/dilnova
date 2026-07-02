@@ -27,8 +27,10 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
       setVisible(true);
     });
 
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     return () => {
+      document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
     };
   }, []);
@@ -39,6 +41,7 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
 
     // Brief delay for the exit animation, then apply
     setTimeout(() => {
+      document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
       applyLanguage(langCode, true);
     }, 500);
@@ -46,6 +49,7 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
 
   const handleSkip = () => {
     applyLanguage('en', false);
+    document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
     setVisible(false);
   };

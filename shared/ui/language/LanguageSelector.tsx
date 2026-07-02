@@ -97,7 +97,7 @@ export default function LanguageSelector() {
       {/* Styled Dropdown Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 h-9 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-semibold border border-zinc-200/60 dark:border-zinc-800 transition-all duration-200 active:scale-[0.98] cursor-pointer"
+        className="flex items-center gap-2 min-h-[44px] px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-semibold border border-zinc-200/60 dark:border-zinc-800 transition-all duration-200 active:scale-[0.98] cursor-pointer"
         aria-label="Select Language"
       >
         <span className="text-sm leading-none">{activeLang.flag}</span>

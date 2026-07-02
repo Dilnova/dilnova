@@ -27,8 +27,40 @@ export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemSetting('system_name', 'Dilnova Commerce Hub');
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dilstar.pp.ua';
   return {
-    title: systemName,
+    title: {
+      template: `%s | ${systemName}`,
+      default: systemName,
+    },
     description: 'Enterprise RBAC sandbox with multi-vendor isolation',
+    keywords: ['dilstar', 'dilstar marketplace', 'marketplace', 'multi-vendor', 'ecommerce', 'b2b', 'platform'],
+    authors: [{ name: systemName }],
+    creator: systemName,
+    publisher: systemName,
+    openGraph: {
+      title: systemName,
+      description: 'Enterprise RBAC sandbox with multi-vendor isolation',
+      url: baseUrl,
+      siteName: systemName,
+      locale: 'en_US',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: systemName,
+      description: 'Enterprise RBAC sandbox with multi-vendor isolation',
+      creator: '@dilnova',
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
     icons: faviconUrl
       ? { icon: faviconUrl }
       : {
@@ -143,23 +175,56 @@ export default async function RootLayout({
 
     const logoUrl = await getSystemSetting('system_logo', '');
     const systemName = await getSystemSetting('system_name', 'Dilnova');
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dilstar.pp.ua';
 
     return (
       <html lang="en">
         <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-x-hidden">
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                '@context': 'https://schema.org',
+                '@graph': [
+                  {
+                    '@type': 'WebSite',
+                    '@id': `${baseUrl}/#website`,
+                    url: baseUrl,
+                    name: systemName,
+                    publisher: {
+                      '@id': `${baseUrl}/#organization`
+                    },
+                  },
+                  {
+                    '@type': 'Organization',
+                    '@id': `${baseUrl}/#organization`,
+                    name: systemName,
+                    url: baseUrl,
+                    logo: {
+                      '@type': 'ImageObject',
+                      url: logoUrl || `${baseUrl}/apple-touch-icon.png`
+                    }
+                  }
+                ]
+              })
+            }}
+          />
           <ClerkProvider nonce={nonce}>
             <CartProvider>
-              <header className="relative flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md sticky top-0 z-50 h-14 sm:h-16 overflow-visible max-w-full">
-                <div className="flex items-center gap-2 sm:gap-3 md:gap-5 min-w-0 flex-1 overflow-hidden">
-                  <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center shrink-0">
+              <header className="relative flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 sticky top-0 z-50 min-h-[3.5rem] sm:min-h-[4rem] max-w-full">
+                {/* Background layer to prevent backdrop-blur from creating a containing block for fixed children */}
+                <div className="absolute inset-0 backdrop-blur-md -z-10 pointer-events-none" aria-hidden="true" />
+                
+                <div className="flex items-center gap-2 sm:gap-3 md:gap-5 min-w-0 flex-1">
+                  <Link href="/" className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center shrink min-w-[5rem]">
                     {logoUrl ? (
-                      <div className="relative h-8 w-28 sm:h-9 sm:w-32 rounded-lg bg-white px-2 py-1 shadow-sm ring-1 ring-zinc-200/80 dark:ring-zinc-700/60">
+                      <div className="relative h-8 w-20 sm:h-9 sm:w-32 max-w-full rounded-lg bg-white px-2 py-1 shadow-sm ring-1 ring-zinc-200/80 dark:ring-zinc-700/60">
                         <Image
                           src={logoUrl}
                           alt={`${systemName} Logo`}
                           fill
                           className="object-contain object-center"
-                          sizes="(max-width: 640px) 112px, 128px"
+                          sizes="(max-width: 640px) 80px, 128px"
                           priority
                         />
                       </div>
@@ -167,14 +232,15 @@ export default async function RootLayout({
                       systemName.toUpperCase()
                     )}
                   </Link>
-                  <div className="min-w-0 flex-1 overflow-hidden">
+                  {/* Removed overflow-hidden to prevent clipping the mobile hamburger menu */}
+                  <div className="flex-1 flex items-center min-w-0">
                     <HeaderNav links={links} />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0">
+                <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0 ml-2">
                   <LanguageSelector />
-
+                  
                   {/* Shopping Cart Icon (Link to page) */}
                   <CartIcon />
 
@@ -206,7 +272,7 @@ export default async function RootLayout({
               {children}
               <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-950 mt-auto">
                 <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <p>&copy; {new Date().getFullYear()} {systemName} Marketplace. All rights reserved.</p>
+                  <p>&copy; {new Date().getFullYear()} {systemName}. All rights reserved.</p>
                   <div className="flex items-center gap-6 font-medium">
                     <Link href="/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Privacy Policy</Link>
                     <Link href="/terms" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Terms of Service</Link>

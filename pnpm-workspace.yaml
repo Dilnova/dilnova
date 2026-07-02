@@ -4,7 +4,7 @@ packages:
 overrides:
   postcss: ">=8.5.10"
   js-cookie: ">=3.0.6"
-  esbuild: ">=0.24.3"
+  esbuild: "^0.28.1"
 
 allowBuilds:
   '@clerk/shared': true

@@ -10,7 +10,7 @@ import { getPricingPlansOrderedByCreatedAtAsc } from '@/features/superadmin/quer
 export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemSetting('system_name', 'Dilnova');
   return {
-    title: `${systemName} Multi-Vendor Commerce Marketplace`,
+    title: `${systemName} | Enterprise Commerce Hub`,
     description: `Welcome to the ${systemName} Commerce Hub. Explore our industrial, botanical, consulting, and technological vendor storefronts.`,
   };
 }

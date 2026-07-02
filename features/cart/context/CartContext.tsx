@@ -156,7 +156,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     persistServerCart(cartItems);
   }, [cartItems, isCartReady, accountKey, serverSynced, persistServerCart]);
 
-  const addToCart = (item: Omit<CartItem, 'quantity'>, quantity = 1) => {
+  const addToCart = useCallback((item: Omit<CartItem, 'quantity'>, quantity = 1) => {
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((i) => i.id === item.id);
       if (existingItem) {
@@ -166,28 +166,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       return [...prevItems, { ...item, quantity }];
     });
-  };
+  }, []);
 
-  const removeFromCart = (id: string) => {
+  const removeFromCart = useCallback((id: string) => {
     setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
-  };
+  }, []);
 
-  const removeItemsByIds = (ids: string[]) => {
+  const removeItemsByIds = useCallback((ids: string[]) => {
     const idSet = new Set(ids);
     setCartItems((prevItems) => prevItems.filter((item) => !idSet.has(item.id)));
-  };
+  }, []);
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = useCallback((id: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(id);
+      setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
       return;
     }
     setCartItems((prevItems) =>
       prevItems.map((item) => (item.id === id ? { ...item, quantity } : item))
     );
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCartItems([]);
     setCartMergeNotice(null);
     if (accountKey === 'guest') {
@@ -195,14 +195,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } else {
       void saveCustomerCartAction([]);
     }
-  };
+  }, [accountKey]);
 
-  const syncCartPrices = (
+  const syncCartPrices = useCallback((
     updates: { id: string; name: string; price: number }[],
     removedIds: string[] = []
   ) => {
     setCartItems((prevItems) => applyCatalogSync(prevItems, updates, removedIds));
-  };
+  }, []);
 
   const clearCartMergeNotice = useCallback(() => setCartMergeNotice(null), []);
 
