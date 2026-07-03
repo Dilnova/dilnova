@@ -9,6 +9,7 @@ import CookieConsent from '@/shared/ui/CookieConsent'
 import { runWithCorrelationId } from '@/shared/security/async-context'
 import HeaderNav from '@/shared/ui/HeaderNav'
 import HeaderAuthButtons from '@/shared/ui/HeaderAuthButtons'
+import SmartHeader from '@/components/layout/SmartHeader'
 import './globals.css'
 
 import { CartProvider } from '@/features/cart/context/CartContext'
@@ -213,7 +214,7 @@ export default async function RootLayout({
           />
           <ClerkProvider nonce={nonce}>
             <CartProvider>
-              <header className="relative flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/70 dark:bg-zinc-950/70 sticky top-0 z-50 min-h-[3.5rem] sm:min-h-[4rem] max-w-full">
+              <SmartHeader>
                 {/* Background layer to prevent backdrop-blur from creating a containing block for fixed children */}
                 <div className="absolute inset-0 backdrop-blur-md -z-10 pointer-events-none" aria-hidden="true" />
                 
@@ -272,7 +273,7 @@ export default async function RootLayout({
                     </div>
                   </Show>
                 </div>
-              </header>
+              </SmartHeader>
               {children}
               <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-950 mt-auto">
                 <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
