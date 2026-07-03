@@ -125,7 +125,7 @@ export const getCachedIsSuperAdmin = (userId: string) => unstable_cache(
       const user = await client.users.getUser(userId);
       return isSuperAdminUser(user);
     } catch (err) {
-      logger.error(`Failed to fetch superadmin grant for ${userId} from Clerk`, err);
+      logger.error('Failed to fetch superadmin grant from Clerk', { userId, err });
       return false;
     }
   },
@@ -139,7 +139,7 @@ export const getCachedIsSuperAdmin = (userId: string) => unstable_cache(
 export const getCachedOrgMembers = (orgId: string) => unstable_cache(
   async (): Promise<{ userId: string; name: string; email: string }[]> => {
     try {
-      logger.info(`Fetching organization memberships for org ${orgId} from Clerk API`);
+      logger.info('Fetching organization memberships from Clerk API', { orgId });
       const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
       const memberships = await client.organizations.getOrganizationMembershipList({
         organizationId: orgId,
@@ -153,7 +153,7 @@ export const getCachedOrgMembers = (orgId: string) => unstable_cache(
           email: m.publicUserData?.identifier || '',
         }));
     } catch (err) {
-      logger.error(`Failed to fetch organization memberships for ${orgId} from Clerk`, err);
+      logger.error('Failed to fetch organization memberships from Clerk', { orgId, err });
       throw err;
     }
   },
@@ -168,7 +168,7 @@ export const getCachedOrgMembers = (orgId: string) => unstable_cache(
  * Invalidates the Clerk cache for a specific user role/superadmin check.
  */
 export function invalidateClerkUserCache(userId: string) {
-  logger.info(`Invalidating Clerk cache for user ${userId}`);
+  logger.info('Invalidating Clerk cache for user', { userId });
   revalidateTag(`clerk-user-role-${userId}`, 'max');
   revalidateTag(`clerk-user-superadmin-${userId}`, 'max');
 }
@@ -177,7 +177,7 @@ export function invalidateClerkUserCache(userId: string) {
  * Invalidates the Clerk cache for organization memberships.
  */
 export function invalidateClerkOrgCache(orgId: string) {
-  logger.info(`Invalidating Clerk cache for organization ${orgId}`);
+  logger.info('Invalidating Clerk cache for organization', { orgId });
   revalidateTag(`clerk-org-members-${orgId}`, 'max');
   revalidateTag('clerk-organizations', 'max');
 }
