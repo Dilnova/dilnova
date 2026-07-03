@@ -1,5 +1,7 @@
 import * as dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
+const envFile = process.argv.includes('--prod') ? '.env.production' : '.env.local';
+dotenv.config({ path: envFile });
+console.log(`Loaded environment variables from ${envFile}`);
 
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { sql } from 'drizzle-orm';

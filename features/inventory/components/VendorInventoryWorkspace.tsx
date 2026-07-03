@@ -183,20 +183,7 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
     return matchesSearch && matchesFilter;
   });
 
-  const orderLifecycleStats = {
-    total: data.simulatedOrders.length,
-    awaitingSlip: data.simulatedOrders.filter(
-      (o) => isBankTransferPayment(o.paymentMethod) && o.status === 'pending_payment'
-    ).length,
-    slipReview: data.simulatedOrders.filter((o) => o.status === 'payment_submitted').length,
-    bankFulfilled: data.simulatedOrders.filter(
-      (o) => o.status === 'fulfilled' && isBankTransferPayment(o.paymentMethod)
-    ).length,
-    codFulfilled: data.simulatedOrders.filter(
-      (o) => o.status === 'fulfilled' && isCodPayment(o.paymentMethod)
-    ).length,
-    cancelled: data.simulatedOrders.filter((o) => o.status === 'cancelled').length,
-  };
+
 
   const filteredOrders = data.simulatedOrders.filter(
     (o) => matchesOrderStatusFilter(o.status, orderStatusFilter)
@@ -764,75 +751,7 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
           {/* TAB 3: SIMULATED ORDERS */}
           {advancedTab === 'orders' && (
             <div className="space-y-4">
-              <div className="border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-5 bg-zinc-50/10 dark:bg-zinc-900/5 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Phase 5 — Online Order Lifecycle Checklist</h3>
-                    <p className="text-xs text-zinc-500 mt-1">
-                      Verify bank transfer slips, fulfill COD orders, and cancel when needed. Place test orders as a signed-in customer first.
-                    </p>
-                  </div>
-                  <span
-                    className={`self-start text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
-                      orderLifecycleStats.bankFulfilled > 0
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
-                        : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400'
-                    }`}
-                  >
-                    {orderLifecycleStats.bankFulfilled > 0 ? 'Bank flow tested' : 'Place test orders'}
-                  </span>
-                </div>
-                <ul className="space-y-2 text-xs text-zinc-700 dark:text-zinc-300">
-                  <li className="flex items-start gap-2">
-                    <span className="text-emerald-600">✓</span>
-                    Premium IMS license enabled — orders appear on this tab
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className={orderLifecycleStats.total > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
-                      {orderLifecycleStats.total > 0 ? '✓' : '○'}
-                    </span>
-                    Customer order received ({orderLifecycleStats.total}) — checkout at{' '}
-                    <Link href="/cart" className="text-purple-700 dark:text-purple-400 hover:underline">
-                      /cart
-                    </Link>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className={orderLifecycleStats.awaitingSlip > 0 || orderLifecycleStats.slipReview > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
-                      {orderLifecycleStats.awaitingSlip > 0 || orderLifecycleStats.slipReview > 0 ? '✓' : '○'}
-                    </span>
-                    Bank transfer order in pipeline — awaiting slip ({orderLifecycleStats.awaitingSlip}) or slip review ({orderLifecycleStats.slipReview})
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className={orderLifecycleStats.bankFulfilled > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
-                      {orderLifecycleStats.bankFulfilled > 0 ? '✓' : '○'}
-                    </span>
-                    Bank transfer verified → fulfilled ({orderLifecycleStats.bankFulfilled}) — use <strong>Verify Payment</strong> on Slip Review filter
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className={orderLifecycleStats.codFulfilled > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
-                      {orderLifecycleStats.codFulfilled > 0 ? '✓' : '○'}
-                    </span>
-                    COD order fulfilled ({orderLifecycleStats.codFulfilled}) <span className="text-zinc-400">(skip if COD disabled)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className={orderLifecycleStats.cancelled > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
-                      {orderLifecycleStats.cancelled > 0 ? '✓' : '○'}
-                    </span>
-                    Cancel flow tested ({orderLifecycleStats.cancelled}) <span className="text-zinc-400">(optional)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-zinc-400">○</span>
-                    Reject slip: customer returns to <strong>Pending Payment</strong> and can re-upload on{' '}
-                    <Link href="/customer?tab=orders" className="text-purple-700 dark:text-purple-400 hover:underline">
-                      /customer
-                    </Link>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-zinc-400">○</span>
-                    Member RBAC: <code className="font-mono text-[10px]">org:member</code> cannot verify, reject, or cancel orders
-                  </li>
-                </ul>
-              </div>
+
 
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-50">Customer Orders (Simulated)</h3>

@@ -77,62 +77,7 @@ export default async function VendorBillingPage() {
 
       {billingData && billingData.premiumStatus.billingActive ? (
         <>
-          <div className="mb-6 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-5 bg-zinc-50/10 dark:bg-zinc-900/5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Phase 4 — POS Register Checklist</h3>
-                <p className="text-xs text-zinc-500 mt-1">
-                  Run in-store sales after IMS stock is configured. Admin and assigned cashiers can use this register.
-                </p>
-              </div>
-              <span
-                className={`self-start text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
-                  billingData.billingReceiptCount > 0
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-400'
-                    : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-400'
-                }`}
-              >
-                {billingData.billingReceiptCount > 0 ? 'Register tested' : 'Run test sale'}
-              </span>
-            </div>
-            <ul className="space-y-2 text-xs text-zinc-700 dark:text-zinc-300">
-              <li className="flex items-start gap-2">
-                <span className="text-emerald-600">✓</span>
-                Premium POS billing license enabled
-              </li>
-              <li className="flex items-start gap-2">
-                <span className={billingData.branches.length > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
-                  {billingData.branches.length > 0 ? '✓' : '○'}
-                </span>
-                Register branch available ({billingData.branches.length} visible to you)
-              </li>
-              <li className="flex items-start gap-2">
-                <span className={purchasableProductCount > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
-                  {purchasableProductCount > 0 ? '✓' : '○'}
-                </span>
-                Purchasable items on register ({purchasableProductCount})
-              </li>
-              {billingData.premiumStatus.multiBranchActive && (
-                <li className="flex items-start gap-2">
-                  <span className="text-zinc-400">○</span>
-                  Multi-branch RBAC: members see <strong>assigned branches only</strong> — assign cashiers on{' '}
-                  <Link href="/vendor?tab=inventory" className="text-purple-700 dark:text-purple-400 hover:underline">
-                    Inventory → Branch Directory
-                  </Link>
-                </li>
-              )}
-              <li className="flex items-start gap-2">
-                <span className={billingData.billingReceiptCount > 0 ? 'text-emerald-600' : 'text-zinc-400'}>
-                  {billingData.billingReceiptCount > 0 ? '✓' : '○'}
-                </span>
-                Test sale completed ({billingData.billingReceiptCount} receipts)
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-zinc-400">○</span>
-                Member RBAC: <code className="font-mono text-[10px]">org:member</code> can checkout; server rejects unassigned branch
-              </li>
-            </ul>
-          </div>
+
           <POSBillingClient initialData={billingData} systemName={systemName} />
         </>
       ) : (
