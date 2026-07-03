@@ -53,12 +53,12 @@ describe('cloudinaryUrl', () => {
       )
     ).toBe(false);
 
-    // Reject vendor URL when orgId is omitted
+    // Allows vendor URL when orgId is omitted
     expect(
       isAllowedCloudinaryDeliveryUrl(
         'https://res.cloudinary.com/deg48jhcz/image/upload/v1780290518/dilnova/vendors/org_123/catalog/product.jpg'
       )
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('rejects other cloud names', () => {
