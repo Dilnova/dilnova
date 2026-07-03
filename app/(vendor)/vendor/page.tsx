@@ -267,12 +267,8 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
           {activeTab === 'inventory' && (
             <>
-              {inventoryData && inventoryDatatab
-                      </li>
-                    </ul>
-                  </div>
-                  <VendorInventoryWorkspace initialData={inventoryData} initialAdvancedTab={initialImsTab} />
-                </>
+              {inventoryData ? (
+                <VendorInventoryWorkspace initialData={inventoryData} initialAdvancedTab={initialImsTab} />
               ) : (
                 <div className="text-center py-16 border border-zinc-250 rounded-2xl dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 shadow-sm space-y-4 max-w-xl mx-auto mt-6">
                   <div className="text-5xl emoji">👑</div>
