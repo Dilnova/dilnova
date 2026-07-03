@@ -20,7 +20,7 @@ export function isAllowedCloudinaryDeliveryUrl(url: string, orgId?: string | nul
     const dilnovaIndex = parts.indexOf('dilnova');
     if (dilnovaIndex !== -1 && parts[dilnovaIndex + 1] === 'vendors') {
       const urlOrgId = parts[dilnovaIndex + 2];
-      if (!orgId || urlOrgId !== orgId) {
+      if (orgId && urlOrgId !== orgId) {
         return false;
       }
     } else if (orgId) {
