@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Package, ShieldCheck, Zap } from 'lucide-react';
+import { Package, ShieldCheck, Zap, Wrench, Leaf, Cpu, Briefcase, Store } from 'lucide-react';
 
 export default function Hero3D() {
-  const [rotation, setRotation] = useState({ x: 0, y: 0 });
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -17,46 +17,64 @@ export default function Hero3D() {
     return () => mediaQuery.removeEventListener('change', listener);
   }, []);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     if (prefersReducedMotion || !containerRef.current) return;
-    
     const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    
-    const rotateX = ((y - centerY) / centerY) * -10; // max 10 deg
-    const rotateY = ((x - centerX) / centerX) * 10;
-    
-    setRotation({ x: rotateX, y: rotateY });
+    // Normalize mouse position between -1 and 1
+    const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+    setMousePos({ x, y });
   };
 
   const handleMouseLeave = () => {
-    if (!prefersReducedMotion) {
-      setRotation({ x: 0, y: 0 });
-    }
+    setMousePos({ x: 0, y: 0 });
   };
 
+  // Parallax multipliers for true depth layering
+  const bgTransform = `translate3d(${mousePos.x * -10}px, ${mousePos.y * -10}px, 0)`;
+  const linesTransform = `translate3d(${mousePos.x * -15}px, ${mousePos.y * -15}px, 0)`;
+  const nodesTransform = `translate3d(${mousePos.x * -20}px, ${mousePos.y * -20}px, 0)`;
+  const hubTransform = `translate3d(${mousePos.x * -35}px, ${mousePos.y * -35}px, 0)`;
+
+  // Store nodes configuration
+  const nodes = [
+    { id: 'hardware', icon: Wrench, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20', pos: { top: '15%', left: '20%' } },
+    { id: 'nursery', icon: Leaf, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', pos: { top: '25%', right: '15%' } },
+    { id: 'tech', icon: Cpu, color: 'text-indigo-400', bg: 'bg-indigo-400/10', border: 'border-indigo-400/20', pos: { bottom: '25%', left: '15%' } },
+    { id: 'services', icon: Briefcase, color: 'text-teal-400', bg: 'bg-teal-400/10', border: 'border-teal-400/20', pos: { bottom: '20%', right: '25%' } },
+    { id: 'vendor1', icon: Store, color: 'text-zinc-400', bg: 'bg-zinc-400/10', border: 'border-zinc-400/20', pos: { top: '10%', right: '40%' } },
+    { id: 'vendor2', icon: Store, color: 'text-zinc-400', bg: 'bg-zinc-400/10', border: 'border-zinc-400/20', pos: { bottom: '10%', left: '40%' } },
+  ];
+
   return (
-    <div className="relative w-full overflow-hidden bg-zinc-950 text-white min-h-[80vh] flex items-center pt-16 pb-12">
-      {/* Ambient background glows */}
-      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none translate-x-1/3 -translate-y-1/3" />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none -translate-x-1/3 translate-y-1/3" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+    <div 
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative w-full overflow-hidden bg-zinc-950 text-white min-h-[80vh] flex items-center pt-16 pb-12"
+      style={{ perspective: '1000px' }}
+    >
+      {/* Background Layer (Moves slightly) - Replaced blobs with restrained dot grid */}
+      <div 
+        className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:24px_24px]"
+        style={{ 
+          transform: bgTransform,
+          transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
+        }}
+      />
 
       <div className="max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
         
         {/* Left: Content */}
-        <div className="space-y-8">
+        <div className="space-y-8 z-20">
           <div className="space-y-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700 uppercase tracking-wider">
-              <Zap className="w-3.5 h-3.5 text-indigo-400" /> Multi-Tenant Architecture
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-900 text-zinc-300 border border-zinc-800 uppercase tracking-wider">
+              <Zap className="w-3.5 h-3.5 text-zinc-400" /> Multi-Tenant Architecture
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]">
+            {/* High-contrast solid typography with one gradient accent word, dropping full gradient text */}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] text-white">
               One Hub. <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-300 to-zinc-500">
                 Every Store.
               </span>
             </h1>
@@ -68,7 +86,7 @@ export default function Hero3D() {
           <div className="flex flex-col sm:flex-row gap-4">
             <Link
               href="/vendors"
-              className="inline-flex items-center justify-center h-12 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all duration-200 shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] active:scale-[0.98]"
+              className="inline-flex items-center justify-center h-12 px-8 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-semibold transition-all duration-200 active:scale-[0.98]"
             >
               Explore Marketplace
             </Link>
@@ -82,71 +100,109 @@ export default function Hero3D() {
           
           <div className="pt-4 flex items-center gap-6 text-sm text-zinc-500">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 text-zinc-400" />
               <span>Enterprise Grade</span>
             </div>
             <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-indigo-400" />
+              <Package className="w-4 h-4 text-zinc-400" />
               <span>Unified Cart</span>
             </div>
           </div>
         </div>
 
-        {/* Right: CSS 3D Scene */}
-        <div 
-          ref={containerRef}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          className="relative h-[400px] lg:h-[500px] w-full hidden md:flex items-center justify-center"
-          style={{ perspective: '1000px' }}
-        >
+        {/* Right: Network Parallax Visual */}
+        <div className="relative h-[400px] lg:h-[600px] w-full hidden md:block" aria-hidden="true">
+          
+          {/* SVG Lines Layer (Mid-background speed) */}
           <div 
-            className="w-full h-full relative transition-transform duration-200 ease-out"
-            style={{ 
-              transformStyle: 'preserve-3d',
-              transform: prefersReducedMotion 
-                ? 'none' 
-                : `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)` 
+            className="absolute inset-0 z-10"
+            style={{
+              transform: linesTransform,
+              transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
             }}
           >
-            {/* Main Floating Card */}
-            <div 
-              className="absolute top-1/2 left-1/2 w-64 h-80 bg-zinc-900/80 backdrop-blur-md border border-zinc-700/50 rounded-2xl shadow-2xl p-6 flex flex-col items-center justify-center gap-6"
-              style={{ transform: 'translate(-50%, -50%) translateZ(50px)' }}
-            >
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <Package className="w-10 h-10 text-white" />
-              </div>
-              <div className="text-center space-y-2">
-                <div className="h-2 w-24 bg-zinc-700 rounded-full mx-auto" />
-                <div className="h-2 w-16 bg-zinc-800 rounded-full mx-auto" />
-              </div>
-            </div>
-
-            {/* Floating Element 1 */}
-            <div 
-              className="absolute top-[20%] left-[10%] w-32 h-32 bg-emerald-900/40 backdrop-blur-md border border-emerald-500/30 rounded-xl shadow-xl p-4 flex flex-col justify-between"
-              style={{ transform: 'translateZ(80px)' }}
-            >
-               <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                 <Zap className="w-4 h-4 text-emerald-400" />
-               </div>
-               <div className="h-1.5 w-12 bg-emerald-800 rounded-full" />
-            </div>
-
-            {/* Floating Element 2 */}
-            <div 
-              className="absolute bottom-[20%] right-[10%] w-40 h-24 bg-amber-900/40 backdrop-blur-md border border-amber-500/30 rounded-xl shadow-xl p-4 flex flex-col justify-between"
-              style={{ transform: 'translateZ(120px)' }}
-            >
-              <div className="flex gap-2">
-                <div className="w-6 h-6 rounded bg-amber-500/20" />
-                <div className="w-6 h-6 rounded bg-amber-500/20" />
-              </div>
-              <div className="h-1.5 w-20 bg-amber-800 rounded-full" />
-            </div>
-
+            <svg className="w-full h-full opacity-30" preserveAspectRatio="none">
+              <g stroke="currentColor" className="text-zinc-600" strokeWidth="1.5" strokeDasharray="4 4" fill="none">
+                {/* Lines connecting nodes to the center Hub */}
+                <line x1="20%" y1="15%" x2="50%" y2="50%" />
+                <line x1="85%" y1="25%" x2="50%" y2="50%" />
+                <line x1="15%" y1="75%" x2="50%" y2="50%" />
+                <line x1="75%" y1="80%" x2="50%" y2="50%" />
+                <line x1="60%" y1="10%" x2="50%" y2="50%" />
+                <line x1="40%" y1="90%" x2="50%" y2="50%" />
+              </g>
+            </svg>
           </div>
+
+          {/* Satellite Nodes Layer (Mid-foreground speed) */}
+          <div 
+            className="absolute inset-0 z-20"
+            style={{
+              transform: nodesTransform,
+              transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
+            }}
+          >
+            {nodes.map((node) => {
+              const Icon = node.icon;
+              return (
+                <div 
+                  key={node.id} 
+                  className={`absolute w-12 h-12 flex items-center justify-center rounded-xl border backdrop-blur-sm ${node.bg} ${node.border} shadow-lg`}
+                  style={{ ...node.pos, transform: 'translate(-50%, -50%)' }}
+                >
+                  <Icon className={`w-5 h-5 ${node.color}`} />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Central Hub Layer (Foreground speed, moves fastest) */}
+          <div 
+            className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none"
+            style={{
+              transform: hubTransform,
+              transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
+            }}
+          >
+            <div className="w-24 h-24 bg-zinc-900 border-2 border-zinc-700 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.05)] flex items-center justify-center backdrop-blur-md relative">
+              <div className="absolute inset-0 bg-white/5 rounded-2xl" />
+              <Package className="w-10 h-10 text-white" />
+              
+              {/* Decorative outer rings to reinforce the 'Hub' concept */}
+              <div className="absolute -inset-4 border border-zinc-800 rounded-[1.5rem] opacity-50" />
+              <div className="absolute -inset-8 border border-zinc-800/30 rounded-[2rem] opacity-50" />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Static Fallback Graphic (Shown below md) */}
+        <div className="relative h-64 w-full md:hidden flex items-center justify-center border border-zinc-800/50 rounded-2xl bg-zinc-900/20 overflow-hidden" aria-hidden="true">
+           {/* Static SVG Lines */}
+           <svg className="absolute inset-0 w-full h-full opacity-20" preserveAspectRatio="none">
+             <g stroke="currentColor" className="text-zinc-500" strokeWidth="1" strokeDasharray="3 3">
+               <line x1="20%" y1="30%" x2="50%" y2="50%" />
+               <line x1="80%" y1="30%" x2="50%" y2="50%" />
+               <line x1="20%" y1="70%" x2="50%" y2="50%" />
+               <line x1="80%" y1="70%" x2="50%" y2="50%" />
+             </g>
+           </svg>
+           {/* Static Hub */}
+           <div className="w-16 h-16 bg-zinc-900 border-2 border-zinc-700 rounded-xl flex items-center justify-center relative z-10 shadow-lg">
+             <Package className="w-6 h-6 text-white" />
+           </div>
+           {/* Static Nodes representing the stores */}
+           <div className="absolute top-[20%] left-[10%] w-8 h-8 flex items-center justify-center rounded-lg bg-amber-400/10 border border-amber-400/20 text-amber-400">
+             <Wrench className="w-4 h-4" />
+           </div>
+           <div className="absolute top-[20%] right-[10%] w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-400/10 border border-emerald-400/20 text-emerald-400">
+             <Leaf className="w-4 h-4" />
+           </div>
+           <div className="absolute bottom-[20%] left-[10%] w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-400/10 border border-indigo-400/20 text-indigo-400">
+             <Cpu className="w-4 h-4" />
+           </div>
+           <div className="absolute bottom-[20%] right-[10%] w-8 h-8 flex items-center justify-center rounded-lg bg-teal-400/10 border border-teal-400/20 text-teal-400">
+             <Briefcase className="w-4 h-4" />
+           </div>
         </div>
 
       </div>
