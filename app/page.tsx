@@ -152,8 +152,8 @@ export default async function Home() {
         <Hero3D />
         
         {/* Trust Row */}
-        <div className="absolute bottom-0 left-0 w-full bg-zinc-950/80 backdrop-blur-md border-t border-zinc-800">
-          <div className="max-w-7xl mx-auto px-6 py-3 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs font-medium text-zinc-400">
+        <div className="absolute bottom-0 left-0 w-full bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800">
+          <div className="max-w-7xl mx-auto px-6 py-3 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
             <span>{activeCount} First-Party Storefronts</span>
             <span className="hidden sm:inline">•</span>
             <span>{otherVendors.length} Marketplace Vendors</span>
