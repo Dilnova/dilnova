@@ -4,10 +4,10 @@ import crypto from 'node:crypto';
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
 
-let cachedV2Key: Buffer | null = null;
-let cachedV1Key: Buffer | null = null;
-let cachedV0Key: Buffer | null = null;
-let cachedHashKey: Buffer | null = null;
+const cachedV2Keys = new Map<string, Buffer>();
+const cachedV1Keys = new Map<string, Buffer>();
+const cachedV0Keys = new Map<string, Buffer>();
+const cachedHashKeys = new Map<string, Buffer>();
 let hasLoggedDecryptionError = false;
 
 function isProduction(): boolean {
@@ -15,30 +15,38 @@ function isProduction(): boolean {
 }
 
 function getV2Key(key: string): Buffer {
-  if (cachedV2Key) return cachedV2Key;
+  let cached = cachedV2Keys.get(key);
+  if (cached) return cached;
   const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v2', 'aes-256-gcm', 32);
-  cachedV2Key = Buffer.from(keyArrayBuffer);
-  return cachedV2Key;
+  cached = Buffer.from(keyArrayBuffer);
+  cachedV2Keys.set(key, cached);
+  return cached;
 }
 
 function getV1Key(key: string): Buffer {
-  if (cachedV1Key) return cachedV1Key;
+  let cached = cachedV1Keys.get(key);
+  if (cached) return cached;
   const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v1', 'aes-256-gcm', 32);
-  cachedV1Key = Buffer.from(keyArrayBuffer);
-  return cachedV1Key;
+  cached = Buffer.from(keyArrayBuffer);
+  cachedV1Keys.set(key, cached);
+  return cached;
 }
 
 function getV0Key(key: string): Buffer {
-  if (cachedV0Key) return cachedV0Key;
-  cachedV0Key = crypto.createHash('sha256').update(key).digest();
-  return cachedV0Key;
+  let cached = cachedV0Keys.get(key);
+  if (cached) return cached;
+  cached = crypto.createHash('sha256').update(key).digest();
+  cachedV0Keys.set(key, cached);
+  return cached;
 }
 
 function getHashKey(key: string): Buffer {
-  if (cachedHashKey) return cachedHashKey;
+  let cached = cachedHashKeys.get(key);
+  if (cached) return cached;
   const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-hash-v1', 'sha256', 32);
-  cachedHashKey = Buffer.from(keyArrayBuffer);
-  return cachedHashKey;
+  cached = Buffer.from(keyArrayBuffer);
+  cachedHashKeys.set(key, cached);
+  return cached;
 }
 
 /**

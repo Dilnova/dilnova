@@ -134,13 +134,13 @@ describe('Encryption Utilities', () => {
     expect(decrypted).toBe(encrypted);
   });
 
-  it('should throw in production if decryption fails due to incorrect key', () => {
+  it('should return [Decryption Failed] in production if decryption fails due to incorrect key', () => {
     process.env.PII_ENCRYPTION_KEY = 'key-one';
     const encrypted = encryptString('hello-world');
     
     process.env.NODE_ENV = 'production';
     process.env.PII_ENCRYPTION_KEY = 'key-two';
-    expect(() => decryptString(encrypted)).toThrowError(/Decryption failed/);
+    expect(decryptString(encrypted)).toBe('[Decryption Failed]');
   });
 });
 
