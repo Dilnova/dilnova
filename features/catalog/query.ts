@@ -95,7 +95,7 @@ export function buildCatalogWhereClauses(params: {
   const whereClauses: SQL[] = [];
 
   if (params.search) {
-    const sanitizedSearch = params.search.replace(/[%_]/g, '\\$&');
+    const sanitizedSearch = params.search.replace(/[\\%_]/g, '\\$&');
     whereClauses.push(
       or(
         ilike(schema.products.name, `%${sanitizedSearch}%`),
