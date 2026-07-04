@@ -251,7 +251,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
               const info = getProductStockInfo(item.productId);
               return (
                 <button
-                  key={item.id}
+                  key={item.productId}
                   onClick={() => addToCart(item)}
                   disabled={info.qty <= 0}
                   className={`p-3 border rounded-xl text-left transition-all active:scale-[0.97] hover:border-indigo-400 group flex flex-col justify-between h-28 ${
