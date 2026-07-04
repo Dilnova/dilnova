@@ -7,15 +7,14 @@ import {
   type CheckoutOptionDefinition,
   type CheckoutOptionType,
 } from '@/features/organization/checkout-options.shared';
+import { toast } from 'sonner';
 
 interface CheckoutOptionsSettingsProps {
   initialCatalog: CheckoutOptionDefinition[];
-  triggerNotification: (success: boolean, text: string) => void;
 }
 
 export default function CheckoutOptionsSettings({
   initialCatalog,
-  triggerNotification,
 }: CheckoutOptionsSettingsProps) {
   const [catalog, setCatalog] = useState<CheckoutOptionDefinition[]>(initialCatalog);
   const [newLabel, setNewLabel] = useState('');
@@ -44,7 +43,7 @@ export default function CheckoutOptionsSettings({
   const handleAddCustom = () => {
     const label = newLabel.trim();
     if (!label) {
-      triggerNotification(false, 'Enter a label for the new checkout option.');
+      toast.error('Enter a label for the new checkout option.');
       return;
     }
 
@@ -52,7 +51,7 @@ export default function CheckoutOptionsSettings({
     const custom = createCustomCheckoutOption(label, newType, existingIds);
     setCatalog((prev) => [...prev, custom]);
     setNewLabel('');
-    triggerNotification(true, `Added "${custom.label}". Save to apply platform-wide.`);
+    toast.success(`Added "${custom.label}". Save to apply platform-wide.`);
   };
 
   const handleRemoveCustom = (id: string) => {
@@ -63,9 +62,9 @@ export default function CheckoutOptionsSettings({
     startTransition(async () => {
       try {
         await updateCheckoutOptionsCatalogAction(catalog);
-        triggerNotification(true, 'Checkout options catalog saved.');
+        toast.success('Checkout options catalog saved.');
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Failed to save checkout options.');
+        toast.error(err instanceof Error ? err.message : 'Failed to save checkout options.');
       }
     });
   };

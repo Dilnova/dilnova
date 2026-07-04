@@ -19,6 +19,8 @@ import {
   updateSimulatedOrderStatusAction,
   updateOrgImsLicenseAction,
 } from '@/features/inventory/superadmin.actions';
+import { toast } from 'sonner';
+import { useConfirm } from '@/shared/ui/notifications';
 
 // ── Interfaces ──
 
@@ -102,7 +104,6 @@ interface InventoryTabProps {
   simulatedOrders: SimulatedOrder[];
   productsWithoutInventory: ProductForInventory[];
   checkoutOptionsCatalog: CheckoutOptionDefinition[];
-  triggerNotification: (success: boolean, text: string) => void;
   organizations: {
     id: string;
     name: string;
@@ -122,11 +123,11 @@ export default function InventoryTab({
   simulatedOrders,
   productsWithoutInventory,
   checkoutOptionsCatalog,
-  triggerNotification,
   organizations,
 }: InventoryTabProps) {
   const [subTab, setSubTab] = useState<InventorySubTab>('stock');
   const [isPending, startTransition] = useTransition();
+  const { confirmAction } = useConfirm();
   const [now, setNow] = useState<number>(0);
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -243,10 +244,10 @@ export default function InventoryTab({
             phone: supplierPhone,
             address: supplierAddress,
           });
-          triggerNotification(true, 'Supplier updated.');
+          toast.success('Supplier updated.');
         } else {
           if (!supplierOrgId) {
-            triggerNotification(false, 'Organization ID is required.');
+            toast.error('Organization ID is required.');
             return;
           }
           await createSupplierAction({
@@ -257,23 +258,30 @@ export default function InventoryTab({
             phone: supplierPhone,
             address: supplierAddress,
           });
-          triggerNotification(true, 'Supplier created.');
+          toast.success('Supplier created.');
         }
         setIsSupplierModalOpen(false);
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Failed to save supplier.');
+        toast.error(err instanceof Error ? err.message : 'Failed to save supplier.');
       }
     });
   };
 
-  const handleDeleteSupplier = (id: string) => {
-    if (!confirm('Delete this supplier? This will unlink it from any inventory records.')) return;
+  const handleDeleteSupplier = async (id: string) => {
+    const confirmed = await confirmAction({
+      title: 'Delete Supplier',
+      message: 'Delete this supplier? This will unlink it from any inventory records.',
+      confirmText: 'Delete',
+      variant: 'danger'
+    });
+    if (!confirmed) return;
+
     startTransition(async () => {
       try {
         await deleteSupplierAction(id);
-        triggerNotification(true, 'Supplier deleted.');
+        toast.success('Supplier deleted.');
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Failed to delete supplier.');
+        toast.error(err instanceof Error ? err.message : 'Failed to delete supplier.');
       }
     });
   };
@@ -291,7 +299,7 @@ export default function InventoryTab({
     if (!adjustingItem) return;
     const qty = parseInt(adjustQty, 10);
     if (isNaN(qty) || qty === 0) {
-      triggerNotification(false, 'Quantity must be a non-zero number.');
+      toast.error('Quantity must be a non-zero number.');
       return;
     }
     // For damage_loss, we negate
@@ -305,10 +313,10 @@ export default function InventoryTab({
           type: adjustType,
           reason: adjustReason,
         });
-        triggerNotification(true, `Stock adjusted: ${change > 0 ? '+' : ''}${change} units.`);
+        toast.success(`Stock adjusted: ${change > 0 ? '+' : ''}${change} units.`);
         setIsAdjustModalOpen(false);
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Failed to adjust stock.');
+        toast.error(err instanceof Error ? err.message : 'Failed to adjust stock.');
       }
     });
   };
@@ -326,7 +334,7 @@ export default function InventoryTab({
   const handleInitInventory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!initProductId) {
-      triggerNotification(false, 'Select a product.');
+      toast.error('Select a product.');
       return;
     }
     startTransition(async () => {
@@ -339,22 +347,31 @@ export default function InventoryTab({
           binLocation: initBin || undefined,
           supplierId: initSupplierId || undefined,
         });
-        triggerNotification(true, 'Inventory record created.');
+        toast.success('Inventory record created.');
         setIsInitModalOpen(false);
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Failed to create inventory.');
+        toast.error(err instanceof Error ? err.message : 'Failed to create inventory.');
       }
     });
   };
 
-  const handleUpdateOrderStatus = (orderId: string, status: 'pending' | 'fulfilled' | 'cancelled') => {
-    if (status === 'cancelled' && !confirm('Cancel this order? Stock will be restored.')) return;
+  const handleUpdateOrderStatus = async (orderId: string, status: 'pending' | 'fulfilled' | 'cancelled') => {
+    if (status === 'cancelled') {
+      const confirmed = await confirmAction({
+        title: 'Cancel Order',
+        message: 'Cancel this order? Stock will be restored.',
+        confirmText: 'Cancel Order',
+        variant: 'danger'
+      });
+      if (!confirmed) return;
+    }
+    
     startTransition(async () => {
       try {
         await updateSimulatedOrderStatusAction(orderId, status);
-        triggerNotification(true, `Order status updated to "${status}".`);
+        toast.success(`Order status updated to "${status}".`);
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Failed to update order.');
+        toast.error(err instanceof Error ? err.message : 'Failed to update order.');
       }
     });
   };
@@ -371,10 +388,10 @@ export default function InventoryTab({
           imsMultiBranchEnabled: licenseImsMultiBranchEnabled,
           imsBillingEnabled: licenseImsBillingEnabled,
         });
-        triggerNotification(true, 'Organization IMS license updated successfully.');
+        toast.success('Organization IMS license updated successfully.');
         setIsLicenseModalOpen(false);
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Failed to update license.');
+        toast.error(err instanceof Error ? err.message : 'Failed to update license.');
       }
     });
   };

@@ -2,6 +2,7 @@
 
 import { useTransition } from 'react';
 import { toggleUserRoleAction } from '@/features/auth/actions';
+import { toast } from 'sonner';
 
 interface RoleToggleButtonProps {
   currentRole: string | undefined;
@@ -14,8 +15,9 @@ export default function RoleToggleButton({ currentRole }: RoleToggleButtonProps)
     startTransition(async () => {
       try {
         await toggleUserRoleAction(currentRole);
+        toast.success(`Role updated to ${currentRole === 'vendor' ? 'Customer' : 'Vendor'}`);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Failed to toggle role');
+        toast.error(err instanceof Error ? err.message : 'Failed to toggle role');
       }
     });
   };

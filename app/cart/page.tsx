@@ -35,6 +35,7 @@ import {
   toggleAllProductsInSelection,
   toggleProductInSelection,
 } from '@/features/cart/vendor-checkout';
+import { Spinner } from '@/shared/ui/loading';
 
 export default function CartPage() {
   const {
@@ -1244,7 +1245,7 @@ export default function CartPage() {
                     >
                       {checkoutStatus === 'processing' ? (
                         <>
-                          <span className="animate-spin text-sm">⏳</span>
+                          <Spinner size="sm" />
                           <span>Processing...</span>
                         </>
                       ) : (
@@ -1313,7 +1314,7 @@ export default function CartPage() {
                     >
                       {emailStatus === 'sending' ? (
                         <>
-                          <span className="animate-spin text-sm">⏳</span>
+                          <Spinner size="sm" />
                           <span>Sending...</span>
                         </>
                       ) : (

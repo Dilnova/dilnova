@@ -23,6 +23,8 @@ import Image from 'next/image'
 import { getPremiumStatus } from '@/features/inventory/premium-license'
 import { getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-cache'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Toaster } from 'sonner'
+import { ConfirmProvider } from '@/shared/ui/notifications'
 
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -213,7 +215,8 @@ export default async function RootLayout({
             }}
           />
           <ClerkProvider nonce={nonce}>
-            <CartProvider>
+            <ConfirmProvider>
+              <CartProvider>
               <SmartHeader>
                 {/* Background layer to prevent backdrop-blur from creating a containing block for fixed children */}
                 <div className="absolute inset-0 backdrop-blur-md -z-10 pointer-events-none" aria-hidden="true" />
@@ -287,6 +290,14 @@ export default async function RootLayout({
               <LanguageSplash systemName={systemName} />
               <CartMergeBanner />
             </CartProvider>
+            <Toaster 
+              position="top-right" 
+              toastOptions={{ className: 'text-xs font-semibold', duration: 4000 }} 
+              richColors 
+              closeButton 
+              theme="system" 
+            />
+            </ConfirmProvider>
             <ConsentTracking initialConsent={initialConsent} />
             <CookieConsent />
           </ClerkProvider>

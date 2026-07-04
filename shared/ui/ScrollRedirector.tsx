@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Spinner } from '@/shared/ui/loading';
 
 export default function ScrollRedirector() {
   const router = useRouter();
@@ -97,7 +98,7 @@ export default function ScrollRedirector() {
         ) : countdown !== null ? (
           <div className="flex flex-col items-center gap-4">
             <div className="flex items-center gap-3">
-              <span className="w-5 h-5 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
+              <Spinner size="sm" />
               <p className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider font-mono">
                 {countdown > 0 ? `Redirecting in ${countdown}s...` : 'Navigating...'}
               </p>

@@ -3,7 +3,7 @@ import { getSystemSetting } from '@/shared/platform/settings';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
+import { getSuperadminOrganizations } from '@/shared/auth/clerk-cache';
 import { logger } from '@/shared/logging/logger';
 import {
   getCategoriesOrderedByCreatedAtDesc,
@@ -37,7 +37,7 @@ async function safeQuery<T>(label: string, fn: () => Promise<T>, fallback: T): P
 
 async function fetchAllData() {
   const client = await clerkClient();
-  const organizations = await getCachedOrganizations(client);
+  const organizations = await getSuperadminOrganizations(client);
 
   // BATCH 1: Core catalog data (4 queries)
   const [

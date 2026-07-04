@@ -6,6 +6,8 @@ import { deleteProductAction } from '@/features/catalog/vendor.actions';
 import Image from 'next/image';
 import Link from 'next/link';
 import { isVideoUrl } from '@/shared/media/media';
+import { toast } from 'sonner';
+import { useConfirm } from '@/shared/ui/notifications';
 
 export interface Product {
   id: string;
@@ -29,8 +31,7 @@ export default function ManageProductsClient({
 }: ManageProductsClientProps) {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const { confirmAction } = useConfirm();
   const [filter, setFilter] = useState<'all' | 'product' | 'service'>('all');
   const [search, setSearch] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -40,32 +41,33 @@ export default function ManageProductsClient({
     setProducts(initialProducts);
   }, [initialProducts]);
 
-  // Auto-dismiss toasts
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-
-  const handleDeleteItem = (id: string, itemName: string) => {
-    if (!confirm(`Are you sure you want to delete "${itemName}"?`)) return;
+  const handleDeleteItem = async (id: string, itemName: string) => {
+    const confirmed = await confirmAction({
+      title: 'Delete Item',
+      message: `Are you sure you want to delete "${itemName}"?`,
+      confirmText: 'Delete',
+      variant: 'danger',
+    });
+    
+    if (!confirmed) return;
 
     setDeletingId(id);
-    startTransition(async () => {
-      try {
-        const result = await deleteProductAction(id);
-        if (result.success) {
-          setMessage({ type: 'success', text: `Deleted "${itemName}".` });
-          setProducts((prev) => prev.filter((p) => p.id !== id));
-          router.refresh();
-        }
-      } catch (err) {
-        setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to delete item.' });
-      } finally {
+    
+    toast.promise(
+      deleteProductAction(id).then((result) => {
+        if (!result.success) throw new Error('Failed to delete item.');
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        router.refresh();
+        return result;
+      }).finally(() => {
         setDeletingId(null);
+      }),
+      {
+        loading: `Deleting "${itemName}"...`,
+        success: `Deleted "${itemName}".`,
+        error: (err) => err instanceof Error ? err.message : 'Failed to delete item.'
       }
-    });
+    );
   };
 
   const filteredProducts = products.filter((p) => {
@@ -79,22 +81,6 @@ export default function ManageProductsClient({
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      {/* Floating Toast */}
-      {message && (
-        <div
-          className={`fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-sm z-[60] p-3.5 rounded-xl text-xs font-semibold border shadow-xl backdrop-blur-lg transition-all duration-300 ${
-            message.type === 'success'
-              ? 'bg-emerald-50/95 text-emerald-800 border-emerald-200 dark:bg-emerald-950/90 dark:text-emerald-400 dark:border-emerald-900/50'
-              : 'bg-rose-50/95 text-rose-800 border-rose-200 dark:bg-rose-950/90 dark:text-rose-400 dark:border-rose-900/50'
-          }`}
-          style={{ animation: 'mobileMenuSlideDown 0.25s ease-out' }}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span>{message.text}</span>
-            <button onClick={() => setMessage(null)} className="opacity-60 hover:opacity-100 p-1 cursor-pointer" aria-label="Dismiss">✕</button>
-          </div>
-        </div>
-      )}
 
       {/* Stats Bar */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -290,8 +276,8 @@ export default function ManageProductsClient({
                     )}
                     <button
                       onClick={() => handleDeleteItem(item.id, item.name)}
-                      disabled={isPending}
-                      className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 dark:hover:bg-rose-900/40 rounded-lg text-[11px] sm:text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                      disabled={deletingId === item.id}
+                      className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-1.5 text-[10px] sm:text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 rounded-lg sm:rounded-xl transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

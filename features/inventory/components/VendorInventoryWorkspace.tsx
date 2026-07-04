@@ -28,6 +28,8 @@ import {
   rejectPaymentSlipAction,
   verifyOrderPaymentAction,
 } from '@/features/orders/vendor.actions';
+import { toast } from 'sonner';
+import { useConfirm } from '@/shared/ui/notifications';
 
 // ── Types ──
 type AdvancedTab = 'stock' | 'suppliers' | 'orders' | 'movements' | 'branches';
@@ -40,18 +42,12 @@ interface Props {
 export default function VendorInventoryWorkspace({ initialData, initialAdvancedTab }: Props) {
   const [isPending, startTransition] = useTransition();
   const [data, setData] = useState(initialData);
-  const [toast, setToast] = useState<{ success: boolean; text: string } | null>(null);
+  const { confirmAction } = useConfirm();
 
   const triggerNotification = (success: boolean, text: string) => {
-    setToast({ success, text });
+    if (success) toast.success(text);
+    else toast.error(text);
   };
-
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
 
   // Re-fetch helper to keep UI fully in sync
   const refreshData = () => {
@@ -262,17 +258,23 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
     });
   };
 
-  const handleDeleteSupplier = (id: string) => {
-    if (!confirm('Are you sure you want to delete this supplier?')) return;
-    startTransition(async () => {
-      try {
-        await vendorDeleteSupplierAction(id);
-        triggerNotification(true, 'Supplier deleted.');
-        refreshData();
-      } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Action failed.');
-      }
+  const handleDeleteSupplier = async (id: string) => {
+    const confirmed = await confirmAction({
+      title: 'Delete Supplier',
+      message: 'Are you sure you want to delete this supplier?',
+      confirmText: 'Delete',
+      variant: 'danger'
     });
+    if (!confirmed) return;
+    
+    toast.promise(
+      vendorDeleteSupplierAction(id).then(() => refreshData()),
+      {
+        loading: 'Deleting supplier...',
+        success: 'Supplier deleted.',
+        error: (err) => err instanceof Error ? err.message : 'Action failed.'
+      }
+    );
   };
 
   const handleAdjustStock = (e: React.FormEvent) => {
@@ -355,17 +357,23 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
     });
   };
 
-  const handleDeleteBranch = (id: string) => {
-    if (!confirm('Are you sure you want to delete this branch? All branch stock records will be removed.')) return;
-    startTransition(async () => {
-      try {
-        await deleteBranchAction(id);
-        triggerNotification(true, 'Branch deleted.');
-        refreshData();
-      } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Action failed.');
-      }
+  const handleDeleteBranch = async (id: string) => {
+    const confirmed = await confirmAction({
+      title: 'Delete Branch',
+      message: 'Are you sure you want to delete this branch? All branch stock records will be removed.',
+      confirmText: 'Delete',
+      variant: 'danger'
     });
+    if (!confirmed) return;
+    
+    toast.promise(
+      deleteBranchAction(id).then(() => refreshData()),
+      {
+        loading: 'Deleting branch...',
+        success: 'Branch deleted.',
+        error: (err) => err instanceof Error ? err.message : 'Action failed.'
+      }
+    );
   };
 
   const handleAllocateStock = (e: React.FormEvent) => {
@@ -416,17 +424,23 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
     });
   };
 
-  const handleRemoveMember = (id: string) => {
-    if (!confirm('Remove this member assignment?')) return;
-    startTransition(async () => {
-      try {
-        await removeBranchMemberAction(id);
-        triggerNotification(true, 'Assignment removed.');
-        refreshData();
-      } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Failed to remove.');
-      }
+  const handleRemoveMember = async (id: string) => {
+    const confirmed = await confirmAction({
+      title: 'Remove Assignment',
+      message: 'Remove this member assignment?',
+      confirmText: 'Remove',
+      variant: 'danger'
     });
+    if (!confirmed) return;
+    
+    toast.promise(
+      removeBranchMemberAction(id).then(() => refreshData()),
+      {
+        loading: 'Removing assignment...',
+        success: 'Assignment removed.',
+        error: (err) => err instanceof Error ? err.message : 'Failed to remove.'
+      }
+    );
   };
 
   const addToPOSCart = (product: any) => {
@@ -542,23 +556,7 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
   };
 
   return (
-    <div className="space-y-6">
-      {toast && (
-        <div
-          className={`fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-sm z-[60] p-3.5 rounded-xl text-xs font-semibold border shadow-xl backdrop-blur-lg transition-all duration-300 ${
-            toast.success
-              ? 'bg-emerald-50/95 text-emerald-800 border-emerald-200 dark:bg-emerald-950/90 dark:text-emerald-400 dark:border-emerald-900/50'
-              : 'bg-rose-50/95 text-rose-800 border-rose-200 dark:bg-rose-950/90 dark:text-rose-400 dark:border-rose-900/50'
-          }`}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span>{toast.text}</span>
-            <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100 p-1 cursor-pointer">✕</button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Branch Filter ── */}
+    <div className="space-y-6">      {/* ── Branch Filter ── */}
       {data.premiumStatus.multiBranchActive && (
         <div className="bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-2">

@@ -10,6 +10,7 @@ import {
 } from '@/features/billing/checkout.actions';
 import Image from 'next/image';
 import { resolveEffectiveStockAvailability } from '@/features/inventory/availability.shared';
+import { toast } from 'sonner';
 
 interface Props {
   initialData: VendorBillingRegisterData;
@@ -19,18 +20,6 @@ interface Props {
 export default function POSBillingClient({ initialData, systemName = 'Dilnova' }: Props) {
   const [isPending, startTransition] = useTransition();
   const [data, setData] = useState(initialData);
-  const [toast, setToast] = useState<{ success: boolean; text: string } | null>(null);
-
-  const triggerNotification = (success: boolean, text: string) => {
-    setToast({ success, text });
-  };
-
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
 
   // Re-fetch helper to keep UI fully in sync
   const refreshData = async () => {
@@ -38,7 +27,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
       const fresh = await getVendorBillingRegisterData();
       setData(fresh);
     } catch (err) {
-      triggerNotification(false, 'Failed to refresh data.');
+      toast.error('Failed to refresh data.');
     }
   };
 
@@ -116,7 +105,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
 
   const addToCart = (product: any) => {
     if (!isProductPurchasable(product)) {
-      triggerNotification(false, 'This item is not available for sale.');
+      toast.error('This item is not available for sale.');
       return;
     }
     const stock = getProductStockInfo(product.productId);
@@ -124,7 +113,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
     const currentQtyInCart = existing?.quantity ?? 0;
 
     if (stock.qty <= currentQtyInCart) {
-      triggerNotification(false, `Insufficient stock! Only ${stock.qty} units available at this branch.`);
+      toast.error(`Insufficient stock! Only ${stock.qty} units available at this branch.`);
       return;
     }
 
@@ -144,7 +133,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
   const updateCartQty = (productId: string, qty: number) => {
     const stock = getProductStockInfo(productId);
     if (qty > stock.qty) {
-      triggerNotification(false, `Only ${stock.qty} units available.`);
+      toast.error(`Only ${stock.qty} units available.`);
       return;
     }
     if (qty <= 0) {
@@ -161,7 +150,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
   const handlePOSCheckout = () => {
     if (cart.length === 0) return;
     if (!selectedBranchId) {
-      triggerNotification(false, 'Select a branch register first.');
+      toast.error('Select a branch register first.');
       return;
     }
 
@@ -182,7 +171,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
           notes,
         });
 
-        triggerNotification(true, `POS receipt processed. Order Total: $${(result.totalAmount / 100).toFixed(2)}`);
+        toast.success(`POS receipt processed. Order Total: $${(result.totalAmount / 100).toFixed(2)}`);
 
         // Save receipt info for print view
         setReceiptToPrint({
@@ -200,7 +189,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
         setNotes('');
         await refreshData();
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'POS checkout failed.');
+        toast.error(err instanceof Error ? err.message : 'POS checkout failed.');
       }
     });
   };
@@ -209,20 +198,6 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[calc(100vh-220px)] items-stretch">
-      {toast && (
-        <div
-          className={`fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-sm z-[60] p-3.5 rounded-xl text-xs font-semibold border shadow-xl backdrop-blur-lg transition-all duration-300 ${
-            toast.success
-              ? 'bg-emerald-50/95 text-emerald-800 border-emerald-200 dark:bg-emerald-950/90 dark:text-emerald-400 dark:border-emerald-900/50'
-              : 'bg-rose-50/95 text-rose-800 border-rose-200 dark:bg-rose-950/90 dark:text-rose-400 dark:border-rose-900/50'
-          }`}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span>{toast.text}</span>
-            <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100 p-1 cursor-pointer">✕</button>
-          </div>
-        </div>
-      )}
       {/* Left side: Product Grid & Search */}
       <div className="lg:col-span-8 bg-white border border-zinc-200 rounded-2xl p-4 sm:p-6 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm flex flex-col justify-between">
         <div className="space-y-4">
@@ -276,7 +251,7 @@ export default function POSBillingClient({ initialData, systemName = 'Dilnova' }
               const info = getProductStockInfo(item.productId);
               return (
                 <button
-                  key={item.id}
+                  key={item.productId}
                   onClick={() => addToCart(item)}
                   disabled={info.qty <= 0}
                   className={`p-3 border rounded-xl text-left transition-all active:scale-[0.97] hover:border-indigo-400 group flex flex-col justify-between h-28 ${

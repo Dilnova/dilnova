@@ -7,6 +7,7 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { clerkClient } from '@clerk/nextjs/server';
 import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
 import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
+import { invalidateClerkUserCache } from '@/shared/auth/clerk-cache';
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { rateLimit } from '@/shared/security/rate-limit';
@@ -191,8 +192,7 @@ export async function updateContactStatusAction(
               role: nextRole,
             },
           });
-          revalidateTag('clerk-user-role', 'max');
-          revalidateTag('clerk-user-superadmin', 'max');
+          invalidateClerkUserCache(clerkUser.id);
           logger.info('Successfully updated Clerk user role', { userId: clerkUser.id, role: nextRole });
         }
       } else {

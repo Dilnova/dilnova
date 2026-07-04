@@ -60,6 +60,7 @@ vi.mock('@/shared/auth/superadmin.server', () => ({
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  unstable_cache: vi.fn((fn) => fn),
 }));
 
 // Mock logger to prevent @sentry/node import block in sandbox
