@@ -127,9 +127,10 @@ export async function updateOrgImsLicense(
     updatedMeta.ims_billing_enabled = flags.imsBillingEnabled;
   }
 
-  await client.organizations.updateOrganization(orgId, {
+  await client.organizations.updateOrganizationMetadata(orgId, {
     publicMetadata: updatedMeta,
   });
 
   revalidateTag('clerk-premium-status', 'max');
+  revalidateTag('clerk-organizations', 'max');
 }
