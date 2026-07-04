@@ -15,6 +15,14 @@ export interface CachedOrg {
   publicMetadata: StorefrontPublicMetadata;
 }
 
+export interface CachedSuperadminOrg {
+  id: string;
+  name: string;
+  slug: string | null;
+  imageUrl: string;
+  publicMetadata: Record<string, unknown>;
+}
+
 
 
 type ClerkOrganizationsClient = Awaited<ReturnType<typeof clerkClient>>;
@@ -37,6 +45,22 @@ function mapClerkOrganization(o: {
   };
 }
 
+function mapSuperadminOrganization(o: {
+  id: string;
+  name: string;
+  slug: string | null;
+  imageUrl: string;
+  publicMetadata?: unknown;
+}): CachedSuperadminOrg {
+  return {
+    id: o.id,
+    name: o.name,
+    slug: o.slug,
+    imageUrl: o.imageUrl,
+    publicMetadata: (o.publicMetadata as Record<string, unknown> | undefined) ?? {},
+  };
+}
+
 /**
  * Fetches every Clerk organization, paginating past the API's 100-item page size.
  */
@@ -48,6 +72,23 @@ export async function fetchAllClerkOrganizations(client: ClerkOrganizationsClien
   while (true) {
     const orgList = await client.organizations.getOrganizationList({ limit, offset });
     all.push(...orgList.data.map(mapClerkOrganization));
+    if (orgList.data.length < limit) {
+      break;
+    }
+    offset += limit;
+  }
+
+  return all;
+}
+
+export async function fetchAllSuperadminOrganizations(client: ClerkOrganizationsClient): Promise<CachedSuperadminOrg[]> {
+  const all: CachedSuperadminOrg[] = [];
+  const limit = 100;
+  let offset = 0;
+
+  while (true) {
+    const orgList = await client.organizations.getOrganizationList({ limit, offset });
+    all.push(...orgList.data.map(mapSuperadminOrganization));
     if (orgList.data.length < limit) {
       break;
     }
@@ -75,6 +116,24 @@ const getCachedOrganizationsInternal = unstable_cache(
   }
 );
 
+const getCachedSuperadminOrganizationsInternal = unstable_cache(
+  async (): Promise<CachedSuperadminOrg[]> => {
+    logger.info('Clerk superadmin organization cache miss, fetching from API');
+    try {
+      const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      return await fetchAllSuperadminOrganizations(client);
+    } catch (err) {
+      logger.error('Failed to fetch superadmin organizations from Clerk API in unstable_cache', err);
+      throw err;
+    }
+  },
+  ['clerk-superadmin-organizations'],
+  {
+    tags: ['clerk-organizations', 'clerk-superadmin-organizations'],
+    revalidate: 300, // 5 minutes
+  }
+);
+
 /**
  * Retrieves the list of Clerk organizations using Next.js unstable_cache
  * to bypass slow network API requests.
@@ -84,6 +143,18 @@ export async function getCachedOrganizations(client?: ClerkOrganizationsClient):
     return await getCachedOrganizationsInternal();
   } catch (err) {
     logger.error('Error fetching cached organizations, returning empty fallback', err);
+    return [];
+  }
+}
+
+/**
+ * Retrieves the raw list of Clerk organizations using Next.js unstable_cache for superadmins.
+ */
+export async function getSuperadminOrganizations(client?: ClerkOrganizationsClient): Promise<CachedSuperadminOrg[]> {
+  try {
+    return await getCachedSuperadminOrganizationsInternal();
+  } catch (err) {
+    logger.error('Error fetching cached superadmin organizations, returning empty fallback', err);
     return [];
   }
 }

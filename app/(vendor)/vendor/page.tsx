@@ -298,47 +298,27 @@ export default async function VendorPage({ searchParams }: PageProps) {
             <>
 
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 bg-white dark:bg-zinc-950 shadow-sm space-y-3">
-                  <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Guest test (incognito)</h4>
-                  <ol className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2 list-decimal list-inside">
-                    <li>
-                      Open{' '}
-                      {org.slug ? (
-                        <Link href={`/vendors/${org.slug}`} className="text-purple-700 dark:text-purple-400 hover:underline">
-                          /vendors/{org.slug}
-                        </Link>
-                      ) : (
-                        'your storefront'
-                      )}
-                    </li>
-                    <li>Browse products — confirm stock badges and add-to-cart gating</li>
-                    <li>
-                      Open <Link href="/cart" className="text-purple-700 dark:text-purple-400 hover:underline">/cart</Link> — checkout should prompt sign-in
-                    </li>
-                  </ol>
-                </div>
-                <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 bg-white dark:bg-zinc-950 shadow-sm space-y-3">
-                  <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Customer test (signed in)</h4>
-                  <ol className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2 list-decimal list-inside">
-                    <li>Add in-stock item to cart from storefront or /products</li>
-                    <li>
-                      Checkout at <Link href="/cart" className="text-purple-700 dark:text-purple-400 hover:underline">/cart</Link> with enabled payment + fulfillment
-                    </li>
-                    <li>
-                      Track order at{' '}
-                      <Link href="/customer?tab=orders" className="text-purple-700 dark:text-purple-400 hover:underline">
-                        /customer
-                      </Link>
-                    </li>
-                    <li>
-                      Vendor verifies on{' '}
-                      <Link href="/vendor?tab=inventory&imsTab=orders" className="text-purple-700 dark:text-purple-400 hover:underline">
-                        Phase 5 orders tab
-                      </Link>
-                    </li>
-                  </ol>
-                </div>
+              <div className="flex flex-col items-center justify-center py-16 border border-zinc-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 p-8 shadow-sm space-y-4 max-w-xl mx-auto mt-6">
+                <div className="text-5xl emoji">🏪</div>
+                <h2 className="text-lg font-black text-zinc-900 dark:text-white">Your Public Storefront</h2>
+                <p className="text-zinc-500 text-xs leading-relaxed text-center">
+                  This is where your customers can browse your catalog and place orders.
+                </p>
+                {org.slug ? (
+                  <div className="pt-2">
+                    <Link
+                      href={`/vendors/${org.slug}`}
+                      target="_blank"
+                      className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer inline-block shadow-md"
+                    >
+                      Visit Storefront &rarr;
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 p-3 rounded-lg text-xs font-mono">
+                    Organization slug not configured. Contact admin.
+                  </div>
+                )}
               </div>
             </>
           )}
