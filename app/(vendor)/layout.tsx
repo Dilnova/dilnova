@@ -18,10 +18,14 @@ export default async function VendorLayout({
     getCachedIsSuperAdmin(userId),
   ]);
 
-  const isAuthorizedVendor = userRole === 'vendor' || isSuperAdmin;
-  const hasOrgAccess = orgId && (orgRole === 'org:member' || orgRole === 'org:admin');
+  if (userRole === 'customer') {
+    redirect('/unauthorized');
+  }
 
-  if (!isAuthorizedVendor || !hasOrgAccess) {
+  const hasOrgAccess = orgId && (orgRole === 'org:member' || orgRole === 'org:admin');
+  const isGlobalVendor = userRole === 'vendor' || isSuperAdmin;
+
+  if (!hasOrgAccess && !isGlobalVendor) {
     redirect('/unauthorized');
   }
 
