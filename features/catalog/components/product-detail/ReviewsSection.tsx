@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { submitReviewAction } from '@/features/catalog/product-detail.actions';
 import Image from 'next/image';
 import SignInPrompt from '@/shared/ui/SignInPrompt';
+import { toast } from 'sonner';
 
 interface Review {
   id: string;
@@ -45,8 +46,6 @@ export default function ReviewsSection({
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState(existingReview?.comment ?? '');
   const [isPending, startTransition] = useTransition();
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (existingReview) {
@@ -70,18 +69,16 @@ export default function ReviewsSection({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
 
     if (rating === 0) {
-      setErrorMessage('Please select a star rating.');
+      toast.error('Please select a star rating.');
       return;
     }
 
     startTransition(async () => {
       try {
         await submitReviewAction(productId, rating, comment);
-        setSuccessMessage(
+        toast.success(
           userHasReviewed
             ? 'Your review has been updated.'
             : 'Thank you! Your review has been submitted successfully.'
@@ -89,7 +86,7 @@ export default function ReviewsSection({
         router.refresh();
       } catch (err) {
         logger.error('Error submitting review:', err);
-        setErrorMessage(err instanceof Error ? err.message : 'Something went wrong.');
+        toast.error(err instanceof Error ? err.message : 'Something went wrong.');
       }
     });
   };
@@ -284,18 +281,7 @@ export default function ReviewsSection({
                 maxLength={1000}
               />
             </div>
-
-            {errorMessage && (
-              <p className="text-xs text-red-500 font-mono bg-red-50 dark:bg-red-950/20 p-2.5 rounded-lg border border-red-200/50 dark:border-red-900/50">
-                ⚠️ {errorMessage}
-              </p>
-            )}
-
-            {successMessage && (
-              <p className="text-xs text-emerald-500 font-mono bg-emerald-50 dark:bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-200/50 dark:border-emerald-900/50">
-                ✅ {successMessage}
-              </p>
-            )}
+            {/* Messages removed - handled by Sonner toasts */}
 
             <button
               type="submit"

@@ -19,6 +19,8 @@ import {
   getCustomerDsarDataAction,
   anonymizeCustomerDataAction,
 } from '@/features/superadmin/actions';
+import { toast } from 'sonner';
+import { useConfirm } from '@/shared/ui/notifications';
 import { updateSystemSettingAction } from '@/features/superadmin/settings.actions';
 import CheckoutOptionsSettings from './CheckoutOptionsSettings';
 import StockAvailabilitySettings from '@/features/inventory/components/StockAvailabilitySettings';
@@ -149,8 +151,7 @@ export default function SuperAdminClient({
     'overview' | 'categories' | 'products' | 'inventory' | 'vendor-issues' | 'pricing' | 'contacts' | 'settings' | 'compliance'
   >('overview');
   const [isPending, startTransition] = useTransition();
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const { confirmAction } = useConfirm();
 
   // Compliance State
   const [complianceSearchEmail, setComplianceSearchEmail] = useState('');
@@ -223,20 +224,6 @@ export default function SuperAdminClient({
   const [contactStatusFilter, setContactStatusFilter] = useState<'all' | 'pending' | 'connected' | 'no_longer'>('all');
   const [contactCategoryFilter, setContactCategoryFilter] = useState<'all' | 'collaboration' | 'registration' | 'info'>('all');
 
-  // Auto-dismiss toasts
-  useEffect(() => {
-    if (successMsg) {
-      const t = setTimeout(() => setSuccessMsg(null), 4000);
-      return () => clearTimeout(t);
-    }
-  }, [successMsg]);
-  useEffect(() => {
-    if (errorMsg) {
-      const t = setTimeout(() => setErrorMsg(null), 5000);
-      return () => clearTimeout(t);
-    }
-  }, [errorMsg]);
-
   // Top 5 viewed products
   const topViewedProducts = [...products]
     .sort((a, b) => b.views - a.views)
@@ -281,11 +268,9 @@ export default function SuperAdminClient({
   // Helper: show transient message
   const triggerNotification = (success: boolean, text: string) => {
     if (success) {
-      setSuccessMsg(text);
-      setErrorMsg(null);
+      toast.success(text);
     } else {
-      setErrorMsg(text);
-      setSuccessMsg(null);
+      toast.error(text);
     }
   };
 
@@ -309,7 +294,6 @@ export default function SuperAdminClient({
 
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
 
     startTransition(async () => {
       try {
@@ -329,20 +313,22 @@ export default function SuperAdminClient({
   };
 
   const handleDeleteCategory = async (catId: string) => {
-    if (!confirm('Are you sure you want to delete this category? This operation will fail if products are linked.')) {
-      return;
-    }
-    setErrorMsg(null);
-
-    startTransition(async () => {
-      try {
-        await deleteCategoryAction(catId);
-        triggerNotification(true, 'Category deleted successfully.');
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Failed to delete category.';
-        triggerNotification(false, msg);
-      }
+    const confirmed = await confirmAction({
+      title: 'Delete Category',
+      message: 'Are you sure you want to delete this category? This operation will fail if products are linked.',
+      confirmText: 'Delete',
+      variant: 'danger'
     });
+    if (!confirmed) return;
+
+    toast.promise(
+      deleteCategoryAction(catId),
+      {
+        loading: 'Deleting category...',
+        success: 'Category deleted successfully.',
+        error: (err) => err instanceof Error ? err.message : 'Failed to delete category.'
+      }
+    );
   };
 
   // ── PRODUCT MODERATOR EVENT HANDLERS ────────────────────────
@@ -409,7 +395,6 @@ export default function SuperAdminClient({
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
-    setErrorMsg(null);
 
     startTransition(async () => {
       try {
@@ -433,20 +418,22 @@ export default function SuperAdminClient({
   };
 
   const handleDeleteProduct = async (prodId: string) => {
-    if (!confirm('Are you sure you want to permanently delete this product/service? This action is irreversible.')) {
-      return;
-    }
-    setErrorMsg(null);
-
-    startTransition(async () => {
-      try {
-        await deleteProductAction(prodId);
-        triggerNotification(true, 'Product deleted.');
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Failed to delete product.';
-        triggerNotification(false, msg);
-      }
+    const confirmed = await confirmAction({
+      title: 'Delete Product',
+      message: 'Are you sure you want to permanently delete this product/service? This action is irreversible.',
+      confirmText: 'Delete',
+      variant: 'danger'
     });
+    if (!confirmed) return;
+
+    toast.promise(
+      deleteProductAction(prodId),
+      {
+        loading: 'Deleting product...',
+        success: 'Product deleted.',
+        error: (err) => err instanceof Error ? err.message : 'Failed to delete product.'
+      }
+    );
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -523,8 +510,6 @@ export default function SuperAdminClient({
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
 
     if (mediaLimitInput < 1 || mediaLimitInput > 20) {
       triggerNotification(false, 'Media limit must be between 1 and 20.');
@@ -592,7 +577,6 @@ export default function SuperAdminClient({
 
   const handleSavePricingPlan = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
 
     const featuresArray = planFeatures
       .split('\n')
@@ -628,25 +612,26 @@ export default function SuperAdminClient({
   };
 
   const handleDeletePricingPlan = async (planId: string) => {
-    if (!confirm('Are you sure you want to permanently delete this pricing plan?')) {
-      return;
-    }
-    setErrorMsg(null);
-
-    startTransition(async () => {
-      try {
-        await deletePricingPlanAction(planId);
-        triggerNotification(true, 'Pricing plan deleted successfully.');
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Failed to delete pricing plan.';
-        triggerNotification(false, msg);
-      }
+    const confirmed = await confirmAction({
+      title: 'Delete Pricing Plan',
+      message: 'Are you sure you want to permanently delete this pricing plan?',
+      confirmText: 'Delete',
+      variant: 'danger'
     });
+    if (!confirmed) return;
+
+    toast.promise(
+      deletePricingPlanAction(planId),
+      {
+        loading: 'Deleting pricing plan...',
+        success: 'Pricing plan deleted successfully.',
+        error: (err) => err instanceof Error ? err.message : 'Failed to delete pricing plan.'
+      }
+    );
   };
 
   // ── CONTACT REQUEST HANDLERS ─────────────────────────────────
   const handleUpdateContactStatus = async (contactId: string, status: 'pending' | 'connected' | 'no_longer') => {
-    setErrorMsg(null);
 
     startTransition(async () => {
       try {
@@ -665,7 +650,6 @@ export default function SuperAdminClient({
       triggerNotification(false, 'Please enter a valid email address.');
       return;
     }
-    setErrorMsg(null);
     setIsSearchingCompliance(true);
 
     try {
@@ -702,12 +686,14 @@ export default function SuperAdminClient({
 
   const handleAnonymizeData = async () => {
     if (!searchedEmail) return;
-    const confirmed = confirm(
-      `WARNING: This will permanently redact/anonymize all PII across simulated orders, redact reviews/questions, delete wishlists/contact submissions, and completely delete the Clerk authentication profile for "${searchedEmail}".\n\nThis action cannot be undone. Are you sure you want to proceed?`
-    );
+    const confirmed = await confirmAction({
+      title: 'WARNING: Permanent Data Erasure',
+      message: `This will permanently redact/anonymize all PII across simulated orders, redact reviews/questions, delete wishlists/contact submissions, and completely delete the Clerk authentication profile for "${searchedEmail}".\n\nThis action cannot be undone. Are you sure you want to proceed?`,
+      confirmText: 'Erase Data',
+      variant: 'danger'
+    });
     if (!confirmed) return;
 
-    setErrorMsg(null);
     startTransition(async () => {
       try {
         const result = await anonymizeCustomerDataAction(searchedEmail);
@@ -731,7 +717,6 @@ export default function SuperAdminClient({
       triggerNotification(false, 'Please enter a valid User ID.');
       return;
     }
-    setErrorMsg(null);
     setIsSearchingApi(true);
 
     try {
@@ -768,12 +753,14 @@ export default function SuperAdminClient({
 
   const handleAnonymizeByUserId = async () => {
     if (!searchedUserId) return;
-    const confirmed = confirm(
-      `WARNING: This will permanently redact/anonymize all PII across tables for User ID "${searchedUserId}" via API.\n\nThis action cannot be undone. Are you sure you want to proceed?`
-    );
+    const confirmed = await confirmAction({
+      title: 'WARNING: Permanent Data Erasure',
+      message: `This will permanently redact/anonymize all PII across tables for User ID "${searchedUserId}" via API.\n\nThis action cannot be undone. Are you sure you want to proceed?`,
+      confirmText: 'Erase Data',
+      variant: 'danger'
+    });
     if (!confirmed) return;
 
-    setErrorMsg(null);
     setIsApiErasing(true);
     try {
       const res = await fetch(`/api/admin/data-subject-request/erase?userId=${encodeURIComponent(searchedUserId)}`, {
@@ -815,26 +802,6 @@ export default function SuperAdminClient({
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      {/* ── Floating Toast ── */}
-      {(successMsg || errorMsg) && (
-        <div
-          className={`fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-sm z-[60] p-3.5 rounded-xl text-xs font-semibold border shadow-xl backdrop-blur-lg ${
-            successMsg
-              ? 'bg-emerald-50/95 text-emerald-800 border-emerald-200 dark:bg-emerald-950/90 dark:text-emerald-400 dark:border-emerald-900/50'
-              : 'bg-rose-50/95 text-rose-800 border-rose-200 dark:bg-rose-950/90 dark:text-rose-400 dark:border-rose-900/50'
-          }`}
-          style={{ animation: 'mobileMenuSlideDown 0.25s ease-out' }}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span>{successMsg ? `✓ ${successMsg}` : `⚠️ ${errorMsg}`}</span>
-            <button
-              onClick={() => { setSuccessMsg(null); setErrorMsg(null); }}
-              className="opacity-60 hover:opacity-100 p-1 cursor-pointer"
-              aria-label="Dismiss"
-            >✕</button>
-          </div>
-        </div>
-      )}
 
       {/* ── Saving Overlay ── */}
       {isPending && (
@@ -872,7 +839,6 @@ export default function SuperAdminClient({
               key={tab.key}
               onClick={() => {
                 setActiveTab(tab.key);
-                setErrorMsg(null);
               }}
               className={`flex items-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex-shrink-0 active:scale-[0.97] ${
                 activeTab === tab.key
@@ -1314,7 +1280,6 @@ export default function SuperAdminClient({
           simulatedOrders={simulatedOrders}
           productsWithoutInventory={productsWithoutInventory}
           checkoutOptionsCatalog={checkoutOptionsCatalog}
-          triggerNotification={triggerNotification}
           organizations={organizations}
         />
       )}
@@ -1323,7 +1288,6 @@ export default function SuperAdminClient({
         <VendorOrgIssuesTab
           integrityReport={vendorOrgIntegrity}
           organizations={organizations}
-          triggerNotification={triggerNotification}
         />
       )}
 
@@ -1764,12 +1728,10 @@ export default function SuperAdminClient({
 
           <CheckoutOptionsSettings
             initialCatalog={checkoutOptionsCatalog}
-            triggerNotification={triggerNotification}
           />
 
           <StockAvailabilitySettings
             initialCatalog={stockAvailabilityCatalog}
-            triggerNotification={triggerNotification}
           />
         </div>
       )}

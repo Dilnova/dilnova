@@ -3,6 +3,8 @@
 import { logger } from '@/shared/logging/logger';
 import { useState, useTransition, useEffect, useRef } from 'react';
 import { submitContactFormAction } from '@/features/contact/actions';
+import { toast } from 'sonner';
+import { Spinner } from '@/shared/ui/loading';
 
 type CategoryType = 'collaboration' | 'registration' | 'info';
 
@@ -12,10 +14,6 @@ interface ContactClientPageProps {
 
 export default function ContactClientPage({ systemName }: ContactClientPageProps) {
   const [isPending, startTransition] = useTransition();
-  const [state, setState] = useState<{ success: boolean | null; error: string | null }>({
-    success: null,
-    error: null,
-  });
 
   const turnstileRef = useRef<HTMLDivElement>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -109,7 +107,6 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setState({ success: null, error: null });
 
     const submissionData = new FormData();
     submissionData.append('name', formData.name);
@@ -125,10 +122,10 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
     startTransition(async () => {
       const result = await submitContactFormAction(null, submissionData);
       if (result.success) {
-        setState({ success: true, error: null });
+        toast.success('Thank you! Your message has been sent successfully.');
         setFormData({ name: '', email: '', category: 'info', subject: '', message: '', middleName: '' });
       } else {
-        setState({ success: false, error: result.error });
+        toast.error(result.error || 'Failed to submit contact form.');
       }
 
       if (typeof window !== 'undefined' && (window as any).turnstile) {
@@ -348,23 +345,7 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
                   />
                 </div>
 
-                {state.success && (
-                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs flex items-center gap-3">
-                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Thank you! Your message has been sent successfully.</span>
-                  </div>
-                )}
-
-                {state.error && (
-                  <div className="p-4 bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 rounded-xl text-xs flex items-center gap-3">
-                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{state.error}</span>
-                  </div>
-                )}
+                {/* Sonner Toasts will handle feedback */}
 
                 {/* Turnstile widget container */}
                 <div className="flex justify-center my-4">
@@ -378,14 +359,11 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
                 >
                   {isPending ? (
                     <>
-                      <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      <span>Sending Message...</span>
+                      <Spinner size="sm" />
+                      <span>Sending Inquiry...</span>
                     </>
                   ) : (
-                    'Send Message'
+                    <span>Send Inquiry</span>
                   )}
                 </button>
               </form>

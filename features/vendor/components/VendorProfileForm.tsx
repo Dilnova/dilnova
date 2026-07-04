@@ -4,6 +4,7 @@ import { logger } from '@/shared/logging/logger';
 import { useState, useTransition, useRef } from 'react';
 import { updateVendorMetadata } from '@/features/vendor/actions';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
+import { toast } from 'sonner';
 
 interface VendorProfileFormProps {
   orgId: string;
@@ -39,7 +40,6 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
   );
 
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isBannerUploading, setIsBannerUploading] = useState(false);
   const [bannerUploadProgress, setBannerUploadProgress] = useState<number | null>(null);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
@@ -50,18 +50,17 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setMessage({ type: 'error', text: 'Please select an image file (PNG, JPG, or WEBP).' });
+      toast.error('Please select an image file (PNG, JPG, or WEBP).');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'Banner image exceeds 10MB limit.' });
+      toast.error('Banner image exceeds 10MB limit.');
       return;
     }
 
     setIsBannerUploading(true);
     setBannerUploadProgress(0);
-    setMessage(null);
 
     try {
       const result = await uploadToCloudinary(file, {
@@ -73,13 +72,13 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
 
       if (result.success && result.publicUrl) {
         setBannerUrl(result.publicUrl);
-        setMessage({ type: 'success', text: 'Banner image uploaded! Save profile to apply changes.' });
+        toast.success('Banner image uploaded! Save profile to apply changes.');
       } else {
-        setMessage({ type: 'error', text: result.error || 'Banner upload failed.' });
+        toast.error(result.error || 'Banner upload failed.');
       }
     } catch (err) {
       logger.error('Error', err);
-      setMessage({ type: 'error', text: 'An error occurred during banner upload.' });
+      toast.error('An error occurred during banner upload.');
     } finally {
       setIsBannerUploading(false);
       setBannerUploadProgress(null);
@@ -90,7 +89,6 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
 
     startTransition(async () => {
       try {
@@ -107,28 +105,16 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
           bankTransferInstructions,
         });
         if (result.success) {
-          setMessage({ type: 'success', text: 'Storefront profile updated successfully!' });
+          toast.success('Storefront profile updated successfully!');
         }
       } catch (err) {
-        setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update profile settings.' });
+        toast.error(err instanceof Error ? err.message : 'Failed to update profile settings.');
       }
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {message && (
-        <div
-          className={`p-4 rounded-lg text-sm font-mono border ${
-            message.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50'
-              : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-955/20 dark:text-rose-400 dark:border-rose-900/50'
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
-
       <div className="space-y-3">
         <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
           Store Banner Image

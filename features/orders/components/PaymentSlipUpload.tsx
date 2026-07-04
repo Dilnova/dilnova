@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import Image from 'next/image';
 import { createPaymentSlipUploadPresignedUrlAction, submitPaymentSlipPathAction } from '@/features/orders/customer.actions';
+import { toast } from 'sonner';
 
 interface PaymentSlipUploadProps {
   orderId: string;
@@ -27,7 +28,6 @@ export default function PaymentSlipUpload({
   compact = false,
 }: PaymentSlipUploadProps) {
   const [slipPreviewUrl, setSlipPreviewUrl] = useState(existingSlipPreviewUrl || '');
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,18 +35,16 @@ export default function PaymentSlipUpload({
     if (!file) return;
 
     if (!isAllowedPaymentSlipFile(file)) {
-      setMessage({ type: 'error', text: 'Please upload an image file (JPG, PNG, WebP, or GIF).' });
+      toast.error('Please upload an image file (JPG, PNG, WebP, or GIF).');
       event.target.value = '';
       return;
     }
 
     if (file.size > 8 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'Image must be 8 MB or smaller.' });
+      toast.error('Image must be 8 MB or smaller.');
       event.target.value = '';
       return;
     }
-
-    setMessage(null);
 
     startTransition(async () => {
       try {
@@ -59,7 +57,7 @@ export default function PaymentSlipUpload({
         });
 
         if (!presignResult.success) {
-          setMessage({ type: 'error', text: presignResult.error || 'Failed to initialize upload.' });
+          toast.error(presignResult.error || 'Failed to initialize upload.');
           return;
         }
 
@@ -89,21 +87,16 @@ export default function PaymentSlipUpload({
           if (submitResult.previewUrl) {
             setSlipPreviewUrl(submitResult.previewUrl);
           }
-          setMessage({
-            type: 'success',
-            text: 'Payment slip submitted. The vendor will review your transfer shortly.',
-          });
+          toast.success('Payment slip submitted. The vendor will review your transfer shortly.');
         } else {
-          setMessage({ type: 'error', text: submitResult.error || 'Failed to save payment slip.' });
+          toast.error(submitResult.error || 'Failed to save payment slip.');
         }
       } catch (error) {
-        setMessage({
-          type: 'error',
-          text:
-            error instanceof Error
-              ? error.message
-              : 'Upload failed. Try a smaller image or refresh the page.',
-        });
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : 'Upload failed. Try a smaller image or refresh the page.'
+        );
       } finally {
         event.target.value = '';
       }
@@ -160,17 +153,6 @@ export default function PaymentSlipUpload({
         <p className="text-[11px] font-mono text-zinc-500">Uploading and saving payment slip…</p>
       )}
 
-      {message && (
-        <p
-          className={`text-[11px] rounded-lg px-3 py-2 ${
-            message.type === 'success'
-              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
-              : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20'
-          }`}
-        >
-          {message.text}
-        </p>
-      )}
     </div>
   );
 }

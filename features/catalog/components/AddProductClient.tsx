@@ -8,6 +8,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import CategorySelector from '@/shared/ui/CategorySelector';
 import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
+import { toast } from 'sonner';
+import { Spinner } from '@/shared/ui/loading';
 
 interface Category {
   id: string;
@@ -62,16 +64,7 @@ export default function AddProductClient({
   const videoCameraInputRef = useRef<HTMLInputElement>(null);
 
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showTips, setShowTips] = useState(false);
-
-  // Auto-dismiss success/error toasts
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
 
   // File Upload Handler using Cloudinary utility
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,19 +77,18 @@ export default function AddProductClient({
       if (!file) continue;
 
       if (media.length + i >= maxMediaLimit) {
-        setMessage({ type: 'error', text: `Maximum media upload limit of ${maxMediaLimit} reached.` });
+        toast.error(`Maximum media upload limit of ${maxMediaLimit} reached.`);
         break;
       }
 
       // Enforce 10MB limit
       if (file.size > 10 * 1024 * 1024) {
-        setMessage({ type: 'error', text: `"${file.name}" exceeds 10MB limit.` });
+        toast.error(`"${file.name}" exceeds 10MB limit.`);
         continue;
       }
 
       setIsUploading(true);
       setUploadProgress(0);
-      setMessage(null);
 
       const fileType = file.type.startsWith('video/') ? ('video' as const) : ('image' as const);
 
@@ -108,13 +100,13 @@ export default function AddProductClient({
         if (result.success && result.publicUrl) {
           const newItem = { url: result.publicUrl, type: fileType };
           setMedia((prev) => [...prev, newItem]);
-          setMessage({ type: 'success', text: `${fileType === 'video' ? 'Video' : 'Image'} uploaded!` });
+          toast.success(`${fileType === 'video' ? 'Video' : 'Image'} uploaded!`);
         } else {
-          setMessage({ type: 'error', text: result.error || 'Upload failed' });
+          toast.error(result.error || 'Upload failed');
         }
       } catch (err) {
         logger.error('Error', err);
-        setMessage({ type: 'error', text: 'Upload error. Please try again.' });
+        toast.error('Upload error. Please try again.');
       } finally {
         setIsUploading(false);
         setUploadProgress(null);
@@ -132,16 +124,15 @@ export default function AddProductClient({
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
 
     if (!name.trim()) {
-      setMessage({ type: 'error', text: 'Item name is required.' });
+      toast.error('Item name is required.');
       return;
     }
 
     const priceNum = parseFloat(price);
     if (isNaN(priceNum) || priceNum <= 0) {
-      setMessage({ type: 'error', text: 'Please enter a valid positive price.' });
+      toast.error('Please enter a valid positive price.');
       return;
     }
 
@@ -149,7 +140,7 @@ export default function AddProductClient({
     if (type === 'product') {
       quantityNum = parseInt(quantity, 10);
       if (isNaN(quantityNum) || quantityNum < 0) {
-        setMessage({ type: 'error', text: 'Please enter a valid non-negative quantity.' });
+        toast.error('Please enter a valid non-negative quantity.');
         return;
       }
     }
@@ -171,7 +162,7 @@ export default function AddProductClient({
         });
 
         if (result.success) {
-          setMessage({ type: 'success', text: `✅ "${name}" added successfully!` });
+          toast.success(`"${name}" added successfully!`);
           router.refresh();
 
           // Reset Form Fields
@@ -184,38 +175,17 @@ export default function AddProductClient({
 
           // Scroll to top on mobile after success
           window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          toast.error((result as any).error || 'Failed to add item.');
         }
       } catch (err) {
-        setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to add item.' });
+        toast.error(err instanceof Error ? err.message : 'Failed to add item.');
       }
     });
   };
 
   return (
     <div className="relative pb-24 sm:pb-6">
-      {/* Floating Toast Notification */}
-      {message && (
-        <div
-          className={`fixed top-16 sm:top-20 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-sm z-[60] p-3.5 rounded-xl text-xs font-semibold border shadow-xl backdrop-blur-lg transition-all duration-300 ${
-            message.type === 'success'
-              ? 'bg-emerald-50/95 text-emerald-800 border-emerald-200 dark:bg-emerald-950/90 dark:text-emerald-400 dark:border-emerald-900/50'
-              : 'bg-rose-50/95 text-rose-800 border-rose-200 dark:bg-rose-950/90 dark:text-rose-400 dark:border-rose-900/50'
-          }`}
-          style={{ animation: 'mobileMenuSlideDown 0.25s ease-out' }}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span>{message.text}</span>
-            <button
-              onClick={() => setMessage(null)}
-              className="text-current opacity-60 hover:opacity-100 p-1 cursor-pointer"
-              aria-label="Dismiss"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-8">
         {/* Main Form */}
         <div className="lg:col-span-3">
@@ -518,7 +488,7 @@ export default function AddProductClient({
                 <div className="space-y-1.5 px-1">
                   <div className="flex justify-between text-[10px] font-mono text-zinc-400">
                     <span className="flex items-center gap-1.5">
-                      <span className="w-3 h-3 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
+                      <Spinner size="sm" className="text-purple-500" />
                       Uploading...
                     </span>
                     <span className="font-bold text-purple-600 dark:text-purple-400">{uploadProgress}%</span>
@@ -541,7 +511,7 @@ export default function AddProductClient({
             >
               {isPending ? (
                 <>
-                  <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  <Spinner size="sm" />
                   Saving...
                 </>
               ) : (
@@ -642,12 +612,12 @@ export default function AddProductClient({
         >
           {isPending ? (
             <>
-              <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              <Spinner size="sm" />
               Saving...
             </>
           ) : isUploading ? (
             <>
-              <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              <Spinner size="sm" />
               Uploading Media...
             </>
           ) : (

@@ -11,6 +11,8 @@ import {
   type VendorOrgReassignScopes,
 } from '@/features/vendor-org/integrity';
 import { reassignProductOrgAction, reassignVendorOrgAction } from '@/features/vendor-org/reassign.actions';
+import { toast } from 'sonner';
+import { useConfirm } from '@/shared/ui/notifications';
 
 interface OrganizationOption {
   id: string;
@@ -21,7 +23,6 @@ interface OrganizationOption {
 interface VendorOrgIssuesTabProps {
   integrityReport: VendorOrgIntegrityReport;
   organizations: OrganizationOption[];
-  triggerNotification: (success: boolean, message: string) => void;
 }
 
 type ReassignScopes = VendorOrgReassignScopes;
@@ -39,12 +40,10 @@ function getActionErrorMessage(error: unknown, fallback: string): string {
 function IssueGroupCard({
   group,
   organizations,
-  onNotify,
   onRefresh,
 }: {
   group: VendorOrgIssueGroup;
   organizations: OrganizationOption[];
-  onNotify: (success: boolean, message: string) => void;
   onRefresh: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -53,7 +52,7 @@ function IssueGroupCard({
   const [scopes, setScopes] = useState<ReassignScopes>(() => getDefaultReassignScopesForGroup(group));
   const [expanded, setExpanded] = useState(false);
   const [productTargets, setProductTargets] = useState<Record<string, string>>({});
-  const [showConfirm, setShowConfirm] = useState(false);
+  const { confirmAction } = useConfirm();
 
   const sortedOrganizations = useMemo(
     () => [...organizations].sort((a, b) => a.name.localeCompare(b.name)),
@@ -68,27 +67,31 @@ function IssueGroupCard({
   const targetOrgName =
     sortedOrganizations.find((org) => org.id === targetOrgId)?.name || 'the selected organization';
 
-  const handleBulkReassign = () => {
+  const handleBulkReassign = async () => {
     if (!targetOrgId) {
-      onNotify(false, 'Select a target organization.');
+      toast.error('Select a target organization.');
       return;
     }
 
     if (!Object.values(scopes).some(Boolean)) {
-      onNotify(false, 'Select at least one record type to reassign.');
+      toast.error('Select at least one record type to reassign.');
       return;
     }
 
     if (selectedRecordCount === 0) {
-      onNotify(false, 'No records match the selected record types for this orphan org.');
+      toast.error('No records match the selected record types for this orphan org.');
       return;
     }
 
-    setShowConfirm(true);
-  };
+    const confirmed = await confirmAction({
+      title: 'Confirm Bulk Reassignment',
+      message: `Move ${selectedRecordCount} record${selectedRecordCount === 1 ? '' : 's'} from orphan org ${group.orgId} to ${targetOrgName}?`,
+      confirmText: 'Yes, reassign now',
+      variant: 'warning',
+    });
 
-  const executeBulkReassign = () => {
-    setShowConfirm(false);
+    if (!confirmed) return;
+
     setIsBulkReassigning(true);
 
     startTransition(async () => {
@@ -99,15 +102,14 @@ function IssueGroupCard({
           scopes,
         });
         const { counts } = result;
-        onNotify(
-          true,
+        toast.success(
           `Reassigned ${formatReassignCounts(counts)} from ${group.orgId.slice(0, 8)}… to ${targetOrgName}.`
         );
         setTargetOrgId('');
         setScopes(getDefaultReassignScopesForGroup(group));
         onRefresh();
       } catch (error) {
-        onNotify(false, getActionErrorMessage(error, 'Reassignment failed.'));
+        toast.error(getActionErrorMessage(error, 'Reassignment failed.'));
       } finally {
         setIsBulkReassigning(false);
       }
@@ -117,17 +119,17 @@ function IssueGroupCard({
   const handleSingleProductReassign = (productId: string, productName: string) => {
     const toOrgId = productTargets[productId];
     if (!toOrgId) {
-      onNotify(false, `Select a target organization for ${productName}.`);
+      toast.error(`Select a target organization for ${productName}.`);
       return;
     }
 
     startTransition(async () => {
       try {
         await reassignProductOrgAction(productId, toOrgId);
-        onNotify(true, `Updated vendor org for "${productName}".`);
+        toast.success(`Updated vendor org for "${productName}".`);
         onRefresh();
       } catch (error) {
-        onNotify(false, getActionErrorMessage(error, 'Product reassignment failed.'));
+        toast.error(getActionErrorMessage(error, 'Product reassignment failed.'));
       }
     });
   };
@@ -235,37 +237,6 @@ function IssueGroupCard({
         </div>
       </div>
 
-      {showConfirm && (
-        <div className="rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/80 dark:bg-amber-950/20 p-4 space-y-3">
-          <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">
-            Confirm bulk reassignment
-          </p>
-          <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90">
-            Move {selectedRecordCount} record{selectedRecordCount === 1 ? '' : 's'} from orphan org{' '}
-            <span className="font-mono break-all">{group.orgId}</span> to{' '}
-            <span className="font-semibold">{targetOrgName}</span>?
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={isBusy}
-              onClick={executeBulkReassign}
-              className="px-4 py-2 text-[11px] font-bold rounded-lg bg-purple-700 text-white cursor-pointer disabled:opacity-60"
-            >
-              Yes, reassign now
-            </button>
-            <button
-              type="button"
-              disabled={isBusy}
-              onClick={() => setShowConfirm(false)}
-              className="px-4 py-2 text-[11px] font-semibold rounded-lg border border-zinc-300 dark:border-zinc-700 cursor-pointer disabled:opacity-60"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
       {expanded && (
         <div className="space-y-4 border-t border-zinc-100 dark:border-zinc-900 pt-4">
           {group.products.length > 0 && (
@@ -346,11 +317,10 @@ function IssueGroupCard({
 export default function VendorOrgIssuesTab({
   integrityReport,
   organizations,
-  triggerNotification,
 }: VendorOrgIssuesTabProps) {
   const router = useRouter();
 
-  const refreshReport = () => {
+  const refreshData = () => {
     router.refresh();
   };
 
@@ -408,8 +378,7 @@ export default function VendorOrgIssuesTab({
             key={group.orgId}
             group={group}
             organizations={organizations}
-            onNotify={triggerNotification}
-            onRefresh={refreshReport}
+            onRefresh={refreshData}
           />
         ))}
       </div>

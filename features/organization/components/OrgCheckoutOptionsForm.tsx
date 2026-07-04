@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { updateOrgCheckoutOptionsAction } from '@/features/organization/checkout-options.actions';
 import type { CheckoutOptionDefinition } from '@/features/organization/checkout-options.shared';
+import { toast } from 'sonner';
 
 interface OrgCheckoutOptionsFormProps {
   orgId: string;
@@ -30,7 +31,6 @@ export default function OrgCheckoutOptionsForm({
     return initial;
   });
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fulfillmentOptions = platformOptions.filter((o) => o.type === 'fulfillment');
   const paymentOptions = platformOptions.filter((o) => o.type === 'payment');
@@ -41,35 +41,25 @@ export default function OrgCheckoutOptionsForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
 
     const hasFulfillment = fulfillmentOptions.some((option) => options[option.id] === true);
     const hasPayment = paymentOptions.some((option) => options[option.id] === true);
     if (!hasFulfillment || !hasPayment) {
-      setMessage({
-        type: 'error',
-        text: 'Enable at least one fulfillment method and one payment method before saving.',
-      });
+      toast.error('Enable at least one fulfillment method and one payment method before saving.');
       return;
     }
 
     if (options.bank_transfer === true && !bankTransferConfigured) {
-      setMessage({
-        type: 'error',
-        text: 'Save bank name, account name, and account number in Public Page Setup before enabling bank transfer.',
-      });
+      toast.error('Save bank name, account name, and account number in Public Page Setup before enabling bank transfer.');
       return;
     }
 
     startTransition(async () => {
       try {
         await updateOrgCheckoutOptionsAction(orgId, options);
-        setMessage({ type: 'success', text: 'Checkout options updated successfully!' });
+        toast.success('Checkout options updated successfully!');
       } catch (err) {
-        setMessage({
-          type: 'error',
-          text: err instanceof Error ? err.message : 'Failed to update checkout options.',
-        });
+        toast.error(err instanceof Error ? err.message : 'Failed to update checkout options.');
       }
     });
   };
@@ -84,18 +74,6 @@ export default function OrgCheckoutOptionsForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {message && (
-        <div
-          className={`p-4 rounded-lg text-sm font-mono border ${
-            message.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50'
-              : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-955/20 dark:text-rose-400 dark:border-rose-900/50'
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
-
       <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
         Choose which fulfillment and payment methods customers can use when buying from your store.
         Only options enabled by the platform superadmin are listed here.

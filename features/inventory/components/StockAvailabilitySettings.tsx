@@ -6,15 +6,14 @@ import {
   createCustomStockAvailability,
   type StockAvailabilityDefinition,
 } from '@/features/inventory/availability.shared';
+import { toast } from 'sonner';
 
 interface StockAvailabilitySettingsProps {
   initialCatalog: StockAvailabilityDefinition[];
-  triggerNotification: (success: boolean, text: string) => void;
 }
 
 export default function StockAvailabilitySettings({
   initialCatalog,
-  triggerNotification,
 }: StockAvailabilitySettingsProps) {
   const [catalog, setCatalog] = useState<StockAvailabilityDefinition[]>(initialCatalog);
   const [newLabel, setNewLabel] = useState('');
@@ -40,7 +39,7 @@ export default function StockAvailabilitySettings({
   const handleAddCustom = () => {
     const label = newLabel.trim();
     if (!label) {
-      triggerNotification(false, 'Enter a label for the new stock availability option.');
+      toast.error('Enter a label for the new stock availability option.');
       return;
     }
 
@@ -48,7 +47,7 @@ export default function StockAvailabilitySettings({
     const custom = createCustomStockAvailability(label, existingIds, newAllowsPurchase);
     setCatalog((prev) => [...prev, custom]);
     setNewLabel('');
-    triggerNotification(true, `Added "${custom.label}". Save to apply platform-wide.`);
+    toast.success(`Added "${custom.label}". Save to apply platform-wide.`);
   };
 
   const handleRemoveCustom = (id: string) => {
@@ -59,9 +58,9 @@ export default function StockAvailabilitySettings({
     startTransition(async () => {
       try {
         await updateStockAvailabilityCatalogAction(catalog);
-        triggerNotification(true, 'Stock availability catalog saved.');
+        toast.success('Stock availability catalog saved.');
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Failed to save stock availability catalog.');
+        toast.error(err instanceof Error ? err.message : 'Failed to save stock availability catalog.');
       }
     });
   };
