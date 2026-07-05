@@ -372,7 +372,15 @@ export async function vendorInitInventoryAction(data: {
 export async function createBranchAction(data: { name: string; address?: string; phone?: string }) {
   return runWithCorrelationId(async () => {
     const { userId, orgId, premiumStatus } = await verifyVendorAccess();
-    if (!premiumStatus.multiBranchActive) {
+
+    const existingCountResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.branches)
+      .where(eq(schema.branches.orgId, orgId));
+    
+    const count = Number(existingCountResult[0].count);
+
+    if (count > 0 && !premiumStatus.multiBranchActive) {
       throw new Error('Multi-branch stock tracking is not unlocked on your account tier.');
     }
 

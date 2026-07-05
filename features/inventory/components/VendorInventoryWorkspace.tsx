@@ -585,7 +585,7 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
               { key: 'suppliers', label: 'Suppliers', icon: '🏭' },
               { key: 'orders', label: 'Simulated Orders', icon: '🛒' },
               { key: 'movements', label: 'Movement Logs', icon: '📋' },
-              ...(data.premiumStatus.multiBranchActive ? [{ key: 'branches', label: 'Branch Directory', icon: '🏬' }] : []),
+              { key: 'branches', label: 'Branch Directory', icon: '🏬' },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -888,7 +888,9 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
                     setBranchPhone('');
                     setIsBranchModalOpen(true);
                   }}
-                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer"
+                  disabled={!data.premiumStatus.multiBranchActive && data.branches.length >= 1}
+                  title={!data.premiumStatus.multiBranchActive && data.branches.length >= 1 ? "Upgrade to Tier 2 for Multi-Branch" : undefined}
+                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   + Add Branch
                 </button>
