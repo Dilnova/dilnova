@@ -13,20 +13,18 @@ export default async function VendorLayout({
     redirect('/sign-in');
   }
 
-  const [userRole, isSuperAdmin] = await Promise.all([
-    getCachedUserRole(userId),
-    getCachedIsSuperAdmin(userId),
-  ]);
-
-  if (userRole === 'customer') {
-    redirect('/unauthorized');
-  }
-
   const hasOrgAccess = orgId && (orgRole === 'org:member' || orgRole === 'org:admin');
-  const isGlobalVendor = userRole === 'vendor' || isSuperAdmin;
 
-  if (!hasOrgAccess && !isGlobalVendor) {
-    redirect('/unauthorized');
+  if (!hasOrgAccess) {
+    // Allow global vendors/superadmins to access /vendor without an org (e.g. to create one)
+    const [userRole, isSuperAdmin] = await Promise.all([
+      getCachedUserRole(userId),
+      getCachedIsSuperAdmin(userId),
+    ]);
+    const isGlobalVendor = userRole === 'vendor' || isSuperAdmin;
+    if (!isGlobalVendor) {
+      redirect('/unauthorized');
+    }
   }
 
   return <>{children}</>;

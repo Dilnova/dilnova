@@ -2,7 +2,7 @@ import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import Link from 'next/link';
 import Image from 'next/image';
 import { isVideoUrl } from '@/shared/media/media';
-import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
+import { getCachedOrganizations, getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-cache';
 import { getClerkUserEmail } from '@/features/customer/email';
 import {
   getCustomerOrders,
@@ -35,13 +35,15 @@ export default async function CustomerPage({ searchParams }: PageProps) {
 
   const userEmail = getClerkUserEmail(user) || 'No email';
 
-  // Fetch Clerk organizations, wishlist, and simulated orders in parallel (reduce latency)
+  // Fetch Clerk organizations, wishlist, roles, and simulated orders in parallel (reduce latency)
   const client = await clerkClient();
-  const [userWishlist, organizations, rawOrders, checkoutOptionsCatalog] = await Promise.all([
+  const [userWishlist, organizations, rawOrders, checkoutOptionsCatalog, userRole, isSuperAdmin] = await Promise.all([
     getUserWishlist(user.id),
     getCachedOrganizations(client).catch(() => []),
     getCustomerOrders(userId),
     getCheckoutOptionsCatalog(),
+    getCachedUserRole(userId || ''),
+    getCachedIsSuperAdmin(userId || ''),
   ]);
   const orders = await attachPaymentSlipPreviews(rawOrders);
 
@@ -513,6 +515,102 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                 Delivery addresses are captured during checkout for home delivery orders.
                 Update your name and email in your Clerk account settings.
               </p>
+            </div>
+          </div>
+
+          {/* Dynamic Permissions & Access Panel */}
+          <div className="border border-purple-200 bg-purple-50/30 rounded-2xl p-6 dark:border-purple-900/30 dark:bg-purple-950/10 mt-6">
+            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 mb-4 font-sans">
+              <span className="text-purple-600 dark:text-purple-400">🛡️</span> Your Access & Permissions
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {isSuperAdmin ? (
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm sm:col-span-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Super Administrator</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">You have unrestricted global access across the entire platform. All administrative actions are fully permitted.</p>
+                </div>
+              ) : orgRole === 'org:admin' ? (
+                <>
+                  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Full Catalog & Inventory</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Create, edit, and delete products, manage suppliers, and adjust branch inventory.</p>
+                  </div>
+                  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Admin Console</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Configure bank transfer details, checkout options, and manage staff roles.</p>
+                  </div>
+                  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">POS Register</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Full checkout permission across all active branch registers.</p>
+                  </div>
+                  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Vendor Status</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Your account holds a registered vendor status.</p>
+                  </div>
+                </>
+              ) : orgRole === 'org:member' ? (
+                <>
+                  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">POS Register</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Process checkouts and manage offline billing transactions at your assigned branch.</p>
+                  </div>
+                  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Catalog Management</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Add new products and services to the organization&apos;s storefront catalog.</p>
+                  </div>
+                  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-emerald-500 font-bold">✓</span>
+                      <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Storefront Profile</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Update the public description, contact details, and banner image of the store.</p>
+                  </div>
+                  <div className="bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-100 dark:border-zinc-800/50 p-4 rounded-xl opacity-80">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-red-400 font-bold">✕</span>
+                      <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">Admin Privileges</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-500">Deleting catalog items, managing staff roles, and configuring bank details are restricted to admins.</p>
+                  </div>
+                </>
+              ) : userRole === 'vendor' ? (
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm sm:col-span-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Vendor Account</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">You are a registered vendor. Switch to your organization to access your dashboard.</p>
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm sm:col-span-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-emerald-500 font-bold">✓</span>
+                    <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Standard Customer</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">You can browse catalogs, save items to your wishlist, and place orders. You do not have vendor permissions.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

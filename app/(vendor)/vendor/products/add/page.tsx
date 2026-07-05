@@ -13,6 +13,7 @@ import {
   getDefaultBranchName,
   getUserAssignedBranchNames,
 } from '@/features/catalog/queries';
+import { RestrictedAccessBlock } from '@/shared/components/RestrictedAccessBlock';
 
 export default async function AddProductPage() {
   // 1. Authenticate & Obtain Organization Context & Role
@@ -50,9 +51,7 @@ export default async function AddProductPage() {
 
   if (orgRole !== 'org:admin' && premiumStatus.multiBranchActive && branches.length > 0) {
     const assignedBranchIds = await getAssignedBranchIdsForUser(userId);
-    if (assignedBranchIds.size > 0) {
-      branches = branches.filter((branch) => assignedBranchIds.has(branch.id));
-    }
+    branches = branches.filter((branch) => assignedBranchIds.has(branch.id));
   }
 
   // 6. Fetch max media limit setting
@@ -60,6 +59,14 @@ export default async function AddProductPage() {
   const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
   const stockAvailabilityCatalog = await getStockAvailabilityCatalog();
   const stockAvailabilityOptions = getEnabledStockAvailabilityOptions(stockAvailabilityCatalog);
+
+  if (orgRole === 'org:member' && branches.length === 0) {
+    return (
+      <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
+        <RestrictedAccessBlock type="no_branch" />
+      </main>
+    );
+  }
 
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">

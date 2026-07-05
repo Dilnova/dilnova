@@ -10,6 +10,7 @@ import { runWithCorrelationId } from '@/shared/security/async-context'
 import HeaderNav from '@/shared/ui/HeaderNav'
 import HeaderAuthButtons from '@/shared/ui/HeaderAuthButtons'
 import SmartHeader from '@/components/layout/SmartHeader'
+import SmartFooter from '@/components/layout/SmartFooter'
 import './globals.css'
 
 import { CartProvider } from '@/features/cart/context/CartContext'
@@ -130,19 +131,11 @@ export default async function RootLayout({
       { href: '/contact', label: 'Support' },
     ];
 
-    if (orgId && (orgRole === 'org:admin' || orgRole === 'org:member')) {
+    if (orgId && orgRole === 'org:admin') {
       links.push({
         href: '/vendor',
         label: 'Dashboard',
         colorClass: 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-semibold',
-      });
-    }
-
-    if (orgId && orgRole === 'org:admin') {
-      links.push({
-        href: '/admin',
-        label: 'Admin',
-        colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold',
       });
     }
 
@@ -170,6 +163,14 @@ export default async function RootLayout({
       });
     }
 
+    if (orgId && orgRole === 'org:admin') {
+      links.push({
+        href: '/admin',
+        label: 'Admin',
+        colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold',
+      });
+    }
+
     if (isSuperAdmin) {
       links.push({
         href: '/superadmin',
@@ -184,7 +185,7 @@ export default async function RootLayout({
 
     return (
       <html lang="en">
-        <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-x-hidden">
+        <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
@@ -278,15 +279,17 @@ export default async function RootLayout({
                 </div>
               </SmartHeader>
               {children}
-              <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-950 mt-auto">
-                <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <p>&copy; {new Date().getFullYear()} {systemName}. All rights reserved.</p>
-                  <div className="flex items-center gap-6 font-medium">
-                    <Link href="/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Privacy Policy</Link>
-                    <Link href="/terms" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Terms of Service</Link>
+              <SmartFooter>
+                <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-950 mt-auto">
+                  <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p>&copy; {new Date().getFullYear()} {systemName}. All rights reserved.</p>
+                    <div className="flex items-center gap-6 font-medium">
+                      <Link href="/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Privacy Policy</Link>
+                      <Link href="/terms" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Terms of Service</Link>
+                    </div>
                   </div>
-                </div>
-              </footer>
+                </footer>
+              </SmartFooter>
               <LanguageSplash systemName={systemName} />
               <CartMergeBanner />
             </CartProvider>

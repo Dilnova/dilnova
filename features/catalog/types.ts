@@ -28,6 +28,7 @@ export interface CatalogQueryParams {
 
 export interface CatalogCategoryRef {
   id: string;
+  name: string;
   slug: string;
   parentId: string | null;
 }

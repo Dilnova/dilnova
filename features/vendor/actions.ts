@@ -55,8 +55,8 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
       }
     }
 
-    if (orgRole !== 'org:admin') {
-      throw new Error('Not authorized: Only organization admins can configure profile settings.');
+    if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
+      throw new Error('Not authorized: You do not have permission to configure profile settings.');
     }
 
     const client = await clerkClient();
@@ -64,14 +64,26 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
     const existingPublic = stripBankFieldsFromPublic((org.publicMetadata || {}) as Record<string, unknown>);
     const existingPrivate = (org.privateMetadata || {}) as Record<string, unknown>;
 
+    const publicProfileUpdates = buildPublicProfileMetadataFromVendorData(parsed.data.data);
+    
+    // Security check: Only admins can modify stock allocation mode
+    if (orgRole !== 'org:admin') {
+      publicProfileUpdates.stockAllocationMode = existingPublic.stockAllocationMode as any;
+    }
+
     const publicMetadata = {
       ...existingPublic,
-      ...buildPublicProfileMetadataFromVendorData(parsed.data.data),
+      ...publicProfileUpdates,
     };
-    const privateMetadata = {
-      ...existingPrivate,
-      ...buildBankPrivateMetadataFromVendorData(parsed.data.data),
-    };
+
+    // Security check: Only admins can modify bank transfer details
+    let privateMetadata = existingPrivate;
+    if (orgRole === 'org:admin') {
+      privateMetadata = {
+        ...existingPrivate,
+        ...buildBankPrivateMetadataFromVendorData(parsed.data.data),
+      };
+    }
 
     await client.organizations.updateOrganization(parsed.data.organizationId, {
       publicMetadata,

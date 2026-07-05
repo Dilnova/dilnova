@@ -338,15 +338,15 @@ export default async function Home() {
       </section>
 
       {/* 6. Pricing & Plans Section */}
-      <section className="py-20 md:py-28 w-full border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/10">
-        <div className="mb-16 md:text-center max-w-2xl mx-auto px-6">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 mb-4">
+      <section className="py-16 sm:py-20 md:py-28 w-full border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/10">
+        <div className="mb-12 sm:mb-16 text-center max-w-2xl mx-auto px-4 sm:px-6">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-widest bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 mb-3 sm:mb-4">
             Transparent Pricing
           </span>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-3 sm:mb-4 text-zinc-900 dark:text-zinc-50">
             Scale with {systemName}
           </h2>
-          <p className="text-base text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
             Choose the right tier to launch your storefront or build a complete enterprise marketplace.
           </p>
         </div>
