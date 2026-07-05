@@ -10,7 +10,7 @@ interface RestrictedAccessBlockProps {
 
 export function RestrictedAccessBlock({ type, errorMsg, className = '' }: RestrictedAccessBlockProps) {
   let emoji: string;
-  let title = 'Access Restricted';
+  let title: string;
   let message: string;
   let actionHref = '/contact';
   let actionText = 'Contact Administrator';
