@@ -12,7 +12,7 @@ export function RestrictedAccessBlock({ type, errorMsg, className = '' }: Restri
   let emoji: string;
   let title: string;
   let message: string;
-  let actionHref = '/contact';
+  const actionHref = '/contact';
   let actionText = 'Contact Administrator';
   let showAction = true;
 

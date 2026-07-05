@@ -577,7 +577,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                       <span className="text-emerald-500 font-bold">✓</span>
                       <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Catalog Management</span>
                     </div>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Add new products and services to the organization's storefront catalog.</p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Add new products and services to the organization&apos;s storefront catalog.</p>
                   </div>
                   <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
                     <div className="flex items-center gap-2 mb-1">
