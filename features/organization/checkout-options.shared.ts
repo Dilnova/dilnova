@@ -18,6 +18,8 @@ export interface CheckoutOptionDefinition {
   pendingPayment?: boolean;
   /** Payment only allowed with delivery fulfillment (not store pickup) */
   requiresDelivery?: boolean;
+  /** Payment only allowed with store pickup fulfillment (not home delivery) */
+  requiresPickup?: boolean;
 }
 
 export const BUILTIN_CHECKOUT_OPTIONS: CheckoutOptionDefinition[] = [
@@ -59,6 +61,16 @@ export const BUILTIN_CHECKOUT_OPTIONS: CheckoutOptionDefinition[] = [
     isBuiltIn: true,
     pendingPayment: true,
   },
+  {
+    id: 'pay_at_store',
+    label: 'Pay at Store',
+    description: 'Pay when picking up your order',
+    type: 'payment',
+    platformEnabled: true,
+    isBuiltIn: true,
+    pendingPayment: true,
+    requiresPickup: true,
+  },
 ];
 
 const BUILTIN_DEFAULTS: Record<string, boolean> = {
@@ -66,6 +78,7 @@ const BUILTIN_DEFAULTS: Record<string, boolean> = {
   store_pickup: true,
   cash_on_delivery: false,
   bank_transfer: true,
+  pay_at_store: true,
 };
 
 function isDeprecatedCheckoutOptionId(id: string): boolean {
@@ -111,6 +124,7 @@ export function parseCheckoutOptionsCatalog(raw: string | null | undefined): Che
         requiresBranch: option.requiresBranch === true,
         pendingPayment: option.pendingPayment === true,
         requiresDelivery: option.requiresDelivery === true,
+        requiresPickup: option.requiresPickup === true,
       });
     }
 
@@ -147,6 +161,7 @@ export function buildCheckoutOptionsCatalogPayload(
     requiresBranch: option.requiresBranch === true,
     pendingPayment: option.pendingPayment === true,
     requiresDelivery: option.requiresDelivery === true,
+    requiresPickup: option.requiresPickup === true,
   }));
 }
 
@@ -162,10 +177,11 @@ export function getCheckoutOptionLabel(
 }
 
 export function isPaymentCompatibleWithFulfillment(
-  payment: Pick<CheckoutOptionDefinition, 'requiresDelivery'>,
+  payment: Pick<CheckoutOptionDefinition, 'requiresDelivery' | 'requiresPickup'>,
   fulfillment: Pick<CheckoutOptionDefinition, 'requiresBranch'>
 ): boolean {
   if (payment.requiresDelivery && fulfillment.requiresBranch) return false;
+  if (payment.requiresPickup && !fulfillment.requiresBranch) return false;
   return true;
 }
 
@@ -215,5 +231,7 @@ export function createCustomCheckoutOption(
     isBuiltIn: false,
     zeroShipping: false,
     requiresBranch: false,
+    requiresDelivery: false,
+    requiresPickup: false,
   };
 }

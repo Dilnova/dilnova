@@ -7,7 +7,10 @@ import { updateOrgCheckoutOptionsSchema } from '@/features/organization/schema';
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
-import { DEPRECATED_CHECKOUT_OPTION_IDS } from '@/features/organization/checkout-options.shared';
+import { 
+  DEPRECATED_CHECKOUT_OPTION_IDS,
+  isPaymentCompatibleWithFulfillment 
+} from '@/features/organization/checkout-options.shared';
 import {
   BANK_TRANSFER_PAYMENT_ID,
   hasCompleteBankDetails,
@@ -47,14 +50,23 @@ export async function updateOrgCheckoutOptionsAction(
       sanitized[key] = enabled === true;
     }
 
-    const enabledFulfillment = catalog.some(
-      (option) => option.type === 'fulfillment' && option.platformEnabled && sanitized[option.id] === true
-    );
-    const enabledPayment = catalog.some(
-      (option) => option.type === 'payment' && option.platformEnabled && sanitized[option.id] === true
-    );
-    if (!enabledFulfillment || !enabledPayment) {
-      throw new Error('Enable at least one fulfillment method and one payment method.');
+    let hasValidCombination = false;
+    for (const fulfillmentOption of catalog) {
+      if (fulfillmentOption.type === 'fulfillment' && fulfillmentOption.platformEnabled && sanitized[fulfillmentOption.id] === true) {
+        for (const paymentOption of catalog) {
+          if (paymentOption.type === 'payment' && paymentOption.platformEnabled && sanitized[paymentOption.id] === true) {
+            if (isPaymentCompatibleWithFulfillment(paymentOption, fulfillmentOption)) {
+              hasValidCombination = true;
+              break;
+            }
+          }
+        }
+      }
+      if (hasValidCombination) break;
+    }
+
+    if (!hasValidCombination) {
+      throw new Error('No valid checkout combinations exist. Please ensure at least one payment method is compatible with your selected fulfillment methods.');
     }
 
     const client = await clerkClient();

@@ -31,7 +31,7 @@ export default function CheckoutOptionsSettings({
 
   const toggleOptionFlag = (
     id: string,
-    flag: 'zeroShipping' | 'requiresBranch' | 'pendingPayment' | 'requiresDelivery'
+    flag: 'zeroShipping' | 'requiresBranch' | 'pendingPayment' | 'requiresDelivery' | 'requiresPickup'
   ) => {
     setCatalog((prev) =>
       prev.map((option) =>
@@ -151,7 +151,7 @@ function OptionGroup({
   title: string;
   options: CheckoutOptionDefinition[];
   onToggle: (id: string) => void;
-  onToggleFlag: (id: string, flag: 'zeroShipping' | 'requiresBranch' | 'pendingPayment' | 'requiresDelivery') => void;
+  onToggleFlag: (id: string, flag: 'zeroShipping' | 'requiresBranch' | 'pendingPayment' | 'requiresDelivery' | 'requiresPickup') => void;
   onRemoveCustom: (id: string) => void;
 }) {
   if (options.length === 0) return null;
@@ -173,6 +173,7 @@ function OptionGroup({
               {option.type === 'fulfillment' && option.requiresBranch ? ' · requires branch' : ''}
               {option.type === 'payment' && option.pendingPayment ? ' · pending payment' : ''}
               {option.type === 'payment' && option.requiresDelivery ? ' · delivery only' : ''}
+              {option.type === 'payment' && option.requiresPickup ? ' · pickup only' : ''}
             </p>
             {!option.isBuiltIn && option.type === 'fulfillment' && (
               <div className="flex flex-wrap gap-2 mt-1.5">
@@ -199,6 +200,11 @@ function OptionGroup({
                   label="Delivery only"
                   enabled={option.requiresDelivery === true}
                   onToggle={() => onToggleFlag(option.id, 'requiresDelivery')}
+                />
+                <FlagToggle
+                  label="Pickup only"
+                  enabled={option.requiresPickup === true}
+                  onToggle={() => onToggleFlag(option.id, 'requiresPickup')}
                 />
               </div>
             )}
