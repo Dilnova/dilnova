@@ -1,6 +1,7 @@
 import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
 import { logger } from '@/shared/logging/logger';
 import { unstable_cache, revalidateTag } from 'next/cache';
+import { cache } from 'react';
 import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
 import {
   sanitizeVendorPublicMetadata,
@@ -170,7 +171,7 @@ export function invalidateClerkCache() {
  * Retrieves the user's public metadata role using Next.js unstable_cache
  * to bypass slow Clerk API lookups on every request.
  */
-export const getCachedUserRole = (userId: string) => unstable_cache(
+export const getCachedUserRole = cache((userId: string) => unstable_cache(
   async (): Promise<string | undefined> => {
     try {
       logger.info(`Fetching role for user ${userId} from Clerk API`);
@@ -187,9 +188,9 @@ export const getCachedUserRole = (userId: string) => unstable_cache(
     tags: ['clerk-user-role', `clerk-user-role-${userId}`],
     revalidate: 15, // Reduce TTL to 15 seconds for security
   }
-)();
+)());
 
-export const getCachedIsSuperAdmin = (userId: string) => unstable_cache(
+export const getCachedIsSuperAdmin = cache((userId: string) => unstable_cache(
   async (): Promise<boolean> => {
     try {
       const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
@@ -205,9 +206,9 @@ export const getCachedIsSuperAdmin = (userId: string) => unstable_cache(
     tags: ['clerk-user-superadmin', `clerk-user-superadmin-${userId}`],
     revalidate: 15, // Reduce TTL to 15 seconds for security
   }
-)();
+)());
 
-export const getCachedOrgMembers = (orgId: string) => unstable_cache(
+export const getCachedOrgMembers = cache((orgId: string) => unstable_cache(
   async (): Promise<{ userId: string; name: string; email: string }[]> => {
     try {
       logger.info('Fetching organization memberships from Clerk API', { orgId });
@@ -233,7 +234,7 @@ export const getCachedOrgMembers = (orgId: string) => unstable_cache(
     tags: ['clerk-org-members', `clerk-org-members-${orgId}`],
     revalidate: 60, // Cache for 1 minute
   }
-)();
+)());
 
 /**
  * Invalidates the Clerk cache for a specific user role/superadmin check.

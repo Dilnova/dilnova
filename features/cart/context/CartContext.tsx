@@ -59,6 +59,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const cartItemsRef = useRef<CartItem[]>([]);
   const activeAccountKeyRef = useRef<CartAccountKey | null>(null);
   const hydrateRequestRef = useRef(0);
+  const isHydratingRef = useRef(false);
 
   useEffect(() => {
     cartItemsRef.current = cartItems;
@@ -119,12 +120,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
 
       const nextLineCount = countCartLines(merged);
+      
+      isHydratingRef.current = true;
       setCartItems(merged);
       setCartMergeNotice(buildCartMergeNotice(previousLineCount, nextLineCount, removedCount));
       setServerSynced(true);
       setIsCartReady(true);
 
-      if (merged.length > 0) {
+      if (merged.length > 0 && (guestItemsForMerge.length > 0 || removedCount > 0 || (syncResult.success && syncResult.items.length > 0))) {
         await saveCustomerCartAction(merged);
       }
     })();
@@ -139,6 +142,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const persistServerCart = useCallback(
     (items: SyncedCartItem[]) => {
       if (accountKey === 'guest' || !serverSynced) return;
+
+      if (isHydratingRef.current) {
+        isHydratingRef.current = false;
+        return;
+      }
 
       if (saveTimerRef.current) {
         window.clearTimeout(saveTimerRef.current);
