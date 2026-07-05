@@ -9,7 +9,7 @@ interface RestrictedAccessBlockProps {
 }
 
 export function RestrictedAccessBlock({ type, errorMsg, className = '' }: RestrictedAccessBlockProps) {
-  let emoji = '⛔';
+  let emoji: string;
   let title = 'Access Restricted';
   let message = 'You do not have permission to view this content.';
   let actionHref = '/contact';
