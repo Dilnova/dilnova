@@ -11,6 +11,7 @@ interface OrgCheckoutOptionsFormProps {
   initialOptions: Record<string, boolean>;
   branchCount?: number;
   bankTransferConfigured?: boolean;
+  addressConfigured?: boolean;
 }
 
 export default function OrgCheckoutOptionsForm({
@@ -19,6 +20,7 @@ export default function OrgCheckoutOptionsForm({
   initialOptions,
   branchCount = 0,
   bankTransferConfigured = false,
+  addressConfigured = false,
 }: OrgCheckoutOptionsFormProps) {
   const platformOptions = catalog.filter((o) => o.platformEnabled);
   const [options, setOptions] = useState<Record<string, boolean>>(() => {
@@ -51,6 +53,11 @@ export default function OrgCheckoutOptionsForm({
 
     if (options.bank_transfer === true && !bankTransferConfigured) {
       toast.error('Save bank name, account name, and account number in Public Page Setup before enabling bank transfer.');
+      return;
+    }
+
+    if (options.store_pickup === true && branchCount === 0 && !addressConfigured) {
+      toast.error('Store pickup requires a physical location. Please set your address in the Public Page Setup, or create a branch.');
       return;
     }
 
@@ -91,11 +98,6 @@ export default function OrgCheckoutOptionsForm({
                 enabled={options[option.id] === true}
                 onToggle={() => toggleOption(option.id)}
               />
-              {option.requiresBranch && options[option.id] === true && branchCount === 0 && (
-                <p className="text-[11px] text-amber-600 dark:text-amber-400 px-1">
-                  Store pickup is enabled but this organization has no branches. Add branches under inventory settings or customers will not see this option.
-                </p>
-              )}
             </div>
           ))}
         </div>

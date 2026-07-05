@@ -676,12 +676,6 @@ export async function simulatedCheckoutAction(
     if (!paymentOption) {
       return { success: false, error: 'Selected payment method is not available for this cart.' };
     }
-    if (vendorOrgIds.length > 1 && paymentOption.pendingPayment === true) {
-      return {
-        success: false as const,
-        error: MULTI_VENDOR_ORDER_CHECKOUT_ERROR,
-      };
-    }
 
     if (isBankTransferPayment(payment)) {
       const bankDetailsByOrg = await getBankTransferDetailsForOrgs(vendorOrgIds);
@@ -700,9 +694,12 @@ export async function simulatedCheckoutAction(
     }
 
     if (!isPaymentCompatibleWithFulfillment(paymentOption, fulfillmentOption)) {
+      const reason = paymentOption.requiresDelivery 
+        ? 'delivery orders, not store pickup.'
+        : 'store pickup orders, not home delivery.';
       return {
         success: false,
-        error: `${paymentOption.label} is only available for delivery orders, not store pickup.`,
+        error: `${paymentOption.label} is only available for ${reason}`,
       };
     }
 
@@ -710,9 +707,18 @@ export async function simulatedCheckoutAction(
       if (!pickupBranch) {
         return { success: false, error: 'Please select a pickup branch to continue.' };
       }
-      const validBranch = branchRows.find(
+      let validBranch = branchRows.find(
         (branch) => branch.id === pickupBranch && vendorOrgIds.includes(branch.orgId)
       );
+      
+      // Virtual branch bypass for vendors with 0 explicit branches
+      if (!validBranch && pickupBranch === 'main_branch' && vendorOrgIds.length === 1) {
+        const orgBranchesLength = branchesByOrg.get(vendorOrgIds[0])?.length || 0;
+        if (orgBranchesLength === 0) {
+          validBranch = { id: 'main_branch', orgId: vendorOrgIds[0] } as any;
+        }
+      }
+
       if (!validBranch) {
         return { success: false, error: 'Selected pickup branch is invalid.' };
       }
@@ -754,7 +760,12 @@ export async function simulatedCheckoutAction(
       };
     }
 
-    const pickupBranchForStock = fulfillmentOption.requiresBranch ? pickupBranch : null;
+    // Free tier users do not get branchInventory rows (central_intake mode).
+    // Bypassing branch stock validation for single-branch (or virtual branch) vendors correctly routes stock 
+    // depletion strictly against central inventory while preserving pickup semantics.
+    const orgBranchesLength = branchesByOrg.get(vendorOrgIds[0])?.length || 0;
+    const isVirtualOrSingleBranchOrg = vendorOrgIds.length === 1 && orgBranchesLength <= 1;
+    const pickupBranchForStock = fulfillmentOption.requiresBranch && !isVirtualOrSingleBranchOrg ? pickupBranch : null;
 
     // Sort items by product ID to prevent deadlock during concurrent lock acquisition
     verifiedItems.sort((a, b) => a.id.localeCompare(b.id));
@@ -836,7 +847,7 @@ export async function simulatedCheckoutAction(
           status: orderStatus,
           fulfillmentMethod: fulfillment,
           paymentMethod: payment,
-          pickupBranchId: fulfillmentOption.requiresBranch ? pickupBranch : null,
+          pickupBranchId: fulfillmentOption.requiresBranch && pickupBranch !== 'main_branch' ? pickupBranch : null,
           shippingAddress: fulfillmentOption.requiresBranch ? null : normalizedShippingAddress,
           shippingPhone: fulfillmentOption.requiresBranch ? null : normalizedShippingPhone,
           stockDepleted: true,

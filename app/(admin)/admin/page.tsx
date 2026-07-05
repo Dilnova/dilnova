@@ -171,6 +171,7 @@ export default async function AdminPage() {
             initialOptions={metadata.checkout_options || {}}
             branchCount={branchCountRow}
             bankTransferConfigured={bankTransferConfigured}
+            addressConfigured={Boolean(metadata.address?.trim())}
           />
         </div>
 

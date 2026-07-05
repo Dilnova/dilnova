@@ -111,6 +111,10 @@ export default function CartPage() {
     setBankTransferInstructions(saved.bankTransferInstructions);
     setConfirmationEmailSent(saved.confirmationEmailSent);
     setCheckoutStatus('success');
+
+    // Automatically clear from local storage so it doesn't reappear 
+    // if the user navigates away, adds new items, and returns to the cart.
+    clearCheckoutSuccessSnapshot();
   }, []);
 
   useEffect(() => {
@@ -265,6 +269,13 @@ export default function CartPage() {
         setFulfillmentMethod(nextFulfillmentId);
         if (!nextFulfillment?.requiresBranch) {
           setPickupBranchId('');
+        } else {
+          const allBranches = result.pickupBranches.flatMap(pb => pb.branches);
+          if (allBranches.length === 1) {
+            setPickupBranchId(allBranches[0].id);
+          } else if (!allBranches.some(b => b.id === pickupBranchId)) {
+            setPickupBranchId('');
+          }
         }
 
         const compatiblePayments = result.payment.filter((payment) =>
@@ -362,6 +373,13 @@ export default function CartPage() {
     setFulfillmentMethod(optionId);
     if (!option?.requiresBranch) {
       setPickupBranchId('');
+    } else {
+      const allBranches = checkoutOptions.pickupBranches.flatMap((pb) => pb.branches);
+      if (allBranches.length === 1) {
+        setPickupBranchId(allBranches[0].id);
+      } else if (!allBranches.some((b) => b.id === pickupBranchId)) {
+        setPickupBranchId('');
+      }
     }
 
     const paymentsForFulfillment = checkoutOptions.payment.filter((payment) =>
@@ -376,6 +394,12 @@ export default function CartPage() {
       setPaymentMethod(paymentsForFulfillment[0]?.id || '');
     }
   };
+
+  useEffect(() => {
+    if (selectedFulfillment?.requiresBranch && pickupBranches.length === 1 && !pickupBranchId) {
+      setPickupBranchId(pickupBranches[0].id);
+    }
+  }, [selectedFulfillment, pickupBranches, pickupBranchId]);
 
   const handleGoBack = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -1113,7 +1137,9 @@ export default function CartPage() {
                                 onChange={(e) => setPickupBranchId(e.target.value)}
                                 className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50"
                               >
-                                <option value="">Select a branch</option>
+                                {pickupBranches.length !== 1 && (
+                                  <option value="">Select a branch</option>
+                                )}
                                 {pickupBranches.map((branch) => (
                                   <option key={branch.id} value={branch.id}>
                                     {branch.name}{branch.address ? ` — ${branch.address}` : ''}

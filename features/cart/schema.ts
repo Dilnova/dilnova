@@ -33,7 +33,7 @@ export const checkoutSchema = z.object({
   totalAmount: z.number().nonnegative(),
   fulfillmentMethod: z.string().min(1),
   paymentMethod: z.string().min(1),
-  pickupBranchId: z.string().uuid().nullable().optional(),
+  pickupBranchId: z.string().nullable().optional(),
   shippingAddress: z.string().max(500).trim().optional().nullable(),
   shippingPhone: z.string().max(50).trim().optional().nullable(),
   checkoutVendorOrgId: z.string().nullable().optional(),

@@ -36,23 +36,40 @@ const fetchOrgCheckoutOptions = unstable_cache(
     const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
     const org = await client.organizations.getOrganization({ organizationId: orgId });
     const meta = (org.publicMetadata || {}) as Record<string, unknown>;
-    const checkoutOptions = meta.checkout_options;
-    if (checkoutOptions && typeof checkoutOptions === 'object' && !Array.isArray(checkoutOptions)) {
-      return checkoutOptions as Record<string, boolean>;
+    
+    let options: Record<string, boolean> = {};
+    if (meta.checkout_options && typeof meta.checkout_options === 'object' && !Array.isArray(meta.checkout_options)) {
+      options = meta.checkout_options as Record<string, boolean>;
     }
-    return {};
+    
+    const vendorMeta = (meta.vendor_metadata || {}) as any;
+    
+    const address = meta.address || vendorMeta.address;
+    const phone = meta.phone || vendorMeta.phone;
+    
+    return {
+      options,
+      address: typeof address === 'string' ? address : null,
+      phone: typeof phone === 'string' ? phone : null,
+      name: org.name,
+    };
   },
-  ['org-checkout-options'],
+  ['org-checkout-options-v2'],
   { tags: ['org-checkout-options'], revalidate: 300 }
 );
 
-export async function getOrgCheckoutOptions(orgId: string): Promise<Record<string, boolean>> {
+export async function getOrgCheckoutData(orgId: string) {
   try {
     return await fetchOrgCheckoutOptions(orgId);
   } catch (error) {
-    logger.error('Failed to read org checkout options', error, { orgId });
-    return {};
+    logger.error('Failed to read org checkout data', error, { orgId });
+    return { options: {}, address: null, phone: null, name: 'Unknown' };
   }
+}
+
+export async function getOrgCheckoutOptions(orgId: string): Promise<Record<string, boolean>> {
+  const data = await getOrgCheckoutData(orgId);
+  return data.options;
 }
 
 export interface ResolvedCheckoutOptions {
@@ -75,7 +92,7 @@ export async function resolveCheckoutOptionsForOrgs(
   const orgOptionsList = await Promise.all(
     uniqueOrgIds.map(async (orgId) => ({
       orgId,
-      options: await getOrgCheckoutOptions(orgId),
+      data: await getOrgCheckoutData(orgId),
     }))
   );
 
@@ -86,15 +103,22 @@ export async function resolveCheckoutOptionsForOrgs(
     if (option.type !== 'fulfillment') return false;
     if (option.requiresBranch) {
       if (uniqueOrgIds.length > 1) return false;
-      const branches = singleVendorOrgId ? (branchesByOrg.get(singleVendorOrgId) || []) : [];
-      if (branches.length === 0) return false;
+      if (!singleVendorOrgId) return false;
+
+      const branches = branchesByOrg.get(singleVendorOrgId) || [];
+      const orgData = orgOptionsList.find((o) => o.orgId === singleVendorOrgId)?.data;
+      
+      // Strict validation: Require at least one branch OR a public page address
+      if (branches.length === 0 && (!orgData?.address || !orgData.address.trim())) {
+        return false;
+      }
     }
-    return orgOptionsList.every(({ options }) => isOrgOptionEnabled(option, options));
+    return orgOptionsList.every(({ data }) => isOrgOptionEnabled(option, data.options));
   });
 
   const payment = platformEnabled.filter((option) => {
     if (option.type !== 'payment') return false;
-    return orgOptionsList.every(({ options }) => isOrgOptionEnabled(option, options));
+    return orgOptionsList.every(({ data }) => isOrgOptionEnabled(option, data.options));
   });
 
   const pickupBranches: ResolvedCheckoutOptions['pickupBranches'] = [];
@@ -103,6 +127,21 @@ export async function resolveCheckoutOptionsForOrgs(
     const branches = branchesByOrg.get(singleVendorOrgId) || [];
     if (branches.length > 0) {
       pickupBranches.push({ orgId: singleVendorOrgId, branches });
+    } else {
+      const orgData = orgOptionsList.find((o) => o.orgId === singleVendorOrgId)?.data;
+      if (orgData?.address && orgData.address.trim()) {
+        pickupBranches.push({
+          orgId: singleVendorOrgId,
+          branches: [
+            {
+              id: 'main_branch',
+              name: 'Main Store',
+              address: orgData.address,
+              phone: orgData.phone || null,
+            }
+          ]
+        });
+      }
     }
   }
 
