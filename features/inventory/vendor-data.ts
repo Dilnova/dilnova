@@ -4,7 +4,7 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { getCachedOrgMembers, getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-cache';
+import { getCachedOrgMembers } from '@/shared/auth/clerk-cache';
 import { getPremiumStatus } from '@/features/inventory/premium-license';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { runWithCorrelationId } from '@/shared/security/async-context';
@@ -17,15 +17,6 @@ export async function verifyVendorAccess(options?: { allowMember?: boolean }) {
   const { userId, orgId, orgRole } = await auth();
   if (!userId || !orgId) {
     throw new Error('Not authorized: You must be signed in with an active organization.');
-  }
-
-  const [userRole, isSuperAdmin] = await Promise.all([
-    getCachedUserRole(userId),
-    getCachedIsSuperAdmin(userId),
-  ]);
-
-  if (userRole !== 'vendor' && !isSuperAdmin) {
-    throw new Error('Not authorized: You do not have vendor permissions.');
   }
 
   const allowMember = options?.allowMember === true;

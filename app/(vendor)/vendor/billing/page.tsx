@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import POSBillingClient from '@/features/billing/components/POSBillingClient';
 import { getVendorBillingRegisterData } from '@/features/billing/register.actions';
+import { RestrictedAccessBlock } from '@/shared/components/RestrictedAccessBlock';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { resolveEffectiveStockAvailability } from '@/features/inventory/availability.shared';
 
@@ -77,31 +78,14 @@ export default async function VendorBillingPage() {
 
       {billingData && billingData.premiumStatus.billingActive ? (
         <>
-
-          <POSBillingClient initialData={billingData} systemName={systemName} />
+          {orgRole === 'org:member' && billingData.branches.length === 0 ? (
+            <RestrictedAccessBlock type="no_branch" />
+          ) : (
+            <POSBillingClient initialData={billingData} systemName={systemName} />
+          )}
         </>
       ) : (
-        <div className="text-center py-16 border border-zinc-250 rounded-2xl dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 shadow-sm space-y-4 max-w-xl mx-auto mt-6">
-          <div className="text-5xl">👑</div>
-          <h2 className="text-lg font-black text-zinc-900 dark:text-white">Premium Billing Register Module</h2>
-          <p className="text-zinc-500 text-xs leading-relaxed">
-            Unlock POS cash registers, cashier duty assignments, real-time stock deductions, and printed thermal receipts.
-            Ask your platform superadmin to enable billing under <strong>/superadmin → Inventory → Licenses</strong>.
-          </p>
-          {errorMsg && (
-            <div className="bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 p-3 rounded-lg text-xs font-mono">
-              Access Status: {errorMsg}
-            </div>
-          )}
-          <div className="pt-2">
-            <Link
-              href="/contact"
-              className="px-6 py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer inline-block shadow-md"
-            >
-              Contact Admin to Activate Upgrade
-            </Link>
-          </div>
-        </div>
+        <RestrictedAccessBlock type="premium_billing" errorMsg={errorMsg || undefined} />
       )}
     </main>
   );

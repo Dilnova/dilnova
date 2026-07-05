@@ -130,19 +130,11 @@ export default async function RootLayout({
       { href: '/contact', label: 'Support' },
     ];
 
-    if (orgId && (orgRole === 'org:admin' || orgRole === 'org:member')) {
+    if (orgId && orgRole === 'org:admin') {
       links.push({
         href: '/vendor',
         label: 'Dashboard',
         colorClass: 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-semibold',
-      });
-    }
-
-    if (orgId && orgRole === 'org:admin') {
-      links.push({
-        href: '/admin',
-        label: 'Admin',
-        colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold',
       });
     }
 
@@ -170,6 +162,14 @@ export default async function RootLayout({
       });
     }
 
+    if (orgId && orgRole === 'org:admin') {
+      links.push({
+        href: '/admin',
+        label: 'Admin',
+        colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold',
+      });
+    }
+
     if (isSuperAdmin) {
       links.push({
         href: '/superadmin',
@@ -184,7 +184,7 @@ export default async function RootLayout({
 
     return (
       <html lang="en">
-        <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 overflow-x-hidden">
+        <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{

@@ -63,7 +63,6 @@
 }
 
 html {
-  overflow-x: hidden;
 }
 
 body {
@@ -71,7 +70,6 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   top: 0px !important;
-  overflow-x: hidden;
   width: 100%;
   position: relative;
 }

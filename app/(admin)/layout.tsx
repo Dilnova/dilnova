@@ -1,6 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-cache';
 
 export default async function AdminLayout({
   children,
@@ -13,14 +12,7 @@ export default async function AdminLayout({
     redirect('/sign-in');
   }
 
-  const [userRole, isSuperAdmin] = await Promise.all([
-    getCachedUserRole(userId),
-    getCachedIsSuperAdmin(userId),
-  ]);
-
-  const isAuthorizedVendor = userRole === 'vendor' || isSuperAdmin;
-
-  if (!isAuthorizedVendor || !orgId || orgRole !== 'org:admin') {
+  if (!orgId || orgRole !== 'org:admin') {
     redirect('/unauthorized');
   }
 

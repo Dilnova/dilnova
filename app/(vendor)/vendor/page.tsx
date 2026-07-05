@@ -3,7 +3,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import ManageProductsClient, { type Product } from '@/features/catalog/components/ManageProductsClient';
+import VendorProfileForm from '@/features/vendor/components/VendorProfileForm';
 import VendorInventoryWorkspace from '@/features/inventory/components/VendorInventoryWorkspace';
+import { RestrictedAccessBlock } from '@/shared/components/RestrictedAccessBlock';
 import { getVendorInventoryData } from '@/features/inventory/vendor.actions';
 import { getVendorProductsForOrg } from '@/features/catalog/queries';
 import { getBranchCountForOrg, getOnlineOrderCountForVendor } from '@/features/vendor/queries';
@@ -31,6 +33,14 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
   if (!orgId) {
     throw new Error('No active organization detected.');
+  }
+
+  if (orgRole !== 'org:admin') {
+    return (
+      <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
+        <RestrictedAccessBlock type="unauthorized" />
+      </main>
+    );
   }
 
   // Fetch current organization details from Clerk API
@@ -270,26 +280,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
               {inventoryData ? (
                 <VendorInventoryWorkspace initialData={inventoryData} initialAdvancedTab={initialImsTab} />
               ) : (
-                <div className="text-center py-16 border border-zinc-250 rounded-2xl dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 shadow-sm space-y-4 max-w-xl mx-auto mt-6">
-                  <div className="text-5xl emoji">👑</div>
-                  <h2 className="text-lg font-black text-zinc-900 dark:text-white">Premium Inventory Management System</h2>
-                  <p className="text-zinc-500 text-xs leading-relaxed">
-                    Unlock multi-branch stock levels, supplier management directories, real-time POS cash register checkouts, and historical stock audit log tracking. Ask your platform superadmin to enable IMS under <strong>/superadmin → Inventory → Licenses</strong>.
-                  </p>
-                  {inventoryErrorMsg && (
-                    <div className="bg-rose-50 text-rose-700 dark:bg-rose-955/20 dark:text-rose-455 p-3 rounded-lg text-xs font-mono">
-                      Access Status: {inventoryErrorMsg}
-                    </div>
-                  )}
-                  <div className="pt-2">
-                    <Link
-                      href="/contact"
-                      className="px-6 py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer inline-block shadow-md"
-                    >
-                      Contact Admin to Activate Upgrade
-                    </Link>
-                  </div>
-                </div>
+                <RestrictedAccessBlock type="premium_ims" errorMsg={inventoryErrorMsg || undefined} />
               )}
             </>
           )}
@@ -350,6 +341,8 @@ export default async function VendorPage({ searchParams }: PageProps) {
             </div>
           </div>
 
+
+
           {/* Member Banner Card */}
           <div className="border border-emerald-250 bg-emerald-50/50 rounded-2xl p-6 dark:border-emerald-900/40 dark:bg-emerald-950/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all hover:bg-emerald-50/80">
             <div className="space-y-1">
@@ -367,6 +360,30 @@ export default async function VendorPage({ searchParams }: PageProps) {
               + Add New Item &rarr;
             </Link>
           </div>
+
+          {/* Storefront Metadata Settings Form - Admin Only */}
+          {orgRole === 'org:admin' && (
+            <div className="space-y-6 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-5 bg-zinc-50/10 dark:bg-zinc-900/5">
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 font-sans">Storefront Profile</h3>
+                  {org.slug && (
+                    <Link
+                      href={`/vendors/${org.slug}`}
+                      target="_blank"
+                      className="text-xs text-purple-600 hover:text-purple-700 font-semibold"
+                    >
+                      View Storefront &rarr;
+                    </Link>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-mono">
+                  Configure your public store details. Bank settings and checkout options are managed by admins.
+                </p>
+              </div>
+              <VendorProfileForm orgId={orgId} initialMetadata={orgMetadata} isAdmin={false} />
+            </div>
+          )}
         </div>
       )}
     </main>
