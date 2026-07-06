@@ -5,6 +5,7 @@ import { useState, useTransition, useEffect, useRef } from 'react';
 import { submitContactFormAction } from '@/features/contact/actions';
 import { toast } from 'sonner';
 import { Spinner } from '@/shared/ui/loading';
+import { useUser } from '@clerk/nextjs';
 
 type CategoryType = 'collaboration' | 'registration' | 'info';
 
@@ -13,6 +14,7 @@ interface ContactClientPageProps {
 }
 
 export default function ContactClientPage({ systemName }: ContactClientPageProps) {
+  const { user, isSignedIn, isLoaded } = useUser();
   const [isPending, startTransition] = useTransition();
 
   const turnstileRef = useRef<HTMLDivElement>(null);
@@ -68,6 +70,16 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
     };
   }, []);
 
+  const getSampleMessage = (category: CategoryType) => {
+    if (category === 'collaboration') {
+      return `Hi ${systemName} team,\n\nWe are interested in exploring a strategic technology integration or partnership with ${systemName}. Please connect us with a representative to discuss potential collaboration.\n\nThanks!`;
+    }
+    if (category === 'registration') {
+      return `Hi ${systemName} team,\n\nI would like to register my store on ${systemName} to manage products, inventory, and orders. Please guide me on the next steps to set up our storefront catalog.\n\nBest regards!`;
+    }
+    return `Hi ${systemName} team,\n\nI have a few questions regarding platform capabilities, pricing options, and system features. Could you please provide more details?\n\nThank you!`;
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -76,6 +88,18 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
     message: '',
     middleName: '', // Honeypot field for anti-spam
   });
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn && user) {
+      const userEmail = user.primaryEmailAddress?.emailAddress || '';
+      const userName = user.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      setFormData((prev) => ({
+        ...prev,
+        email: prev.email || userEmail,
+        name: prev.name || userName,
+      }));
+    }
+  }, [isLoaded, isSignedIn, user]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -136,13 +160,19 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
   };
 
   const selectCategory = (category: CategoryType) => {
-    setFormData((prev) => ({
-      ...prev,
-      category,
-      subject: prev.subject === '' ? 
-        (category === 'collaboration' ? 'Partnership Proposal' : category === 'registration' ? 'New Vendor Registration Inquiry' : 'Information Request') 
-        : prev.subject
-    }));
+    setFormData((prev) => {
+      const isMessageDefault = !prev.message || prev.message.startsWith('Hi ');
+      const newSubject = prev.subject === '' || ['Partnership Proposal', 'New Vendor Registration Inquiry', 'Information Request'].includes(prev.subject)
+        ? (category === 'collaboration' ? 'Partnership Proposal' : category === 'registration' ? 'New Vendor Registration Inquiry' : 'Information Request')
+        : prev.subject;
+
+      return {
+        ...prev,
+        category,
+        subject: newSubject,
+        message: isMessageDefault ? getSampleMessage(category) : prev.message,
+      };
+    });
   };
 
   return (
@@ -330,9 +360,18 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
-                    Message Description
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="message" className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                      Message Description
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, message: getSampleMessage(prev.category) }))}
+                      className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline cursor-pointer focus:outline-none"
+                    >
+                      + Load Sample Template
+                    </button>
+                  </div>
                   <textarea
                     id="message"
                     name="message"

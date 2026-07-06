@@ -16,6 +16,7 @@ import BankTransferInstructions from '@/features/billing/components/BankTransfer
 import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
 import { formatOrderStatusLabel } from '@/features/orders/status';
 import { attachPaymentSlipPreview } from '@/features/orders/payment-slip-preview';
+import { PrintButton } from '@/shared/ui/PrintButton';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -97,12 +98,9 @@ export default async function InvoicePage({ params }: PageProps) {
         >
           &larr; Back to Portal
         </Link>
-        <a
-          href="javascript:window.print()"
-          className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer text-center"
-        >
+        <PrintButton className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer text-center">
           🖨️ Print Invoice
-        </a>
+        </PrintButton>
       </div>
 
       {/* Invoice Sheet */}

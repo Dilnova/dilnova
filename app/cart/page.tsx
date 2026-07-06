@@ -712,12 +712,12 @@ export default function CartPage() {
                 Add products or services from our multi-vendor catalog to get started.
               </p>
             </div>
-            <button
-              onClick={handleGoBack}
+            <Link
+              href="/products"
               className="inline-block text-[10px] bg-purple-700 hover:bg-purple-800 text-white font-bold font-mono uppercase tracking-wider px-5 py-3 rounded-xl transition-all shadow-md shadow-purple-900/10 cursor-pointer"
             >
               Browse Catalog
-            </button>
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
