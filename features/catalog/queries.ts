@@ -179,7 +179,9 @@ export async function getVendorProductsForOrg(orgId: string) {
       imageUrl: schema.products.imageUrl,
       media: schema.products.media,
       categoryId: schema.products.categoryId,
+      stockQuantity: schema.inventory.quantity,
     })
     .from(schema.products)
+    .leftJoin(schema.inventory, eq(schema.products.id, schema.inventory.productId))
     .where(eq(schema.products.orgId, orgId));
 }
