@@ -131,11 +131,21 @@ export default async function InvoicePage({ params }: PageProps) {
             {order.shippingPhone && (
               <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">{order.shippingPhone}</p>
             )}
+            {order.shippingPhone2 && (
+              <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">{order.shippingPhone2}</p>
+            )}
           </div>
-          {order.shippingAddress && (
+          {(order.shippingAddress || order.shippingCity) && (
             <div>
               <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Ship To:</h3>
-              <p className="text-zinc-800 dark:text-zinc-200 print:text-black whitespace-pre-line">{order.shippingAddress}</p>
+              <p className="text-zinc-800 dark:text-zinc-200 print:text-black whitespace-pre-line">
+                {[
+                  order.shippingAddress,
+                  order.shippingAddressLine2,
+                  order.shippingCity ? `${order.shippingCity}, ${order.shippingState || ''} ${order.shippingPostalCode || ''}`.trim() : null,
+                  order.shippingCountry
+                ].filter(Boolean).join('\n')}
+              </p>
             </div>
           )}
           <div className="sm:text-right">

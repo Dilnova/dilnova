@@ -441,14 +441,24 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                         </div>
                       </div>
 
-                      {(order.shippingAddress || order.shippingPhone) && (
+                      {(order.shippingAddress || order.shippingCity || order.shippingPhone) && (
                         <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3.5 space-y-1">
                           <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 font-mono">Delivery Details</h4>
-                          {order.shippingAddress && (
-                            <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-line">{order.shippingAddress}</p>
+                          {(order.shippingAddress || order.shippingCity) && (
+                            <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-line">
+                              {[
+                                order.shippingAddress,
+                                order.shippingAddressLine2,
+                                order.shippingCity ? `${order.shippingCity}, ${order.shippingState || ''} ${order.shippingPostalCode || ''}`.trim() : null,
+                                order.shippingCountry
+                              ].filter(Boolean).join('\n')}
+                            </p>
                           )}
                           {order.shippingPhone && (
                             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">{order.shippingPhone}</p>
+                          )}
+                          {order.shippingPhone2 && (
+                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">{order.shippingPhone2}</p>
                           )}
                         </div>
                       )}
