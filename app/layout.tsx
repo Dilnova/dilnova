@@ -26,7 +26,7 @@ import { getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-ca
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Toaster } from 'sonner'
 import { ConfirmProvider } from '@/shared/ui/notifications'
-
+import { GlobalNotificationListener } from '@/shared/ui/notifications/GlobalNotificationListener'
 
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting('system_favicon', '');
@@ -293,6 +293,7 @@ export default async function RootLayout({
               <LanguageSplash systemName={systemName} />
               <CartMergeBanner />
             </CartProvider>
+            <GlobalNotificationListener userId={userId} />
             <Toaster 
               position="top-right" 
               toastOptions={{ className: 'text-xs font-semibold', duration: 4000 }} 

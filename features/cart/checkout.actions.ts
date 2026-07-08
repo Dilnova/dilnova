@@ -943,6 +943,10 @@ export async function simulatedCheckoutAction(
       });
     }
 
+    // ── Vendor Notifications (Web-First / Email Fallback) ──
+    const { dispatchVendorOrderNotifications } = await import('@/features/orders/vendor-notification');
+    await dispatchVendorOrderNotifications(createdOrderId);
+
     return {
       success: true,
       orderId: createdOrderId,
