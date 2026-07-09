@@ -66,7 +66,7 @@ export function VendorOrderPaymentPanel({
       )}
 
       {awaitingSlip && (
-        <p className="text-[11px] text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
           Waiting for customer to upload a bank payment slip.
         </p>
       )}
@@ -130,7 +130,7 @@ export function CustomerPaymentSlipSection({ order }: CustomerPaymentSlipSection
   if (!canUploadPaymentSlip(order)) {
     if (order.status === 'payment_submitted') {
       return (
-        <p className="text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
+        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
           Your payment slip was submitted and is awaiting vendor verification.
         </p>
       );
