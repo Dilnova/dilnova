@@ -26,9 +26,10 @@ export async function updateCustomerDeliveryDetailsAction(input: UpdateDeliveryS
       return { success: false as const, error: 'Unauthorized.' };
     }
 
-    const rl = await rateLimit(`update-delivery-${userId}`, 5, 60);
-    if (!rl.success) {
-      return { success: false as const, error: 'Too many requests. Please try again later.' };
+    try {
+      await rateLimit(5, 60000);
+    } catch (error: any) {
+      return { success: false as const, error: error.message || 'Too many requests. Please try again later.' };
     }
 
     const parsed = updateDeliverySettingsSchema.safeParse(input);
