@@ -789,10 +789,10 @@ export async function simulatedCheckoutAction(
     const normalizedShippingPhone2 = shippingPhone2Input?.trim() || null;
 
     if (!fulfillmentOption.requiresBranch) {
-      if (!normalizedShippingAddress || normalizedShippingAddress.length < 5 || !normalizedShippingCity || !normalizedShippingState || !normalizedShippingPostalCode) {
+      if (!normalizedShippingAddress || normalizedShippingAddress.length < 5 || !normalizedShippingCity || !normalizedShippingState || !normalizedShippingPostalCode || !normalizedShippingCountry) {
         return {
           success: false,
-          error: 'Please enter a complete delivery address for home delivery orders (Street, City, State, and Postal Code are required).',
+          error: 'Please enter a complete delivery address for home delivery orders (Street, City, State, Postal Code, and Country are required).',
         };
       }
     } else if (normalizedShippingAddress || normalizedShippingPhone) {
