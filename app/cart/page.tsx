@@ -607,6 +607,33 @@ export default function CartPage() {
     bankTransferSelected &&
     !checkoutOptions.vendorBankTransferByOrg[selectedCheckoutVendorOrgId]?.configured;
 
+  const checkoutErrors: string[] = [];
+  if (isSignedIn && cartItems.length > 0) {
+    if (vendorCount > 1 && !selectedCheckoutVendorOrgId) {
+      checkoutErrors.push('Select a vendor to checkout.');
+    }
+    if (checkoutCartItems.length === 0 || selectedCheckoutProductIds.length === 0) {
+      checkoutErrors.push('Tick at least one product to checkout.');
+    }
+    if (!optionsLoading) {
+      if (!selectedFulfillment) {
+        checkoutErrors.push('Select a Delivery & Payment option (Fulfillment).');
+      } else if (selectedFulfillment.requiresBranch && !pickupBranchId) {
+        checkoutErrors.push('Select a store branch for pickup.');
+      }
+      if (requiresDeliveryAddress) {
+        if (!shippingAddress.trim() || shippingAddress.trim().length < 5 || !shippingCity.trim() || !shippingState.trim() || !shippingPostalCode.trim()) {
+          checkoutErrors.push('Provide complete delivery details (Street, City, State, and Postal Code are required).');
+        }
+      }
+      if (!selectedPayment) {
+        checkoutErrors.push('Select a Payment method.');
+      } else if (bankTransferMissingDetails) {
+        checkoutErrors.push('Bank account details are missing for this vendor.');
+      }
+    }
+  }
+
   if (checkoutStatus === 'success') {
     const isBankTransferOrder = Boolean(bankTransferInstructions);
 
@@ -1257,6 +1284,19 @@ export default function CartPage() {
                 )}
 
                 <div className="pt-2 space-y-3">
+                  {isSignedIn && checkoutErrors.length > 0 && !optionsLoading && (
+                    <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl p-4 space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                      <p className="text-[11px] font-bold text-red-700 dark:text-red-400 uppercase tracking-wider">
+                        Please complete to checkout:
+                      </p>
+                      <ul className="list-disc list-inside text-[11px] font-medium text-red-600 dark:text-red-400/80 space-y-1">
+                        {checkoutErrors.map((err, idx) => (
+                          <li key={idx}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {!isSignedIn ? (
                     <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? '/cart'}>
                       <button
@@ -1271,16 +1311,9 @@ export default function CartPage() {
                       onClick={handleCheckout}
                       disabled={
                         checkoutStatus === 'processing' ||
-                        cartItems.length === 0 ||
-                        checkoutCartItems.length === 0 ||
                         optionsLoading ||
-                        requiresVendorSelection ||
-                        selectedCheckoutProductIds.length === 0 ||
-                        !selectedFulfillment ||
-                        !selectedPayment ||
-                        bankTransferMissingDetails ||
-                        (vendorCount > 1 && !selectedCheckoutVendorOrgId) ||
-                        (requiresDeliveryAddress && (!shippingAddress.trim() || !shippingCity.trim() || !shippingState.trim() || !shippingPostalCode.trim()))
+                        cartItems.length === 0 ||
+                        checkoutErrors.length > 0
                       }
                       className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
