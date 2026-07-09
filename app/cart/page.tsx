@@ -37,6 +37,7 @@ import {
   toggleProductInSelection,
 } from '@/features/cart/vendor-checkout';
 import { Spinner } from '@/shared/ui/loading';
+import DeliveryAddressFormFields from '@/features/customer/components/DeliveryAddressFormFields';
 
 export default function CartPage() {
   const {
@@ -59,7 +60,21 @@ export default function CartPage() {
   const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success'>('idle');
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success'>('idle');
-  const [emailMessage, setEmailMessage] = useState('');
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    switch (name) {
+      case 'shippingAddress': setShippingAddress(value); break;
+      case 'shippingAddressLine2': setShippingAddressLine2(value); break;
+      case 'shippingCity': setShippingCity(value); break;
+      case 'shippingState': setShippingState(value); break;
+      case 'shippingPostalCode': setShippingPostalCode(value); break;
+      case 'shippingCountry': setShippingCountry(value); break;
+      case 'shippingPhone': setShippingPhone(value); break;
+      case 'shippingPhone2': setShippingPhone2(value); break;
+    }
+  };
+
   const [emailError, setEmailError] = useState<string | null>(null);
   const [confirmedOrderEmail, setConfirmedOrderEmail] = useState('');
   const [confirmedOrderId, setConfirmedOrderId] = useState('');
@@ -1187,87 +1202,17 @@ export default function CartPage() {
                         )}
 
                         {requiresDeliveryAddress && (
-                          <div className="space-y-4">
-                            <div>
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 font-mono mb-2">Delivery Address</p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="sm:col-span-2">
-                                  <input
-                                    type="text"
-                                    value={shippingAddress}
-                                    onChange={(e) => setShippingAddress(e.target.value)}
-                                    placeholder="Street Address*"
-                                    className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-                                  />
-                                </div>
-                                <div className="sm:col-span-2">
-                                  <input
-                                    type="text"
-                                    value={shippingAddressLine2}
-                                    onChange={(e) => setShippingAddressLine2(e.target.value)}
-                                    placeholder="Apartment, suite, etc. (optional)"
-                                    className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-                                  />
-                                </div>
-                                <div>
-                                  <input
-                                    type="text"
-                                    value={shippingCity}
-                                    onChange={(e) => setShippingCity(e.target.value)}
-                                    placeholder="City*"
-                                    className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-                                  />
-                                </div>
-                                <div>
-                                  <input
-                                    type="text"
-                                    value={shippingState}
-                                    onChange={(e) => setShippingState(e.target.value)}
-                                    placeholder="State / Province*"
-                                    className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-                                  />
-                                </div>
-                                <div>
-                                  <input
-                                    type="text"
-                                    value={shippingPostalCode}
-                                    onChange={(e) => setShippingPostalCode(e.target.value)}
-                                    placeholder="Postal Code*"
-                                    className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-                                  />
-                                </div>
-                                <div>
-                                  <input
-                                    type="text"
-                                    value={shippingCountry}
-                                    onChange={(e) => setShippingCountry(e.target.value)}
-                                    placeholder="Country"
-                                    className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="pt-2">
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 font-mono mb-2">Contact Numbers</p>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <input
-                                  type="tel"
-                                  value={shippingPhone}
-                                  onChange={(e) => setShippingPhone(e.target.value)}
-                                  placeholder="Primary Phone"
-                                  className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-                                />
-                                <input
-                                  type="tel"
-                                  value={shippingPhone2}
-                                  onChange={(e) => setShippingPhone2(e.target.value)}
-                                  placeholder="Secondary Phone (optional)"
-                                  className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-                                />
-                              </div>
-                            </div>
-                          </div>
+                          <DeliveryAddressFormFields
+                            shippingAddress={shippingAddress}
+                            shippingAddressLine2={shippingAddressLine2}
+                            shippingCity={shippingCity}
+                            shippingState={shippingState}
+                            shippingPostalCode={shippingPostalCode}
+                            shippingCountry={shippingCountry}
+                            shippingPhone={shippingPhone}
+                            shippingPhone2={shippingPhone2}
+                            onChange={handleAddressChange}
+                          />
                         )}
 
                         {compatiblePayments.length > 0 ? (
