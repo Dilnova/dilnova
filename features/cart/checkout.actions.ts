@@ -1,6 +1,6 @@
 'use server';
 
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { DEFAULT_APP_URL } from '@/shared/platform/brand';
@@ -53,6 +53,35 @@ import { hashPii } from '@/shared/security/encryption';
 import { z } from 'zod';
 
 const syncCartSchema = z.array(z.string().uuid()).max(50);
+
+export async function getCustomerDeliveryDetailsAction() {
+  try {
+    const { userId } = await auth();
+    if (!userId) return null;
+
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
+
+    if (user && user.privateMetadata) {
+      return {
+        shippingAddress: (user.privateMetadata.shippingAddress as string) || '',
+        shippingAddressLine2: (user.privateMetadata.shippingAddressLine2 as string) || '',
+        shippingCity: (user.privateMetadata.shippingCity as string) || '',
+        shippingState: (user.privateMetadata.shippingState as string) || '',
+        shippingPostalCode: (user.privateMetadata.shippingPostalCode as string) || '',
+        shippingCountry: (user.privateMetadata.shippingCountry as string) || '',
+        shippingPhone: (user.privateMetadata.shippingPhone as string) || '',
+        shippingPhone2: (user.privateMetadata.shippingPhone2 as string) || '',
+      };
+    }
+    return null;
+  } catch (error) {
+    logger.error('Failed to get customer delivery details from Clerk', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
 
 export async function sendCartSummaryEmailAction(
   emailAddress: string,
@@ -487,7 +516,13 @@ export async function simulatedCheckoutAction(
   pickupBranchId?: string | null,
   shippingAddress?: string | null,
   shippingPhone?: string | null,
-  checkoutVendorOrgId?: string | null
+  checkoutVendorOrgId?: string | null,
+  shippingAddressLine2?: string | null,
+  shippingCity?: string | null,
+  shippingState?: string | null,
+  shippingPostalCode?: string | null,
+  shippingCountry?: string | null,
+  shippingPhone2?: string | null
 ) {
   try {
     // ── Input Validation ──
@@ -500,7 +535,13 @@ export async function simulatedCheckoutAction(
       paymentMethod,
       pickupBranchId: pickupBranchId || null,
       shippingAddress: shippingAddress?.trim() || null,
+      shippingAddressLine2: shippingAddressLine2?.trim() || null,
+      shippingCity: shippingCity?.trim() || null,
+      shippingState: shippingState?.trim() || null,
+      shippingPostalCode: shippingPostalCode?.trim() || null,
+      shippingCountry: shippingCountry?.trim() || null,
       shippingPhone: shippingPhone?.trim() || null,
+      shippingPhone2: shippingPhone2?.trim() || null,
       checkoutVendorOrgId: checkoutVendorOrgId || null,
     });
     if (!parsed.success) {
@@ -516,7 +557,13 @@ export async function simulatedCheckoutAction(
       paymentMethod: payment,
       pickupBranchId: pickupBranch,
       shippingAddress: shippingAddressInput,
+      shippingAddressLine2: shippingAddressLine2Input,
+      shippingCity: shippingCityInput,
+      shippingState: shippingStateInput,
+      shippingPostalCode: shippingPostalCodeInput,
+      shippingCountry: shippingCountryInput,
       shippingPhone: shippingPhoneInput,
+      shippingPhone2: shippingPhone2Input,
       checkoutVendorOrgId: checkoutVendorOrgIdInput,
     } = parsed.data;
 
@@ -733,13 +780,19 @@ export async function simulatedCheckoutAction(
     }
 
     const normalizedShippingAddress = shippingAddressInput?.trim() || null;
+    const normalizedShippingAddressLine2 = shippingAddressLine2Input?.trim() || null;
+    const normalizedShippingCity = shippingCityInput?.trim() || null;
+    const normalizedShippingState = shippingStateInput?.trim() || null;
+    const normalizedShippingPostalCode = shippingPostalCodeInput?.trim() || null;
+    const normalizedShippingCountry = shippingCountryInput?.trim() || null;
     const normalizedShippingPhone = shippingPhoneInput?.trim() || null;
+    const normalizedShippingPhone2 = shippingPhone2Input?.trim() || null;
 
     if (!fulfillmentOption.requiresBranch) {
-      if (!normalizedShippingAddress || normalizedShippingAddress.length < 5) {
+      if (!normalizedShippingAddress || normalizedShippingAddress.length < 5 || !normalizedShippingCity || !normalizedShippingState || !normalizedShippingPostalCode) {
         return {
           success: false,
-          error: 'Please enter a complete delivery address for home delivery orders.',
+          error: 'Please enter a complete delivery address for home delivery orders (Street, City, State, and Postal Code are required).',
         };
       }
     } else if (normalizedShippingAddress || normalizedShippingPhone) {
@@ -849,7 +902,13 @@ export async function simulatedCheckoutAction(
           paymentMethod: payment,
           pickupBranchId: fulfillmentOption.requiresBranch && pickupBranch !== 'main_branch' ? pickupBranch : null,
           shippingAddress: fulfillmentOption.requiresBranch ? null : normalizedShippingAddress,
+          shippingAddressLine2: fulfillmentOption.requiresBranch ? null : normalizedShippingAddressLine2,
+          shippingCity: fulfillmentOption.requiresBranch ? null : normalizedShippingCity,
+          shippingState: fulfillmentOption.requiresBranch ? null : normalizedShippingState,
+          shippingPostalCode: fulfillmentOption.requiresBranch ? null : normalizedShippingPostalCode,
+          shippingCountry: fulfillmentOption.requiresBranch ? null : normalizedShippingCountry,
           shippingPhone: fulfillmentOption.requiresBranch ? null : normalizedShippingPhone,
+          shippingPhone2: fulfillmentOption.requiresBranch ? null : normalizedShippingPhone2,
           stockDepleted: true,
         })
         .returning();
@@ -891,6 +950,31 @@ export async function simulatedCheckoutAction(
           item.vendorOrgId,
           (vendorSubtotals.get(item.vendorOrgId) || 0) + item.price * item.quantity
         );
+      }
+
+      // Save the latest delivery details to Clerk privateMetadata for returning customers
+      try {
+        if (userId && fulfillmentOption.requiresBranch === false && normalizedShippingAddress) {
+          const client = await clerkClient();
+          await client.users.updateUserMetadata(userId, {
+            privateMetadata: {
+              shippingAddress: normalizedShippingAddress,
+              shippingAddressLine2: normalizedShippingAddressLine2,
+              shippingCity: normalizedShippingCity,
+              shippingState: normalizedShippingState,
+              shippingPostalCode: normalizedShippingPostalCode,
+              shippingCountry: normalizedShippingCountry,
+              shippingPhone: normalizedShippingPhone,
+              shippingPhone2: normalizedShippingPhone2,
+            },
+          });
+        }
+      } catch (metadataError) {
+        logger.error('Failed to update user private metadata during checkout', {
+          error: metadataError instanceof Error ? metadataError.message : String(metadataError),
+          userId,
+        });
+        // We do not fail the order if metadata fails
       }
 
       return {
@@ -942,6 +1026,10 @@ export async function simulatedCheckoutAction(
         error: emailResult.error,
       });
     }
+
+    // ── Vendor Notifications (Web-First / Email Fallback) ──
+    const { dispatchVendorOrderNotifications } = await import('@/features/orders/vendor-notification');
+    await dispatchVendorOrderNotifications(createdOrderId);
 
     return {
       success: true,

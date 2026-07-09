@@ -183,6 +183,12 @@ export async function submitContactFormAction(prevState: any, formData: FormData
     logger.error('Failed to send contact email', {
       error: error instanceof Error ? error.message : String(error),
     });
+
+    // Explicitly allow rate limit errors to surface to the UI
+    if (error instanceof Error && error.message.includes('Rate limit')) {
+      return { success: false, error: error.message };
+    }
+
     const errorMsg = process.env.NODE_ENV === 'production' 
       ? 'An unexpected error occurred. Please try again.'
       : error instanceof Error ? error.message : 'Unknown error';
