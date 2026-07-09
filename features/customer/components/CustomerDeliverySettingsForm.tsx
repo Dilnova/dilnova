@@ -3,8 +3,9 @@
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateCustomerDeliveryDetailsAction, type UpdateDeliverySettingsInput } from '../profile.actions';
-import { MapPin, CheckCircle, Loader2, Save, AlertCircle } from 'lucide-react';
+import { MapPin, Loader2, Save } from 'lucide-react';
 import DeliveryAddressFormFields from './DeliveryAddressFormFields';
+import { toast } from 'sonner';
 
 interface CustomerDeliverySettingsFormProps {
   initialData: {
@@ -22,8 +23,6 @@ interface CustomerDeliverySettingsFormProps {
 export default function CustomerDeliverySettingsForm({ initialData }: CustomerDeliverySettingsFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const [formData, setFormData] = useState<UpdateDeliverySettingsInput>({
     shippingAddress: initialData?.shippingAddress || '',
@@ -38,32 +37,20 @@ export default function CustomerDeliverySettingsForm({ initialData }: CustomerDe
 
   const isFormEmpty = !initialData?.shippingAddress && !initialData?.shippingPhone;
 
-  // Auto-hide success message after 3 seconds
-  useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => setSuccess(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [success]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setError(null);
-    setSuccess(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(false);
 
     startTransition(async () => {
       const result = await updateCustomerDeliveryDetailsAction(formData);
       if (result.success) {
-        setSuccess(true);
+        toast.success('Delivery preferences saved successfully!');
         router.refresh();
       } else {
-        setError(result.error);
+        toast.error(result.error);
       }
     });
   };
@@ -84,11 +71,6 @@ export default function CustomerDeliverySettingsForm({ initialData }: CustomerDe
                 : 'Manage the default address and contact numbers used for your home deliveries.'}
             </p>
           </div>
-          {success && (
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-bold uppercase tracking-widest animate-in fade-in slide-in-from-top-2">
-              <CheckCircle className="w-3 h-3" /> Saved
-            </div>
-          )}
         </div>
       </div>
 
@@ -107,14 +89,6 @@ export default function CustomerDeliverySettingsForm({ initialData }: CustomerDe
           onChange={handleChange}
         />
 
-        {/* Error State */}
-        {error && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-xs rounded-xl animate-in fade-in slide-in-from-top-1">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <p>{error}</p>
-          </div>
-        )}
-
         {/* Action Footer */}
         <div className="pt-2 flex justify-end">
           <button
@@ -124,12 +98,10 @@ export default function CustomerDeliverySettingsForm({ initialData }: CustomerDe
           >
             {isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
-            ) : success ? (
-              <CheckCircle className="w-4 h-4 text-emerald-500" />
             ) : (
               <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />
             )}
-            {isPending ? 'Saving...' : success ? 'Saved!' : 'Save Preferences'}
+            {isPending ? 'Saving...' : 'Save Preferences'}
           </button>
         </div>
       </form>
