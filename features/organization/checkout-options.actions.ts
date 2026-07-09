@@ -50,23 +50,25 @@ export async function updateOrgCheckoutOptionsAction(
       sanitized[key] = enabled === true;
     }
 
-    let hasValidCombination = false;
-    for (const fulfillmentOption of catalog) {
-      if (fulfillmentOption.type === 'fulfillment' && fulfillmentOption.platformEnabled && sanitized[fulfillmentOption.id] === true) {
-        for (const paymentOption of catalog) {
-          if (paymentOption.type === 'payment' && paymentOption.platformEnabled && sanitized[paymentOption.id] === true) {
-            if (isPaymentCompatibleWithFulfillment(paymentOption, fulfillmentOption)) {
-              hasValidCombination = true;
-              break;
-            }
-          }
-        }
-      }
-      if (hasValidCombination) break;
+    const selectedFulfillments = catalog.filter((o) => o.type === 'fulfillment' && o.platformEnabled && sanitized[o.id] === true);
+    const selectedPayments = catalog.filter((o) => o.type === 'payment' && o.platformEnabled && sanitized[o.id] === true);
+
+    if (selectedFulfillments.length === 0 || selectedPayments.length === 0) {
+      throw new Error('You must select at least one fulfillment method and one payment method.');
     }
 
-    if (!hasValidCombination) {
-      throw new Error('No valid checkout combinations exist. Please ensure at least one payment method is compatible with your selected fulfillment methods.');
+    for (const f of selectedFulfillments) {
+      const hasCompatiblePayment = selectedPayments.some((p) => isPaymentCompatibleWithFulfillment(p, f));
+      if (!hasCompatiblePayment) {
+        throw new Error(`Fulfillment method "${f.label}" has no compatible payment methods selected.`);
+      }
+    }
+
+    for (const p of selectedPayments) {
+      const hasCompatibleFulfillment = selectedFulfillments.some((f) => isPaymentCompatibleWithFulfillment(p, f));
+      if (!hasCompatibleFulfillment) {
+        throw new Error(`Payment method "${p.label}" has no compatible fulfillment methods selected.`);
+      }
     }
 
     const client = await clerkClient();

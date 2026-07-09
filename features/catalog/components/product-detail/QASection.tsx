@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { submitQuestionAction, submitAnswerAction } from '@/features/catalog/product-detail.actions';
 import Image from 'next/image';
 import SignInPrompt from '@/shared/ui/SignInPrompt';
+import { toast } from 'sonner';
 
 interface Question {
   id: string;
@@ -41,58 +42,48 @@ export default function QASection({
   const [replyContent, setReplyContent] = useState('');
   const [isPending, startTransition] = useTransition();
   const [isReplyPending, startReplyTransition] = useTransition();
-  
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-  const [replyErrorMsg, setReplyErrorMsg] = useState<Record<string, string>>({});
 
   const isVendorOwner = productOrgId && userOrgId === productOrgId;
 
   // Handle Question Submission
   const handleAskQuestion = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
 
     if (!questionContent.trim()) {
-      setErrorMsg('Question content cannot be empty.');
+      toast.error('Question content cannot be empty.');
       return;
     }
 
     startTransition(async () => {
       try {
         await submitQuestionAction(productId, questionContent);
-        setSuccessMsg('Your question has been posted.');
+        toast.success('Your question has been posted.');
         setQuestionContent('');
         router.refresh();
       } catch (err) {
         logger.error('Error posting question:', err);
-        setErrorMsg(err instanceof Error ? err.message : 'Failed to post question.');
+        toast.error(err instanceof Error ? err.message : 'Failed to post question.');
       }
     });
   };
 
   // Handle Answer Submission
   const handleAnswerQuestion = (questionId: string) => {
-    setReplyErrorMsg((prev) => ({ ...prev, [questionId]: '' }));
-
     if (!replyContent.trim()) {
-      setReplyErrorMsg((prev) => ({ ...prev, [questionId]: 'Answer content cannot be empty.' }));
+      toast.error('Answer content cannot be empty.');
       return;
     }
 
     startReplyTransition(async () => {
       try {
         await submitAnswerAction(questionId, replyContent);
+        toast.success('Answer posted successfully.');
         setReplyContent('');
         setActiveReplyId(null);
         router.refresh();
       } catch (err) {
         logger.error('Error replying to question:', err);
-        setReplyErrorMsg((prev) => ({
-          ...prev,
-          [questionId]: err instanceof Error ? err.message : 'Failed to save answer.',
-        }));
+        toast.error(err instanceof Error ? err.message : 'Failed to save answer.');
       }
     });
   };
@@ -195,9 +186,6 @@ export default function QASection({
                           placeholder="Type your response to the customer..."
                           className="w-full text-xs rounded-xl border border-zinc-200 p-3 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 dark:border-zinc-800 dark:bg-zinc-900/50 transition-all"
                         />
-                        {replyErrorMsg[q.id] && (
-                          <p className="text-xs text-red-500 font-mono">⚠️ {replyErrorMsg[q.id]}</p>
-                        )}
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleAnswerQuestion(q.id)}
@@ -258,18 +246,6 @@ export default function QASection({
                 maxLength={500}
               />
             </div>
-
-            {errorMsg && (
-              <p className="text-xs text-red-500 font-mono bg-red-50 dark:bg-red-950/20 p-2.5 rounded-lg border border-red-200/50 dark:border-red-900/50">
-                ⚠️ {errorMsg}
-              </p>
-            )}
-
-            {successMsg && (
-              <p className="text-xs text-emerald-500 font-mono bg-emerald-50 dark:bg-emerald-950/20 p-2.5 rounded-lg border border-emerald-200/50 dark:border-emerald-900/50">
-                ✅ {successMsg}
-              </p>
-            )}
 
             <button
               type="submit"

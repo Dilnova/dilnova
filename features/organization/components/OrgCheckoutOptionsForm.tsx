@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { updateOrgCheckoutOptionsAction } from '@/features/organization/checkout-options.actions';
-import type { CheckoutOptionDefinition } from '@/features/organization/checkout-options.shared';
+import { type CheckoutOptionDefinition, isPaymentCompatibleWithFulfillment } from '@/features/organization/checkout-options.shared';
 import { toast } from 'sonner';
 
 interface OrgCheckoutOptionsFormProps {
@@ -44,11 +44,28 @@ export default function OrgCheckoutOptionsForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const hasFulfillment = fulfillmentOptions.some((option) => options[option.id] === true);
-    const hasPayment = paymentOptions.some((option) => options[option.id] === true);
-    if (!hasFulfillment || !hasPayment) {
+    const selectedFulfillments = fulfillmentOptions.filter((option) => options[option.id] === true);
+    const selectedPayments = paymentOptions.filter((option) => options[option.id] === true);
+
+    if (selectedFulfillments.length === 0 || selectedPayments.length === 0) {
       toast.error('Enable at least one fulfillment method and one payment method before saving.');
       return;
+    }
+
+    for (const f of selectedFulfillments) {
+      const hasCompatiblePayment = selectedPayments.some((p) => isPaymentCompatibleWithFulfillment(p, f));
+      if (!hasCompatiblePayment) {
+        toast.error(`Fulfillment method "${f.label}" has no compatible payment methods selected.`);
+        return;
+      }
+    }
+
+    for (const p of selectedPayments) {
+      const hasCompatibleFulfillment = selectedFulfillments.some((f) => isPaymentCompatibleWithFulfillment(p, f));
+      if (!hasCompatibleFulfillment) {
+        toast.error(`Payment method "${p.label}" has no compatible fulfillment methods selected.`);
+        return;
+      }
     }
 
     if (options.bank_transfer === true && !bankTransferConfigured) {

@@ -35,7 +35,13 @@ async function main() {
       WHERE (customer_name IS NOT NULL AND customer_name NOT LIKE 'v2:%')
          OR (customer_email IS NOT NULL AND customer_email NOT LIKE 'v2:%')
          OR (shipping_address IS NOT NULL AND shipping_address NOT LIKE 'v2:%')
+         OR (shipping_address_line2 IS NOT NULL AND shipping_address_line2 NOT LIKE 'v2:%')
+         OR (shipping_city IS NOT NULL AND shipping_city NOT LIKE 'v2:%')
+         OR (shipping_state IS NOT NULL AND shipping_state NOT LIKE 'v2:%')
+         OR (shipping_postal_code IS NOT NULL AND shipping_postal_code NOT LIKE 'v2:%')
+         OR (shipping_country IS NOT NULL AND shipping_country NOT LIKE 'v2:%')
          OR (shipping_phone IS NOT NULL AND shipping_phone NOT LIKE 'v2:%')
+         OR (shipping_phone2 IS NOT NULL AND shipping_phone2 NOT LIKE 'v2:%')
     `);
 
     console.log(`Found ${staleOrders.length} order(s) requiring re-encryption.`);
@@ -46,12 +52,24 @@ async function main() {
       const rawName = row.customer_name as string | null;
       const rawEmail = row.customer_email as string | null;
       const rawAddress = row.shipping_address as string | null;
+      const rawAddressLine2 = row.shipping_address_line2 as string | null;
+      const rawCity = row.shipping_city as string | null;
+      const rawState = row.shipping_state as string | null;
+      const rawPostalCode = row.shipping_postal_code as string | null;
+      const rawCountry = row.shipping_country as string | null;
       const rawPhone = row.shipping_phone as string | null;
+      const rawPhone2 = row.shipping_phone2 as string | null;
 
       const decryptedName = rawName ? decryptString(rawName) : null;
       const decryptedEmail = rawEmail ? decryptString(rawEmail) : null;
       const decryptedAddress = rawAddress ? decryptString(rawAddress) : null;
+      const decryptedAddressLine2 = rawAddressLine2 ? decryptString(rawAddressLine2) : null;
+      const decryptedCity = rawCity ? decryptString(rawCity) : null;
+      const decryptedState = rawState ? decryptString(rawState) : null;
+      const decryptedPostalCode = rawPostalCode ? decryptString(rawPostalCode) : null;
+      const decryptedCountry = rawCountry ? decryptString(rawCountry) : null;
       const decryptedPhone = rawPhone ? decryptString(rawPhone) : null;
+      const decryptedPhone2 = rawPhone2 ? decryptString(rawPhone2) : null;
 
       // Drizzle update will automatically invoke customType's toDriver() (which runs encryptString and uses v2 prefix)
       await db.update(simulatedOrders)
@@ -59,7 +77,13 @@ async function main() {
           customerName: decryptedName ?? undefined,
           customerEmail: decryptedEmail ?? undefined,
           shippingAddress: decryptedAddress,
+          shippingAddressLine2: decryptedAddressLine2,
+          shippingCity: decryptedCity,
+          shippingState: decryptedState,
+          shippingPostalCode: decryptedPostalCode,
+          shippingCountry: decryptedCountry,
           shippingPhone: decryptedPhone,
+          shippingPhone2: decryptedPhone2,
         })
         .where(eq(simulatedOrders.id, id));
 

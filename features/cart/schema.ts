@@ -35,7 +35,13 @@ export const checkoutSchema = z.object({
   paymentMethod: z.string().min(1),
   pickupBranchId: z.string().nullable().optional(),
   shippingAddress: z.string().max(500).trim().optional().nullable(),
+  shippingAddressLine2: z.string().max(500).trim().optional().nullable(),
+  shippingCity: z.string().max(200).trim().optional().nullable(),
+  shippingState: z.string().max(200).trim().optional().nullable(),
+  shippingPostalCode: z.string().max(50).trim().optional().nullable(),
+  shippingCountry: z.string().max(200).trim().optional().nullable(),
   shippingPhone: z.string().max(50).trim().optional().nullable(),
+  shippingPhone2: z.string().max(50).trim().optional().nullable(),
   checkoutVendorOrgId: z.string().nullable().optional(),
 });
 

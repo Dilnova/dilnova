@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { deleteProductAction } from '@/features/catalog/vendor.actions';
+import { deleteProductAction, quickUpdateProductStockAction } from '@/features/catalog/vendor.actions';
 import Image from 'next/image';
 import Link from 'next/link';
 import { isVideoUrl } from '@/shared/media/media';
@@ -18,6 +18,7 @@ export interface Product {
   imageUrl: string | null;
   media?: { url: string; type: 'image' | 'video' }[] | null;
   categoryId: string | null;
+  stockQuantity?: number | null;
 }
 
 interface ManageProductsClientProps {
@@ -35,6 +36,9 @@ export default function ManageProductsClient({
   const [filter, setFilter] = useState<'all' | 'product' | 'service'>('all');
   const [search, setSearch] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingStockId, setEditingStockId] = useState<string | null>(null);
+  const [editStockValue, setEditStockValue] = useState<string>('');
+  const [isUpdatingStock, setIsUpdatingStock] = useState(false);
 
   // Keep local list in sync when server data refreshes (e.g. after add on another page)
   useEffect(() => {
@@ -66,6 +70,35 @@ export default function ManageProductsClient({
         loading: `Deleting "${itemName}"...`,
         success: `Deleted "${itemName}".`,
         error: (err) => err instanceof Error ? err.message : 'Failed to delete item.'
+      }
+    );
+  };
+
+  const handleUpdateStock = async (id: string, itemName: string) => {
+    const qty = parseInt(editStockValue, 10);
+    if (isNaN(qty) || qty < 0) {
+      toast.error('Please enter a valid positive quantity.');
+      return;
+    }
+
+    setIsUpdatingStock(true);
+    toast.promise(
+      quickUpdateProductStockAction(id, qty).then((result) => {
+        if (!result.success) throw new Error('Failed to update stock.');
+        setProducts((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, stockQuantity: qty } : p))
+        );
+        setEditingStockId(null);
+        setEditStockValue('');
+        router.refresh();
+        return result;
+      }).finally(() => {
+        setIsUpdatingStock(false);
+      }),
+      {
+        loading: `Updating stock for "${itemName}"...`,
+        success: `Updated stock for "${itemName}".`,
+        error: (err) => err instanceof Error ? err.message : 'Failed to update stock.'
       }
     );
   };
@@ -255,36 +288,83 @@ export default function ManageProductsClient({
                 </div>
 
                 <div className="flex items-center justify-between mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-zinc-100 dark:border-zinc-800/80 gap-2">
-                  <span className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 font-mono">
-                    ${(item.price / 100).toFixed(2)}
-                  </span>
-
-                  <div className="flex items-center gap-1.5">
-                    <Link
-                      href={`/products/${item.id}`}
-                      className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-300 rounded-lg text-[11px] font-semibold transition-all"
-                    >
-                      View
-                    </Link>
-                    {orgSlug && (
-                      <Link
-                        href={`/vendors/${orgSlug}`}
-                        className="hidden sm:inline-flex px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:hover:bg-purple-900/40 dark:text-purple-300 rounded-lg text-[11px] font-semibold transition-all"
-                      >
-                        Store
-                      </Link>
+                  <div className="flex flex-col">
+                    <span className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 font-mono">
+                      ${(item.price / 100).toFixed(2)}
+                    </span>
+                    {item.type === 'product' && item.stockQuantity !== undefined && item.stockQuantity !== null && (
+                      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono mt-0.5 font-medium flex items-center gap-1">
+                        📦 {item.stockQuantity} in stock
+                      </span>
                     )}
-                    <button
-                      onClick={() => handleDeleteItem(item.id, item.name)}
-                      disabled={deletingId === item.id}
-                      className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-1.5 text-[10px] sm:text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 rounded-lg sm:rounded-xl transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      Delete
-                    </button>
                   </div>
+
+                  {editingStockId === item.id ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="0"
+                        value={editStockValue}
+                        onChange={(e) => setEditStockValue(e.target.value)}
+                        className="w-16 px-2 py-1 text-xs border border-zinc-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-purple-500 text-center"
+                        disabled={isUpdatingStock}
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => handleUpdateStock(item.id, item.name)}
+                        disabled={isUpdatingStock}
+                        className="px-2 py-1.5 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded transition-colors disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingStockId(null)}
+                        disabled={isUpdatingStock}
+                        className="px-2 py-1.5 text-[10px] font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      {item.type === 'product' && (
+                        <button
+                          onClick={() => {
+                            setEditingStockId(item.id);
+                            setEditStockValue(item.stockQuantity?.toString() || '0');
+                          }}
+                          disabled={deletingId === item.id}
+                          className="hidden sm:inline-flex px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 dark:text-emerald-400 rounded-lg text-[11px] font-semibold transition-all"
+                        >
+                          Stock
+                        </button>
+                      )}
+                      <Link
+                        href={`/products/${item.id}`}
+                        className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-300 rounded-lg text-[11px] font-semibold transition-all"
+                      >
+                        View
+                      </Link>
+                      {orgSlug && (
+                        <Link
+                          href={`/vendors/${orgSlug}`}
+                          className="hidden sm:inline-flex px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:hover:bg-purple-900/40 dark:text-purple-300 rounded-lg text-[11px] font-semibold transition-all"
+                        >
+                          Store
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => handleDeleteItem(item.id, item.name)}
+                        disabled={deletingId === item.id}
+                        className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-1.5 text-[10px] sm:text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 rounded-lg sm:rounded-xl transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

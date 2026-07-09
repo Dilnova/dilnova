@@ -13,6 +13,7 @@ import {
   sendCartSummaryEmailAction,
   simulatedCheckoutAction,
   syncCartPricesAction,
+  getCustomerDeliveryDetailsAction,
 } from '@/features/cart/checkout.actions';
 import { isPaymentCompatibleWithFulfillment } from '@/features/organization/checkout-options.shared';
 import { calculateCheckoutTotals } from '@/features/billing/checkout-totals';
@@ -36,6 +37,8 @@ import {
   toggleProductInSelection,
 } from '@/features/cart/vendor-checkout';
 import { Spinner } from '@/shared/ui/loading';
+import DeliveryAddressFormFields from '@/features/customer/components/DeliveryAddressFormFields';
+import { toast } from 'sonner';
 
 export default function CartPage() {
   const {
@@ -56,10 +59,22 @@ export default function CartPage() {
   const { isSignedIn, user } = useUser();
 
   const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success'>('idle');
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success'>('idle');
-  const [emailMessage, setEmailMessage] = useState('');
-  const [emailError, setEmailError] = useState<string | null>(null);
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    switch (name) {
+      case 'shippingAddress': setShippingAddress(value); break;
+      case 'shippingAddressLine2': setShippingAddressLine2(value); break;
+      case 'shippingCity': setShippingCity(value); break;
+      case 'shippingState': setShippingState(value); break;
+      case 'shippingPostalCode': setShippingPostalCode(value); break;
+      case 'shippingCountry': setShippingCountry(value); break;
+      case 'shippingPhone': setShippingPhone(value); break;
+      case 'shippingPhone2': setShippingPhone2(value); break;
+    }
+  };
+
   const [confirmedOrderEmail, setConfirmedOrderEmail] = useState('');
   const [confirmedOrderId, setConfirmedOrderId] = useState('');
   const [bankTransferInstructions, setBankTransferInstructions] =
@@ -69,7 +84,13 @@ export default function CartPage() {
   const [paymentMethod, setPaymentMethod] = useState(BANK_TRANSFER_PAYMENT_ID);
   const [pickupBranchId, setPickupBranchId] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
+  const [shippingAddressLine2, setShippingAddressLine2] = useState('');
+  const [shippingCity, setShippingCity] = useState('');
+  const [shippingState, setShippingState] = useState('');
+  const [shippingPostalCode, setShippingPostalCode] = useState('');
+  const [shippingCountry, setShippingCountry] = useState('');
   const [shippingPhone, setShippingPhone] = useState('');
+  const [shippingPhone2, setShippingPhone2] = useState('');
   const [checkoutOptions, setCheckoutOptions] = useState<{
     fulfillment: { id: string; label: string; description?: string; zeroShipping: boolean; requiresBranch: boolean }[];
     payment: { id: string; label: string; description?: string; requiresDelivery: boolean; pendingPayment?: boolean }[];
@@ -90,7 +111,6 @@ export default function CartPage() {
     }[];
   }>({ fulfillment: [], payment: [], pickupBranches: [], vendorBankTransferByOrg: {}, vendorCartSummary: [] });
   const [optionsLoading, setOptionsLoading] = useState(false);
-  const [optionsError, setOptionsError] = useState<string | null>(null);
   const [vendorCount, setVendorCount] = useState(0);
   const [selectedCheckoutVendorOrgId, setSelectedCheckoutVendorOrgId] = useState('');
   const [requiresVendorSelection, setRequiresVendorSelection] = useState(false);
@@ -101,6 +121,25 @@ export default function CartPage() {
   const cartLinesKey = cartItems.map((item) => `${item.id}:${item.quantity}`).join(',');
   const prevCartItemIdsRef = useRef<string[]>([]);
   const prevCheckoutVendorOrgIdRef = useRef('');
+
+  useEffect(() => {
+    async function loadSavedDeliveryDetails() {
+      if (isSignedIn) {
+        const details = await getCustomerDeliveryDetailsAction();
+        if (details) {
+          if (details.shippingAddress) setShippingAddress(details.shippingAddress);
+          if (details.shippingAddressLine2) setShippingAddressLine2(details.shippingAddressLine2);
+          if (details.shippingCity) setShippingCity(details.shippingCity);
+          if (details.shippingState) setShippingState(details.shippingState);
+          if (details.shippingPostalCode) setShippingPostalCode(details.shippingPostalCode);
+          if (details.shippingCountry) setShippingCountry(details.shippingCountry);
+          if (details.shippingPhone) setShippingPhone(details.shippingPhone);
+          if (details.shippingPhone2) setShippingPhone2(details.shippingPhone2);
+        }
+      }
+    }
+    loadSavedDeliveryDetails();
+  }, [isSignedIn]);
 
   useEffect(() => {
     const saved = loadCheckoutSuccessSnapshot();
@@ -181,7 +220,6 @@ export default function CartPage() {
           vendorBankTransferByOrg: {},
           vendorCartSummary: [],
         });
-        setOptionsError(null);
         setOptionsLoading(false);
         setVendorCount(0);
         setSelectedCheckoutVendorOrgId('');
@@ -196,7 +234,6 @@ export default function CartPage() {
 
     let active = true;
     setOptionsLoading(true);
-    setOptionsError(null);
 
     const lines = cartItems.map((item) => ({
       id: item.id,
@@ -207,7 +244,7 @@ export default function CartPage() {
     const loadTimeout = window.setTimeout(() => {
       if (!active) return;
       setOptionsLoading(false);
-      setOptionsError('Checkout options timed out. Please refresh the page and try again.');
+      toast.error('Checkout options timed out. Please refresh the page and try again.');
     }, 20000);
 
     getCartCheckoutOptionsAction(
@@ -218,7 +255,7 @@ export default function CartPage() {
         if (!active) return;
 
         if (!result.success) {
-          setOptionsError(result.error || 'Failed to load checkout options.');
+          toast.error(result.error || 'Failed to load checkout options.');
           setCheckoutOptions({
             fulfillment: [],
             payment: [],
@@ -293,7 +330,7 @@ export default function CartPage() {
       })
       .catch(() => {
         if (!active) return;
-        setOptionsError('Failed to load checkout options. Please refresh the page.');
+        toast.error('Failed to load checkout options. Please refresh the page.');
         setCheckoutOptions({
           fulfillment: [],
           payment: [],
@@ -340,19 +377,16 @@ export default function CartPage() {
     setSelectedCheckoutVendorOrgId(orgId);
     setSelectedCheckoutProductIds(productIds);
     setPickupBranchId('');
-    setCheckoutError(null);
   };
 
   const toggleProductCheckout = (productId: string) => {
     setSelectedCheckoutProductIds((prev) => toggleProductInSelection(prev, productId));
-    setCheckoutError(null);
   };
 
   const toggleAllProductsInGroup = (productIds: string[], checked: boolean) => {
     setSelectedCheckoutProductIds((prev) =>
       toggleAllProductsInSelection(prev, productIds, checked)
     );
-    setCheckoutError(null);
   };
 
   const selectedFulfillment = checkoutOptions.fulfillment.find((o) => o.id === fulfillmentMethod);
@@ -414,7 +448,6 @@ export default function CartPage() {
     if (!targetEmail) return;
 
     setEmailStatus('sending');
-    setEmailError(null);
     try {
       const res = await sendCartSummaryEmailAction(
         targetEmail,
@@ -423,19 +456,16 @@ export default function CartPage() {
         selectedFulfillment?.zeroShipping ?? false
       );
       if (res.success) {
-        setEmailStatus('success');
-        setEmailMessage(`Cart list successfully sent to ${targetEmail}!`);
-        setTimeout(() => {
-          setEmailStatus('idle');
-        }, 4000);
+        setEmailStatus('idle');
+        toast.success(`Cart list successfully sent to ${targetEmail}!`);
       } else {
         setEmailStatus('idle');
-        setEmailError(res.error || 'Failed to send email.');
+        toast.error(res.error || 'Failed to send email.');
       }
     } catch (err: unknown) {
       setEmailStatus('idle');
       const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
-      setEmailError(errMsg);
+      toast.error(errMsg);
     }
   };
 
@@ -447,10 +477,8 @@ export default function CartPage() {
   };
 
   const handleCheckout = async () => {
-    setCheckoutError(null);
-
     if (!isSignedIn) {
-      setCheckoutError('Please sign in to place an order.');
+      toast.error('Please sign in to place an order.');
       return;
     }
 
@@ -458,35 +486,35 @@ export default function CartPage() {
     const customerEmail = user?.primaryEmailAddress?.emailAddress || '';
 
     if (!customerEmail) {
-      setCheckoutError('Your account does not have an email address. Please update your profile before checkout.');
+      toast.error('Your account does not have an email address. Please update your profile before checkout.');
       return;
     }
 
     if (!selectedFulfillment) {
-      setCheckoutError('Please select a fulfillment method.');
+      toast.error('Please select a fulfillment method.');
       return;
     }
     if (!selectedPayment) {
-      setCheckoutError('Please select a payment method.');
+      toast.error('Please select a payment method.');
       return;
     }
     if (selectedFulfillment.requiresBranch && !pickupBranchId) {
-      setCheckoutError('Please select a store branch for pickup.');
+      toast.error('Please select a store branch for pickup.');
       return;
     }
     if (requiresDeliveryAddress) {
-      if (!shippingAddress.trim() || shippingAddress.trim().length < 5) {
-        setCheckoutError('Please enter a complete delivery address for home delivery.');
+      if (!shippingAddress.trim() || shippingAddress.trim().length < 5 || !shippingCity.trim() || !shippingState.trim() || !shippingPostalCode.trim()) {
+        toast.error('Please enter a complete delivery address for home delivery (Street, City, State, and Postal Code are required).');
         return;
       }
     }
 
     if (vendorCount > 1 && !selectedCheckoutVendorOrgId) {
-      setCheckoutError('Select a vendor to checkout.');
+      toast.error('Select a vendor to checkout.');
       return;
     }
     if (checkoutCartItems.length === 0) {
-      setCheckoutError('Tick at least one product to checkout.');
+      toast.error('Tick at least one product to checkout.');
       return;
     }
 
@@ -515,7 +543,13 @@ export default function CartPage() {
         selectedFulfillment.requiresBranch ? pickupBranchId : null,
         requiresDeliveryAddress ? shippingAddress.trim() : null,
         requiresDeliveryAddress ? shippingPhone.trim() || null : null,
-        vendorCount > 1 ? selectedCheckoutVendorOrgId : null
+        vendorCount > 1 ? selectedCheckoutVendorOrgId : null,
+        requiresDeliveryAddress ? shippingAddressLine2.trim() || null : null,
+        requiresDeliveryAddress ? shippingCity.trim() : null,
+        requiresDeliveryAddress ? shippingState.trim() : null,
+        requiresDeliveryAddress ? shippingPostalCode.trim() : null,
+        requiresDeliveryAddress ? shippingCountry.trim() || null : null,
+        requiresDeliveryAddress ? shippingPhone2.trim() || null : null
       );
 
       if (result.success) {
@@ -541,11 +575,11 @@ export default function CartPage() {
         setPickupBranchId('');
       } else {
         setCheckoutStatus('idle');
-        setCheckoutError(result.error || 'Checkout failed.');
+        toast.error(result.error || 'Checkout failed.');
       }
     } catch (err) {
       setCheckoutStatus('idle');
-      setCheckoutError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+      toast.error(err instanceof Error ? err.message : 'An unexpected error occurred.');
     }
   };
 
@@ -572,6 +606,33 @@ export default function CartPage() {
   const bankTransferMissingDetails =
     bankTransferSelected &&
     !checkoutOptions.vendorBankTransferByOrg[selectedCheckoutVendorOrgId]?.configured;
+
+  const checkoutErrors: string[] = [];
+  if (isSignedIn && cartItems.length > 0) {
+    if (vendorCount > 1 && !selectedCheckoutVendorOrgId) {
+      checkoutErrors.push('Select a vendor to checkout.');
+    }
+    if (checkoutCartItems.length === 0 || selectedCheckoutProductIds.length === 0) {
+      checkoutErrors.push('Tick at least one product to checkout.');
+    }
+    if (!optionsLoading) {
+      if (!selectedFulfillment) {
+        checkoutErrors.push('Select a Delivery & Payment option (Fulfillment).');
+      } else if (selectedFulfillment.requiresBranch && !pickupBranchId) {
+        checkoutErrors.push('Select a store branch for pickup.');
+      }
+      if (requiresDeliveryAddress) {
+        if (!shippingAddress.trim() || shippingAddress.trim().length < 5 || !shippingCity.trim() || !shippingState.trim() || !shippingPostalCode.trim()) {
+          checkoutErrors.push('Provide complete delivery details (Street, City, State, and Postal Code are required).');
+        }
+      }
+      if (!selectedPayment) {
+        checkoutErrors.push('Select a Payment method.');
+      } else if (bankTransferMissingDetails) {
+        checkoutErrors.push('Bank account details are missing for this vendor.');
+      }
+    }
+  }
 
   if (checkoutStatus === 'success') {
     const isBankTransferOrder = Boolean(bankTransferInstructions);
@@ -1068,23 +1129,17 @@ export default function CartPage() {
                       Delivery & Payment
                     </h3>
 
-                    {optionsError && (
-                      <p className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
-                        {optionsError}
-                      </p>
-                    )}
-
                     {optionsLoading ? (
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Loading checkout options...</p>
                     ) : (
                       <>
                         {requiresVendorSelection && (
-                          <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                             Select a vendor on the left and tick products to load delivery and payment options.
                           </p>
                         )}
                         {isSignedIn && selectedCheckoutProductIds.length === 0 && !requiresVendorSelection && (
-                          <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                             Tick at least one product on the left to checkout.
                           </p>
                         )}
@@ -1118,15 +1173,15 @@ export default function CartPage() {
                               </label>
                             ))}
                           </div>
-                        ) : !optionsError ? (
-                          <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                        ) : (
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                             {vendorCount > 1
                               ? requiresVendorSelection
                                 ? 'Select a vendor on the left to see available fulfillment methods.'
                                 : 'No fulfillment methods are enabled for the selected vendor. Contact the store or try another vendor.'
                               : 'No fulfillment methods are enabled for this vendor. Contact the store or try again later.'}
                           </p>
-                        ) : null}
+                        )}
 
                         {selectedFulfillment?.requiresBranch && (
                           <div className="space-y-2">
@@ -1147,7 +1202,7 @@ export default function CartPage() {
                                 ))}
                               </select>
                             ) : (
-                              <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                                 Store pickup is enabled but no branches are configured for this vendor.
                               </p>
                             )}
@@ -1155,23 +1210,17 @@ export default function CartPage() {
                         )}
 
                         {requiresDeliveryAddress && (
-                          <div className="space-y-3">
-                            <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Delivery Address</p>
-                            <textarea
-                              value={shippingAddress}
-                              onChange={(e) => setShippingAddress(e.target.value)}
-                              rows={3}
-                              placeholder="Street address, city, postal code, and any delivery notes"
-                              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50 resize-y"
-                            />
-                            <input
-                              type="tel"
-                              value={shippingPhone}
-                              onChange={(e) => setShippingPhone(e.target.value)}
-                              placeholder="Contact phone for delivery (optional)"
-                              className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50"
-                            />
-                          </div>
+                          <DeliveryAddressFormFields
+                            shippingAddress={shippingAddress}
+                            shippingAddressLine2={shippingAddressLine2}
+                            shippingCity={shippingCity}
+                            shippingState={shippingState}
+                            shippingPostalCode={shippingPostalCode}
+                            shippingCountry={shippingCountry}
+                            shippingPhone={shippingPhone}
+                            shippingPhone2={shippingPhone2}
+                            onChange={handleAddressChange}
+                          />
                         )}
 
                         {compatiblePayments.length > 0 ? (
@@ -1203,8 +1252,8 @@ export default function CartPage() {
                               </label>
                             ))}
                           </div>
-                        ) : !optionsError ? (
-                          <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                        ) : (
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                             {checkoutOptions.payment.length > 0 && selectedFulfillment?.requiresBranch
                               ? 'No payment methods are available for store pickup with the current selection. Choose home delivery or another fulfillment option.'
                               : vendorCount > 1
@@ -1213,16 +1262,16 @@ export default function CartPage() {
                                   : 'No payment methods are enabled for the selected vendor.'
                                 : 'No payment methods are enabled for this vendor. Contact the store or try again later.'}
                           </p>
-                        ) : null}
+                        )}
 
                         {bankTransferSelected && (
                           <div className="space-y-2">
                             {bankTransferMissingDetails ? (
-                              <p className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+                              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                                 Bank transfer cannot be completed until {selectedVendorSummary?.vendorName || 'this vendor'} configures bank account details.
                               </p>
                             ) : (
-                              <p className="text-[11px] text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                                 Bank account details and your payment reference will be shown after you place the order
                                 (confirmation screen, email, and invoice).
                               </p>
@@ -1234,13 +1283,20 @@ export default function CartPage() {
                   </div>
                 )}
 
-                {checkoutError && (
-                  <div className="bg-rose-500/10 border border-rose-500/25 text-rose-700 dark:text-rose-400 p-3 rounded-xl text-xs leading-relaxed whitespace-pre-line">
-                    {checkoutError}
-                  </div>
-                )}
-
                 <div className="pt-2 space-y-3">
+                  {isSignedIn && checkoutErrors.length > 0 && !optionsLoading && (
+                    <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl p-4 space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                      <p className="text-[11px] font-bold text-red-700 dark:text-red-400 uppercase tracking-wider">
+                        Please complete to checkout:
+                      </p>
+                      <ul className="list-disc list-inside text-[11px] font-medium text-red-600 dark:text-red-400/80 space-y-1">
+                        {checkoutErrors.map((err, idx) => (
+                          <li key={idx}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {!isSignedIn ? (
                     <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? '/cart'}>
                       <button
@@ -1255,17 +1311,9 @@ export default function CartPage() {
                       onClick={handleCheckout}
                       disabled={
                         checkoutStatus === 'processing' ||
-                        cartItems.length === 0 ||
-                        checkoutCartItems.length === 0 ||
                         optionsLoading ||
-                        !!optionsError ||
-                        requiresVendorSelection ||
-                        selectedCheckoutProductIds.length === 0 ||
-                        !selectedFulfillment ||
-                        !selectedPayment ||
-                        bankTransferMissingDetails ||
-                        (vendorCount > 1 && !selectedCheckoutVendorOrgId) ||
-                        (requiresDeliveryAddress && shippingAddress.trim().length < 5)
+                        cartItems.length === 0 ||
+                        checkoutErrors.length > 0
                       }
                       className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
@@ -1299,11 +1347,7 @@ export default function CartPage() {
                   Send Cart to Inbox
                 </h2>
                 
-                {emailStatus === 'success' ? (
-                  <div className="bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-450 p-3.5 rounded-xl text-xs leading-relaxed">
-                    {emailMessage}
-                  </div>
-                ) : !isSignedIn ? (
+                {!isSignedIn ? (
                   <div className="space-y-3">
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
                       Sign in to email a summary of your cart items to your account address.
@@ -1322,12 +1366,6 @@ export default function CartPage() {
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
                       Email the list of these {cartCount} items to your registered address.
                     </p>
-
-                    {emailError && (
-                      <p className="text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
-                        {emailError}
-                      </p>
-                    )}
 
                     <div className="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-900 truncate">
                       📧 {user?.primaryEmailAddress?.emailAddress}
