@@ -47,7 +47,13 @@ export async function DELETE(req: NextRequest) {
         customerEmail: 'redacted@example.com',
         customerUserId: null,
         shippingAddress: 'REDACTED',
+        shippingAddressLine2: 'REDACTED',
+        shippingCity: 'REDACTED',
+        shippingState: 'REDACTED',
+        shippingPostalCode: 'REDACTED',
+        shippingCountry: 'REDACTED',
         shippingPhone: 'REDACTED',
+        shippingPhone2: 'REDACTED',
         paymentSlipUrl: null,
         updatedAt: new Date(),
       }).where(eq(schema.simulatedOrders.id, order.id));

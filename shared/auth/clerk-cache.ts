@@ -254,3 +254,24 @@ export function invalidateClerkOrgCache(orgId: string) {
   revalidateTag('clerk-organizations', 'max');
 }
 
+/**
+ * Checks if a user belongs to ANY organization, cached to prevent API spam.
+ */
+export const getCachedUserBelongsToOrg = cache((userId: string) => unstable_cache(
+  async (): Promise<boolean> => {
+    try {
+      const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      const memberships = await client.users.getOrganizationMembershipList({ userId, limit: 1 });
+      return memberships.data.length > 0;
+    } catch (err) {
+      logger.error('Failed to fetch user org memberships from Clerk', { userId, err });
+      return false;
+    }
+  },
+  ['clerk-user-has-org', userId],
+  {
+    tags: ['clerk-user-has-org', `clerk-user-has-org-${userId}`],
+    revalidate: 60, // Cache for 1 minute
+  }
+)());
+

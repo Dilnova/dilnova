@@ -91,8 +91,13 @@ export async function sendOrderConfirmationEmailForOrder(
       fulfillmentLabel: checkoutDetails.fulfillment,
       paymentLabel: checkoutDetails.payment,
       pickupBranchName: checkoutDetails.pickup ?? pickupBranch,
-      shippingAddress: order.shippingAddress,
-      shippingPhone: order.shippingPhone,
+      shippingAddress: [
+        order.shippingAddress,
+        order.shippingAddressLine2,
+        order.shippingCity ? `${order.shippingCity}, ${order.shippingState || ''} ${order.shippingPostalCode || ''}`.trim() : null,
+        order.shippingCountry
+      ].filter(Boolean).join('\n'),
+      shippingPhone: [order.shippingPhone, order.shippingPhone2].filter(Boolean).join(' / '),
       items,
       subtotalAmount: orderTotals.subtotalAmount,
       taxAmount: orderTotals.taxAmount,

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useCart } from '@/features/cart/context/CartContext';
+import { toast } from 'sonner';
 
 interface AddToCartButtonProps {
   product: {
@@ -27,7 +28,6 @@ export default function AddToCartButton({
 }: AddToCartButtonProps) {
   const { addToCart, cartItems } = useCart();
   const [added, setAdded] = useState(false);
-  const [vendorWarning, setVendorWarning] = useState<string | null>(null);
 
   if (!canPurchase) {
     if (!showLabel) {
@@ -62,10 +62,9 @@ export default function AddToCartButton({
       !existingVendors.has(product.vendorName) &&
       existingVendors.size >= 1
     ) {
-      setVendorWarning(
+      toast.warning(
         'Your cart already has items from another vendor. At checkout you can choose which vendor to order from first.'
       );
-      window.setTimeout(() => setVendorWarning(null), 5000);
     }
 
     addToCart(product, quantity);
@@ -75,11 +74,6 @@ export default function AddToCartButton({
 
   const baseStyles = 'inline-flex items-center justify-center font-mono font-bold uppercase transition-all duration-200 select-none';
 
-  const warningBanner = vendorWarning ? (
-    <p className="mt-2 text-[10px] leading-snug text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-2">
-      {vendorWarning}
-    </p>
-  ) : null;
 
   if (!showLabel) {
     return (
@@ -96,7 +90,6 @@ export default function AddToCartButton({
         >
           {added ? '✓' : '🛒'}
         </button>
-        {warningBanner}
       </div>
     );
   }
@@ -123,7 +116,6 @@ export default function AddToCartButton({
           </span>
         )}
       </button>
-      {warningBanner}
     </div>
   );
 }

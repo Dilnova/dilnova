@@ -293,3 +293,90 @@ export async function deleteProductAction(productId: string) {
     }
   });
 }
+
+/**
+ * Enterprise solution for quick stock updates directly from the catalog.
+ * Useful for free-tier users who don't have access to the full IMS.
+ */
+export async function quickUpdateProductStockAction(productId: string, newQuantity: number) {
+  return runWithCorrelationId(async () => {
+    try {
+      await rateLimit(20, 60 * 1000);
+
+      if (typeof newQuantity !== 'number' || !Number.isInteger(newQuantity) || newQuantity < 0) {
+        throw new Error('Invalid quantity');
+      }
+
+      // 1. Authentication & Organization Context Check
+      const { userId, orgId, orgRole } = await auth();
+      if (!userId || !orgId) {
+        throw new Error('Not authorized: You must be signed in with an active organization.');
+      }
+      await requireVendorRole(userId);
+
+      if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
+        throw new Error('Not authorized: You do not have permissions to manage this catalog.');
+      }
+
+      // 2. Transaction for secure lookup and update
+      await db.transaction(async (tx) => {
+        // Ensure product belongs to org
+        const [prod] = await tx
+          .select({ id: schema.products.id, type: schema.products.type })
+          .from(schema.products)
+          .where(
+            and(
+              eq(schema.products.id, productId),
+              eq(schema.products.orgId, orgId)
+            )
+          )
+          .limit(1);
+
+        if (!prod || prod.type !== 'product') {
+          throw new Error('Product not found or not eligible for stock update.');
+        }
+
+        // Get central inventory record
+        const [inv] = await tx
+          .select({ id: schema.inventory.id, quantity: schema.inventory.quantity })
+          .from(schema.inventory)
+          .where(eq(schema.inventory.productId, productId))
+          .limit(1);
+
+        if (!inv) {
+          throw new Error('Inventory record not found. (Legacy product without inventory)');
+        }
+
+        const prevQty = inv.quantity;
+
+        // Update central inventory
+        await tx
+          .update(schema.inventory)
+          .set({ quantity: newQuantity, updatedAt: new Date() })
+          .where(eq(schema.inventory.id, inv.id));
+
+        // Create movement log
+        await tx.insert(schema.inventoryMovements).values({
+          inventoryId: inv.id,
+          type: 'manual_adjustment',
+          quantityChanged: newQuantity - prevQty,
+          previousQuantity: prevQty,
+          newQuantity: newQuantity,
+          reason: 'Quick stock update from catalog (Free Tier / Quick Edit)',
+          userId,
+        });
+      });
+
+      // 3. Cache Invalidation
+      revalidatePath('/products');
+      revalidatePath('/vendors');
+      revalidateVendorConsole();
+      updateTag(`vendor-products-${orgId}`);
+
+      return { success: true };
+    } catch (error) {
+      logger.error('Error updating stock', error);
+      throw new Error(error instanceof Error ? error.message : 'Internal database error');
+    }
+  });
+}

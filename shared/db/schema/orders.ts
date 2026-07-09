@@ -22,7 +22,13 @@ export const simulatedOrders = pgTable('simulated_orders', {
   paymentVerifiedAt: timestamp('payment_verified_at'),
   paymentVerifiedBy: text('payment_verified_by'),
   shippingAddress: encryptedText('shipping_address'),
+  shippingAddressLine2: encryptedText('shipping_address_line2'),
+  shippingCity: encryptedText('shipping_city'),
+  shippingState: encryptedText('shipping_state'),
+  shippingPostalCode: encryptedText('shipping_postal_code'),
+  shippingCountry: encryptedText('shipping_country'),
   shippingPhone: encryptedText('shipping_phone'),
+  shippingPhone2: encryptedText('shipping_phone_2'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => [

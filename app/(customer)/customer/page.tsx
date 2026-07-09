@@ -20,6 +20,8 @@ import { isBankTransferPayment } from '@/features/billing/bank-transfer';
 import OrderBankTransferInstructions from '@/features/customer/components/OrderBankTransferInstructions';
 import WishlistRemoveButton from '@/features/customer/components/WishlistRemoveButton';
 import { attachPaymentSlipPreviews } from '@/features/orders/payment-slip-preview';
+import CustomerDeliverySettingsForm from '@/features/customer/components/CustomerDeliverySettingsForm';
+import { getCustomerDeliveryDetailsAction } from '@/features/cart/checkout.actions';
 
 interface PageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -37,13 +39,14 @@ export default async function CustomerPage({ searchParams }: PageProps) {
 
   // Fetch Clerk organizations, wishlist, roles, and simulated orders in parallel (reduce latency)
   const client = await clerkClient();
-  const [userWishlist, organizations, rawOrders, checkoutOptionsCatalog, userRole, isSuperAdmin] = await Promise.all([
+  const [userWishlist, organizations, rawOrders, checkoutOptionsCatalog, userRole, isSuperAdmin, deliveryDetails] = await Promise.all([
     getUserWishlist(user.id),
     getCachedOrganizations(client).catch(() => []),
     getCustomerOrders(userId),
     getCheckoutOptionsCatalog(),
     getCachedUserRole(userId || ''),
     getCachedIsSuperAdmin(userId || ''),
+    getCustomerDeliveryDetailsAction(),
   ]);
   const orders = await attachPaymentSlipPreviews(rawOrders);
 
@@ -441,14 +444,24 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                         </div>
                       </div>
 
-                      {(order.shippingAddress || order.shippingPhone) && (
+                      {(order.shippingAddress || order.shippingCity || order.shippingPhone) && (
                         <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3.5 space-y-1">
                           <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 font-mono">Delivery Details</h4>
-                          {order.shippingAddress && (
-                            <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-line">{order.shippingAddress}</p>
+                          {(order.shippingAddress || order.shippingCity) && (
+                            <p className="text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-line">
+                              {[
+                                order.shippingAddress,
+                                order.shippingAddressLine2,
+                                order.shippingCity ? `${order.shippingCity}, ${order.shippingState || ''} ${order.shippingPostalCode || ''}`.trim() : null,
+                                order.shippingCountry
+                              ].filter(Boolean).join('\n')}
+                            </p>
                           )}
                           {order.shippingPhone && (
                             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">{order.shippingPhone}</p>
+                          )}
+                          {order.shippingPhone2 && (
+                            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">{order.shippingPhone2}</p>
                           )}
                         </div>
                       )}
@@ -508,13 +521,8 @@ export default async function CustomerPage({ searchParams }: PageProps) {
                 <li><span className="text-zinc-400 dark:text-zinc-500">Org Context Role:</span> {orgRole || 'None'}</li>
               </ul>
             </div>
-
-            <div className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm dark:bg-zinc-900/40 dark:border-zinc-800 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 font-mono">Account Notes</h4>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Delivery addresses are captured during checkout for home delivery orders.
-                Update your name and email in your Clerk account settings.
-              </p>
+            <div className="md:col-span-2 mt-2">
+              <CustomerDeliverySettingsForm initialData={deliveryDetails} />
             </div>
           </div>
 
