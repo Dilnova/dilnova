@@ -34,7 +34,6 @@ export function GlobalNotificationListener({
       }
     }
 
-    let interval: NodeJS.Timeout;
 
     const pingPresenceAndPollNotifications = async () => {
       try {
@@ -83,7 +82,7 @@ export function GlobalNotificationListener({
     
     // Ping immediately, then every 15 seconds (reduced for faster notifications)
     pingPresenceAndPollNotifications();
-    interval = setInterval(pingPresenceAndPollNotifications, 15000);
+    const interval = setInterval(pingPresenceAndPollNotifications, 15000);
 
     return () => {
       if (interval) clearInterval(interval);
