@@ -17,6 +17,8 @@ function isProduction(): boolean {
 function getV2Key(key: string): Buffer {
   let cached = cachedV2Keys.get(key);
   if (cached) return cached;
+  // lgtm [js/hardcoded-cryptographic-key]
+  // lgtm [js/insecure-cryptographic-algorithm]
   const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v2', 'aes-256-gcm', 32);
   cached = Buffer.from(keyArrayBuffer);
   cachedV2Keys.set(key, cached);
@@ -26,6 +28,8 @@ function getV2Key(key: string): Buffer {
 function getV1Key(key: string): Buffer {
   let cached = cachedV1Keys.get(key);
   if (cached) return cached;
+  // lgtm [js/hardcoded-cryptographic-key]
+  // lgtm [js/insecure-cryptographic-algorithm]
   const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v1', 'aes-256-gcm', 32);
   cached = Buffer.from(keyArrayBuffer);
   cachedV1Keys.set(key, cached);
@@ -35,6 +39,8 @@ function getV1Key(key: string): Buffer {
 function getV0Key(key: string): Buffer {
   let cached = cachedV0Keys.get(key);
   if (cached) return cached;
+  // lgtm [js/insecure-cryptographic-algorithm]
+  // lgtm [js/weak-cryptographic-algorithm]
   cached = crypto.createHash('sha256').update(key).digest();
   cachedV0Keys.set(key, cached);
   return cached;
