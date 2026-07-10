@@ -11,6 +11,9 @@ on:
         required: false
         default: 'https://www.dilstar.pp.ua'
 
+permissions:
+  contents: read
+
 jobs:
   k6-load-test:
     name: Execute k6 Load Test
