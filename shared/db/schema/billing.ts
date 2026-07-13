@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, integer, uuid, index, boolean, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, uuid, index, uniqueIndex, boolean, unique } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { products } from './catalog';
 import { encryptedText } from './custom-types';
 
@@ -13,6 +14,11 @@ export const branches = pgTable('branches', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => [
   index('idx_branches_org_id').on(t.orgId),
+  // Enterprise guard: Only one default branch per org (PostgreSQL partial unique index).
+  // Prevents TOCTOU race condition duplicates during auto-initialization.
+  uniqueIndex('unique_org_default_branch')
+    .on(t.orgId)
+    .where(sql`is_default = true`),
 ]);
 
 export const branchInventory = pgTable('branch_inventory', {

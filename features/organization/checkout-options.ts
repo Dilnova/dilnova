@@ -126,7 +126,16 @@ export async function resolveCheckoutOptionsForOrgs(
   if (singleVendorOrgId) {
     const branches = branchesByOrg.get(singleVendorOrgId) || [];
     if (branches.length > 0) {
-      pickupBranches.push({ orgId: singleVendorOrgId, branches });
+      // Defensive deduplication by branch name — collapses race-condition duplicates
+      // that have different UUIDs but identical names (e.g. multiple "Main Register" rows).
+      const seenNames = new Set<string>();
+      const uniqueBranches = branches.filter((b) => {
+        const key = b.name.trim().toLowerCase();
+        if (seenNames.has(key)) return false;
+        seenNames.add(key);
+        return true;
+      });
+      pickupBranches.push({ orgId: singleVendorOrgId, branches: uniqueBranches });
     } else {
       const orgData = orgOptionsList.find((o) => o.orgId === singleVendorOrgId)?.data;
       if (orgData?.address && orgData.address.trim()) {
