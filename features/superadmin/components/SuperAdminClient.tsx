@@ -22,6 +22,7 @@ import {
 import { toast } from 'sonner';
 import { useConfirm } from '@/shared/ui/notifications';
 import { updateSystemSettingAction } from '@/features/superadmin/settings.actions';
+import LicensesTab from './LicensesTab';
 import CheckoutOptionsSettings from './CheckoutOptionsSettings';
 import StockAvailabilitySettings from '@/features/inventory/components/StockAvailabilitySettings';
 import InventoryTab from '@/features/inventory/components/InventoryTab';
@@ -148,7 +149,7 @@ export default function SuperAdminClient({
   vendorOrgIntegrity,
 }: SuperAdminClientProps) {
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'categories' | 'products' | 'inventory' | 'vendor-issues' | 'pricing' | 'contacts' | 'settings' | 'compliance'
+    'overview' | 'categories' | 'products' | 'inventory' | 'vendor-issues' | 'pricing' | 'contacts' | 'settings' | 'compliance' | 'licenses'
   >('overview');
   const [isPending, startTransition] = useTransition();
   const { confirmAction } = useConfirm();
@@ -788,6 +789,7 @@ export default function SuperAdminClient({
     { key: 'categories' as const, label: 'Categories', icon: '🏷️' },
     { key: 'products' as const, label: 'Products', icon: '📦' },
     { key: 'inventory' as const, label: 'Inventory', icon: '🏭' },
+    { key: 'licenses' as const, label: 'Licenses & Limits', icon: '👑' },
     {
       key: 'vendor-issues' as const,
       label: 'Vendor Issues',
@@ -1734,6 +1736,12 @@ export default function SuperAdminClient({
             initialCatalog={stockAvailabilityCatalog}
           />
         </div>
+      )}
+
+      {/* ── LICENSES TAB ──────────────────────────────────────── */}
+      {/* ══════════════════════════════════════════════════════════ */}
+      {activeTab === 'licenses' && (
+        <LicensesTab organizations={organizations} />
       )}
 
       {/* ── COMPLIANCE TAB ────────────────────────────────────── */}
