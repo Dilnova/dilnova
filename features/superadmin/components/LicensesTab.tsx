@@ -97,7 +97,7 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                             <img src={org.imageUrl} alt={org.name} className="w-6 h-6 rounded-full" />
                           )}
                           <div>
-                            <p className="font-semibold text-zinc-900 dark:text-zinc-250">{org.name}</p>
+                            <p className="font-semibold text-zinc-900 dark:text-zinc-200">{org.name}</p>
                             <p className="text-[9px] text-zinc-400 font-mono">ID: {org.id}</p>
                           </div>
                         </div>

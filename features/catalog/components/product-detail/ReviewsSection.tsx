@@ -189,7 +189,7 @@ export default function ReviewsSection({
                         {review.userName.charAt(0)}
                       </div>
                     )}
-                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-250">
+                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
                       {review.userName}
                     </span>
                     {verifiedReviewerIdSet.has(review.userId) && (
