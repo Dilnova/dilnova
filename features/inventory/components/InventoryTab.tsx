@@ -125,7 +125,7 @@ export default function InventoryTab({
   checkoutOptionsCatalog,
   organizations,
 }: InventoryTabProps) {
-  const [subTab, setSubTab] = useState<InventorySubTab>('stock');
+  const [subTab, setSubTab] = useState<InventorySubTab>('licenses');
   const [isPending, startTransition] = useTransition();
   const { confirmAction } = useConfirm();
   const [now, setNow] = useState<number>(0);
@@ -397,11 +397,11 @@ export default function InventoryTab({
   };
 
   const subTabConfig = [
+    { key: 'licenses' as const, label: 'Licenses & Limits', icon: '👑' },
     { key: 'stock' as const, label: 'Stock Levels', icon: '📦' },
     { key: 'suppliers' as const, label: 'Suppliers', icon: '🏭' },
     { key: 'orders' as const, label: 'Orders', icon: '🛒' },
     { key: 'audit' as const, label: 'Movement Log', icon: '📋' },
-    { key: 'licenses' as const, label: 'Licenses & Limits', icon: '👑' },
   ];
 
   const movementTypeLabels: Record<string, string> = {
