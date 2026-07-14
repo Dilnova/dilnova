@@ -416,6 +416,8 @@ export async function updateOrgImsLicenseAction(data: {
   imsExpiresAt: string | null;
   imsMultiBranchEnabled: boolean;
   imsBillingEnabled: boolean;
+  /** Optional per-org override for the maximum active listing count. Defaults to 10 (free tier). */
+  imsMaxListingCount?: number;
 }) {
   return runWithCorrelationId(async () => {
     const user = await checkSuperAdmin();
@@ -432,6 +434,7 @@ export async function updateOrgImsLicenseAction(data: {
       imsExpiresAt: parsed.data.imsExpiresAt,
       imsMultiBranchEnabled: parsed.data.imsMultiBranchEnabled,
       imsBillingEnabled: parsed.data.imsBillingEnabled,
+      imsMaxListingCount: parsed.data.imsMaxListingCount,
     });
 
     await logAuditAction({

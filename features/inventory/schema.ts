@@ -85,4 +85,6 @@ export const updateImsLicenseSchema = z.object({
   imsExpiresAt: z.string().nullable().optional(),
   imsMultiBranchEnabled: z.boolean().optional(),
   imsBillingEnabled: z.boolean().optional(),
+  /** Override the default free-tier listing cap (10) for this org. Min: 1, Max: 100,000 */
+  imsMaxListingCount: z.number().int('Must be a whole number.').min(1, 'Minimum is 1.').max(100_000, 'Maximum is 100,000.').optional(),
 });

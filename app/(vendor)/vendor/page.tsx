@@ -25,7 +25,7 @@ interface PageProps {
 
 export default async function VendorPage({ searchParams }: PageProps) {
   const { orgId, orgRole, userId } = await auth();
-  const user = await currentUser();
+  const user = await currentUser().catch(() => null);
 
   if (!userId) {
     redirect('/unauthorized');
@@ -90,8 +90,16 @@ export default async function VendorPage({ searchParams }: PageProps) {
     phone?: string;
     bannerUrl?: string;
     checkout_options?: Record<string, boolean>;
+    ims_max_listing_count?: number;
   };
   const checkoutOptions = orgMetadata.checkout_options || {};
+  // Resolve org-specific listing limit (falls back to 10 if not set by superadmin)
+  const maxListingCount =
+    typeof orgMetadata.ims_max_listing_count === 'number' &&
+    Number.isInteger(orgMetadata.ims_max_listing_count) &&
+    orgMetadata.ims_max_listing_count >= 1
+      ? orgMetadata.ims_max_listing_count
+      : 10;
   const bankTransferConfigured = hasBankTransferConfiguredForOrg(org);
   const pickupEnabled = checkoutOptions.store_pickup === true;
   const bankTransferEnabled = checkoutOptions.bank_transfer === true;
@@ -270,7 +278,12 @@ export default async function VendorPage({ searchParams }: PageProps) {
           {activeTab === 'catalog' && (
             <>
 
-              <ManageProductsClient initialProducts={vendorProducts} orgSlug={org.slug} />
+              <ManageProductsClient
+                initialProducts={vendorProducts}
+                orgSlug={org.slug}
+                maxListingCount={maxListingCount}
+                activeListingCount={vendorProducts.filter((p: Product) => (p as any).status !== 'archived').length}
+              />
             </>
           )}
 

@@ -26,6 +26,7 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
   const [licenseImsExpiresAt, setLicenseImsExpiresAt] = useState('');
   const [licenseImsMultiBranchEnabled, setLicenseImsMultiBranchEnabled] = useState(false);
   const [licenseImsBillingEnabled, setLicenseImsBillingEnabled] = useState(false);
+  const [licenseMaxListingCount, setLicenseMaxListingCount] = useState<number>(10);
   const [now, setNow] = useState<number>(0);
   
   useEffect(() => {
@@ -45,6 +46,7 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
           imsExpiresAt: licenseImsExpiresAt || null,
           imsMultiBranchEnabled: licenseImsMultiBranchEnabled,
           imsBillingEnabled: licenseImsBillingEnabled,
+          imsMaxListingCount: licenseMaxListingCount,
         });
         toast.success('Organization IMS license updated successfully.');
         setIsLicenseModalOpen(false);
@@ -74,6 +76,7 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                   <th className="py-2.5 px-4">Expires At</th>
                   <th className="py-2.5 px-4">Multi-Branch</th>
                   <th className="py-2.5 px-4">POS Billing</th>
+                  <th className="py-2.5 px-4">Max Listings</th>
                   <th className="py-2.5 px-4">Actions</th>
                 </tr>
               </thead>
@@ -83,6 +86,11 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                   const imsExpiresAt = org.publicMetadata?.ims_expires_at || null;
                   const multiBranchEnabled = org.publicMetadata?.ims_multi_branch_enabled === true;
                   const billingEnabled = org.publicMetadata?.ims_billing_enabled === true;
+                  const maxListings: number =
+                    typeof org.publicMetadata?.ims_max_listing_count === 'number' &&
+                    org.publicMetadata.ims_max_listing_count >= 1
+                      ? org.publicMetadata.ims_max_listing_count
+                      : 10;
 
                   let isExpired = false;
                   if (imsExpiresAt) {
@@ -131,6 +139,11 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                         )}
                       </td>
                       <td className="py-3 px-4">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400 font-mono">
+                          {maxListings.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
                         <button
                           onClick={() => {
                             setManagingOrg(org);
@@ -138,6 +151,7 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                             setLicenseImsExpiresAt(imsExpiresAt ? new Date(imsExpiresAt).toISOString().split('T')[0] : '');
                             setLicenseImsMultiBranchEnabled(multiBranchEnabled);
                             setLicenseImsBillingEnabled(billingEnabled);
+                            setLicenseMaxListingCount(maxListings);
                             setIsLicenseModalOpen(true);
                           }}
                           className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 rounded-lg text-[11px] font-semibold transition-all cursor-pointer"
@@ -149,7 +163,7 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                   );
                 })}
                 {organizations.length === 0 && (
-                  <tr><td colSpan={6} className="py-12 text-center text-zinc-400 font-mono text-sm">No organizations found.</td></tr>
+                  <tr><td colSpan={7} className="py-12 text-center text-zinc-400 font-mono text-sm">No organizations found.</td></tr>
                 )}
               </tbody>
             </table>
@@ -203,6 +217,25 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                   checked={licenseImsBillingEnabled}
                   onChange={(e) => setLicenseImsBillingEnabled(e.target.checked)}
                   className="w-4 h-4 text-indigo-650"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                  Max Active Listings
+                </label>
+                <p className="text-[10px] text-zinc-400 font-mono">Default: 10 for all orgs (free tier). Increase for premium plans.</p>
+                <input
+                  type="number"
+                  min={1}
+                  max={100000}
+                  step={1}
+                  value={licenseMaxListingCount}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val) && val >= 1) setLicenseMaxListingCount(val);
+                  }}
+                  className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all font-mono"
                 />
               </div>
 
