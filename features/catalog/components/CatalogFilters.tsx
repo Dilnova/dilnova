@@ -663,16 +663,23 @@ export function CatalogDesktopSidebar({
   currentMinPrice,
   currentMaxPrice,
   currentStock,
-}: Omit<CatalogFiltersProps, 'totalCount' | 'currentSearch' | 'currentSort'>) {
+  updateParams: parentUpdateParams,
+  isPending: parentIsPending,
+}: Omit<CatalogFiltersProps, 'totalCount' | 'currentSearch' | 'currentSort'> & {
+  updateParams?: (updates: Record<string, string | null>) => void;
+  isPending?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
+  const [localIsPending, startTransition] = useTransition();
+
+  const isPending = parentIsPending ?? localIsPending;
 
   const [minPriceVal, setMinPriceVal] = useState(currentMinPrice || '');
   const [maxPriceVal, setMaxPriceVal] = useState(currentMaxPrice || '');
 
-  const updateParams = (updates: Record<string, string | null>) => {
+  const updateParams = parentUpdateParams ?? ((updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(updates).forEach(([key, val]) => {
       if (val === null || val === '' || val === 'all') {
@@ -686,7 +693,7 @@ export function CatalogDesktopSidebar({
     startTransition(() => {
       router.push(`${pathname}?${params.toString()}`);
     });
-  };
+  });
 
   const handlePriceSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { clerkClient, auth } from '@clerk/nextjs/server';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
@@ -15,7 +16,7 @@ import {
   resolveVendorOrgId,
 } from '@/features/catalog/query';
 
-export const revalidate = 0; // Fresh load on each catalog query
+export const revalidate = 30; // Cache for 30s to prevent rapid re-fetches; vendor actions revalidate on-demand
 
 interface PageProps {
   searchParams: Promise<{
@@ -194,16 +195,18 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans pb-24">
       <div className="pt-8 sm:pt-12"></div>
       <main className="max-w-7xl mx-auto px-4 sm:px-6">
-        <CatalogViewClient
-          categories={categoriesList}
-          vendors={organizations}
-          catalogQuery={catalogQuery}
-          rawParams={params}
-          totalCount={totalCount}
-          totalPages={totalPages}
-          items={items}
-          userId={userId}
-        />
+        <Suspense fallback={null}>
+          <CatalogViewClient
+            categories={categoriesList}
+            vendors={organizations}
+            catalogQuery={catalogQuery}
+            rawParams={params}
+            totalCount={totalCount}
+            totalPages={totalPages}
+            items={items}
+            userId={userId}
+          />
+        </Suspense>
       </main>
     </div>
   );

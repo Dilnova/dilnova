@@ -61,7 +61,6 @@ export async function toggleWishlistAction(productId: string) {
           );
         
         revalidatePath(`/products/${parsed.data.productId}`);
-        revalidatePath('/products');
         revalidatePath('/customer');
         return { success: true, isFavorited: false };
       } else {
@@ -72,7 +71,6 @@ export async function toggleWishlistAction(productId: string) {
         });
 
         revalidatePath(`/products/${parsed.data.productId}`);
-        revalidatePath('/products');
         revalidatePath('/customer');
         return { success: true, isFavorited: true };
       }
@@ -165,7 +163,6 @@ export async function submitReviewAction(productId: string, rating: number, comm
       }
 
       revalidatePath(`/products/${parsed.data.productId}`);
-      revalidatePath('/products');
       return { success: true };
     } catch (error) {
       logger.error('Error submitting review', error, { productId });

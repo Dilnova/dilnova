@@ -33,6 +33,7 @@ import {
   buildBankTransferCheckoutInstructions,
   getBankTransferDetailsForOrgs,
 } from '@/features/billing/bank-transfer.server';
+import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
 import { sendOrderConfirmationEmailForOrder } from '@/features/orders/email/confirmation';
 import { escapeHtml, sendRawSmtpEmail } from '@/shared/email/smtp-client';
 import { logger } from '@/shared/logging/logger';
@@ -383,8 +384,14 @@ export async function getCartCheckoutOptionsAction(
 
     const productById = new Map(products.map((product) => [product.id, product]));
     const uniqueOrgIds = [...new Set(products.map((product) => product.orgId))];
+
+    const cachedOrgs = await getCachedOrganizations();
+    const vendorNamesByOrg = Object.fromEntries(
+      cachedOrgs.map((org) => [org.id, org.name])
+    );
+
     const resolvedCheckoutVendorOrgId = resolveCheckoutVendorOrgId(
-      buildVendorCartSummaries(cartLines, productById),
+      buildVendorCartSummaries(cartLines, productById, vendorNamesByOrg),
       checkoutVendorOrgId
     );
 
@@ -393,9 +400,7 @@ export async function getCartCheckoutOptionsAction(
       const vendorCartSummary = buildVendorCartSummaries(
         cartLines,
         productById,
-        Object.fromEntries(
-          uniqueOrgIds.map((orgId) => [orgId, bankDetailsByOrg[orgId]?.vendorName || 'Vendor'])
-        )
+        vendorNamesByOrg
       );
 
       return {
@@ -463,9 +468,11 @@ export async function getCartCheckoutOptionsAction(
     const bankDetailsByOrg = bankTransferEnabled
       ? await getBankTransferDetailsForOrgs(uniqueOrgIds)
       : {};
-    const vendorCartSummary = buildVendorCartSummaries(cartLines, productById, Object.fromEntries(
-      uniqueOrgIds.map((orgId) => [orgId, bankDetailsByOrg[orgId]?.vendorName || 'Vendor'])
-    ));
+    const vendorCartSummary = buildVendorCartSummaries(
+      cartLines,
+      productById,
+      vendorNamesByOrg
+    );
 
     return {
       success: true as const,
