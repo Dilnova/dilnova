@@ -45,7 +45,9 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
   // Fetch current organization details from Clerk API
   const client = await clerkClient();
-  const org = await client.organizations.getOrganization({ organizationId: orgId });
+  const org = await client.organizations.getOrganization({ organizationId: orgId }).catch((err) => {
+    throw new Error(`Failed to load organization details from Clerk API: ${err.message || 'Rate limit or timeout'}. Please try refreshing the page.`);
+  });
 
   const resolvedParams = await searchParams;
   const activeTab = resolvedParams.tab || 'catalog';
