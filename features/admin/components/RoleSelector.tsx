@@ -30,13 +30,13 @@ export default function RoleSelector({ orgId, userId, currentRole }: RoleSelecto
   };
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-2">
+    <div className="space-y-1 w-full sm:w-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
         <select
           value={role}
           onChange={handleChange}
           disabled={isPending}
-          className="text-xs font-mono bg-white border border-zinc-300 rounded px-2 py-1 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:focus:ring-zinc-100 disabled:opacity-50"
+          className="w-full sm:w-auto min-h-[44px] sm:min-h-0 text-sm sm:text-xs font-mono bg-white border border-zinc-300 rounded-lg sm:rounded px-3 py-2 sm:px-2 sm:py-1 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 sm:focus:ring-1 focus:ring-purple-500 disabled:opacity-50 transition-shadow shadow-sm"
         >
           <option value="org:member">org:member (Default Member)</option>
           <option value="org:admin">org:admin (Administrator)</option>
