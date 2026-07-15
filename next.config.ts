@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 import { DEFAULT_APP_URL } from "./shared/platform/brand";
+import createBundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzer = createBundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 // Helper to extract the custom Clerk domain from the publishable key
 const getClerkDomain = (): string | null => {
@@ -193,4 +198,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);
