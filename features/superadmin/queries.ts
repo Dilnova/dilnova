@@ -122,7 +122,22 @@ export async function getInventoryMovementsWithProductName() {
  */
 export async function getSimulatedOrdersWithItems() {
   const rawOrders = await db
-    .select()
+    .select({
+      id: schema.simulatedOrders.id,
+      customerName: schema.simulatedOrders.customerName,
+      customerEmail: schema.simulatedOrders.customerEmail,
+      totalAmount: schema.simulatedOrders.totalAmount,
+      subtotalAmount: schema.simulatedOrders.subtotalAmount,
+      taxAmount: schema.simulatedOrders.taxAmount,
+      shippingAmount: schema.simulatedOrders.shippingAmount,
+      status: schema.simulatedOrders.status,
+      fulfillmentMethod: schema.simulatedOrders.fulfillmentMethod,
+      paymentMethod: schema.simulatedOrders.paymentMethod,
+      pickupBranchId: schema.simulatedOrders.pickupBranchId,
+      paymentSlipUrl: schema.simulatedOrders.paymentSlipUrl,
+      createdAt: schema.simulatedOrders.createdAt,
+      updatedAt: schema.simulatedOrders.updatedAt,
+    })
     .from(schema.simulatedOrders)
     .orderBy(desc(schema.simulatedOrders.createdAt))
     .limit(50);
