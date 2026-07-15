@@ -79,6 +79,7 @@ const nextConfig: NextConfig = {
 
   // Allow next/image to optimize images from these external domains
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns,
   },
 
