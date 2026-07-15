@@ -27,7 +27,6 @@ interface CatalogFiltersProps {
   currentStock?: CatalogStockFilter;
   totalCount?: number;
   viewMode?: 'grid' | 'list';
-  onViewModeChange?: (mode: 'grid' | 'list') => void;
 }
 
 const PRICE_PRESETS = [
@@ -324,7 +323,6 @@ export default function CatalogFilters({
   currentStock = 'all',
   totalCount = 0,
   viewMode = 'grid',
-  onViewModeChange,
 }: CatalogFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -513,34 +511,32 @@ export default function CatalogFilters({
         {/* Right Controls: Sort Dropdown & View Mode Switcher */}
         <div className="flex items-center gap-2.5 self-end sm:self-auto">
           {/* View Mode Switcher */}
-          {onViewModeChange && (
-            <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
-              <button
-                type="button"
-                onClick={() => onViewModeChange('grid')}
-                className={`p-1.5 px-2.5 rounded-lg transition-colors cursor-pointer text-xs font-medium ${
-                  viewMode === 'grid'
-                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-xs'
-                    : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
-                }`}
-                title="Grid View"
-              >
-                ⊞ Grid
-              </button>
-              <button
-                type="button"
-                onClick={() => onViewModeChange('list')}
-                className={`p-1.5 px-2.5 rounded-lg transition-colors cursor-pointer text-xs font-medium ${
-                  viewMode === 'list'
-                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-xs'
-                    : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
-                }`}
-                title="List View"
-              >
-                ≡ List
-              </button>
-            </div>
-          )}
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+            <button
+              type="button"
+              onClick={() => updateParams({ view: 'grid' })}
+              className={`p-1.5 px-2.5 rounded-lg transition-colors cursor-pointer text-xs font-medium ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-xs'
+                  : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+              }`}
+              title="Grid View"
+            >
+              ⊞ Grid
+            </button>
+            <button
+              type="button"
+              onClick={() => updateParams({ view: 'list' })}
+              className={`p-1.5 px-2.5 rounded-lg transition-colors cursor-pointer text-xs font-medium ${
+                viewMode === 'list'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-xs'
+                  : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+              }`}
+              title="List View"
+            >
+              ≡ List
+            </button>
+          </div>
 
           {/* Sort By Dropdown */}
           <div className="flex items-center gap-1.5">

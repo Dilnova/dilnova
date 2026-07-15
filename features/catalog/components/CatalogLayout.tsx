@@ -1,6 +1,4 @@
-'use client';
-
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { isVideoUrl } from '@/shared/media/media';
@@ -40,7 +38,7 @@ export interface CatalogItemViewData {
   } | null;
 }
 
-interface CatalogViewClientProps {
+interface CatalogLayoutProps {
   categories: CatalogCategoryRef[];
   vendors: CatalogVendorRef[];
   catalogQuery: CatalogQueryParams;
@@ -52,9 +50,10 @@ interface CatalogViewClientProps {
   totalPages: number;
   items: CatalogItemViewData[];
   userId: string | null;
+  viewMode: 'grid' | 'list';
 }
 
-export default function CatalogViewClient({
+export default function CatalogLayout({
   categories,
   vendors,
   catalogQuery,
@@ -63,9 +62,8 @@ export default function CatalogViewClient({
   totalPages,
   items,
   userId,
-}: CatalogViewClientProps) {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
+  viewMode,
+}: CatalogLayoutProps) {
   return (
     <div className="space-y-6">
       {/* Top Filter Header Bar */}
@@ -82,7 +80,6 @@ export default function CatalogViewClient({
         currentStock={catalogQuery.stock}
         totalCount={totalCount}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
       />
 
       {/* Main 2-Column Responsive Layout (Desktop Sidebar + Content Area) */}

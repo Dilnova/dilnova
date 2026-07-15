@@ -8,7 +8,7 @@ import { getSystemSetting } from '@/shared/platform/settings';
 import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { resolveOnlineProductPurchaseState } from '@/features/inventory/availability.shared';
-import CatalogViewClient, { type CatalogItemViewData } from '@/features/catalog/components/CatalogViewClient';
+import CatalogLayout, { type CatalogItemViewData } from '@/features/catalog/components/CatalogLayout';
 import {
   buildCatalogOrderBy,
   buildCatalogWhereClauses,
@@ -29,6 +29,7 @@ interface PageProps {
     minPrice?: string;
     maxPrice?: string;
     stock?: string;
+    view?: string;
   }>;
 }
 
@@ -81,6 +82,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const catalogQuery = parseCatalogQueryParams(params);
+  const viewMode = (params.view === 'list' ? 'list' : 'grid') as 'grid' | 'list';
   const itemsPerPage = 12;
 
   const [categoriesList, stockAvailabilityCatalog, organizations] = await Promise.all([
@@ -196,7 +198,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
       <div className="pt-8 sm:pt-12"></div>
       <main className="max-w-7xl mx-auto px-4 sm:px-6">
         <Suspense fallback={null}>
-          <CatalogViewClient
+          <CatalogLayout
             categories={categoriesList}
             vendors={organizations}
             catalogQuery={catalogQuery}
@@ -205,6 +207,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
             totalPages={totalPages}
             items={items}
             userId={userId}
+            viewMode={viewMode}
           />
         </Suspense>
       </main>

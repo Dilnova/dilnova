@@ -47,14 +47,7 @@ export default async function VendorBillingPage() {
 
   return (
     <main className="px-2 py-3 sm:px-4 md:px-6 max-w-[1700px] mx-auto font-sans w-full pb-20 lg:pb-6 flex flex-col min-h-screen">
-      <div className="mb-4">
-        <h1 className="text-2xl font-extrabold tracking-tight text-zinc-950 dark:text-zinc-50">
-          Billing Register
-        </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Manage point-of-sale transactions and receipts.
-        </p>
-      </div>
+
       <Suspense fallback={
         <div className="flex flex-col items-center justify-center p-20 space-y-4">
           <span className="text-5xl animate-pulse">🧾</span>
