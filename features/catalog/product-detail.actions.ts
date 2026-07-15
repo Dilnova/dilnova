@@ -39,7 +39,7 @@ export async function toggleWishlistAction(productId: string) {
 
       // Check if the product is already in the wishlist
       const [existing] = await db
-        .select()
+        .select({ id: schema.wishlists.id })
         .from(schema.wishlists)
         .where(
           and(
@@ -122,7 +122,7 @@ export async function submitReviewAction(productId: string, rating: number, comm
 
       // Check if user already reviewed this product
       const [existing] = await db
-        .select()
+        .select({ id: schema.reviews.id })
         .from(schema.reviews)
         .where(
           and(

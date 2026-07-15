@@ -2,7 +2,7 @@
 
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { eq, or, inArray } from 'drizzle-orm';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { clerkClient } from '@clerk/nextjs/server';
 import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
@@ -240,15 +240,19 @@ export async function getCustomerDsarDataAction(email: string) {
       .where(eq(schema.simulatedOrders.customerEmailHash, targetHash!));
       
     const matchingOrders = [];
-    for (const order of orders) {
-      const items = await db
+    if (orders.length > 0) {
+      const orderIds = orders.map(o => o.id);
+      const allItems = await db
         .select()
         .from(schema.simulatedOrderItems)
-        .where(eq(schema.simulatedOrderItems.orderId, order.id));
-      matchingOrders.push({
-        ...order,
-        items,
-      });
+        .where(inArray(schema.simulatedOrderItems.orderId, orderIds));
+      
+      for (const order of orders) {
+        matchingOrders.push({
+          ...order,
+          items: allItems.filter(i => i.orderId === order.id),
+        });
+      }
     }
 
     // 2. Fetch matching contact submissions using the blind index
@@ -320,27 +324,29 @@ export async function anonymizeCustomerDataAction(email: string) {
     const { createSupabaseAdminClient, isSupabaseStorageConfigured } = await import('@/shared/storage/admin-client');
     const { PAYMENT_SLIPS_BUCKET } = await import('@/shared/storage/config');
 
-    for (const order of matchingOrders) {
-        // Remove Supabase payment slip if exists
-        if (order.paymentSlipUrl && isSupabaseStorageConfigured()) {
-          if (!supabase) supabase = createSupabaseAdminClient();
-          await supabase.storage.from(PAYMENT_SLIPS_BUCKET).remove([order.paymentSlipUrl]);
-          paymentSlipsDeleted++;
-        }
+    const orderIds = matchingOrders.map(o => o.id);
+    const paymentSlipUrls = matchingOrders.map(o => o.paymentSlipUrl).filter(Boolean) as string[];
 
-        await db
-          .update(schema.simulatedOrders)
-          .set({
-            customerName: 'GDPR REDACTED',
-            customerEmail: 'redacted@example.com',
-            customerUserId: null,
-            shippingAddress: 'REDACTED',
-            shippingPhone: 'REDACTED',
-            paymentSlipUrl: null,
-            updatedAt: new Date(),
-          })
-          .where(eq(schema.simulatedOrders.id, order.id));
-        ordersAnonymized++;
+    if (paymentSlipUrls.length > 0 && isSupabaseStorageConfigured()) {
+      supabase = createSupabaseAdminClient();
+      await supabase.storage.from(PAYMENT_SLIPS_BUCKET).remove(paymentSlipUrls);
+      paymentSlipsDeleted = paymentSlipUrls.length;
+    }
+
+    if (orderIds.length > 0) {
+      await db
+        .update(schema.simulatedOrders)
+        .set({
+          customerName: 'GDPR REDACTED',
+          customerEmail: 'redacted@example.com',
+          customerUserId: null,
+          shippingAddress: 'REDACTED',
+          shippingPhone: 'REDACTED',
+          paymentSlipUrl: null,
+          updatedAt: new Date(),
+        })
+        .where(inArray(schema.simulatedOrders.id, orderIds));
+      ordersAnonymized = orderIds.length;
     }
 
     // 2. Fetch matching contact submissions and delete them
@@ -349,11 +355,12 @@ export async function anonymizeCustomerDataAction(email: string) {
       : [];
       
     let submissionsDeleted = 0;
-    for (const sub of matchingSubmissions) {
+    if (matchingSubmissions.length > 0) {
+      const subIds = matchingSubmissions.map(s => s.id);
       await db
         .delete(schema.contactSubmissions)
-        .where(eq(schema.contactSubmissions.id, sub.id));
-      submissionsDeleted++;
+        .where(inArray(schema.contactSubmissions.id, subIds));
+      submissionsDeleted = subIds.length;
     }
 
     let reviewsRedacted = 0;
@@ -364,42 +371,42 @@ export async function anonymizeCustomerDataAction(email: string) {
     // 3. Scrub secondary PII tables using clerkUserId
     if (clerkUserId) {
       // Reviews
-      const userReviews = await db.select().from(schema.reviews).where(eq(schema.reviews.userId, clerkUserId));
-      for (const review of userReviews) {
+      const userReviews = await db.select({ id: schema.reviews.id }).from(schema.reviews).where(eq(schema.reviews.userId, clerkUserId));
+      if (userReviews.length > 0) {
         await db.update(schema.reviews).set({
           userName: 'GDPR REDACTED',
           userImageUrl: null,
           comment: '[REDACTED]',
-        }).where(eq(schema.reviews.id, review.id));
-        reviewsRedacted++;
+        }).where(eq(schema.reviews.userId, clerkUserId));
+        reviewsRedacted = userReviews.length;
       }
 
       // Wishlists
-      const userWishlists = await db.select().from(schema.wishlists).where(eq(schema.wishlists.userId, clerkUserId));
-      for (const wl of userWishlists) {
-        await db.delete(schema.wishlists).where(eq(schema.wishlists.id, wl.id));
-        wishlistsDeleted++;
+      const userWishlists = await db.select({ id: schema.wishlists.id }).from(schema.wishlists).where(eq(schema.wishlists.userId, clerkUserId));
+      if (userWishlists.length > 0) {
+        await db.delete(schema.wishlists).where(eq(schema.wishlists.userId, clerkUserId));
+        wishlistsDeleted = userWishlists.length;
       }
 
       // Questions
-      const userQuestions = await db.select().from(schema.questions).where(eq(schema.questions.userId, clerkUserId));
-      for (const q of userQuestions) {
+      const userQuestions = await db.select({ id: schema.questions.id }).from(schema.questions).where(eq(schema.questions.userId, clerkUserId));
+      if (userQuestions.length > 0) {
         await db.update(schema.questions).set({
           userName: 'GDPR REDACTED',
           userImageUrl: null,
-        }).where(eq(schema.questions.id, q.id));
-        questionsRedacted++;
+        }).where(eq(schema.questions.userId, clerkUserId));
+        questionsRedacted = userQuestions.length;
       }
 
       // Audit Logs
-      const userLogs = await db.select().from(schema.auditLogs).where(eq(schema.auditLogs.userId, clerkUserId));
-      for (const log of userLogs) {
+      const userLogs = await db.select({ id: schema.auditLogs.id }).from(schema.auditLogs).where(eq(schema.auditLogs.userId, clerkUserId));
+      if (userLogs.length > 0) {
         await db.update(schema.auditLogs).set({
           userId: 'gdpr_redacted',
           ipAddress: null,
           userAgent: null,
-        }).where(eq(schema.auditLogs.id, log.id));
-        auditLogsRedacted++;
+        }).where(eq(schema.auditLogs.userId, clerkUserId));
+        auditLogsRedacted = userLogs.length;
       }
     }
 
