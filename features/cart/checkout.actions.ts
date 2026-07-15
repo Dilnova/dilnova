@@ -835,20 +835,29 @@ export async function simulatedCheckoutAction(
       const stockErrors: string[] = [];
       const stockReservations: { productId: string; quantity: number; reservation: StockReservation }[] = [];
 
+      const productItems = verifiedItems.filter((i) => i.type === 'product');
+      const productIds = productItems.map((i) => i.id);
+
+      const invMetaRecords = productIds.length > 0
+        ? await tx
+            .select({
+              productId: schema.inventory.productId,
+              stockAvailability: schema.inventory.stockAvailability,
+              quantity: schema.inventory.quantity,
+            })
+            .from(schema.inventory)
+            .where(inArray(schema.inventory.productId, productIds))
+            .for('update')
+        : [];
+      
+      const invMetaMap = new Map(invMetaRecords.map(r => [r.productId, r]));
+
       for (const item of verifiedItems) {
         if (item.type !== 'product') {
           continue;
         }
 
-        const [invMeta] = await tx
-          .select({
-            stockAvailability: schema.inventory.stockAvailability,
-            quantity: schema.inventory.quantity,
-          })
-          .from(schema.inventory)
-          .where(eq(schema.inventory.productId, item.id))
-          .for('update')
-          .limit(1);
+        const invMeta = invMetaMap.get(item.id);
 
         if (!invMeta) {
           stockErrors.push(`"${item.name}" is not available for online purchase (missing inventory record).`);
@@ -925,15 +934,17 @@ export async function simulatedCheckoutAction(
       }
 
       // ── Insert Order Items using DB-verified information ──
-      for (const item of verifiedItems) {
-        await tx.insert(schema.simulatedOrderItems).values({
-          orderId: order.id,
-          productId: item.id,
-          productName: item.name,
-          vendorOrgId: item.vendorOrgId,
-          quantity: item.quantity,
-          unitPrice: item.price,
-        });
+      if (verifiedItems.length > 0) {
+        await tx.insert(schema.simulatedOrderItems).values(
+          verifiedItems.map((item) => ({
+            orderId: order.id,
+            productId: item.id,
+            productName: item.name,
+            vendorOrgId: item.vendorOrgId,
+            quantity: item.quantity,
+            unitPrice: item.price,
+          }))
+        );
       }
 
       for (const { productId, quantity, reservation } of stockReservations) {
