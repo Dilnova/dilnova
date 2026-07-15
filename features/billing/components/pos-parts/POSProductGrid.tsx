@@ -1,48 +1,52 @@
-import React, { useRef } from 'react';
+'use client';
+
+import React, { useRef, useEffect } from 'react';
 import { toast } from 'sonner';
+import { usePOSContext } from '../POSBillingProvider';
 
-interface ProductGridProps {
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  categoryFilter: 'all' | 'products' | 'services' | 'low_stock';
-  setCategoryFilter: (filter: 'all' | 'products' | 'services' | 'low_stock') => void;
-  paginatedProducts: any[];
-  filteredProductsLength: number;
-  currentPage: number;
-  setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
-  totalPages: number;
-  cart: { product: any; quantity: number }[];
-  addToCart: (product: any, playSound?: boolean) => void;
-  getProductStockInfo: (productId: string) => { qty: number; sku: string; binLocation: string };
-  isProductPurchasable: (item: any) => boolean;
-  inventoryItems: any[];
-  searchInputRef: React.RefObject<HTMLInputElement | null>;
-}
-
-export default function POSProductGrid({
-  searchQuery,
-  setSearchQuery,
-  categoryFilter,
-  setCategoryFilter,
-  paginatedProducts,
-  filteredProductsLength,
-  currentPage,
-  setCurrentPage,
-  totalPages,
-  cart,
-  addToCart,
-  getProductStockInfo,
-  isProductPurchasable,
-  inventoryItems,
-  searchInputRef,
-}: ProductGridProps) {
+export default function POSProductGrid() {
+  const {
+    searchQuery,
+    setSearchQuery,
+    categoryFilter,
+    setCategoryFilter,
+    paginatedProducts,
+    filteredProducts,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    cart,
+    addToCart,
+    getProductStockInfo,
+    isProductPurchasable,
+    data,
+  } = usePOSContext();
   
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Global POS Keyboard Shortcuts for Search
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === '/' || e.key === 'F2') && document.activeElement !== searchInputRef.current) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.key === 'Escape' && document.activeElement === searchInputRef.current) {
+        setSearchQuery('');
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [setSearchQuery]);
+
+  const filteredProductsLength = filteredProducts.length;
+
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
       e.preventDefault();
       const q = searchQuery.trim().toLowerCase();
 
-      const exactMatch = inventoryItems.find(
+      const exactMatch = data.inventoryItems.find(
         (i) =>
           isProductPurchasable(i) &&
           ((i.sku && i.sku.toLowerCase() === q) || i.productId.toLowerCase() === q)

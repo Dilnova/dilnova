@@ -1,16 +1,11 @@
+'use client';
+
 import React from 'react';
+import { usePOSContext } from '../POSBillingProvider';
 
-interface ReceiptModalProps {
-  receiptToPrint: any;
-  setReceiptToPrint: (receipt: any) => void;
-  systemName: string;
-}
+export default function POSReceiptModal() {
+  const { receiptToPrint, setReceiptToPrint, systemName } = usePOSContext();
 
-export default function POSReceiptModal({
-  receiptToPrint,
-  setReceiptToPrint,
-  systemName,
-}: ReceiptModalProps) {
   if (!receiptToPrint) return null;
 
   return (

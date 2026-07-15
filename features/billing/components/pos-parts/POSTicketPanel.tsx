@@ -1,56 +1,40 @@
+'use client';
+
 import React from 'react';
 import { playAudioFeedback } from '../../utils/pos-audio';
+import { usePOSContext } from '../POSBillingProvider';
 
 interface TicketPanelProps {
-  cart: { product: any; quantity: number }[];
-  setCart: (cart: any[]) => void;
-  totalItemCount: number;
-  updateCartQty: (productId: string, qty: number) => void;
-  removeCartItem: (productId: string) => void;
-  discountPercent: number;
-  setDiscountPercent: (pct: number) => void;
-  subtotalAmount: number;
-  discountAmount: number;
-  totalAmount: number;
-  customerName: string;
-  setCustomerName: (name: string) => void;
-  paymentMethod: 'cash' | 'card' | 'other';
-  setPaymentMethod: (method: 'cash' | 'card' | 'other') => void;
-  cashTendered: string;
-  setCashTendered: (cash: string) => void;
-  cashTenderedVal: number;
-  changeDue: number;
-  notes: string;
-  setNotes: (notes: string) => void;
-  handlePOSCheckout: () => void;
-  isPending: boolean;
   isMobileSheet?: boolean;
 }
 
-export default function POSTicketPanel({
-  cart,
-  setCart,
-  totalItemCount,
-  updateCartQty,
-  removeCartItem,
-  discountPercent,
-  setDiscountPercent,
-  subtotalAmount,
-  discountAmount,
-  totalAmount,
-  customerName,
-  setCustomerName,
-  paymentMethod,
-  setPaymentMethod,
-  cashTendered,
-  setCashTendered,
-  cashTenderedVal,
-  changeDue,
-  notes,
-  setNotes,
-  handlePOSCheckout,
-  isPending,
-}: TicketPanelProps) {
+export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelProps) {
+  const {
+    cart,
+    setCart,
+    totalItemCount,
+    updateCartQty,
+    removeCartItem,
+    discountPercent,
+    setDiscountPercent,
+    subtotalAmount,
+    discountAmount,
+    totalAmount,
+    customerName,
+    setCustomerName,
+    paymentMethod,
+    setPaymentMethod,
+    cashTendered,
+    setCashTendered,
+    cashTenderedVal,
+    changeDue,
+    notes,
+    setNotes,
+    handlePOSCheckout,
+    isPending,
+    setIsMobileCartOpen,
+  } = usePOSContext();
+
   return (
     <div className="flex flex-col justify-between h-full min-h-0 overflow-hidden">
       {/* Pinned Ticket Top Header & Scrollable Items Container */}
@@ -286,7 +270,7 @@ export default function POSTicketPanel({
         </div>
 
         <button
-          onClick={handlePOSCheckout}
+          onClick={() => handlePOSCheckout(() => isMobileSheet && setIsMobileCartOpen(false))}
           disabled={cart.length === 0 || isPending}
           className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black cursor-pointer transition-all active:scale-[0.98] shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
         >
