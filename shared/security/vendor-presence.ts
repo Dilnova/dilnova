@@ -30,14 +30,14 @@ function getRawRedisClient(): Redis | null {
 
 /**
  * Sets the vendor's online status in Redis.
- * Expires after 45 seconds to require a 30s heartbeat.
+ * Expires after 75 seconds to comfortably cover the 60s dynamic polling backoff.
  */
 export async function setVendorOnlineStatus(userId: string): Promise<boolean> {
   const redis = getRedisClient();
   if (!redis) return false;
 
   try {
-    await redis.set(`vendor_online:${userId}`, '1', { ex: 45 });
+    await redis.set(`vendor_online:${userId}`, '1', { ex: 75 });
     return true;
   } catch (error) {
     logger.error('Failed to set vendor online status', error, { userId });
