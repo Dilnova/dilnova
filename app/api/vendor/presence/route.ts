@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { setVendorOnlineStatus, popVendorNotifications } from '@/shared/security/vendor-presence';
+import { setVendorOnlineStatus, peekVendorNotifications, ackVendorNotifications } from '@/shared/security/vendor-presence';
 import { getCachedUserRole, getSuperadminOrganizations, getCachedUserBelongsToOrg } from '@/shared/auth/clerk-cache';
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const { userId, orgRole } = await auth();
     if (!userId) {
@@ -31,8 +31,20 @@ export async function POST() {
       return NextResponse.json({ error: 'Failed to update presence' }, { status: 500 });
     }
 
-    // Securely pop any pending notifications for this specific user
-    const notifications = await popVendorNotifications(userId);
+    // Optionally handle acknowledgments if the client passed them
+    let reqBody: any = null;
+    try {
+      reqBody = await req.json();
+    } catch {
+      // Ignore empty body
+    }
+
+    if (reqBody && reqBody.ackIds && Array.isArray(reqBody.ackIds)) {
+      await ackVendorNotifications(userId, reqBody.ackIds);
+    }
+
+    // Securely peek any pending notifications for this specific user
+    const notifications = await peekVendorNotifications(userId);
 
     return NextResponse.json({ success: true, notifications });
   } catch (error) {

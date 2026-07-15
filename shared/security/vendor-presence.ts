@@ -15,6 +15,19 @@ function getRedisClient(): Redis | null {
   }
 }
 
+function getRawRedisClient(): Redis | null {
+  const { url, token } = readUpstashEnv();
+  if (!url || !token) {
+    return null;
+  }
+  try {
+    return new Redis({ url, token, automaticDeserialization: false });
+  } catch (error) {
+    logger.error('Failed to initialize raw Redis for vendor presence', error);
+    return null;
+  }
+}
+
 /**
  * Sets the vendor's online status in Redis.
  * Expires after 45 seconds to require a 30s heartbeat.
@@ -58,7 +71,13 @@ export async function queueVendorNotification(userId: string, payload: any): Pro
 
   try {
     const key = `vendor_notifications:${userId}`;
-    await redis.lpush(key, JSON.stringify(payload));
+    
+    // Inject a unique ID so the client can selectively acknowledge it later
+    const enrichedPayload = typeof payload === 'object' && payload !== null 
+      ? { id: crypto.randomUUID(), ...payload } 
+      : payload;
+
+    await redis.lpush(key, JSON.stringify(enrichedPayload));
     await redis.expire(key, 300); // 5 minutes
     return true;
   } catch (error) {
@@ -68,22 +87,18 @@ export async function queueVendorNotification(userId: string, payload: any): Pro
 }
 
 /**
- * Pops all pending notifications from the vendor's secure Redis queue.
+ * Peeks at all pending notifications from the vendor's secure Redis queue.
+ * Does not remove them (non-destructive).
  */
-export async function popVendorNotifications(userId: string): Promise<any[]> {
+export async function peekVendorNotifications(userId: string): Promise<any[]> {
   const redis = getRedisClient();
   if (!redis) return [];
 
   try {
     const key = `vendor_notifications:${userId}`;
     
-    // Use a transaction/pipeline to reliably get and delete the list
-    const pipeline = redis.pipeline();
-    pipeline.lrange(key, 0, -1);
-    pipeline.del(key);
-    
-    const results = await pipeline.exec();
-    const items = results[0] as any[] | null;
+    // Just lrange, no del
+    const items = await redis.lrange(key, 0, -1);
     
     if (!items || items.length === 0) return [];
     
@@ -91,7 +106,43 @@ export async function popVendorNotifications(userId: string): Promise<any[]> {
     // If it's already an object, use it directly. Otherwise, try parsing it.
     return items.map(item => typeof item === 'string' ? JSON.parse(item) : item);
   } catch (error) {
-    logger.error('Failed to pop vendor notifications', error, { userId });
+    logger.error('Failed to peek vendor notifications', error, { userId });
     return [];
+  }
+}
+
+/**
+ * Acknowledges specific notification IDs by removing them from the vendor's Redis queue.
+ */
+export async function ackVendorNotifications(userId: string, ackIds: string[]): Promise<boolean> {
+  // Use the raw client to prevent auto-parsing. We need exact strings for lrem.
+  const rawRedis = getRawRedisClient();
+  if (!rawRedis || !ackIds.length) return false;
+
+  try {
+    const key = `vendor_notifications:${userId}`;
+    
+    const items = await rawRedis.lrange<string>(key, 0, -1);
+    if (!items || items.length === 0) return true;
+
+    const pipeline = rawRedis.pipeline();
+    for (const item of items) {
+      if (typeof item !== 'string') continue; // Safety check
+      try {
+        const parsed = JSON.parse(item);
+        if (parsed.id && ackIds.includes(parsed.id)) {
+          // lrem matches the exact original stored string payload
+          pipeline.lrem(key, 1, item);
+        }
+      } catch (err) {
+        // Skip invalid JSON
+      }
+    }
+    
+    await pipeline.exec();
+    return true;
+  } catch (error) {
+    logger.error('Failed to ack vendor notifications', error, { userId });
+    return false;
   }
 }
