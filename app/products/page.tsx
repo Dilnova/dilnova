@@ -131,7 +131,10 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
 
   const [allReviewsForPage, userWishlist, inventoryRows] = await Promise.all([
     productIds.length > 0
-      ? db.select().from(schema.reviews).where(inArray(schema.reviews.productId, productIds))
+      ? db.select({
+          productId: schema.reviews.productId,
+          rating: schema.reviews.rating,
+        }).from(schema.reviews).where(inArray(schema.reviews.productId, productIds))
       : Promise.resolve([]),
     (userId && productIds.length > 0)
       ? db.select().from(schema.wishlists).where(and(eq(schema.wishlists.userId, userId), inArray(schema.wishlists.productId, productIds)))
