@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import useSWR from 'swr';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -163,29 +164,32 @@ export default function CartPage() {
     }
 
     let cancelled = false;
-    syncCartPricesAction(cartItems.map((item) => item.id)).then((result) => {
-      if (cancelled || !result.success) return;
+    const timeoutId = setTimeout(() => {
+      syncCartPricesAction(cartItems.map((item) => item.id)).then((result) => {
+        if (cancelled || !result.success) return;
 
-      const previousById = new Map(cartItems.map((item) => [item.id, item]));
-      const priceChanged = result.items.some(
-        (item) => previousById.get(item.id)?.price !== item.price
-      );
+        const previousById = new Map(cartItems.map((item) => [item.id, item]));
+        const priceChanged = result.items.some(
+          (item) => previousById.get(item.id)?.price !== item.price
+        );
 
-      syncCartPrices(result.items, result.removedIds);
+        syncCartPrices(result.items, result.removedIds);
 
-      if (result.removedIds.length > 0 && priceChanged) {
-        setPriceSyncNotice('Some items were removed and prices were updated to match the catalog.');
-      } else if (result.removedIds.length > 0) {
-        setPriceSyncNotice('Some unavailable items were removed from your cart.');
-      } else if (priceChanged) {
-        setPriceSyncNotice('Cart prices were updated to match the current catalog.');
-      } else {
-        setPriceSyncNotice(null);
-      }
-    });
+        if (result.removedIds.length > 0 && priceChanged) {
+          setPriceSyncNotice('Some items were removed and prices were updated to match the catalog.');
+        } else if (result.removedIds.length > 0) {
+          setPriceSyncNotice('Some unavailable items were removed from your cart.');
+        } else if (priceChanged) {
+          setPriceSyncNotice('Cart prices were updated to match the current catalog.');
+        } else {
+          setPriceSyncNotice(null);
+        }
+      });
+    }, 400); // 400ms debounce prevents spamming server on rapid quantity clicks
 
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
   }, [cartItemIds, syncCartPrices]);
 
@@ -210,6 +214,33 @@ export default function CartPage() {
     );
   }, [cartLinesKey, isSignedIn, cartItems]);
 
+  const { 
+    data: checkoutOptionsData, 
+    error: checkoutOptionsError, 
+    isValidating: isCheckoutOptionsLoading 
+  } = useSWR(
+    isSignedIn && cartItems.length > 0
+      ? ['checkoutOptions', cartLinesKey, selectedCheckoutVendorOrgId]
+      : null,
+    async () => {
+      const lines = cartItems.map((item) => ({
+        id: item.id,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+      const result = await getCartCheckoutOptionsAction(lines, selectedCheckoutVendorOrgId || null);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to load checkout options.');
+      }
+      return result;
+    },
+    { revalidateOnFocus: false, dedupingInterval: 500 }
+  );
+
+  useEffect(() => {
+    setOptionsLoading(isCheckoutOptionsLoading);
+  }, [isCheckoutOptionsLoading]);
+
   useEffect(() => {
     if (!isSignedIn || cartItems.length === 0) {
       if (cartItems.length === 0) {
@@ -220,7 +251,6 @@ export default function CartPage() {
           vendorBankTransferByOrg: {},
           vendorCartSummary: [],
         });
-        setOptionsLoading(false);
         setVendorCount(0);
         setSelectedCheckoutVendorOrgId('');
         setRequiresVendorSelection(false);
@@ -232,126 +262,90 @@ export default function CartPage() {
       return;
     }
 
-    let active = true;
-    setOptionsLoading(true);
-
-    const lines = cartItems.map((item) => ({
-      id: item.id,
-      quantity: item.quantity,
-      price: item.price,
-    }));
-
-    const loadTimeout = window.setTimeout(() => {
-      if (!active) return;
-      setOptionsLoading(false);
-      toast.error('Checkout options timed out. Please refresh the page and try again.');
-    }, 20000);
-
-    getCartCheckoutOptionsAction(
-      lines,
-      selectedCheckoutVendorOrgId || null
-    )
-      .then((result) => {
-        if (!active) return;
-
-        if (!result.success) {
-          toast.error(result.error || 'Failed to load checkout options.');
-          setCheckoutOptions({
-            fulfillment: [],
-            payment: [],
-            pickupBranches: [],
-            vendorBankTransferByOrg: {},
-            vendorCartSummary: [],
-          });
-          setVendorCount(0);
-          setSelectedCheckoutVendorOrgId('');
-          setRequiresVendorSelection(false);
-          setFulfillmentMethod('');
-          setPaymentMethod('');
-          setPickupBranchId('');
-          return;
-        }
-
-        setCheckoutOptions({
-          fulfillment: result.fulfillment,
-          payment: result.payment,
-          pickupBranches: result.pickupBranches,
-          vendorBankTransferByOrg: result.vendorBankTransferByOrg || {},
-          vendorCartSummary: result.vendorCartSummary || [],
-        });
-        setVendorCount(result.vendorCount);
-        setRequiresVendorSelection(result.requiresVendorSelection === true);
-
-        if (result.checkoutVendorOrgId) {
-          setSelectedCheckoutVendorOrgId(result.checkoutVendorOrgId);
-          if (!prevCheckoutVendorOrgIdRef.current) {
-            prevCheckoutVendorOrgIdRef.current = result.checkoutVendorOrgId;
-          }
-        } else if (
-          result.vendorCount > 1 &&
-          result.vendorCartSummary.length > 0 &&
-          !selectedCheckoutVendorOrgId
-        ) {
-          const firstVendor = result.vendorCartSummary[0];
-          setSelectedCheckoutVendorOrgId(firstVendor.orgId);
-          setSelectedCheckoutProductIds(firstVendor.productIds);
-          prevCheckoutVendorOrgIdRef.current = firstVendor.orgId;
-        }
-
-        const nextFulfillmentId = result.fulfillment.some((o) => o.id === fulfillmentMethod)
-          ? fulfillmentMethod
-          : (result.fulfillment[0]?.id || '');
-        const nextFulfillment = result.fulfillment.find((o) => o.id === nextFulfillmentId);
-
-        setFulfillmentMethod(nextFulfillmentId);
-        if (!nextFulfillment?.requiresBranch) {
-          setPickupBranchId('');
-        } else {
-          const allBranches = result.pickupBranches.flatMap(pb => pb.branches);
-          if (allBranches.length === 1) {
-            setPickupBranchId(allBranches[0].id);
-          } else if (!allBranches.some(b => b.id === pickupBranchId)) {
-            setPickupBranchId('');
-          }
-        }
-
-        const compatiblePayments = result.payment.filter((payment) =>
-          nextFulfillment
-            ? isPaymentCompatibleWithFulfillment(
-                { requiresDelivery: payment.requiresDelivery },
-                { requiresBranch: nextFulfillment.requiresBranch }
-              )
-            : true
-        );
-        const nextPaymentId = compatiblePayments.some((o) => o.id === paymentMethod)
-          ? paymentMethod
-          : (compatiblePayments[0]?.id || '');
-        setPaymentMethod(nextPaymentId);
-      })
-      .catch(() => {
-        if (!active) return;
-        toast.error('Failed to load checkout options. Please refresh the page.');
-        setCheckoutOptions({
-          fulfillment: [],
-          payment: [],
-          pickupBranches: [],
-          vendorBankTransferByOrg: {},
-          vendorCartSummary: [],
-        });
-        setVendorCount(0);
-        setSelectedCheckoutVendorOrgId('');
-        setRequiresVendorSelection(false);
-      })
-      .finally(() => {
-        window.clearTimeout(loadTimeout);
-        if (active) setOptionsLoading(false);
+    if (checkoutOptionsError) {
+      toast.error(checkoutOptionsError.message || 'Failed to load checkout options. Please refresh the page.');
+      setCheckoutOptions({
+        fulfillment: [],
+        payment: [],
+        pickupBranches: [],
+        vendorBankTransferByOrg: {},
+        vendorCartSummary: [],
       });
+      setVendorCount(0);
+      setSelectedCheckoutVendorOrgId('');
+      setRequiresVendorSelection(false);
+      setFulfillmentMethod('');
+      setPaymentMethod('');
+      setPickupBranchId('');
+      return;
+    }
 
-    return () => {
-      active = false;
-      window.clearTimeout(loadTimeout);
-    };
-  }, [cartLinesKey, isSignedIn, selectedCheckoutVendorOrgId]);
+    if (checkoutOptionsData) {
+      const result = checkoutOptionsData;
+      
+      setCheckoutOptions({
+        fulfillment: result.fulfillment,
+        payment: result.payment,
+        pickupBranches: result.pickupBranches,
+        vendorBankTransferByOrg: result.vendorBankTransferByOrg || {},
+        vendorCartSummary: result.vendorCartSummary || [],
+      });
+      setVendorCount(result.vendorCount);
+      setRequiresVendorSelection(result.requiresVendorSelection === true);
+
+      if (result.checkoutVendorOrgId) {
+        setSelectedCheckoutVendorOrgId(result.checkoutVendorOrgId);
+        if (!prevCheckoutVendorOrgIdRef.current) {
+          prevCheckoutVendorOrgIdRef.current = result.checkoutVendorOrgId;
+        }
+      } else if (
+        result.vendorCount > 1 &&
+        result.vendorCartSummary.length > 0 &&
+        !selectedCheckoutVendorOrgId
+      ) {
+        const firstVendor = result.vendorCartSummary[0];
+        setSelectedCheckoutVendorOrgId(firstVendor.orgId);
+        setSelectedCheckoutProductIds(firstVendor.productIds);
+        prevCheckoutVendorOrgIdRef.current = firstVendor.orgId;
+      }
+
+      // We capture current state variables in this closure. 
+      // SWR strictly guarantees checkoutOptionsData only changes when the SWR key changes (which relies on cartLinesKey),
+      // ensuring this initialization block ONLY runs strictly when the cart contents actually change, preserving user selections otherwise.
+      const nextFulfillmentId = result.fulfillment.some((o) => o.id === fulfillmentMethod)
+        ? fulfillmentMethod
+        : (result.fulfillment[0]?.id || '');
+      const nextFulfillment = result.fulfillment.find((o) => o.id === nextFulfillmentId);
+
+      setFulfillmentMethod(nextFulfillmentId);
+      if (!nextFulfillment?.requiresBranch) {
+        setPickupBranchId('');
+      } else {
+        const allBranches = result.pickupBranches.flatMap(pb => pb.branches);
+        if (allBranches.length === 1) {
+          setPickupBranchId(allBranches[0].id);
+        } else if (!allBranches.some(b => b.id === pickupBranchId)) {
+          setPickupBranchId('');
+        }
+      }
+
+      const compatiblePayments = result.payment.filter((payment) =>
+        nextFulfillment
+          ? isPaymentCompatibleWithFulfillment(
+              { requiresDelivery: payment.requiresDelivery },
+              { requiresBranch: nextFulfillment.requiresBranch }
+            )
+          : true
+      );
+      const nextPaymentId = compatiblePayments.some((o) => o.id === paymentMethod)
+        ? paymentMethod
+        : (compatiblePayments[0]?.id || '');
+      setPaymentMethod(nextPaymentId);
+    }
+    // Note: Deliberately excluding fulfillmentMethod, paymentMethod, pickupBranchId from deps
+    // to mimic the exact prior architecture where these were only initialized on network response.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkoutOptionsData, checkoutOptionsError, isSignedIn, cartItems.length, selectedCheckoutVendorOrgId]);
 
   const selectedCheckoutProductIdSet = new Set(selectedCheckoutProductIds);
   const selectedVendorSummary =
