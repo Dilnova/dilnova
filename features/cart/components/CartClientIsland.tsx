@@ -41,6 +41,22 @@ import { Spinner } from '@/shared/ui/loading';
 import DeliveryAddressFormFields from '@/features/customer/components/DeliveryAddressFormFields';
 import { toast } from 'sonner';
 
+function CheckoutValidationTracker({ 
+  swrKey, 
+  fetcher, 
+  children 
+}: { 
+  swrKey: any; 
+  fetcher: () => Promise<any>; 
+  children: (isValidating: boolean) => React.ReactNode; 
+}) {
+  const { isValidating } = useSWR(swrKey, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 500,
+  });
+  return <>{children(isValidating)}</>;
+}
+
 export default function CartClientIsland() {
   const {
     cartItems,
@@ -111,7 +127,6 @@ export default function CartClientIsland() {
       itemCount: number;
     }[];
   }>({ fulfillment: [], payment: [], pickupBranches: [], vendorBankTransferByOrg: {}, vendorCartSummary: [] });
-  const [optionsLoading, setOptionsLoading] = useState(false);
   const [vendorCount, setVendorCount] = useState(0);
   const [selectedCheckoutVendorOrgId, setSelectedCheckoutVendorOrgId] = useState('');
   const [requiresVendorSelection, setRequiresVendorSelection] = useState(false);
@@ -214,32 +229,27 @@ export default function CartClientIsland() {
     );
   }, [cartLinesKey, isSignedIn, cartItems]);
 
+  const swrKey = isSignedIn && cartItems.length > 0
+    ? ['checkoutOptions', cartLinesKey, selectedCheckoutVendorOrgId]
+    : null;
+
+  const swrFetcher = async () => {
+    const lines = cartItems.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+    const result = await getCartCheckoutOptionsAction(lines, selectedCheckoutVendorOrgId || null);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to load checkout options.');
+    }
+    return result;
+  };
+
   const { 
     data: checkoutOptionsData, 
     error: checkoutOptionsError, 
-    isValidating: isCheckoutOptionsLoading 
-  } = useSWR(
-    isSignedIn && cartItems.length > 0
-      ? ['checkoutOptions', cartLinesKey, selectedCheckoutVendorOrgId]
-      : null,
-    async () => {
-      const lines = cartItems.map((item) => ({
-        id: item.id,
-        quantity: item.quantity,
-        price: item.price,
-      }));
-      const result = await getCartCheckoutOptionsAction(lines, selectedCheckoutVendorOrgId || null);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to load checkout options.');
-      }
-      return result;
-    },
-    { revalidateOnFocus: false, dedupingInterval: 500 }
-  );
-
-  useEffect(() => {
-    setOptionsLoading(isCheckoutOptionsLoading);
-  }, [isCheckoutOptionsLoading]);
+  } = useSWR(swrKey, swrFetcher, { revalidateOnFocus: false, dedupingInterval: 500 });
 
   useEffect(() => {
     if (!isSignedIn || cartItems.length === 0) {
@@ -465,12 +475,15 @@ export default function CartClientIsland() {
     });
   };
 
-  const handleCheckout = async () => {
-    if (!isSignedIn) {
-      toast.error('Please sign in to place an order.');
+  const handleCheckout = async (optionsLoading: boolean) => {
+    if (!isSignedIn) return;
+    if (checkoutItemCount === 0) {
+      toast.error('No items selected for checkout.');
       return;
     }
-
+    if (optionsLoading) {
+      return;
+    }
     const customerName = user?.fullName || user?.firstName || 'Customer';
     const customerEmail = user?.primaryEmailAddress?.emailAddress || '';
 
@@ -604,22 +617,20 @@ export default function CartClientIsland() {
     if (checkoutCartItems.length === 0 || selectedCheckoutProductIds.length === 0) {
       checkoutErrors.push('Tick at least one product to checkout.');
     }
-    if (!optionsLoading) {
-      if (!selectedFulfillment) {
-        checkoutErrors.push('Select a Delivery & Payment option (Fulfillment).');
-      } else if (selectedFulfillment.requiresBranch && !pickupBranchId) {
-        checkoutErrors.push('Select a store branch for pickup.');
+    if (!selectedFulfillment) {
+      checkoutErrors.push('Select a Delivery & Payment option (Fulfillment).');
+    } else if (selectedFulfillment.requiresBranch && !pickupBranchId) {
+      checkoutErrors.push('Select a store branch for pickup.');
+    }
+    if (requiresDeliveryAddress) {
+      if (!shippingAddress.trim() || shippingAddress.trim().length < 5 || !shippingCity.trim() || !shippingState.trim() || !shippingPostalCode.trim()) {
+        checkoutErrors.push('Provide complete delivery details (Street, City, State, and Postal Code are required).');
       }
-      if (requiresDeliveryAddress) {
-        if (!shippingAddress.trim() || shippingAddress.trim().length < 5 || !shippingCity.trim() || !shippingState.trim() || !shippingPostalCode.trim()) {
-          checkoutErrors.push('Provide complete delivery details (Street, City, State, and Postal Code are required).');
-        }
-      }
-      if (!selectedPayment) {
-        checkoutErrors.push('Select a Payment method.');
-      } else if (bankTransferMissingDetails) {
-        checkoutErrors.push('Bank account details are missing for this vendor.');
-      }
+    }
+    if (!paymentMethod) {
+      checkoutErrors.push('Select a payment method.');
+    } else if (bankTransferMissingDetails) {
+      checkoutErrors.push('Selected bank transfer but the vendor has not configured their bank details.');
     }
   }
 
@@ -1081,11 +1092,14 @@ export default function CartClientIsland() {
                 )}
 
                 {/* Fulfillment & Payment Options — signed-in only */}
-                {isSignedIn && cartItems.length > 0 && (
-                  <div className="space-y-4 border-t border-zinc-100 dark:border-zinc-900 pt-4">
-                    <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
-                      Delivery & Payment
-                    </h3>
+                <CheckoutValidationTracker swrKey={swrKey} fetcher={swrFetcher}>
+                  {(optionsLoading) => (
+                    <>
+                      {isSignedIn && cartItems.length > 0 && (
+                        <div className="space-y-4 border-t border-zinc-100 dark:border-zinc-900 pt-4">
+                          <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
+                            Delivery & Payment
+                          </h3>
 
                     {optionsLoading ? (
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Loading checkout options...</p>
@@ -1266,7 +1280,7 @@ export default function CartClientIsland() {
                     </SignInButton>
                   ) : (
                     <button
-                      onClick={handleCheckout}
+                      onClick={() => handleCheckout(optionsLoading)}
                       disabled={
                         checkoutStatus === 'processing' ||
                         optionsLoading ||
@@ -1297,6 +1311,9 @@ export default function CartClientIsland() {
                     Clear Cart
                   </button>
                 </div>
+                    </>
+                  )}
+                </CheckoutValidationTracker>
               </div>
 
               {/* Send to Inbox Box */}
