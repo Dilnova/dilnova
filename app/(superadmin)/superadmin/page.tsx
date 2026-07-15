@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import SuperAdminClient from '@/features/superadmin/components/SuperAdminClient';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
@@ -17,7 +18,6 @@ import {
   getVendorOrgIntegrityReport,
 } from '@/features/superadmin/queries';
 
-export const revalidate = 0; // Fresh database query on each load
 export const maxDuration = 60; // Allow up to 60s for this heavy page (Vercel serverless)
 
 /**
@@ -179,7 +179,7 @@ async function fetchAllData() {
   };
 }
 
-export default async function SuperAdminDashboardPage() {
+async function DashboardData() {
   let data: Awaited<ReturnType<typeof fetchAllData>>;
 
   try {
@@ -188,29 +188,27 @@ export default async function SuperAdminDashboardPage() {
     const err = error instanceof Error ? error : new Error('Unknown error');
     logger.error('CRITICAL ERROR in SuperAdminDashboardPage:', err);
     return (
-      <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
-        <div className="bg-red-50 border border-red-500 text-red-900 p-6 rounded-lg shadow-sm">
-          <h1 className="text-2xl font-bold mb-4">CRITICAL RENDER ERROR</h1>
-          <p className="mb-4">The Superadmin Dashboard crashed during server-side rendering. This error was caught by the page-level try-catch block.</p>
-          <div className="bg-white p-4 rounded border border-red-200 overflow-x-auto">
-            <h2 className="font-semibold mb-2">Error Message:</h2>
-            <pre className="text-sm font-mono text-red-600 whitespace-pre-wrap">{err.message}</pre>
-            {err.stack && (
-              <>
-                <h2 className="font-semibold mt-4 mb-2">Stack Trace:</h2>
-                <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap">{err.stack}</pre>
-              </>
-            )}
-          </div>
+      <div className="bg-red-50 border border-red-500 text-red-900 p-6 rounded-lg shadow-sm mt-6">
+        <h1 className="text-2xl font-bold mb-4">CRITICAL RENDER ERROR</h1>
+        <p className="mb-4">The Superadmin Dashboard crashed during server-side rendering. This error was caught by the page-level try-catch block.</p>
+        <div className="bg-white p-4 rounded border border-red-200 overflow-x-auto">
+          <h2 className="font-semibold mb-2">Error Message:</h2>
+          <pre className="text-sm font-mono text-red-600 whitespace-pre-wrap">{err.message}</pre>
+          {err.stack && (
+            <>
+              <h2 className="font-semibold mt-4 mb-2">Stack Trace:</h2>
+              <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap">{err.stack}</pre>
+            </>
+          )}
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
+    <>
       {data.queryErrors.length > 0 && (
-        <div className="mb-6 rounded-lg border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/50 p-4">
+        <div className="mb-6 mt-6 rounded-lg border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/50 p-4">
           <h3 className="font-semibold text-red-800 dark:text-red-300 mb-1">
             ⚠️ Some data could not be loaded
           </h3>
@@ -250,6 +248,29 @@ export default async function SuperAdminDashboardPage() {
         organizations={data.organizations}
         vendorOrgIntegrity={data.vendorOrgIntegrity}
       />
+    </>
+  );
+}
+
+export default function SuperAdminDashboardPage() {
+  return (
+    <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
+      <div className="mb-4">
+        <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950 dark:text-zinc-50">
+          Superadmin Dashboard
+        </h1>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+          Platform-wide analytics, operational data, and configurations.
+        </p>
+      </div>
+      <Suspense fallback={
+        <div className="flex flex-col items-center justify-center p-20 space-y-4">
+          <span className="text-5xl animate-pulse">📊</span>
+          <p className="text-sm font-mono text-zinc-500 uppercase tracking-widest">Loading Dashboard Data...</p>
+        </div>
+      }>
+        <DashboardData />
+      </Suspense>
     </main>
   );
 }
