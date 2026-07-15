@@ -128,6 +128,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
                 src={bannerUrl}
                 alt="Storefront Banner Preview"
                 fill
+                sizes="(max-width: 768px) 100vw, 800px"
                 className="object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
