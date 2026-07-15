@@ -27,6 +27,13 @@ import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Toaster } from 'sonner'
 import { ConfirmProvider } from '@/shared/ui/notifications'
 import { GlobalNotificationListener } from '@/shared/ui/notifications/GlobalNotificationListener'
+import { Inter } from 'next/font/google';
+
+const interFont = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-geist-sans',
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting('system_favicon', '');
@@ -185,7 +192,7 @@ export default async function RootLayout({
 
     return (
       <html lang="en">
-        <body className="antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
+        <body className={`${interFont.variable} antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950`}>
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
