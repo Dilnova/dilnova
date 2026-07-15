@@ -5,11 +5,8 @@ import OrgCheckoutOptionsForm from '@/features/organization/components/OrgChecko
 import RoleSelector from '@/features/admin/components/RoleSelector';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import { getBranchCountForOrg } from '@/features/admin/queries';
-import {
-  bankDetailsToProfileFormFields,
-  hasBankTransferConfiguredForOrg,
-  parseBankDetailsFromClerkOrg,
-} from '@/features/billing/bank-transfer-metadata';
+import { bankDetailsToProfileFormFields, hasBankTransferConfiguredForOrg, parseBankDetailsFromClerkOrg } from '@/features/billing/bank-transfer-metadata';
+import Image from 'next/image';
 
 export default async function AdminPage() {
   const { orgId, orgRole } = await auth();
@@ -200,7 +197,7 @@ export default async function AdminPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         {avatarUrl ? (
-                          <img src={avatarUrl} alt={fullName} className="w-10 h-10 rounded-full border border-zinc-200/40 object-cover flex-shrink-0" />
+                          <Image src={avatarUrl} alt={fullName} width={40} height={40} className="w-10 h-10 rounded-full border border-zinc-200/40 object-cover flex-shrink-0" />
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-400 flex items-center justify-center font-bold text-xs flex-shrink-0 font-mono">
                             {fullName.charAt(0).toUpperCase()}
@@ -251,7 +248,7 @@ export default async function AdminPage() {
                       <tr key={m.id} className="hover:bg-zinc-50/20 dark:hover:bg-zinc-900/20 transition-colors">
                         <td className="py-3 px-4 font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
                           {avatarUrl ? (
-                            <img src={avatarUrl} alt={fullName} className="w-8 h-8 rounded-full border border-zinc-200/40 object-cover flex-shrink-0" />
+                            <Image src={avatarUrl} alt={fullName} width={32} height={32} className="w-8 h-8 rounded-full border border-zinc-200/40 object-cover flex-shrink-0" />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 font-mono">
                               {fullName.charAt(0).toUpperCase()}

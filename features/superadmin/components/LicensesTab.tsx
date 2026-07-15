@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
+import Image from 'next/image';
 import { toast } from 'sonner';
 import { updateOrgImsLicenseAction } from '@/features/inventory/superadmin.actions';
 
@@ -102,7 +103,7 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           {org.imageUrl && (
-                            <img src={org.imageUrl} alt={org.name} className="w-6 h-6 rounded-full" />
+                            <Image src={org.imageUrl} alt={org.name} width={24} height={24} className="w-6 h-6 rounded-full" />
                           )}
                           <div>
                             <p className="font-semibold text-zinc-900 dark:text-zinc-200">{org.name}</p>

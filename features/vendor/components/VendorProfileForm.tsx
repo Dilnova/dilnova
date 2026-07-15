@@ -5,6 +5,7 @@ import { useState, useTransition, useRef } from 'react';
 import { updateVendorMetadata } from '@/features/vendor/actions';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 interface VendorProfileFormProps {
   orgId: string;
@@ -123,10 +124,11 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
         {bannerUrl ? (
           <div className="space-y-3">
             <div className="relative h-32 w-full rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900">
-              <img
+              <Image
                 src={bannerUrl}
                 alt="Storefront Banner Preview"
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
