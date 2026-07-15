@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import SuperAdminClient from '@/features/superadmin/components/SuperAdminClient';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
@@ -18,12 +17,22 @@ import {
   getVendorOrgIntegrityReport,
 } from '@/features/superadmin/queries';
 
+import SuperAdminNavigation from '@/features/superadmin/components/SuperAdminNavigation';
+import OverviewTab from '@/features/superadmin/components/tabs/OverviewTab';
+import CategoriesTab from '@/features/superadmin/components/tabs/CategoriesTab';
+import ProductsTab from '@/features/superadmin/components/tabs/ProductsTab';
+import PricingTab from '@/features/superadmin/components/tabs/PricingTab';
+import ContactsTab from '@/features/superadmin/components/tabs/ContactsTab';
+import SettingsTab from '@/features/superadmin/components/tabs/SettingsTab';
+import ComplianceTab from '@/features/superadmin/components/tabs/ComplianceTab';
+import InventoryTab from '@/features/inventory/components/InventoryTab';
+import VendorOrgIssuesTab from '@/features/vendor-org/components/VendorOrgIssuesTab';
+import LicensesTab from '@/features/superadmin/components/LicensesTab';
+
 export const maxDuration = 60; // Allow up to 60s for this heavy page (Vercel serverless)
 
 /**
  * Safely execute a data-fetching function, returning a fallback value if it fails.
- * This prevents a single failing query (e.g. due to a PII decryption error) from
- * crashing the entire superadmin dashboard. The error is still logged server-side.
  */
 async function safeQuery<T>(label: string, fn: () => Promise<T>, fallback: T): Promise<{ data: T; error: string | null }> {
   try {
@@ -35,179 +44,185 @@ async function safeQuery<T>(label: string, fn: () => Promise<T>, fallback: T): P
   }
 }
 
-async function fetchAllData() {
+async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const params = await searchParams;
+  const activeTab = params.tab || 'overview';
+  const queryErrors: string[] = [];
+
+  const pushError = (err: string | null) => {
+    if (err) queryErrors.push(err);
+  };
+
+  // We need vendor org integrity for badges & org issues
   const client = await clerkClient();
   const organizations = await getSuperadminOrganizations(client);
-
-  // BATCH 1: Core catalog data (4 queries)
-  const [
-    categoriesResult,
-    productsResult,
-    pricingPlansResult,
-    inventoryItemsResult,
-  ] = await Promise.all([
-    safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []),
-    safeQuery('Products', getProductsWithCategoryDetails, []),
-    safeQuery('Pricing Plans', getPricingPlansOrderedByCreatedAtDesc, []),
-    safeQuery('Inventory Items', getInventoryItemsWithDetails, []),
-  ]);
-
-  // BATCH 2: Operational data (4 queries)
-  const [
-    inventoryMovementsResult,
-    suppliersResult,
-    contactsResult,
-    ordersResult,
-  ] = await Promise.all([
-    safeQuery('Inventory Movements', getInventoryMovementsWithProductName, []),
-    safeQuery('Suppliers', getImsSuppliersOrderedByCreatedAtDesc, []),
-    safeQuery('Contact Submissions', getContactSubmissionsOrderedByCreatedAtDesc, []),
-    safeQuery('Simulated Orders', getSimulatedOrdersWithItems, []),
-  ]);
-
-  // BATCH 3: System settings (8 queries to settings table)
-  const [
-    maxMediaLimitSetting,
-    systemLogo,
-    systemFavicon,
-    systemName,
-    hardwareCustomSetting,
-    nurseryCustomSetting,
-    techCustomSetting,
-    servicesCustomSetting,
-  ] = await Promise.all([
-    getSystemSetting('max_media_limit', '5'),
-    getSystemSetting('system_logo', ''),
-    getSystemSetting('system_favicon', ''),
-    getSystemSetting('system_name', 'Dilnova'),
-    getSystemSetting('custom_storefront_distar-hardware', 'true'),
-    getSystemSetting('custom_storefront_distar-nursery', 'true'),
-    getSystemSetting('custom_storefront_distar-tech', 'true'),
-    getSystemSetting('custom_storefront_dilstar-services', 'true'),
-  ]);
-
-  // BATCH 4: Catalogs and heavy reports
-  const [
-    checkoutOptionsCatalog,
-    stockAvailabilityCatalog,
-    vendorOrgIntegrityResult,
-  ] = await Promise.all([
-    getCheckoutOptionsCatalog(),
-    getStockAvailabilityCatalog(),
-    safeQuery('Vendor Org Integrity', () => getVendorOrgIntegrityReport(organizations), {
-      knownOrgCount: 0,
-      issueGroups: [],
-      totals: {
-        orphanOrgIds: 0,
-        products: 0,
-        orderItems: 0,
-        suppliers: 0,
-        branches: 0,
-        billingReceipts: 0,
-      }
-    }),
-  ]);
-
-  const categories = categoriesResult.data;
-  const products = productsResult.data;
-  const pricingPlans = pricingPlansResult.data;
-  const inventoryItems = inventoryItemsResult.data;
-  const inventoryMovements = inventoryMovementsResult.data;
-
-  const totalProductsCount = products.filter((p) => p?.type === 'product').length;
-  const totalServicesCount = products.filter((p) => p?.type === 'service').length;
-  const totalCategoriesCount = categories.length;
-  const totalViewsCount = products.reduce((acc, p) => acc + (p?.views || 0), 0);
-
-  const stats = {
-    totalProducts: totalProductsCount,
-    totalServices: totalServicesCount,
-    totalCategories: totalCategoriesCount,
-    totalViews: totalViewsCount,
-  };
-
-  const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
-  const hardwareCustomEnabled = hardwareCustomSetting === 'true';
-  const nurseryCustomEnabled = nurseryCustomSetting === 'true';
-  const techCustomEnabled = techCustomSetting === 'true';
-  const servicesCustomEnabled = servicesCustomSetting === 'true';
-
-  // Compute products without inventory in-memory
-  const productsWithoutInventory = products.filter((p) => {
-    return !inventoryItems.some((i) => i.productId === p.id);
+  const vendorOrgIntegrityResult = await safeQuery('Vendor Org Integrity', () => getVendorOrgIntegrityReport(organizations), {
+    knownOrgCount: 0,
+    issueGroups: [],
+    totals: { orphanOrgIds: 0, products: 0, orderItems: 0, suppliers: 0, branches: 0, billingReceipts: 0 }
   });
-
+  pushError(vendorOrgIntegrityResult.error);
   const vendorOrgIntegrity = vendorOrgIntegrityResult.data;
+  const vendorIssuesCount = vendorOrgIntegrity.totals.orphanOrgIds || 0;
 
-  // Collect any query errors to display a warning banner
-  const queryErrors = [
-    categoriesResult.error,
-    productsResult.error,
-    pricingPlansResult.error,
-    inventoryItemsResult.error,
-    inventoryMovementsResult.error,
-    suppliersResult.error,
-    contactsResult.error,
-    ordersResult.error,
-    vendorOrgIntegrityResult.error,
-  ].filter(Boolean) as string[];
+  // We need contacts for badges
+  const contactsResult = await safeQuery('Contact Submissions', getContactSubmissionsOrderedByCreatedAtDesc, []);
+  pushError(contactsResult.error);
+  const pendingContactsCount = contactsResult.data.filter(c => c.status === 'pending').length;
 
-  return {
-    categories,
-    products,
-    stats,
-    maxMediaLimit,
-    systemLogo,
-    systemFavicon,
-    systemName,
-    pricingPlans,
-    contactSubmissions: contactsResult.data,
-    hardwareCustomEnabled,
-    nurseryCustomEnabled,
-    techCustomEnabled,
-    servicesCustomEnabled,
-    checkoutOptionsCatalog,
-    stockAvailabilityCatalog,
-    inventoryItems,
-    imsSuppliers: suppliersResult.data,
-    inventoryMovements,
-    simulatedOrders: ordersResult.data,
-    productsWithoutInventory,
-    organizations,
-    vendorOrgIntegrity,
-    queryErrors,
-  };
-}
+  let content: React.ReactNode = null;
 
-async function DashboardData() {
-  let data: Awaited<ReturnType<typeof fetchAllData>>;
+  switch (activeTab) {
+    case 'overview': {
+      const [categoriesResult, productsResult] = await Promise.all([
+        safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []),
+        safeQuery('Products', getProductsWithCategoryDetails, []),
+      ]);
+      pushError(categoriesResult.error);
+      pushError(productsResult.error);
 
-  try {
-    data = await fetchAllData();
-  } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error('Unknown error');
-    logger.error('CRITICAL ERROR in SuperAdminDashboardPage:', err);
-    return (
-      <div className="bg-red-50 border border-red-500 text-red-900 p-6 rounded-lg shadow-sm mt-6">
-        <h1 className="text-2xl font-bold mb-4">CRITICAL RENDER ERROR</h1>
-        <p className="mb-4">The Superadmin Dashboard crashed during server-side rendering. This error was caught by the page-level try-catch block.</p>
-        <div className="bg-white p-4 rounded border border-red-200 overflow-x-auto">
-          <h2 className="font-semibold mb-2">Error Message:</h2>
-          <pre className="text-sm font-mono text-red-600 whitespace-pre-wrap">{err.message}</pre>
-          {err.stack && (
-            <>
-              <h2 className="font-semibold mt-4 mb-2">Stack Trace:</h2>
-              <pre className="text-xs font-mono text-gray-700 whitespace-pre-wrap">{err.stack}</pre>
-            </>
-          )}
-        </div>
-      </div>
-    );
+      const categories = categoriesResult.data;
+      const products = productsResult.data;
+      const stats = {
+        totalProducts: products.filter(p => p?.type === 'product').length,
+        totalServices: products.filter(p => p?.type === 'service').length,
+        totalCategories: categories.length,
+        totalViews: products.reduce((acc, p) => acc + (p?.views || 0), 0),
+      };
+
+      content = <OverviewTab stats={stats} products={products} />;
+      break;
+    }
+    case 'categories': {
+      const categoriesResult = await safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []);
+      pushError(categoriesResult.error);
+      content = <CategoriesTab categories={categoriesResult.data} />;
+      break;
+    }
+    case 'products': {
+      const [productsResult, categoriesResult, maxMediaSetting] = await Promise.all([
+        safeQuery('Products', getProductsWithCategoryDetails, []),
+        safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []),
+        getSystemSetting('max_media_limit', '5'),
+      ]);
+      pushError(productsResult.error);
+      pushError(categoriesResult.error);
+      content = (
+        <ProductsTab
+          products={productsResult.data}
+          categories={categoriesResult.data}
+          organizations={organizations}
+          maxMediaLimit={parseInt(maxMediaSetting, 10) || 5}
+        />
+      );
+      break;
+    }
+    case 'inventory': {
+      const [productsResult, inventoryItemsResult, inventoryMovementsResult, suppliersResult, ordersResult, checkoutOptionsCatalog] = await Promise.all([
+        safeQuery('Products', getProductsWithCategoryDetails, []),
+        safeQuery('Inventory Items', getInventoryItemsWithDetails, []),
+        safeQuery('Inventory Movements', getInventoryMovementsWithProductName, []),
+        safeQuery('Suppliers', getImsSuppliersOrderedByCreatedAtDesc, []),
+        safeQuery('Simulated Orders', getSimulatedOrdersWithItems, []),
+        getCheckoutOptionsCatalog(),
+      ]);
+      pushError(productsResult.error);
+      pushError(inventoryItemsResult.error);
+      pushError(inventoryMovementsResult.error);
+      pushError(suppliersResult.error);
+      pushError(ordersResult.error);
+
+      const productsWithoutInventory = productsResult.data.filter(p => !inventoryItemsResult.data.some(i => i.productId === p.id));
+      content = (
+        <InventoryTab
+          inventoryItems={inventoryItemsResult.data}
+          movements={inventoryMovementsResult.data}
+          suppliers={suppliersResult.data}
+          simulatedOrders={ordersResult.data}
+          productsWithoutInventory={productsWithoutInventory}
+          checkoutOptionsCatalog={checkoutOptionsCatalog}
+          organizations={organizations}
+        />
+      );
+      break;
+    }
+    case 'vendor-issues': {
+      content = (
+        <VendorOrgIssuesTab
+          integrityReport={vendorOrgIntegrity}
+          organizations={organizations}
+        />
+      );
+      break;
+    }
+    case 'licenses': {
+      content = <LicensesTab organizations={organizations} />;
+      break;
+    }
+    case 'pricing': {
+      const pricingPlansResult = await safeQuery('Pricing Plans', getPricingPlansOrderedByCreatedAtDesc, []);
+      pushError(pricingPlansResult.error);
+      content = <PricingTab pricingPlans={pricingPlansResult.data} />;
+      break;
+    }
+    case 'contacts': {
+      content = <ContactsTab contactSubmissions={contactsResult.data} />;
+      break;
+    }
+    case 'settings': {
+      const [
+        maxMediaLimitSetting,
+        systemLogo,
+        systemFavicon,
+        systemName,
+        hardwareCustomSetting,
+        nurseryCustomSetting,
+        techCustomSetting,
+        servicesCustomSetting,
+        checkoutOptionsCatalog,
+        stockAvailabilityCatalog,
+      ] = await Promise.all([
+        getSystemSetting('max_media_limit', '5'),
+        getSystemSetting('system_logo', ''),
+        getSystemSetting('system_favicon', ''),
+        getSystemSetting('system_name', 'Dilnova'),
+        getSystemSetting('custom_storefront_distar-hardware', 'true'),
+        getSystemSetting('custom_storefront_distar-nursery', 'true'),
+        getSystemSetting('custom_storefront_distar-tech', 'true'),
+        getSystemSetting('custom_storefront_dilstar-services', 'true'),
+        getCheckoutOptionsCatalog(),
+        getStockAvailabilityCatalog(),
+      ]);
+
+      content = (
+        <SettingsTab
+          systemName={systemName}
+          mediaLimit={parseInt(maxMediaLimitSetting, 10) || 5}
+          logoUrl={systemLogo}
+          faviconUrl={systemFavicon}
+          hardwareCustomEnabled={hardwareCustomSetting === 'true'}
+          nurseryCustomEnabled={nurseryCustomSetting === 'true'}
+          techCustomEnabled={techCustomSetting === 'true'}
+          servicesCustomEnabled={servicesCustomSetting === 'true'}
+          checkoutOptionsCatalog={checkoutOptionsCatalog}
+          stockAvailabilityCatalog={stockAvailabilityCatalog}
+        />
+      );
+      break;
+    }
+    case 'compliance': {
+      content = <ComplianceTab />;
+      break;
+    }
+    default: {
+      content = <div className="p-10 text-center text-zinc-500 font-mono">Invalid Tab</div>;
+      break;
+    }
   }
 
   return (
     <>
-      {data.queryErrors.length > 0 && (
+      {queryErrors.length > 0 && (
         <div className="mb-6 mt-6 rounded-lg border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/50 p-4">
           <h3 className="font-semibold text-red-800 dark:text-red-300 mb-1">
             ⚠️ Some data could not be loaded
@@ -218,41 +233,26 @@ async function DashboardData() {
             environment variable in production.
           </p>
           <ul className="list-disc list-inside text-sm text-red-600 dark:text-red-400 space-y-1">
-            {data.queryErrors.map((err, i) => (
+            {queryErrors.map((err, i) => (
               <li key={i}>{err}</li>
             ))}
           </ul>
         </div>
       )}
-      <SuperAdminClient
-        categories={data.categories}
-        products={data.products}
-        stats={data.stats}
-        maxMediaLimit={data.maxMediaLimit}
-        systemLogo={data.systemLogo}
-        systemFavicon={data.systemFavicon}
-        systemName={data.systemName}
-        pricingPlans={data.pricingPlans}
-        contactSubmissions={data.contactSubmissions}
-        hardwareCustomEnabled={data.hardwareCustomEnabled}
-        nurseryCustomEnabled={data.nurseryCustomEnabled}
-        techCustomEnabled={data.techCustomEnabled}
-        servicesCustomEnabled={data.servicesCustomEnabled}
-        checkoutOptionsCatalog={data.checkoutOptionsCatalog}
-        stockAvailabilityCatalog={data.stockAvailabilityCatalog}
-        inventoryItems={data.inventoryItems}
-        imsSuppliers={data.imsSuppliers}
-        inventoryMovements={data.inventoryMovements}
-        simulatedOrders={data.simulatedOrders}
-        productsWithoutInventory={data.productsWithoutInventory}
-        organizations={data.organizations}
-        vendorOrgIntegrity={data.vendorOrgIntegrity}
-      />
+
+      <div className="space-y-6">
+        <SuperAdminNavigation 
+          activeTab={activeTab} 
+          vendorIssuesCount={vendorIssuesCount} 
+          pendingContactsCount={pendingContactsCount} 
+        />
+        {content}
+      </div>
     </>
   );
 }
 
-export default function SuperAdminDashboardPage() {
+export default function SuperAdminDashboardPage(props: { searchParams: Promise<{ tab?: string }> }) {
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
       <div className="mb-4">
@@ -269,7 +269,7 @@ export default function SuperAdminDashboardPage() {
           <p className="text-sm font-mono text-zinc-500 uppercase tracking-widest">Loading Dashboard Data...</p>
         </div>
       }>
-        <DashboardData />
+        <DashboardData searchParams={props.searchParams} />
       </Suspense>
     </main>
   );
