@@ -16,8 +16,10 @@ import './globals.css'
 import { CartProvider } from '@/features/cart/context/CartContext'
 import CartIcon from '@/features/cart/components/CartIcon'
 import LanguageSelector from '@/shared/ui/language/LanguageSelector'
-import LanguageSplash from '@/shared/ui/language/LanguageSplash'
-import CartMergeBanner from '@/features/cart/components/CartMergeBanner'
+import dynamic from 'next/dynamic';
+
+const LanguageSplash = dynamic(() => import('@/shared/ui/language/LanguageSplash'));
+const CartMergeBanner = dynamic(() => import('@/features/cart/components/CartMergeBanner'));
 
 import { getSystemSetting } from '@/shared/platform/settings'
 import Image from 'next/image'
