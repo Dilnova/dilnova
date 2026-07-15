@@ -8,7 +8,7 @@ import VendorInventoryWorkspace from '@/features/inventory/components/VendorInve
 import { RestrictedAccessBlock } from '@/shared/components/RestrictedAccessBlock';
 import { getVendorInventoryData } from '@/features/inventory/vendor.actions';
 import { getVendorProductsForOrg } from '@/features/catalog/queries';
-import { getBranchCountForOrg, getOnlineOrderCountForVendor } from '@/features/vendor/queries';
+import { getBranchCountForOrg, getOnlineOrderCountForVendor, getCachedOrganization } from '@/features/vendor/queries';
 import { hasBankTransferConfiguredForOrg } from '@/features/billing/bank-transfer-metadata';
 
 const IMS_WORKSPACE_TABS = ['stock', 'suppliers', 'orders', 'movements', 'branches'] as const;
@@ -43,9 +43,8 @@ export default async function VendorPage({ searchParams }: PageProps) {
     );
   }
 
-  // Fetch current organization details from Clerk API
-  const client = await clerkClient();
-  const org = await client.organizations.getOrganization({ organizationId: orgId }).catch((err) => {
+  // Fetch current organization details (cached to avoid Clerk API rate limits)
+  const org = await getCachedOrganization(orgId).catch((err) => {
     throw new Error(`Failed to load organization details from Clerk API: ${err.message || 'Rate limit or timeout'}. Please try refreshing the page.`);
   });
 

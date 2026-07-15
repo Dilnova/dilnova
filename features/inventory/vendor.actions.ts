@@ -28,8 +28,9 @@ import {
   sumBranchAllocatedQuantity,
   validateBranchAllocationAgainstCentral,
   validateCentralQuantityCoversBranches,
-  incrementDefaultBranchStock,
-  decrementDefaultBranchStock,
+  incrementBranchStock,
+  decrementBranchStock,
+  getOrgDefaultBranchId,
 } from '@/features/inventory/ledger';
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
@@ -55,6 +56,7 @@ export async function vendorAdjustInventoryAction(data: {
   quantityChange: number;
   type: 'restock' | 'manual_adjustment' | 'damage_loss';
   reason?: string;
+  branchId?: string;
 }) {
   return runWithCorrelationId(async () => {
     await rateLimit(30, 60 * 1000);
@@ -90,6 +92,28 @@ export async function vendorAdjustInventoryAction(data: {
       }
 
       if (premiumStatus.multiBranchActive) {
+        const targetBranchId = parsed.data.branchId ?? await getOrgDefaultBranchId(tx, orgId);
+
+        if (targetBranchId) {
+          if (parsed.data.quantityChange > 0) {
+            await incrementBranchStock(
+              tx,
+              targetBranchId,
+              inv.productId,
+              parsed.data.quantityChange
+            );
+          } else if (parsed.data.quantityChange < 0) {
+            await decrementBranchStock(
+              tx,
+              targetBranchId,
+              inv.productId,
+              -parsed.data.quantityChange
+            );
+          }
+        }
+
+        // Validate that the new central quantity covers the total branch allocations
+        // This is strictly checked AFTER branch modifications are applied in the transaction
         const totalBranchAllocated = await sumBranchAllocatedQuantity(tx, inv.productId);
         const branchCheck = validateCentralQuantityCoversBranches(nextQuantity, totalBranchAllocated);
         if (!branchCheck.ok) {
@@ -113,23 +137,6 @@ export async function vendorAdjustInventoryAction(data: {
         reason: parsed.data.reason || null,
         userId,
       });
-
-      if (premiumStatus.multiBranchActive && parsed.data.quantityChange > 0) {
-        await incrementDefaultBranchStock(
-          tx,
-          orgId,
-          inv.productId,
-          parsed.data.quantityChange
-        );
-      } else if (premiumStatus.multiBranchActive && parsed.data.quantityChange < 0) {
-        await decrementDefaultBranchStock(
-          tx,
-          orgId,
-          inv.productId,
-          -parsed.data.quantityChange
-        );
-      }
-
       return nextQuantity;
     });
 

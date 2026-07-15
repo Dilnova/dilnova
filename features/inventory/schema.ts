@@ -36,6 +36,7 @@ export const adjustInventorySchema = z.object({
   quantityChange: z.number().int('Quantity must be a whole number.'),
   type: z.enum(['restock', 'manual_adjustment', 'damage_loss']),
   reason: z.string().max(500, 'Reason cannot exceed 500 characters.').trim().optional().default(''),
+  branchId: uuidField.optional(),
 });
 
 export const updateInventoryDetailsSchema = z.object({
