@@ -3,7 +3,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { logger } from '@/shared/logging/logger';
@@ -301,6 +301,68 @@ export async function incrementProductViewsAction(productId: string) {
       // Silently handle rate limit or other issues to prevent breaking client-side UX
       logger.warn('Failed to increment product views', { productId, error });
       return { success: false };
+    }
+  });
+}
+
+/**
+ * Fetches the user's wishlisted product IDs for a given set of products.
+ */
+export async function getUserWishlistIdsAction(productIds: string[]) {
+  if (!productIds || productIds.length === 0) return [];
+  return runWithCorrelationId(async () => {
+    try {
+      const { userId } = await auth();
+      if (!userId) return [];
+      const wishlists = await db
+        .select({ productId: schema.wishlists.productId })
+        .from(schema.wishlists)
+        .where(
+          and(
+            eq(schema.wishlists.userId, userId),
+            inArray(schema.wishlists.productId, productIds)
+          )
+        );
+      return wishlists.map(w => w.productId);
+    } catch (error) {
+      logger.error('Error fetching user wishlist IDs', error);
+      return [];
+    }
+  });
+}
+
+/**
+ * Fetches the user's personalized state for a specific product.
+ */
+export async function getUserProductStateAction(productId: string) {
+  return runWithCorrelationId(async () => {
+    try {
+      const { userId } = await auth();
+      if (!userId) {
+        return { userHasReviewed: false, isVerifiedBuyer: false, existingReview: null };
+      }
+      
+      const [reviewRows, purchased] = await Promise.all([
+        db.select({ rating: schema.reviews.rating, comment: schema.reviews.comment })
+          .from(schema.reviews)
+          .where(
+            and(
+              eq(schema.reviews.userId, userId),
+              eq(schema.reviews.productId, productId)
+            )
+          )
+          .limit(1),
+        hasCustomerPurchasedProduct(productId, userId),
+      ]);
+      
+      return {
+        userHasReviewed: reviewRows.length > 0,
+        isVerifiedBuyer: purchased,
+        existingReview: reviewRows[0] || null,
+      };
+    } catch (error) {
+      logger.error('Error fetching user product state', error);
+      return { userHasReviewed: false, isVerifiedBuyer: false, existingReview: null };
     }
   });
 }

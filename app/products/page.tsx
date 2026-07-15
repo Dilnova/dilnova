@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { clerkClient, auth } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { and, eq, inArray, sql } from 'drizzle-orm';
@@ -125,19 +125,15 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const totalCount = countResult[0]?.count || 0;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-  // Fetch reviews and wishlist statuses for the returned product IDs in parallel
-  const { userId } = await auth();
+  // Fetch reviews and inventory for the returned product IDs in parallel
   const productIds = results.map((r) => r.product.id);
 
-  const [allReviewsForPage, userWishlist, inventoryRows] = await Promise.all([
+  const [allReviewsForPage, inventoryRows] = await Promise.all([
     productIds.length > 0
       ? db.select({
           productId: schema.reviews.productId,
           rating: schema.reviews.rating,
         }).from(schema.reviews).where(inArray(schema.reviews.productId, productIds))
-      : Promise.resolve([]),
-    (userId && productIds.length > 0)
-      ? db.select().from(schema.wishlists).where(and(eq(schema.wishlists.userId, userId), inArray(schema.wishlists.productId, productIds)))
       : Promise.resolve([]),
     productIds.length > 0
       ? db
@@ -155,8 +151,6 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
     inventoryRows.map((row) => [row.productId, { stockAvailability: row.stockAvailability, quantity: row.quantity }])
   );
 
-  const wishlistSet = new Set(userWishlist.map((w) => w.productId));
-
   const items: CatalogItemViewData[] = results.map(({ product, category }) => {
     const orgMatch = organizations.find((o) => o.id === product.orgId);
     const vendorName = orgMatch ? orgMatch.name : 'Unknown Vendor';
@@ -169,7 +163,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
       ? Number((productReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
       : 0;
 
-    const isFavorited = wishlistSet.has(product.id);
+    const isFavorited = false; // Resolved via client-side SWR in CatalogLayout
     const inventoryInfo = inventoryByProduct.get(product.id);
     const { canPurchase, availabilityDef } = resolveOnlineProductPurchaseState(
       product.type,
@@ -209,7 +203,6 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
             totalCount={totalCount}
             totalPages={totalPages}
             items={items}
-            userId={userId}
             viewMode={viewMode}
           />
         </Suspense>

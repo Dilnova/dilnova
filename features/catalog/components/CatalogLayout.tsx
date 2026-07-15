@@ -1,4 +1,9 @@
+'use client';
+
 import React from 'react';
+import useSWR from 'swr';
+import { useAuth } from '@clerk/nextjs';
+import { getUserWishlistIdsAction } from '../product-detail.actions';
 import Link from 'next/link';
 import Image from 'next/image';
 import { isVideoUrl } from '@/shared/media/media';
@@ -49,7 +54,6 @@ interface CatalogLayoutProps {
   totalCount: number;
   totalPages: number;
   items: CatalogItemViewData[];
-  userId: string | null;
   viewMode: 'grid' | 'list';
 }
 
@@ -61,9 +65,16 @@ export default function CatalogLayout({
   totalCount,
   totalPages,
   items,
-  userId,
   viewMode,
 }: CatalogLayoutProps) {
+  const { userId } = useAuth();
+  const productIds = items.map(item => item.product.id);
+  const { data: wishlistedIds } = useSWR(
+    userId && productIds.length > 0 ? ['wishlist', productIds] : null,
+    ([, ids]) => getUserWishlistIdsAction(ids as string[])
+  );
+  const wishlistSet = new Set(wishlistedIds || []);
+
   return (
     <div className="space-y-6">
       {/* Top Filter Header Bar */}
@@ -126,7 +137,8 @@ export default function CatalogLayout({
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                   {items.map((item, index) => {
-                    const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, isFavorited, canPurchase, availabilityBadge } = item;
+                    const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, canPurchase, availabilityBadge } = item;
+                    const isFavorited = wishlistSet.has(product.id);
                     const formattedPrice = (product.price / 100).toLocaleString('en-US', {
                       style: 'currency',
                       currency: 'USD',
@@ -298,7 +310,8 @@ export default function CatalogLayout({
                 /* List View Layout */
                 <div className="space-y-4">
                   {items.map((item) => {
-                    const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, isFavorited, canPurchase, availabilityBadge } = item;
+                    const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, canPurchase, availabilityBadge } = item;
+                    const isFavorited = wishlistSet.has(product.id);
                     const formattedPrice = (product.price / 100).toLocaleString('en-US', {
                       style: 'currency',
                       currency: 'USD',

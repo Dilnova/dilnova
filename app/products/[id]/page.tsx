@@ -1,4 +1,4 @@
-import { clerkClient, auth } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,7 +19,6 @@ import StockAvailabilityBadge from '@/features/inventory/components/StockAvailab
 import { DEFAULT_SUPPORT_EMAIL } from '@/shared/platform/brand';
 import {
   getVerifiedReviewerIdsForProduct,
-  hasCustomerPurchasedProduct,
 } from '@/features/catalog/verified-buyer';
 import {
   getCategoryById,
@@ -28,8 +27,6 @@ import {
   getProductQuestions,
   getProductReviews,
   getProductWithCategory,
-  getUserReviewForProduct,
-  getWishlistEntryForUser,
 } from '@/features/catalog/queries';
 
 interface PageProps {
@@ -106,38 +103,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
     inventoryRecord
   );
 
-  // 1.5. Fetch Auth context, Reviews, Questions and Wishlist status
-  const { userId, orgId: userOrgId } = await auth();
-
   const [productReviews, productQuestions, verifiedReviewerIds] = await Promise.all([
     getProductReviews(id),
     getProductQuestions(id),
     getVerifiedReviewerIdsForProduct(id),
   ]);
-
-  let isFavorited = false;
-  let userHasReviewed = false;
-  let isVerifiedBuyer = false;
-  let existingUserReview: { rating: number; comment: string | null } | null = null;
-
-  if (userId) {
-    const [fav, rev, purchased] = await Promise.all([
-      getWishlistEntryForUser(userId, id),
-      getUserReviewForProduct(userId, id),
-      hasCustomerPurchasedProduct(id, userId),
-    ]);
-
-    isFavorited = !!fav;
-    userHasReviewed = !!rev;
-    isVerifiedBuyer = purchased;
-
-    if (rev) {
-      existingUserReview = {
-        rating: rev.rating,
-        comment: rev.comment,
-      };
-    }
-  }
 
   // Calculate review stats
   const totalReviews = productReviews.length;
@@ -398,8 +368,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
                 <WishlistButton
                   productId={product.id}
-                  initialFavorited={isFavorited}
-                  isLoggedIn={!!userId}
+                  initialFavorited={false}
                   showLabel={true}
                   className="flex-1 sm:flex-initial"
                 />
@@ -414,22 +383,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <ReviewsSection
           productId={product.id}
           reviews={productReviews}
-          isLoggedIn={!!userId}
-          userHasReviewed={userHasReviewed}
-          isVerifiedBuyer={isVerifiedBuyer}
-          existingReview={existingUserReview}
           verifiedReviewerIds={[...verifiedReviewerIds]}
           productOrgId={product.orgId}
-          userOrgId={userOrgId || null}
         />
 
         {/* Q&A Section */}
         <QASection
           productId={product.id}
           questions={productQuestions}
-          isLoggedIn={!!userId}
           productOrgId={product.orgId}
-          userOrgId={userOrgId || null}
         />
       </main>
     </div>

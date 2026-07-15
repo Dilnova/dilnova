@@ -3,6 +3,7 @@
 import { logger } from '@/shared/logging/logger';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
 import { submitQuestionAction, submitAnswerAction } from '@/features/catalog/product-detail.actions';
 import Image from 'next/image';
 import SignInPrompt from '@/shared/ui/SignInPrompt';
@@ -24,19 +25,17 @@ interface Question {
 interface QASectionProps {
   productId: string;
   questions: Question[];
-  isLoggedIn: boolean;
   productOrgId: string;
-  userOrgId: string | null;
 }
 
 export default function QASection({
   productId,
   questions,
-  isLoggedIn,
   productOrgId,
-  userOrgId,
 }: QASectionProps) {
   const router = useRouter();
+  const { userId, orgId: userOrgId } = useAuth();
+  const isLoggedIn = !!userId;
   const [questionContent, setQuestionContent] = useState('');
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
