@@ -52,7 +52,7 @@ function CheckoutValidationTracker({
 }) {
   const { isValidating } = useSWR(swrKey, fetcher, {
     revalidateOnFocus: false,
-    dedupingInterval: 500,
+    dedupingInterval: 5000,
   });
   return <>{children(isValidating)}</>;
 }
@@ -249,7 +249,7 @@ export default function CartClientIsland() {
   const { 
     data: checkoutOptionsData, 
     error: checkoutOptionsError, 
-  } = useSWR(swrKey, swrFetcher, { revalidateOnFocus: false, dedupingInterval: 500 });
+  } = useSWR(swrKey, swrFetcher, { revalidateOnFocus: false, dedupingInterval: 5000 });
 
   useEffect(() => {
     if (!isSignedIn || cartItems.length === 0) {
