@@ -40,4 +40,15 @@ if (process.env.NODE_ENV !== 'production') {
   globalForDb.postgresClient = client;
 }
 
-export const db = drizzle(client, { schema });
+import { logger } from '@/shared/logging/logger';
+
+export const db = drizzle(client, { 
+  schema,
+  logger: process.env.NODE_ENV === 'development' ? {
+    logQuery(query: string, params: unknown[]) {
+      // In development, log the raw query. 
+      // In production, we rely on Sentry's APM to trace DB spans automatically.
+      logger.info(`[DB Query]`, { query, params });
+    }
+  } : undefined
+});

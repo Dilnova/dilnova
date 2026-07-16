@@ -13,6 +13,22 @@ async function captureSentryError(error: unknown, context?: Record<string, unkno
   }
 }
 
+function addClientBreadcrumb(level: 'info' | 'warning' | 'error', message: string, data?: Record<string, unknown>) {
+  // Only record manual breadcrumbs in the browser, Server logs are already handled by stdout drains.
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+    import('@sentry/nextjs')
+      .then(Sentry => {
+        Sentry.addBreadcrumb({
+          category: 'logger',
+          message,
+          level,
+          data,
+        });
+      })
+      .catch(() => {});
+  }
+}
+
 function redactSensitiveString(text: string): string {
   if (!text) return text;
   // Replace email addresses with a redacted placeholder
@@ -115,6 +131,7 @@ export const logger = {
           timestamp: new Date().toISOString(),
         })
       );
+      addClientBreadcrumb('info', safeMessage, redactedContext);
     } else {
       const idPrefix = safeRequestId ? ` [${safeRequestId}]` : '';
       console.log(
@@ -141,6 +158,7 @@ export const logger = {
           timestamp: new Date().toISOString(),
         })
       );
+      addClientBreadcrumb('warning', safeMessage, redactedContext);
     } else {
       const idPrefix = safeRequestId ? ` [${safeRequestId}]` : '';
       console.warn(
@@ -177,6 +195,7 @@ export const logger = {
           timestamp: new Date().toISOString(),
         })
       );
+      addClientBreadcrumb('error', safeMessage, redactedContext);
       
       const sentryErr = error instanceof Error ? error : new Error(safeMessage);
       void captureSentryError(sentryErr, {
