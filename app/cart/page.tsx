@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import CartCountBadge from '@/features/cart/components/CartCountBadge';
-import CartClientIsland from '@/features/cart/components/CartClientIsland';
+import { CartClientManager } from '@/features/cart/components/CartClientManager';
+import { CartEmptyState } from '@/features/cart/components/CartStates';
 
 export default function CartPage() {
   return (
@@ -32,7 +33,9 @@ export default function CartPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-6">
-        <CartClientIsland />
+        <CartClientManager
+          emptyState={<CartEmptyState />}
+        />
       </div>
     </main>
   );
