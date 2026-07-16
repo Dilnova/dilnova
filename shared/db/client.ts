@@ -115,7 +115,7 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
         };
       }
 
-      return typeof orig === 'function' ? orig.bind(target) : orig;
+      return typeof orig === 'function' ? (orig as any).bind(target) : orig;
     }
   }) as PostgresClient;
 }

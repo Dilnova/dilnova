@@ -104,7 +104,7 @@ export const logger = {
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
     
-    const baseContext = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
+    const baseContext: Record<string, any> = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
     Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
     const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
     
@@ -134,7 +134,7 @@ export const logger = {
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
     
-    const baseContext = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
+    const baseContext: Record<string, any> = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
     Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
     const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
     
@@ -164,7 +164,7 @@ export const logger = {
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
     
-    const baseContext = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
+    const baseContext: Record<string, any> = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
     Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
     const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
     

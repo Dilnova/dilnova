@@ -99,7 +99,7 @@ async function handler(req: NextRequest) {
     let questions: any[] = [];
     let wishlists: any[] = [];
 
-    const queries = [
+    const queries: any[] = [
       db.select().from(schema.customerCarts).where(eq(schema.customerCarts.userId, targetUserId)),
       db.select().from(schema.branchMembers).where(eq(schema.branchMembers.memberUserId, targetUserId)),
       db.select().from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId)),
