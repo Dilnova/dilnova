@@ -4,6 +4,8 @@ import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
 import { createSupabaseAdminClient } from '@/shared/storage/admin-client';
 import { GDPR_EXPORTS_BUCKET } from '@/shared/storage/config';
 
+export const maxDuration = 60;
+
 async function handler(req: NextRequest) {
   try {
     const body = await req.json();

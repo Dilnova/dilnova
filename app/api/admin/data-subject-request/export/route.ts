@@ -26,7 +26,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Superadmin account lacks an email address.' }, { status: 400 });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl = process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
     
     // Publish to QStash for asynchronous processing
     const message = await qstash.publishJSON({

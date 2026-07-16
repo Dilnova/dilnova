@@ -12,6 +12,8 @@ import { escapeHtml } from '@/shared/email/smtp-client';
 import { sendSystemHtmlEmail } from '@/shared/email/delivery';
 import { Client as QStashClient } from '@upstash/qstash';
 
+export const maxDuration = 300;
+
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || '',
   token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
@@ -169,7 +171,9 @@ async function handler(req: NextRequest) {
       throw new Error(`Supabase upload failed: ${uploadError.message}`);
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl = process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
     
     // Publish cleanup job (delayed 24h)
     await getQStashClient().publishJSON({

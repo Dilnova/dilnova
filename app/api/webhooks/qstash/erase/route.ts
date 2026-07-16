@@ -9,6 +9,8 @@ import { Redis } from '@upstash/redis';
 import { logAuditAction } from '@/shared/audit/logger';
 import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
 
+export const maxDuration = 300;
+
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || '',
   token: process.env.UPSTASH_REDIS_REST_TOKEN || '',

@@ -64,7 +64,15 @@ function verifyClerkWebhookSignature(
 }
 
 export async function POST(req: NextRequest) {
-  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+  let webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+
+  if (process.env.VERCEL_ENV === 'preview') {
+    if (process.env.PREVIEW_CLERK_WEBHOOK_SECRET) {
+      webhookSecret = process.env.PREVIEW_CLERK_WEBHOOK_SECRET;
+    } else {
+      logger.warn('Preview deployment using production CLERK_WEBHOOK_SECRET. It is highly recommended to set PREVIEW_CLERK_WEBHOOK_SECRET in Vercel for preview environments to avoid cross-contamination.');
+    }
+  }
 
   if (!webhookSecret) {
     logger.error('CLERK_WEBHOOK_SECRET is not configured on the server', undefined, { tags: { alert: 'webhook_failure', source: 'clerk' } });
