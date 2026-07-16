@@ -4,7 +4,6 @@ import { useState, useTransition, useRef } from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
-import { logger } from '@/shared/logging/logger';
 import { updateSystemSettingAction } from '@/features/superadmin/settings.actions';
 import CheckoutOptionsSettings from '../CheckoutOptionsSettings';
 import StockAvailabilitySettings from '@/features/inventory/components/StockAvailabilitySettings';
@@ -89,7 +88,7 @@ export default function SettingsTab({
         triggerNotification(false, result.error || 'Logo upload failed.');
       }
     } catch (err) {
-      logger.error('Error', err);
+      console.error('Error', err);
       triggerNotification(false, 'An error occurred during logo upload.');
     } finally {
       setIsLogoUploading(false);
@@ -125,7 +124,7 @@ export default function SettingsTab({
         triggerNotification(false, result.error || 'Favicon upload failed.');
       }
     } catch (err) {
-      logger.error('Error', err);
+      console.error('Error', err);
       triggerNotification(false, 'An error occurred during favicon upload.');
     } finally {
       setIsFaviconUploading(false);

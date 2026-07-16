@@ -10,7 +10,6 @@ import ReviewsSection from '@/features/catalog/components/product-detail/Reviews
 import QASection from '@/features/catalog/components/product-detail/QASection';
 import ProductViewTracker from '@/features/catalog/components/product-detail/ProductViewTracker';
 import ProductDetailAddToCart from '@/features/catalog/components/product-detail/ProductDetailAddToCart';
-import { logger } from '@/shared/logging/logger';
 import { isVideoUrl } from '@/shared/media/media';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
@@ -145,7 +144,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       };
     }
   } catch (err) {
-    logger.error('Failed to resolve seller organization details', err, { productId: product.id, orgId: product.orgId });
+    console.error('Failed to resolve seller organization details', err, { productId: product.id, orgId: product.orgId });
   }
 
   const vendorName = orgDetails ? orgDetails.name : 'Unknown Vendor';

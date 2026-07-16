@@ -151,6 +151,24 @@ export default defineConfig({
         storageState: path.join(AUTH_DIR, 'superadmin.json'),
       },
     },
+    {
+      name: 'business-customer',
+      testMatch: /business\/checkout\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: path.join(AUTH_DIR, 'customer.json'),
+      },
+    },
+    {
+      name: 'business-vendor',
+      testMatch: /business\/pos-billing\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: path.join(AUTH_DIR, 'vendor-admin.json'),
+      },
+    },
   ],
   webServer: {
     // On CI we start Next.js in the workflow; reuse that server. Locally Playwright can start the server.

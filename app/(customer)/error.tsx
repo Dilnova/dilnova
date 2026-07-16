@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { logger } from '@/shared/logging/logger';
+import * as Sentry from '@sentry/nextjs';
 
 export default function Error({
   error,
@@ -13,7 +13,8 @@ export default function Error({
 }) {
   useEffect(() => {
     // Log the error to your structured logger / error reporting service
-    logger.error('[ErrorBoundary] React error boundary caught exception', error);
+    console.error('[ErrorBoundary] React error boundary caught exception', error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (

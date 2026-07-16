@@ -1,6 +1,5 @@
 'use client';
 
-import { logger } from '@/shared/logging/logger';
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
@@ -83,7 +82,7 @@ export default function ReviewsSection({
         );
         router.refresh();
       } catch (err) {
-        logger.error('Error submitting review:', err);
+        console.error('Error submitting review:', err);
         toast.error(err instanceof Error ? err.message : 'Something went wrong.');
       }
     });

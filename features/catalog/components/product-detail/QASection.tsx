@@ -1,6 +1,5 @@
 'use client';
 
-import { logger } from '@/shared/logging/logger';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
@@ -60,7 +59,7 @@ export default function QASection({
         setQuestionContent('');
         router.refresh();
       } catch (err) {
-        logger.error('Error posting question:', err);
+        console.error('Error posting question:', err);
         toast.error(err instanceof Error ? err.message : 'Failed to post question.');
       }
     });
@@ -81,7 +80,7 @@ export default function QASection({
         setActiveReplyId(null);
         router.refresh();
       } catch (err) {
-        logger.error('Error replying to question:', err);
+        console.error('Error replying to question:', err);
         toast.error(err instanceof Error ? err.message : 'Failed to save answer.');
       }
     });

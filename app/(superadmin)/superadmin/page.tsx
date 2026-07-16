@@ -4,7 +4,6 @@ import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-opti
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { clerkClient } from '@clerk/nextjs/server';
 import { getSuperadminOrganizations } from '@/shared/auth/clerk-cache';
-import { logger } from '@/shared/logging/logger';
 import {
   getCategoriesOrderedByCreatedAtDesc,
   getContactSubmissionsOrderedByCreatedAtDesc,
@@ -39,7 +38,7 @@ async function safeQuery<T>(label: string, fn: () => Promise<T>, fallback: T): P
     return { data: await fn(), error: null };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    logger.error(`SuperAdmin dashboard query failed: ${label}`, err);
+    console.error(`SuperAdmin dashboard query failed: ${label}`, err);
     return { data: fallback, error: `${label}: ${message}` };
   }
 }

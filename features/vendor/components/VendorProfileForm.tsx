@@ -1,6 +1,5 @@
 'use client';
 
-import { logger } from '@/shared/logging/logger';
 import { useState, useTransition, useRef } from 'react';
 import { updateVendorMetadata } from '@/features/vendor/actions';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
@@ -78,7 +77,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
         toast.error(result.error || 'Banner upload failed.');
       }
     } catch (err) {
-      logger.error('Error', err);
+      console.error('Error', err);
       toast.error('An error occurred during banner upload.');
     } finally {
       setIsBannerUploading(false);

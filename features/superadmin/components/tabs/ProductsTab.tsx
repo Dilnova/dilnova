@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 import { useConfirm } from '@/shared/ui/notifications';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
-import { logger } from '@/shared/logging/logger';
 import { updateProductAction, deleteProductAction } from '@/features/catalog/superadmin.actions';
 
 export interface Product {
@@ -115,7 +114,7 @@ export default function ProductsTab({ products, categories, organizations, maxMe
         triggerNotification(false, result.error || 'Upload failed');
       }
     } catch (err) {
-      logger.error('Error', err);
+      console.error('Error', err);
       triggerNotification(false, 'An error occurred during media upload.');
     } finally {
       setIsUploading(false);
