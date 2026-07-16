@@ -7,6 +7,7 @@ import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-opti
 import { getBranchCountForOrg } from '@/features/admin/queries';
 import { bankDetailsToProfileFormFields, hasBankTransferConfiguredForOrg, parseBankDetailsFromClerkOrg } from '@/features/billing/bank-transfer-metadata';
 import Image from 'next/image';
+import { logger } from '@/shared/logging/logger';
 
 export default async function AdminPage() {
   const { orgId, orgRole } = await auth();
@@ -23,7 +24,7 @@ export default async function AdminPage() {
     client.organizations.getOrganizationMembershipList({
       organizationId: orgId,
       limit: 100,
-    }).catch((err) => { console.error("CLERK ERROR:", err); return { data: [] }; }),
+    }).catch((err) => { logger.error("CLERK ERROR", err); return { data: [] }; }),
     getCheckoutOptionsCatalog(),
     getBranchCountForOrg(orgId),
   ]);

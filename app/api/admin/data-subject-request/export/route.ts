@@ -5,6 +5,7 @@ import * as schema from '@/shared/db/schema';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { logAuditAction } from '@/shared/audit/logger';
 import { clerkClient } from '@clerk/nextjs/server';
+import { logger } from '@/shared/logging/logger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -99,7 +100,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('GDPR Export Error:', error);
+    logger.error('GDPR Export Error', error);
     if (error instanceof Error && error.message.includes('Unauthorized')) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
