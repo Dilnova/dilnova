@@ -69,32 +69,12 @@ export function redactSensitiveData(obj: any, seen = new WeakSet()): any {
     };
   }
 
-  const sensitiveKeys = new Set([
-    'email',
-    'phone',
-    'address',
-    'password',
-    'secret',
-    'token',
-    'key',
-    'bankaccountname',
-    'bankaccountnumber',
-    'bankbranchcode',
-    'bankname',
-    'shippingaddress',
-    'shippingphone',
-    'customeremail',
-    'customername',
-    'authorization',
-    'cookie',
-  ]);
+  // Pre-compiled regex for performance (avoids Array.from() inside the loop)
+  const sensitiveKeysRegex = /email|phone|address|password|secret|token|key|bankaccountname|bankaccountnumber|bankbranchcode|bankname|shippingaddress|shippingphone|customeremail|customername|authorization|cookie/i;
 
   const redacted: Record<string, any> = {};
   for (const [k, v] of Object.entries(obj)) {
-    const lowerKey = k.toLowerCase();
-    const isSensitive = Array.from(sensitiveKeys).some(
-      (sk) => lowerKey === sk || lowerKey.includes(sk)
-    );
+    const isSensitive = sensitiveKeysRegex.test(k);
 
     if (isSensitive) {
       redacted[k] = '[REDACTED]';
@@ -228,3 +208,42 @@ export const logger = {
     }
   },
 };
+
+/**
+ * Wraps an asynchronous operation with performance timing and a Sentry span.
+ * Logs a warning if the operation takes longer than thresholdMs (default 1500ms).
+ */
+export async function withPerformanceTracking<T>(
+  name: string,
+  op: string,
+  fn: () => Promise<T>,
+  thresholdMs = 1500
+): Promise<T> {
+  const start = performance.now();
+
+  const execute = async () => {
+    try {
+      const result = await fn();
+      const duration = performance.now() - start;
+      if (duration > thresholdMs) {
+        logger.warn(`[Slow API ${duration.toFixed(2)}ms] ${name}`);
+      }
+      return result;
+    } catch (error) {
+      const duration = performance.now() - start;
+      logger.error(`[API Failure ${duration.toFixed(2)}ms] ${name} failed`, error);
+      throw error;
+    }
+  };
+
+  if (process.env.NODE_ENV === 'production' && (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)) {
+    try {
+      const Sentry = await import('@sentry/nextjs');
+      return await Sentry.startSpan({ name, op }, execute);
+    } catch {
+      return await execute();
+    }
+  }
+
+  return await execute();
+}

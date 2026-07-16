@@ -121,3 +121,32 @@ resource "sentry_metric_alert" "latency_critical" {
     threshold_type    = 0
   }
 }
+
+# ---------------------------------------------------------
+# Issue Alerts (New Backend Errors)
+# ---------------------------------------------------------
+
+resource "sentry_issue_alert" "backend_errors" {
+  organization = data.sentry_organization.org.slug
+  project      = data.sentry_project.dilnova.slug
+  name         = "Critical: New Backend Error / Uncaught Exception"
+
+  action_match = "any"
+  filter_match = "any"
+  frequency    = 30
+
+  conditions = [
+    {
+      id = "sentry.rules.conditions.first_seen_event.FirstSeenEventCondition"
+    },
+    {
+      id = "sentry.rules.conditions.regression_event.RegressionEventCondition"
+    }
+  ]
+
+  actions = [
+    {
+      id = "sentry.rules.actions.notify_event.NotifyEventAction"
+    }
+  ]
+}

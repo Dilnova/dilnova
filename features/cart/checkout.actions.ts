@@ -740,6 +740,7 @@ export async function simulatedCheckoutAction(
         const vendorNames = vendorsMissingBankDetails.map(
           (orgId) => bankDetailsByOrg[orgId]?.vendorName || 'A vendor'
         );
+        logger.warn('Checkout business validation failed', { reason: 'Missing bank details', vendors: vendorNames, cartItems: uniqueItemIds });
         return {
           success: false as const,
           error: `Bank transfer is unavailable because bank details are not configured for: ${vendorNames.join(', ')}. Please contact the store or choose another payment method.`,
@@ -751,6 +752,7 @@ export async function simulatedCheckoutAction(
       const reason = paymentOption.requiresDelivery 
         ? 'delivery orders, not store pickup.'
         : 'store pickup orders, not home delivery.';
+      logger.warn('Checkout business validation failed', { reason: 'Incompatible payment and fulfillment', payment: paymentOption.id, fulfillment: fulfillmentOption.id, cartItems: uniqueItemIds });
       return {
         success: false,
         error: `${paymentOption.label} is only available for ${reason}`,
@@ -774,9 +776,11 @@ export async function simulatedCheckoutAction(
       }
 
       if (!validBranch) {
+        logger.warn('Checkout business validation failed', { reason: 'Invalid pickup branch', pickupBranch, vendorOrgIds, cartItems: uniqueItemIds });
         return { success: false, error: 'Selected pickup branch is invalid.' };
       }
       if (vendorOrgIds.length > 1) {
+        logger.warn('Checkout business validation failed', { reason: 'Multi-vendor store pickup', vendorOrgIds, cartItems: uniqueItemIds });
         return {
           success: false,
           error: 'Store pickup is only available when all items are from the same vendor.',
@@ -891,6 +895,7 @@ export async function simulatedCheckoutAction(
       }
 
       if (stockErrors.length > 0) {
+        logger.warn('Checkout business validation failed', { reason: 'Insufficient stock', stockErrors, cartItems: uniqueItemIds });
         return {
           success: false,
           error: `Insufficient stock:\n${stockErrors.join('\n')}`,

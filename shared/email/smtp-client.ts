@@ -1,6 +1,6 @@
 import tls from 'tls';
 import net from 'net';
-import { logger } from '@/shared/logging/logger';
+import { logger, withPerformanceTracking } from '@/shared/logging/logger';
 
 export interface SmtpEmailOptions {
   host: string;
@@ -214,10 +214,18 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
 /** Custom SMTP transaction client using Node net/tls modules, supporting STARTTLS. With socket timeouts and single retry. */
 export async function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
   try {
-    return await sendRawSmtpEmailAttempt(options);
+    return await withPerformanceTracking(
+      'SMTP Dispatch (Initial)',
+      'http.client.smtp',
+      () => sendRawSmtpEmailAttempt(options)
+    );
   } catch (error) {
     logger.warn('First SMTP attempt failed, retrying once...', { error });
-    return await sendRawSmtpEmailAttempt(options);
+    return await withPerformanceTracking(
+      'SMTP Dispatch (Retry)',
+      'http.client.smtp',
+      () => sendRawSmtpEmailAttempt(options)
+    );
   }
 }
 
