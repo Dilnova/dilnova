@@ -1,9 +1,5 @@
-'use client';
-
 import React from 'react';
-import useSWR from 'swr';
-import { useAuth } from '@clerk/nextjs';
-import { getUserWishlistIdsAction } from '../product-detail.actions';
+import { WishlistProvider } from './product-detail/WishlistProvider';
 import Link from 'next/link';
 import Image from 'next/image';
 import { isVideoUrl } from '@/shared/media/media';
@@ -67,13 +63,7 @@ export default function CatalogLayout({
   items,
   viewMode,
 }: CatalogLayoutProps) {
-  const { userId } = useAuth();
   const productIds = items.map(item => item.product.id);
-  const { data: wishlistedIds } = useSWR(
-    userId && productIds.length > 0 ? ['wishlist', productIds] : null,
-    ([, ids]) => getUserWishlistIdsAction(ids as string[])
-  );
-  const wishlistSet = new Set(wishlistedIds || []);
 
   return (
     <div className="space-y-6">
@@ -132,13 +122,12 @@ export default function CatalogLayout({
               </Link>
             </div>
           ) : (
-            <>
+            <WishlistProvider productIds={productIds}>
               {/* Product Layout Grid vs List */}
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                   {items.map((item, index) => {
                     const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, canPurchase, availabilityBadge } = item;
-                    const isFavorited = wishlistSet.has(product.id);
                     const formattedPrice = (product.price / 100).toLocaleString('en-US', {
                       style: 'currency',
                       currency: 'USD',
@@ -182,8 +171,7 @@ export default function CatalogLayout({
                             <div className="absolute top-3 left-3 z-10">
                               <WishlistButton
                                 productId={product.id}
-                                initialFavorited={isFavorited}
-                                isLoggedIn={!!userId}
+                                initialFavorited={false}
                                 showLabel={false}
                                 className="p-1.5 h-8 w-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-none hover:bg-white dark:hover:bg-zinc-900 shadow-xs"
                               />
@@ -311,7 +299,6 @@ export default function CatalogLayout({
                 <div className="space-y-4">
                   {items.map((item) => {
                     const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, canPurchase, availabilityBadge } = item;
-                    const isFavorited = wishlistSet.has(product.id);
                     const formattedPrice = (product.price / 100).toLocaleString('en-US', {
                       style: 'currency',
                       currency: 'USD',
@@ -353,8 +340,7 @@ export default function CatalogLayout({
                           <div className="absolute top-3 left-3 z-10">
                             <WishlistButton
                               productId={product.id}
-                              initialFavorited={isFavorited}
-                              isLoggedIn={!!userId}
+                              initialFavorited={false}
                               showLabel={false}
                               className="p-1.5 h-8 w-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-none hover:bg-white dark:hover:bg-zinc-900 shadow-xs"
                             />
@@ -490,7 +476,7 @@ export default function CatalogLayout({
                   )}
                 </div>
               )}
-            </>
+            </WishlistProvider>
           )}
         </div>
       </div>
