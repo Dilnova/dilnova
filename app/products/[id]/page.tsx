@@ -1,4 +1,4 @@
-import { clerkClient } from '@clerk/nextjs/server';
+import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -36,6 +36,10 @@ interface PageProps {
 }
 
 export const revalidate = 60; // Cache for 60 seconds (ISR)
+
+export async function generateStaticParams() {
+  return []; // Return empty array to rely entirely on runtime ISR
+}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
@@ -124,7 +128,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
 
   // 2. Fetch Seller Organization from Clerk (Optimized with cached lookup + fallback)
-  const client = await clerkClient();
+  const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
   let orgDetails: CachedOrg | null = null;
 
   try {
