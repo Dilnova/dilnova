@@ -6,6 +6,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { logAuditAction } from '@/shared/audit/logger';
 import { clerkClient } from '@clerk/nextjs/server';
 import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
+import { logger } from '@/shared/logging/logger';
 
 export async function DELETE(req: NextRequest) {
   try {
@@ -26,8 +27,12 @@ export async function DELETE(req: NextRequest) {
          await client.users.deleteUser(targetUserId);
          clerkProfileDeleted = true;
       }
-    } catch (e) {
-      // User might be already deleted
+    } catch (e: any) {
+      if (e.status === 404 || (e.errors && e.errors[0]?.code === 'resource_not_found')) {
+        logger.info(`Clerk user ${targetUserId} already deleted or not found.`);
+      } else {
+        logger.error('Unexpected error fetching or deleting user from Clerk during GDPR erasure', e);
+      }
     }
 
     const orders = await db.select().from(schema.simulatedOrders).where(eq(schema.simulatedOrders.customerUserId, targetUserId));
@@ -132,7 +137,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'User data erased successfully' });
   } catch (error) {
-    console.error('GDPR Erasure Error:', error);
+    logger.error('GDPR Erasure Error', error);
     if (error instanceof Error && error.message.includes('Unauthorized')) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
