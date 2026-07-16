@@ -4,6 +4,15 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Metadata } from 'next';
+import { unstable_cache } from 'next/cache';
+
+const getCachedCategories = unstable_cache(
+  async () => {
+    return db.select().from(schema.categories);
+  },
+  ['all-categories-list'],
+  { revalidate: 3600, tags: ['categories'] }
+);
 import { getSystemSetting } from '@/shared/platform/settings';
 import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
@@ -88,7 +97,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const itemsPerPage = 12;
 
   const [categoriesList, stockAvailabilityCatalog, organizations] = await Promise.all([
-    db.select().from(schema.categories),
+    getCachedCategories(),
     getStockAvailabilityCatalog(),
     clerkClient().then((client) => getCachedOrganizations(client)),
   ]);
