@@ -5,13 +5,11 @@ async function captureSentryError(error: unknown, context?: Record<string, unkno
     return;
   }
 
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    try {
-      const Sentry = await import('@sentry/node');
-      Sentry.captureException(error, { extra: context });
-    } catch {
-      // Sentry is optional; never block application flow.
-    }
+  try {
+    const Sentry = await import('@sentry/nextjs');
+    Sentry.captureException(error, { extra: context });
+  } catch {
+    // Sentry is optional; never block application flow.
   }
 }
 

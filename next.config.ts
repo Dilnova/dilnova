@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import { DEFAULT_APP_URL } from "./shared/platform/brand";
 import createBundleAnalyzer from '@next/bundle-analyzer';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const withBundleAnalyzer = createBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
@@ -199,4 +200,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withBundleAnalyzer(nextConfig);
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
+  silent: true,
+  hideSourceMaps: true,
+  widenClientFileUpload: true,
+});
