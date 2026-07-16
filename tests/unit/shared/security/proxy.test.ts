@@ -5,13 +5,10 @@ import { NextRequest, NextResponse } from 'next/server';
 vi.mock('@clerk/nextjs/server', () => ({
   clerkMiddleware: vi.fn((handler) => {
     return (req: any, event: any) => {
-      const mockAuth = {
-        protect: vi.fn(),
-      };
+      const mockAuth = {};
       return handler(mockAuth, req, event);
     };
   }),
-  createRouteMatcher: vi.fn(() => () => true),
 }));
 
 // Mock next/server to intercept responses

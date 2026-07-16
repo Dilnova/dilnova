@@ -1,27 +1,9 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { clerkMiddleware } from '@clerk/nextjs/server';
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import type { NextFetchEvent } from 'next/server';
 
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/unauthorized',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/vendors(.*)',
-  '/products(.*)',   // Allows public access to all products and services
-  '/cart',           // Allows cart viewing; checkout requires sign-in
-  '/contact',        // Allows public contact form submissions
-  '/api/health(.*)', // Allows public access to the health check endpoint
-  '/api/csp-report(.*)', // Allows public access to CSP violation reports
-  '/api/webhooks/clerk(.*)', // Allows public access to Clerk webhooks (secured by signature verification)
-  '/_next(.*)',      // Allows public access to Next.js static files/image optimization
-  '/sitemap.xml',    // Allow public access to sitemap.xml
-  '/robots.txt',     // Allow public access to robots.txt
-  '/privacy(.*)',    // Allow public access to privacy policy
-  '/terms(.*)'       // Allow public access to terms of service
-]);
 
 function getSentryCspReportUri(): string | null {
   const dsn = process.env.SENTRY_DSN;
@@ -46,9 +28,6 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   requestHeaders.set('x-request-id', requestId);
   requestHeaders.set('x-nonce', nonce);
 
-  if (!isPublicRoute(req)) {
-    await auth.protect();
-  }
 
   const response = NextResponse.next({
     request: {

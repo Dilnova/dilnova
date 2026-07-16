@@ -1,13 +1,10 @@
 import type { Metadata } from 'next'
 import React from 'react'
-import { ClerkProvider, Show, UserButton, OrganizationSwitcher } from '@clerk/nextjs'
-import { headers, cookies } from 'next/headers'
+import { ClerkProvider, Show, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
-import { auth } from '@clerk/nextjs/server'
 import ConsentTracking from '@/shared/ui/ConsentTracking'
 import CookieConsent from '@/shared/ui/CookieConsent'
 import { runWithCorrelationId } from '@/shared/security/async-context'
-import HeaderNav from '@/shared/ui/HeaderNav'
 import HeaderAuthButtons from '@/shared/ui/HeaderAuthButtons'
 import SmartHeader from '@/components/layout/SmartHeader'
 import SmartFooter from '@/components/layout/SmartFooter'
@@ -23,13 +20,13 @@ const CartMergeBanner = dynamic(() => import('@/features/cart/components/CartMer
 
 import { getSystemSetting } from '@/shared/platform/settings'
 import Image from 'next/image'
-import { getPremiumStatus } from '@/features/inventory/premium-license'
-import { getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-cache'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Toaster } from 'sonner'
 import { ConfirmProvider } from '@/shared/ui/notifications'
 import { GlobalNotificationListener } from '@/shared/ui/notifications/GlobalNotificationListener'
 import { Inter } from 'next/font/google';
+
+import { DynamicHeaderNav, DynamicOrganizationSwitcher } from '@/shared/ui/DynamicHeader';
 
 const interFont = Inter({
   subsets: ['latin'],
@@ -101,93 +98,6 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   return runWithCorrelationId(async () => {
-    const { orgId, orgRole, userId } = await auth();
-    const requestHeaders = await headers();
-    const cookieStore = await cookies();
-    const nonce = requestHeaders.get('x-nonce') || undefined;
-    const initialConsent = cookieStore.get('dilnova_cookie_consent')?.value === 'accepted';
-    let userRole: string | undefined = undefined;
-    let isSuperAdmin = false;
-    if (userId) {
-      [userRole, isSuperAdmin] = await Promise.all([
-        getCachedUserRole(userId),
-        getCachedIsSuperAdmin(userId),
-      ]);
-    }
-
-    // RBAC check: can the user create organizations?
-    // 1. If user is in an active organization context, check if they are an admin or vendor
-    // 2. If user is not in an organization context, check if their user-level metadata role is vendor or they are superadmin
-    const isUserVendorOrAdmin = userRole === 'vendor' || isSuperAdmin;
-
-    let canCreateOrg = false;
-    if (orgId) {
-      canCreateOrg = orgRole === 'org:admin' || orgRole === 'org:member';
-    } else {
-      canCreateOrg = isUserVendorOrAdmin;
-    }
-
-    let billingActive = false;
-    if (orgId) {
-      const status = await getPremiumStatus(orgId);
-      billingActive = status.billingActive;
-    }
-
-    // Build responsive links dynamically based on user session status and permissions
-    const links: { href: string; label: string; colorClass?: string }[] = [
-      { href: '/vendors', label: 'Vendors' },
-      { href: '/products', label: 'Products' },
-      { href: '/contact', label: 'Support' },
-    ];
-
-    if (orgId && orgRole === 'org:admin') {
-      links.push({
-        href: '/vendor',
-        label: 'Dashboard',
-        colorClass: 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-semibold',
-      });
-    }
-
-    if (orgId && (orgRole === 'org:admin' || orgRole === 'org:member')) {
-      links.push({
-        href: '/vendor/products/add',
-        label: 'Create',
-        colorClass: 'text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300',
-      });
-    }
-
-    if (userId) {
-      links.push({
-        href: '/customer',
-        label: 'Account',
-        colorClass: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-semibold',
-      });
-    }
-
-    if (orgId && billingActive && (orgRole === 'org:admin' || orgRole === 'org:member')) {
-      links.push({
-        href: '/vendor/billing',
-        label: 'POS Register',
-        colorClass: 'text-indigo-650 hover:text-indigo-850 dark:text-indigo-400 dark:hover:text-indigo-300 font-bold',
-      });
-    }
-
-    if (orgId && orgRole === 'org:admin') {
-      links.push({
-        href: '/admin',
-        label: 'Admin',
-        colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-semibold',
-      });
-    }
-
-    if (isSuperAdmin) {
-      links.push({
-        href: '/superadmin',
-        label: 'Superadmin',
-        colorClass: 'text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-bold',
-      });
-    }
-
     const logoUrl = await getSystemSetting('system_logo', '');
     const systemName = await getSystemSetting('system_name', 'Dilnova');
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dilstar.pp.ua';
@@ -224,7 +134,7 @@ export default async function RootLayout({
               })
             }}
           />
-          <ClerkProvider nonce={nonce}>
+          <ClerkProvider>
             <ConfirmProvider>
               <CartProvider>
               <SmartHeader>
@@ -250,7 +160,7 @@ export default async function RootLayout({
                   </Link>
                   {/* Removed overflow-hidden to prevent clipping the mobile hamburger menu */}
                   <div className="flex-1 flex items-center min-w-0">
-                    <HeaderNav links={links} mobileExtra={<LanguageSelector />} />
+                    <DynamicHeaderNav mobileExtra={<LanguageSelector />} />
                   </div>
                 </div>
 
@@ -268,20 +178,7 @@ export default async function RootLayout({
 
                   <Show when="signed-in">
                     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4">
-                      <OrganizationSwitcher 
-                        afterCreateOrganizationUrl="/" 
-                        afterSelectOrganizationUrl="/"
-                        afterLeaveOrganizationUrl="/"
-                        afterSelectPersonalUrl="/"
-                        hidePersonal={false}
-                        appearance={{
-                          elements: {
-                            organizationSwitcherTrigger: 'dark:[&_*]:!text-zinc-50',
-                            organizationSwitcherPopoverActionButton__createOrganization: canCreateOrg ? 'flex' : 'hidden',
-                            organizationSwitcherPopoverCreateOrganization: canCreateOrg ? 'flex' : 'hidden',
-                          }
-                        }}
-                      />
+                      <DynamicOrganizationSwitcher />
                       <UserButton />
                     </div>
                   </Show>
@@ -302,7 +199,7 @@ export default async function RootLayout({
               <LanguageSplash systemName={systemName} />
               <CartMergeBanner />
             </CartProvider>
-            <GlobalNotificationListener userId={userId} />
+            <GlobalNotificationListener />
             <Toaster 
               position="top-right" 
               toastOptions={{ className: 'text-xs font-semibold', duration: 4000 }} 
@@ -311,7 +208,7 @@ export default async function RootLayout({
               theme="system" 
             />
             </ConfirmProvider>
-            <ConsentTracking initialConsent={initialConsent} />
+            <ConsentTracking />
             <CookieConsent />
           </ClerkProvider>
         </body>
