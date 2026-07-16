@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, inArray, sql } from 'drizzle-orm';
 import { logAuditAction } from '@/shared/audit/logger';
 import { clerkClient } from '@clerk/nextjs/server';
 import { logger } from '@/shared/logging/logger';
+import { Client } from '@upstash/qstash';
+
+const qstash = new Client({
+  token: process.env.QSTASH_TOKEN || '',
+});
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,91 +18,42 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
     }
 
-    // 1. simulatedOrders
-    const orders = await db.select().from(schema.simulatedOrders).where(eq(schema.simulatedOrders.customerUserId, targetUserId));
-    let populatedOrders: any[] = [];
-    
-    if (orders.length > 0) {
-      const orderIds = orders.map((o) => o.id);
-      const allItems = await db.select().from(schema.simulatedOrderItems).where(inArray(schema.simulatedOrderItems.orderId, orderIds));
-      
-      const itemsByOrderId = allItems.reduce((acc, item) => {
-        if (!acc[item.orderId]) acc[item.orderId] = [];
-        acc[item.orderId].push(item);
-        return acc;
-      }, {} as Record<string, typeof allItems[0][]>);
-      
-      populatedOrders = orders.map(order => ({
-        ...order,
-        items: itemsByOrderId[order.id] || []
-      }));
-    }
-
-    // 2. clerk user to get email for contact submissions
     const client = await clerkClient();
-    let clerkUser = null;
-    let contactSubmissions: any[] = [];
-    try {
-      clerkUser = await client.users.getUser(targetUserId);
-      const email = clerkUser.emailAddresses[0]?.emailAddress;
-      if (email) {
-         contactSubmissions = await db.select()
-           .from(schema.contactSubmissions)
-           .where(sql`lower(trim(${schema.contactSubmissions.email})) = ${email.trim().toLowerCase()}`);
-      }
-    } catch (e) {
-      // User might be deleted from clerk already or error
+    const clerkAdminUser = await client.users.getUser(adminUser.id);
+    const adminEmail = clerkAdminUser.emailAddresses[0]?.emailAddress;
+
+    if (!adminEmail) {
+      return NextResponse.json({ error: 'Superadmin account lacks an email address.' }, { status: 400 });
     }
 
-    // 3-6. Fetch Carts, Branch Members, Audit Logs, Reviews, Questions, Wishlists concurrently
-    let cart = null;
-    let branchMemberships: any[] = [];
-    let logs: any[] = [];
-    let reviews: any[] = [];
-    let questions: any[] = [];
-    let wishlists: any[] = [];
-
-    const results = await Promise.allSettled([
-      db.select().from(schema.customerCarts).where(eq(schema.customerCarts.userId, targetUserId)),
-      db.select().from(schema.branchMembers).where(eq(schema.branchMembers.memberUserId, targetUserId)),
-      db.select().from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId)),
-      // Ignore type errors for dynamic schema access used in this specific route
-      db.select().from((schema as any).reviews).where(eq((schema as any).reviews.userId, targetUserId)),
-      db.select().from((schema as any).questions).where(eq((schema as any).questions.userId, targetUserId)),
-      db.select().from((schema as any).wishlists).where(eq((schema as any).wishlists.userId, targetUserId)),
-    ]);
-
-    if (results[0].status === 'fulfilled' && results[0].value.length > 0) cart = results[0].value[0];
-    if (results[1].status === 'fulfilled') branchMemberships = results[1].value;
-    if (results[2].status === 'fulfilled') logs = results[2].value;
-    if (results[3].status === 'fulfilled') reviews = results[3].value;
-    if (results[4].status === 'fulfilled') questions = results[4].value;
-    if (results[5].status === 'fulfilled') wishlists = results[5].value;
-
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    
+    // Publish to QStash for asynchronous processing
+    const message = await qstash.publishJSON({
+      url: `${appUrl}/api/webhooks/qstash/export`,
+      body: {
+        targetUserId,
+        adminUserId: adminUser.id,
+        adminEmail,
+      },
+    });
 
     await logAuditAction({
       userId: adminUser.id,
-      action: 'API_GDPR_EXPORT',
+      action: 'API_GDPR_EXPORT_QUEUED',
       targetType: 'data_subject_request',
       targetId: targetUserId,
-      metadata: { ordersCount: populatedOrders.length, contactSubmissionsCount: contactSubmissions.length },
+      metadata: { qstashMessageId: message.messageId },
       strict: true,
     });
 
-    return NextResponse.json({
-      userId: targetUserId,
-      orders: populatedOrders,
-      contactSubmissions,
-      cart,
-      branchMemberships,
-      reviews,
-      questions,
-      wishlists,
-      auditLogs: logs
-    });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Export job queued successfully. You will receive an email when it is ready.' 
+    }, { status: 202 });
 
   } catch (error) {
-    logger.error('GDPR Export Error', error);
+    logger.error('GDPR Export Queue Error', error);
     if (error instanceof Error && error.message.includes('Unauthorized')) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }

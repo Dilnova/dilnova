@@ -28,6 +28,7 @@
     "@clerk/nextjs": "7.5.17",
     "@sentry/node": "10.65.0",
     "@supabase/supabase-js": "2.110.3",
+    "@upstash/qstash": "^2.11.2",
     "@upstash/ratelimit": "2.0.8",
     "@upstash/redis": "1.38.0",
     "@vercel/analytics": "2.0.1",

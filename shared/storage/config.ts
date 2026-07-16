@@ -1,8 +1,14 @@
 /** Private bucket for bank payment slip images (signed URLs only). */
 export const PAYMENT_SLIPS_BUCKET = 'payment-slips';
 
+/** Private bucket for temporary GDPR export JSON dumps. */
+export const GDPR_EXPORTS_BUCKET = 'gdpr-exports';
+
 /** Short-lived signed URL TTL for viewing private slips in the app. */
 export const PAYMENT_SLIP_SIGNED_URL_TTL_SECONDS = 300;
+
+/** Short-lived signed URL TTL for securely downloading GDPR exports. */
+export const GDPR_EXPORT_TTL_SECONDS = 300;
 
 export const PAYMENT_SLIP_MAX_BYTES = 8 * 1024 * 1024;
 
