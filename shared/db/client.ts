@@ -42,12 +42,61 @@ if (process.env.NODE_ENV !== 'production') {
 
 import { logger } from '@/shared/logging/logger';
 
-export const db = drizzle(client, { 
+function withSlowQueryLogger(client: PostgresClient): PostgresClient {
+  return new Proxy(client, {
+    get(target, prop) {
+      const orig = target[prop as keyof typeof target];
+      if (prop === 'unsafe') {
+        return (query: string, params?: any[]) => {
+          const start = performance.now();
+          const result = (orig as any).call(target, query, params);
+          
+          const logIfSlow = () => {
+            const duration = performance.now() - start;
+            if (duration > 500) {
+              logger.warn(`[Slow Query ${duration.toFixed(2)}ms]`, { query, params });
+            }
+          };
+
+          const wrappedResult = result.then((res: any) => {
+            logIfSlow();
+            return res;
+          }).catch((err: any) => {
+            logIfSlow();
+            throw err;
+          });
+
+          wrappedResult.values = () => {
+            return result.values().then((res: any) => {
+              logIfSlow();
+              return res;
+            }).catch((err: any) => {
+              logIfSlow();
+              throw err;
+            });
+          };
+
+          return wrappedResult;
+        };
+      }
+      
+      if (prop === 'begin' || prop === 'savepoint') {
+        return (cb: any) => {
+          return (orig as any).call(target, (txClient: PostgresClient) => {
+            return cb(withSlowQueryLogger(txClient));
+          });
+        };
+      }
+
+      return typeof orig === 'function' ? orig.bind(target) : orig;
+    }
+  }) as PostgresClient;
+}
+
+export const db = drizzle(withSlowQueryLogger(client), { 
   schema,
   logger: process.env.NODE_ENV === 'development' ? {
     logQuery(query: string, params: unknown[]) {
-      // In development, log the raw query. 
-      // In production, we rely on Sentry's APM to trace DB spans automatically.
       logger.info(`[DB Query]`, { query, params });
     }
   } : undefined
