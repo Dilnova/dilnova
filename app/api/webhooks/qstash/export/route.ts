@@ -17,9 +17,13 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
 });
 
-const qstash = new QStashClient({
-  token: process.env.QSTASH_TOKEN || '',
-});
+let qstash: QStashClient;
+const getQStashClient = () => {
+  if (!qstash) {
+    qstash = new QStashClient({ token: process.env.QSTASH_TOKEN || '' });
+  }
+  return qstash;
+};
 
 async function handler(req: NextRequest) {
   const messageId = req.headers.get('upstash-message-id');
@@ -168,11 +172,12 @@ async function handler(req: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     
     // Publish cleanup job (delayed 24h)
-    await qstash.publishJSON({
+    await getQStashClient().publishJSON({
       url: `${appUrl}/api/webhooks/qstash/cleanup`,
       body: { storagePath },
       delay: '24h',
     });
+
 
     // Email admin the download link to the internal superadmin route
     const downloadPageUrl = `${appUrl}/superadmin/gdpr/export/${encodeURIComponent(targetUserId)}?file=${encodeURIComponent(storagePath)}`;
@@ -219,4 +224,6 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const POST = verifySignatureAppRouter(handler);
+export const POST = async (req: NextRequest) => {
+  return verifySignatureAppRouter(handler)(req);
+};

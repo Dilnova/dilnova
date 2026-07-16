@@ -182,4 +182,6 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const POST = verifySignatureAppRouter(handler);
+export const POST = async (req: NextRequest) => {
+  return verifySignatureAppRouter(handler)(req);
+};
