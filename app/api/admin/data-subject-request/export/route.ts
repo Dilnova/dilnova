@@ -51,29 +51,30 @@ export async function GET(req: NextRequest) {
       // User might be deleted from clerk already or error
     }
 
-    // 3. Carts
+    // 3-6. Fetch Carts, Branch Members, Audit Logs, Reviews, Questions, Wishlists concurrently
     let cart = null;
-    try {
-        const [foundCart] = await db.select().from(schema.customerCarts).where(eq(schema.customerCarts.userId, targetUserId));
-        cart = foundCart;
-    } catch(e) {}
-
-    // 4. Branch Members
     let branchMemberships: any[] = [];
-    try {
-        branchMemberships = await db.select().from(schema.branchMembers).where(eq(schema.branchMembers.memberUserId, targetUserId));
-    } catch(e) {}
-
-    // 5. Audit logs
-    const logs = await db.select().from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId));
-
-    // 6. Reviews, Questions, Wishlists
+    let logs: any[] = [];
     let reviews: any[] = [];
     let questions: any[] = [];
     let wishlists: any[] = [];
-    try { reviews = await db.select().from((schema as any).reviews).where(eq((schema as any).reviews.userId, targetUserId)); } catch(e) {}
-    try { questions = await db.select().from((schema as any).questions).where(eq((schema as any).questions.userId, targetUserId)); } catch(e) {}
-    try { wishlists = await db.select().from((schema as any).wishlists).where(eq((schema as any).wishlists.userId, targetUserId)); } catch(e) {}
+
+    const results = await Promise.allSettled([
+      db.select().from(schema.customerCarts).where(eq(schema.customerCarts.userId, targetUserId)),
+      db.select().from(schema.branchMembers).where(eq(schema.branchMembers.memberUserId, targetUserId)),
+      db.select().from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId)),
+      // Ignore type errors for dynamic schema access used in this specific route
+      db.select().from((schema as any).reviews).where(eq((schema as any).reviews.userId, targetUserId)),
+      db.select().from((schema as any).questions).where(eq((schema as any).questions.userId, targetUserId)),
+      db.select().from((schema as any).wishlists).where(eq((schema as any).wishlists.userId, targetUserId)),
+    ]);
+
+    if (results[0].status === 'fulfilled' && results[0].value.length > 0) cart = results[0].value[0];
+    if (results[1].status === 'fulfilled') branchMemberships = results[1].value;
+    if (results[2].status === 'fulfilled') logs = results[2].value;
+    if (results[3].status === 'fulfilled') reviews = results[3].value;
+    if (results[4].status === 'fulfilled') questions = results[4].value;
+    if (results[5].status === 'fulfilled') wishlists = results[5].value;
 
 
     await logAuditAction({
