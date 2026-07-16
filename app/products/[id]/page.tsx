@@ -26,6 +26,7 @@ import {
   getProductForMetadata,
   getProductQuestions,
   getProductReviews,
+  getProductReviewStats,
   getProductWithCategory,
 } from '@/features/catalog/queries';
 
@@ -107,17 +108,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
     inventoryRecord
   );
 
-  const [productReviews, productQuestions, verifiedReviewerIds] = await Promise.all([
+  const [productReviews, reviewStats, productQuestions, verifiedReviewerIds] = await Promise.all([
     getProductReviews(id),
+    getProductReviewStats(id),
     getProductQuestions(id),
     getVerifiedReviewerIdsForProduct(id),
   ]);
 
-  // Calculate review stats
-  const totalReviews = productReviews.length;
-  const averageRating = totalReviews
-    ? Number((productReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
-    : 0;
+  const { totalReviews, averageRating } = reviewStats;
 
   // Fetch parent category if this is a subcategory
   let parentCategory = null;
@@ -387,6 +385,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <ReviewsSection
           productId={product.id}
           reviews={productReviews}
+          reviewStats={reviewStats}
           verifiedReviewerIds={[...verifiedReviewerIds]}
           productOrgId={product.orgId}
         />

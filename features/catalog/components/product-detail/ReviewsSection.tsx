@@ -23,6 +23,11 @@ interface Review {
 interface ReviewsSectionProps {
   productId: string;
   reviews: Review[];
+  reviewStats: {
+    totalReviews: number;
+    averageRating: number;
+    distribution: number[];
+  };
   verifiedReviewerIds: string[];
   productOrgId: string;
 }
@@ -30,6 +35,7 @@ interface ReviewsSectionProps {
 export default function ReviewsSection({
   productId,
   reviews,
+  reviewStats,
   verifiedReviewerIds,
   productOrgId,
 }: ReviewsSectionProps) {
@@ -57,18 +63,7 @@ export default function ReviewsSection({
     }
   }, [existingReview]);
 
-  // Calculate statistics
-  const totalReviews = reviews.length;
-  const averageRating = totalReviews
-    ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
-    : 0;
-
-  const distribution = [0, 0, 0, 0, 0]; // Index 0 represents 1-star, Index 4 represents 5-star
-  reviews.forEach((r) => {
-    if (r.rating >= 1 && r.rating <= 5) {
-      distribution[r.rating - 1]++;
-    }
-  });
+  const { totalReviews, averageRating, distribution } = reviewStats;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
