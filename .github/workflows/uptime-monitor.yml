@@ -1,15 +1,13 @@
 name: Uptime Monitor
 
+permissions:
+  contents: read
+
 on:
   schedule:
     # Run every 5 minutes
     - cron: '*/5 * * * *'
   workflow_dispatch:
-    inputs:
-      target_url:
-        description: 'URL to ping (override)'
-        required: false
-        type: string
 
 jobs:
   health-check:
@@ -20,9 +18,9 @@ jobs:
       - name: Ping API Health Endpoint
         id: ping
         env:
-          # Use workflow input if provided, otherwise fallback to the production URL variable, 
+          # Use the production URL variable, 
           # or finally default to dilstar.pp.ua which is referenced in layout.tsx.
-          TARGET_URL: ${{ inputs.target_url || vars.PRODUCTION_APP_URL || 'https://dilstar.pp.ua' }}
+          TARGET_URL: ${{ vars.PRODUCTION_APP_URL || 'https://dilstar.pp.ua' }}
           HEALTH_SECRET: ${{ secrets.HEALTH_CHECK_SECRET }}
         run: |
           echo "Pinging health endpoint at $TARGET_URL/api/health"

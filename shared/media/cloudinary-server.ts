@@ -60,7 +60,14 @@ export function createCloudinaryUploadSignature(input: {
 }
 
 export async function deleteCloudinaryAsset(imageUrl: string, resourceType: CloudinaryResourceType = 'image'): Promise<void> {
-  if (!imageUrl || !imageUrl.includes('res.cloudinary.com')) return;
+  if (!imageUrl) return;
+
+  try {
+    const parsedUrl = new URL(imageUrl);
+    if (parsedUrl.hostname !== 'res.cloudinary.com') return;
+  } catch {
+    return;
+  }
 
   const { cloudName, apiKey, apiSecret } = readCloudinaryServerEnv();
   
