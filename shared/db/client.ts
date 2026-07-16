@@ -42,6 +42,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 import { logger } from '@/shared/logging/logger';
 
+import * as Sentry from '@sentry/nextjs';
+
 function withSlowQueryLogger(client: PostgresClient): PostgresClient {
   return new Proxy(client, {
     get(target, prop) {
@@ -49,29 +51,54 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
       if (prop === 'unsafe') {
         return (query: string, params?: any[]) => {
           const start = performance.now();
+          
+          let span: any;
+          if (process.env.NODE_ENV === 'production' && (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)) {
+            try {
+              if (Sentry.startInactiveSpan) {
+                span = Sentry.startInactiveSpan({ 
+                  name: 'DB Query', 
+                  op: 'db.query',
+                  attributes: { 'db.statement': query }
+                });
+              }
+            } catch {
+              // ignore
+            }
+          }
+
           const result = (orig as any).call(target, query, params);
           
-          const logIfSlow = () => {
+          const finish = (error?: any) => {
             const duration = performance.now() - start;
             if (duration > 500) {
               logger.warn(`[Slow Query ${duration.toFixed(2)}ms]`, { query, params });
+              if (span) {
+                span.setAttribute('slow', true);
+              }
+            }
+            if (span) {
+              if (error) {
+                span.setStatus({ code: 2, message: 'internal_error' });
+              }
+              span.end();
             }
           };
 
           const wrappedResult = result.then((res: any) => {
-            logIfSlow();
+            finish();
             return res;
           }).catch((err: any) => {
-            logIfSlow();
+            finish(err);
             throw err;
           });
 
           wrappedResult.values = () => {
             return result.values().then((res: any) => {
-              logIfSlow();
+              finish();
               return res;
             }).catch((err: any) => {
-              logIfSlow();
+              finish(err);
               throw err;
             });
           };

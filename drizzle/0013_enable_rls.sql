@@ -68,8 +68,8 @@ CREATE TABLE IF NOT EXISTS simulated_order_items (
     );
 CREATE INDEX IF NOT EXISTS idx_simulated_order_items_order_id ON simulated_order_items (order_id);
 CREATE INDEX IF NOT EXISTS idx_simulated_order_items_product_id ON simulated_order_items (product_id);
-DROP TABLE IF EXISTS catalog_registry CASCADE;
-DROP TABLE IF EXISTS enterprise_categories CASCADE;
+DROP TABLE IF EXISTS catalog_registry;
+DROP TABLE IF EXISTS enterprise_categories;
 CREATE TABLE IF NOT EXISTS tax_classes (
       id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
       name TEXT NOT NULL,

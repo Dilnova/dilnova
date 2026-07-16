@@ -16,6 +16,7 @@ import { getPremiumStatus, DEFAULT_MAX_LISTING_COUNT } from '@/features/inventor
 import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
 import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
 import { requireVendorRole } from '@/shared/auth/vendor-guard';
+import { deleteCloudinaryAsset } from '@/shared/media/cloudinary-server';
 
 /**
  * Enterprise-grade Server Action to securely insert a new product/service into PostgreSQL.
@@ -295,6 +296,15 @@ export async function deleteProductAction(productId: string) {
 
       const deletedProduct = result[0];
       if (deletedProduct) {
+        if (deletedProduct.imageUrl) {
+          await deleteCloudinaryAsset(deletedProduct.imageUrl);
+        }
+        if (deletedProduct.media && Array.isArray(deletedProduct.media)) {
+          for (const m of deletedProduct.media) {
+            await deleteCloudinaryAsset(m.url, m.type);
+          }
+        }
+
         await logAuditAction({
           userId,
           action: 'DELETE_PRODUCT',

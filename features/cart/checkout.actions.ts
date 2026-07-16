@@ -1054,6 +1054,13 @@ export async function simulatedCheckoutAction(
     const { dispatchVendorOrderNotifications } = await import('@/features/orders/vendor-notification');
     await dispatchVendorOrderNotifications(createdOrderId);
 
+    logger.info('Checkout succeeded', {
+      orderId: createdOrderId,
+      grandTotalCents,
+      paymentMethod: payment,
+      fulfillmentMethod: fulfillment,
+    });
+
     return {
       success: true,
       orderId: createdOrderId,

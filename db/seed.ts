@@ -14,6 +14,10 @@ if (!connectionString) {
 }
 
 
+if (process.env.NODE_ENV === 'production') {
+  console.error('❌ Cannot run seed in production environment! Aborting.');
+  process.exit(1);
+}
 
 async function main() {
   console.log('🌱 Starting database seed script...');
