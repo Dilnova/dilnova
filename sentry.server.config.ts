@@ -5,6 +5,7 @@ const tracesSampleRate = process.env.SENTRY_TRACES_SAMPLE_RATE
   : 0.1; // Reduced from 1.0 to limit volume and PII risk
 
 Sentry.init({
+  enabled: process.env.NODE_ENV === 'production',
   dsn: process.env.SENTRY_DSN,
 
   environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,

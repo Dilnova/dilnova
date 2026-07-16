@@ -202,6 +202,5 @@ const nextConfig: NextConfig = {
 
 export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   silent: true,
-  hideSourceMaps: true,
   widenClientFileUpload: true,
 });

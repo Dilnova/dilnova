@@ -5,6 +5,7 @@ const tracesSampleRate = process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE
   : 0.1; // Reduced from 1.0 to limit volume and PII risk
 
 Sentry.init({
+  enabled: process.env.NODE_ENV === 'production',
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
   
   // Replay may not be desired if strict PII redaction is needed,
