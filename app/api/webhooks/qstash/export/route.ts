@@ -22,20 +22,25 @@ const qstash = new QStashClient({
 });
 
 async function handler(req: NextRequest) {
-  try {
-    const messageId = req.headers.get('upstash-message-id');
-    if (!messageId) {
-      return NextResponse.json({ error: 'Missing upstash-message-id' }, { status: 400 });
-    }
+  const messageId = req.headers.get('upstash-message-id');
+  if (!messageId) {
+    return NextResponse.json({ error: 'Missing upstash-message-id' }, { status: 400 });
+  }
 
-    // Idempotency check: 86400s (24h) TTL
-    const setnxResult = await redis.setnx(`export:msg_id:${messageId}`, "1");
-    if (setnxResult === 0) {
+  try {
+    // Check if already successfully processed
+    const isDone = await redis.get(`export:msg_id:${messageId}:done`);
+    if (isDone) {
       logger.info(`Idempotency caught duplicate execution for QStash message ${messageId}`);
       return NextResponse.json({ success: true, message: 'Duplicate message ignored' }, { status: 200 });
     }
-    // Set expiry
-    await redis.expire(`export:msg_id:${messageId}`, 86400);
+
+    // Acquire a short-lived processing lock to prevent concurrent identical deliveries
+    const lock = await redis.set(`export:msg_id:${messageId}:lock`, "1", { nx: true, ex: 120 });
+    if (!lock) {
+      logger.warn(`QStash message ${messageId} is currently being processed. Returning 409 to trigger retry.`);
+      return NextResponse.json({ error: 'Currently processing' }, { status: 409 });
+    }
 
     const body = await req.json();
     const { targetUserId, adminUserId, adminEmail } = body;
@@ -49,7 +54,14 @@ async function handler(req: NextRequest) {
     let populatedOrders: any[] = [];
     if (orders.length > 0) {
       const orderIds = orders.map((o) => o.id);
-      const allItems = await db.select().from(schema.simulatedOrderItems).where(inArray(schema.simulatedOrderItems.orderId, orderIds));
+      
+      const allItems: any[] = [];
+      const CHUNK_SIZE = 100;
+      for (let i = 0; i < orderIds.length; i += CHUNK_SIZE) {
+        const chunkIds = orderIds.slice(i, i + CHUNK_SIZE);
+        const itemsChunk = await db.select().from(schema.simulatedOrderItems).where(inArray(schema.simulatedOrderItems.orderId, chunkIds));
+        allItems.push(...itemsChunk);
+      }
       
       const itemsByOrderId = allItems.reduce((acc, item) => {
         if (!acc[item.orderId]) acc[item.orderId] = [];
@@ -87,22 +99,41 @@ async function handler(req: NextRequest) {
     let questions: any[] = [];
     let wishlists: any[] = [];
 
-    const results = await Promise.allSettled([
+    const queries = [
       db.select().from(schema.customerCarts).where(eq(schema.customerCarts.userId, targetUserId)),
       db.select().from(schema.branchMembers).where(eq(schema.branchMembers.memberUserId, targetUserId)),
       db.select().from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId)),
-      // Ignore type errors for dynamic schema access used in this specific route
-      db.select().from((schema as any).reviews).where(eq((schema as any).reviews.userId, targetUserId)),
-      db.select().from((schema as any).questions).where(eq((schema as any).questions.userId, targetUserId)),
-      db.select().from((schema as any).wishlists).where(eq((schema as any).wishlists.userId, targetUserId)),
-    ]);
+    ];
 
-    if (results[0].status === 'fulfilled' && results[0].value.length > 0) cart = results[0].value[0];
-    if (results[1].status === 'fulfilled') branchMemberships = results[1].value;
-    if (results[2].status === 'fulfilled') logs = results[2].value;
-    if (results[3].status === 'fulfilled') reviews = results[3].value;
-    if (results[4].status === 'fulfilled') questions = results[4].value;
-    if (results[5].status === 'fulfilled') wishlists = results[5].value;
+    let hasReviews = false;
+    let hasQuestions = false;
+    let hasWishlists = false;
+
+    if ('reviews' in schema) {
+      hasReviews = true;
+      queries.push(db.select().from((schema as any).reviews).where(eq((schema as any).reviews.userId, targetUserId)));
+    }
+    if ('questions' in schema) {
+      hasQuestions = true;
+      queries.push(db.select().from((schema as any).questions).where(eq((schema as any).questions.userId, targetUserId)));
+    }
+    if ('wishlists' in schema) {
+      hasWishlists = true;
+      queries.push(db.select().from((schema as any).wishlists).where(eq((schema as any).wishlists.userId, targetUserId)));
+    }
+
+    // Fail loud on any DB errors to prevent silent data loss
+    const results = await Promise.all(queries);
+
+    let idx = 0;
+    if (results[idx] && results[idx].length > 0) cart = results[idx][0];
+    idx++;
+    branchMemberships = results[idx++];
+    logs = results[idx++];
+    
+    if (hasReviews) reviews = results[idx++];
+    if (hasQuestions) questions = results[idx++];
+    if (hasWishlists) wishlists = results[idx++];
 
     const exportData = {
       userId: targetUserId,
@@ -169,9 +200,21 @@ async function handler(req: NextRequest) {
 
     logger.info(`GDPR export completed successfully for ${targetUserId}`);
 
+    // Mark as done (24h TTL) and release the processing lock
+    await redis.set(`export:msg_id:${messageId}:done`, "1", { ex: 86400 });
+    await redis.del(`export:msg_id:${messageId}:lock`);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error('GDPR Export Worker Error', error);
+    
+    // Release the lock so QStash retries can process it
+    try {
+      await redis.del(`export:msg_id:${messageId}:lock`);
+    } catch (e) {
+      logger.error('Failed to release idempotency lock', e);
+    }
+    
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

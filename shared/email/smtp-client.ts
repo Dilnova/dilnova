@@ -27,8 +27,8 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
       if (socket) {
         socket.destroy();
       }
-      fail(new Error('SMTP transaction overall deadline exceeded (30 seconds).'));
-    }, 30000);
+      fail(new Error('SMTP transaction overall deadline exceeded (10 seconds).'));
+    }, 10000);
 
     const cleanup = () => {
       clearTimeout(overallTimeout);
@@ -45,10 +45,10 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
     };
 
     const setupSocketTimeout = (sock: net.Socket | tls.TLSSocket) => {
-      sock.setTimeout(30000);
+      sock.setTimeout(10000);
       sock.on('timeout', () => {
         sock.destroy();
-        fail(new Error('SMTP socket inactivity timeout exceeded (30 seconds).'));
+        fail(new Error('SMTP socket inactivity timeout exceeded (10 seconds).'));
       });
     };
 
