@@ -21,6 +21,7 @@ const CartMergeBanner = dynamic(() => import('@/features/cart/components/CartMer
 import { getSystemSetting } from '@/shared/platform/settings'
 import Image from 'next/image'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Analytics } from '@vercel/analytics/react'
 import { Toaster } from 'sonner'
 import { ConfirmProvider } from '@/shared/ui/notifications'
 import { GlobalNotificationListener } from '@/shared/ui/notifications/GlobalNotificationListener'
@@ -210,6 +211,8 @@ export default async function RootLayout({
             </ConfirmProvider>
             <ConsentTracking />
             <CookieConsent />
+            <SpeedInsights />
+            <Analytics />
           </ClerkProvider>
         </body>
       </html>
