@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { logAuditAction } from '@/shared/audit/logger';
 import { clerkClient } from '@clerk/nextjs/server';
 
@@ -43,8 +43,9 @@ export async function GET(req: NextRequest) {
       clerkUser = await client.users.getUser(targetUserId);
       const email = clerkUser.emailAddresses[0]?.emailAddress;
       if (email) {
-         const allSubmissions = await db.select().from(schema.contactSubmissions);
-         contactSubmissions = allSubmissions.filter(sub => sub.email && sub.email.trim().toLowerCase() === email.trim().toLowerCase());
+         contactSubmissions = await db.select()
+           .from(schema.contactSubmissions)
+           .where(sql`lower(trim(${schema.contactSubmissions.email})) = ${email.trim().toLowerCase()}`);
       }
     } catch (e) {
       // User might be deleted from clerk already or error
