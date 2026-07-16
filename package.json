@@ -46,6 +46,7 @@
   },
   "devDependencies": {
     "@clerk/testing": "^2.2.7",
+    "@next/bundle-analyzer": "^16.2.10",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.3.2",
     "@types/node": "^26.1.1",
