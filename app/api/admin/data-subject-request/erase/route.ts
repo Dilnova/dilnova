@@ -31,7 +31,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const orders = await db.select().from(schema.simulatedOrders).where(eq(schema.simulatedOrders.customerUserId, targetUserId));
-    let ordersAnonymized = orders.length;
+    const ordersAnonymized = orders.length;
     
     let supabase: any = null;
     const { createSupabaseAdminClient, isSupabaseStorageConfigured } = await import('@/shared/storage/admin-client');
