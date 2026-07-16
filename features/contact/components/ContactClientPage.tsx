@@ -6,6 +6,7 @@ import { submitContactFormAction } from '@/features/contact/actions';
 import { toast } from 'sonner';
 import { Spinner } from '@/shared/ui/loading';
 import { useUser } from '@clerk/nextjs';
+import { useSearchParams } from 'next/navigation';
 
 type CategoryType = 'collaboration' | 'registration' | 'info';
 
@@ -15,6 +16,8 @@ interface ContactClientPageProps {
 
 export default function ContactClientPage({ systemName }: ContactClientPageProps) {
   const { user, isSignedIn, isLoaded } = useUser();
+  const searchParams = useSearchParams();
+  const plan = searchParams.get('plan');
   const [isPending, startTransition] = useTransition();
 
   const turnstileRef = useRef<HTMLDivElement>(null);
@@ -80,13 +83,32 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
     return `Hi ${systemName} team,\n\nI have a few questions regarding platform capabilities, pricing options, and system features. Could you please provide more details?\n\nThank you!`;
   };
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    category: 'info' as CategoryType,
-    subject: '',
-    message: '',
-    middleName: '', // Honeypot field for anti-spam
+  const [formData, setFormData] = useState(() => {
+    let category: CategoryType = 'info';
+    let subject = '';
+    let message = '';
+    if (plan) {
+      const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
+      category = plan === 'enterprise' ? 'collaboration' : 'registration';
+      subject = `Inquiry for ${planName} Plan Registration`;
+      if (plan === 'starter') {
+        message = `Hi ${systemName} team,\n\nI would like to register my storefront on the Starter Plan ($0/month). Please guide me on the next steps to set up my catalog.\n\nThanks!`;
+      } else if (plan === 'growth') {
+        message = `Hi ${systemName} team,\n\nI am interested in registering my storefront on the Growth Plan ($5/yearly) to upload unlimited listings. Please let me know how to get started.\n\nThanks!`;
+      } else if (plan === 'enterprise') {
+        message = `Hi ${systemName} team,\n\nWe are looking to set up multiple storefront profiles with custom branding and priority support configurations. Please connect us with a representative to discuss the custom Enterprise Plan setup.\n\nThanks!`;
+      } else {
+        message = `Hi ${systemName} team,\n\nI am interested in registering a new storefront on the marketplace. Please provide more details on how to get started.\n\nThanks!`;
+      }
+    }
+    return {
+      name: '',
+      email: '',
+      category,
+      subject,
+      message,
+      middleName: '',
+    };
   });
 
   useEffect(() => {
@@ -100,34 +122,6 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
       }));
     }
   }, [isLoaded, isSignedIn, user]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const searchParams = new URLSearchParams(window.location.search);
-      const plan = searchParams.get('plan');
-      if (plan) {
-        const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
-        let defaultMessage = '';
-        if (plan === 'starter') {
-          defaultMessage = `Hi ${systemName} team,\n\nI would like to register my storefront on the Starter Plan ($0/month). Please guide me on the next steps to set up my catalog.\n\nThanks!`;
-        } else if (plan === 'growth') {
-          defaultMessage = `Hi ${systemName} team,\n\nI am interested in registering my storefront on the Growth Plan ($5/yearly) to upload unlimited listings. Please let me know how to get started.\n\nThanks!`;
-        } else if (plan === 'enterprise') {
-          defaultMessage = `Hi ${systemName} team,\n\nWe are looking to set up multiple storefront profiles with custom branding and priority support configurations. Please connect us with a representative to discuss the custom Enterprise Plan setup.\n\nThanks!`;
-        } else {
-          defaultMessage = `Hi ${systemName} team,\n\nI am interested in registering a new storefront on the marketplace. Please provide more details on how to get started.\n\nThanks!`;
-        }
-        requestAnimationFrame(() => {
-          setFormData((prev) => ({
-            ...prev,
-            category: plan === 'enterprise' ? 'collaboration' : 'registration',
-            subject: `Inquiry for ${planName} Plan Registration`,
-            message: defaultMessage,
-          }));
-        });
-      }
-    }
-  }, [systemName]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
