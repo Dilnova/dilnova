@@ -124,7 +124,7 @@ export default function CatalogLayout({
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                   {items.map((item, index) => {
-                    const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, canPurchase, availabilityBadge } = item;
+                    const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, isFavorited, canPurchase, availabilityBadge } = item;
                     const formattedPrice = (product.price / 100).toLocaleString('en-US', {
                       style: 'currency',
                       currency: 'USD',
@@ -295,7 +295,7 @@ export default function CatalogLayout({
                 /* List View Layout */
                 <div className="space-y-4">
                   {items.map((item) => {
-                    const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, canPurchase, availabilityBadge } = item;
+                    const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, isFavorited, canPurchase, availabilityBadge } = item;
                     const formattedPrice = (product.price / 100).toLocaleString('en-US', {
                       style: 'currency',
                       currency: 'USD',

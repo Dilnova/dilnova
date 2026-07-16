@@ -113,8 +113,22 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
       .where(conditions),
     db
       .select({
-        product: schema.products,
-        category: schema.categories,
+        product: {
+          id: schema.products.id,
+          orgId: schema.products.orgId,
+          categoryId: schema.products.categoryId,
+          name: schema.products.name,
+          description: schema.products.description,
+          price: schema.products.price,
+          type: schema.products.type,
+          status: schema.products.status,
+          imageUrl: schema.products.imageUrl,
+          views: schema.products.views,
+          createdAt: schema.products.createdAt,
+        },
+        category: {
+          name: schema.categories.name,
+        },
       })
       .from(schema.products)
       .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
