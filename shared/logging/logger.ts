@@ -1,4 +1,4 @@
-import { getRequestId } from '@/shared/security/async-context';
+import { getRequestId, getUserId, getRequestPath, getRequestMethod } from '@/shared/security/async-context';
 
 async function captureSentryError(error: unknown, context?: Record<string, unknown>) {
   if (!process.env.SENTRY_DSN) {
@@ -119,7 +119,10 @@ export const logger = {
     const requestId = getRequestId();
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
-    const redactedContext = context ? redactSensitiveData(context) : undefined;
+    
+    const baseContext = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
+    Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
+    const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
     
     if (process.env.NODE_ENV === 'production') {
       console.log(
@@ -146,7 +149,10 @@ export const logger = {
     const requestId = getRequestId();
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
-    const redactedContext = context ? redactSensitiveData(context) : undefined;
+    
+    const baseContext = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
+    Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
+    const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
     
     if (process.env.NODE_ENV === 'production') {
       console.warn(
@@ -173,7 +179,10 @@ export const logger = {
     const requestId = getRequestId();
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
-    const redactedContext = context ? redactSensitiveData(context) : undefined;
+    
+    const baseContext = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
+    Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
+    const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
     
     let redactedError = error;
     if (error) {
