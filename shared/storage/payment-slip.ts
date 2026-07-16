@@ -130,9 +130,15 @@ export async function verifyPaymentSlipMagicBytes(storagePath: string): Promise<
   if (!signedUrl) return false;
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(signedUrl, {
       headers: { Range: 'bytes=0-31' },
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeout);
     if (!response.ok) return false;
 
     const buffer = await response.arrayBuffer();
