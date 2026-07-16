@@ -1,5 +1,4 @@
 import React from 'react';
-import { WishlistProvider } from './product-detail/WishlistProvider';
 import Link from 'next/link';
 import Image from 'next/image';
 import { isVideoUrl } from '@/shared/media/media';
@@ -63,8 +62,6 @@ export default function CatalogLayout({
   items,
   viewMode,
 }: CatalogLayoutProps) {
-  const productIds = items.map(item => item.product.id);
-
   return (
     <div className="space-y-6">
       {/* Top Filter Header Bar */}
@@ -122,7 +119,7 @@ export default function CatalogLayout({
               </Link>
             </div>
           ) : (
-            <WishlistProvider productIds={productIds}>
+            <>
               {/* Product Layout Grid vs List */}
               {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -171,7 +168,7 @@ export default function CatalogLayout({
                             <div className="absolute top-3 left-3 z-10">
                               <WishlistButton
                                 productId={product.id}
-                                initialFavorited={false}
+                                initialFavorited={isFavorited}
                                 showLabel={false}
                                 className="p-1.5 h-8 w-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-none hover:bg-white dark:hover:bg-zinc-900 shadow-xs"
                               />
@@ -340,7 +337,7 @@ export default function CatalogLayout({
                           <div className="absolute top-3 left-3 z-10">
                             <WishlistButton
                               productId={product.id}
-                              initialFavorited={false}
+                              initialFavorited={isFavorited}
                               showLabel={false}
                               className="p-1.5 h-8 w-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-none hover:bg-white dark:hover:bg-zinc-900 shadow-xs"
                             />
@@ -476,7 +473,7 @@ export default function CatalogLayout({
                   )}
                 </div>
               )}
-            </WishlistProvider>
+            </>
           )}
         </div>
       </div>

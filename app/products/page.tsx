@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { clerkClient } from '@clerk/nextjs/server';
+import { clerkClient, auth } from '@clerk/nextjs/server';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { and, eq, inArray, sql } from 'drizzle-orm';
@@ -15,6 +15,7 @@ import {
   parseCatalogQueryParams,
   resolveVendorOrgId,
 } from '@/features/catalog/query';
+import { getUserWishlistIdsAction } from '@/features/catalog/product-detail.actions';
 
 export const revalidate = 30; // Cache for 30s to prevent rapid re-fetches; vendor actions revalidate on-demand
 
@@ -81,6 +82,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const { userId } = await auth();
   const catalogQuery = parseCatalogQueryParams(params);
   const viewMode = (params.view === 'list' ? 'list' : 'grid') as 'grid' | 'list';
   const itemsPerPage = 12;
@@ -128,7 +130,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   // Fetch reviews and inventory for the returned product IDs in parallel
   const productIds = results.map((r) => r.product.id);
 
-  const [allReviewsForPage, inventoryRows] = await Promise.all([
+  const [allReviewsForPage, inventoryRows, wishlistedIds] = await Promise.all([
     productIds.length > 0
       ? db.select({
           productId: schema.reviews.productId,
@@ -145,8 +147,12 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
           .from(schema.inventory)
           .where(inArray(schema.inventory.productId, productIds))
       : Promise.resolve([]),
+    userId && productIds.length > 0
+      ? getUserWishlistIdsAction(productIds)
+      : Promise.resolve([]),
   ]);
 
+  const wishlistSet = new Set(wishlistedIds);
   const inventoryByProduct = new Map(
     inventoryRows.map((row) => [row.productId, { stockAvailability: row.stockAvailability, quantity: row.quantity }])
   );
@@ -163,7 +169,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
       ? Number((productReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
       : 0;
 
-    const isFavorited = false; // Resolved via client-side SWR in CatalogLayout
+    const isFavorited = wishlistSet.has(product.id);
     const inventoryInfo = inventoryByProduct.get(product.id);
     const { canPurchase, availabilityDef } = resolveOnlineProductPurchaseState(
       product.type,
