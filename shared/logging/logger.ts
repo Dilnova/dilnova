@@ -7,7 +7,11 @@ async function captureSentryError(error: unknown, context?: Record<string, unkno
 
   try {
     const Sentry = await import('@sentry/nextjs');
-    Sentry.captureException(error, { extra: context });
+    const { tags, ...extra } = context || {};
+    Sentry.captureException(error, { 
+      extra, 
+      tags: tags as Record<string, string> 
+    });
   } catch {
     // Sentry is optional; never block application flow.
   }

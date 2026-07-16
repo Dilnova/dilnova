@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
-    logger.error('CLERK_WEBHOOK_SECRET is not configured on the server');
+    logger.error('CLERK_WEBHOOK_SECRET is not configured on the server', undefined, { tags: { alert: 'webhook_failure', source: 'clerk' } });
     return NextResponse.json(
       { error: 'Webhook secret is not configured.' },
       { status: 500 }
@@ -122,14 +122,14 @@ export async function POST(req: NextRequest) {
       }
     } catch (e) {
       if (process.env.NODE_ENV === 'production') {
-        logger.error('Redis idempotency check failed, failing closed in production', e);
+        logger.error('Redis idempotency check failed, failing closed in production', e, { tags: { alert: 'webhook_failure', source: 'clerk' } });
         return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
       }
-      logger.error('Redis idempotency check failed, proceeding anyway', e);
+      logger.error('Redis idempotency check failed, proceeding anyway', e, { tags: { alert: 'webhook_failure', source: 'clerk' } });
     }
   } else {
     if (process.env.NODE_ENV === 'production') {
-      logger.error('Redis required for webhook idempotency in production');
+      logger.error('Redis required for webhook idempotency in production', undefined, { tags: { alert: 'webhook_failure', source: 'clerk' } });
       return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
     }
     if (processedWebhooks.has(svixId)) {
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    logger.error('Failed to process Clerk webhook event payload', error);
+    logger.error('Failed to process Clerk webhook event payload', error, { tags: { alert: 'webhook_failure', source: 'clerk' } });
     return NextResponse.json(
       { error: 'Error processing webhook payload.' },
       { status: 500 }
