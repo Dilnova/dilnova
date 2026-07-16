@@ -100,7 +100,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-5">
           {userAvatar ? (
-            <Image src={userAvatar} alt={fullName} width={80} height={80} unoptimized className="w-20 h-20 rounded-full border border-purple-500/20 shadow-md object-cover flex-shrink-0" />
+            <Image src={userAvatar} alt={fullName} width={80} height={80} className="w-20 h-20 rounded-full border border-purple-500/20 shadow-md object-cover flex-shrink-0" />
           ) : (
             <div className="w-20 h-20 rounded-full bg-purple-100 dark:bg-purple-950 flex items-center justify-center font-bold text-2xl text-purple-700 dark:text-purple-400 border border-purple-500/20 flex-shrink-0">
               {fullName.charAt(0).toUpperCase()}

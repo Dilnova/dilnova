@@ -45,7 +45,7 @@ export function RestrictedAccessBlock({ type, errorMsg, className = '' }: Restri
   }
 
   return (
-    <div className={`text-center py-16 border border-zinc-250 rounded-2xl dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 shadow-sm space-y-4 max-w-xl mx-auto mt-6 ${className}`}>
+    <div className={`text-center py-16 border border-zinc-200 rounded-2xl dark:border-zinc-800 bg-white dark:bg-zinc-950 p-8 shadow-sm space-y-4 max-w-xl mx-auto mt-6 ${className}`}>
       <div className="text-5xl">{emoji}</div>
       <h2 className="text-lg font-black text-zinc-900 dark:text-white">{title}</h2>
       <p className="text-zinc-500 text-xs leading-relaxed font-medium">

@@ -24,11 +24,17 @@ export interface Product {
 interface ManageProductsClientProps {
   initialProducts: Product[];
   orgSlug?: string | null;
+  /** Maximum active listings allowed for this org (from Clerk metadata). Default: 10 */
+  maxListingCount?: number;
+  /** Current count of active listings for this org (server-computed). */
+  activeListingCount?: number;
 }
 
 export default function ManageProductsClient({
   initialProducts,
   orgSlug,
+  maxListingCount = 10,
+  activeListingCount,
 }: ManageProductsClientProps) {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -190,6 +196,42 @@ export default function ManageProductsClient({
           </Link>
         </div>
       </div>
+
+      {/* Listing Quota Meter */}
+      {(() => {
+        const limit = maxListingCount;
+        // Prefer server-computed count; fall back to local product list length
+        const used = activeListingCount ?? products.length;
+        const pct = Math.min(100, Math.round((used / limit) * 100));
+        const isAtLimit = used >= limit;
+        const isNearLimit = pct >= 80 && !isAtLimit;
+        const barColor = isAtLimit
+          ? 'bg-rose-500'
+          : isNearLimit
+          ? 'bg-amber-400'
+          : 'bg-indigo-500';
+        const textColor = isAtLimit
+          ? 'text-rose-600 dark:text-rose-400'
+          : isNearLimit
+          ? 'text-amber-600 dark:text-amber-400'
+          : 'text-zinc-500 dark:text-zinc-400';
+        return (
+          <div className="flex items-center gap-3 px-1 py-0.5">
+            <span className={`text-[11px] font-mono whitespace-nowrap ${textColor}`}>
+              📦 {used.toLocaleString()} / {limit.toLocaleString()} listings
+            </span>
+            <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className={`text-[10px] font-mono ${textColor}`}>
+              {isAtLimit ? 'Limit reached' : `${(limit - used).toLocaleString()} left`}
+            </span>
+          </div>
+        );
+      })()}
 
       {/* Results count */}
       {(search || filter !== 'all') && (

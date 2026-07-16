@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { logAuditAction } from '@/shared/audit/logger';
 import { clerkClient } from '@clerk/nextjs/server';
 import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
@@ -30,18 +30,20 @@ export async function DELETE(req: NextRequest) {
       // User might be already deleted
     }
 
-    let ordersAnonymized = 0;
     const orders = await db.select().from(schema.simulatedOrders).where(eq(schema.simulatedOrders.customerUserId, targetUserId));
+    const ordersAnonymized = orders.length;
     
     let supabase: any = null;
     const { createSupabaseAdminClient, isSupabaseStorageConfigured } = await import('@/shared/storage/admin-client');
     const { PAYMENT_SLIPS_BUCKET } = await import('@/shared/storage/config');
 
-    for (const order of orders) {
-      if (order.paymentSlipUrl && isSupabaseStorageConfigured()) {
-        if (!supabase) supabase = createSupabaseAdminClient();
-        await supabase.storage.from(PAYMENT_SLIPS_BUCKET).remove([order.paymentSlipUrl]);
-      }
+    const paymentSlipUrls = orders.map(o => o.paymentSlipUrl).filter(Boolean) as string[];
+    if (paymentSlipUrls.length > 0 && isSupabaseStorageConfigured()) {
+      supabase = createSupabaseAdminClient();
+      await supabase.storage.from(PAYMENT_SLIPS_BUCKET).remove(paymentSlipUrls);
+    }
+
+    if (orders.length > 0) {
       await db.update(schema.simulatedOrders).set({
         customerName: 'GDPR REDACTED',
         customerEmail: 'redacted@example.com',
@@ -56,18 +58,19 @@ export async function DELETE(req: NextRequest) {
         shippingPhone2: 'REDACTED',
         paymentSlipUrl: null,
         updatedAt: new Date(),
-      }).where(eq(schema.simulatedOrders.id, order.id));
-      ordersAnonymized++;
+      }).where(eq(schema.simulatedOrders.customerUserId, targetUserId));
     }
 
     let submissionsDeleted = 0;
     if (email) {
-      const allSubmissions = await db.select().from(schema.contactSubmissions);
-      for (const sub of allSubmissions) {
-        if (sub.email && sub.email.trim().toLowerCase() === email) {
-          await db.delete(schema.contactSubmissions).where(eq(schema.contactSubmissions.id, sub.id));
-          submissionsDeleted++;
-        }
+      const allSubmissions = await db.select({ id: schema.contactSubmissions.id, email: schema.contactSubmissions.email }).from(schema.contactSubmissions);
+      const toDeleteIds = allSubmissions
+        .filter(sub => sub.email && sub.email.trim().toLowerCase() === email)
+        .map(sub => sub.id);
+
+      if (toDeleteIds.length > 0) {
+        await db.delete(schema.contactSubmissions).where(inArray(schema.contactSubmissions.id, toDeleteIds));
+        submissionsDeleted = toDeleteIds.length;
       }
     }
 
@@ -80,14 +83,14 @@ export async function DELETE(req: NextRequest) {
     // Audit logs
     let auditLogsRedacted = 0;
     try {
-        const userLogs = await db.select().from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId));
-        for (const log of userLogs) {
-        await db.update(schema.auditLogs).set({
-            userId: 'gdpr_redacted',
-            ipAddress: null,
-            userAgent: null,
-        }).where(eq(schema.auditLogs.id, log.id));
-        auditLogsRedacted++;
+        const userLogs = await db.select({ id: schema.auditLogs.id }).from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId));
+        if (userLogs.length > 0) {
+            await db.update(schema.auditLogs).set({
+                userId: 'gdpr_redacted',
+                ipAddress: null,
+                userAgent: null,
+            }).where(eq(schema.auditLogs.userId, targetUserId));
+            auditLogsRedacted = userLogs.length;
         }
     } catch (e) {}
     

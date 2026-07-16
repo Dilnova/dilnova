@@ -8,7 +8,7 @@ import VendorInventoryWorkspace from '@/features/inventory/components/VendorInve
 import { RestrictedAccessBlock } from '@/shared/components/RestrictedAccessBlock';
 import { getVendorInventoryData } from '@/features/inventory/vendor.actions';
 import { getVendorProductsForOrg } from '@/features/catalog/queries';
-import { getBranchCountForOrg, getOnlineOrderCountForVendor } from '@/features/vendor/queries';
+import { getBranchCountForOrg, getOnlineOrderCountForVendor, getCachedOrganization } from '@/features/vendor/queries';
 import { hasBankTransferConfiguredForOrg } from '@/features/billing/bank-transfer-metadata';
 
 const IMS_WORKSPACE_TABS = ['stock', 'suppliers', 'orders', 'movements', 'branches'] as const;
@@ -25,7 +25,7 @@ interface PageProps {
 
 export default async function VendorPage({ searchParams }: PageProps) {
   const { orgId, orgRole, userId } = await auth();
-  const user = await currentUser();
+  const user = await currentUser().catch(() => null);
 
   if (!userId) {
     redirect('/unauthorized');
@@ -43,9 +43,10 @@ export default async function VendorPage({ searchParams }: PageProps) {
     );
   }
 
-  // Fetch current organization details from Clerk API
-  const client = await clerkClient();
-  const org = await client.organizations.getOrganization({ organizationId: orgId });
+  // Fetch current organization details (cached to avoid Clerk API rate limits)
+  const org = await getCachedOrganization(orgId).catch((err) => {
+    throw new Error(`Failed to load organization details from Clerk API: ${err.message || 'Rate limit or timeout'}. Please try refreshing the page.`);
+  });
 
   const resolvedParams = await searchParams;
   const activeTab = resolvedParams.tab || 'catalog';
@@ -90,8 +91,16 @@ export default async function VendorPage({ searchParams }: PageProps) {
     phone?: string;
     bannerUrl?: string;
     checkout_options?: Record<string, boolean>;
+    ims_max_listing_count?: number;
   };
   const checkoutOptions = orgMetadata.checkout_options || {};
+  // Resolve org-specific listing limit (falls back to 10 if not set by superadmin)
+  const maxListingCount =
+    typeof orgMetadata.ims_max_listing_count === 'number' &&
+    Number.isInteger(orgMetadata.ims_max_listing_count) &&
+    orgMetadata.ims_max_listing_count >= 1
+      ? orgMetadata.ims_max_listing_count
+      : 10;
   const bankTransferConfigured = hasBankTransferConfiguredForOrg(org);
   const pickupEnabled = checkoutOptions.store_pickup === true;
   const bankTransferEnabled = checkoutOptions.bank_transfer === true;
@@ -161,6 +170,15 @@ export default async function VendorPage({ searchParams }: PageProps) {
         </div>
         
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-start sm:self-center">
+          {org.slug && (
+            <Link
+              href={`/vendors/${org.slug}`}
+              target="_blank"
+              className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition-colors whitespace-nowrap cursor-pointer"
+            >
+              Visit Storefront &rarr;
+            </Link>
+          )}
           {orgRole === 'org:admin' && (
             <Link
               href="/admin"
@@ -255,23 +273,18 @@ export default async function VendorPage({ searchParams }: PageProps) {
             >
               <span className="emoji text-sm" aria-hidden="true">📦</span> Inventory Workspace
             </Link>
-            <Link
-              href="?tab=storefront"
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === 'storefront'
-                  ? 'bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'
-              }`}
-            >
-              <span className="emoji text-sm" aria-hidden="true">🌐</span> Public Storefront
-            </Link>
           </div>
 
           {/* Content rendering based on Tab */}
           {activeTab === 'catalog' && (
             <>
 
-              <ManageProductsClient initialProducts={vendorProducts} orgSlug={org.slug} />
+              <ManageProductsClient
+                initialProducts={vendorProducts}
+                orgSlug={org.slug}
+                maxListingCount={maxListingCount}
+                activeListingCount={vendorProducts.filter((p: Product) => (p as any).status !== 'archived').length}
+              />
             </>
           )}
 
@@ -285,34 +298,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
             </>
           )}
 
-          {activeTab === 'storefront' && (
-            <>
 
-
-              <div className="flex flex-col items-center justify-center py-16 border border-zinc-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 p-8 shadow-sm space-y-4 max-w-xl mx-auto mt-6">
-                <div className="text-5xl emoji">🏪</div>
-                <h2 className="text-lg font-black text-zinc-900 dark:text-white">Your Public Storefront</h2>
-                <p className="text-zinc-500 text-xs leading-relaxed text-center">
-                  This is where your customers can browse your catalog and place orders.
-                </p>
-                {org.slug ? (
-                  <div className="pt-2">
-                    <Link
-                      href={`/vendors/${org.slug}`}
-                      target="_blank"
-                      className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer inline-block shadow-md"
-                    >
-                      Visit Storefront &rarr;
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 p-3 rounded-lg text-xs font-mono">
-                    Organization slug not configured. Contact admin.
-                  </div>
-                )}
-              </div>
-            </>
-          )}
         </>
       ) : (
         /* Regular Members Dashboard (Non-Admin View) */

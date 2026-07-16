@@ -5,11 +5,8 @@ import OrgCheckoutOptionsForm from '@/features/organization/components/OrgChecko
 import RoleSelector from '@/features/admin/components/RoleSelector';
 import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
 import { getBranchCountForOrg } from '@/features/admin/queries';
-import {
-  bankDetailsToProfileFormFields,
-  hasBankTransferConfiguredForOrg,
-  parseBankDetailsFromClerkOrg,
-} from '@/features/billing/bank-transfer-metadata';
+import { bankDetailsToProfileFormFields, hasBankTransferConfiguredForOrg, parseBankDetailsFromClerkOrg } from '@/features/billing/bank-transfer-metadata';
+import Image from 'next/image';
 
 export default async function AdminPage() {
   const { orgId, orgRole } = await auth();
@@ -70,8 +67,7 @@ export default async function AdminPage() {
 
   return (
     <main className="p-4 sm:p-8 max-w-4xl mx-auto font-sans">
-      <div className="border border-zinc-200 rounded-2xl p-6 sm:p-8 bg-white dark:border-zinc-800 dark:bg-zinc-950 shadow-md">
-        
+      <div className="w-full">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
@@ -86,20 +82,20 @@ export default async function AdminPage() {
             </p>
           </div>
           
-          <div className="flex items-center gap-2 self-start sm:self-center">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
             {org.slug && (
               <Link
                 href={`/vendors/${org.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-semibold px-3 py-2 rounded-lg border border-purple-200 hover:bg-purple-50 dark:border-purple-900/50 dark:hover:bg-purple-950/30 text-purple-700 dark:text-purple-300 transition-colors shadow-sm"
+                className="text-center min-h-[44px] sm:min-h-0 flex items-center justify-center text-sm sm:text-xs font-semibold px-4 sm:px-3 py-2 rounded-lg border border-purple-200 hover:bg-purple-50 dark:border-purple-900/50 dark:hover:bg-purple-950/30 text-purple-700 dark:text-purple-300 transition-colors shadow-sm"
               >
                 View Storefront ↗
               </Link>
             )}
             <Link
               href="/vendor"
-              className="text-xs font-semibold px-3 py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors shadow-sm"
+              className="text-center min-h-[44px] sm:min-h-0 flex items-center justify-center text-sm sm:text-xs font-semibold px-4 sm:px-3 py-2 rounded-lg border border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300 transition-colors shadow-sm"
             >
               &larr; Storefront Console
             </Link>
@@ -112,22 +108,22 @@ export default async function AdminPage() {
 
         {/* Enterprise Administrative KPIs Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-zinc-50 border border-zinc-200/60 rounded-xl p-4 dark:bg-zinc-900/20 dark:border-zinc-900 text-center relative group">
+          <div className="bg-zinc-50 border border-zinc-200/60 rounded-xl p-3 sm:p-4 dark:bg-zinc-900/20 dark:border-zinc-900 text-center relative group">
             <p className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Total Staff</p>
             <h4 className="text-xl font-extrabold font-mono mt-1 text-zinc-900 dark:text-zinc-100">{totalMembers}</h4>
           </div>
 
-          <div className="bg-zinc-50 border border-zinc-200/60 rounded-xl p-4 dark:bg-zinc-900/20 dark:border-zinc-900 text-center relative group">
+          <div className="bg-zinc-50 border border-zinc-200/60 rounded-xl p-3 sm:p-4 dark:bg-zinc-900/20 dark:border-zinc-900 text-center relative group">
             <p className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Admins</p>
             <h4 className="text-xl font-extrabold font-mono mt-1 text-red-650 dark:text-red-400">{adminCount}</h4>
           </div>
 
-          <div className="bg-zinc-50 border border-zinc-200/60 rounded-xl p-4 dark:bg-zinc-900/20 dark:border-zinc-900 text-center relative group">
+          <div className="bg-zinc-50 border border-zinc-200/60 rounded-xl p-3 sm:p-4 dark:bg-zinc-900/20 dark:border-zinc-900 text-center relative group">
             <p className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Members</p>
             <h4 className="text-xl font-extrabold font-mono mt-1 text-indigo-650 dark:text-indigo-400">{memberCount}</h4>
           </div>
 
-          <div className="bg-zinc-50 border border-zinc-200/60 rounded-xl p-4 dark:bg-zinc-900/20 dark:border-zinc-900 text-center relative group flex flex-col justify-center items-center">
+          <div className="bg-zinc-50 border border-zinc-200/60 rounded-xl p-3 sm:p-4 dark:bg-zinc-900/20 dark:border-zinc-900 text-center relative group flex flex-col justify-center items-center">
             <p className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Setup Progress</p>
             <span className="text-sm font-bold font-mono mt-1 text-purple-700 dark:text-purple-400">{completionPercent}% Complete</span>
             <div className="w-full max-w-[80px] bg-zinc-200 dark:bg-zinc-800 rounded-full h-1 mt-1.5 overflow-hidden">
@@ -185,7 +181,50 @@ export default async function AdminPage() {
               </p>
             </div>
             
-            <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/10 dark:bg-zinc-900/5">
+            {/* Mobile Card View */}
+            <div className="grid grid-cols-1 gap-4 md:hidden mt-4">
+              {memberships.map((m) => {
+                const memberUserId = m.publicUserData?.userId;
+                if (!memberUserId) return null;
+
+                const email = m.publicUserData?.identifier || 'No email';
+                const fullName = [m.publicUserData?.firstName, m.publicUserData?.lastName].filter(Boolean).join(' ') || 'Unnamed Member';
+                const memberRole = m.role;
+                const avatarUrl = m.publicUserData?.imageUrl;
+
+                return (
+                  <div key={m.id} className="flex flex-col gap-3 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {avatarUrl ? (
+                          <Image src={avatarUrl} alt={fullName} width={40} height={40} className="w-10 h-10 rounded-full border border-zinc-200/40 object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-400 flex items-center justify-center font-bold text-xs flex-shrink-0 font-mono">
+                            {fullName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="truncate">
+                          <span className="block font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{fullName}</span>
+                          <span className="block text-xs text-zinc-500 dark:text-zinc-400 font-mono truncate">{email}</span>
+                        </div>
+                      </div>
+                      {memberUserId === user?.id && (
+                        <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded px-1.5 py-0.5 font-mono font-bold flex-shrink-0">
+                          You
+                        </span>
+                      )}
+                    </div>
+                    <div className="pt-3 border-t border-zinc-100 dark:border-zinc-900">
+                      <p className="text-[10px] text-zinc-400 font-mono uppercase mb-1.5 tracking-wider font-semibold">Role & Permissions</p>
+                      <RoleSelector orgId={orgId} userId={memberUserId} currentRole={memberRole} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/10 dark:bg-zinc-900/5 mt-4">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-450 font-mono uppercase text-[9px] bg-zinc-50/50 dark:bg-zinc-900/30">
@@ -209,7 +248,7 @@ export default async function AdminPage() {
                       <tr key={m.id} className="hover:bg-zinc-50/20 dark:hover:bg-zinc-900/20 transition-colors">
                         <td className="py-3 px-4 font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
                           {avatarUrl ? (
-                            <img src={avatarUrl} alt={fullName} className="w-8 h-8 rounded-full border border-zinc-200/40 object-cover flex-shrink-0" />
+                            <Image src={avatarUrl} alt={fullName} width={32} height={32} className="w-8 h-8 rounded-full border border-zinc-200/40 object-cover flex-shrink-0" />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 font-mono">
                               {fullName.charAt(0).toUpperCase()}

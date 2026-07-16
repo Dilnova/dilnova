@@ -99,13 +99,13 @@ export default function DefaultStorefront({ org, products }: StorefrontProps) {
                 <div className="space-y-4 text-xs">
                   <div>
                     <span className="text-zinc-400 block font-mono">Business Address</span>
-                    <span className="font-medium text-zinc-800 dark:text-zinc-250 block mt-0.5">
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200 block mt-0.5">
                       {metadata.address || 'Address not listed'}
                     </span>
                   </div>
                   <div>
                     <span className="text-zinc-400 block font-mono">Contact Phone</span>
-                    <span className="font-medium text-zinc-800 dark:text-zinc-250 block mt-0.5">
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200 block mt-0.5">
                       {metadata.phone || 'Phone not listed'}
                     </span>
                   </div>

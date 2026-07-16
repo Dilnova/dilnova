@@ -44,7 +44,7 @@ describe('incrementProductViewsAction', () => {
 
   it('should catch errors and return success false if rate limit is exceeded', async () => {
     const validUuid = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-    vi.mocked(rateLimit).mockRejectedValue(new Error('Rate limit exceeded. Please try again later.'));
+    vi.mocked(rateLimit).mockRejectedValue(new Error('Rate limit exceeded. Please try again in 60 seconds.'));
 
     const result = await incrementProductViewsAction(validUuid);
 

@@ -73,6 +73,7 @@ export default function VendorCarousel({ vendors }: { vendors: any[] }) {
                     src={vendor.imageUrl} 
                     alt={`${vendor.name} logo`} 
                     fill
+                    sizes="48px"
                     className="object-cover"
                   />
                 </div>

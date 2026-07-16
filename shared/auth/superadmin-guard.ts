@@ -27,12 +27,12 @@ export async function checkSuperAdmin(): Promise<User> {
  * instead of crashing the entire page with the error boundary.
  */
 export async function getCurrentSuperAdminUser(): Promise<User | null> {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return null;
-    }
+  const { userId } = await auth();
+  if (!userId) {
+    return null;
+  }
 
+  try {
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
     return isSuperAdminUser(user) ? user : null;

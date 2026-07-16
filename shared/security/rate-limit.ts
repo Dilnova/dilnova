@@ -82,9 +82,10 @@ export async function rateLimit(limit: number, windowMs: number): Promise<void> 
 
   if (client) {
     try {
-      const { success } = await client.limit(ip);
+      const { success, reset } = await client.limit(ip);
       if (!success) {
-        throw new Error('Rate limit exceeded. Please try again later.');
+        const waitSeconds = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+        throw new Error(`Rate limit exceeded. Please try again in ${waitSeconds} seconds.`);
       }
       return;
     } catch (error) {
@@ -137,7 +138,9 @@ function runInMemoryRateLimit(ip: string, limit: number, windowMs: number): void
   const activeTimestamps = timestamps.filter((t) => now - t < windowMs);
 
   if (activeTimestamps.length >= limit) {
-    throw new Error('Rate limit exceeded. Please try again later.');
+    const oldestTimestamp = activeTimestamps[0] || now;
+    const waitSeconds = Math.max(1, Math.ceil(((oldestTimestamp + windowMs) - now) / 1000));
+    throw new Error(`Rate limit exceeded. Please try again in ${waitSeconds} seconds.`);
   }
 
   // Record this hit

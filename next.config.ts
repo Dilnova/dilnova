@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 import { DEFAULT_APP_URL } from "./shared/platform/brand";
+import createBundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzer = createBundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 // Helper to extract the custom Clerk domain from the publishable key
 const getClerkDomain = (): string | null => {
@@ -26,6 +31,14 @@ const remotePatterns: Array<{ protocol: 'https' | 'http'; hostname: string }> = 
   {
     protocol: 'https',
     hostname: 'img.clerk.com',
+  },
+  {
+    protocol: 'https',
+    hostname: '*.googleusercontent.com',
+  },
+  {
+    protocol: 'https',
+    hostname: 'avatars.githubusercontent.com',
   },
   {
     protocol: 'https',
@@ -69,6 +82,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '1mb',
     },
+    optimizePackageImports: ['lucide-react'],
   },
 
   /**
@@ -79,6 +93,7 @@ const nextConfig: NextConfig = {
 
   // Allow next/image to optimize images from these external domains
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns,
   },
 
@@ -184,4 +199,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

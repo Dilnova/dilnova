@@ -1,5 +1,5 @@
 import { z } from 'zod/v3';
-import { uuidField } from '@/shared/validation/primitives';
+import { uuidField, phoneField } from '@/shared/validation/primitives';
 
 const stockAvailabilityDefinitionSchema = z.object({
   id: z.string().min(1).max(50).regex(/^[a-z0-9_]+$/, 'Status ID must be lowercase letters, numbers, and underscores.'),
@@ -19,7 +19,7 @@ export const createSupplierSchema = z.object({
   name: z.string().min(1, 'Supplier name is required.').max(200, 'Supplier name cannot exceed 200 characters.').trim(),
   contactName: z.string().max(200).trim().optional().default(''),
   email: z.string().email('Invalid email format.').or(z.literal('')).optional().default(''),
-  phone: z.string().max(50).trim().optional().default(''),
+  phone: phoneField.or(z.literal('')).optional().default(''),
   address: z.string().max(500).trim().optional().default(''),
 });
 
@@ -36,6 +36,7 @@ export const adjustInventorySchema = z.object({
   quantityChange: z.number().int('Quantity must be a whole number.'),
   type: z.enum(['restock', 'manual_adjustment', 'damage_loss']),
   reason: z.string().max(500, 'Reason cannot exceed 500 characters.').trim().optional().default(''),
+  branchId: uuidField.optional(),
 });
 
 export const updateInventoryDetailsSchema = z.object({
@@ -50,7 +51,7 @@ export const updateInventoryDetailsSchema = z.object({
 export const createBranchSchema = z.object({
   name: z.string().min(1, 'Branch name is required.').max(100, 'Branch name cannot exceed 100 characters.').trim(),
   address: z.string().max(300, 'Address cannot exceed 300 characters.').trim().optional().default(''),
-  phone: z.string().max(50, 'Phone cannot exceed 50 characters.').trim().optional().default(''),
+  phone: phoneField.or(z.literal('')).optional().default(''),
 });
 
 export const updateBranchSchema = createBranchSchema.extend({
@@ -85,4 +86,6 @@ export const updateImsLicenseSchema = z.object({
   imsExpiresAt: z.string().nullable().optional(),
   imsMultiBranchEnabled: z.boolean().optional(),
   imsBillingEnabled: z.boolean().optional(),
+  /** Override the default free-tier listing cap (10) for this org. Min: 1, Max: 100,000 */
+  imsMaxListingCount: z.number().int('Must be a whole number.').min(1, 'Minimum is 1.').max(100_000, 'Maximum is 100,000.').optional(),
 });

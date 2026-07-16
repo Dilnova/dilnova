@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { logAuditAction } from '@/shared/audit/logger';
 import { clerkClient } from '@clerk/nextjs/server';
 
@@ -17,10 +17,22 @@ export async function GET(req: NextRequest) {
 
     // 1. simulatedOrders
     const orders = await db.select().from(schema.simulatedOrders).where(eq(schema.simulatedOrders.customerUserId, targetUserId));
-    const populatedOrders = [];
-    for (const order of orders) {
-      const items = await db.select().from(schema.simulatedOrderItems).where(eq(schema.simulatedOrderItems.orderId, order.id));
-      populatedOrders.push({ ...order, items });
+    let populatedOrders: any[] = [];
+    
+    if (orders.length > 0) {
+      const orderIds = orders.map((o) => o.id);
+      const allItems = await db.select().from(schema.simulatedOrderItems).where(inArray(schema.simulatedOrderItems.orderId, orderIds));
+      
+      const itemsByOrderId = allItems.reduce((acc, item) => {
+        if (!acc[item.orderId]) acc[item.orderId] = [];
+        acc[item.orderId].push(item);
+        return acc;
+      }, {} as Record<string, typeof allItems[0][]>);
+      
+      populatedOrders = orders.map(order => ({
+        ...order,
+        items: itemsByOrderId[order.id] || []
+      }));
     }
 
     // 2. clerk user to get email for contact submissions

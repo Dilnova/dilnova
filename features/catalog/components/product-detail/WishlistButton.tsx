@@ -1,15 +1,15 @@
 'use client';
 
 import { logger } from '@/shared/logging/logger';
-import { useState, useTransition } from 'react';
-import { SignInButton } from '@clerk/nextjs';
+import { useState, useTransition, useEffect } from 'react';
+import { SignInButton, useAuth } from '@clerk/nextjs';
 import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/useClerkAuthRedirectUrl';
 import { toggleWishlistAction } from '@/features/catalog/product-detail.actions';
 
 interface WishlistButtonProps {
   productId: string;
   initialFavorited: boolean;
-  isLoggedIn: boolean;
+  isLoggedIn?: boolean;
   className?: string;
   showLabel?: boolean;
 }
@@ -17,13 +17,19 @@ interface WishlistButtonProps {
 export default function WishlistButton({
   productId,
   initialFavorited,
-  isLoggedIn,
+  isLoggedIn: propsIsLoggedIn,
   className = '',
   showLabel = false,
 }: WishlistButtonProps) {
+  const { userId } = useAuth();
+  const isLoggedIn = propsIsLoggedIn ?? !!userId;
   const redirectUrl = useClerkAuthRedirectUrl();
   const [isFavorited, setIsFavorited] = useState(initialFavorited);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setIsFavorited(initialFavorited);
+  }, [initialFavorited]);
 
   const buttonClassName = `group relative flex items-center justify-center gap-2 rounded-xl border transition-all duration-300 cursor-pointer ${
     isFavorited

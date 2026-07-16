@@ -5,6 +5,7 @@ import { useState, useTransition, useRef } from 'react';
 import { updateVendorMetadata } from '@/features/vendor/actions';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 interface VendorProfileFormProps {
   orgId: string;
@@ -123,10 +124,12 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
         {bannerUrl ? (
           <div className="space-y-3">
             <div className="relative h-32 w-full rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900">
-              <img
+              <Image
                 src={bannerUrl}
                 alt="Storefront Banner Preview"
-                className="w-full h-full object-cover"
+                fill
+                sizes="(max-width: 768px) 100vw, 800px"
+                className="object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
@@ -227,7 +230,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
           placeholder="Tell customers about your business, specialties, and support hours..."
-          className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500"
+          className="w-full min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 sm:focus:ring-1 focus:ring-purple-500 transition-shadow"
         />
       </div>
 
@@ -241,7 +244,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+1 (555) 123-4567"
-            className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500 font-mono"
+            className="w-full min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 sm:focus:ring-1 focus:ring-purple-500 font-mono transition-shadow"
           />
         </div>
 
@@ -254,7 +257,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="123 Enterprise Rd, Suite B"
-            className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500"
+            className="w-full min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 sm:focus:ring-1 focus:ring-purple-500 transition-shadow"
           />
         </div>
       </div>
@@ -278,7 +281,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
                 value={bankName}
                 onChange={(e) => setBankName(e.target.value)}
                 placeholder="e.g. Commercial Bank"
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                className="w-full min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 sm:focus:ring-1 focus:ring-purple-500 transition-shadow"
               />
             </div>
 
@@ -291,7 +294,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
                 value={bankAccountName}
                 onChange={(e) => setBankAccountName(e.target.value)}
                 placeholder="Registered account holder name"
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                className="w-full min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 sm:focus:ring-1 focus:ring-purple-500 transition-shadow"
               />
             </div>
 
@@ -304,7 +307,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
                 value={bankAccountNumber}
                 onChange={(e) => setBankAccountNumber(e.target.value)}
                 placeholder="1234567890"
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500 font-mono"
+                className="w-full min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 sm:focus:ring-1 focus:ring-purple-500 font-mono transition-shadow"
               />
             </div>
 
@@ -317,7 +320,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
                 value={bankBranchCode}
                 onChange={(e) => setBankBranchCode(e.target.value)}
                 placeholder="Branch code or SWIFT"
-                className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500 font-mono"
+                className="w-full min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 sm:focus:ring-1 focus:ring-purple-500 font-mono transition-shadow"
               />
             </div>
           </div>
@@ -331,7 +334,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
               onChange={(e) => setBankTransferInstructions(e.target.value)}
               rows={3}
               placeholder="e.g. Use your order reference in the transfer description."
-              className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-1 focus:ring-purple-500"
+              className="w-full min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 sm:focus:ring-1 focus:ring-purple-500 transition-shadow"
             />
           </div>
         </div>
@@ -383,7 +386,7 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
         <button
           type="submit"
           disabled={isPending || isBannerUploading}
-          className="w-full md:w-auto px-6 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-sm shadow-purple-900/10"
+          className="w-full sm:w-auto min-h-[44px] sm:min-h-0 px-6 py-3 sm:py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-sm sm:text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-sm shadow-purple-900/10 flex items-center justify-center"
         >
           {isPending ? 'Saving storefront settings...' : 'Save Profile Settings'}
         </button>

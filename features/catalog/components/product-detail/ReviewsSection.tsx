@@ -3,7 +3,9 @@
 import { logger } from '@/shared/logging/logger';
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { submitReviewAction } from '@/features/catalog/product-detail.actions';
+import useSWR from 'swr';
+import { useAuth } from '@clerk/nextjs';
+import { submitReviewAction, getUserProductStateAction } from '@/features/catalog/product-detail.actions';
 import Image from 'next/image';
 import SignInPrompt from '@/shared/ui/SignInPrompt';
 import { toast } from 'sonner';
@@ -21,27 +23,28 @@ interface Review {
 interface ReviewsSectionProps {
   productId: string;
   reviews: Review[];
-  isLoggedIn: boolean;
-  userHasReviewed: boolean;
-  isVerifiedBuyer: boolean;
-  existingReview: { rating: number; comment: string | null } | null;
   verifiedReviewerIds: string[];
   productOrgId: string;
-  userOrgId: string | null;
 }
 
 export default function ReviewsSection({
   productId,
   reviews,
-  isLoggedIn,
-  userHasReviewed,
-  isVerifiedBuyer,
-  existingReview,
   verifiedReviewerIds,
   productOrgId,
-  userOrgId,
 }: ReviewsSectionProps) {
   const router = useRouter();
+  const { userId, orgId: userOrgId } = useAuth();
+  const isLoggedIn = !!userId;
+
+  const { data: userState } = useSWR(
+    userId ? ['product-state', productId] : null,
+    () => getUserProductStateAction(productId)
+  );
+
+  const existingReview = userState?.existingReview || null;
+  const userHasReviewed = userState?.userHasReviewed || false;
+  const isVerifiedBuyer = userState?.isVerifiedBuyer || false;
   const [rating, setRating] = useState(existingReview?.rating ?? 0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState(existingReview?.comment ?? '');
@@ -189,7 +192,7 @@ export default function ReviewsSection({
                         {review.userName.charAt(0)}
                       </div>
                     )}
-                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-250">
+                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
                       {review.userName}
                     </span>
                     {verifiedReviewerIdSet.has(review.userId) && (

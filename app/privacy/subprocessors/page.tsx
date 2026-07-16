@@ -9,6 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: `Subprocessor inventory and vendor security assessments for the ${systemName} Multi-Vendor Commerce Marketplace.`,
   };
 }
+export const revalidate = 86400;
 
 export default async function Subprocessors() {
   const systemName = await getSystemSetting('system_name', 'Dilnova');

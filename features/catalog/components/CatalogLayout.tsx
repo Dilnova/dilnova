@@ -1,6 +1,4 @@
-'use client';
-
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { isVideoUrl } from '@/shared/media/media';
@@ -40,7 +38,7 @@ export interface CatalogItemViewData {
   } | null;
 }
 
-interface CatalogViewClientProps {
+interface CatalogLayoutProps {
   categories: CatalogCategoryRef[];
   vendors: CatalogVendorRef[];
   catalogQuery: CatalogQueryParams;
@@ -51,10 +49,10 @@ interface CatalogViewClientProps {
   totalCount: number;
   totalPages: number;
   items: CatalogItemViewData[];
-  userId: string | null;
+  viewMode: 'grid' | 'list';
 }
 
-export default function CatalogViewClient({
+export default function CatalogLayout({
   categories,
   vendors,
   catalogQuery,
@@ -62,10 +60,8 @@ export default function CatalogViewClient({
   totalCount,
   totalPages,
   items,
-  userId,
-}: CatalogViewClientProps) {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
+  viewMode,
+}: CatalogLayoutProps) {
   return (
     <div className="space-y-6">
       {/* Top Filter Header Bar */}
@@ -82,7 +78,6 @@ export default function CatalogViewClient({
         currentStock={catalogQuery.stock}
         totalCount={totalCount}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
       />
 
       {/* Main 2-Column Responsive Layout (Desktop Sidebar + Content Area) */}
@@ -174,7 +169,6 @@ export default function CatalogViewClient({
                               <WishlistButton
                                 productId={product.id}
                                 initialFavorited={isFavorited}
-                                isLoggedIn={!!userId}
                                 showLabel={false}
                                 className="p-1.5 h-8 w-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-none hover:bg-white dark:hover:bg-zinc-900 shadow-xs"
                               />
@@ -344,7 +338,6 @@ export default function CatalogViewClient({
                             <WishlistButton
                               productId={product.id}
                               initialFavorited={isFavorited}
-                              isLoggedIn={!!userId}
                               showLabel={false}
                               className="p-1.5 h-8 w-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur border-none hover:bg-white dark:hover:bg-zinc-900 shadow-xs"
                             />

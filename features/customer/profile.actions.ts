@@ -1,7 +1,8 @@
 'use server';
 
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
+import { phoneField, postalCodeField } from '@/shared/validation/primitives';
 import { logger } from '@/shared/logging/logger';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { revalidatePath } from 'next/cache';
@@ -11,10 +12,10 @@ const updateDeliverySettingsSchema = z.object({
   shippingAddressLine2: z.string().max(500).trim().optional().nullable(),
   shippingCity: z.string().max(200).trim().min(1, 'City is required.'),
   shippingState: z.string().max(200).trim().min(1, 'State is required.'),
-  shippingPostalCode: z.string().max(50).trim().min(1, 'Postal Code is required.'),
+  shippingPostalCode: postalCodeField,
   shippingCountry: z.string().max(200).trim().optional().nullable(),
-  shippingPhone: z.string().max(50).trim().optional().nullable(),
-  shippingPhone2: z.string().max(50).trim().optional().nullable(),
+  shippingPhone: phoneField.or(z.literal('')).optional().nullable(),
+  shippingPhone2: phoneField.or(z.literal('')).optional().nullable(),
 });
 
 export type UpdateDeliverySettingsInput = z.infer<typeof updateDeliverySettingsSchema>;

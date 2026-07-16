@@ -77,7 +77,7 @@ export default async function AddProductPage() {
             Add Item
           </h1>
           <p className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-sm mt-0.5 truncate">
-            New listing for <strong className="text-zinc-800 dark:text-zinc-250 font-semibold">{org.name} + {branchNames}</strong>
+            New listing for <strong className="text-zinc-800 dark:text-zinc-200 font-semibold">{org.name} + {branchNames}</strong>
           </p>
         </div>
         

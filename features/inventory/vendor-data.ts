@@ -232,19 +232,26 @@ export async function loadVendorInventoryData(
         .where(eq(schema.branches.orgId, orgId))
         .orderBy(schema.branches.name);
 
-      // If no branches exist, programmatically insert a default branch record named "Main Register"
+      // Idempotent default branch initialization — atomic upsert prevents race condition duplicates.
+      // The partial unique index `unique_org_default_branch` on (org_id) WHERE is_default = true
+      // guarantees only one default branch per org at the database level. Concurrent inserts
+      // will silently no-op via ON CONFLICT DO NOTHING.
       if (allBranches.length === 0) {
-        const [defaultBranch] = await db
+        await db
           .insert(schema.branches)
           .values({
             orgId,
             name: 'Main Register',
             isDefault: true,
           })
-          .returning();
-        if (defaultBranch) {
-          allBranches = [defaultBranch];
-        }
+          .onConflictDoNothing();
+
+        // Re-fetch to get the winning row (ours or the concurrent winner's)
+        allBranches = await db
+          .select()
+          .from(schema.branches)
+          .where(eq(schema.branches.orgId, orgId))
+          .orderBy(schema.branches.name);
       }
 
       // Auto-migrate/initialize default branch inventory for ongoing shop records in multi-branch mode

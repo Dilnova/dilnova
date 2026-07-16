@@ -3,7 +3,7 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath, updateTag } from 'next/cache';
 import { revalidateVendorConsole } from '@/features/vendor/revalidate';
 import { getSystemSetting } from '@/shared/platform/settings';
@@ -12,7 +12,7 @@ import { addProductSchema, vendorDeleteProductSchema } from '@/features/catalog/
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { rateLimit } from '@/shared/security/rate-limit';
-import { getPremiumStatus } from '@/features/inventory/premium-license';
+import { getPremiumStatus, DEFAULT_MAX_LISTING_COUNT } from '@/features/inventory/premium-license';
 import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
 import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
 import { requireVendorRole } from '@/shared/auth/vendor-guard';
@@ -82,8 +82,35 @@ export async function addProductAction(data: {
       const org = await client.organizations.getOrganization({ organizationId: orgId });
       const orgMetadata = (org.publicMetadata || {}) as {
         stockAllocationMode?: 'target_branch' | 'central_intake';
+        ims_max_listing_count?: number;
       };
       const stockAllocationMode = orgMetadata.stockAllocationMode || 'central_intake';
+
+      // ── Listing Count Enforcement ────────────────────────────────────────────
+      // Resolve org-specific limit: fall back to DEFAULT_MAX_LISTING_COUNT (10)
+      // if the superadmin has not set an explicit override in Clerk metadata.
+      const resolvedMaxListings =
+        typeof orgMetadata.ims_max_listing_count === 'number' &&
+        Number.isInteger(orgMetadata.ims_max_listing_count) &&
+        orgMetadata.ims_max_listing_count >= 1
+          ? orgMetadata.ims_max_listing_count
+          : DEFAULT_MAX_LISTING_COUNT;
+
+      const [listingCountRow] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(schema.products)
+        .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, 'active')));
+
+      const currentListingCount = listingCountRow?.count ?? 0;
+
+      if (currentListingCount >= resolvedMaxListings) {
+        throw new Error(
+          `Your organization has reached its maximum listing limit of ${resolvedMaxListings} active item${
+            resolvedMaxListings === 1 ? '' : 's'
+          }. Please contact support to upgrade your plan.`
+        );
+      }
+      // ── End Listing Count Enforcement ────────────────────────────────────────
 
       let resolvedStockAvailability = 'in_stock';
       if (parsed.data.type === 'product') {

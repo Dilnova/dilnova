@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { clerkClient, auth } from '@clerk/nextjs/server';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
@@ -7,15 +8,16 @@ import { getSystemSetting } from '@/shared/platform/settings';
 import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
 import { resolveOnlineProductPurchaseState } from '@/features/inventory/availability.shared';
-import CatalogViewClient, { type CatalogItemViewData } from '@/features/catalog/components/CatalogViewClient';
+import CatalogLayout, { type CatalogItemViewData } from '@/features/catalog/components/CatalogLayout';
 import {
   buildCatalogOrderBy,
   buildCatalogWhereClauses,
   parseCatalogQueryParams,
   resolveVendorOrgId,
 } from '@/features/catalog/query';
+import { getUserWishlistIdsAction } from '@/features/catalog/product-detail.actions';
 
-export const revalidate = 0; // Fresh load on each catalog query
+export const revalidate = 30; // Cache for 30s to prevent rapid re-fetches; vendor actions revalidate on-demand
 
 interface PageProps {
   searchParams: Promise<{
@@ -28,6 +30,7 @@ interface PageProps {
     minPrice?: string;
     maxPrice?: string;
     stock?: string;
+    view?: string;
   }>;
 }
 
@@ -79,7 +82,9 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const { userId } = await auth();
   const catalogQuery = parseCatalogQueryParams(params);
+  const viewMode = (params.view === 'list' ? 'list' : 'grid') as 'grid' | 'list';
   const itemsPerPage = 12;
 
   const [categoriesList, stockAvailabilityCatalog, organizations] = await Promise.all([
@@ -108,8 +113,22 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
       .where(conditions),
     db
       .select({
-        product: schema.products,
-        category: schema.categories,
+        product: {
+          id: schema.products.id,
+          orgId: schema.products.orgId,
+          categoryId: schema.products.categoryId,
+          name: schema.products.name,
+          description: schema.products.description,
+          price: schema.products.price,
+          type: schema.products.type,
+          status: schema.products.status,
+          imageUrl: schema.products.imageUrl,
+          views: schema.products.views,
+          createdAt: schema.products.createdAt,
+        },
+        category: {
+          name: schema.categories.name,
+        },
       })
       .from(schema.products)
       .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
@@ -122,16 +141,15 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const totalCount = countResult[0]?.count || 0;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-  // Fetch reviews and wishlist statuses for the returned product IDs in parallel
-  const { userId } = await auth();
+  // Fetch reviews and inventory for the returned product IDs in parallel
   const productIds = results.map((r) => r.product.id);
 
-  const [allReviewsForPage, userWishlist, inventoryRows] = await Promise.all([
+  const [allReviewsForPage, inventoryRows, wishlistedIds] = await Promise.all([
     productIds.length > 0
-      ? db.select().from(schema.reviews).where(inArray(schema.reviews.productId, productIds))
-      : Promise.resolve([]),
-    (userId && productIds.length > 0)
-      ? db.select().from(schema.wishlists).where(and(eq(schema.wishlists.userId, userId), inArray(schema.wishlists.productId, productIds)))
+      ? db.select({
+          productId: schema.reviews.productId,
+          rating: schema.reviews.rating,
+        }).from(schema.reviews).where(inArray(schema.reviews.productId, productIds))
       : Promise.resolve([]),
     productIds.length > 0
       ? db
@@ -143,13 +161,15 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
           .from(schema.inventory)
           .where(inArray(schema.inventory.productId, productIds))
       : Promise.resolve([]),
+    userId && productIds.length > 0
+      ? getUserWishlistIdsAction(productIds)
+      : Promise.resolve([]),
   ]);
 
+  const wishlistSet = new Set(wishlistedIds);
   const inventoryByProduct = new Map(
     inventoryRows.map((row) => [row.productId, { stockAvailability: row.stockAvailability, quantity: row.quantity }])
   );
-
-  const wishlistSet = new Set(userWishlist.map((w) => w.productId));
 
   const items: CatalogItemViewData[] = results.map(({ product, category }) => {
     const orgMatch = organizations.find((o) => o.id === product.orgId);
@@ -194,16 +214,18 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans pb-24">
       <div className="pt-8 sm:pt-12"></div>
       <main className="max-w-7xl mx-auto px-4 sm:px-6">
-        <CatalogViewClient
-          categories={categoriesList}
-          vendors={organizations}
-          catalogQuery={catalogQuery}
-          rawParams={params}
-          totalCount={totalCount}
-          totalPages={totalPages}
-          items={items}
-          userId={userId}
-        />
+        <Suspense fallback={null}>
+          <CatalogLayout
+            categories={categoriesList}
+            vendors={organizations}
+            catalogQuery={catalogQuery}
+            rawParams={params}
+            totalCount={totalCount}
+            totalPages={totalPages}
+            items={items}
+            viewMode={viewMode}
+          />
+        </Suspense>
       </main>
     </div>
   );

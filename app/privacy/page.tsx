@@ -9,6 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: `Privacy policy for the ${systemName} Multi-Vendor Commerce Marketplace. Learn about our encryption standard, data retention policies, and GDPR rights.`,
   };
 }
+export const revalidate = 86400;
 
 export default async function PrivacyPolicy() {
   const systemName = await getSystemSetting('system_name', 'Dilnova');

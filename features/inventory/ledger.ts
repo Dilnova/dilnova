@@ -122,16 +122,13 @@ export async function reduceBranchAllocationsForCentralSale(
   }
 }
 
-export async function decrementDefaultBranchStock(
+export async function decrementBranchStock(
   conn: DbConn,
-  orgId: string,
+  branchId: string,
   productId: string,
   quantityDelta: number
 ): Promise<void> {
   if (quantityDelta <= 0) return;
-
-  const branchId = await getOrgDefaultBranchId(conn, orgId);
-  if (!branchId) return;
 
   const [existing] = await conn
     .select({
@@ -160,16 +157,24 @@ export async function decrementDefaultBranchStock(
     .where(eq(schema.branchInventory.id, existing.id));
 }
 
-export async function incrementDefaultBranchStock(
+export async function decrementDefaultBranchStock(
   conn: DbConn,
   orgId: string,
   productId: string,
   quantityDelta: number
 ): Promise<void> {
-  if (quantityDelta <= 0) return;
-
   const branchId = await getOrgDefaultBranchId(conn, orgId);
   if (!branchId) return;
+  return decrementBranchStock(conn, branchId, productId, quantityDelta);
+}
+
+export async function incrementBranchStock(
+  conn: DbConn,
+  branchId: string,
+  productId: string,
+  quantityDelta: number
+): Promise<void> {
+  if (quantityDelta <= 0) return;
 
   const [existing] = await conn
     .select({
@@ -201,4 +206,15 @@ export async function incrementDefaultBranchStock(
       quantity: quantityDelta,
     });
   }
+}
+
+export async function incrementDefaultBranchStock(
+  conn: DbConn,
+  orgId: string,
+  productId: string,
+  quantityDelta: number
+): Promise<void> {
+  const branchId = await getOrgDefaultBranchId(conn, orgId);
+  if (!branchId) return;
+  return incrementBranchStock(conn, branchId, productId, quantityDelta);
 }

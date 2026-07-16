@@ -4,6 +4,9 @@ import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
 import { logger } from '@/shared/logging/logger';
 import { unstable_cache, revalidateTag } from 'next/cache';
 
+/** Default maximum active listings allowed for a free-tier organization. */
+export const DEFAULT_MAX_LISTING_COUNT = 10;
+
 /**
  * Premium IMS feature flags stored in Clerk Organization publicMetadata.
  * Set by the superadmin via the admin dashboard.
@@ -17,6 +20,11 @@ export interface ImsLicenseFlags {
   imsMultiBranchEnabled: boolean;
   /** Whether POS billing register is enabled */
   imsBillingEnabled: boolean;
+  /**
+   * Maximum number of active product/service listings this org may have.
+   * Defaults to DEFAULT_MAX_LISTING_COUNT (10) when not set.
+   */
+  imsMaxListingCount: number;
 }
 
 /**
@@ -33,6 +41,11 @@ export interface PremiumStatus {
   expiresAt: Date | null;
   /** true if the license has expired */
   isExpired: boolean;
+  /**
+   * Resolved maximum active listing count for this org.
+   * Superadmin can override; falls back to DEFAULT_MAX_LISTING_COUNT.
+   */
+  maxListingCount: number;
 }
 
 /**
@@ -53,6 +66,13 @@ const fetchRawStatus = unstable_cache(
     const imsMultiBranchEnabled = meta.ims_multi_branch_enabled === true;
     const imsBillingEnabled = meta.ims_billing_enabled === true;
 
+    // Resolve listing count limit — fall back to the platform default for free-tier orgs
+    const rawMaxListing = meta.ims_max_listing_count;
+    const maxListingCount =
+      typeof rawMaxListing === 'number' && Number.isInteger(rawMaxListing) && rawMaxListing >= 1
+        ? rawMaxListing
+        : DEFAULT_MAX_LISTING_COUNT;
+
     // Evaluate expiration
     let isExpired = false;
     if (imsExpiresAtRaw) {
@@ -68,6 +88,7 @@ const fetchRawStatus = unstable_cache(
       billingActive: imsActive && imsBillingEnabled,
       expiresAt: imsExpiresAtRaw,
       isExpired,
+      maxListingCount,
     };
   },
   ['clerk-premium-status'],
@@ -86,16 +107,19 @@ export async function getPremiumStatus(orgId: string): Promise<PremiumStatus> {
       billingActive: raw.billingActive,
       expiresAt: raw.expiresAt ? new Date(raw.expiresAt) : null,
       isExpired: raw.isExpired,
+      maxListingCount: raw.maxListingCount,
     };
   } catch (error) {
     logger.error('Failed to read premium license status', error, { orgId });
-    // Fail-closed: deny access if we can't verify
+    // Fail-closed: deny access if we can't verify.
+    // maxListingCount falls back to the free-tier default to avoid undefined enforcement.
     return {
       imsActive: false,
       multiBranchActive: false,
       billingActive: false,
       expiresAt: null,
       isExpired: false,
+      maxListingCount: DEFAULT_MAX_LISTING_COUNT,
     };
   }
 }
@@ -125,6 +149,9 @@ export async function updateOrgImsLicense(
   }
   if (flags.imsBillingEnabled !== undefined) {
     updatedMeta.ims_billing_enabled = flags.imsBillingEnabled;
+  }
+  if (flags.imsMaxListingCount !== undefined) {
+    updatedMeta.ims_max_listing_count = flags.imsMaxListingCount;
   }
 
   await client.organizations.updateOrganizationMetadata(orgId, {

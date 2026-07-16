@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   getVendorInventoryData,
@@ -65,16 +66,24 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
   const [advancedTab, setAdvancedTab] = useState<AdvancedTab>(initialAdvancedTab ?? 'stock');
 
   // Branch selector (Premium multi-branch)
-  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlBranchId = searchParams.get('branch');
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(urlBranchId || '');
 
   useEffect(() => {
     if (data.branches && data.branches.length > 0) {
-      const defaultBranch = data.branches.find((b) => b.isDefault) || data.branches[0];
-      requestAnimationFrame(() => {
+      if (!selectedBranchId) {
+        const defaultBranch = data.branches.find((b) => b.isDefault) || data.branches[0];
         setSelectedBranchId(defaultBranch.id);
-      });
+        
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('branch', defaultBranch.id);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      }
     }
-  }, [data.branches]);
+  }, [data.branches, selectedBranchId, pathname, router, searchParams]);
 
   // --- Filtering States ---
   const [stockSearch, setStockSearch] = useState('');
@@ -294,6 +303,7 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
           quantityChange: finalChange,
           type: adjustType,
           reason: adjustReason,
+          branchId: selectedBranchId || undefined,
         });
         triggerNotification(true, 'Central inventory updated.');
         setIsAdjustModalOpen(false);
@@ -563,7 +573,13 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
             <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Active Branch Context:</span>
             <select
               value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(e.target.value)}
+              onChange={(e) => {
+                const newBranchId = e.target.value;
+                setSelectedBranchId(newBranchId);
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('branch', newBranchId);
+                router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+              }}
               className="px-3 py-1.5 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 font-bold focus:outline-none"
             >
               {data.branches.map((b) => (
