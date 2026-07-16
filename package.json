@@ -25,16 +25,16 @@
     "prepare": "node scripts/setup-git-hooks.mjs"
   },
   "dependencies": {
-    "@clerk/nextjs": "7.5.13",
-    "@sentry/node": "10.63.0",
-    "@supabase/supabase-js": "2.110.0",
+    "@clerk/nextjs": "7.5.17",
+    "@sentry/node": "10.65.0",
+    "@supabase/supabase-js": "2.110.3",
     "@upstash/ratelimit": "2.0.8",
     "@upstash/redis": "1.38.0",
     "@vercel/analytics": "2.0.1",
     "@vercel/speed-insights": "2.0.0",
     "dotenv": "17.4.2",
     "drizzle-orm": "0.45.2",
-    "lucide-react": "^1.23.0",
+    "lucide-react": "^1.24.0",
     "next": "16.2.10",
     "next-cloudinary": "6.17.5",
     "postgres": "3.4.9",
@@ -45,11 +45,10 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@clerk/testing": "^2.2.3",
-    "@next/bundle-analyzer": "^16.2.10",
+    "@clerk/testing": "^2.2.7",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.3.2",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.10",
@@ -57,7 +56,7 @@
     "eslint": "^9.39.4",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4.3.2",
-    "tsx": "^4.23.0",
+    "tsx": "^4.23.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   }
