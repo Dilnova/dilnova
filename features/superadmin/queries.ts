@@ -3,16 +3,17 @@ import * as schema from '@/shared/db/schema';
 import { eq, desc, inArray, asc } from 'drizzle-orm';
 import { buildVendorOrgIntegrityReport } from '@/features/vendor-org';
 
-export async function getPricingPlansOrderedByCreatedAtAsc() {
-  return db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt)).limit(200);
+export async function getPricingPlansOrderedByCreatedAtAsc(limit = 200, offset = 0) {
+  return db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt)).limit(limit).offset(offset);
 }
 
-export async function getPricingPlansOrderedByCreatedAtDesc() {
+export async function getPricingPlansOrderedByCreatedAtDesc(limit = 200, offset = 0) {
   return db
     .select()
     .from(schema.pricingPlans)
     .orderBy(desc(schema.pricingPlans.createdAt))
-    .limit(200);
+    .limit(limit)
+    .offset(offset);
 }
 
 export async function getCategoriesOrderedByCreatedAtDesc() {

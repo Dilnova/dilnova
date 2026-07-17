@@ -101,6 +101,25 @@ export default async function RootLayout({
     const systemName = await getSystemSetting('system_name', 'Dilnova');
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dilstar.pp.ua';
 
+    const isBetaEnabled = process.env.NEXT_PUBLIC_ENABLE_BETA_ACCESS === 'true';
+    if (process.env.NODE_ENV === 'production' && !isBetaEnabled) {
+      return (
+        <html lang="en">
+          <body className={`${interFont.variable} antialiased min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 p-6`}>
+            <div className="max-w-md text-center space-y-6 bg-white dark:bg-zinc-900 p-10 rounded-3xl shadow-xl border border-zinc-200 dark:border-zinc-800">
+              <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🚀</span>
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight">{systemName} is Coming Soon</h1>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                We are currently in a closed beta phase. Our marketplace will be launching to the public soon. Thank you for your patience!
+              </p>
+            </div>
+          </body>
+        </html>
+      );
+    }
+
     return (
       <html lang="en">
         <body className={`${interFont.variable} antialiased min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950`}>

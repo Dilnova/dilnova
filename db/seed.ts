@@ -55,14 +55,28 @@ async function main() {
   if (clerkSecretKey) {
     try {
       console.log('Connecting to Clerk to fetch real organization IDs...');
-      const response = await fetch('https://api.clerk.com/v1/organizations?limit=100', {
-        headers: {
-          'Authorization': `Bearer ${clerkSecretKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      const orgData = await response.json();
-      const orgList = { data: orgData.data || [] };
+      let allOrgs: any[] = [];
+      let offset = 0;
+      const limit = 100;
+      
+      while (true) {
+        const response = await fetch(`https://api.clerk.com/v1/organizations?limit=${limit}&offset=${offset}`, {
+          headers: {
+            'Authorization': `Bearer ${clerkSecretKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const orgData = await response.json();
+        const orgsBatch = orgData.data || [];
+        allOrgs = allOrgs.concat(orgsBatch);
+        
+        if (orgsBatch.length < limit) {
+          break;
+        }
+        offset += limit;
+      }
+      
+      const orgList = { data: allOrgs };
       
       const distarOrgFallback = orgList.data.find((o: any) => 
         o.name.toLowerCase() === 'distar' || 
