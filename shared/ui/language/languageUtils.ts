@@ -85,9 +85,11 @@ export function setGoogTransCookie(lang: string): void {
     }
   }
 
+  const secure = window.location.protocol === 'https:' ? '; secure' : '';
+
   // Delete all existing googtrans cookies
   domains.forEach((d) => {
-    document.cookie = `googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT${d}`;
+    document.cookie = `googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT${d}; SameSite=Lax${secure}`;
   });
 
   if (lang === 'en') {
@@ -95,13 +97,13 @@ export function setGoogTransCookie(lang: string): void {
   }
 
   // Write new googtrans cookie
-  document.cookie = `googtrans=/en/${lang}; path=/`;
-  document.cookie = `googtrans=/en/${lang}; path=/; domain=${host}`;
+  document.cookie = `googtrans=/en/${lang}; path=/; SameSite=Lax${secure}`;
+  document.cookie = `googtrans=/en/${lang}; path=/; domain=${host}; SameSite=Lax${secure}`;
   if (!host.includes('localhost') && host.includes('.')) {
     const parts = host.split('.');
     if (parts.length > 2) {
       const rootDomain = parts.slice(-2).join('.');
-      document.cookie = `googtrans=/en/${lang}; path=/; domain=.${rootDomain}`;
+      document.cookie = `googtrans=/en/${lang}; path=/; domain=.${rootDomain}; SameSite=Lax${secure}`;
     }
   }
 }
@@ -110,7 +112,8 @@ export function setGoogTransCookie(lang: string): void {
 export function setLangPreferenceCookie(lang: string): void {
   // Persist for 1 year
   const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
-  document.cookie = `lang_preference=${lang}; path=/; expires=${expires}; SameSite=Lax`;
+  const secure = window.location.protocol === 'https:' ? '; secure' : '';
+  document.cookie = `lang_preference=${lang}; path=/; expires=${expires}; SameSite=Lax${secure}`;
   writeLangPreferenceToStorage(lang);
 }
 

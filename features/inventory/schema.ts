@@ -48,6 +48,16 @@ export const updateInventoryDetailsSchema = z.object({
   stockAvailability: z.string().min(1).max(50).optional(),
 });
 
+export const initInventorySchema = z.object({
+  productId: uuidField,
+  sku: z.string().max(100).trim().optional(),
+  quantity: z.number().int('Quantity must be a whole number.').min(0, 'Quantity cannot be negative.').optional(),
+  lowStockThreshold: z.number().int().min(0).optional(),
+  binLocation: z.string().max(200).trim().optional(),
+  supplierId: z.string().uuid().nullable().optional(),
+  stockAvailability: z.string().min(1).max(50).optional(),
+});
+
 export const createBranchSchema = z.object({
   name: z.string().min(1, 'Branch name is required.').max(100, 'Branch name cannot exceed 100 characters.').trim(),
   address: z.string().max(300, 'Address cannot exceed 300 characters.').trim().optional().default(''),

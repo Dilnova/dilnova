@@ -529,7 +529,8 @@ export async function simulatedCheckoutAction(
   shippingState?: string | null,
   shippingPostalCode?: string | null,
   shippingCountry?: string | null,
-  shippingPhone2?: string | null
+  shippingPhone2?: string | null,
+  idempotencyKey?: string | null
 ) {
   try {
     // ── Input Validation ──
@@ -596,6 +597,15 @@ export async function simulatedCheckoutAction(
 
     // ── Rate Limiting ──
     await rateLimit(5, 60 * 1000); // Max 5 checkouts per minute
+
+    // ── Idempotency Check ──
+    if (idempotencyKey) {
+      const { checkIdempotencyKey } = await import('@/shared/security/idempotency');
+      const isNewRequest = await checkIdempotencyKey(idempotencyKey);
+      if (!isNewRequest) {
+        return { success: false, error: 'This order is already being processed. Please wait or refresh the page.' };
+      }
+    }
 
     // ── Concurrency Safe Stock Validation & Checkout ──
     // ── Verify products, prices, and availability flags server-side (outside transaction) ──
