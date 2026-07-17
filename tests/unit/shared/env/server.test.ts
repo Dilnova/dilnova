@@ -29,6 +29,7 @@ describe('validateServerEnv', () => {
     process.env.NODE_ENV = 'production';
     delete process.env.NEXT_PHASE;
     delete process.env.DATABASE_URL;
+    delete process.env.CI;
 
     const { validateServerEnv } = await import('@/shared/env/server');
     expect(() => validateServerEnv()).toThrow('Server environment validation failed');
