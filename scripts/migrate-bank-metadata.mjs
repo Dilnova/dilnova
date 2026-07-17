@@ -18,8 +18,8 @@ const dryRun = process.argv.includes('--dry-run');
 const secretKey = process.env.CLERK_SECRET_KEY;
 
 if (!secretKey) {
-  console.error('CLERK_SECRET_KEY is required.');
-  process.exit(1);
+  console.warn('CLERK_SECRET_KEY is missing. Skipping migration.');
+  process.exit(0);
 }
 
 const clerkApi = 'https://api.clerk.com/v1';

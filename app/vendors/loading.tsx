@@ -5,8 +5,8 @@ export default function VendorsLoading() {
         {/* Header Skeleton */}
         <div className="text-center mb-16 space-y-4">
           <div className="h-5 w-28 bg-purple-200/30 dark:bg-purple-900/30 rounded-full mx-auto" />
-          <div className="h-9 w-56 bg-zinc-200 dark:bg-zinc-800 rounded-xl mx-auto" />
-          <div className="h-4 w-96 max-w-full bg-zinc-100 dark:bg-zinc-900 rounded mx-auto" />
+          <div className="h-9 w-full max-w-xs bg-zinc-200 dark:bg-zinc-800 rounded-xl mx-auto" />
+          <div className="h-4 w-full max-w-sm bg-zinc-100 dark:bg-zinc-900 rounded mx-auto" />
         </div>
 
         {/* Vendor Cards Grid Skeleton */}

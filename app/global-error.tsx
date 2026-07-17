@@ -37,10 +37,10 @@ export default function GlobalError({
             </div>
 
             <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-              Critical Error
+              {typeof error?.message === 'string' && (error.message.toLowerCase().includes('fetch') || error.message.toLowerCase().includes('network')) ? 'Check your connection' : 'Critical Error'}
             </h1>
             <p style={{ fontSize: '0.875rem', color: '#a1a1aa', lineHeight: 1.6, marginBottom: '0.5rem' }}>
-              A critical application error occurred. Please try refreshing the page.
+              {typeof error?.message === 'string' && (error.message.toLowerCase().includes('fetch') || error.message.toLowerCase().includes('network')) ? 'It looks like you are offline or having network issues. Please check your connection and try again.' : 'A critical application error occurred. Please try refreshing the page.'}
             </p>
             {error.digest && (
               <p style={{ fontSize: '0.75rem', color: '#52525b', fontFamily: 'monospace', marginBottom: '1.5rem' }}>
