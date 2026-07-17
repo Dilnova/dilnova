@@ -17,8 +17,8 @@ const BANK_KEYS = [
 const dryRun = process.argv.includes('--dry-run');
 const secretKey = process.env.CLERK_SECRET_KEY;
 
-if (!secretKey) {
-  console.warn('CLERK_SECRET_KEY is missing. Skipping migration.');
+if (!secretKey || secretKey.includes('placeholder')) {
+  console.warn('CLERK_SECRET_KEY is missing or is a placeholder. Skipping migration.');
   process.exit(0);
 }
 

@@ -18,8 +18,8 @@ const allowlist = new Set(
     .filter(Boolean)
 );
 
-if (!secretKey) {
-  console.warn('CLERK_SECRET_KEY is missing. Skipping migration.');
+if (!secretKey || secretKey.includes('placeholder')) {
+  console.warn('CLERK_SECRET_KEY is missing or is a placeholder. Skipping migration.');
   process.exit(0);
 }
 
