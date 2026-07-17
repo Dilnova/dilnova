@@ -17,11 +17,13 @@ vi.mock('@/shared/auth/clerk-cache', () => ({
   invalidateClerkOrgCache: vi.fn(),
 }));
 
-vi.mock('@upstash/redis', () => ({
-  Redis: vi.fn().mockImplementation(() => ({
-    set: vi.fn().mockResolvedValue('OK'),
-  })),
-}));
+vi.mock('@upstash/redis', () => {
+  return {
+    Redis: class {
+      set = vi.fn().mockResolvedValue('OK');
+    },
+  };
+});
 
 const mockHeaders = vi.fn();
 vi.mock('next/headers', () => ({
