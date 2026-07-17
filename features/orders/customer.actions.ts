@@ -125,7 +125,7 @@ export async function createPaymentSlipUploadPresignedUrlAction(input: {
       logger.error('Failed to generate pre-signed upload URL', { orderId: order.id, error });
       return {
         success: false as const,
-        error: error instanceof Error ? error.message : 'Failed to initialize payment slip upload.',
+        error: 'Failed to initialize payment slip upload. Please try again.',
       };
     }
   });

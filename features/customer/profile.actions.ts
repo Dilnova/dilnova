@@ -30,7 +30,8 @@ export async function updateCustomerDeliveryDetailsAction(input: UpdateDeliveryS
     try {
       await rateLimit(5, 60000);
     } catch (error: any) {
-      return { success: false as const, error: error.message || 'Too many requests. Please try again later.' };
+      logger.warn('Rate limit exceeded during delivery details update', { userId, error: error?.message });
+      return { success: false as const, error: 'Too many requests. Please try again later.' };
     }
 
     const parsed = updateDeliverySettingsSchema.safeParse(input);

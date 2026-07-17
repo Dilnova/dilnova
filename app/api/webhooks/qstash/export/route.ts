@@ -141,10 +141,13 @@ async function handler(req: NextRequest) {
     if (hasQuestions) questions = results[idx++];
     if (hasWishlists) wishlists = results[idx++];
 
+    const sanitizedOrders = populatedOrders.map(({ customerEmailHash, ...rest }) => rest);
+    const sanitizedSubmissions = contactSubmissions.map(({ emailHash, ...rest }) => rest);
+
     const exportData = {
       userId: targetUserId,
-      orders: populatedOrders,
-      contactSubmissions,
+      orders: sanitizedOrders,
+      contactSubmissions: sanitizedSubmissions,
       cart,
       branchMemberships,
       reviews,

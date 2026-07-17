@@ -1,7 +1,6 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
 import { getPremiumStatus } from './premium-license';
 
 export async function getPremiumStatusAction(orgId: string) {

@@ -270,12 +270,15 @@ export async function getCustomerDsarDataAction(email: string) {
       strict: true,
     });
 
+    const sanitizedOrders = matchingOrders.map(({ customerEmailHash, ...rest }) => rest);
+    const sanitizedSubmissions = matchingSubmissions.map(({ emailHash, ...rest }) => rest);
+
     return {
       success: true,
       data: {
         email: normalizedEmailInput,
-        orders: matchingOrders,
-        contactSubmissions: matchingSubmissions,
+        orders: sanitizedOrders,
+        contactSubmissions: sanitizedSubmissions,
       },
     };
   });
