@@ -39,8 +39,20 @@ test.describe('Customer Checkout Flow', () => {
     // 4. Proceed to checkout
     await checkoutBtn.click();
 
-    // Verify success state or next step
-    // We expect some progression, either a success message or order confirmation
-    await expect(page.locator('body')).not.toBeEmpty();
+    // 5. Verify success state
+    await expect(page.getByText(/Order Placed|Order Confirmed!/i)).toBeVisible({ timeout: 15000 });
+    
+    // 6. Navigate to Invoice
+    const viewInvoiceBtn = page.getByRole('link', { name: /view invoice/i });
+    
+    // Some cart items might just be added to existing orders or handled differently,
+    // but if the view invoice button is there, we should verify the invoice page loads.
+    if (await viewInvoiceBtn.isVisible()) {
+      await viewInvoiceBtn.click();
+      
+      // 7. Verify Invoice Page
+      await expect(page).toHaveURL(/\/customer\/invoice\/.+/);
+      await expect(page.locator('body')).toContainText(/Automated Simulated Register checkout|Payment|Pickup/i);
+    }
   });
 });
