@@ -100,6 +100,14 @@ jobs:
         with:
           subject-path: 'next.config.ts'
 
+      - name: Install Playwright Browsers
+        run: pnpm run test:e2e:install
+
+      - name: Run E2E Tests
+        run: pnpm run test:e2e
+        env:
+          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+
 
   secrets-scan:
     name: Secrets Scan
