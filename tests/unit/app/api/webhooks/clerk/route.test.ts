@@ -35,6 +35,8 @@ describe('POST /api/webhooks/clerk', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv('CLERK_WEBHOOK_SECRET', webhookSecret);
+    vi.stubEnv('VERCEL_ENV', 'test');
+    vi.stubEnv('PREVIEW_CLERK_WEBHOOK_SECRET', '');
   });
 
   afterEach(() => {
