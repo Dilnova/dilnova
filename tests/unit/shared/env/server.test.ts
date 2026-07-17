@@ -61,6 +61,7 @@ describe('validateServerEnv', () => {
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: 'sitekey',
       TURNSTILE_SECRET_KEY: 'secret',
       SENTRY_DSN: 'https://public@sentry.example.com/1',
+      QSTASH_TOKEN: 'token',
     };
 
     // Valid cases
@@ -109,6 +110,7 @@ describe('validateServerEnv', () => {
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: 'sitekey',
       TURNSTILE_SECRET_KEY: 'secret',
       SENTRY_DSN: 'https://public@sentry.example.com/1',
+      QSTASH_TOKEN: 'token',
     };
 
     // Valid cases

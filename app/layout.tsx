@@ -20,8 +20,6 @@ const CartMergeBanner = dynamic(() => import('@/features/cart/components/CartMer
 
 import { getSystemSetting } from '@/shared/platform/settings'
 import Image from 'next/image'
-import { SpeedInsights } from '@vercel/speed-insights/next'
-import { Analytics } from '@vercel/analytics/react'
 import { Toaster } from 'sonner'
 import { ConfirmProvider } from '@/shared/ui/notifications'
 import { GlobalNotificationListener } from '@/shared/ui/notifications/GlobalNotificationListener'
@@ -193,6 +191,7 @@ export default async function RootLayout({
                     <div className="flex items-center gap-6 font-medium">
                       <Link href="/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Privacy Policy</Link>
                       <Link href="/terms" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Terms of Service</Link>
+                      <Link href="/refund" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Refund Policy</Link>
                     </div>
                   </div>
                 </footer>
@@ -211,8 +210,6 @@ export default async function RootLayout({
             </ConfirmProvider>
             <ConsentTracking />
             <CookieConsent />
-            <SpeedInsights />
-            <Analytics />
           </ClerkProvider>
         </body>
       </html>

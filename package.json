@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "vitest run && next build",
+    "build": "vitest run && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

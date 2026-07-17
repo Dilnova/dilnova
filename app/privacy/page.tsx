@@ -57,7 +57,7 @@ export default async function PrivacyPolicy() {
               1. Overview & Scope
             </h2>
             <p>
-              Welcome to the <strong>{systemName} Commerce Marketplace</strong>. We value your privacy and trust. This policy governs how we collect, process, secure, and store your personally identifiable information (PII) across all tenant storefronts, core portals, and services offered under the {systemName} hub.
+              Welcome to <strong>{systemName}</strong> (&quot;Company&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;). We value your privacy and trust. This policy governs how we collect, process, secure, and store your personally identifiable information (PII) across all tenant storefronts, core portals, and services offered under the {systemName} hub.
             </p>
           </section>
 
@@ -73,7 +73,7 @@ export default async function PrivacyPolicy() {
                 <strong>Account Credentials:</strong> Handled securely by our authentication partner (Clerk), including your name, email address, profile avatar, and system-assigned unique identifiers.
               </li>
               <li>
-                <strong>Order Details:</strong> Customer name, shipping address, contact phone, and transaction history.
+                <strong>Order Details:</strong> Customer name, shipping address, contact phone, transaction history, and uploaded financial documents (such as bank transfer payment slips).
               </li>
               <li>
                 <strong>Inquiries & Contact Submissions:</strong> Form contents, feedback details, name, and email address submitted via support forms.
@@ -96,7 +96,7 @@ export default async function PrivacyPolicy() {
             </p>
           </section>
 
-          <section className="space-y-3">
+          <section id="cookies" className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
               4. Cookies and Tracking Consent
             </h2>
@@ -140,7 +140,7 @@ export default async function PrivacyPolicy() {
               </li>
             </ul>
             <p>
-              Upon verification of your identity, a platform superadmin will process your request (typically within 30 days). Fulfilling an erasure request permanently redacts your shipping address, phone number, name, and email from database logs, severing Clerk identity links.
+              Upon verification of your identity, we will process your request (typically within 30 days). Fulfilling an erasure request permanently redacts your shipping address, phone number, name, and email from database logs, severing Clerk identity links.
             </p>
           </section>
 
