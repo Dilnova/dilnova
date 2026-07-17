@@ -101,16 +101,8 @@ export default async function PrivacyPolicy() {
               4. Cookies and Tracking Consent
             </h2>
             <p>
-              We distinguish between essential and analytical cookies:
+              We use strictly necessary and performance cookies to provide and optimize our service. For detailed information on how we manage cookies, what data they process, and how to change your tracking preferences, please read our dedicated <Link href="/cookie" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">Cookie Policy</Link>.
             </p>
-            <ul className="list-disc pl-5 space-y-1.5">
-              <li>
-                <strong>Strictly Necessary:</strong> Required for secure session tokens, Clerk auth state, and the persistent shopping cart. These do not require cookie consent and cannot be turned off.
-              </li>
-              <li>
-                <strong>Performance & Analytics:</strong> Provided by Vercel Analytics and Vercel Speed Insights to help us optimize page load performance. These scripts are strictly disabled unless you click &quot;Accept All&quot; or toggle them to active in our cookie settings drawer.
-              </li>
-            </ul>
           </section>
 
           <section className="space-y-3">

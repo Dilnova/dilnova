@@ -235,8 +235,8 @@ export function CartCheckoutSidebar({
                 )}
 
                 {checkoutOptions.fulfillment.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Fulfillment</p>
+                  <fieldset className="space-y-2">
+                    <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Fulfillment</legend>
                     {checkoutOptions.fulfillment.map((option: any) => (
                       <label
                         key={option.id}
@@ -262,7 +262,7 @@ export function CartCheckoutSidebar({
                         </span>
                       </label>
                     ))}
-                  </div>
+                  </fieldset>
                 ) : (
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     {vendorCount > 1
@@ -314,8 +314,8 @@ export function CartCheckoutSidebar({
                 )}
 
                 {compatiblePayments.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Payment</p>
+                  <fieldset className="space-y-2">
+                    <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Payment</legend>
                     {compatiblePayments.map((option: any) => (
                       <label
                         key={option.id}
@@ -341,7 +341,7 @@ export function CartCheckoutSidebar({
                         </span>
                       </label>
                     ))}
-                  </div>
+                  </fieldset>
                 ) : (
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     {checkoutOptions.payment.length > 0 && selectedFulfillment?.requiresBranch

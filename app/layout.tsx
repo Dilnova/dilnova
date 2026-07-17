@@ -185,13 +185,25 @@ export default async function RootLayout({
               </SmartHeader>
               {children}
               <SmartFooter>
-                <footer className="border-t border-zinc-200 dark:border-zinc-900 py-8 text-center text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-950 mt-auto">
-                  <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <p>&copy; {new Date().getFullYear()} {systemName}. All rights reserved.</p>
-                    <div className="flex items-center gap-6 font-medium">
-                      <Link href="/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Privacy Policy</Link>
-                      <Link href="/terms" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Terms of Service</Link>
-                      <Link href="/refund" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Refund Policy</Link>
+                <footer className="border-t border-zinc-200 dark:border-zinc-900 py-10 text-center md:text-left text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-950 mt-auto">
+                  <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center md:items-start justify-between gap-8">
+                    <div className="flex flex-col space-y-1">
+                      <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">{systemName}</p>
+                      <p>Colombo, Sri Lanka</p>
+                      <p className="pt-4">&copy; {new Date().getFullYear()} {systemName}. All rights reserved.</p>
+                    </div>
+                    <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-8 font-medium">
+                      <div className="flex flex-col space-y-2">
+                        <span className="text-zinc-900 dark:text-zinc-100 font-bold mb-1 uppercase tracking-wider text-[10px]">Legal</span>
+                        <Link href="/privacy" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Privacy Policy</Link>
+                        <Link href="/cookie" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Cookie Policy</Link>
+                        <Link href="/terms" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Terms of Service</Link>
+                        <Link href="/refund" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Refund Policy</Link>
+                      </div>
+                      <div className="flex flex-col space-y-2 mt-4 md:mt-0">
+                        <span className="text-zinc-900 dark:text-zinc-100 font-bold mb-1 uppercase tracking-wider text-[10px]">Support</span>
+                        <Link href="/contact" className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">Contact Us</Link>
+                      </div>
                     </div>
                   </div>
                 </footer>
