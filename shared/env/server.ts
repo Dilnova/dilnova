@@ -66,6 +66,11 @@ export function validateServerEnv(): void {
     return;
   }
 
+  // Playwright runs `next start` in CI which sets NODE_ENV=production, but we still use dummy values.
+  if (process.env.CI === 'true') {
+    return;
+  }
+
   const result = productionServerEnvSchema.safeParse(process.env);
   if (!result.success) {
     const formatted = result.error.flatten().fieldErrors;
