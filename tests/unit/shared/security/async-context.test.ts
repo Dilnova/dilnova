@@ -61,23 +61,30 @@ describe('asyncContext Utility & Correlation ID Logging', () => {
   });
 
   it('logger should output request ID in development output format', async () => {
-    const customId = 'dev-logger-test-id';
-    vi.mocked(headers).mockResolvedValue({
-      get: (name: string) => (name === 'x-request-id' ? customId : null),
-    } as unknown as Awaited<ReturnType<typeof headers>>);
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
 
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      const customId = 'dev-logger-test-id';
+      vi.mocked(headers).mockResolvedValue({
+        get: (name: string) => (name === 'x-request-id' ? customId : null),
+      } as unknown as Awaited<ReturnType<typeof headers>>);
 
-    await runWithCorrelationId(async () => {
-      logger.info('Test log message');
-      expect(logSpy).toHaveBeenCalledWith(
-        '%s %s %s',
-        `[INFO] [${customId}]`,
-        'Test log message',
-        ''
-      );
-    });
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    logSpy.mockRestore();
+      await runWithCorrelationId(async () => {
+        logger.info('Test log message');
+        expect(logSpy).toHaveBeenCalledWith(
+          '%s %s %s',
+          `[INFO] [${customId}]`,
+          'Test log message',
+          ''
+        );
+      });
+
+      logSpy.mockRestore();
+    } finally {
+      process.env.NODE_ENV = originalEnv;
+    }
   });
 });
