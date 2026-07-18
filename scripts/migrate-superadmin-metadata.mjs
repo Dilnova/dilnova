@@ -18,8 +18,8 @@ const allowlist = new Set(
     .filter(Boolean)
 );
 
-if (!secretKey || secretKey.includes('placeholder')) {
-  console.warn('CLERK_SECRET_KEY is missing or is a placeholder. Skipping migration.');
+if (!secretKey || secretKey.includes('placeholder') || secretKey === 'sk_test_ci_dummy' || process.env.CI === 'true') {
+  console.warn('CLERK_SECRET_KEY is missing, placeholder, or CI environment. Skipping migration.');
   process.exit(0);
 }
 

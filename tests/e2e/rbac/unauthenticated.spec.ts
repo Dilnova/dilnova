@@ -5,6 +5,7 @@ test.describe('Unauthenticated access', () => {
   for (const [label, path] of Object.entries(PROTECTED_ROUTES)) {
     test(`blocks ${label} (${path})`, async ({ page }) => {
       await page.goto(path, { waitUntil: 'domcontentloaded' });
+      console.log(`URL for ${label}:`, page.url());
       expect(isAuthWallUrl(page.url())).toBe(true);
     });
   }

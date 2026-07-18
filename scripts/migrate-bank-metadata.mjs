@@ -14,6 +14,11 @@ const BANK_KEYS = [
   'bankTransferInstructions',
 ];
 
+if (process.env.CI === 'true' || process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy') {
+  console.log('Skipping bank metadata migration in CI environment.');
+  process.exit(0);
+}
+
 const dryRun = process.argv.includes('--dry-run');
 const secretKey = process.env.CLERK_SECRET_KEY;
 
