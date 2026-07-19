@@ -120,22 +120,7 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
     }
   }
 
-  // Bypass Clerk entirely in CI when dummy keys are present to prevent NXDOMAIN redirect/hangs.
-  // Manually redirect protected routes to /sign-in for E2E tests to pass.
-  if (process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy') {
-    const pathname = request.nextUrl.pathname;
-    const isProtectedRoute = 
-      pathname === '/vendor' || pathname.startsWith('/vendor/') || 
-      pathname.startsWith('/admin') || 
-      pathname.startsWith('/customer') || 
-      pathname.startsWith('/superadmin');
 
-    if (isProtectedRoute) {
-      return NextResponse.redirect(new URL('/sign-in', request.url));
-    }
-    
-    return NextResponse.next();
-  }
 
   return clerkHandler(request, event);
 }
