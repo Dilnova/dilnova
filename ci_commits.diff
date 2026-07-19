@@ -1,0 +1,1049 @@
+commit 2269d4463068992847a9b1703d0a4cc45fca47ed
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 22:51:35 2026 +0530
+
+    fix: change Playwright baseURL from 127.0.0.1 to localhost to resolve Chromium ERR_NAME_NOT_RESOLVED in CI
+
+diff --git a/playwright.config.ts b/playwright.config.ts
+index 5142306..a2a7ddc 100644
+--- a/playwright.config.ts
++++ b/playwright.config.ts
+@@ -6,7 +6,7 @@ loadE2EEnv();
+ 
+ const AUTH_DIR = path.join(__dirname, 'playwright/.clerk');
+ const PORT = process.env.PLAYWRIGHT_PORT ?? '3000';
+-const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://127.0.0.1:${PORT}`;
++const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://localhost:${PORT}`;
+ 
+ const webServerEnv: Record<string, string> = {
+   PORT,
+
+commit 57d2693d3ab2362c1466eb1d392d2085e304026a
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 22:50:31 2026 +0530
+
+    fix: explicit ipv4 host binding for next js to prevent playwright timeout
+
+diff --git a/playwright.config.ts b/playwright.config.ts
+index 98749ac..5142306 100644
+--- a/playwright.config.ts
++++ b/playwright.config.ts
+@@ -174,8 +174,8 @@ export default defineConfig({
+   webServer: {
+     // On CI we start Next.js in the workflow; reuse that server. Locally Playwright can start the server.
+     command: process.env.CI
+-      ? `node ./node_modules/next/dist/bin/next start --port ${PORT}`
+-      : `sh -c 'pnpm exec next build --webpack && exec node ./node_modules/next/dist/bin/next start --port ${PORT}'`,
++      ? `node ./node_modules/next/dist/bin/next start -H 127.0.0.1 --port ${PORT}`
++      : `sh -c 'pnpm exec next build --webpack && exec node ./node_modules/next/dist/bin/next start -H 127.0.0.1 --port ${PORT}'`,
+     url: baseURL,
+     reuseExistingServer: process.env.CI ? true : false,
+     timeout: 600_000,
+
+commit 14bfda39c9d79880badfabcc328901cc930be602
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 22:35:11 2026 +0530
+
+    fix: remove redundant manual server startup in CI to let Playwright handle server lifecycle
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index f087bdf..7c65caf 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -105,26 +105,6 @@ jobs:
+       - name: Install Playwright Browsers
+         run: pnpm run test:e2e:install
+ 
+-      - name: Start Application Server
+-        run: pnpm run start &
+-        env:
+-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
+-          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+-          NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+-
+-      - name: Wait for Server to be Ready
+-        run: |
+-          for i in {1..30}; do
+-            if curl -f http://127.0.0.1:3000 > /dev/null 2>&1; then
+-              echo "Server is ready"
+-              exit 0
+-            fi
+-            echo "Waiting for server... ($i/30)"
+-            sleep 2
+-          done
+-          echo "Server failed to start"
+-          exit 1
+ 
+       - name: Run E2E Tests
+         run: pnpm run test:e2e
+
+commit b97c9c39ac66b05ffe41ef39bcd7fa3b932e0712
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 21:53:31 2026 +0530
+
+    fix(ci): add server start and readiness check for E2E tests
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 575b07f..f087bdf 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -105,6 +105,27 @@ jobs:
+       - name: Install Playwright Browsers
+         run: pnpm run test:e2e:install
+ 
++      - name: Start Application Server
++        run: pnpm run start &
++        env:
++          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
++          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
++          NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
++
++      - name: Wait for Server to be Ready
++        run: |
++          for i in {1..30}; do
++            if curl -f http://127.0.0.1:3000 > /dev/null 2>&1; then
++              echo "Server is ready"
++              exit 0
++            fi
++            echo "Waiting for server... ($i/30)"
++            sleep 2
++          done
++          echo "Server failed to start"
++          exit 1
++
+       - name: Run E2E Tests
+         run: pnpm run test:e2e
+         env:
+
+commit f16e12c85f8b1ce3884b9b3d4dccfd9feeab9dcb
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 19:22:57 2026 +0530
+
+    chore(ci): revert clerk secrets to dummy keys to fix PR build failures
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 4824fbe..575b07f 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -71,8 +71,8 @@ jobs:
+       - name: Run Production Build
+         run: pnpm run build
+         env:
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+-          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
++          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+           DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+@@ -109,8 +109,8 @@ jobs:
+         run: pnpm run test:e2e
+         env:
+           DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+-          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
++          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+ 
+ 
+
+commit fcc0a33fbc255eb3647692e5be97e8c428a33f99
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 19:11:02 2026 +0530
+
+    fix(ci): update DATABASE_URL for local development and add job log for permission errors
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 186f57e..4824fbe 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -74,7 +74,7 @@ jobs:
+           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+-          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
++          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+           NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+           CLOUDINARY_API_KEY: "placeholder"
+
+commit 620b2265feaa06011b152e417e4bfb6106beb96d
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 18:47:58 2026 +0530
+
+    fix(ci): update environment variables for production build and E2E tests
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index a28bc01..186f57e 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -71,8 +71,9 @@ jobs:
+       - name: Run Production Build
+         run: pnpm run build
+         env:
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
+-          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
++          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
++          NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+           NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+@@ -108,6 +109,9 @@ jobs:
+         run: pnpm run test:e2e
+         env:
+           DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
++          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
++          NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+ 
+ 
+   secrets-scan:
+diff --git a/playwright.config.ts b/playwright.config.ts
+index d3a6ed0..98749ac 100644
+--- a/playwright.config.ts
++++ b/playwright.config.ts
+@@ -12,8 +12,9 @@ const webServerEnv: Record<string, string> = {
+   PORT,
+   DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://ci:ci@localhost:5432/ci',
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
+-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? 'pk_test_dGVzdC5jbGVyay5kZXYk',
+-  CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY ?? 'sk_test_ci_dummy',
++    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '',
++  CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY || '',
++  NEXT_PUBLIC_ENABLE_BETA_ACCESS: 'true',
+   UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL ?? 'https://dummy.upstash.io',
+   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ?? 'dummy-token',
+   NEXT_PUBLIC_APP_URL: baseURL,
+diff --git a/tests/e2e/rbac/unauthenticated.spec.ts b/tests/e2e/rbac/unauthenticated.spec.ts
+index f013a83..cd8e35d 100644
+--- a/tests/e2e/rbac/unauthenticated.spec.ts
++++ b/tests/e2e/rbac/unauthenticated.spec.ts
+@@ -4,7 +4,11 @@ import { isAuthWallUrl, PROTECTED_ROUTES } from '../helpers/routes';
+ test.describe('Unauthenticated access', () => {
+   for (const [label, path] of Object.entries(PROTECTED_ROUTES)) {
+     test(`blocks ${label} (${path})`, async ({ page }) => {
+-      await page.goto(path, { waitUntil: 'domcontentloaded' });
++      await page.goto(path, { waitUntil: 'networkidle' });
++      
++      // Wait for Next.js client-side router to process the RSC redirect
++      await page.waitForURL((url) => isAuthWallUrl(url.toString()), { timeout: 10000 }).catch(() => {});
++      
+       console.log(`URL for ${label}:`, page.url());
+       expect(isAuthWallUrl(page.url())).toBe(true);
+     });
+
+commit d1fd6ebc2307dfe8e5e9e3c09baa07b471357268
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sat Jul 18 08:45:02 2026 +0530
+
+    fix(ci): update Clerk handling in proxy and migration scripts for CI environment
+
+diff --git a/tests/e2e/rbac/unauthenticated.spec.ts b/tests/e2e/rbac/unauthenticated.spec.ts
+index 87353e4..f013a83 100644
+--- a/tests/e2e/rbac/unauthenticated.spec.ts
++++ b/tests/e2e/rbac/unauthenticated.spec.ts
+@@ -5,6 +5,7 @@ test.describe('Unauthenticated access', () => {
+   for (const [label, path] of Object.entries(PROTECTED_ROUTES)) {
+     test(`blocks ${label} (${path})`, async ({ page }) => {
+       await page.goto(path, { waitUntil: 'domcontentloaded' });
++      console.log(`URL for ${label}:`, page.url());
+       expect(isAuthWallUrl(page.url())).toBe(true);
+     });
+   }
+
+commit e0f6b8ce427fb3db3960b464c430c64bf368d611
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 15:56:57 2026 +0530
+
+    fix(ci): fix unit test that failed due to CI environment variable skip
+
+diff --git a/tests/unit/shared/env/server.test.ts b/tests/unit/shared/env/server.test.ts
+index 39e1097..754efa2 100644
+--- a/tests/unit/shared/env/server.test.ts
++++ b/tests/unit/shared/env/server.test.ts
+@@ -29,6 +29,7 @@ describe('validateServerEnv', () => {
+     process.env.NODE_ENV = 'production';
+     delete process.env.NEXT_PHASE;
+     delete process.env.DATABASE_URL;
++    delete process.env.CI;
+ 
+     const { validateServerEnv } = await import('@/shared/env/server');
+     expect(() => validateServerEnv()).toThrow('Server environment validation failed');
+
+commit 338dcd6db730503e2ea26a3ca6db8509cb3a874a
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 12:49:35 2026 +0530
+
+    fix(ci): add NEXT_PUBLIC_SENTRY_DSN to ci.yml
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 0af7165..a28bc01 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -88,6 +88,7 @@ jobs:
+           SMTP_USER: "placeholder"
+           SMTP_PASSWORD: "placeholder"
+           SENTRY_DSN: "placeholder"
++          NEXT_PUBLIC_SENTRY_DSN: "placeholder"
+           EMAIL_FROM_ADDRESS: "info@example.com"
+           EMAIL_FROM_NAME: "Placeholder"
+           SUPERADMIN_USER_IDS: "user_placeholder"
+
+commit c7a23874eee8e6b0f92f5d6e9a2134850ac482d9
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 11:53:44 2026 +0530
+
+    feat(error): enhance error messages for network issues across all error components
+    feat(loading): update loading skeleton dimensions for products and vendors
+    fix(migration): change error handling for missing CLERK_SECRET_KEY in migration scripts
+    test(checkout): add database setup and teardown for E2E checkout tests
+
+diff --git a/tests/e2e/business/checkout.spec.ts b/tests/e2e/business/checkout.spec.ts
+index b3a5da3..2d1a412 100644
+--- a/tests/e2e/business/checkout.spec.ts
++++ b/tests/e2e/business/checkout.spec.ts
+@@ -1,11 +1,40 @@
+ import { test, expect } from '@playwright/test';
+ import { authStateExists } from '../helpers/env';
+-import { PROTECTED_ROUTES } from '../helpers/routes';
++import { db } from '@/shared/db/client';
++import * as schema from '@/shared/db/schema';
++import { eq } from 'drizzle-orm';
++import { loadSecurityFixtureContext } from '../helpers/security-fixtures';
+ 
+ test.beforeEach(() => {
+   test.skip(!authStateExists('customer'), 'Run auth.setup with E2E_CUSTOMER_EMAIL to enable this suite.');
+ });
+ 
++let testProductId: string;
++
++test.beforeAll(async () => {
++  if (process.env.DATABASE_URL) {
++    const context = await loadSecurityFixtureContext();
++    const orgId = context?.vendorOrgId || 'e2e-dummy-org';
++
++    const [product] = await db.insert(schema.products).values({
++      name: 'E2E Test Checkout Product',
++      price: 1999,
++      orgId,
++      description: 'Dummy product for E2E checkout testing',
++      status: 'active',
++      type: 'product',
++    }).returning({ id: schema.products.id });
++    
++    testProductId = product.id;
++  }
++});
++
++test.afterAll(async () => {
++  if (process.env.DATABASE_URL && testProductId) {
++    await db.delete(schema.products).where(eq(schema.products.id, testProductId));
++  }
++});
++
+ test.describe('Customer Checkout Flow', () => {
+   test('can add item to cart and checkout', async ({ page }) => {
+     // 1. Navigate to products
+@@ -14,11 +43,7 @@ test.describe('Customer Checkout Flow', () => {
+ 
+     // 2. Add first product to cart (if any exist)
+     const firstProduct = page.locator('a[href^="/products/"]').first();
+-    const productExists = await firstProduct.isVisible();
+-    if (!productExists) {
+-      test.skip(true, 'No products available to test checkout flow.');
+-      return;
+-    }
++    await expect(firstProduct).toBeVisible({ timeout: 10000 });
+     
+     await firstProduct.click();
+     await page.waitForURL(/\/products\/.+/);
+
+commit b775911602e571859dfcc44063109f838f38256d
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 11:09:09 2026 +0530
+
+    feat: implement loading skeletons for customer, vendor, and cart dashboards; enhance catalog E2E tests
+
+diff --git a/tests/e2e/business/catalog.spec.ts b/tests/e2e/business/catalog.spec.ts
+new file mode 100644
+index 0000000..93aea6a
+--- /dev/null
++++ b/tests/e2e/business/catalog.spec.ts
+@@ -0,0 +1,64 @@
++import { test, expect } from '@playwright/test';
++import { authStateExists } from '../helpers/env';
++
++test.beforeEach(() => {
++  // We can test catalog browsing either logged in or logged out.
++  // Using customer auth to ensure they have the right view.
++  test.skip(!authStateExists('customer'), 'Run auth.setup with E2E_CUSTOMER_EMAIL to enable this suite.');
++});
++
++test.describe('Catalog Browsing and Searching', () => {
++  test('can load the products page and view items', async ({ page }) => {
++    // 1. Navigate to products
++    await page.goto('/products');
++    await expect(page).toHaveURL(/\/products/);
++
++    // 2. Verify page structure loaded
++    await expect(page.locator('h1').filter({ hasText: /Products & Services/i }).or(page.getByText(/Products/i).first())).toBeVisible();
++    
++    // 3. Verify either products exist or the empty state is shown
++    const productCard = page.locator('a[href^="/products/"]').first();
++    const emptyState = page.getByText(/No Catalog Items Found/i);
++    
++    await expect(productCard.or(emptyState)).toBeVisible();
++  });
++
++  test('can use the search input to filter items', async ({ page }) => {
++    await page.goto('/products');
++
++    // Find the search input (usually by placeholder like "Search products...")
++    const searchInput = page.getByPlaceholder(/search/i).first();
++    
++    if (await searchInput.isVisible()) {
++      await searchInput.fill('test search query');
++      await searchInput.press('Enter');
++
++      // Verify the URL was updated with the search query
++      await expect(page).toHaveURL(/search=test\+search\+query/i);
++      
++      // Verify loading state resolves to either items or empty state
++      const productCard = page.locator('a[href^="/products/"]').first();
++      const emptyState = page.getByText(/No Catalog Items Found/i);
++      await expect(productCard.or(emptyState)).toBeVisible();
++    }
++  });
++
++  test('can toggle between products and services types', async ({ page }) => {
++    await page.goto('/products');
++
++    // Click the "Services" filter if it exists (usually a button, link, or select option)
++    const servicesFilter = page.getByRole('link', { name: /^Services$/i }).or(page.getByRole('button', { name: /^Services$/i }));
++    
++    if (await servicesFilter.first().isVisible()) {
++      await servicesFilter.first().click();
++      
++      // Verify URL updates
++      await expect(page).toHaveURL(/type=service/i);
++      
++      // Verify results
++      const productCard = page.locator('a[href^="/products/"]').first();
++      const emptyState = page.getByText(/No Catalog Items Found/i);
++      await expect(productCard.or(emptyState)).toBeVisible();
++    }
++  });
++});
+
+commit edd7af9b6f297dd5ca2d5076c6eff865426061c8
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 10:52:47 2026 +0530
+
+    feat(checkout): enhance success state verification and invoice navigation in E2E tests
+
+diff --git a/tests/e2e/business/checkout.spec.ts b/tests/e2e/business/checkout.spec.ts
+index 473c08c..b3a5da3 100644
+--- a/tests/e2e/business/checkout.spec.ts
++++ b/tests/e2e/business/checkout.spec.ts
+@@ -39,8 +39,20 @@ test.describe('Customer Checkout Flow', () => {
+     // 4. Proceed to checkout
+     await checkoutBtn.click();
+ 
+-    // Verify success state or next step
+-    // We expect some progression, either a success message or order confirmation
+-    await expect(page.locator('body')).not.toBeEmpty();
++    // 5. Verify success state
++    await expect(page.getByText(/Order Placed|Order Confirmed!/i)).toBeVisible({ timeout: 15000 });
++    
++    // 6. Navigate to Invoice
++    const viewInvoiceBtn = page.getByRole('link', { name: /view invoice/i });
++    
++    // Some cart items might just be added to existing orders or handled differently,
++    // but if the view invoice button is there, we should verify the invoice page loads.
++    if (await viewInvoiceBtn.isVisible()) {
++      await viewInvoiceBtn.click();
++      
++      // 7. Verify Invoice Page
++      await expect(page).toHaveURL(/\/customer\/invoice\/.+/);
++      await expect(page.locator('body')).toContainText(/Automated Simulated Register checkout|Payment|Pickup/i);
++    }
+   });
+ });
+
+commit e35796e9b3a11d4a647833498769802ca7a70107
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 10:50:10 2026 +0530
+
+    feat(e2e): add Playwright browser installation and E2E test execution steps
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 2758b86..0af7165 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -100,6 +100,14 @@ jobs:
+         with:
+           subject-path: 'next.config.ts'
+ 
++      - name: Install Playwright Browsers
++        run: pnpm run test:e2e:install
++
++      - name: Run E2E Tests
++        run: pnpm run test:e2e
++        env:
++          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++
+ 
+   secrets-scan:
+     name: Secrets Scan
+
+commit c6d4cdcd1f8d003b87199ce7f76ba249d45705e1
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 10:46:37 2026 +0530
+
+    test(checkout): add unit tests for checkout totals calculations
+
+diff --git a/tests/unit/features/billing/checkout-totals.test.ts b/tests/unit/features/billing/checkout-totals.test.ts
+new file mode 100644
+index 0000000..64bba88
+--- /dev/null
++++ b/tests/unit/features/billing/checkout-totals.test.ts
+@@ -0,0 +1,89 @@
++import { describe, it, expect } from 'vitest';
++import {
++  calculateCheckoutTotals,
++  getOrderDisplayTotals,
++  CHECKOUT_TAX_RATE,
++  CHECKOUT_STANDARD_SHIPPING_CENTS,
++} from '@/features/billing/checkout-totals';
++
++describe('Checkout Totals (Billing)', () => {
++  describe('calculateCheckoutTotals()', () => {
++    it('calculates totals correctly below the free shipping threshold', () => {
++      // $20.00 subtotal (below $50.00 threshold)
++      const subtotalCents = 2000;
++      const result = calculateCheckoutTotals(subtotalCents);
++
++      expect(result.subtotalAmount).toBe(2000);
++      expect(result.taxAmount).toBe(Math.round(2000 * CHECKOUT_TAX_RATE)); // 2000 * 0.08 = 160
++      expect(result.shippingAmount).toBe(CHECKOUT_STANDARD_SHIPPING_CENTS); // 500
++      expect(result.grandTotal).toBe(2000 + 160 + 500); // 2660
++    });
++
++    it('calculates totals correctly above the free shipping threshold', () => {
++      // $60.00 subtotal (above $50.00 threshold)
++      const subtotalCents = 6000;
++      const result = calculateCheckoutTotals(subtotalCents);
++
++      expect(result.subtotalAmount).toBe(6000);
++      expect(result.taxAmount).toBe(Math.round(6000 * CHECKOUT_TAX_RATE)); // 6000 * 0.08 = 480
++      expect(result.shippingAmount).toBe(0);
++      expect(result.grandTotal).toBe(6000 + 480 + 0); // 6480
++    });
++
++    it('forces zero shipping if zeroShipping flag is true', () => {
++      // $20.00 subtotal (would normally have shipping)
++      const subtotalCents = 2000;
++      const result = calculateCheckoutTotals(subtotalCents, true);
++
++      expect(result.subtotalAmount).toBe(2000);
++      expect(result.shippingAmount).toBe(0);
++      expect(result.grandTotal).toBe(2000 + 160); // 2160
++    });
++
++    it('handles zero subtotal correctly', () => {
++      const result = calculateCheckoutTotals(0);
++      expect(result.subtotalAmount).toBe(0);
++      expect(result.taxAmount).toBe(0);
++      expect(result.shippingAmount).toBe(CHECKOUT_STANDARD_SHIPPING_CENTS);
++      expect(result.grandTotal).toBe(500);
++    });
++
++    it('handles negative subtotal by clamping to zero', () => {
++      const result = calculateCheckoutTotals(-500);
++      expect(result.subtotalAmount).toBe(0);
++      expect(result.taxAmount).toBe(0);
++      expect(result.shippingAmount).toBe(CHECKOUT_STANDARD_SHIPPING_CENTS);
++      expect(result.grandTotal).toBe(500);
++    });
++  });
++
++  describe('getOrderDisplayTotals()', () => {
++    it('returns exact breakdown when full breakdown is provided', () => {
++      const order = {
++        totalAmount: 3000,
++        subtotalAmount: 2000,
++        taxAmount: 200,
++        shippingAmount: 800,
++      };
++
++      const result = getOrderDisplayTotals(order);
++      expect(result.subtotalAmount).toBe(2000);
++      expect(result.taxAmount).toBe(200);
++      expect(result.shippingAmount).toBe(800);
++      expect(result.grandTotal).toBe(3000);
++    });
++
++    it('infers tax and zero shipping for legacy orders missing breakdown', () => {
++      // Only totalAmount provided
++      const order = {
++        totalAmount: 1000,
++      };
++
++      const result = getOrderDisplayTotals(order);
++      expect(result.subtotalAmount).toBe(1000);
++      expect(result.taxAmount).toBe(Math.round(1000 * CHECKOUT_TAX_RATE)); // 80
++      expect(result.shippingAmount).toBe(0);
++      expect(result.grandTotal).toBe(1000 + 80);
++    });
++  });
++});
+diff --git a/tests/unit/features/inventory/reservation.test.ts b/tests/unit/features/inventory/reservation.test.ts
+new file mode 100644
+index 0000000..21adc1f
+--- /dev/null
++++ b/tests/unit/features/inventory/reservation.test.ts
+@@ -0,0 +1,111 @@
++import { describe, it, expect, vi, beforeEach } from 'vitest';
++import { reserveProductStock, applyStockReservation } from '@/features/inventory/reservation';
++
++describe('Inventory Reservation', () => {
++  let mockTx: any;
++
++  beforeEach(() => {
++    vi.clearAllMocks();
++
++    const mockLimit = vi.fn().mockResolvedValue([]);
++    const mockFor = vi.fn().mockReturnValue({ limit: mockLimit });
++    const mockWhere = vi.fn().mockReturnValue({ for: mockFor });
++    const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
++    const mockSelect = vi.fn().mockReturnValue({ from: mockFrom });
++
++    const mockReturning = vi.fn().mockResolvedValue([]);
++    const mockUpdateWhere = vi.fn().mockReturnValue({ returning: mockReturning });
++    const mockSet = vi.fn().mockReturnValue({ where: mockUpdateWhere });
++    const mockUpdate = vi.fn().mockReturnValue({ set: mockSet });
++    
++    const mockInsert = vi.fn().mockReturnValue({ values: vi.fn().mockResolvedValue({}) });
++
++    mockTx = {
++      select: mockSelect,
++      update: mockUpdate,
++      insert: mockInsert,
++    };
++  });
++
++  describe('reserveProductStock()', () => {
++    it('returns error if central inventory record does not exist', async () => {
++      // Setup mock to return empty array (no inventory)
++      mockTx.select().from().where().for().limit = vi.fn().mockResolvedValue([]);
++
++      const result = await reserveProductStock(mockTx, 'prod-1', 5);
++      
++      expect(result.ok).toBe(false);
++      if (!result.ok) {
++        expect(result.error).toMatch(/Product has no inventory record/);
++      }
++    });
++
++    it('returns error if central inventory quantity is insufficient', async () => {
++      // Setup mock to return central inventory with only 2 units
++      mockTx.select().from().where().for().limit = vi.fn().mockResolvedValue([
++        { id: 'inv-1', quantity: 2 }
++      ]);
++
++      const result = await reserveProductStock(mockTx, 'prod-1', 5);
++      
++      expect(result.ok).toBe(false);
++      if (!result.ok) {
++        expect(result.error).toMatch(/only has 2 units in stock/);
++      }
++    });
++
++    it('returns success reservation if central inventory is sufficient', async () => {
++      // Setup mock to return central inventory with 10 units
++      mockTx.select().from().where().for().limit = vi.fn().mockResolvedValue([
++        { id: 'inv-1', quantity: 10 }
++      ]);
++
++      const result = await reserveProductStock(mockTx, 'prod-1', 5);
++      
++      expect(result.ok).toBe(true);
++      if (result.ok) {
++        expect(result.reservation.centralInventoryId).toBe('inv-1');
++        expect(result.reservation.branchInventoryId).toBeUndefined();
++      }
++    });
++  });
++
++  describe('applyStockReservation()', () => {
++    it('throws error if central stock update fails', async () => {
++      // Simulate zero rows returned from the returning() clause (meaning where condition failed)
++      mockTx.update().set().where().returning = vi.fn().mockResolvedValue([]);
++
++      await expect(
++        applyStockReservation(mockTx, 5, { centralInventoryId: 'inv-1' }, { userId: 'u1', reason: 'sale' })
++      ).rejects.toThrow('Insufficient central stock during checkout.');
++    });
++
++    it('successfully updates central stock and inserts movement log', async () => {
++      // Simulate successful update returning the new quantity
++      mockTx.update().set().where().returning = vi.fn().mockResolvedValue([
++        { quantity: 5 } // started with 10, depleted 5, new qty is 5
++      ]);
++
++      await applyStockReservation(
++        mockTx, 
++        5, 
++        { centralInventoryId: 'inv-1' }, 
++        { userId: 'u1', reason: 'sale' }
++      );
++
++      // Verify movement was inserted
++      expect(mockTx.insert).toHaveBeenCalledTimes(1);
++      
++      const insertValuesArg = mockTx.insert().values.mock.calls[0][0];
++      expect(insertValuesArg).toEqual({
++        inventoryId: 'inv-1',
++        type: 'sale_depletion',
++        quantityChanged: -5,
++        previousQuantity: 10, // 5 + 5
++        newQuantity: 5,
++        reason: 'sale',
++        userId: 'u1'
++      });
++    });
++  });
++});
+diff --git a/tests/unit/features/orders/transitions.test.ts b/tests/unit/features/orders/transitions.test.ts
+new file mode 100644
+index 0000000..5e533e8
+--- /dev/null
++++ b/tests/unit/features/orders/transitions.test.ts
+@@ -0,0 +1,160 @@
++import { describe, it, expect, vi, beforeEach } from 'vitest';
++import { applySimulatedOrderStatusChange } from '@/features/orders/transitions';
++import * as stockModule from '@/features/orders/stock';
++
++// Mock the stock depletion/restoration functions so we don't need a real DB for them either
++vi.mock('@/features/orders/stock', () => ({
++  depleteOnlineOrderItemStock: vi.fn(),
++  restoreOnlineOrderItemStock: vi.fn(),
++}));
++
++describe('Order Transitions', () => {
++  let mockTx: any;
++  let mockSelect: any;
++  let mockUpdate: any;
++
++  beforeEach(() => {
++    vi.clearAllMocks();
++
++    // Mocking the Drizzle chain: tx.select().from().innerJoin().where()
++    mockSelect = vi.fn().mockReturnThis();
++    const mockFrom = vi.fn().mockReturnThis();
++    const mockInnerJoin = vi.fn().mockReturnThis();
++    const mockWhere = vi.fn().mockResolvedValue([]);
++
++    // Mocking tx.update().set().where()
++    mockUpdate = vi.fn().mockReturnThis();
++    const mockSet = vi.fn().mockReturnThis();
++    const mockUpdateWhere = vi.fn().mockResolvedValue([{ id: 'order-123' }]);
++
++    mockTx = {
++      select: mockSelect,
++      from: mockFrom,
++      innerJoin: mockInnerJoin,
++      where: mockWhere,
++      update: mockUpdate,
++      set: mockSet,
++    };
++
++    // Fix the chain structure so returning 'this' works smoothly
++    mockTx.select.mockReturnValue({
++      from: vi.fn().mockReturnValue({
++        innerJoin: vi.fn().mockReturnValue({
++          where: mockWhere,
++        }),
++      }),
++    });
++
++    mockTx.update.mockReturnValue({
++      set: vi.fn().mockReturnValue({
++        where: mockUpdateWhere,
++      }),
++    });
++  });
++
++  describe('applySimulatedOrderStatusChange()', () => {
++    it('depletes stock when transitioning from pending_payment to fulfilled', async () => {
++      // Setup mock order items to be returned by the DB
++      const mockOrderItems = [
++        {
++          productId: 'prod-1',
++          productName: 'Test Product 1',
++          vendorOrgId: 'vendor-1',
++          quantity: 2,
++          productType: 'product',
++        },
++      ];
++      // Override the where() resolution for this specific test
++      mockTx.select().from().innerJoin().where = vi.fn().mockResolvedValue(mockOrderItems);
++
++      const order: any = {
++        id: 'order-123',
++        status: 'pending_payment',
++        stockDepleted: false,
++        pickupBranchId: 'branch-1',
++      };
++
++      const result = await applySimulatedOrderStatusChange(mockTx, {
++        order,
++        newStatus: 'fulfilled',
++        userId: 'user-1',
++      });
++
++      expect(result.stockDepleted).toBe(true);
++      expect(stockModule.depleteOnlineOrderItemStock).toHaveBeenCalledTimes(1);
++      expect(stockModule.depleteOnlineOrderItemStock).toHaveBeenCalledWith(
++        mockTx,
++        expect.objectContaining({
++          productId: 'prod-1',
++          quantity: 2,
++          orderId: 'order-123',
++        })
++      );
++      
++      // Verify payment verification fields were added to the update payload
++      const setCallArgs = mockTx.update().set.mock.calls[0][0];
++      expect(setCallArgs.status).toBe('fulfilled');
++      expect(setCallArgs.stockDepleted).toBe(true);
++      expect(setCallArgs.paymentVerifiedAt).toBeInstanceOf(Date);
++      expect(setCallArgs.paymentVerifiedBy).toBe('user-1');
++    });
++
++    it('restores stock when transitioning from fulfilled to cancelled', async () => {
++      const mockOrderItems = [
++        {
++          productId: 'prod-2',
++          quantity: 1,
++          vendorOrgId: 'vendor-1',
++          productType: 'product',
++        },
++      ];
++      mockTx.select().from().innerJoin().where = vi.fn().mockResolvedValue(mockOrderItems);
++
++      const order: any = {
++        id: 'order-456',
++        status: 'fulfilled',
++        stockDepleted: true, // currently depleted
++        pickupBranchId: 'branch-1',
++      };
++
++      const result = await applySimulatedOrderStatusChange(mockTx, {
++        order,
++        newStatus: 'cancelled',
++        userId: 'user-1',
++      });
++
++      expect(result.stockDepleted).toBe(false);
++      expect(stockModule.restoreOnlineOrderItemStock).toHaveBeenCalledTimes(1);
++      
++      const setCallArgs = mockTx.update().set.mock.calls[0][0];
++      expect(setCallArgs.status).toBe('cancelled');
++      expect(setCallArgs.stockDepleted).toBe(false);
++      expect(setCallArgs.paymentSlipUrl).toBe(null);
++    });
++
++    it('does not deplete stock if items are not of type product', async () => {
++      const mockOrderItems = [
++        {
++          productId: 'service-1',
++          quantity: 1,
++          productType: 'service', // Should be ignored
++        },
++      ];
++      mockTx.select().from().innerJoin().where = vi.fn().mockResolvedValue(mockOrderItems);
++
++      const order: any = {
++        id: 'order-789',
++        status: 'pending_payment',
++        stockDepleted: false,
++      };
++
++      await applySimulatedOrderStatusChange(mockTx, {
++        order,
++        newStatus: 'fulfilled',
++        userId: 'user-1',
++      });
++
++      expect(stockModule.depleteOnlineOrderItemStock).not.toHaveBeenCalled();
++    });
++  });
++});
+
+commit 82523af454f4ff0bb02825f24056a33e18d9a826
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 09:46:32 2026 +0530
+
+    refactor(redis): update Redis mock implementation for consistency
+
+diff --git a/tests/unit/app/api/webhooks/clerk/route.test.ts b/tests/unit/app/api/webhooks/clerk/route.test.ts
+index 5a46e33..5849fd9 100644
+--- a/tests/unit/app/api/webhooks/clerk/route.test.ts
++++ b/tests/unit/app/api/webhooks/clerk/route.test.ts
+@@ -17,11 +17,13 @@ vi.mock('@/shared/auth/clerk-cache', () => ({
+   invalidateClerkOrgCache: vi.fn(),
+ }));
+ 
+-vi.mock('@upstash/redis', () => ({
+-  Redis: vi.fn().mockImplementation(() => ({
+-    set: vi.fn().mockResolvedValue('OK'),
+-  })),
+-}));
++vi.mock('@upstash/redis', () => {
++  return {
++    Redis: class {
++      set = vi.fn().mockResolvedValue('OK');
++    },
++  };
++});
+ 
+ const mockHeaders = vi.fn();
+ vi.mock('next/headers', () => ({
+
+commit b280d5b28cc26fa59762b9b5b3a7736af093d246
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 09:37:53 2026 +0530
+
+    test(webhooks): add environment variable stubs for webhook tests
+
+diff --git a/tests/unit/app/api/webhooks/clerk/route.test.ts b/tests/unit/app/api/webhooks/clerk/route.test.ts
+index 8c84ea6..5a46e33 100644
+--- a/tests/unit/app/api/webhooks/clerk/route.test.ts
++++ b/tests/unit/app/api/webhooks/clerk/route.test.ts
+@@ -35,6 +35,8 @@ describe('POST /api/webhooks/clerk', () => {
+   beforeEach(() => {
+     vi.clearAllMocks();
+     vi.stubEnv('CLERK_WEBHOOK_SECRET', webhookSecret);
++    vi.stubEnv('VERCEL_ENV', 'test');
++    vi.stubEnv('PREVIEW_CLERK_WEBHOOK_SECRET', '');
+   });
+ 
+   afterEach(() => {
+
+commit 8f3d6ed69b26ee3ef10ea63625ba5238b04c4dd6
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 09:34:15 2026 +0530
+
+    test(redis): mock Redis implementation for unit tests
+
+diff --git a/tests/unit/app/api/webhooks/clerk/route.test.ts b/tests/unit/app/api/webhooks/clerk/route.test.ts
+index e36e8c4..8c84ea6 100644
+--- a/tests/unit/app/api/webhooks/clerk/route.test.ts
++++ b/tests/unit/app/api/webhooks/clerk/route.test.ts
+@@ -17,6 +17,12 @@ vi.mock('@/shared/auth/clerk-cache', () => ({
+   invalidateClerkOrgCache: vi.fn(),
+ }));
+ 
++vi.mock('@upstash/redis', () => ({
++  Redis: vi.fn().mockImplementation(() => ({
++    set: vi.fn().mockResolvedValue('OK'),
++  })),
++}));
++
+ const mockHeaders = vi.fn();
+ vi.mock('next/headers', () => ({
+   headers: () => Promise.resolve(mockHeaders()),
+
+commit e6744f34eac760ebbe3fcadbb08bf73edd214fb1
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 09:31:34 2026 +0530
+
+    refactor(auth): simplify toggleUserRoleAction function and enhance production checks
+
+diff --git a/tests/unit/shared/security/async-context.test.ts b/tests/unit/shared/security/async-context.test.ts
+index 953ca0a..a164aa2 100644
+--- a/tests/unit/shared/security/async-context.test.ts
++++ b/tests/unit/shared/security/async-context.test.ts
+@@ -61,23 +61,30 @@ describe('asyncContext Utility & Correlation ID Logging', () => {
+   });
+ 
+   it('logger should output request ID in development output format', async () => {
+-    const customId = 'dev-logger-test-id';
+-    vi.mocked(headers).mockResolvedValue({
+-      get: (name: string) => (name === 'x-request-id' ? customId : null),
+-    } as unknown as Awaited<ReturnType<typeof headers>>);
++    const originalEnv = process.env.NODE_ENV;
++    process.env.NODE_ENV = 'development';
+ 
+-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
++    try {
++      const customId = 'dev-logger-test-id';
++      vi.mocked(headers).mockResolvedValue({
++        get: (name: string) => (name === 'x-request-id' ? customId : null),
++      } as unknown as Awaited<ReturnType<typeof headers>>);
+ 
+-    await runWithCorrelationId(async () => {
+-      logger.info('Test log message');
+-      expect(logSpy).toHaveBeenCalledWith(
+-        '%s %s %s',
+-        `[INFO] [${customId}]`,
+-        'Test log message',
+-        ''
+-      );
+-    });
++      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
++
++      await runWithCorrelationId(async () => {
++        logger.info('Test log message');
++        expect(logSpy).toHaveBeenCalledWith(
++          '%s %s %s',
++          `[INFO] [${customId}]`,
++          'Test log message',
++          ''
++        );
++      });
+ 
+-    logSpy.mockRestore();
++      logSpy.mockRestore();
++    } finally {
++      process.env.NODE_ENV = originalEnv;
++    }
+   });
+ });
+
+commit 8a7acb73face607ba0374ba0cf04facaa4603325
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 09:26:12 2026 +0530
+
+    feat(refund): add Refund & Return Policy page with detailed guidelines
+    fix(privacy): update privacy policy text for clarity and completeness
+    fix(terms): revise terms of service for accuracy and add governing law section
+    fix(cookieConsent): update privacy policy link to direct to cookies section
+    fix(package): modify build script to use webpack for better performance
+    test(env): include QSTASH_TOKEN in server environment validation tests
+
+diff --git a/tests/unit/shared/env/server.test.ts b/tests/unit/shared/env/server.test.ts
+index 137370d..39e1097 100644
+--- a/tests/unit/shared/env/server.test.ts
++++ b/tests/unit/shared/env/server.test.ts
+@@ -61,6 +61,7 @@ describe('validateServerEnv', () => {
+       NEXT_PUBLIC_TURNSTILE_SITE_KEY: 'sitekey',
+       TURNSTILE_SECRET_KEY: 'secret',
+       SENTRY_DSN: 'https://public@sentry.example.com/1',
++      QSTASH_TOKEN: 'token',
+     };
+ 
+     // Valid cases
+@@ -109,6 +110,7 @@ describe('validateServerEnv', () => {
+       NEXT_PUBLIC_TURNSTILE_SITE_KEY: 'sitekey',
+       TURNSTILE_SECRET_KEY: 'secret',
+       SENTRY_DSN: 'https://public@sentry.example.com/1',
++      QSTASH_TOKEN: 'token',
+     };
+ 
+     // Valid cases
