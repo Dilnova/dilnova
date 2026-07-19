@@ -46,8 +46,8 @@ jobs:
           
           # Optional: Parse JSON to check internal detailed status if authorized
           if echo "$HTTP_BODY" | grep -q '"status":"degraded"'; then
-            echo "::warning title=System Degraded::The health check returned 200 but system is in a degraded state (e.g. Upstash rate limiting failed)."
-            # We don't exit 1 here unless we want degraded states to wake people up
+            echo "::error title=System Degraded::The health check returned 200 but system is in a degraded state (e.g. Upstash rate limiting failed)."
+            exit 1
           fi
 
       - name: Notify on Failure
@@ -64,4 +64,3 @@ jobs:
             View the workflow run here: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
           to: alerts@dilnova.com
           from: GitHub Actions
-        continue-on-error: true # Don't fail the workflow if email fails, the GitHub Action failure notification will still trigger.
