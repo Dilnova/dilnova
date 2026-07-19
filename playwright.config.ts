@@ -35,6 +35,7 @@ const webServerEnv: Record<string, string> = {
   CLERK_WEBHOOK_SECRET: process.env.CLERK_WEBHOOK_SECRET ?? 'whsec_placeholder',
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '1x00000000000000000000AA',
   TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY ?? '1x00000000000000000000AA',
+  QSTASH_TOKEN: process.env.QSTASH_TOKEN ?? 'dummy_qstash_token',
 };
 
 export default defineConfig({
