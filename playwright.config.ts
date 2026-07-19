@@ -174,8 +174,8 @@ export default defineConfig({
   webServer: {
     // On CI we start Next.js in the workflow; reuse that server. Locally Playwright can start the server.
     command: process.env.CI
-      ? `node ./node_modules/next/dist/bin/next start --port ${PORT}`
-      : `sh -c 'pnpm exec next build --webpack && exec node ./node_modules/next/dist/bin/next start --port ${PORT}'`,
+      ? `node ./node_modules/next/dist/bin/next start -H 127.0.0.1 --port ${PORT}`
+      : `sh -c 'pnpm exec next build --webpack && exec node ./node_modules/next/dist/bin/next start -H 127.0.0.1 --port ${PORT}'`,
     url: baseURL,
     reuseExistingServer: process.env.CI ? true : false,
     timeout: 600_000,
