@@ -1,4 +1,5 @@
 import { validateServerEnv } from '@/shared/env/server';
+import * as Sentry from '@sentry/nextjs';
 
 export async function register() {
   validateServerEnv();
@@ -11,3 +12,5 @@ export async function register() {
     await import('./sentry.edge.config');
   }
 }
+
+export const onRequestError = Sentry.captureRequestError;

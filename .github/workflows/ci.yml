@@ -114,6 +114,11 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup-env
 
+      - name: Run Database Migrations
+        run: pnpm run db:migrate
+        env:
+          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+
       - name: Run Production Build
         run: pnpm run build
         env:
