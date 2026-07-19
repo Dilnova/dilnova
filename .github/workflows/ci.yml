@@ -105,26 +105,6 @@ jobs:
       - name: Install Playwright Browsers
         run: pnpm run test:e2e:install
 
-      - name: Start Application Server
-        run: pnpm run start &
-        env:
-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
-          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
-          NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
-
-      - name: Wait for Server to be Ready
-        run: |
-          for i in {1..30}; do
-            if curl -f http://127.0.0.1:3000 > /dev/null 2>&1; then
-              echo "Server is ready"
-              exit 0
-            fi
-            echo "Waiting for server... ($i/30)"
-            sleep 2
-          done
-          echo "Server failed to start"
-          exit 1
 
       - name: Run E2E Tests
         run: pnpm run test:e2e
