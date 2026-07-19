@@ -7,13 +7,44 @@ on:
     branches: [ main ]
 
 jobs:
-  validate:
+  audit:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-      attestations: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
 
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+
+      - name: Audit Dependencies
+        run: pnpm audit --audit-level=moderate
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+
+      - name: Check Linting
+        run: pnpm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+
+      - name: Validate TypeScript
+        run: pnpm exec tsc --noEmit
+
+  db-verify:
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:16-alpine
@@ -28,33 +59,12 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6.0.9
-        with:
-          version: "11.5.2"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6.4.0
-        with:
-          node-version: 26
-          cache: 'pnpm'
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Audit Dependencies
-        run: pnpm audit --audit-level=moderate
-
-      - name: Check Linting
-        run: pnpm run lint
-
-      - name: Validate TypeScript
-        run: pnpm exec tsc --noEmit
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
 
       - name: Verify Database Migrations
         run: pnpm run db:verify
@@ -65,8 +75,30 @@ jobs:
           MIGRATION_DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
           DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
 
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+
       - name: Run Unit Tests
         run: pnpm run test
+
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
 
       - name: Run Production Build
         run: pnpm run build
@@ -102,9 +134,32 @@ jobs:
         with:
           subject-path: 'next.config.ts'
 
+  test-e2e:
+    needs: [build]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+
       - name: Install Playwright Browsers
         run: pnpm run test:e2e:install
-
 
       - name: Run E2E Tests
         run: pnpm run test:e2e
@@ -113,7 +168,6 @@ jobs:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
-
 
   secrets-scan:
     name: Secrets Scan
@@ -126,5 +180,3 @@ jobs:
 
       - name: Gitleaks Secrets Scan
         run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb detect --source /src -v
-
-
