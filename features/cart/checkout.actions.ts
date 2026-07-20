@@ -192,7 +192,6 @@ export async function simulatedCheckoutAction(
     }
 
     let name = parsed.data.customerName.trim();
-    let email: string; // Will be overridden by session email if available
     const aggregatedItems = aggregateCheckoutItems(parsed.data.items);
     const {
       totalAmount: clientGrandTotal,
@@ -227,7 +226,7 @@ export async function simulatedCheckoutAction(
         error: 'Your account does not have an email address. Please update your profile before checkout.',
       };
     }
-    email = sessionEmail;
+    const email = sessionEmail;
     name = user.fullName || user.firstName || name;
 
     await rateLimit(5, 60 * 1000);
