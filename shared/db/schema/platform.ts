@@ -52,3 +52,11 @@ export const contactSubmissions = pgTable('contact_submissions', {
   index('idx_contact_submissions_status').on(t.status),
   index('idx_contact_submissions_email_hash').on(t.emailHash),
 ]);
+
+export const processedWebhooks = pgTable('processed_webhooks', {
+  id: text('id').primaryKey(),
+  source: text('source').default('clerk').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [
+  index('idx_processed_webhooks_created_at').on(t.createdAt),
+]);

@@ -5,8 +5,9 @@ import { logger } from '@/shared/logging/logger';
 import { invalidateClerkUserCache, invalidateClerkOrgCache } from '@/shared/auth/clerk-cache';
 import { Redis } from '@upstash/redis';
 import { readUpstashEnv } from '@/shared/security/upstash-health';
-
-const processedWebhooks = new Set<string>();
+import { db } from '@/shared/db/client';
+import { processedWebhooks } from '@/shared/db/schema';
+const processedWebhooksMemory = new Set<string>();
 
 function verifyClerkWebhookSignature(
   rawBody: string,
@@ -119,6 +120,28 @@ export async function POST(req: NextRequest) {
 
   // Idempotency check
   const { url, token } = readUpstashEnv();
+  
+  // Helper for DB fallback
+  const fallbackToDbIdempotency = async () => {
+    try {
+      logger.info('Falling back to database for webhook idempotency check', { svixId });
+      const result = await db
+        .insert(processedWebhooks)
+        .values({ id: svixId, source: 'clerk' })
+        .onConflictDoNothing({ target: processedWebhooks.id })
+        .returning({ id: processedWebhooks.id });
+      
+      if (result.length === 0) {
+        logger.warn('Clerk webhook duplicate detected via DB fallback, ignoring replay', { svixId });
+        return true; // Is duplicate
+      }
+      return false; // Not duplicate
+    } catch (dbError) {
+      logger.error('Database fallback for webhook idempotency failed', dbError, { tags: { alert: 'webhook_failure', source: 'clerk' } });
+      throw dbError; // Fail closed if even DB fails
+    }
+  };
+
   if (url && token) {
     try {
       const redis = new Redis({ url, token });
@@ -129,23 +152,38 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, message: 'Already processed' });
       }
     } catch (e) {
-      if (process.env.NODE_ENV === 'production') {
-        logger.error('Redis idempotency check failed, failing closed in production', e, { tags: { alert: 'webhook_failure', source: 'clerk' } });
-        return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+      logger.error('Redis idempotency check failed, attempting database fallback', e, { tags: { source: 'clerk' } });
+      try {
+        const isDuplicate = await fallbackToDbIdempotency();
+        if (isDuplicate) {
+          return NextResponse.json({ success: true, message: 'Already processed' });
+        }
+      } catch (dbError) {
+        if (process.env.NODE_ENV === 'production') {
+          return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+        }
       }
-      logger.error('Redis idempotency check failed, proceeding anyway', e, { tags: { alert: 'webhook_failure', source: 'clerk' } });
     }
   } else {
-    if (process.env.NODE_ENV === 'production') {
-      logger.error('Redis required for webhook idempotency in production', undefined, { tags: { alert: 'webhook_failure', source: 'clerk' } });
-      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+    try {
+      const isDuplicate = await fallbackToDbIdempotency();
+      if (isDuplicate) {
+        return NextResponse.json({ success: true, message: 'Already processed' });
+      }
+    } catch (e) {
+      if (process.env.NODE_ENV === 'production') {
+        logger.error('Redis and DB idempotency check both failed in production', undefined, { tags: { alert: 'webhook_failure', source: 'clerk' } });
+        return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+      }
+      
+      // Memory fallback for local dev if DB also fails
+      if (processedWebhooksMemory.has(svixId)) {
+        logger.warn('Clerk webhook duplicate detected via memory, ignoring replay', { svixId });
+        return NextResponse.json({ success: true, message: 'Already processed' });
+      }
+      processedWebhooksMemory.add(svixId);
+      setTimeout(() => processedWebhooksMemory.delete(svixId), 10 * 60 * 1000);
     }
-    if (processedWebhooks.has(svixId)) {
-      logger.warn('Clerk webhook duplicate detected via memory, ignoring replay', { svixId });
-      return NextResponse.json({ success: true, message: 'Already processed' });
-    }
-    processedWebhooks.add(svixId);
-    setTimeout(() => processedWebhooks.delete(svixId), 10 * 60 * 1000);
   }
 
   try {
