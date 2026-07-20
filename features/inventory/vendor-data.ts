@@ -43,6 +43,8 @@ export type GetVendorInventoryDataOptions = {
   movementsLimit?: number;
   ordersLimit?: number;
   ordersOffset?: number;
+  suppliersLimit?: number;
+  branchesLimit?: number;
 };
 
 // ── GET VENDOR IMS DATA ──────────────────────────────────────
@@ -147,10 +149,12 @@ export async function loadVendorInventoryData(
     // 3. Fetch Suppliers (full IMS workspace only)
     let suppliers: (typeof schema.suppliers.$inferSelect)[] = [];
     if (scope === 'full') {
+      const suppliersLimit = options?.suppliersLimit ?? 100;
       suppliers = await db
         .select()
         .from(schema.suppliers)
-        .where(eq(schema.suppliers.orgId, orgId));
+        .where(eq(schema.suppliers.orgId, orgId))
+        .limit(suppliersLimit);
     }
 
     // 4. Fetch Inventory Movements (full IMS workspace only)
@@ -207,7 +211,8 @@ export async function loadVendorInventoryData(
           (await db
             .select({ id: schema.branches.id, name: schema.branches.name })
             .from(schema.branches)
-            .where(eq(schema.branches.orgId, orgId)))
+            .where(eq(schema.branches.orgId, orgId))
+            .limit(100))
             .map((branch) => [branch.id, branch.name])
         );
 
@@ -226,11 +231,13 @@ export async function loadVendorInventoryData(
     let branchInventoryList: any[] = [];
     let branchMembersList: any[] = [];
     if (premiumStatus.multiBranchActive || premiumStatus.billingActive) {
+      const branchesLimit = options?.branchesLimit ?? 100;
       let allBranches = await db
         .select()
         .from(schema.branches)
         .where(eq(schema.branches.orgId, orgId))
-        .orderBy(schema.branches.name);
+        .orderBy(schema.branches.name)
+        .limit(branchesLimit);
 
       // Idempotent default branch initialization — atomic upsert prevents race condition duplicates.
       // The partial unique index `unique_org_default_branch` on (org_id) WHERE is_default = true

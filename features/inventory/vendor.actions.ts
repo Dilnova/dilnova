@@ -46,7 +46,10 @@ import type { VendorInventoryFullData } from '@/features/inventory/types';
 export async function getVendorInventoryData(
   options?: GetVendorInventoryDataOptions
 ): Promise<VendorInventoryFullData> {
-  return loadVendorInventoryData('full', options) as Promise<VendorInventoryFullData>;
+  return runWithCorrelationId(async () => {
+    await rateLimit(30, 60 * 1000);
+    return loadVendorInventoryData('full', options) as Promise<VendorInventoryFullData>;
+  });
 }
 
 

@@ -252,8 +252,9 @@ export async function cancelVendorOrderAction(orderId: string) {
   });
 }
 
-export async function getVendorPendingPaymentOrderIds(orgId: string): Promise<string[]> {
+export async function getVendorPendingPaymentOrderIds(orgId: string, limit = 100, offset = 0): Promise<string[]> {
   return runWithCorrelationId(async () => {
+    await rateLimit(30, 60 * 1000);
     const { userId, orgId: sessionOrgId, orgRole } = await auth();
 
     if (!userId || !sessionOrgId || orgRole !== 'org:admin' || sessionOrgId !== orgId) {
@@ -264,7 +265,9 @@ export async function getVendorPendingPaymentOrderIds(orgId: string): Promise<st
     const rows = await db
       .select({ orderId: schema.simulatedOrderItems.orderId })
       .from(schema.simulatedOrderItems)
-      .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId));
+      .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId))
+      .limit(limit)
+      .offset(offset);
 
     const orderIds = [...new Set(rows.map((row) => row.orderId))];
     if (orderIds.length === 0) return [];

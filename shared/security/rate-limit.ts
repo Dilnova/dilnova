@@ -62,14 +62,15 @@ function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
 }
 
 /**
- * Checks if the calling client IP exceeds the configured rate limit.
+ * Checks if the calling client exceeds the configured rate limit.
  * Uses Upstash Redis when configured, and falls back to an in-memory sliding window.
  * 
  * @param limit Max number of allowed requests in the window.
  * @param windowMs Time window in milliseconds.
+ * @param identifier Optional identifier to limit by (e.g., userId, orgId). Defaults to client IP.
  * @throws Error if the rate limit is exceeded.
  */
-export async function rateLimit(limit: number, windowMs: number): Promise<void> {
+export async function rateLimit(limit: number, windowMs: number, identifier?: string): Promise<void> {
   const reqHeaders = await headers();
   // Get IP address prioritizing x-real-ip (injected securely by Vercel/Cloudflare at edge)
   // to prevent client header spoofing via custom X-Forwarded-For inputs.
@@ -78,11 +79,13 @@ export async function rateLimit(limit: number, windowMs: number): Promise<void> 
     reqHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     '127.0.0.1';
 
+  const limitKey = identifier || ip;
+
   const client = getRatelimitClient(limit, windowMs);
 
   if (client) {
     try {
-      const { success, reset } = await client.limit(ip);
+      const { success, reset } = await client.limit(limitKey);
       if (!success) {
         const waitSeconds = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
         throw new Error(`Rate limit exceeded. Please try again in ${waitSeconds} seconds.`);
@@ -106,10 +109,10 @@ export async function rateLimit(limit: number, windowMs: number): Promise<void> 
   }
 
   // Development/test fallback to in-memory sliding window rate limiting
-  runInMemoryRateLimit(ip, limit, windowMs);
+  runInMemoryRateLimit(limitKey, limit, windowMs);
 }
 
-function runInMemoryRateLimit(ip: string, limit: number, windowMs: number): void {
+function runInMemoryRateLimit(key: string, limit: number, windowMs: number): void {
   const now = Date.now();
 
   // Periodically cleanup expired entries to prevent memory bloat
@@ -133,7 +136,7 @@ function runInMemoryRateLimit(ip: string, limit: number, windowMs: number): void
     }
   }
 
-  const timestamps = memoryTracker.get(ip) || [];
+  const timestamps = memoryTracker.get(key) || [];
 
   // Filter out timestamps outside the sliding window
   const activeTimestamps = timestamps.filter((t) => now - t < windowMs);
@@ -146,7 +149,7 @@ function runInMemoryRateLimit(ip: string, limit: number, windowMs: number): void
 
   // Record this hit
   activeTimestamps.push(now);
-  memoryTracker.set(ip, activeTimestamps);
+  memoryTracker.set(key, activeTimestamps);
 }
 
 function cleanupOldKeys(now: number, windowMs: number) {

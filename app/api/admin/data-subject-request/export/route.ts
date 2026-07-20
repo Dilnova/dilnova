@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
+import { rateLimit } from '@/shared/security/rate-limit';
 import { logAuditAction } from '@/shared/audit/logger';
 import { clerkClient } from '@clerk/nextjs/server';
 import { logger } from '@/shared/logging/logger';
@@ -12,6 +13,7 @@ const qstash = new Client({
 export async function GET(req: NextRequest) {
   try {
     const adminUser = await checkSuperAdmin();
+    await rateLimit(5, 60 * 1000, adminUser.id);
     const targetUserId = req.nextUrl.searchParams.get('userId');
 
     if (!targetUserId) {
