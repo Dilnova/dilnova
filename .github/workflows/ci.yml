@@ -124,7 +124,6 @@ jobs:
         env:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
-          NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
           DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
           NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
@@ -207,7 +206,6 @@ jobs:
           DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
-          NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4

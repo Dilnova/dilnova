@@ -26,7 +26,7 @@ function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
   if (!url || !token) {
     if (process.env.NODE_ENV === 'production' && !hasLoggedUpstashWarning) {
       hasLoggedUpstashWarning = true;
-      logger.error('Upstash Redis credentials are not configured in production. Rate limiting will reject requests.', {
+      logger.error('Upstash Redis credentials are not configured in production. Rate limiting will be bypassed (fail-open).', {
         urlPresent: Boolean(url),
         tokenPresent: Boolean(token),
       });
@@ -93,15 +93,16 @@ export async function rateLimit(limit: number, windowMs: number): Promise<void> 
       if (error instanceof Error && error.message.includes('Rate limit exceeded')) {
         throw error;
       }
-      logger.error('Upstash rate limiting failed', error, { limit, windowMs });
+      logger.error('Upstash rate limiting failed - failing open', error, { limit, windowMs });
       if (isProductionEnvironment()) {
-        throw new Error(PRODUCTION_RATE_LIMIT_UNAVAILABLE_ERROR);
+        return; // Fail-open strategy: bypass rate limit so critical paths can proceed
       }
     }
   }
 
   if (isProductionEnvironment()) {
-    throw new Error(PRODUCTION_RATE_LIMIT_UNAVAILABLE_ERROR);
+    logger.warn('Rate limiter client unavailable in production - failing open');
+    return; // Fail-open strategy: bypass rate limit so critical paths can proceed
   }
 
   // Development/test fallback to in-memory sliding window rate limiting
