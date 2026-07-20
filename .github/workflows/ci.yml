@@ -119,14 +119,6 @@ jobs:
         env:
           DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
 
-      - name: Run Clerk Migrations
-        run: |
-          node scripts/migrate-bank-metadata.mjs
-          node scripts/migrate-superadmin-metadata.mjs
-        env:
-          CLERK_SECRET_KEY: ${{ github.event_name == 'pull_request' && 'sk_test_ci_dummy' || secrets.CLERK_SECRET_KEY }}
-          SUPERADMIN_USER_IDS: ${{ secrets.SUPERADMIN_USER_IDS }}
-
       - name: Run Production Build
         run: pnpm run build
         env:
@@ -233,4 +225,4 @@ jobs:
           fetch-depth: 0
 
       - name: Gitleaks Secrets Scan
-        run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb detect --source /src --redact -v
+        run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb detect --source /src --redact
