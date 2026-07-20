@@ -146,10 +146,12 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
       break;
     }
     case 'vendor-issues': {
+      const enableBulkReassignmentStr = await getSystemSetting('enable_bulk_reassignment', 'true');
       content = (
         <VendorOrgIssuesTab
           integrityReport={vendorOrgIntegrity}
           organizations={organizations}
+          enableBulkReassignment={enableBulkReassignmentStr === 'true'}
         />
       );
       break;

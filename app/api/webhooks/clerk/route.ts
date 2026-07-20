@@ -5,8 +5,6 @@ import { logger } from '@/shared/logging/logger';
 import { invalidateClerkUserCache, invalidateClerkOrgCache } from '@/shared/auth/clerk-cache';
 import { Redis } from '@upstash/redis';
 import { readUpstashEnv } from '@/shared/security/upstash-health';
-import { db } from '@/shared/db/client';
-import { processedWebhooks } from '@/shared/db/schema';
 const processedWebhooksMemory = new Set<string>();
 
 function verifyClerkWebhookSignature(
@@ -124,6 +122,9 @@ export async function POST(req: NextRequest) {
   // Helper for DB fallback
   const fallbackToDbIdempotency = async () => {
     try {
+      const { db } = await import('@/shared/db/client');
+      const { processedWebhooks } = await import('@/shared/db/schema');
+      
       logger.info('Falling back to database for webhook idempotency check', { svixId });
       const result = await db
         .insert(processedWebhooks)
