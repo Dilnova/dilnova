@@ -11,6 +11,7 @@ import { GDPR_EXPORTS_BUCKET } from '@/shared/storage/config';
 import { escapeHtml } from '@/shared/email/smtp-client';
 import { sendSystemHtmlEmail } from '@/shared/email/delivery';
 import { Client as QStashClient } from '@upstash/qstash';
+import { logAuditAction } from '@/shared/audit/logger';
 
 export const maxDuration = 300;
 
@@ -144,6 +145,16 @@ async function handler(req: NextRequest) {
     const sanitizedOrders = populatedOrders.map(({ customerEmailHash, ...rest }) => rest);
     const sanitizedSubmissions = contactSubmissions.map(({ emailHash, ...rest }) => rest);
 
+    const hasRedactionEvent = logs.some((l: any) => l.action === 'GDPR_REDACTION');
+    const sanitizedLogs = hasRedactionEvent
+      ? logs.map((l: any) => ({
+          ...l,
+          userId: 'gdpr_redacted',
+          ipAddress: null,
+          userAgent: null
+        }))
+      : logs;
+
     const exportData = {
       userId: targetUserId,
       orders: sanitizedOrders,
@@ -153,7 +164,7 @@ async function handler(req: NextRequest) {
       reviews,
       questions,
       wishlists,
-      auditLogs: logs
+      auditLogs: sanitizedLogs
     };
 
     const jsonString = JSON.stringify(exportData, null, 2);
@@ -211,6 +222,14 @@ async function handler(req: NextRequest) {
     );
 
     logger.info(`GDPR export completed successfully for ${targetUserId}`);
+
+    await logAuditAction({
+      userId: adminUserId,
+      action: 'API_GDPR_EXPORT_FULFILLED',
+      targetType: 'data_subject_request',
+      targetId: targetUserId,
+      metadata: { storagePath }
+    });
 
     // Mark as done (24h TTL) and release the processing lock
     await redis.set(`export:msg_id:${messageId}:done`, "1", { ex: 86400 });

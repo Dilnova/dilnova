@@ -3,6 +3,7 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { runWithCorrelationId } from '@/shared/security/async-context';
+import { logAuditAction } from '@/shared/audit/logger';
 
 /**
  * Toggles the user's metadata role between 'customer' and 'vendor' to simulate different user accounts.
@@ -29,6 +30,14 @@ export async function toggleUserRoleAction(currentRole: string | undefined) {
       publicMetadata: {
         role: nextRole,
       },
+    });
+
+    await logAuditAction({
+      userId,
+      action: 'TOGGLE_USER_ROLE',
+      targetType: 'membership',
+      targetId: userId,
+      metadata: { previousRole: currentRole, nextRole },
     });
 
     revalidatePath('/');

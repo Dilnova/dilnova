@@ -111,11 +111,13 @@ async function handler(req: NextRequest) {
       // Audit logs
       const userLogs = await tx.select({ id: schema.auditLogs.id }).from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId));
       if (userLogs.length > 0) {
-          await tx.update(schema.auditLogs).set({
-              userId: 'gdpr_redacted',
-              ipAddress: null,
-              userAgent: null,
-          }).where(eq(schema.auditLogs.userId, targetUserId));
+          await tx.insert(schema.auditLogs).values({
+              userId: targetUserId,
+              action: 'GDPR_REDACTION',
+              targetType: 'data_subject_request',
+              targetId: targetUserId,
+              metadata: { redactedLogsCount: userLogs.length },
+          });
           auditLogsRedacted = userLogs.length;
       }
       
