@@ -8,7 +8,7 @@ import VendorInventoryWorkspace from '@/features/inventory/components/VendorInve
 import { RestrictedAccessBlock } from '@/shared/components/RestrictedAccessBlock';
 import { getVendorInventoryData } from '@/features/inventory/vendor-data.actions';
 import { getVendorProductsForOrg } from '@/features/catalog/queries';
-import { getBranchCountForOrg, getOnlineOrderCountForVendor, getCachedOrganization } from '@/features/vendor/queries';
+import { getBranchCountForOrg, getCachedOrganization } from '@/features/vendor/queries';
 import { hasBankTransferConfiguredForOrg } from '@/features/billing/bank-transfer-metadata';
 import type { VendorInventoryFullData } from '@/features/inventory/types';
 
@@ -58,22 +58,19 @@ export default async function VendorPage({ searchParams }: PageProps) {
   let inventoryData: VendorInventoryFullData | null = null;
   let inventoryErrorMsg = '';
   let branchCount = 0;
-  let onlineOrderCount = 0;
 
   if (orgRole === 'org:admin') {
-    const [productsResult, inventoryResult, branchCountRow, onlineOrderCountRow] = await Promise.all([
+    const [productsResult, inventoryResult, branchCountRow] = await Promise.all([
       getVendorProductsForOrg(orgId),
       getVendorInventoryData().catch((err: unknown) => {
         inventoryErrorMsg = err instanceof Error ? err.message : 'Unable to load inventory data.';
         return null;
       }),
       getBranchCountForOrg(orgId),
-      getOnlineOrderCountForVendor(orgId),
     ]);
     vendorProducts = productsResult as Product[];
     inventoryData = inventoryResult;
     branchCount = branchCountRow;
-    onlineOrderCount = onlineOrderCountRow;
   }
 
   // Compute metrics summary stats for enterprise-grade KPI cards

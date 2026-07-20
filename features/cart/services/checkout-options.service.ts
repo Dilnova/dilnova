@@ -109,17 +109,12 @@ export async function getCheckoutOptionsService(
     };
   }
 
-  const linesForOptions = filterCartLinesByVendorOrg(
-    cartLines,
-    productById,
-    resolvedCheckoutVendorOrgId
-  );
   const orgIdsForOptions =
     resolvedCheckoutVendorOrgId != null
       ? [resolvedCheckoutVendorOrgId]
       : uniqueOrgIds;
 
-  const { branchRows, branchesByOrg } = await fetchBranchesForOrgs(orgIdsForOptions);
+  const { branchesByOrg } = await fetchBranchesForOrgs(orgIdsForOptions);
 
   const resolved = await resolveCheckoutOptionsForOrgs(orgIdsForOptions, branchesByOrg);
   const bankTransferEnabled = resolved.payment.some((o) => o.id === BANK_TRANSFER_PAYMENT_ID);

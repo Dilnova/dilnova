@@ -12,7 +12,8 @@ export function withErrorHandler(handler: RouteHandler): RouteHandler {
       return await handler(req, ...args);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[API Error] ${req.method} ${req.url}:`, error);
+      const safeUrl = req.url.replace(/[\r\n]/g, '');
+      console.error('[API Error]', req.method, safeUrl, error);
       return NextResponse.json(
         { error: 'Internal Server Error', message },
         { status: 500 }

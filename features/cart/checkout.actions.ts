@@ -4,7 +4,7 @@ import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { handleApiError } from '@/shared/errors/error-handler';
 import { getNormalizedClerkUserEmail } from '@/features/customer/email';
-import { resolveInitialOrderStatus, isPaymentCompatibleWithFulfillment } from '@/features/organization/checkout-options.shared';
+import { resolveInitialOrderStatus } from '@/features/organization/checkout-options.shared';
 import { resolveCheckoutOptionsForOrgs } from '@/features/organization/checkout-options';
 import { calculateCheckoutTotals } from '@/features/billing/checkout-totals';
 import { isBankTransferPayment } from '@/features/billing/bank-transfer';
@@ -192,7 +192,7 @@ export async function simulatedCheckoutAction(
     }
 
     let name = parsed.data.customerName.trim();
-    let email = customerEmail; // Will be overridden by session email if available
+    let email: string; // Will be overridden by session email if available
     const aggregatedItems = aggregateCheckoutItems(parsed.data.items);
     const {
       totalAmount: clientGrandTotal,
@@ -396,7 +396,7 @@ export async function simulatedCheckoutAction(
       fulfillment,
       name,
       email,
-      userId: userId || null,
+      userId,
     });
 
     return successResult;
