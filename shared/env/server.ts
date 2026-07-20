@@ -66,8 +66,13 @@ export function validateServerEnv(): void {
     return;
   }
 
-  // Playwright runs `next start` in CI which sets NODE_ENV=production, but we still use dummy values.
-  if (process.env.CI === 'true') {
+  // SECURITY: Require all three conditions to bypass validation for E2E tests.
+  // Prevents accidentally bypassing validation if Vercel sets CI=true.
+  if (
+    process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy' &&
+    process.env.NODE_ENV === 'production' &&
+    process.env.VERCEL !== '1'
+  ) {
     return;
   }
 

@@ -120,7 +120,18 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
     }
   }
 
-
+  // SECURITY: Bypass Clerk entirely in CI when dummy keys are present to prevent NXDOMAIN redirect/hangs.
+  // This bypass MUST check all three conditions to prevent an accidental production authentication bypass:
+  // 1. CLERK_SECRET_KEY must be the dummy key.
+  // 2. NODE_ENV must not be production.
+  // 3. VERCEL must not be '1' (ensures it never runs on a Vercel deployment, preview or prod).
+  if (
+    process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy' &&
+    process.env.NODE_ENV !== 'production' &&
+    process.env.VERCEL !== '1'
+  ) {
+    return NextResponse.next();
+  }
 
   return clerkHandler(request, event);
 }

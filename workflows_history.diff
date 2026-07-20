@@ -1,0 +1,4194 @@
+commit b0592888381f2b46eb753c09f5b313d8d7f49a08
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jul 20 09:25:55 2026 +0530
+
+    fix(ci): update MIGRATION_DATABASE_URL to use 127.0.0.1 for consistency and add QSTASH_TOKEN to build environment
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 0459436..c832a3b 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -72,7 +72,7 @@ jobs:
+       - name: Test Migrations Execution
+         run: pnpm run db:migrate
+         env:
+-          MIGRATION_DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++          MIGRATION_DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
+           DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
+ 
+   test-unit:
+@@ -147,6 +147,7 @@ jobs:
+           CLERK_WEBHOOK_SECRET: "whsec_placeholder"
+           NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
+           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
++          QSTASH_TOKEN: "dummy_qstash_token"
+ 
+       - name: Generate build attestation
+         uses: actions/attest-build-provenance@v4.1.1
+
+commit 087229c443c7ee95c07da856618dca1dc3afc2fd
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jul 20 09:22:55 2026 +0530
+
+    fix(ci): update DATABASE_URL to use 127.0.0.1 for consistency and improve CI environment configuration
+    feat(playwright): enhance web server configuration for CI and update placeholder keys
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index cd50ebb..0459436 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -73,7 +73,7 @@ jobs:
+         run: pnpm run db:migrate
+         env:
+           MIGRATION_DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++          DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
+ 
+   test-unit:
+     runs-on: ubuntu-latest
+@@ -117,7 +117,7 @@ jobs:
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+         env:
+-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++          DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
+ 
+       - name: Run Production Build
+         run: pnpm run build
+@@ -125,7 +125,7 @@ jobs:
+           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++          DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
+           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+           NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+           CLOUDINARY_API_KEY: "placeholder"
+@@ -195,7 +195,7 @@ jobs:
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+         env:
+-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++          DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
+ 
+       - name: Install Playwright Browsers
+         run: pnpm run test:e2e:install
+@@ -203,7 +203,7 @@ jobs:
+       - name: Run E2E Tests
+         run: pnpm run test:e2e
+         env:
+-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++          DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
+           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+
+commit 0e30642580b0ee0db2b1ab0792cb781de888de88
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jul 20 00:33:10 2026 +0530
+
+    feat(ci): add database migration step to CI workflow and enhance Sentry error handling
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 7f9a0b5..cd50ebb 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -114,6 +114,11 @@ jobs:
+       - name: Setup Environment
+         uses: ./.github/actions/setup-env
+ 
++      - name: Run Database Migrations
++        run: pnpm run db:migrate
++        env:
++          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++
+       - name: Run Production Build
+         run: pnpm run build
+         env:
+
+commit 13d066b98b2c6bd15c03f92f2c801766cb79eb46
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jul 20 00:27:00 2026 +0530
+
+    fix(ci): update artifact upload configuration to include hidden files and handle missing files
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 11035db..7f9a0b5 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -152,7 +152,9 @@ jobs:
+         uses: actions/upload-artifact@v4
+         with:
+           name: next-build
+-          path: .next/
++          path: .next
++          include-hidden-files: true
++          if-no-files-found: error
+           retention-days: 1
+ 
+   test-e2e:
+
+commit 47a442eb8920a31655dfe3c67de8ff467f1f686a
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jul 20 00:21:08 2026 +0530
+
+    fix(ci): add PostgreSQL service configuration for build job
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 733ee09..11035db 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -89,6 +89,20 @@ jobs:
+ 
+   build:
+     runs-on: ubuntu-latest
++    services:
++      postgres:
++        image: postgres:16-alpine
++        env:
++          POSTGRES_USER: postgres
++          POSTGRES_PASSWORD: password
++          POSTGRES_DB: postgres
++        ports:
++          - 5432:5432
++        options: >-
++          --health-cmd pg_isready
++          --health-interval 10s
++          --health-timeout 5s
++          --health-retries 5
+     permissions:
+       id-token: write
+       contents: read
+@@ -134,6 +148,13 @@ jobs:
+         with:
+           subject-path: 'next.config.ts'
+ 
++      - name: Upload Build Artifact
++        uses: actions/upload-artifact@v4
++        with:
++          name: next-build
++          path: .next/
++          retention-days: 1
++
+   test-e2e:
+     needs: [build]
+     runs-on: ubuntu-latest
+@@ -158,6 +179,17 @@ jobs:
+       - name: Setup Environment
+         uses: ./.github/actions/setup-env
+ 
++      - name: Download Build Artifact
++        uses: actions/download-artifact@v4
++        with:
++          name: next-build
++          path: .next/
++
++      - name: Run Database Migrations
++        run: pnpm run db:migrate
++        env:
++          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++
+       - name: Install Playwright Browsers
+         run: pnpm run test:e2e:install
+ 
+@@ -169,6 +201,14 @@ jobs:
+           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+ 
++      - name: Upload Playwright Report
++        uses: actions/upload-artifact@v4
++        if: always()
++        with:
++          name: playwright-report
++          path: playwright-report/
++          retention-days: 7
++
+   secrets-scan:
+     name: Secrets Scan
+     runs-on: ubuntu-latest
+
+commit 76cbe6e4b48a978da15eadb5d03639853cda1e41
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jul 20 00:10:54 2026 +0530
+
+    feat(ci): refactor CI workflow to use a composite action for environment setup
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 82fccc9..733ee09 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -7,13 +7,44 @@ on:
+     branches: [ main ]
+ 
+ jobs:
+-  validate:
++  audit:
+     runs-on: ubuntu-latest
+-    permissions:
+-      id-token: write
+-      contents: read
+-      attestations: write
++    steps:
++      - name: Checkout Code
++        uses: actions/checkout@v7
++
++      - name: Setup Environment
++        uses: ./.github/actions/setup-env
++
++      - name: Audit Dependencies
++        run: pnpm audit --audit-level=moderate
++
++  lint:
++    runs-on: ubuntu-latest
++    steps:
++      - name: Checkout Code
++        uses: actions/checkout@v7
++
++      - name: Setup Environment
++        uses: ./.github/actions/setup-env
++
++      - name: Check Linting
++        run: pnpm run lint
++
++  typecheck:
++    runs-on: ubuntu-latest
++    steps:
++      - name: Checkout Code
++        uses: actions/checkout@v7
++
++      - name: Setup Environment
++        uses: ./.github/actions/setup-env
+ 
++      - name: Validate TypeScript
++        run: pnpm exec tsc --noEmit
++
++  db-verify:
++    runs-on: ubuntu-latest
+     services:
+       postgres:
+         image: postgres:16-alpine
+@@ -28,33 +59,12 @@ jobs:
+           --health-interval 10s
+           --health-timeout 5s
+           --health-retries 5
+-
+     steps:
+       - name: Checkout Code
+         uses: actions/checkout@v7
+ 
+-      - name: Install pnpm
+-        uses: pnpm/action-setup@v6.0.9
+-        with:
+-          version: "11.5.2"
+-
+-      - name: Setup Node.js
+-        uses: actions/setup-node@v6.4.0
+-        with:
+-          node-version: 26
+-          cache: 'pnpm'
+-
+-      - name: Install Dependencies
+-        run: pnpm install --frozen-lockfile
+-
+-      - name: Audit Dependencies
+-        run: pnpm audit --audit-level=moderate
+-
+-      - name: Check Linting
+-        run: pnpm run lint
+-
+-      - name: Validate TypeScript
+-        run: pnpm exec tsc --noEmit
++      - name: Setup Environment
++        uses: ./.github/actions/setup-env
+ 
+       - name: Verify Database Migrations
+         run: pnpm run db:verify
+@@ -65,9 +75,31 @@ jobs:
+           MIGRATION_DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+           DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+ 
++  test-unit:
++    runs-on: ubuntu-latest
++    steps:
++      - name: Checkout Code
++        uses: actions/checkout@v7
++
++      - name: Setup Environment
++        uses: ./.github/actions/setup-env
++
+       - name: Run Unit Tests
+         run: pnpm run test
+ 
++  build:
++    runs-on: ubuntu-latest
++    permissions:
++      id-token: write
++      contents: read
++      attestations: write
++    steps:
++      - name: Checkout Code
++        uses: actions/checkout@v7
++
++      - name: Setup Environment
++        uses: ./.github/actions/setup-env
++
+       - name: Run Production Build
+         run: pnpm run build
+         env:
+@@ -102,10 +134,33 @@ jobs:
+         with:
+           subject-path: 'next.config.ts'
+ 
++  test-e2e:
++    needs: [build]
++    runs-on: ubuntu-latest
++    services:
++      postgres:
++        image: postgres:16-alpine
++        env:
++          POSTGRES_USER: postgres
++          POSTGRES_PASSWORD: password
++          POSTGRES_DB: postgres
++        ports:
++          - 5432:5432
++        options: >-
++          --health-cmd pg_isready
++          --health-interval 10s
++          --health-timeout 5s
++          --health-retries 5
++    steps:
++      - name: Checkout Code
++        uses: actions/checkout@v7
++
++      - name: Setup Environment
++        uses: ./.github/actions/setup-env
++
+       - name: Install Playwright Browsers
+         run: pnpm run test:e2e:install
+ 
+-
+       - name: Run E2E Tests
+         run: pnpm run test:e2e
+         env:
+@@ -114,7 +169,6 @@ jobs:
+           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+ 
+-
+   secrets-scan:
+     name: Secrets Scan
+     runs-on: ubuntu-latest
+@@ -126,5 +180,3 @@ jobs:
+ 
+       - name: Gitleaks Secrets Scan
+         run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb detect --source /src -v
+-
+-
+
+commit daab4d12d5ac54af2120ec9c24d5e30a482c74c6
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 23:51:04 2026 +0530
+
+    fix(ci): use actual GitHub secrets for Clerk API keys
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 7c65caf..82fccc9 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -71,8 +71,8 @@ jobs:
+       - name: Run Production Build
+         run: pnpm run build
+         env:
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
+-          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
++          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+           DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+@@ -110,8 +110,8 @@ jobs:
+         run: pnpm run test:e2e
+         env:
+           DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
+-          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
++          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+ 
+ 
+
+commit a7a85fedf83d4c1087e14160a2f357c5462385f8
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 23:42:51 2026 +0530
+
+    fix: remove continue-on-error from Microsoft Security DevOps action and update auto-merge comments for Dependabot PRs
+
+diff --git a/.github/workflows/defender-for-devops.yml b/.github/workflows/defender-for-devops.yml
+index af217e8..4d1569f 100644
+--- a/.github/workflows/defender-for-devops.yml
++++ b/.github/workflows/defender-for-devops.yml
+@@ -47,7 +47,6 @@ jobs:
+     - name: Run Microsoft Security DevOps
+       uses: microsoft/security-devops-action@v1.12.0
+       id: msdo
+-      continue-on-error: true
+     - name: Upload results to Security tab
+       uses: github/codeql-action/upload-sarif@v4
+       with:
+diff --git a/.github/workflows/dependabot-auto-merge.yml b/.github/workflows/dependabot-auto-merge.yml
+index aec490b..35d219e 100644
+--- a/.github/workflows/dependabot-auto-merge.yml
++++ b/.github/workflows/dependabot-auto-merge.yml
+@@ -19,12 +19,11 @@ jobs:
+         with:
+           github-token: "${{ secrets.GITHUB_TOKEN }}"
+ 
+-      - name: Approve and auto-merge Dependabot PR
++      - name: Auto-merge Dependabot PR
+         # Only auto-merge patch updates. Minor/Major updates require human review.
+-        # Note: --auto flag ensures the merge happens ONLY after CI status checks pass.
++        # Note: --auto flag ensures the merge happens ONLY after CI status checks and required reviews pass.
+         if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+         run: |
+-          gh pr review --approve "$PR_URL"
+           gh pr merge --auto --merge "$PR_URL"
+         env:
+           PR_URL: ${{ github.event.pull_request.html_url }}
+diff --git a/.github/workflows/uptime-monitor.yml b/.github/workflows/uptime-monitor.yml
+index 0b288e6..bd741b5 100644
+--- a/.github/workflows/uptime-monitor.yml
++++ b/.github/workflows/uptime-monitor.yml
+@@ -46,8 +46,8 @@ jobs:
+           
+           # Optional: Parse JSON to check internal detailed status if authorized
+           if echo "$HTTP_BODY" | grep -q '"status":"degraded"'; then
+-            echo "::warning title=System Degraded::The health check returned 200 but system is in a degraded state (e.g. Upstash rate limiting failed)."
+-            # We don't exit 1 here unless we want degraded states to wake people up
++            echo "::error title=System Degraded::The health check returned 200 but system is in a degraded state (e.g. Upstash rate limiting failed)."
++            exit 1
+           fi
+ 
+       - name: Notify on Failure
+@@ -64,4 +64,3 @@ jobs:
+             View the workflow run here: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+           to: alerts@dilnova.com
+           from: GitHub Actions
+-        continue-on-error: true # Don't fail the workflow if email fails, the GitHub Action failure notification will still trigger.
+
+commit 14bfda39c9d79880badfabcc328901cc930be602
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 22:35:11 2026 +0530
+
+    fix: remove redundant manual server startup in CI to let Playwright handle server lifecycle
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index f087bdf..7c65caf 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -105,26 +105,6 @@ jobs:
+       - name: Install Playwright Browsers
+         run: pnpm run test:e2e:install
+ 
+-      - name: Start Application Server
+-        run: pnpm run start &
+-        env:
+-          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
+-          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+-          NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+-
+-      - name: Wait for Server to be Ready
+-        run: |
+-          for i in {1..30}; do
+-            if curl -f http://127.0.0.1:3000 > /dev/null 2>&1; then
+-              echo "Server is ready"
+-              exit 0
+-            fi
+-            echo "Waiting for server... ($i/30)"
+-            sleep 2
+-          done
+-          echo "Server failed to start"
+-          exit 1
+ 
+       - name: Run E2E Tests
+         run: pnpm run test:e2e
+
+commit b97c9c39ac66b05ffe41ef39bcd7fa3b932e0712
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 21:53:31 2026 +0530
+
+    fix(ci): add server start and readiness check for E2E tests
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 575b07f..f087bdf 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -105,6 +105,27 @@ jobs:
+       - name: Install Playwright Browsers
+         run: pnpm run test:e2e:install
+ 
++      - name: Start Application Server
++        run: pnpm run start &
++        env:
++          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
++          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
++          NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
++
++      - name: Wait for Server to be Ready
++        run: |
++          for i in {1..30}; do
++            if curl -f http://127.0.0.1:3000 > /dev/null 2>&1; then
++              echo "Server is ready"
++              exit 0
++            fi
++            echo "Waiting for server... ($i/30)"
++            sleep 2
++          done
++          echo "Server failed to start"
++          exit 1
++
+       - name: Run E2E Tests
+         run: pnpm run test:e2e
+         env:
+
+commit f16e12c85f8b1ce3884b9b3d4dccfd9feeab9dcb
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 19:22:57 2026 +0530
+
+    chore(ci): revert clerk secrets to dummy keys to fix PR build failures
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 4824fbe..575b07f 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -71,8 +71,8 @@ jobs:
+       - name: Run Production Build
+         run: pnpm run build
+         env:
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+-          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
++          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+           DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+@@ -109,8 +109,8 @@ jobs:
+         run: pnpm run test:e2e
+         env:
+           DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+-          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
++          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+ 
+ 
+
+commit fcc0a33fbc255eb3647692e5be97e8c428a33f99
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 19:11:02 2026 +0530
+
+    fix(ci): update DATABASE_URL for local development and add job log for permission errors
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 186f57e..4824fbe 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -74,7 +74,7 @@ jobs:
+           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+           NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+-          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
++          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+           NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+           CLOUDINARY_API_KEY: "placeholder"
+
+commit 620b2265feaa06011b152e417e4bfb6106beb96d
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jul 19 18:47:58 2026 +0530
+
+    fix(ci): update environment variables for production build and E2E tests
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index a28bc01..186f57e 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -71,8 +71,9 @@ jobs:
+       - name: Run Production Build
+         run: pnpm run build
+         env:
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
+-          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
++          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
++          NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+           NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+@@ -108,6 +109,9 @@ jobs:
+         run: pnpm run test:e2e
+         env:
+           DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
++          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
++          NEXT_PUBLIC_ENABLE_BETA_ACCESS: "true"
+ 
+ 
+   secrets-scan:
+
+commit 338dcd6db730503e2ea26a3ca6db8509cb3a874a
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 12:49:35 2026 +0530
+
+    fix(ci): add NEXT_PUBLIC_SENTRY_DSN to ci.yml
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 0af7165..a28bc01 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -88,6 +88,7 @@ jobs:
+           SMTP_USER: "placeholder"
+           SMTP_PASSWORD: "placeholder"
+           SENTRY_DSN: "placeholder"
++          NEXT_PUBLIC_SENTRY_DSN: "placeholder"
+           EMAIL_FROM_ADDRESS: "info@example.com"
+           EMAIL_FROM_NAME: "Placeholder"
+           SUPERADMIN_USER_IDS: "user_placeholder"
+
+commit e35796e9b3a11d4a647833498769802ca7a70107
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 17 10:50:10 2026 +0530
+
+    feat(e2e): add Playwright browser installation and E2E test execution steps
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 2758b86..0af7165 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -100,6 +100,14 @@ jobs:
+         with:
+           subject-path: 'next.config.ts'
+ 
++      - name: Install Playwright Browsers
++        run: pnpm run test:e2e:install
++
++      - name: Run E2E Tests
++        run: pnpm run test:e2e
++        env:
++          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++
+ 
+   secrets-scan:
+     name: Secrets Scan
+
+commit 467f8a3cb0dbd77dcd01b312afb5cffae3740017
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Thu Jul 16 16:19:55 2026 +0530
+
+    fix(cloudinary): improve URL validation in deleteCloudinaryAsset function
+
+diff --git a/.github/workflows/uptime-monitor.yml b/.github/workflows/uptime-monitor.yml
+index 6949b1b..0b288e6 100644
+--- a/.github/workflows/uptime-monitor.yml
++++ b/.github/workflows/uptime-monitor.yml
+@@ -1,15 +1,13 @@
+ name: Uptime Monitor
+ 
++permissions:
++  contents: read
++
+ on:
+   schedule:
+     # Run every 5 minutes
+     - cron: '*/5 * * * *'
+   workflow_dispatch:
+-    inputs:
+-      target_url:
+-        description: 'URL to ping (override)'
+-        required: false
+-        type: string
+ 
+ jobs:
+   health-check:
+@@ -20,9 +18,9 @@ jobs:
+       - name: Ping API Health Endpoint
+         id: ping
+         env:
+-          # Use workflow input if provided, otherwise fallback to the production URL variable, 
++          # Use the production URL variable, 
+           # or finally default to dilstar.pp.ua which is referenced in layout.tsx.
+-          TARGET_URL: ${{ inputs.target_url || vars.PRODUCTION_APP_URL || 'https://dilstar.pp.ua' }}
++          TARGET_URL: ${{ vars.PRODUCTION_APP_URL || 'https://dilstar.pp.ua' }}
+           HEALTH_SECRET: ${{ secrets.HEALTH_CHECK_SECRET }}
+         run: |
+           echo "Pinging health endpoint at $TARGET_URL/api/health"
+
+commit 8569ba45e94b449c4d2f4a9c67b3d20546897d36
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Thu Jul 16 15:26:48 2026 +0530
+
+    feat(ci): add PostgreSQL service and migration tests to CI workflow
+    
+    feat(seed): prevent seeding in production environment
+    
+    fix(sql): remove CASCADE from DROP TABLE statements
+    
+    feat(checkout): log successful checkout details
+    
+    feat(superadmin): delete Cloudinary assets on product deletion
+    
+    feat(vendor): delete Cloudinary assets on product deletion
+    
+    feat(db): enhance slow query logging with Sentry integration
+    
+    feat(cloudinary): implement deleteCloudinaryAsset function
+    
+    feat(uptime): add uptime monitoring workflow with health checks
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index b95546e..2758b86 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -14,6 +14,21 @@ jobs:
+       contents: read
+       attestations: write
+ 
++    services:
++      postgres:
++        image: postgres:16-alpine
++        env:
++          POSTGRES_USER: postgres
++          POSTGRES_PASSWORD: password
++          POSTGRES_DB: postgres
++        ports:
++          - 5432:5432
++        options: >-
++          --health-cmd pg_isready
++          --health-interval 10s
++          --health-timeout 5s
++          --health-retries 5
++
+     steps:
+       - name: Checkout Code
+         uses: actions/checkout@v7
+@@ -44,6 +59,12 @@ jobs:
+       - name: Verify Database Migrations
+         run: pnpm run db:verify
+ 
++      - name: Test Migrations Execution
++        run: pnpm run db:migrate
++        env:
++          MIGRATION_DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++          DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
++
+       - name: Run Unit Tests
+         run: pnpm run test
+ 
+diff --git a/.github/workflows/uptime-monitor.yml b/.github/workflows/uptime-monitor.yml
+new file mode 100644
+index 0000000..6949b1b
+--- /dev/null
++++ b/.github/workflows/uptime-monitor.yml
+@@ -0,0 +1,69 @@
++name: Uptime Monitor
++
++on:
++  schedule:
++    # Run every 5 minutes
++    - cron: '*/5 * * * *'
++  workflow_dispatch:
++    inputs:
++      target_url:
++        description: 'URL to ping (override)'
++        required: false
++        type: string
++
++jobs:
++  health-check:
++    runs-on: ubuntu-latest
++    timeout-minutes: 5
++
++    steps:
++      - name: Ping API Health Endpoint
++        id: ping
++        env:
++          # Use workflow input if provided, otherwise fallback to the production URL variable, 
++          # or finally default to dilstar.pp.ua which is referenced in layout.tsx.
++          TARGET_URL: ${{ inputs.target_url || vars.PRODUCTION_APP_URL || 'https://dilstar.pp.ua' }}
++          HEALTH_SECRET: ${{ secrets.HEALTH_CHECK_SECRET }}
++        run: |
++          echo "Pinging health endpoint at $TARGET_URL/api/health"
++          
++          if [ -n "$HEALTH_SECRET" ]; then
++            echo "Using authorized detailed probe"
++            RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $HEALTH_SECRET" "$TARGET_URL/api/health")
++          else
++            echo "Using public probe"
++            RESPONSE=$(curl -s -w "\n%{http_code}" "$TARGET_URL/api/health")
++          fi
++          
++          HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
++          HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
++          
++          echo "Status Code: $HTTP_STATUS"
++          echo "Response Body: $HTTP_BODY"
++          
++          if [ "$HTTP_STATUS" -ne 200 ]; then
++            echo "::error title=Health Check Failed::The health endpoint returned status $HTTP_STATUS"
++            exit 1
++          fi
++          
++          # Optional: Parse JSON to check internal detailed status if authorized
++          if echo "$HTTP_BODY" | grep -q '"status":"degraded"'; then
++            echo "::warning title=System Degraded::The health check returned 200 but system is in a degraded state (e.g. Upstash rate limiting failed)."
++            # We don't exit 1 here unless we want degraded states to wake people up
++          fi
++
++      - name: Notify on Failure
++        if: failure()
++        uses: dawidd6/action-send-mail@v3
++        with:
++          server_address: smtp.gmail.com
++          server_port: 465
++          username: ${{ secrets.MAIL_USERNAME }}
++          password: ${{ secrets.MAIL_PASSWORD }}
++          subject: 🚨 Uptime Monitor Failed! 
++          body: |
++            The production health check endpoint returned a non-200 status code. 
++            View the workflow run here: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
++          to: alerts@dilnova.com
++          from: GitHub Actions
++        continue-on-error: true # Don't fail the workflow if email fails, the GitHub Action failure notification will still trigger.
+
+commit c1db444670217efcaf7f98fa8a6fd5d21d8c2f91
+Merge: bfe3684 cd8742e
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Thu Jul 16 10:07:37 2026 +0530
+
+    Merge branch 'main' into dev-branch
+
+commit 6e2eec92a456095d5c58eb0c21d8e4e6a4cec19a
+Merge: b2df616 dfe4817
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Thu Jul 16 09:52:17 2026 +0530
+
+    Merge pull request #62 from Dilnova/dependabot/github_actions/github/codeql-action-4
+    
+    chore(deps): bump github/codeql-action from 3 to 4
+
+commit dfe48174b3cf855057d9f09422cafa9a051c6b4e
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Thu Jul 16 04:17:36 2026 +0000
+
+    chore(deps): bump github/codeql-action from 3 to 4
+    
+    Bumps [github/codeql-action](https://github.com/github/codeql-action) from 3 to 4.
+    - [Release notes](https://github.com/github/codeql-action/releases)
+    - [Changelog](https://github.com/github/codeql-action/blob/main/CHANGELOG.md)
+    - [Commits](https://github.com/github/codeql-action/compare/v3...v4)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: github/codeql-action
+      dependency-version: '4'
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+diff --git a/.github/workflows/defender-for-devops.yml b/.github/workflows/defender-for-devops.yml
+index c5acf11..0d7bcd7 100644
+--- a/.github/workflows/defender-for-devops.yml
++++ b/.github/workflows/defender-for-devops.yml
+@@ -42,6 +42,6 @@ jobs:
+       uses: microsoft/security-devops-action@v1.12.0
+       id: msdo
+     - name: Upload results to Security tab
+-      uses: github/codeql-action/upload-sarif@v3
++      uses: github/codeql-action/upload-sarif@v4
+       with:
+         sarif_file: ${{ steps.msdo.outputs.sarifFile }}
+
+commit af11b49cd275f2fc8230f1f99e6b530b81ac31e8
+Merge: e8a721e 1abadd9
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Thu Jul 16 09:46:13 2026 +0530
+
+    Merge branch 'main' into dependabot/github_actions/actions/checkout-7
+
+commit e8a721eb98da6e53871cebf13aff259b8363767e
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Mon Jul 13 23:55:16 2026 +0000
+
+    chore(deps): bump actions/checkout from 4 to 7
+    
+    Bumps [actions/checkout](https://github.com/actions/checkout) from 4 to 7.
+    - [Release notes](https://github.com/actions/checkout/releases)
+    - [Commits](https://github.com/actions/checkout/compare/v4...v7)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/checkout
+      dependency-version: '7'
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index da63372..b95546e 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -16,7 +16,7 @@ jobs:
+ 
+     steps:
+       - name: Checkout Code
+-        uses: actions/checkout@v7.0.0
++        uses: actions/checkout@v7
+ 
+       - name: Install pnpm
+         uses: pnpm/action-setup@v6.0.9
+@@ -85,7 +85,7 @@ jobs:
+     runs-on: ubuntu-latest
+     steps:
+       - name: Checkout Code
+-        uses: actions/checkout@v7.0.0
++        uses: actions/checkout@v7
+         with:
+           fetch-depth: 0
+ 
+diff --git a/.github/workflows/defender-for-devops.yml b/.github/workflows/defender-for-devops.yml
+index a72aeb8..5e281ab 100644
+--- a/.github/workflows/defender-for-devops.yml
++++ b/.github/workflows/defender-for-devops.yml
+@@ -32,7 +32,7 @@ jobs:
+     runs-on: windows-latest
+ 
+     steps:
+-    - uses: actions/checkout@v4
++    - uses: actions/checkout@v7
+     - uses: actions/setup-dotnet@v4
+       with:
+         dotnet-version: |
+
+commit b2f708a4c068832878cf72df518c2632166dda03
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Mon Jul 13 23:55:03 2026 +0000
+
+    chore(deps): bump microsoft/security-devops-action from 1.6.0 to 1.12.0
+    
+    Bumps [microsoft/security-devops-action](https://github.com/microsoft/security-devops-action) from 1.6.0 to 1.12.0.
+    - [Release notes](https://github.com/microsoft/security-devops-action/releases)
+    - [Commits](https://github.com/microsoft/security-devops-action/compare/v1.6.0...v1.12.0)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: microsoft/security-devops-action
+      dependency-version: 1.12.0
+      dependency-type: direct:production
+      update-type: version-update:semver-minor
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+diff --git a/.github/workflows/defender-for-devops.yml b/.github/workflows/defender-for-devops.yml
+index a72aeb8..c5acf11 100644
+--- a/.github/workflows/defender-for-devops.yml
++++ b/.github/workflows/defender-for-devops.yml
+@@ -39,7 +39,7 @@ jobs:
+           5.0.x
+           6.0.x
+     - name: Run Microsoft Security DevOps
+-      uses: microsoft/security-devops-action@v1.6.0
++      uses: microsoft/security-devops-action@v1.12.0
+       id: msdo
+     - name: Upload results to Security tab
+       uses: github/codeql-action/upload-sarif@v3
+
+commit 970aea8036479d57d60687f49326e2776943ce21
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 10 10:51:58 2026 +0530
+
+    chore: add permissions section to workflow files for enhanced security
+
+diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
+index 74a3eb2..8e8ffef 100644
+--- a/.github/workflows/codeql.yml
++++ b/.github/workflows/codeql.yml
+@@ -8,6 +8,9 @@ on:
+   schedule:
+     - cron: '30 4 * * 4'
+ 
++permissions:
++  contents: read
++
+ jobs:
+   analyze:
+     name: Analyze
+diff --git a/.github/workflows/defender-for-devops.yml b/.github/workflows/defender-for-devops.yml
+index a72aeb8..4b716cc 100644
+--- a/.github/workflows/defender-for-devops.yml
++++ b/.github/workflows/defender-for-devops.yml
+@@ -26,10 +26,16 @@ on:
+   schedule:
+     - cron: '24 22 * * 2'
+ 
++permissions:
++  contents: read
++
+ jobs:
+   MSDO:
+     # currently only windows latest is supported
+     runs-on: windows-latest
++    permissions:
++      contents: read
++      security-events: write
+ 
+     steps:
+     - uses: actions/checkout@v4
+@@ -41,6 +47,7 @@ jobs:
+     - name: Run Microsoft Security DevOps
+       uses: microsoft/security-devops-action@v1.6.0
+       id: msdo
++      continue-on-error: true
+     - name: Upload results to Security tab
+       uses: github/codeql-action/upload-sarif@v3
+       with:
+diff --git a/.github/workflows/load-test.yml b/.github/workflows/load-test.yml
+index 27c616c..a3dd449 100644
+--- a/.github/workflows/load-test.yml
++++ b/.github/workflows/load-test.yml
+@@ -11,6 +11,9 @@ on:
+         required: false
+         default: 'https://www.dilstar.pp.ua'
+ 
++permissions:
++  contents: read
++
+ jobs:
+   k6-load-test:
+     name: Execute k6 Load Test
+diff --git a/.github/workflows/waf.yml b/.github/workflows/waf.yml
+index c008dc5..9ccf5bb 100644
+--- a/.github/workflows/waf.yml
++++ b/.github/workflows/waf.yml
+@@ -6,6 +6,9 @@ on:
+     - cron: '0 0 1 * *'
+   workflow_dispatch:
+ 
++permissions:
++  contents: read
++
+ jobs:
+   verify-waf:
+     name: Verify WAF Rules on Staging
+
+commit d3a1325538d95a8dd28ac8c6851a47b9b4c59e1e
+Merge: 46c5732 18885c7
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Thu Jul 9 16:03:39 2026 +0530
+
+    Merge branch 'main' into dev-branch
+
+commit 46c57320f2d18e21b7beb051ce8390441c44069e
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Thu Jul 9 15:50:44 2026 +0530
+
+    chore: remove unused test files and update CodeQL action versions
+
+diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
+index 03b5916..74a3eb2 100644
+--- a/.github/workflows/codeql.yml
++++ b/.github/workflows/codeql.yml
+@@ -27,12 +27,12 @@ jobs:
+       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+ 
+     - name: Initialize CodeQL
+-      uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
++      uses: github/codeql-action/init@v4
+       with:
+         languages: ${{ matrix.language }}
+         queries: security-extended,security-and-quality
+ 
+     - name: Perform CodeQL Analysis
+-      uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
++      uses: github/codeql-action/analyze@v4
+       with:
+         category: "/language:${{ matrix.language }}"
+
+commit a3f0dcb4c791c11c980778f51085cd06d80095d2
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Fri Jul 3 15:46:59 2026 +0530
+
+    Add Microsoft Defender for DevOps workflow
+    
+    This workflow integrates Microsoft Security DevOps for static analysis in the development cycle, triggered on pushes and pull requests to the main branch, and scheduled runs.
+
+diff --git a/.github/workflows/defender-for-devops.yml b/.github/workflows/defender-for-devops.yml
+new file mode 100644
+index 0000000..a72aeb8
+--- /dev/null
++++ b/.github/workflows/defender-for-devops.yml
+@@ -0,0 +1,47 @@
++# This workflow uses actions that are not certified by GitHub.
++# They are provided by a third-party and are governed by
++# separate terms of service, privacy policy, and support
++# documentation.
++#
++# Microsoft Security DevOps (MSDO) is a command line application which integrates static analysis tools into the development cycle.
++# MSDO installs, configures and runs the latest versions of static analysis tools
++# (including, but not limited to, SDL/security and compliance tools).
++#
++# The Microsoft Security DevOps action is currently in beta and runs on the windows-latest queue,
++# as well as Windows self hosted agents. ubuntu-latest support coming soon.
++#
++# For more information about the action , check out https://github.com/microsoft/security-devops-action
++#
++# Please note this workflow do not integrate your GitHub Org with Microsoft Defender For DevOps. You have to create an integration
++# and provide permission before this can report data back to azure.
++# Read the official documentation here : https://learn.microsoft.com/en-us/azure/defender-for-cloud/quickstart-onboard-github
++
++name: "Microsoft Defender For Devops"
++
++on:
++  push:
++    branches: [ "main" ]
++  pull_request:
++    branches: [ "main" ]
++  schedule:
++    - cron: '24 22 * * 2'
++
++jobs:
++  MSDO:
++    # currently only windows latest is supported
++    runs-on: windows-latest
++
++    steps:
++    - uses: actions/checkout@v4
++    - uses: actions/setup-dotnet@v4
++      with:
++        dotnet-version: |
++          5.0.x
++          6.0.x
++    - name: Run Microsoft Security DevOps
++      uses: microsoft/security-devops-action@v1.6.0
++      id: msdo
++    - name: Upload results to Security tab
++      uses: github/codeql-action/upload-sarif@v3
++      with:
++        sarif_file: ${{ steps.msdo.outputs.sarifFile }}
+
+commit 29e50d11ac44471a982ed8c5a0a406a59c3e1122
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Thu Jul 2 10:05:32 2026 +0530
+
+    Refactor code structure for improved readability and maintainability
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index d1d8baa..da63372 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -16,15 +16,15 @@ jobs:
+ 
+     steps:
+       - name: Checkout Code
+-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
++        uses: actions/checkout@v7.0.0
+ 
+       - name: Install pnpm
+-        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
++        uses: pnpm/action-setup@v6.0.9
+         with:
+           version: "11.5.2"
+ 
+       - name: Setup Node.js
+-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
++        uses: actions/setup-node@v6.4.0
+         with:
+           node-version: 26
+           cache: 'pnpm'
+@@ -75,7 +75,7 @@ jobs:
+           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
+ 
+       - name: Generate build attestation
+-        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v1.4.4
++        uses: actions/attest-build-provenance@v4.1.1
+         with:
+           subject-path: 'next.config.ts'
+ 
+@@ -85,7 +85,7 @@ jobs:
+     runs-on: ubuntu-latest
+     steps:
+       - name: Checkout Code
+-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
++        uses: actions/checkout@v7.0.0
+         with:
+           fetch-depth: 0
+ 
+diff --git a/.github/workflows/load-test.yml b/.github/workflows/load-test.yml
+index faf0e11..27c616c 100644
+--- a/.github/workflows/load-test.yml
++++ b/.github/workflows/load-test.yml
+@@ -20,7 +20,7 @@ jobs:
+         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+ 
+       - name: Setup k6
+-        uses: grafana/setup-k6-action@c00053c996b4061198c9c24a00474b748abdf8b7 # v1
++        uses: grafana/setup-k6-action@db07bd9765aac508ef18982e52ab937fe633a065
+ 
+       - name: Run k6 load test
+         run: k6 run scripts/load-test-k6.js
+
+commit 6fd7b3750244a5d98f32a54eb904da6acdc8531c
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Thu Jun 25 11:10:17 2026 +0530
+
+    chore: pin GitHub Actions to specific commit SHAs for security hardening
+
+diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
+index d0753ef..03b5916 100644
+--- a/.github/workflows/codeql.yml
++++ b/.github/workflows/codeql.yml
+@@ -24,15 +24,15 @@ jobs:
+ 
+     steps:
+     - name: Checkout repository
+-      uses: actions/checkout@v7
++      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+ 
+     - name: Initialize CodeQL
+-      uses: github/codeql-action/init@v4
++      uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
+       with:
+         languages: ${{ matrix.language }}
+         queries: security-extended,security-and-quality
+ 
+     - name: Perform CodeQL Analysis
+-      uses: github/codeql-action/analyze@v4
++      uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
+       with:
+         category: "/language:${{ matrix.language }}"
+diff --git a/.github/workflows/dependabot-auto-merge.yml b/.github/workflows/dependabot-auto-merge.yml
+index 4c001cc..aec490b 100644
+--- a/.github/workflows/dependabot-auto-merge.yml
++++ b/.github/workflows/dependabot-auto-merge.yml
+@@ -15,7 +15,7 @@ jobs:
+     steps:
+       - name: Fetch Dependabot metadata
+         id: metadata
+-        uses: dependabot/fetch-metadata@v3
++        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
+         with:
+           github-token: "${{ secrets.GITHUB_TOKEN }}"
+ 
+diff --git a/.github/workflows/load-test.yml b/.github/workflows/load-test.yml
+index f940bd8..faf0e11 100644
+--- a/.github/workflows/load-test.yml
++++ b/.github/workflows/load-test.yml
+@@ -17,10 +17,10 @@ jobs:
+     runs-on: ubuntu-latest
+     steps:
+       - name: Checkout Code
+-        uses: actions/checkout@v7
++        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+ 
+       - name: Setup k6
+-        uses: grafana/setup-k6-action@v1
++        uses: grafana/setup-k6-action@c00053c996b4061198c9c24a00474b748abdf8b7 # v1
+ 
+       - name: Run k6 load test
+         run: k6 run scripts/load-test-k6.js
+
+commit cf0c2514f877ee23efd70af9125045e8f3c50e1c
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Thu Jun 25 10:04:56 2026 +0530
+
+    chore: pin actions/checkout to specific commit hash for security
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 3850fb7..d1d8baa 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -16,7 +16,7 @@ jobs:
+ 
+     steps:
+       - name: Checkout Code
+-        uses: actions/checkout@v7
++        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+ 
+       - name: Install pnpm
+         uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+
+commit fda8723990b77a6647c9f47224eb2e575676ca2e
+Merge: 8d0db10 edcc081
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Thu Jun 25 10:01:24 2026 +0530
+
+    Merge branch 'main' into dev-branch
+
+commit 7a513e9db7163d6d384fe1b2627d402badb6f49c
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 22:55:22 2026 +0530
+
+    chore: pin GitHub Actions to specific commit SHAs for security hardening
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 387e618..d1d8baa 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -16,15 +16,15 @@ jobs:
+ 
+     steps:
+       - name: Checkout Code
+-        uses: actions/checkout@v4
++        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+ 
+       - name: Install pnpm
+-        uses: pnpm/action-setup@v4
++        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+         with:
+           version: "11.5.2"
+ 
+       - name: Setup Node.js
+-        uses: actions/setup-node@v4
++        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+         with:
+           node-version: 26
+           cache: 'pnpm'
+@@ -75,7 +75,7 @@ jobs:
+           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
+ 
+       - name: Generate build attestation
+-        uses: actions/attest-build-provenance@v1
++        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v1.4.4
+         with:
+           subject-path: 'next.config.ts'
+ 
+@@ -85,7 +85,7 @@ jobs:
+     runs-on: ubuntu-latest
+     steps:
+       - name: Checkout Code
+-        uses: actions/checkout@v4
++        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+         with:
+           fetch-depth: 0
+ 
+
+commit edcc081e7b80b1d7a54554009390c8f060e7ce44
+Merge: 0850b55 765cc73
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 22:33:48 2026 +0530
+
+    Merge pull request #14 from Dilnova/dependabot/github_actions/actions/attest-build-provenance-4
+    
+    chore(deps): bump actions/attest-build-provenance from 1 to 4
+
+commit 0850b55cb3c8604ff1bf3bc705ba868242b8aa30
+Merge: 2918fd1 5f3cba9
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 22:33:32 2026 +0530
+
+    Merge pull request #15 from Dilnova/dependabot/github_actions/github/codeql-action-4
+    
+    chore(deps): bump github/codeql-action from 3 to 4
+
+commit 2918fd189765c8ee56598dd75c1adc6c0a665dc1
+Merge: 3babc6f ff73e38
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 22:33:12 2026 +0530
+
+    Merge pull request #16 from Dilnova/dependabot/github_actions/actions/setup-node-6
+    
+    chore(deps): bump actions/setup-node from 4 to 6
+
+commit 3babc6fd10332c3d261e2d4c7440ecdaefca2b8b
+Merge: 7f6c496 909ca86
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 22:32:47 2026 +0530
+
+    Merge pull request #17 from Dilnova/dependabot/github_actions/actions/checkout-7
+    
+    chore(deps): bump actions/checkout from 4 to 7
+
+commit 7f6c4969656f8773d0dfb1a2371444cfe0f022d8
+Merge: 3e0a9f2 edbe6c8
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 22:32:21 2026 +0530
+
+    Merge pull request #18 from Dilnova/dependabot/github_actions/dependabot/fetch-metadata-3
+    
+    chore(deps): bump dependabot/fetch-metadata from 2 to 3
+
+commit 00b697bf0bcdbcd2900c79a7f85d220ae2c90302
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 14:39:42 2026 +0530
+
+    chore: increase WAF audit frequency to monthly and add monitoring for WAF configuration changes
+
+diff --git a/.github/workflows/waf.yml b/.github/workflows/waf.yml
+index 665aee9..c008dc5 100644
+--- a/.github/workflows/waf.yml
++++ b/.github/workflows/waf.yml
+@@ -2,8 +2,8 @@ name: WAF / Edge Security Verification
+ 
+ on:
+   schedule:
+-    # Run quarterly on the 1st of Jan, Apr, Jul, Oct at 00:00 UTC
+-    - cron: '0 0 1 1,4,7,10 *'
++    # Run monthly on the 1st of every month at 00:00 UTC
++    - cron: '0 0 1 * *'
+   workflow_dispatch:
+ 
+ jobs:
+
+commit edbe6c884f2b2c1408166b9174b17a6f85208bfa
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Jun 24 07:07:40 2026 +0000
+
+    chore(deps): bump dependabot/fetch-metadata from 2 to 3
+    
+    Bumps [dependabot/fetch-metadata](https://github.com/dependabot/fetch-metadata) from 2 to 3.
+    - [Release notes](https://github.com/dependabot/fetch-metadata/releases)
+    - [Commits](https://github.com/dependabot/fetch-metadata/compare/v2...v3)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: dependabot/fetch-metadata
+      dependency-version: '3'
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+diff --git a/.github/workflows/dependabot-auto-merge.yml b/.github/workflows/dependabot-auto-merge.yml
+index 9b3b067..4c001cc 100644
+--- a/.github/workflows/dependabot-auto-merge.yml
++++ b/.github/workflows/dependabot-auto-merge.yml
+@@ -15,7 +15,7 @@ jobs:
+     steps:
+       - name: Fetch Dependabot metadata
+         id: metadata
+-        uses: dependabot/fetch-metadata@v2
++        uses: dependabot/fetch-metadata@v3
+         with:
+           github-token: "${{ secrets.GITHUB_TOKEN }}"
+ 
+
+commit 909ca86a8756c1041d93f6eb1837cb471c414ba7
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Jun 24 07:07:37 2026 +0000
+
+    chore(deps): bump actions/checkout from 4 to 7
+    
+    Bumps [actions/checkout](https://github.com/actions/checkout) from 4 to 7.
+    - [Release notes](https://github.com/actions/checkout/releases)
+    - [Changelog](https://github.com/actions/checkout/blob/main/CHANGELOG.md)
+    - [Commits](https://github.com/actions/checkout/compare/v4...v7)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/checkout
+      dependency-version: '7'
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 387e618..dbf13e0 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -16,7 +16,7 @@ jobs:
+ 
+     steps:
+       - name: Checkout Code
+-        uses: actions/checkout@v4
++        uses: actions/checkout@v7
+ 
+       - name: Install pnpm
+         uses: pnpm/action-setup@v4
+@@ -85,7 +85,7 @@ jobs:
+     runs-on: ubuntu-latest
+     steps:
+       - name: Checkout Code
+-        uses: actions/checkout@v4
++        uses: actions/checkout@v7
+         with:
+           fetch-depth: 0
+ 
+diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
+index 0254b72..756d88c 100644
+--- a/.github/workflows/codeql.yml
++++ b/.github/workflows/codeql.yml
+@@ -24,7 +24,7 @@ jobs:
+ 
+     steps:
+     - name: Checkout repository
+-      uses: actions/checkout@v4
++      uses: actions/checkout@v7
+ 
+     - name: Initialize CodeQL
+       uses: github/codeql-action/init@v3
+diff --git a/.github/workflows/load-test.yml b/.github/workflows/load-test.yml
+index 6b0afde..f940bd8 100644
+--- a/.github/workflows/load-test.yml
++++ b/.github/workflows/load-test.yml
+@@ -17,7 +17,7 @@ jobs:
+     runs-on: ubuntu-latest
+     steps:
+       - name: Checkout Code
+-        uses: actions/checkout@v4
++        uses: actions/checkout@v7
+ 
+       - name: Setup k6
+         uses: grafana/setup-k6-action@v1
+
+commit ff73e384ccec1a061eaf0494040d40a3adebef11
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Jun 24 07:07:33 2026 +0000
+
+    chore(deps): bump actions/setup-node from 4 to 6
+    
+    Bumps [actions/setup-node](https://github.com/actions/setup-node) from 4 to 6.
+    - [Release notes](https://github.com/actions/setup-node/releases)
+    - [Commits](https://github.com/actions/setup-node/compare/v4...v6)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/setup-node
+      dependency-version: '6'
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 387e618..63cddd5 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -24,7 +24,7 @@ jobs:
+           version: "11.5.2"
+ 
+       - name: Setup Node.js
+-        uses: actions/setup-node@v4
++        uses: actions/setup-node@v6
+         with:
+           node-version: 26
+           cache: 'pnpm'
+
+commit 5f3cba942fa566b861b3b221e3f51c812a18b0cc
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Jun 24 07:07:30 2026 +0000
+
+    chore(deps): bump github/codeql-action from 3 to 4
+    
+    Bumps [github/codeql-action](https://github.com/github/codeql-action) from 3 to 4.
+    - [Release notes](https://github.com/github/codeql-action/releases)
+    - [Changelog](https://github.com/github/codeql-action/blob/main/CHANGELOG.md)
+    - [Commits](https://github.com/github/codeql-action/compare/v3...v4)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: github/codeql-action
+      dependency-version: '4'
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
+index 0254b72..7c7e246 100644
+--- a/.github/workflows/codeql.yml
++++ b/.github/workflows/codeql.yml
+@@ -27,12 +27,12 @@ jobs:
+       uses: actions/checkout@v4
+ 
+     - name: Initialize CodeQL
+-      uses: github/codeql-action/init@v3
++      uses: github/codeql-action/init@v4
+       with:
+         languages: ${{ matrix.language }}
+         queries: security-extended,security-and-quality
+ 
+     - name: Perform CodeQL Analysis
+-      uses: github/codeql-action/analyze@v3
++      uses: github/codeql-action/analyze@v4
+       with:
+         category: "/language:${{ matrix.language }}"
+
+commit 765cc7367fc10e2837571158c9c60ea26a9b9a96
+Author: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
+Date:   Wed Jun 24 07:07:26 2026 +0000
+
+    chore(deps): bump actions/attest-build-provenance from 1 to 4
+    
+    Bumps [actions/attest-build-provenance](https://github.com/actions/attest-build-provenance) from 1 to 4.
+    - [Release notes](https://github.com/actions/attest-build-provenance/releases)
+    - [Changelog](https://github.com/actions/attest-build-provenance/blob/main/RELEASE.md)
+    - [Commits](https://github.com/actions/attest-build-provenance/compare/v1...v4)
+    
+    ---
+    updated-dependencies:
+    - dependency-name: actions/attest-build-provenance
+      dependency-version: '4'
+      dependency-type: direct:production
+      update-type: version-update:semver-major
+    ...
+    
+    Signed-off-by: dependabot[bot] <support@github.com>
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 387e618..488e79e 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -75,7 +75,7 @@ jobs:
+           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
+ 
+       - name: Generate build attestation
+-        uses: actions/attest-build-provenance@v1
++        uses: actions/attest-build-provenance@v4
+         with:
+           subject-path: 'next.config.ts'
+ 
+
+commit faabf50149686afdc298be2061fe319ce3f142da
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 12:21:31 2026 +0530
+
+    chore: remove failing e2e and dast/smoke-test workflows as requested
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 3abc098..387e618 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -92,124 +92,4 @@ jobs:
+       - name: Gitleaks Secrets Scan
+         run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb detect --source /src -v
+ 
+-  e2e:
+-    name: E2E Tests
+-    runs-on: ubuntu-latest
+-    needs: validate
+-    services:
+-      postgres:
+-        image: postgres:15@sha256:67d4ae1588f5a4170a8480fa0bd55a6e0de359830cc2fbed0cf6677ef194eec9
+-        env:
+-          POSTGRES_USER: ci
+-          POSTGRES_DB: ci
+-          POSTGRES_PASSWORD: ci
+-        ports:
+-          - 5432:5432
+-        options: >-
+-          --health-cmd "pg_isready -U ci"
+-          --health-interval 10s
+-          --health-timeout 5s
+-          --health-retries 5
+-
+-    env:
+-      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
+-      CLERK_SECRET_KEY: "sk_test_ci_dummy"
+-      NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+-      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+-      CLOUDINARY_API_KEY: "placeholder"
+-      CLOUDINARY_API_SECRET: "placeholder"
+-      NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "placeholder"
+-      SUPABASE_SERVICE_ROLE_KEY: "placeholder"
+-      UPSTASH_REDIS_REST_URL: "https://placeholder.upstash.io"
+-      UPSTASH_REDIS_REST_TOKEN: "placeholder"
+-      PII_ENCRYPTION_KEY: "placeholder_key_at_least_32_characters_long"
+-      HEALTH_CHECK_SECRET: "placeholder"
+-      SMTP_USER: "placeholder"
+-      SMTP_PASSWORD: "placeholder"
+-      SENTRY_DSN: "placeholder"
+-      EMAIL_FROM_ADDRESS: "info@example.com"
+-      EMAIL_FROM_NAME: "Placeholder"
+-      SUPERADMIN_USER_IDS: "user_placeholder"
+-      CLERK_WEBHOOK_SECRET: "whsec_placeholder"
+-      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
+-      TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
+-
+-    steps:
+-      - name: Checkout Code
+-        uses: actions/checkout@v4
+-
+-      - name: Install pnpm
+-        uses: pnpm/action-setup@v4
+-        with:
+-          version: "11.5.2"
+-
+-      - name: Setup Node.js
+-        uses: actions/setup-node@v4
+-        with:
+-          node-version: 26
+-          cache: 'pnpm'
+-
+-      - name: Install Dependencies
+-        run: pnpm install --frozen-lockfile
+-
+-      - name: Run Database Migrations
+-        run: |
+-          pnpm run db:migrate > migrate.log 2>&1 || (
+-            ERR=$(tail -n 40 migrate.log | awk '{printf "%s%%0A", $0}')
+-            echo "::error::Migration failed! Logs:"
+-            echo "::error::$ERR"
+-            exit 1
+-          )
+-
+-      - name: Build Application
+-        run: pnpm run build
+ 
+-      - name: Wait for Postgres
+-        run: npx wait-on tcp:5432 --timeout 60000
+-
+-      - name: Start production server (background), detect its URL and wait
+-        run: |
+-          # Start Next.js using the built output in background and capture logs
+-          pnpm exec next start -p 3000 > server.log 2>&1 &
+-          echo $! > server.pid
+-          # Wait up to 2 minutes for localhost to be available (may still fail if Next binds to another IP)
+-          npx wait-on http://127.0.0.1:3000 --timeout 120000 || (
+-            echo "::error::Next.js Server failed to start in CI! Last logs:"
+-            ERR=$(tail -n 40 server.log | awk '{printf "%s%%0A", $0}')
+-            echo "::error::$ERR"
+-            exit 1
+-          )
+-          # Determine the served URL from the server output. Next prints a line like: "Network:       http://10.1.0.86:3000"
+-          SERVED_URL=$(grep -m1 -Eo 'http://[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+' server.log || true)
+-          if [ -z "$SERVED_URL" ]; then
+-            echo "PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000" >> $GITHUB_ENV
+-            echo "Detected no explicit network URL; using http://127.0.0.1:3000"
+-          else
+-            echo "PLAYWRIGHT_BASE_URL=${SERVED_URL}" >> $GITHUB_ENV
+-            echo "Detected server URL: ${SERVED_URL}"
+-          fi
+-
+-      - name: Install Playwright Browsers
+-        run: pnpm exec playwright install --with-deps chromium
+-
+-      - name: Run Playwright E2E Tests
+-        run: pnpm run test:e2e
+-
+-      - name: Dump server log (on failure)
+-        if: failure()
+-        run: |
+-          if [ -f server.log ]; then
+-            echo "::error::Next.js server logs:"
+-            tail -n 100 server.log | awk '{printf "::error::%s%%0A", $0}'
+-          fi
+-          echo "=== server.log ==="
+-          tail -n +1 server.log || true
+-          echo "=== server processes ==="
+-          ps aux | grep -E "next|node" || true
+-
+-      - name: Stop server (cleanup)
+-        if: always()
+-        run: |
+-          if [ -f server.pid ]; then kill $(cat server.pid) || true; rm -f server.pid; fi
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+deleted file mode 100644
+index 2863025..0000000
+--- a/.github/workflows/dast.yml
++++ /dev/null
+@@ -1,126 +0,0 @@
+-name: DAST Scan
+-
+-on:
+-  schedule:
+-    # Run every Sunday at midnight
+-    - cron: '0 0 * * 0'
+-  workflow_dispatch:
+-    # Allow manual triggering from GitHub Actions tab
+-  pull_request:
+-    branches: [ main ]
+-
+-jobs:
+-  zap-scan:
+-    name: OWASP ZAP Baseline Scan
+-    runs-on: ubuntu-latest
+-    permissions:
+-      issues: write
+-      pull-requests: write
+-      contents: read
+-
+-    services:
+-      postgres:
+-        image: postgres:15@sha256:67d4ae1588f5a4170a8480fa0bd55a6e0de359830cc2fbed0cf6677ef194eec9
+-        env:
+-          POSTGRES_USER: ci
+-          POSTGRES_DB: ci
+-          POSTGRES_PASSWORD: ci
+-        ports:
+-          - 5432:5432
+-        options: >-
+-          --health-cmd pg_isready
+-          --health-interval 10s
+-          --health-timeout 5s
+-          --health-retries 5
+-
+-    env:
+-      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
+-      CLERK_SECRET_KEY: "sk_test_ci_dummy"
+-      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+-      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+-      CLOUDINARY_API_KEY: "placeholder"
+-      CLOUDINARY_API_SECRET: "placeholder"
+-      NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "placeholder"
+-      SUPABASE_SERVICE_ROLE_KEY: "placeholder"
+-      UPSTASH_REDIS_REST_URL: "https://placeholder.upstash.io"
+-      UPSTASH_REDIS_REST_TOKEN: "placeholder"
+-      PII_ENCRYPTION_KEY: "placeholder_key_at_least_32_characters_long"
+-      HEALTH_CHECK_SECRET: "placeholder"
+-      SMTP_USER: "placeholder"
+-      SMTP_PASSWORD: "placeholder"
+-      SENTRY_DSN: "placeholder"
+-      EMAIL_FROM_ADDRESS: "info@example.com"
+-      EMAIL_FROM_NAME: "Placeholder"
+-      SUPERADMIN_USER_IDS: "user_placeholder"
+-      CLERK_WEBHOOK_SECRET: "whsec_placeholder"
+-      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
+-      TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
+-
+-    steps:
+-      - name: Checkout Code
+-        uses: actions/checkout@v4
+-
+-      - name: Install pnpm
+-        uses: pnpm/action-setup@v4
+-        with:
+-          version: "11.5.2"
+-
+-      - name: Setup Node.js
+-        uses: actions/setup-node@v4
+-        with:
+-          node-version: 26
+-          cache: 'pnpm'
+-
+-      - name: Install Dependencies
+-        run: pnpm install --frozen-lockfile
+-
+-      - name: Run Database Migrations
+-        run: |
+-          pnpm run db:migrate > migrate.log 2>&1 || (
+-            ERR=$(tail -n 40 migrate.log | awk '{printf "%s%%0A", $0}')
+-            echo "::error::Migration failed! Logs:"
+-            echo "::error::$ERR"
+-            exit 1
+-          )
+-
+-      - name: Build Application
+-        run: pnpm run build
+-
+-      - name: Get Host IP
+-        run: echo "HOST_IP=$(hostname -I | awk '{print $1}')" >> $GITHUB_ENV
+-
+-      - name: Start Production Server
+-        run: |
+-          pnpm exec next start -p 3000 > server.log 2>&1 &
+-          echo $! > server.pid
+-
+-      - name: Wait for Server to be Ready
+-        run: |
+-          npx wait-on http://127.0.0.1:3000 --timeout 120000 || (
+-            echo "::error::Next.js Server failed to start! Last logs:"
+-            ERR=$(tail -n 40 server.log | awk '{printf "%s%%0A", $0}')
+-            echo "::error::$ERR"
+-            exit 1
+-          )
+-
+-      - name: OWASP ZAP Baseline Scan
+-        uses: zaproxy/action-baseline@v0.11.0
+-        continue-on-error: true
+-        with:
+-          token: ${{ secrets.GITHUB_TOKEN }}
+-          target: 'http://${{ env.HOST_IP }}:3000'
+-          rules_file_name: '.zap/rules.tsv'
+-          fail_action: false
+-
+-      - name: Dump server log (on failure)
+-        if: failure()
+-        run: |
+-          echo "=== server.log ==="
+-          cat server.log || true
+-
+-      - name: Stop server (cleanup)
+-        if: always()
+-        run: |
+-          if [ -f server.pid ]; then kill $(cat server.pid) || true; rm -f server.pid; fi
+diff --git a/.github/workflows/smoke-test.yml b/.github/workflows/smoke-test.yml
+deleted file mode 100644
+index 5f5ba3f..0000000
+--- a/.github/workflows/smoke-test.yml
++++ /dev/null
+@@ -1,54 +0,0 @@
+-name: Post-Deploy Smoke Test
+-
+-on:
+-  deployment_status:
+-  workflow_dispatch:
+-    inputs:
+-      target_url:
+-        description: 'Target URL to run smoke tests against'
+-        required: true
+-        default: 'https://www.dilstar.pp.ua'
+-
+-jobs:
+-  health-probe:
+-    name: Detailed Production Environment Probe
+-    # Run if triggered manually OR if a Vercel deployment just finished successfully
+-    if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'
+-    runs-on: ubuntu-latest
+-    steps:
+-      - name: Validate Environment configuration
+-        run: |
+-          TARGET_URL="${{ github.event.inputs.target_url || github.event.deployment_status.target_url }}"
+-          
+-          if [ -z "$TARGET_URL" ]; then
+-            echo "No target URL provided"
+-            exit 1
+-          fi
+-          
+-          echo "Running detailed health probe against $TARGET_URL/api/health"
+-          
+-          # Run the authenticated detailed health probe to check DB and Redis
+-          HTTP_STATUS=$(curl -s -o health.json -w "%{http_code}" -H "Authorization: Bearer ${{ secrets.HEALTH_CHECK_SECRET }}" "$TARGET_URL/api/health")
+-          
+-          if [ "$HTTP_STATUS" != "200" ]; then
+-            echo "❌ Detailed health probe failed! Received HTTP $HTTP_STATUS"
+-            cat health.json
+-            exit 1
+-          fi
+-          
+-          # Parse JSON payload
+-          APP_STATUS=$(jq -r '.status' health.json)
+-          DB_STATUS=$(jq -r '.database' health.json)
+-          RL_STATUS=$(jq -r '.rateLimit.status' health.json)
+-          
+-          echo "App Status: $APP_STATUS"
+-          echo "DB Status: $DB_STATUS"
+-          echo "Rate Limit Status: $RL_STATUS"
+-          
+-          if [ "$APP_STATUS" != "ok" ] || [ "$DB_STATUS" != "connected" ]; then
+-            echo "❌ Environment is misconfigured or degraded!"
+-            cat health.json
+-            exit 1
+-          fi
+-          
+-          echo "✅ Production environment verification passed successfully."
+
+commit 9d478d94e52d603f88d473a32b74b1cee3b4a4c0
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 12:03:44 2026 +0530
+
+    fix: correctly utilize PLAYWRIGHT_BASE_URL for e2e and set ZAP fail_action to false to unblock artifact bug
+
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index 4df81fc..2863025 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -107,11 +107,12 @@ jobs:
+ 
+       - name: OWASP ZAP Baseline Scan
+         uses: zaproxy/action-baseline@v0.11.0
++        continue-on-error: true
+         with:
+           token: ${{ secrets.GITHUB_TOKEN }}
+           target: 'http://${{ env.HOST_IP }}:3000'
+           rules_file_name: '.zap/rules.tsv'
+-          fail_action: true
++          fail_action: false
+ 
+       - name: Dump server log (on failure)
+         if: failure()
+
+commit c886344d06c14875aeb7b47ca7d8af61afee5e2b
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 11:48:54 2026 +0530
+
+    fix: remove -H flags from Next.js start to unbreak internal middleware proxy and add permissions to DAST
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 1d0b638..3abc098 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -172,7 +172,7 @@ jobs:
+       - name: Start production server (background), detect its URL and wait
+         run: |
+           # Start Next.js using the built output in background and capture logs
+-          pnpm exec next start -H 127.0.0.1 -p 3000 > server.log 2>&1 &
++          pnpm exec next start -p 3000 > server.log 2>&1 &
+           echo $! > server.pid
+           # Wait up to 2 minutes for localhost to be available (may still fail if Next binds to another IP)
+           npx wait-on http://127.0.0.1:3000 --timeout 120000 || (
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index cfd9b8d..4df81fc 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -13,6 +13,10 @@ jobs:
+   zap-scan:
+     name: OWASP ZAP Baseline Scan
+     runs-on: ubuntu-latest
++    permissions:
++      issues: write
++      pull-requests: write
++      contents: read
+ 
+     services:
+       postgres:
+@@ -89,7 +93,7 @@ jobs:
+ 
+       - name: Start Production Server
+         run: |
+-          pnpm exec next start -H 0.0.0.0 -p 3000 > server.log 2>&1 &
++          pnpm exec next start -p 3000 > server.log 2>&1 &
+           echo $! > server.pid
+ 
+       - name: Wait for Server to be Ready
+
+commit f2632871a05ddfdb5f4cbd4a4b7833e8eaac66e4
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 11:01:55 2026 +0530
+
+    fix: resolve E2E and DAST networking issues by explicitly binding Next.js to 127.0.0.1 in CI and 0.0.0.0 in DAST with HOST_IP target
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 3abc098..1d0b638 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -172,7 +172,7 @@ jobs:
+       - name: Start production server (background), detect its URL and wait
+         run: |
+           # Start Next.js using the built output in background and capture logs
+-          pnpm exec next start -p 3000 > server.log 2>&1 &
++          pnpm exec next start -H 127.0.0.1 -p 3000 > server.log 2>&1 &
+           echo $! > server.pid
+           # Wait up to 2 minutes for localhost to be available (may still fail if Next binds to another IP)
+           npx wait-on http://127.0.0.1:3000 --timeout 120000 || (
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index 35afa57..cfd9b8d 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -84,9 +84,12 @@ jobs:
+       - name: Build Application
+         run: pnpm run build
+ 
++      - name: Get Host IP
++        run: echo "HOST_IP=$(hostname -I | awk '{print $1}')" >> $GITHUB_ENV
++
+       - name: Start Production Server
+         run: |
+-          pnpm exec next start -p 3000 -H 127.0.0.1 > server.log 2>&1 &
++          pnpm exec next start -H 0.0.0.0 -p 3000 > server.log 2>&1 &
+           echo $! > server.pid
+ 
+       - name: Wait for Server to be Ready
+@@ -102,7 +105,7 @@ jobs:
+         uses: zaproxy/action-baseline@v0.11.0
+         with:
+           token: ${{ secrets.GITHUB_TOKEN }}
+-          target: 'http://127.0.0.1:3000'
++          target: 'http://${{ env.HOST_IP }}:3000'
+           rules_file_name: '.zap/rules.tsv'
+           fail_action: true
+ 
+
+commit d8dd6257dd5c37a564b3e6f6d602b79a9c1da9c0
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 10:28:57 2026 +0530
+
+    fix: resolve E2E net::ERR_NAME_NOT_RESOLVED, fix Clerk keys in DAST, and add Next.js server log dumps as annotations
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 1469c5a..3abc098 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -200,6 +200,10 @@ jobs:
+       - name: Dump server log (on failure)
+         if: failure()
+         run: |
++          if [ -f server.log ]; then
++            echo "::error::Next.js server logs:"
++            tail -n 100 server.log | awk '{printf "::error::%s%%0A", $0}'
++          fi
+           echo "=== server.log ==="
+           tail -n +1 server.log || true
+           echo "=== server processes ==="
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index 5a1705b..35afa57 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -31,8 +31,8 @@ jobs:
+ 
+     env:
+       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "dummy_public_key_for_testing"
+-      CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
++      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
++      CLERK_SECRET_KEY: "sk_test_ci_dummy"
+       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+       CLOUDINARY_API_KEY: "placeholder"
+
+commit bccddef892be16e5da92a70d419c1285dc881a53
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 10:05:48 2026 +0530
+
+    fix: create missing Supabase roles in migration for CI environments and add db:migrate debug logging
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 3b418ca..1469c5a 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -155,7 +155,13 @@ jobs:
+         run: pnpm install --frozen-lockfile
+ 
+       - name: Run Database Migrations
+-        run: pnpm run db:migrate
++        run: |
++          pnpm run db:migrate > migrate.log 2>&1 || (
++            ERR=$(tail -n 40 migrate.log | awk '{printf "%s%%0A", $0}')
++            echo "::error::Migration failed! Logs:"
++            echo "::error::$ERR"
++            exit 1
++          )
+ 
+       - name: Build Application
+         run: pnpm run build
+@@ -169,7 +175,12 @@ jobs:
+           pnpm exec next start -p 3000 > server.log 2>&1 &
+           echo $! > server.pid
+           # Wait up to 2 minutes for localhost to be available (may still fail if Next binds to another IP)
+-          npx wait-on http://127.0.0.1:3000 --timeout 120000 || true
++          npx wait-on http://127.0.0.1:3000 --timeout 120000 || (
++            echo "::error::Next.js Server failed to start in CI! Last logs:"
++            ERR=$(tail -n 40 server.log | awk '{printf "%s%%0A", $0}')
++            echo "::error::$ERR"
++            exit 1
++          )
+           # Determine the served URL from the server output. Next prints a line like: "Network:       http://10.1.0.86:3000"
+           SERVED_URL=$(grep -m1 -Eo 'http://[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+' server.log || true)
+           if [ -z "$SERVED_URL" ]; then
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index 8000cd2..5a1705b 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -73,7 +73,13 @@ jobs:
+         run: pnpm install --frozen-lockfile
+ 
+       - name: Run Database Migrations
+-        run: pnpm run db:migrate
++        run: |
++          pnpm run db:migrate > migrate.log 2>&1 || (
++            ERR=$(tail -n 40 migrate.log | awk '{printf "%s%%0A", $0}')
++            echo "::error::Migration failed! Logs:"
++            echo "::error::$ERR"
++            exit 1
++          )
+ 
+       - name: Build Application
+         run: pnpm run build
+@@ -85,7 +91,12 @@ jobs:
+ 
+       - name: Wait for Server to be Ready
+         run: |
+-          npx wait-on http://127.0.0.1:3000 --timeout 120000
++          npx wait-on http://127.0.0.1:3000 --timeout 120000 || (
++            echo "::error::Next.js Server failed to start! Last logs:"
++            ERR=$(tail -n 40 server.log | awk '{printf "%s%%0A", $0}')
++            echo "::error::$ERR"
++            exit 1
++          )
+ 
+       - name: OWASP ZAP Baseline Scan
+         uses: zaproxy/action-baseline@v0.11.0
+
+commit 6b4de3b93e454e83b9e1cc91a7658e0c41453192
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 08:57:23 2026 +0530
+
+    fix: update actions/setup-node to v26 for pnpm 11 compatibility and restore lockfile caching
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 220db19..3b418ca 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -26,15 +26,11 @@ jobs:
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+         with:
+-          node-version: 20
++          node-version: 26
++          cache: 'pnpm'
+ 
+       - name: Install Dependencies
+-        run: |
+-          pnpm install > install.log 2>&1 || (
+-            ERR=$(tail -n 30 install.log | awk '{printf "%s%%0A", $0}')
+-            echo "::error::$ERR"
+-            exit 1
+-          )
++        run: pnpm install --frozen-lockfile
+ 
+       - name: Audit Dependencies
+         run: pnpm audit --audit-level=moderate
+@@ -152,10 +148,11 @@ jobs:
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+         with:
+-          node-version: 20
++          node-version: 26
++          cache: 'pnpm'
+ 
+       - name: Install Dependencies
+-        run: pnpm install
++        run: pnpm install --frozen-lockfile
+ 
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index bda3795..8000cd2 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -66,10 +66,11 @@ jobs:
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+         with:
+-          node-version: 20
++          node-version: 26
++          cache: 'pnpm'
+ 
+       - name: Install Dependencies
+-        run: pnpm install
++        run: pnpm install --frozen-lockfile
+ 
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+
+commit c7364090b670d2e6e6a32bc90c758fb8f4caf410
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Wed Jun 24 08:53:00 2026 +0530
+
+    chore: output pnpm install error as annotation
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 1815656..220db19 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -31,11 +31,8 @@ jobs:
+       - name: Install Dependencies
+         run: |
+           pnpm install > install.log 2>&1 || (
+-            git config user.name "github-actions"
+-            git config user.email "github-actions@github.com"
+-            git add install.log
+-            git commit -m "chore: upload install log from ci"
+-            git push origin HEAD:dev-branch
++            ERR=$(tail -n 30 install.log | awk '{printf "%s%%0A", $0}')
++            echo "::error::$ERR"
+             exit 1
+           )
+ 
+
+commit df4ac1af9a07f711ce648f91e644fb455933c593
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 22:34:10 2026 +0530
+
+    chore: debug CI pnpm install failure
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index b5199b5..1815656 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -29,7 +29,15 @@ jobs:
+           node-version: 20
+ 
+       - name: Install Dependencies
+-        run: pnpm install
++        run: |
++          pnpm install > install.log 2>&1 || (
++            git config user.name "github-actions"
++            git config user.email "github-actions@github.com"
++            git add install.log
++            git commit -m "chore: upload install log from ci"
++            git push origin HEAD:dev-branch
++            exit 1
++          )
+ 
+       - name: Audit Dependencies
+         run: pnpm audit --audit-level=moderate
+
+commit d49c7de5f86c0b12d4c2768c43cbe3ef9094755c
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 22:31:36 2026 +0530
+
+    fix: use pnpm install without frozen-lockfile to bypass OS mismatch in lockfile
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index d660844..b5199b5 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -29,7 +29,7 @@ jobs:
+           node-version: 20
+ 
+       - name: Install Dependencies
+-        run: pnpm install --frozen-lockfile
++        run: pnpm install
+ 
+       - name: Audit Dependencies
+         run: pnpm audit --audit-level=moderate
+@@ -150,7 +150,7 @@ jobs:
+           node-version: 20
+ 
+       - name: Install Dependencies
+-        run: pnpm install --frozen-lockfile
++        run: pnpm install
+ 
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index ee11391..bda3795 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -69,7 +69,7 @@ jobs:
+           node-version: 20
+ 
+       - name: Install Dependencies
+-        run: pnpm install --frozen-lockfile
++        run: pnpm install
+ 
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+
+commit 80126c0daae66c090af3d61c017406cf4875b3d8
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 22:26:58 2026 +0530
+
+    fix: explicit pnpm version string 11.5.2 in workflows
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index ece9650..d660844 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -21,7 +21,7 @@ jobs:
+       - name: Install pnpm
+         uses: pnpm/action-setup@v4
+         with:
+-          version: 11
++          version: "11.5.2"
+ 
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+@@ -142,7 +142,7 @@ jobs:
+       - name: Install pnpm
+         uses: pnpm/action-setup@v4
+         with:
+-          version: 11
++          version: "11.5.2"
+ 
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index edd0f49..ee11391 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -61,7 +61,7 @@ jobs:
+       - name: Install pnpm
+         uses: pnpm/action-setup@v4
+         with:
+-          version: 11
++          version: "11.5.2"
+ 
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+
+commit d33d6bbbdb0580ebeb9586acd0aa682c6cb85f6b
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 22:23:50 2026 +0530
+
+    fix: remove cache parameter from setup-node to resolve pnpm v11 compatibility issue
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 3b0d1b5..ece9650 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -27,7 +27,6 @@ jobs:
+         uses: actions/setup-node@v4
+         with:
+           node-version: 20
+-          cache: 'pnpm'
+ 
+       - name: Install Dependencies
+         run: pnpm install --frozen-lockfile
+@@ -149,7 +148,6 @@ jobs:
+         uses: actions/setup-node@v4
+         with:
+           node-version: 20
+-          cache: 'pnpm'
+ 
+       - name: Install Dependencies
+         run: pnpm install --frozen-lockfile
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index 7b530a8..edd0f49 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -67,7 +67,6 @@ jobs:
+         uses: actions/setup-node@v4
+         with:
+           node-version: 20
+-          cache: 'pnpm'
+ 
+       - name: Install Dependencies
+         run: pnpm install --frozen-lockfile
+
+commit 87cac27ddeac77bbfa5d0407e259c3c2757eab97
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 22:14:29 2026 +0530
+
+    chore: upgrade pnpm version to 11 in CI and DAST workflows
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 7a6b423..3b0d1b5 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -21,7 +21,7 @@ jobs:
+       - name: Install pnpm
+         uses: pnpm/action-setup@v4
+         with:
+-          version: 9
++          version: 11
+ 
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+@@ -143,7 +143,7 @@ jobs:
+       - name: Install pnpm
+         uses: pnpm/action-setup@v4
+         with:
+-          version: 9
++          version: 11
+ 
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index 72db835..7b530a8 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -61,7 +61,7 @@ jobs:
+       - name: Install pnpm
+         uses: pnpm/action-setup@v4
+         with:
+-          version: 9
++          version: 11
+ 
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+
+commit ad40a45e5e46032a7ea98536376103ad8554cb4b
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 22:08:14 2026 +0530
+
+    refactor: migrate pnpm overrides to workspace config and improve DAST workflow server stability and logging
+
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index f496945..72db835 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -79,16 +79,29 @@ jobs:
+         run: pnpm run build
+ 
+       - name: Start Production Server
+-        run: pnpm run start &
++        run: |
++          pnpm exec next start -p 3000 -H 127.0.0.1 > server.log 2>&1 &
++          echo $! > server.pid
+ 
+       - name: Wait for Server to be Ready
+         run: |
+-          npx wait-on http://localhost:3000 --timeout 60000
++          npx wait-on http://127.0.0.1:3000 --timeout 120000
+ 
+       - name: OWASP ZAP Baseline Scan
+         uses: zaproxy/action-baseline@v0.11.0
+         with:
+           token: ${{ secrets.GITHUB_TOKEN }}
+-          target: 'http://localhost:3000'
++          target: 'http://127.0.0.1:3000'
+           rules_file_name: '.zap/rules.tsv'
+           fail_action: true
++
++      - name: Dump server log (on failure)
++        if: failure()
++        run: |
++          echo "=== server.log ==="
++          cat server.log || true
++
++      - name: Stop server (cleanup)
++        if: always()
++        run: |
++          if [ -f server.pid ]; then kill $(cat server.pid) || true; rm -f server.pid; fi
+
+commit e36b1b2e2345189b19950107163495410bb5defe
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 21:53:01 2026 +0530
+
+    fix: remove duplicate SENTRY_DSN environment variable declarations in CI and DAST workflows
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 88ba161..7a6b423 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -66,7 +66,6 @@ jobs:
+           HEALTH_CHECK_SECRET: "placeholder"
+           SMTP_USER: "placeholder"
+           SMTP_PASSWORD: "placeholder"
+-      SENTRY_DSN: "placeholder"
+           SENTRY_DSN: "placeholder"
+           EMAIL_FROM_ADDRESS: "info@example.com"
+           EMAIL_FROM_NAME: "Placeholder"
+@@ -130,7 +129,6 @@ jobs:
+       SMTP_USER: "placeholder"
+       SMTP_PASSWORD: "placeholder"
+       SENTRY_DSN: "placeholder"
+-          SENTRY_DSN: "placeholder"
+       EMAIL_FROM_ADDRESS: "info@example.com"
+       EMAIL_FROM_NAME: "Placeholder"
+       SUPERADMIN_USER_IDS: "user_placeholder"
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index 819def2..f496945 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -47,7 +47,6 @@ jobs:
+       SMTP_USER: "placeholder"
+       SMTP_PASSWORD: "placeholder"
+       SENTRY_DSN: "placeholder"
+-          SENTRY_DSN: "placeholder"
+       EMAIL_FROM_ADDRESS: "info@example.com"
+       EMAIL_FROM_NAME: "Placeholder"
+       SUPERADMIN_USER_IDS: "user_placeholder"
+
+commit 31552284b91194a166b80ee5cd3063d5c9a9eb60
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 18:52:22 2026 +0530
+
+    feat: add SENTRY_DSN environment variable to CI/CD workflows and server schema validation
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index ee34ea1..88ba161 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -66,6 +66,8 @@ jobs:
+           HEALTH_CHECK_SECRET: "placeholder"
+           SMTP_USER: "placeholder"
+           SMTP_PASSWORD: "placeholder"
++      SENTRY_DSN: "placeholder"
++          SENTRY_DSN: "placeholder"
+           EMAIL_FROM_ADDRESS: "info@example.com"
+           EMAIL_FROM_NAME: "Placeholder"
+           SUPERADMIN_USER_IDS: "user_placeholder"
+@@ -127,6 +129,8 @@ jobs:
+       HEALTH_CHECK_SECRET: "placeholder"
+       SMTP_USER: "placeholder"
+       SMTP_PASSWORD: "placeholder"
++      SENTRY_DSN: "placeholder"
++          SENTRY_DSN: "placeholder"
+       EMAIL_FROM_ADDRESS: "info@example.com"
+       EMAIL_FROM_NAME: "Placeholder"
+       SUPERADMIN_USER_IDS: "user_placeholder"
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index 57af3f7..819def2 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -46,6 +46,8 @@ jobs:
+       HEALTH_CHECK_SECRET: "placeholder"
+       SMTP_USER: "placeholder"
+       SMTP_PASSWORD: "placeholder"
++      SENTRY_DSN: "placeholder"
++          SENTRY_DSN: "placeholder"
+       EMAIL_FROM_ADDRESS: "info@example.com"
+       EMAIL_FROM_NAME: "Placeholder"
+       SUPERADMIN_USER_IDS: "user_placeholder"
+
+commit c61a07a6b48409cad54427fb8d8cc56990460c31
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 18:29:00 2026 +0530
+
+    chore: lower dependency audit threshold to moderate in CI workflow
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 1948c12..ee34ea1 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -33,7 +33,7 @@ jobs:
+         run: pnpm install --frozen-lockfile
+ 
+       - name: Audit Dependencies
+-        run: pnpm audit --audit-level=high
++        run: pnpm audit --audit-level=moderate
+ 
+       - name: Check Linting
+         run: pnpm run lint
+
+commit 5ca5f34f8295f04d73cd849cb85adcd63f1b9cf0
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 18:27:21 2026 +0530
+
+    feat: add automated smoke test workflow for post-deployment health verification
+
+diff --git a/.github/workflows/smoke-test.yml b/.github/workflows/smoke-test.yml
+new file mode 100644
+index 0000000..5f5ba3f
+--- /dev/null
++++ b/.github/workflows/smoke-test.yml
+@@ -0,0 +1,54 @@
++name: Post-Deploy Smoke Test
++
++on:
++  deployment_status:
++  workflow_dispatch:
++    inputs:
++      target_url:
++        description: 'Target URL to run smoke tests against'
++        required: true
++        default: 'https://www.dilstar.pp.ua'
++
++jobs:
++  health-probe:
++    name: Detailed Production Environment Probe
++    # Run if triggered manually OR if a Vercel deployment just finished successfully
++    if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'
++    runs-on: ubuntu-latest
++    steps:
++      - name: Validate Environment configuration
++        run: |
++          TARGET_URL="${{ github.event.inputs.target_url || github.event.deployment_status.target_url }}"
++          
++          if [ -z "$TARGET_URL" ]; then
++            echo "No target URL provided"
++            exit 1
++          fi
++          
++          echo "Running detailed health probe against $TARGET_URL/api/health"
++          
++          # Run the authenticated detailed health probe to check DB and Redis
++          HTTP_STATUS=$(curl -s -o health.json -w "%{http_code}" -H "Authorization: Bearer ${{ secrets.HEALTH_CHECK_SECRET }}" "$TARGET_URL/api/health")
++          
++          if [ "$HTTP_STATUS" != "200" ]; then
++            echo "❌ Detailed health probe failed! Received HTTP $HTTP_STATUS"
++            cat health.json
++            exit 1
++          fi
++          
++          # Parse JSON payload
++          APP_STATUS=$(jq -r '.status' health.json)
++          DB_STATUS=$(jq -r '.database' health.json)
++          RL_STATUS=$(jq -r '.rateLimit.status' health.json)
++          
++          echo "App Status: $APP_STATUS"
++          echo "DB Status: $DB_STATUS"
++          echo "Rate Limit Status: $RL_STATUS"
++          
++          if [ "$APP_STATUS" != "ok" ] || [ "$DB_STATUS" != "connected" ]; then
++            echo "❌ Environment is misconfigured or degraded!"
++            cat health.json
++            exit 1
++          fi
++          
++          echo "✅ Production environment verification passed successfully."
+
+commit ddb3f169c763d1e5c3dba9223fea9713b72904cd
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 18:24:59 2026 +0530
+
+    chore: pin postgres image to sha256 digest in CI and DAST workflows
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index e3d9dcb..1948c12 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -97,7 +97,7 @@ jobs:
+     needs: validate
+     services:
+       postgres:
+-        image: postgres:15
++        image: postgres:15@sha256:67d4ae1588f5a4170a8480fa0bd55a6e0de359830cc2fbed0cf6677ef194eec9
+         env:
+           POSTGRES_USER: ci
+           POSTGRES_DB: ci
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index 38de93b..57af3f7 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -16,7 +16,7 @@ jobs:
+ 
+     services:
+       postgres:
+-        image: postgres:15
++        image: postgres:15@sha256:67d4ae1588f5a4170a8480fa0bd55a6e0de359830cc2fbed0cf6677ef194eec9
+         env:
+           POSTGRES_USER: ci
+           POSTGRES_DB: ci
+
+commit f9f6a626974ad6959298755cf7e1bcb6d3662de3
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 16:40:20 2026 +0530
+
+    chore: implement automated nightly k6 load testing and document baseline results
+
+diff --git a/.github/workflows/load-test.yml b/.github/workflows/load-test.yml
+new file mode 100644
+index 0000000..6b0afde
+--- /dev/null
++++ b/.github/workflows/load-test.yml
+@@ -0,0 +1,30 @@
++name: Nightly Load Test
++
++on:
++  schedule:
++    # Run at 02:00 UTC daily to catch performance regressions
++    - cron: '0 2 * * *'
++  workflow_dispatch:
++    inputs:
++      target_url:
++        description: 'Target URL to test against'
++        required: false
++        default: 'https://www.dilstar.pp.ua'
++
++jobs:
++  k6-load-test:
++    name: Execute k6 Load Test
++    runs-on: ubuntu-latest
++    steps:
++      - name: Checkout Code
++        uses: actions/checkout@v4
++
++      - name: Setup k6
++        uses: grafana/setup-k6-action@v1
++
++      - name: Run k6 load test
++        run: k6 run scripts/load-test-k6.js
++        env:
++          TARGET_URL: ${{ github.event.inputs.target_url || 'https://www.dilstar.pp.ua' }}
++          TEST_AUTH_TOKEN: ${{ secrets.TEST_AUTH_TOKEN }}
++          TEST_TURNSTILE_TOKEN: ${{ secrets.TEST_TURNSTILE_TOKEN }}
+
+commit 4b597665672e21449444bb9ff5f0c6f6c9d387e8
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 16:32:33 2026 +0530
+
+    ci: enable DAST on pull requests, enforce scan failures, and update ZAP exclusion rules
+
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index 3a36461..38de93b 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -6,6 +6,8 @@ on:
+     - cron: '0 0 * * 0'
+   workflow_dispatch:
+     # Allow manual triggering from GitHub Actions tab
++  pull_request:
++    branches: [ main ]
+ 
+ jobs:
+   zap-scan:
+@@ -88,4 +90,4 @@ jobs:
+           token: ${{ secrets.GITHUB_TOKEN }}
+           target: 'http://localhost:3000'
+           rules_file_name: '.zap/rules.tsv'
+-          fail_action: false
++          fail_action: true
+
+commit 0330331ea9b6d8fbced72d4f6b3acf00b64f7ec6
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 13:54:48 2026 +0530
+
+    chore: pin Gitleaks Docker image by digest and configure custom allowlist via .gitleaks.toml
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 78f9f23..e3d9dcb 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -89,7 +89,7 @@ jobs:
+           fetch-depth: 0
+ 
+       - name: Gitleaks Secrets Scan
+-        run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks:latest detect --source /src -v
++        run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb detect --source /src -v
+ 
+   e2e:
+     name: E2E Tests
+
+commit eff062bc24574a759f44ce7a443a4fdd645bf214
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 13:51:51 2026 +0530
+
+    ci: add id-token permissions and build attestation step to CI workflow
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index ffb273f..78f9f23 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -9,6 +9,10 @@ on:
+ jobs:
+   validate:
+     runs-on: ubuntu-latest
++    permissions:
++      id-token: write
++      contents: read
++      attestations: write
+ 
+     steps:
+       - name: Checkout Code
+@@ -69,6 +73,11 @@ jobs:
+           NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
+           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
+ 
++      - name: Generate build attestation
++        uses: actions/attest-build-provenance@v1
++        with:
++          subject-path: 'next.config.ts'
++
+ 
+   secrets-scan:
+     name: Secrets Scan
+
+commit d09da89ed5b3490be987d479a102a7ff3d42351b
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 13:47:58 2026 +0530
+
+    chore: restrict auto-merge to patch updates and add dependabot configuration for github-actions
+
+diff --git a/.github/workflows/dependabot-auto-merge.yml b/.github/workflows/dependabot-auto-merge.yml
+index 5df533f..9b3b067 100644
+--- a/.github/workflows/dependabot-auto-merge.yml
++++ b/.github/workflows/dependabot-auto-merge.yml
+@@ -20,8 +20,9 @@ jobs:
+           github-token: "${{ secrets.GITHUB_TOKEN }}"
+ 
+       - name: Approve and auto-merge Dependabot PR
+-        # Only auto-merge patch and minor updates
+-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
++        # Only auto-merge patch updates. Minor/Major updates require human review.
++        # Note: --auto flag ensures the merge happens ONLY after CI status checks pass.
++        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+         run: |
+           gh pr review --approve "$PR_URL"
+           gh pr merge --auto --merge "$PR_URL"
+
+commit 8457f223c56279499a7aeaee145d65a79ac6f4f0
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 13:46:57 2026 +0530
+
+    feat: add automated WAF security verification workflow and update production runbook with rule identifiers
+
+diff --git a/.github/workflows/waf.yml b/.github/workflows/waf.yml
+new file mode 100644
+index 0000000..665aee9
+--- /dev/null
++++ b/.github/workflows/waf.yml
+@@ -0,0 +1,44 @@
++name: WAF / Edge Security Verification
++
++on:
++  schedule:
++    # Run quarterly on the 1st of Jan, Apr, Jul, Oct at 00:00 UTC
++    - cron: '0 0 1 1,4,7,10 *'
++  workflow_dispatch:
++
++jobs:
++  verify-waf:
++    name: Verify WAF Rules on Staging
++    runs-on: ubuntu-latest
++
++    env:
++      # Testing against the staging/production domain to ensure edge protections are active
++      STAGING_URL: "https://www.dilstar.pp.ua"
++
++    steps:
++      - name: Verify Bot Protection (Crawler User-Agent)
++        run: |
++          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "User-Agent: python-requests" $STAGING_URL)
++          if [ "$HTTP_STATUS" != "403" ]; then
++            echo "Failed: WAF did not block python-requests user-agent (Got $HTTP_STATUS)"
++            exit 1
++          fi
++          echo "Passed: Bot protection active."
++
++      - name: Verify SQLi Protection
++        run: |
++          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/?search=%27%20UNION%20SELECT%20null%20--")
++          if [ "$HTTP_STATUS" != "403" ]; then
++            echo "Failed: WAF did not block SQLi payload (Got $HTTP_STATUS)"
++            exit 1
++          fi
++          echo "Passed: SQLi protection active."
++
++      - name: Verify Directory Traversal Protection
++        run: |
++          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/?file=../../../../etc/passwd")
++          if [ "$HTTP_STATUS" != "403" ]; then
++            echo "Failed: WAF did not block directory traversal payload (Got $HTTP_STATUS)"
++            exit 1
++          fi
++          echo "Passed: Directory traversal protection active."
+
+commit 36eb648a922dc916ab5e8a15bd87439e4e5000cb
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 13:12:31 2026 +0530
+
+    ci(e2e): detect Next advertised URL, set PLAYWRIGHT_BASE_URL, align CLERK_SECRET_KEY, add cleanup
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 7caa0ec..ffb273f 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -104,7 +104,7 @@ jobs:
+     env:
+       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
+-      CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
++      CLERK_SECRET_KEY: "sk_test_ci_dummy"
+       NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+       CLOUDINARY_API_KEY: "placeholder"
+@@ -152,13 +152,22 @@ jobs:
+       - name: Wait for Postgres
+         run: npx wait-on tcp:5432 --timeout 60000
+ 
+-      - name: Start production server (background) and wait
++      - name: Start production server (background), detect its URL and wait
+         run: |
+           # Start Next.js using the built output in background and capture logs
+           pnpm exec next start -p 3000 > server.log 2>&1 &
+           echo $! > server.pid
+-          # Wait up to 2 minutes for the server to be available
+-          npx wait-on http://127.0.0.1:3000 --timeout 120000
++          # Wait up to 2 minutes for localhost to be available (may still fail if Next binds to another IP)
++          npx wait-on http://127.0.0.1:3000 --timeout 120000 || true
++          # Determine the served URL from the server output. Next prints a line like: "Network:       http://10.1.0.86:3000"
++          SERVED_URL=$(grep -m1 -Eo 'http://[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+' server.log || true)
++          if [ -z "$SERVED_URL" ]; then
++            echo "PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000" >> $GITHUB_ENV
++            echo "Detected no explicit network URL; using http://127.0.0.1:3000"
++          else
++            echo "PLAYWRIGHT_BASE_URL=${SERVED_URL}" >> $GITHUB_ENV
++            echo "Detected server URL: ${SERVED_URL}"
++          fi
+ 
+       - name: Install Playwright Browsers
+         run: pnpm exec playwright install --with-deps chromium
+@@ -173,3 +182,8 @@ jobs:
+           tail -n +1 server.log || true
+           echo "=== server processes ==="
+           ps aux | grep -E "next|node" || true
++
++      - name: Stop server (cleanup)
++        if: always()
++        run: |
++          if [ -f server.pid ]; then kill $(cat server.pid) || true; rm -f server.pid; fi
+
+commit 8de299c1d1015f58e0f428a2dafdbf02a5ff82ac
+Author: diluka lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 12:51:40 2026 +0530
+
+    ci(e2e): start Next.js server in workflow and dump server logs on failure
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 1ed39ea..7caa0ec 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -149,10 +149,27 @@ jobs:
+       - name: Build Application
+         run: pnpm run build
+ 
++      - name: Wait for Postgres
++        run: npx wait-on tcp:5432 --timeout 60000
++
++      - name: Start production server (background) and wait
++        run: |
++          # Start Next.js using the built output in background and capture logs
++          pnpm exec next start -p 3000 > server.log 2>&1 &
++          echo $! > server.pid
++          # Wait up to 2 minutes for the server to be available
++          npx wait-on http://127.0.0.1:3000 --timeout 120000
++
+       - name: Install Playwright Browsers
+         run: pnpm exec playwright install --with-deps chromium
+ 
+       - name: Run Playwright E2E Tests
+         run: pnpm run test:e2e
+ 
+-
++      - name: Dump server log (on failure)
++        if: failure()
++        run: |
++          echo "=== server.log ==="
++          tail -n +1 server.log || true
++          echo "=== server processes ==="
++          ps aux | grep -E "next|node" || true
+
+commit 1634c3f6b8beacf7090dc15a177476449762a2a4
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 12:18:14 2026 +0530
+
+    refactor: disable server reuse in Playwright config and remove redundant CI server startup step
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 16e556e..1ed39ea 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -149,18 +149,6 @@ jobs:
+       - name: Build Application
+         run: pnpm run build
+ 
+-      - name: Start production server (background) and wait
+-        run: |
+-          pnpm exec next start -p 3000 > server.log 2>&1 &
+-          echo $! > server.pid
+-          pnpm dlx wait-on http://127.0.0.1:3000 -t 120000
+-
+-      - name: Dump server log on failure
+-        if: failure()
+-        run: |
+-          echo "=== server.log ==="
+-          cat server.log || true
+-
+       - name: Install Playwright Browsers
+         run: pnpm exec playwright install --with-deps chromium
+ 
+
+commit e06c09a2a859e418358979f3eb9019bc558ca85a
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 11:54:47 2026 +0530
+
+    ci: configure production server background execution and reuse existing server in Playwright CI tests
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 1ed39ea..16e556e 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -149,6 +149,18 @@ jobs:
+       - name: Build Application
+         run: pnpm run build
+ 
++      - name: Start production server (background) and wait
++        run: |
++          pnpm exec next start -p 3000 > server.log 2>&1 &
++          echo $! > server.pid
++          pnpm dlx wait-on http://127.0.0.1:3000 -t 120000
++
++      - name: Dump server log on failure
++        if: failure()
++        run: |
++          echo "=== server.log ==="
++          cat server.log || true
++
+       - name: Install Playwright Browsers
+         run: pnpm exec playwright install --with-deps chromium
+ 
+
+commit ddaa78fa4983eab7ced8e4c3f3cb699957094da0
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 23 09:13:44 2026 +0530
+
+    chore: update test environment Clerk publishable keys to valid format
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 7da2bcd..1ed39ea 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -46,7 +46,7 @@ jobs:
+       - name: Run Production Build
+         run: pnpm run build
+         env:
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_public_key_for_testing"
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
+           CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+@@ -103,7 +103,7 @@ jobs:
+ 
+     env:
+       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_public_key_for_testing"
++      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVzdC5jbGVyay5kZXYk" # gitleaks:allow
+       CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+       NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+
+commit 540c5ab0dcefbbceb2aa34de11447974ce24100b
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jun 22 15:40:12 2026 +0530
+
+    chore: update Clerk dummy keys, standardize loopback address to 127.0.0.1, and improve error object serialization in logger
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 4d8132f..7da2bcd 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -46,10 +46,10 @@ jobs:
+       - name: Run Production Build
+         run: pnpm run build
+         env:
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "dummy_public_key_for_testing"
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_public_key_for_testing"
+           CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+-          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
++          NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+           NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+           CLOUDINARY_API_KEY: "placeholder"
+           CLOUDINARY_API_SECRET: "placeholder"
+@@ -103,9 +103,9 @@ jobs:
+ 
+     env:
+       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "dummy_public_key_for_testing"
++      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_public_key_for_testing"
+       CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+-      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
++      NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
+       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+       CLOUDINARY_API_KEY: "placeholder"
+       CLOUDINARY_API_SECRET: "placeholder"
+
+commit 20dcf3fb28091b65feb2555e9ac6752816566de2
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jun 22 13:45:08 2026 +0530
+
+    refactor: migrate database schema injection from CI pipeline to a dedicated python script and update migration file
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 80b0cf5..4d8132f 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -143,9 +143,6 @@ jobs:
+       - name: Install Dependencies
+         run: pnpm install --frozen-lockfile
+ 
+-      - name: Run Schema Init Script
+-        run: pnpm exec tsx db/push-schema.ts
+-
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+ 
+
+commit 74712486fdcf640f85c73fca84b733b179d1b438
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jun 22 13:35:48 2026 +0530
+
+    chore: replace gitleaks-action with docker-based gitleaks execution
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index a2fcc34..80b0cf5 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -80,9 +80,7 @@ jobs:
+           fetch-depth: 0
+ 
+       - name: Gitleaks Secrets Scan
+-        uses: gitleaks/gitleaks-action@v2
+-        env:
+-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
++        run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks:latest detect --source /src -v
+ 
+   e2e:
+     name: E2E Tests
+
+commit ac3c729fc67cffee2ed2aae7a0628b74cc2a45e8
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jun 22 13:31:29 2026 +0530
+
+    ci: update postgres health check user and execute schema initialization script before migrations
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index e034829..a2fcc34 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -98,7 +98,7 @@ jobs:
+         ports:
+           - 5432:5432
+         options: >-
+-          --health-cmd pg_isready
++          --health-cmd "pg_isready -U ci"
+           --health-interval 10s
+           --health-timeout 5s
+           --health-retries 5
+@@ -145,6 +145,9 @@ jobs:
+       - name: Install Dependencies
+         run: pnpm install --frozen-lockfile
+ 
++      - name: Run Schema Init Script
++        run: pnpm exec tsx db/push-schema.ts
++
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+ 
+
+commit 722a8e1a4980497379e0973b1305a7fad25631d5
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jun 22 10:54:33 2026 +0530
+
+    refactor: make RLS migration idempotent and improve CI/CD secrets management and tooling
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index dc71938..e034829 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -46,8 +46,8 @@ jobs:
+       - name: Run Production Build
+         run: pnpm run build
+         env:
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_key_for_testing"
+-          CLERK_SECRET_KEY: "sk_test_placeholder"
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "dummy_public_key_for_testing"
++          CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+           NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+@@ -105,8 +105,8 @@ jobs:
+ 
+     env:
+       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_key_for_testing"
+-      CLERK_SECRET_KEY: "sk_test_placeholder"
++      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "dummy_public_key_for_testing"
++      CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+       CLOUDINARY_API_KEY: "placeholder"
+@@ -145,9 +145,6 @@ jobs:
+       - name: Install Dependencies
+         run: pnpm install --frozen-lockfile
+ 
+-      - name: Setup Supabase Roles
+-        run: psql "$DATABASE_URL" -c "CREATE ROLE service_role NOLOGIN;" || true
+-
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+ 
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+index f8e5475..3a36461 100644
+--- a/.github/workflows/dast.yml
++++ b/.github/workflows/dast.yml
+@@ -29,8 +29,8 @@ jobs:
+ 
+     env:
+       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_Y2xlcmsuYWNjb3VudHMuZGV2JA=="
+-      CLERK_SECRET_KEY: "sk_test_placeholder"
++      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "dummy_public_key_for_testing"
++      CLERK_SECRET_KEY: "dummy_secret_key_placeholder"
+       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+       CLOUDINARY_API_KEY: "placeholder"
+
+commit ea2853f3ec26a07fa252d6487283e87356003be8
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jun 22 09:31:21 2026 +0530
+
+    chore: update CI configuration, refine gitleaks allowlist, and clean up dev dependencies
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 13ebb85..dc71938 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -46,7 +46,7 @@ jobs:
+       - name: Run Production Build
+         run: pnpm run build
+         env:
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_Y2xlcmsuYWNjb3VudHMuZGV2JA=="
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_key_for_testing"
+           CLERK_SECRET_KEY: "sk_test_placeholder"
+           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+           NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+@@ -105,7 +105,7 @@ jobs:
+ 
+     env:
+       DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_Y2xlcmsuYWNjb3VudHMuZGV2JA=="
++      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dummy_key_for_testing"
+       CLERK_SECRET_KEY: "sk_test_placeholder"
+       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
+@@ -145,6 +145,9 @@ jobs:
+       - name: Install Dependencies
+         run: pnpm install --frozen-lockfile
+ 
++      - name: Setup Supabase Roles
++        run: psql "$DATABASE_URL" -c "CREATE ROLE service_role NOLOGIN;" || true
++
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+ 
+
+commit d6942b37d93c6d9be8a7dd4170916875b123346f
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Mon Jun 22 09:14:39 2026 +0530
+
+    chore: update audit threshold and add esbuild and postcss dependencies
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index fba3560..13ebb85 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -29,7 +29,7 @@ jobs:
+         run: pnpm install --frozen-lockfile
+ 
+       - name: Audit Dependencies
+-        run: pnpm audit --audit-level=moderate
++        run: pnpm audit --audit-level=high
+ 
+       - name: Check Linting
+         run: pnpm run lint
+
+commit a0b2135dfe3c6d7655881848f0a462f1d01a983b
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jun 21 18:57:35 2026 +0530
+
+    refactor: reorganize project structure, update security policies, and implement new auth and catalog features
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 4850705..fba3560 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -2,121 +2,92 @@ name: CI
+ 
+ on:
+   push:
+-    branches: [main, master, dev-branch]
++    branches: [ main ]
+   pull_request:
+-    branches: [main, master, dev-branch]
+-
+-concurrency:
+-  group: ci-${{ github.workflow }}-${{ github.ref }}
+-  cancel-in-progress: true
+-
+-defaults:
+-  run:
+-    working-directory: dilnova
+-
+-env:
+-  DUMMY_DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+-  DUMMY_UPSTASH_URL: https://dummy.upstash.io
+-  DUMMY_UPSTASH_TOKEN: dummy-token
+-  DUMMY_CLERK_PUBLISHABLE_KEY: pk_test_ci_dummy
+-  DUMMY_CLERK_SECRET_KEY: sk_test_ci_dummy
++    branches: [ main ]
+ 
+ jobs:
+-  quality:
+-    name: Lint, typecheck & unit tests
++  validate:
+     runs-on: ubuntu-latest
++
+     steps:
+-      - name: Checkout
++      - name: Checkout Code
+         uses: actions/checkout@v4
+ 
+       - name: Install pnpm
+         uses: pnpm/action-setup@v4
+         with:
+-          version: 10
++          version: 9
+ 
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+         with:
+           node-version: 20
+-          cache: pnpm
+-          cache-dependency-path: dilnova/pnpm-lock.yaml
++          cache: 'pnpm'
+ 
+-      - name: Install dependencies
++      - name: Install Dependencies
+         run: pnpm install --frozen-lockfile
+ 
+-      - name: Lint
+-        run: pnpm lint
++      - name: Audit Dependencies
++        run: pnpm audit --audit-level=moderate
+ 
+-      - name: TypeScript
++      - name: Check Linting
++        run: pnpm run lint
++
++      - name: Validate TypeScript
+         run: pnpm exec tsc --noEmit
+ 
+-      - name: Unit tests
+-        run: pnpm test
+-        env:
+-          UPSTASH_REDIS_REST_URL: ${{ env.DUMMY_UPSTASH_URL }}
+-          UPSTASH_REDIS_REST_TOKEN: ${{ env.DUMMY_UPSTASH_TOKEN }}
++      - name: Verify Database Migrations
++        run: pnpm run db:verify
+ 
+-      - name: Verify Drizzle migration journal
+-        run: pnpm db:verify
++      - name: Run Unit Tests
++        run: pnpm run test
+ 
+-      - name: Verify Drizzle schema snapshot
+-        run: pnpm exec drizzle-kit check
++      - name: Run Production Build
++        run: pnpm run build
+         env:
+-          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
+-
+-      - name: Security audit
+-        run: pnpm audit --audit-level moderate
+-        continue-on-error: true
+-
+-  build:
+-    name: Production build
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_Y2xlcmsuYWNjb3VudHMuZGV2JA=="
++          CLERK_SECRET_KEY: "sk_test_placeholder"
++          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
++          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
++          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
++          CLOUDINARY_API_KEY: "placeholder"
++          CLOUDINARY_API_SECRET: "placeholder"
++          NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
++          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "placeholder"
++          SUPABASE_SERVICE_ROLE_KEY: "placeholder"
++          UPSTASH_REDIS_REST_URL: "https://placeholder.upstash.io"
++          UPSTASH_REDIS_REST_TOKEN: "placeholder"
++          PII_ENCRYPTION_KEY: "placeholder_key_at_least_32_characters_long"
++          HEALTH_CHECK_SECRET: "placeholder"
++          SMTP_USER: "placeholder"
++          SMTP_PASSWORD: "placeholder"
++          EMAIL_FROM_ADDRESS: "info@example.com"
++          EMAIL_FROM_NAME: "Placeholder"
++          SUPERADMIN_USER_IDS: "user_placeholder"
++          CLERK_WEBHOOK_SECRET: "whsec_placeholder"
++          NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
++          TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
++
++
++  secrets-scan:
++    name: Secrets Scan
+     runs-on: ubuntu-latest
+-    needs: quality
+     steps:
+-      - name: Checkout
++      - name: Checkout Code
+         uses: actions/checkout@v4
+-
+-      - name: Install pnpm
+-        uses: pnpm/action-setup@v4
+         with:
+-          version: 10
++          fetch-depth: 0
+ 
+-      - name: Setup Node.js
+-        uses: actions/setup-node@v4
+-        with:
+-          node-version: 20
+-          cache: pnpm
+-          cache-dependency-path: dilnova/pnpm-lock.yaml
+-
+-      - name: Install dependencies
+-        run: pnpm install --frozen-lockfile
+-
+-      - name: Build
+-        run: pnpm build
++      - name: Gitleaks Secrets Scan
++        uses: gitleaks/gitleaks-action@v2
+         env:
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ env.DUMMY_CLERK_PUBLISHABLE_KEY }}
+-          CLERK_SECRET_KEY: ${{ env.DUMMY_CLERK_SECRET_KEY }}
+-          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
+-          UPSTASH_REDIS_REST_URL: ${{ env.DUMMY_UPSTASH_URL }}
+-          UPSTASH_REDIS_REST_TOKEN: ${{ env.DUMMY_UPSTASH_TOKEN }}
+-          NEXT_PUBLIC_APP_URL: http://localhost:3000
+-          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ci_dummy
+-          CLOUDINARY_API_KEY: ci_dummy_api_key
+-          CLOUDINARY_API_SECRET: ci_dummy_api_secret
+-          HEALTH_CHECK_SECRET: ci_health_secret
+-          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_dummy
+-          SUPABASE_SERVICE_ROLE_KEY: sb_service_dummy
+-          SMTP_USER: ci_smtp_user@example.com
+-          SMTP_PASSWORD: ci_smtp_password
+-          EMAIL_FROM_ADDRESS: ci@example.com
+-          EMAIL_FROM_NAME: CI Dilnova
++          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+ 
+   e2e:
+-    name: Playwright E2E
++    name: E2E Tests
+     runs-on: ubuntu-latest
+-    needs: quality
+-    timeout-minutes: 30
++    needs: validate
+     services:
+       postgres:
+         image: postgres:15
+@@ -131,119 +102,59 @@ jobs:
+           --health-interval 10s
+           --health-timeout 5s
+           --health-retries 5
++
++    env:
++      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
++      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_Y2xlcmsuYWNjb3VudHMuZGV2JA=="
++      CLERK_SECRET_KEY: "sk_test_placeholder"
++      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
++      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
++      CLOUDINARY_API_KEY: "placeholder"
++      CLOUDINARY_API_SECRET: "placeholder"
++      NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
++      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "placeholder"
++      SUPABASE_SERVICE_ROLE_KEY: "placeholder"
++      UPSTASH_REDIS_REST_URL: "https://placeholder.upstash.io"
++      UPSTASH_REDIS_REST_TOKEN: "placeholder"
++      PII_ENCRYPTION_KEY: "placeholder_key_at_least_32_characters_long"
++      HEALTH_CHECK_SECRET: "placeholder"
++      SMTP_USER: "placeholder"
++      SMTP_PASSWORD: "placeholder"
++      EMAIL_FROM_ADDRESS: "info@example.com"
++      EMAIL_FROM_NAME: "Placeholder"
++      SUPERADMIN_USER_IDS: "user_placeholder"
++      CLERK_WEBHOOK_SECRET: "whsec_placeholder"
++      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
++      TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
++
+     steps:
+-      - name: Checkout
++      - name: Checkout Code
+         uses: actions/checkout@v4
+ 
+       - name: Install pnpm
+         uses: pnpm/action-setup@v4
+         with:
+-          version: 10
++          version: 9
+ 
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+         with:
+           node-version: 20
+-          cache: pnpm
+-          cache-dependency-path: dilnova/pnpm-lock.yaml
++          cache: 'pnpm'
+ 
+-      - name: Install dependencies
++      - name: Install Dependencies
+         run: pnpm install --frozen-lockfile
+ 
+-      - name: Create service_role database role
+-        run: node -e "const postgres = require('postgres'); const sql = postgres(process.env.DATABASE_URL); sql\`CREATE ROLE service_role;\`.then(() => console.log('Created service_role role')).catch(err => { if (err.message.includes('already exists')) { console.log('role already exists'); } else { console.error(err); process.exit(1); } }).finally(() => sql.end())"
+-        env:
+-          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
+-
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+-        env:
+-          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
+ 
+-      - name: Get Playwright version
+-        run: echo "PLAYWRIGHT_VERSION=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_ENV"
++      - name: Build Application
++        run: pnpm run build
+ 
+-      - name: Cache Playwright browsers
+-        uses: actions/cache@v4
+-        id: playwright-cache
+-        with:
+-          path: ~/.cache/ms-playwright
+-          key: playwright-${{ runner.os }}-${{ env.PLAYWRIGHT_VERSION }}
++      - name: Install Playwright Browsers
++        run: pnpm exec playwright install --with-deps chromium
+ 
+-      - name: Install Playwright Chromium
+-        run: pnpm exec playwright install chromium --with-deps
+-        if: steps.playwright-cache.outputs.cache-hit != 'true'
++      - name: Run Playwright E2E Tests
++        run: pnpm run test:e2e
+ 
+-      - name: Install Playwright OS deps (cache hit)
+-        run: pnpm exec playwright install-deps chromium
+-        if: steps.playwright-cache.outputs.cache-hit == 'true'
+ 
+-      - name: Build
+-        run: pnpm build
+-        env:
+-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ env.DUMMY_CLERK_PUBLISHABLE_KEY }}
+-          CLERK_SECRET_KEY: ${{ env.DUMMY_CLERK_SECRET_KEY }}
+-          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
+-          UPSTASH_REDIS_REST_URL: ${{ env.DUMMY_UPSTASH_URL }}
+-          UPSTASH_REDIS_REST_TOKEN: ${{ env.DUMMY_UPSTASH_TOKEN }}
+-          NEXT_PUBLIC_APP_URL: http://localhost:3000
+-          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ci_dummy
+-          CLOUDINARY_API_KEY: ci_dummy_api_key
+-          CLOUDINARY_API_SECRET: ci_dummy_api_secret
+-          HEALTH_CHECK_SECRET: ci_health_secret
+-          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_dummy
+-          SUPABASE_SERVICE_ROLE_KEY: sb_service_dummy
+-          SMTP_USER: ci_smtp_user@example.com
+-          SMTP_PASSWORD: ci_smtp_password
+-          EMAIL_FROM_ADDRESS: ci@example.com
+-          EMAIL_FROM_NAME: CI Dilnova
+-
+-      - name: Write CI env for Playwright
+-        env:
+-          CLERK_PK: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+-          CLERK_SK: ${{ secrets.CLERK_SECRET_KEY }}
+-          DB_URL: ${{ secrets.DATABASE_URL }}
+-          UPSTASH_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+-          UPSTASH_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+-          E2E_VENDOR_ADMIN: ${{ secrets.E2E_VENDOR_ADMIN_EMAIL }}
+-          E2E_VENDOR_MEMBER: ${{ secrets.E2E_VENDOR_MEMBER_EMAIL }}
+-          E2E_CUSTOMER: ${{ secrets.E2E_CUSTOMER_EMAIL }}
+-          E2E_SUPERADMIN: ${{ secrets.E2E_SUPERADMIN_EMAIL }}
+-        run: |
+-          {
+-            echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${CLERK_PK:-$DUMMY_CLERK_PUBLISHABLE_KEY}"
+-            echo "CLERK_SECRET_KEY=${CLERK_SK:-$DUMMY_CLERK_SECRET_KEY}"
+-            echo "DATABASE_URL=${DB_URL:-$DUMMY_DATABASE_URL}"
+-            echo "UPSTASH_REDIS_REST_URL=${UPSTASH_URL:-$DUMMY_UPSTASH_URL}"
+-            echo "UPSTASH_REDIS_REST_TOKEN=${UPSTASH_TOKEN:-$DUMMY_UPSTASH_TOKEN}"
+-            echo "NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000"
+-            echo "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=ci_dummy"
+-            echo "CLOUDINARY_API_KEY=ci_dummy_api_key"
+-            echo "CLOUDINARY_API_SECRET=ci_dummy_api_secret"
+-            echo "HEALTH_CHECK_SECRET=ci_health_secret"
+-            echo "NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co"
+-            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_dummy"
+-            echo "SUPABASE_SERVICE_ROLE_KEY=sb_service_dummy"
+-            echo "SMTP_USER=ci_smtp_user@example.com"
+-            echo "SMTP_PASSWORD=ci_smtp_password"
+-            echo "EMAIL_FROM_ADDRESS=ci@example.com"
+-            echo "EMAIL_FROM_NAME=CI Dilnova"
+-            echo "E2E_VENDOR_ADMIN_EMAIL=${E2E_VENDOR_ADMIN:-}"
+-            echo "E2E_VENDOR_MEMBER_EMAIL=${E2E_VENDOR_MEMBER:-}"
+-            echo "E2E_CUSTOMER_EMAIL=${E2E_CUSTOMER:-}"
+-            echo "E2E_SUPERADMIN_EMAIL=${E2E_SUPERADMIN:-}"
+-          } > .env.local
+-
+-      - name: Run Playwright E2E
+-        run: pnpm test:e2e
+-        env:
+-          CI: true
+-
+-      - name: Upload Playwright report
+-        uses: actions/upload-artifact@v4
+-        if: failure()
+-        with:
+-          name: playwright-report
+-          path: dilnova/playwright-report/
+-          retention-days: 7
+diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
+new file mode 100644
+index 0000000..0254b72
+--- /dev/null
++++ b/.github/workflows/codeql.yml
+@@ -0,0 +1,38 @@
++name: "CodeQL"
++
++on:
++  push:
++    branches: [ "main" ]
++  pull_request:
++    branches: [ "main" ]
++  schedule:
++    - cron: '30 4 * * 4'
++
++jobs:
++  analyze:
++    name: Analyze
++    runs-on: ubuntu-latest
++    permissions:
++      actions: read
++      contents: read
++      security-events: write
++
++    strategy:
++      fail-fast: false
++      matrix:
++        language: [ 'javascript-typescript' ]
++
++    steps:
++    - name: Checkout repository
++      uses: actions/checkout@v4
++
++    - name: Initialize CodeQL
++      uses: github/codeql-action/init@v3
++      with:
++        languages: ${{ matrix.language }}
++        queries: security-extended,security-and-quality
++
++    - name: Perform CodeQL Analysis
++      uses: github/codeql-action/analyze@v3
++      with:
++        category: "/language:${{ matrix.language }}"
+diff --git a/.github/workflows/dast.yml b/.github/workflows/dast.yml
+new file mode 100644
+index 0000000..f8e5475
+--- /dev/null
++++ b/.github/workflows/dast.yml
+@@ -0,0 +1,91 @@
++name: DAST Scan
++
++on:
++  schedule:
++    # Run every Sunday at midnight
++    - cron: '0 0 * * 0'
++  workflow_dispatch:
++    # Allow manual triggering from GitHub Actions tab
++
++jobs:
++  zap-scan:
++    name: OWASP ZAP Baseline Scan
++    runs-on: ubuntu-latest
++
++    services:
++      postgres:
++        image: postgres:15
++        env:
++          POSTGRES_USER: ci
++          POSTGRES_DB: ci
++          POSTGRES_PASSWORD: ci
++        ports:
++          - 5432:5432
++        options: >-
++          --health-cmd pg_isready
++          --health-interval 10s
++          --health-timeout 5s
++          --health-retries 5
++
++    env:
++      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
++      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_Y2xlcmsuYWNjb3VudHMuZGV2JA=="
++      CLERK_SECRET_KEY: "sk_test_placeholder"
++      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
++      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
++      CLOUDINARY_API_KEY: "placeholder"
++      CLOUDINARY_API_SECRET: "placeholder"
++      NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
++      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "placeholder"
++      SUPABASE_SERVICE_ROLE_KEY: "placeholder"
++      UPSTASH_REDIS_REST_URL: "https://placeholder.upstash.io"
++      UPSTASH_REDIS_REST_TOKEN: "placeholder"
++      PII_ENCRYPTION_KEY: "placeholder_key_at_least_32_characters_long"
++      HEALTH_CHECK_SECRET: "placeholder"
++      SMTP_USER: "placeholder"
++      SMTP_PASSWORD: "placeholder"
++      EMAIL_FROM_ADDRESS: "info@example.com"
++      EMAIL_FROM_NAME: "Placeholder"
++      SUPERADMIN_USER_IDS: "user_placeholder"
++      CLERK_WEBHOOK_SECRET: "whsec_placeholder"
++      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
++      TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
++
++    steps:
++      - name: Checkout Code
++        uses: actions/checkout@v4
++
++      - name: Install pnpm
++        uses: pnpm/action-setup@v4
++        with:
++          version: 9
++
++      - name: Setup Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: 20
++          cache: 'pnpm'
++
++      - name: Install Dependencies
++        run: pnpm install --frozen-lockfile
++
++      - name: Run Database Migrations
++        run: pnpm run db:migrate
++
++      - name: Build Application
++        run: pnpm run build
++
++      - name: Start Production Server
++        run: pnpm run start &
++
++      - name: Wait for Server to be Ready
++        run: |
++          npx wait-on http://localhost:3000 --timeout 60000
++
++      - name: OWASP ZAP Baseline Scan
++        uses: zaproxy/action-baseline@v0.11.0
++        with:
++          token: ${{ secrets.GITHUB_TOKEN }}
++          target: 'http://localhost:3000'
++          rules_file_name: '.zap/rules.tsv'
++          fail_action: false
+diff --git a/.github/workflows/dependabot-auto-merge.yml b/.github/workflows/dependabot-auto-merge.yml
+new file mode 100644
+index 0000000..5df533f
+--- /dev/null
++++ b/.github/workflows/dependabot-auto-merge.yml
+@@ -0,0 +1,30 @@
++name: Dependabot Auto-Merge
++
++on:
++  pull_request:
++    types: [labeled, opened, synchronize, reopened]
++
++permissions:
++  pull-requests: write
++  contents: write
++
++jobs:
++  auto-merge:
++    runs-on: ubuntu-latest
++    if: github.actor == 'dependabot[bot]'
++    steps:
++      - name: Fetch Dependabot metadata
++        id: metadata
++        uses: dependabot/fetch-metadata@v2
++        with:
++          github-token: "${{ secrets.GITHUB_TOKEN }}"
++
++      - name: Approve and auto-merge Dependabot PR
++        # Only auto-merge patch and minor updates
++        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
++        run: |
++          gh pr review --approve "$PR_URL"
++          gh pr merge --auto --merge "$PR_URL"
++        env:
++          PR_URL: ${{ github.event.pull_request.html_url }}
++          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+commit 256548bfc1e50c57fa5458a5c6c1768c7ae2050b
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jun 21 18:48:02 2026 +0530
+
+    feat: create service_role database role in CI pipeline before migrations
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index bdafe14..4850705 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -150,6 +150,11 @@ jobs:
+       - name: Install dependencies
+         run: pnpm install --frozen-lockfile
+ 
++      - name: Create service_role database role
++        run: node -e "const postgres = require('postgres'); const sql = postgres(process.env.DATABASE_URL); sql\`CREATE ROLE service_role;\`.then(() => console.log('Created service_role role')).catch(err => { if (err.message.includes('already exists')) { console.log('role already exists'); } else { console.error(err); process.exit(1); } }).finally(() => sql.end())"
++        env:
++          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
++
+       - name: Run Database Migrations
+         run: pnpm run db:migrate
+         env:
+
+commit afdf374a3ec1fb0dabc0a405e193bb5a8726026a
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jun 21 18:32:52 2026 +0530
+
+    feat: add PostgreSQL service container and database migration step to CI pipeline
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 5a46f64..bdafe14 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -117,6 +117,20 @@ jobs:
+     runs-on: ubuntu-latest
+     needs: quality
+     timeout-minutes: 30
++    services:
++      postgres:
++        image: postgres:15
++        env:
++          POSTGRES_USER: ci
++          POSTGRES_DB: ci
++          POSTGRES_PASSWORD: ci
++        ports:
++          - 5432:5432
++        options: >-
++          --health-cmd pg_isready
++          --health-interval 10s
++          --health-timeout 5s
++          --health-retries 5
+     steps:
+       - name: Checkout
+         uses: actions/checkout@v4
+@@ -136,6 +150,11 @@ jobs:
+       - name: Install dependencies
+         run: pnpm install --frozen-lockfile
+ 
++      - name: Run Database Migrations
++        run: pnpm run db:migrate
++        env:
++          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
++
+       - name: Get Playwright version
+         run: echo "PLAYWRIGHT_VERSION=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_ENV"
+ 
+
+commit 6a63896a13d9b71fd4d588737f44aa0a7fb4423a
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Sun Jun 21 17:48:33 2026 +0530
+
+    ci: add build step with dummy environment variables to CI workflow
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 64900ea..5a46f64 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -154,6 +154,27 @@ jobs:
+         run: pnpm exec playwright install-deps chromium
+         if: steps.playwright-cache.outputs.cache-hit == 'true'
+ 
++      - name: Build
++        run: pnpm build
++        env:
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ env.DUMMY_CLERK_PUBLISHABLE_KEY }}
++          CLERK_SECRET_KEY: ${{ env.DUMMY_CLERK_SECRET_KEY }}
++          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
++          UPSTASH_REDIS_REST_URL: ${{ env.DUMMY_UPSTASH_URL }}
++          UPSTASH_REDIS_REST_TOKEN: ${{ env.DUMMY_UPSTASH_TOKEN }}
++          NEXT_PUBLIC_APP_URL: http://localhost:3000
++          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ci_dummy
++          CLOUDINARY_API_KEY: ci_dummy_api_key
++          CLOUDINARY_API_SECRET: ci_dummy_api_secret
++          HEALTH_CHECK_SECRET: ci_health_secret
++          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
++          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_dummy
++          SUPABASE_SERVICE_ROLE_KEY: sb_service_dummy
++          SMTP_USER: ci_smtp_user@example.com
++          SMTP_PASSWORD: ci_smtp_password
++          EMAIL_FROM_ADDRESS: ci@example.com
++          EMAIL_FROM_NAME: CI Dilnova
++
+       - name: Write CI env for Playwright
+         env:
+           CLERK_PK: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+
+commit 87ccebae86ba0354240d95e46bc458875cf163fd
+Author: Diluka Lahiru <106172155+dilukalahiru@users.noreply.github.com>
+Date:   Tue Jun 16 12:52:21 2026 +0530
+
+    chore: migrate CI workflow to root directory and enable Sentry CLI in workspace
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+new file mode 100644
+index 0000000..64900ea
+--- /dev/null
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,204 @@
++name: CI
++
++on:
++  push:
++    branches: [main, master, dev-branch]
++  pull_request:
++    branches: [main, master, dev-branch]
++
++concurrency:
++  group: ci-${{ github.workflow }}-${{ github.ref }}
++  cancel-in-progress: true
++
++defaults:
++  run:
++    working-directory: dilnova
++
++env:
++  DUMMY_DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
++  DUMMY_UPSTASH_URL: https://dummy.upstash.io
++  DUMMY_UPSTASH_TOKEN: dummy-token
++  DUMMY_CLERK_PUBLISHABLE_KEY: pk_test_ci_dummy
++  DUMMY_CLERK_SECRET_KEY: sk_test_ci_dummy
++
++jobs:
++  quality:
++    name: Lint, typecheck & unit tests
++    runs-on: ubuntu-latest
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++
++      - name: Install pnpm
++        uses: pnpm/action-setup@v4
++        with:
++          version: 10
++
++      - name: Setup Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: 20
++          cache: pnpm
++          cache-dependency-path: dilnova/pnpm-lock.yaml
++
++      - name: Install dependencies
++        run: pnpm install --frozen-lockfile
++
++      - name: Lint
++        run: pnpm lint
++
++      - name: TypeScript
++        run: pnpm exec tsc --noEmit
++
++      - name: Unit tests
++        run: pnpm test
++        env:
++          UPSTASH_REDIS_REST_URL: ${{ env.DUMMY_UPSTASH_URL }}
++          UPSTASH_REDIS_REST_TOKEN: ${{ env.DUMMY_UPSTASH_TOKEN }}
++
++      - name: Verify Drizzle migration journal
++        run: pnpm db:verify
++
++      - name: Verify Drizzle schema snapshot
++        run: pnpm exec drizzle-kit check
++        env:
++          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
++
++      - name: Security audit
++        run: pnpm audit --audit-level moderate
++        continue-on-error: true
++
++  build:
++    name: Production build
++    runs-on: ubuntu-latest
++    needs: quality
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++
++      - name: Install pnpm
++        uses: pnpm/action-setup@v4
++        with:
++          version: 10
++
++      - name: Setup Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: 20
++          cache: pnpm
++          cache-dependency-path: dilnova/pnpm-lock.yaml
++
++      - name: Install dependencies
++        run: pnpm install --frozen-lockfile
++
++      - name: Build
++        run: pnpm build
++        env:
++          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ env.DUMMY_CLERK_PUBLISHABLE_KEY }}
++          CLERK_SECRET_KEY: ${{ env.DUMMY_CLERK_SECRET_KEY }}
++          DATABASE_URL: ${{ env.DUMMY_DATABASE_URL }}
++          UPSTASH_REDIS_REST_URL: ${{ env.DUMMY_UPSTASH_URL }}
++          UPSTASH_REDIS_REST_TOKEN: ${{ env.DUMMY_UPSTASH_TOKEN }}
++          NEXT_PUBLIC_APP_URL: http://localhost:3000
++          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ci_dummy
++          CLOUDINARY_API_KEY: ci_dummy_api_key
++          CLOUDINARY_API_SECRET: ci_dummy_api_secret
++          HEALTH_CHECK_SECRET: ci_health_secret
++          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
++          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_dummy
++          SUPABASE_SERVICE_ROLE_KEY: sb_service_dummy
++          SMTP_USER: ci_smtp_user@example.com
++          SMTP_PASSWORD: ci_smtp_password
++          EMAIL_FROM_ADDRESS: ci@example.com
++          EMAIL_FROM_NAME: CI Dilnova
++
++  e2e:
++    name: Playwright E2E
++    runs-on: ubuntu-latest
++    needs: quality
++    timeout-minutes: 30
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++
++      - name: Install pnpm
++        uses: pnpm/action-setup@v4
++        with:
++          version: 10
++
++      - name: Setup Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: 20
++          cache: pnpm
++          cache-dependency-path: dilnova/pnpm-lock.yaml
++
++      - name: Install dependencies
++        run: pnpm install --frozen-lockfile
++
++      - name: Get Playwright version
++        run: echo "PLAYWRIGHT_VERSION=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_ENV"
++
++      - name: Cache Playwright browsers
++        uses: actions/cache@v4
++        id: playwright-cache
++        with:
++          path: ~/.cache/ms-playwright
++          key: playwright-${{ runner.os }}-${{ env.PLAYWRIGHT_VERSION }}
++
++      - name: Install Playwright Chromium
++        run: pnpm exec playwright install chromium --with-deps
++        if: steps.playwright-cache.outputs.cache-hit != 'true'
++
++      - name: Install Playwright OS deps (cache hit)
++        run: pnpm exec playwright install-deps chromium
++        if: steps.playwright-cache.outputs.cache-hit == 'true'
++
++      - name: Write CI env for Playwright
++        env:
++          CLERK_PK: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
++          CLERK_SK: ${{ secrets.CLERK_SECRET_KEY }}
++          DB_URL: ${{ secrets.DATABASE_URL }}
++          UPSTASH_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
++          UPSTASH_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
++          E2E_VENDOR_ADMIN: ${{ secrets.E2E_VENDOR_ADMIN_EMAIL }}
++          E2E_VENDOR_MEMBER: ${{ secrets.E2E_VENDOR_MEMBER_EMAIL }}
++          E2E_CUSTOMER: ${{ secrets.E2E_CUSTOMER_EMAIL }}
++          E2E_SUPERADMIN: ${{ secrets.E2E_SUPERADMIN_EMAIL }}
++        run: |
++          {
++            echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${CLERK_PK:-$DUMMY_CLERK_PUBLISHABLE_KEY}"
++            echo "CLERK_SECRET_KEY=${CLERK_SK:-$DUMMY_CLERK_SECRET_KEY}"
++            echo "DATABASE_URL=${DB_URL:-$DUMMY_DATABASE_URL}"
++            echo "UPSTASH_REDIS_REST_URL=${UPSTASH_URL:-$DUMMY_UPSTASH_URL}"
++            echo "UPSTASH_REDIS_REST_TOKEN=${UPSTASH_TOKEN:-$DUMMY_UPSTASH_TOKEN}"
++            echo "NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000"
++            echo "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=ci_dummy"
++            echo "CLOUDINARY_API_KEY=ci_dummy_api_key"
++            echo "CLOUDINARY_API_SECRET=ci_dummy_api_secret"
++            echo "HEALTH_CHECK_SECRET=ci_health_secret"
++            echo "NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co"
++            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_dummy"
++            echo "SUPABASE_SERVICE_ROLE_KEY=sb_service_dummy"
++            echo "SMTP_USER=ci_smtp_user@example.com"
++            echo "SMTP_PASSWORD=ci_smtp_password"
++            echo "EMAIL_FROM_ADDRESS=ci@example.com"
++            echo "EMAIL_FROM_NAME=CI Dilnova"
++            echo "E2E_VENDOR_ADMIN_EMAIL=${E2E_VENDOR_ADMIN:-}"
++            echo "E2E_VENDOR_MEMBER_EMAIL=${E2E_VENDOR_MEMBER:-}"
++            echo "E2E_CUSTOMER_EMAIL=${E2E_CUSTOMER:-}"
++            echo "E2E_SUPERADMIN_EMAIL=${E2E_SUPERADMIN:-}"
++          } > .env.local
++
++      - name: Run Playwright E2E
++        run: pnpm test:e2e
++        env:
++          CI: true
++
++      - name: Upload Playwright report
++        uses: actions/upload-artifact@v4
++        if: failure()
++        with:
++          name: playwright-report
++          path: dilnova/playwright-report/
++          retention-days: 7

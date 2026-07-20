@@ -14,7 +14,13 @@ const BANK_KEYS = [
   'bankTransferInstructions',
 ];
 
-if (process.env.CI === 'true' || process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy') {
+// SECURITY: Require all three conditions to safely skip in CI.
+// Prevents skipping the migration if Vercel happens to have CI=true.
+if (
+  process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy' &&
+  process.env.NODE_ENV !== 'production' &&
+  process.env.VERCEL !== '1'
+) {
   console.log('Skipping bank metadata migration in CI environment.');
   process.exit(0);
 }
