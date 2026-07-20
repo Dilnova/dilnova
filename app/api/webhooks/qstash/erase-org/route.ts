@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { logger } from '@/shared/logging/logger';
 import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
 import { Redis } from '@upstash/redis';

@@ -53,6 +53,10 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
           query: Parameters<PostgresClient['unsafe']>[0],
           params?: Parameters<PostgresClient['unsafe']>[1]
         ): ReturnType<PostgresClient['unsafe']> => {
+        return (
+          query: Parameters<PostgresClient['unsafe']>[0],
+          params?: Parameters<PostgresClient['unsafe']>[1]
+        ): ReturnType<PostgresClient['unsafe']> => {
           const start = performance.now();
           
           let span: any;
@@ -70,6 +74,8 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
             }
           }
 
+          const unsafeFn = orig as PostgresClient['unsafe'];
+          const result = unsafeFn.call(target, query, params as any);
           const unsafeFn = orig as PostgresClient['unsafe'];
           const result = unsafeFn.call(target, query, params as any);
           
@@ -96,8 +102,9 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
             finish(err);
             throw err;
           }) as ReturnType<PostgresClient['unsafe']>;
+          }) as ReturnType<PostgresClient['unsafe']>;
 
-          wrappedResult.values = () => {
+          (wrappedResult as any).values = () => {
             return result.values().then((res: any) => {
               finish();
               return res;
@@ -112,6 +119,10 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
       }
       
       if (prop === 'begin' || prop === 'savepoint') {
+        type TxCallback = (client: PostgresClient) => any;
+        return (cb: TxCallback) => {
+          const txFn = orig as (cb: TxCallback) => any;
+          return txFn.call(target, (txClient: PostgresClient) => {
         type TxCallback = (client: PostgresClient) => any;
         return (cb: TxCallback) => {
           const txFn = orig as (cb: TxCallback) => any;
