@@ -49,7 +49,7 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
     get(target, prop) {
       const orig = target[prop as keyof typeof target];
       if (prop === 'unsafe') {
-        return (query: string, params?: any[]) => {
+        return (query: string, params?: Parameters<PostgresClient['unsafe']>[1]) => {
           const start = performance.now();
           
           let span: any;
@@ -67,7 +67,7 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
             }
           }
 
-          const result = (orig as any).call(target, query, params);
+          const result = (orig as PostgresClient['unsafe']).call(target, query, params);
           
           const finish = (error?: any) => {
             const duration = performance.now() - start;
@@ -93,7 +93,7 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
             throw err;
           });
 
-          wrappedResult.values = () => {
+          (wrappedResult as any).values = () => {
             return result.values().then((res: any) => {
               finish();
               return res;
@@ -108,14 +108,15 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
       }
       
       if (prop === 'begin' || prop === 'savepoint') {
-        return (cb: any) => {
-          return (orig as any).call(target, (txClient: PostgresClient) => {
+        return (cb: (tx: PostgresClient) => unknown) => {
+          const txFn = orig as (callback: (tx: PostgresClient) => unknown) => ReturnType<PostgresClient['begin']>;
+          return txFn.call(target, (txClient: PostgresClient) => {
             return cb(withSlowQueryLogger(txClient));
           });
         };
       }
 
-      return typeof orig === 'function' ? (orig as any).bind(target) : orig;
+      return typeof orig === 'function' ? (orig as CallableFunction).bind(target) : orig;
     }
   }) as PostgresClient;
 }

@@ -17,11 +17,11 @@ export default function LanguageSelector() {
 
   useEffect(() => {
     // 1. Define global init function immediately so it is always present
-    (window as any).googleTranslateElementInit = () => {
-      new (window as any).google.translate.TranslateElement({
+    window.googleTranslateElementInit = () => {
+      new window.google!.translate!.TranslateElement({
         pageLanguage: 'en',
         includedLanguages: 'en,si,ta',
-        layout: (window as any).google.translate.TranslateElement.InlineLayout.SIMPLE,
+        layout: window.google!.translate!.TranslateElement.InlineLayout?.SIMPLE,
         autoDisplay: false
       }, 'google_translate_element');
     };
@@ -54,9 +54,9 @@ export default function LanguageSelector() {
       document.body.appendChild(script);
     } else if (!isBot) {
       // If script is already loaded but we remounted, re-run init if google API exists
-      if ((window as any).google && (window as any).google.translate) {
+      if (window.google && window.google.translate) {
         try {
-          (window as any).googleTranslateElementInit();
+          window.googleTranslateElementInit?.();
         } catch (e) {
           console.warn('Google Translate re-init deferred:', { error: e });
         }

@@ -10,6 +10,7 @@ import { getVendorInventoryData } from '@/features/inventory/vendor.actions';
 import { getVendorProductsForOrg } from '@/features/catalog/queries';
 import { getBranchCountForOrg, getOnlineOrderCountForVendor, getCachedOrganization } from '@/features/vendor/queries';
 import { hasBankTransferConfiguredForOrg } from '@/features/billing/bank-transfer-metadata';
+import type { VendorInventoryFullData } from '@/features/inventory/types';
 
 const IMS_WORKSPACE_TABS = ['stock', 'suppliers', 'orders', 'movements', 'branches'] as const;
 type ImsWorkspaceTab = (typeof IMS_WORKSPACE_TABS)[number];
@@ -54,7 +55,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
   // Fetch products and inventory data in parallel to optimize loading latency (reduce TTFB)
   let vendorProducts: Product[] = [];
-  let inventoryData: any = null;
+  let inventoryData: VendorInventoryFullData | null = null;
   let inventoryErrorMsg = '';
   let branchCount = 0;
   let onlineOrderCount = 0;
@@ -125,11 +126,11 @@ export default async function VendorPage({ searchParams }: PageProps) {
   let lowStockCount = 0;
   let outOfStockCount = 0;
   if (inventoryData && inventoryData.inventoryItems) {
-    inventoryData.inventoryItems.forEach((item: any) => {
+    inventoryData.inventoryItems.forEach((item) => {
       const qty = item.quantity ?? 0;
       if (qty === 0) {
         outOfStockCount++;
-      } else if (qty <= item.lowStockThreshold) {
+      } else if (qty <= (item.lowStockThreshold ?? 5)) {
         lowStockCount++;
       }
     });
@@ -283,7 +284,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
                 initialProducts={vendorProducts}
                 orgSlug={org.slug}
                 maxListingCount={maxListingCount}
-                activeListingCount={vendorProducts.filter((p: Product) => (p as any).status !== 'archived').length}
+                activeListingCount={vendorProducts.filter((p: Product) => p.status !== 'archived').length}
               />
             </>
           )}

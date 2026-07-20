@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { escapeHtml, sanitizeSmtpHeader, sendRawSmtpEmail } from '@/shared/email/smtp-client';
 import { logger } from '@/shared/logging/logger';
+import { withActionHandler } from '@/shared/errors/action-handler';
 
 const contactFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
@@ -19,13 +20,12 @@ const contactFormSchema = z.object({
   message: z.string().min(10, 'Message must be at least 10 characters.'),
 });
 
-export async function submitContactFormAction(prevState: any, formData: FormData) {
-  try {
+export async function submitContactFormAction(prevState: unknown, formData: FormData) {
+  return withActionHandler('submitContactFormAction', async () => {
     const rawHoneypot = formData.get('middleName') as string;
     if (rawHoneypot && rawHoneypot.trim().length > 0) {
       logger.warn('Spam contact submission detected and blocked via honeypot field.');
-      // Silently succeed to trick automated spam bots
-      return { success: true, error: null };
+      return;
     }
 
     // Cloudflare Turnstile CAPTCHA Verification
@@ -33,9 +33,10 @@ export async function submitContactFormAction(prevState: any, formData: FormData
     if (turnstileSecret) {
       const turnstileToken = formData.get('cf-turnstile-response') as string;
       if (!turnstileToken) {
-        return { success: false, error: 'Please complete the CAPTCHA.' };
+        throw new Error('Please complete the CAPTCHA.');
       }
 
+      let verifyData;
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
@@ -50,19 +51,21 @@ export async function submitContactFormAction(prevState: any, formData: FormData
         });
         
         clearTimeout(timeout);
-
-        const verifyData = await verifyResponse.json();
-        if (!verifyData.success) {
-          logger.warn('Turnstile CAPTCHA verification failed', {
-            errorCodes: verifyData['error-codes'],
-          });
-          return { success: false, error: 'CAPTCHA verification failed. Please try again.' };
-        }
+        verifyData = await verifyResponse.json();
       } catch (error) {
         logger.error('Failed to verify Turnstile CAPTCHA due to network error', error);
         if (process.env.NODE_ENV === 'production') {
-          return { success: false, error: 'CAPTCHA verification service is unavailable. Please try again later.' };
+          throw new Error('CAPTCHA verification service is unavailable. Please try again later.');
+        } else {
+          throw new Error('CAPTCHA verification service is unavailable. Please try again later.');
         }
+      }
+
+      if (!verifyData?.success) {
+        logger.warn('Turnstile CAPTCHA verification failed', {
+          errorCodes: verifyData?.['error-codes'],
+        });
+        throw new Error('CAPTCHA verification failed. Please try again.');
       }
     }
 
@@ -72,7 +75,7 @@ export async function submitContactFormAction(prevState: any, formData: FormData
     const rawSubject = formData.get('subject') as string;
     const rawMessage = formData.get('message') as string;
 
-    const parsedInput = contactFormSchema.safeParse({
+    const parsedInput = contactFormSchema.parse({
       name: rawName,
       email: rawEmail,
       category: rawCategory,
@@ -80,11 +83,7 @@ export async function submitContactFormAction(prevState: any, formData: FormData
       message: rawMessage,
     });
 
-    if (!parsedInput.success) {
-      return { success: false, error: parsedInput.error.issues[0]?.message || 'Invalid input data.' };
-    }
-
-    const { name, email, category, subject, message } = parsedInput.data;
+    const { name, email, category, subject, message } = parsedInput;
 
     const sanitizedName = sanitizeSmtpHeader(name);
     const sanitizedEmail = sanitizeSmtpHeader(email);
@@ -98,9 +97,9 @@ export async function submitContactFormAction(prevState: any, formData: FormData
       name: sanitizedName,
       email: sanitizedEmail,
       emailHash: hashPii(sanitizedEmail),
-      category,
+      category: parsedInput.category,
       subject: sanitizedSubject,
-      message,
+      message: escapeHtml(message),
       status: 'pending',
     });
 
@@ -116,7 +115,7 @@ export async function submitContactFormAction(prevState: any, formData: FormData
 
     if (!smtpUser || !smtpPassword) {
       logger.error('SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing');
-      return { success: false, error: 'SMTP configuration is incomplete on the server.' };
+      throw new Error('SMTP configuration is incomplete on the server.');
     }
 
     const categoryLabel = 
@@ -177,21 +176,5 @@ export async function submitContactFormAction(prevState: any, formData: FormData
       subject: `[Contact Form - ${categoryLabel}] ${sanitizedSubject}`,
       html: emailHtml,
     });
-
-    return { success: true, error: null };
-  } catch (error: unknown) {
-    logger.error('Failed to send contact email', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-
-    // Explicitly allow rate limit errors to surface to the UI
-    if (error instanceof Error && error.message.includes('Rate limit')) {
-      return { success: false, error: error.message };
-    }
-
-    const errorMsg = process.env.NODE_ENV === 'production' 
-      ? 'An unexpected error occurred. Please try again.'
-      : error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: errorMsg };
-  }
+  });
 }

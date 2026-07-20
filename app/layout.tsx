@@ -101,8 +101,7 @@ export default async function RootLayout({
     const systemName = await getSystemSetting('system_name', 'Dilnova');
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dilstar.pp.ua';
 
-    const defaultBetaAccess = process.env.CI === 'true' ? 'true' : 'false';
-    const isBetaEnabled = (await getSystemSetting('enable_beta_access', defaultBetaAccess)) === 'true';
+    const isBetaEnabled = process.env.NEXT_PUBLIC_ENABLE_BETA_ACCESS === 'true' || process.env.CI === 'true';
     if (process.env.NODE_ENV === 'production' && !isBetaEnabled) {
       return (
         <html lang="en">
