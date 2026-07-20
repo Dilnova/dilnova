@@ -31,32 +31,35 @@ export async function getCheckoutOptionsCatalog(): Promise<CheckoutOptionDefinit
   return parseCheckoutOptionsCatalog(raw);
 }
 
-const fetchOrgCheckoutOptions = unstable_cache(
-  async (orgId: string) => {
-    const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
-    const org = await client.organizations.getOrganization({ organizationId: orgId });
-    const meta = (org.publicMetadata || {}) as Record<string, unknown>;
-    
-    let options: Record<string, boolean> = {};
-    if (meta.checkout_options && typeof meta.checkout_options === 'object' && !Array.isArray(meta.checkout_options)) {
-      options = meta.checkout_options as Record<string, boolean>;
-    }
-    
-    const vendorMeta = (meta.vendor_metadata || {}) as any;
-    
-    const address = meta.address || vendorMeta.address;
-    const phone = meta.phone || vendorMeta.phone;
-    
-    return {
-      options,
-      address: typeof address === 'string' ? address : null,
-      phone: typeof phone === 'string' ? phone : null,
-      name: org.name,
-    };
-  },
-  ['org-checkout-options-v2'],
-  { tags: ['org-checkout-options'], revalidate: 300 }
-);
+const fetchOrgCheckoutOptions = async (orgId: string) => {
+  const fetcher = unstable_cache(
+    async (id: string) => {
+      const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      const org = await client.organizations.getOrganization({ organizationId: id });
+      const meta = (org.publicMetadata || {}) as Record<string, unknown>;
+      
+      let options: Record<string, boolean> = {};
+      if (meta.checkout_options && typeof meta.checkout_options === 'object' && !Array.isArray(meta.checkout_options)) {
+        options = meta.checkout_options as Record<string, boolean>;
+      }
+      
+      const vendorMeta = (meta.vendor_metadata || {}) as any;
+      
+      const address = meta.address || vendorMeta.address;
+      const phone = meta.phone || vendorMeta.phone;
+      
+      return {
+        options,
+        address: typeof address === 'string' ? address : null,
+        phone: typeof phone === 'string' ? phone : null,
+        name: org.name,
+      };
+    },
+    [`org-checkout-options-v2-${orgId}`],
+    { tags: [`org-checkout-options-${orgId}`], revalidate: 300 }
+  );
+  return fetcher(orgId);
+};
 
 export async function getOrgCheckoutData(orgId: string) {
   try {
