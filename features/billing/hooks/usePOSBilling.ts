@@ -183,6 +183,12 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
           notes,
         });
 
+        if (!result.success) {
+          playAudioFeedback('error');
+          toast.error(result.error || 'POS checkout failed.');
+          return;
+        }
+
         playAudioFeedback('checkout');
         toast.success(`POS receipt processed! Total: $${(result.totalAmount / 100).toFixed(2)}`);
 

@@ -111,6 +111,27 @@ export default async function Subprocessors() {
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">Executed</td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">Global Edge Network</td>
                   </tr>
+                  <tr>
+                    <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-zinc-900 dark:text-zinc-100 sm:pl-6">Brevo</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">SMTP & Transactional Email</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">Maintained</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">Executed</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">European Union (EU)</td>
+                  </tr>
+                  <tr>
+                    <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-zinc-900 dark:text-zinc-100 sm:pl-6">Sentry</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">Error Tracking & Monitoring</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">Maintained</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">Executed</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">United States</td>
+                  </tr>
+                  <tr>
+                    <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-zinc-900 dark:text-zinc-100 sm:pl-6">Cloudflare</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">Turnstile (Bot Protection)</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">Maintained</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">Executed</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">Global Edge Network</td>
+                  </tr>
                 </tbody>
               </table>
             </div>

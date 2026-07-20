@@ -57,16 +57,16 @@ export default async function TermsOfService() {
               1. Acceptance of Terms
             </h2>
             <p>
-              By accessing or using the <strong>{systemName} Commerce Marketplace</strong> (the &quot;Service&quot;), you agree to comply with and be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.
+              By accessing or using <strong>{systemName}</strong> (the &quot;Service&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), you agree to comply with and be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              2. User Accounts & Security
+              2. User Accounts & Eligibility
             </h2>
             <p>
-              To browse products, make purchases, or create a vendor store, you must authenticate through our authentication provider (Clerk). You are responsible for:
+              To browse products, make purchases, or create a vendor store, you must authenticate through our authentication provider (Clerk). By registering an account, you represent and warrant that you are at least 18 years of age (or the age of legal majority in your jurisdiction). If you are under this age, you may not use the Service to conduct e-commerce transactions. You are responsible for:
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Maintaining the confidentiality of your credentials.</li>
@@ -137,6 +137,24 @@ export default async function TermsOfService() {
             </h2>
             <p>
               We reserve the right to suspend or terminate your account or access to the Service at our sole discretion, without notice, for conduct that we believe violates these Terms of Service, is harmful to other users or merchants, or violates applicable local or federal laws.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+              8. Governing Law
+            </h2>
+            <p>
+              These Terms of Service and any separate agreements whereby we provide you Services shall be governed by and construed in accordance with the applicable laws of our operating jurisdiction.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+              9. Contact Information
+            </h2>
+            <p>
+              Questions about the Terms of Service should be sent to us at <a href="mailto:info@dilstar.pp.ua" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">info@dilstar.pp.ua</a>.
             </p>
           </section>
         </div>

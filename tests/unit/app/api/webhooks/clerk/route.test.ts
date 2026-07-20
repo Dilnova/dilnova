@@ -17,6 +17,14 @@ vi.mock('@/shared/auth/clerk-cache', () => ({
   invalidateClerkOrgCache: vi.fn(),
 }));
 
+vi.mock('@upstash/redis', () => {
+  return {
+    Redis: class {
+      set = vi.fn().mockResolvedValue('OK');
+    },
+  };
+});
+
 const mockHeaders = vi.fn();
 vi.mock('next/headers', () => ({
   headers: () => Promise.resolve(mockHeaders()),
@@ -29,6 +37,8 @@ describe('POST /api/webhooks/clerk', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv('CLERK_WEBHOOK_SECRET', webhookSecret);
+    vi.stubEnv('VERCEL_ENV', 'test');
+    vi.stubEnv('PREVIEW_CLERK_WEBHOOK_SECRET', '');
   });
 
   afterEach(() => {

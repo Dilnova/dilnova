@@ -70,6 +70,7 @@ export default function PaymentSlipUpload({
             'Content-Type': file.type,
           },
           body: file,
+          signal: AbortSignal.timeout(30000),
         });
 
         if (!uploadResponse.ok) {

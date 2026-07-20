@@ -51,6 +51,7 @@ export const productionServerEnvSchema = z.object({
   CLERK_WEBHOOK_SECRET: nonEmpty,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: nonEmpty,
   TURNSTILE_SECRET_KEY: nonEmpty,
+  QSTASH_TOKEN: nonEmpty,
 });
 
 export type ProductionServerEnv = z.infer<typeof productionServerEnvSchema>;
@@ -62,6 +63,16 @@ export function validateServerEnv(): void {
 
   // Next.js invokes instrumentation during production builds; CI uses placeholder values.
   if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return;
+  }
+
+  // SECURITY: Require all three conditions to bypass validation for E2E tests.
+  // Prevents accidentally bypassing validation if Vercel sets CI=true.
+  if (
+    process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy' &&
+    process.env.NODE_ENV === 'production' &&
+    process.env.VERCEL !== '1'
+  ) {
     return;
   }
 
@@ -77,5 +88,19 @@ export function validateServerEnv(): void {
       })
     );
     throw new Error('Server environment validation failed. Check Vercel environment variables.');
+  }
+
+  if (
+    process.env.VERCEL_ENV === 'preview' &&
+    process.env.DATABASE_URL?.includes('jnsfgoafayvlukjkqzjm')
+  ) {
+    logger.error(
+      JSON.stringify({
+        level: 'error',
+        message: 'Preview deployment attempted to use production database',
+        timestamp: new Date().toISOString(),
+      })
+    );
+    throw new Error('Preview deployments must not use the production DATABASE_URL. Please configure a separate branch database URL for previews.');
   }
 }

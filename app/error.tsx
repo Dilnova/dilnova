@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { logger } from '@/shared/logging/logger';
+import * as Sentry from '@sentry/nextjs';
 
 export default function Error({
   error,
@@ -13,8 +13,11 @@ export default function Error({
 }) {
   useEffect(() => {
     // Log the error to your structured logger / error reporting service
-    logger.error('[ErrorBoundary] React error boundary caught exception', error);
+    console.error('[ErrorBoundary] React error boundary caught exception', error);
+    Sentry.captureException(error);
   }, [error]);
+
+  const isNetworkError = typeof error?.message === 'string' && (error.message.toLowerCase().includes('fetch') || error.message.toLowerCase().includes('network'));
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-6">
@@ -28,10 +31,10 @@ export default function Error({
 
         <div className="space-y-2">
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-            Something went wrong
+            {isNetworkError ? 'Check your connection' : 'Something went wrong'}
           </h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            An unexpected error occurred while loading this page. Our team has been notified.
+            {isNetworkError ? 'It looks like you are offline or having network issues. Please check your connection and try again.' : 'An unexpected error occurred while loading this page. Our team has been notified.'}
           </p>
           {error.digest && (
             <p className="text-xs text-zinc-400 dark:text-zinc-600 font-mono mt-2">

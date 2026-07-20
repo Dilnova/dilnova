@@ -1,6 +1,5 @@
 'use client';
 
-import { logger } from '@/shared/logging/logger';
 import { useState, useTransition, useRef, useEffect } from 'react';
 import { addProductAction } from '@/features/catalog/vendor.actions';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
@@ -105,7 +104,7 @@ export default function AddProductClient({
           toast.error(result.error || 'Upload failed');
         }
       } catch (err) {
-        logger.error('Error', err);
+        console.error('Error', err);
         toast.error('Upload error. Please try again.');
       } finally {
         setIsUploading(false);

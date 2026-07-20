@@ -16,6 +16,7 @@ import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
+import { deleteCloudinaryAsset } from '@/shared/media/cloudinary-server';
 
 export async function createCategoryAction(name: string, slug: string, parentId?: string | null) {
   return runWithCorrelationId(async () => {
@@ -235,7 +236,16 @@ export async function deleteProductAction(id: string) {
       throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
     }
 
-    await db.delete(schema.products).where(eq(schema.products.id, parsed.data.id));
+    const [deleted] = await db.delete(schema.products).where(eq(schema.products.id, parsed.data.id)).returning();
+
+    if (deleted?.imageUrl) {
+      await deleteCloudinaryAsset(deleted.imageUrl);
+    }
+    if (deleted?.media && Array.isArray(deleted.media)) {
+      for (const m of deleted.media) {
+        await deleteCloudinaryAsset(m.url, m.type);
+      }
+    }
 
     await logAuditAction({
       userId: user.id,

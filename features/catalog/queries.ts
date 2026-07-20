@@ -1,6 +1,6 @@
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, sql } from 'drizzle-orm';
 
 export async function getUserAssignedBranchNames(userId: string, orgId: string) {
   const userBranches = await db
@@ -112,12 +112,40 @@ export async function getInventoryForProduct(productId: string) {
   return rows[0] || null;
 }
 
-export async function getProductReviews(productId: string) {
+export async function getProductReviews(productId: string, limitAmount: number = 50) {
   return db
     .select()
     .from(schema.reviews)
     .where(eq(schema.reviews.productId, productId))
-    .orderBy(desc(schema.reviews.createdAt));
+    .orderBy(desc(schema.reviews.createdAt))
+    .limit(limitAmount);
+}
+
+export async function getProductReviewStats(productId: string) {
+  const stats = await db
+    .select({
+      rating: schema.reviews.rating,
+      count: sql<number>`cast(count(*) as int)`,
+    })
+    .from(schema.reviews)
+    .where(eq(schema.reviews.productId, productId))
+    .groupBy(schema.reviews.rating);
+
+  let totalReviews = 0;
+  let sum = 0;
+  const distribution = [0, 0, 0, 0, 0];
+
+  for (const row of stats) {
+    totalReviews += row.count;
+    sum += row.rating * row.count;
+    if (row.rating >= 1 && row.rating <= 5) {
+      distribution[row.rating - 1] += row.count;
+    }
+  }
+
+  const averageRating = totalReviews > 0 ? Number((sum / totalReviews).toFixed(1)) : 0;
+
+  return { totalReviews, averageRating, distribution };
 }
 
 export async function getProductQuestions(productId: string) {

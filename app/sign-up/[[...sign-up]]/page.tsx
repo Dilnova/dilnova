@@ -1,4 +1,4 @@
-import { SignUp } from '@clerk/nextjs';
+import AgeGatedSignUp from './AgeGatedSignUp';
 
 type SignUpPageProps = {
   searchParams: Promise<{ redirect_url?: string }>;
@@ -9,7 +9,7 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
 
   return (
     <main className="flex min-h-[70vh] items-center justify-center p-6">
-      <SignUp forceRedirectUrl={redirectUrl ?? '/'} />
+      <AgeGatedSignUp redirectUrl={redirectUrl} />
     </main>
   );
 }

@@ -120,6 +120,13 @@
       "when": 1783506782699,
       "tag": "0016_premium_microbe",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784524608126,
+      "tag": "0017_odd_goblin_queen",
+      "breakpoints": true
     }
   ]
 }

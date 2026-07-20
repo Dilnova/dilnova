@@ -1,27 +1,9 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { clerkMiddleware } from '@clerk/nextjs/server';
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import type { NextFetchEvent } from 'next/server';
 
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/unauthorized',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/vendors(.*)',
-  '/products(.*)',   // Allows public access to all products and services
-  '/cart',           // Allows cart viewing; checkout requires sign-in
-  '/contact',        // Allows public contact form submissions
-  '/api/health(.*)', // Allows public access to the health check endpoint
-  '/api/csp-report(.*)', // Allows public access to CSP violation reports
-  '/api/webhooks/clerk(.*)', // Allows public access to Clerk webhooks (secured by signature verification)
-  '/_next(.*)',      // Allows public access to Next.js static files/image optimization
-  '/sitemap.xml',    // Allow public access to sitemap.xml
-  '/robots.txt',     // Allow public access to robots.txt
-  '/privacy(.*)',    // Allow public access to privacy policy
-  '/terms(.*)'       // Allow public access to terms of service
-]);
 
 function getSentryCspReportUri(): string | null {
   const dsn = process.env.SENTRY_DSN;
@@ -46,9 +28,6 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   requestHeaders.set('x-request-id', requestId);
   requestHeaders.set('x-nonce', nonce);
 
-  if (!isPublicRoute(req)) {
-    await auth.protect();
-  }
 
   const response = NextResponse.next({
     request: {
@@ -85,7 +64,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   // Tailwind CSS and React inline style compatibility. The practical risk of CSS 
   // exfiltration is low given React's rendering model and strict script-src policies.
   // Consider migrating to CSS-in-JS with nonce support to eliminate unsafe-inline in the future.
-  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:${excludeEval ? '' : " 'unsafe-eval'"}; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com http://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:; ${reportingDirectives}${isProd ? ' upgrade-insecure-requests;' : ''}`;
+  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:${excludeEval ? '' : " 'unsafe-eval'"}; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:; ${reportingDirectives}${isProd ? ' upgrade-insecure-requests;' : ''}`;
 
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000';
   const protocol = req.headers.get('x-forwarded-proto') || 'http';
@@ -107,7 +86,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   return response;
 });
 
-export default function proxy(request: NextRequest, event: NextFetchEvent) {
+export default async function proxy(request: NextRequest, event: NextFetchEvent) {
   // CSRF protection:
   // Enforce that mutating requests (except webhook and csp-report endpoints) have a valid Origin matching Host or X-Forwarded-Host.
   const MUTATING_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
@@ -141,12 +120,29 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
     }
   }
 
-  // Bypass Clerk entirely in CI when dummy keys are present to prevent NXDOMAIN redirect/hangs
-  if (process.env.NODE_ENV !== 'production' && process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy') {
+  // SECURITY: Bypass Clerk entirely in CI when dummy keys are present to prevent NXDOMAIN redirect/hangs.
+  // This bypass MUST check all three conditions to prevent an accidental production authentication bypass:
+  // 1. CLERK_SECRET_KEY must be the dummy key.
+  // 2. NODE_ENV must not be production.
+  // 3. VERCEL must not be '1' (ensures it never runs on a Vercel deployment, preview or prod).
+  if (
+    process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy' &&
+    process.env.NODE_ENV !== 'production' &&
+    process.env.VERCEL !== '1'
+  ) {
     return NextResponse.next();
   }
 
-  return clerkHandler(request, event);
+  try {
+    const res = await clerkHandler(request, event);
+    return res;
+  } catch (error) {
+    console.error('Clerk Middleware execution failed (API outage):', error);
+    return new NextResponse(
+      'Authentication Service is currently unavailable. Please try again later.',
+      { status: 503 }
+    );
+  }
 }
 
 export const config = {

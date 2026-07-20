@@ -2,17 +2,19 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, desc, inArray, asc } from 'drizzle-orm';
 import { buildVendorOrgIntegrityReport } from '@/features/vendor-org';
+import { rateLimit } from '@/shared/security/rate-limit';
 
-export async function getPricingPlansOrderedByCreatedAtAsc() {
-  return db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt)).limit(200);
+export async function getPricingPlansOrderedByCreatedAtAsc(limit = 200, offset = 0) {
+  return db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt)).limit(limit).offset(offset);
 }
 
-export async function getPricingPlansOrderedByCreatedAtDesc() {
+export async function getPricingPlansOrderedByCreatedAtDesc(limit = 200, offset = 0) {
   return db
     .select()
     .from(schema.pricingPlans)
     .orderBy(desc(schema.pricingPlans.createdAt))
-    .limit(200);
+    .limit(limit)
+    .offset(offset);
 }
 
 export async function getCategoriesOrderedByCreatedAtDesc() {
@@ -197,8 +199,13 @@ export function computeProductsWithoutInventory(
 }
 
 export async function getVendorOrgIntegrityReport(
-  organizations: { id: string }[]
+  organizations: { id: string }[],
+  limit = 1000,
+  offset = 0
 ) {
+  // Rate limit the query since it can be heavy
+  await rateLimit(10, 60 * 1000);
+
   // Run integrity queries sequentially in pairs to avoid exhausting the
   // 5-connection pool. Each query has a safety limit to cap row count.
   const [integrityProducts, integrityOrderItems] = await Promise.all([
@@ -211,7 +218,8 @@ export async function getVendorOrgIntegrityReport(
         status: schema.products.status,
       })
       .from(schema.products)
-      .limit(1000),
+      .limit(limit)
+      .offset(offset),
     db
       .select({
         id: schema.simulatedOrderItems.id,
@@ -220,7 +228,8 @@ export async function getVendorOrgIntegrityReport(
         vendorOrgId: schema.simulatedOrderItems.vendorOrgId,
       })
       .from(schema.simulatedOrderItems)
-      .limit(1000),
+      .limit(limit)
+      .offset(offset),
   ]);
 
   const [integritySuppliers, integrityBranches, integrityBillingReceipts] = await Promise.all([
@@ -231,7 +240,8 @@ export async function getVendorOrgIntegrityReport(
         orgId: schema.suppliers.orgId,
       })
       .from(schema.suppliers)
-      .limit(1000),
+      .limit(limit)
+      .offset(offset),
     db
       .select({
         id: schema.branches.id,
@@ -239,14 +249,16 @@ export async function getVendorOrgIntegrityReport(
         orgId: schema.branches.orgId,
       })
       .from(schema.branches)
-      .limit(1000),
+      .limit(limit)
+      .offset(offset),
     db
       .select({
         id: schema.billingReceipts.id,
         orgId: schema.billingReceipts.orgId,
       })
       .from(schema.billingReceipts)
-      .limit(1000),
+      .limit(limit)
+      .offset(offset),
   ]);
 
   return buildVendorOrgIntegrityReport(

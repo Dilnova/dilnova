@@ -13,6 +13,10 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock('@/shared/audit/logger', () => ({
+  logAuditAction: vi.fn(() => Promise.resolve()),
+}));
+
 describe('toggleUserRoleAction', () => {
   const originalEnv = process.env.NODE_ENV;
 

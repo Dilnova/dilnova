@@ -23,6 +23,7 @@ interface OrganizationOption {
 interface VendorOrgIssuesTabProps {
   integrityReport: VendorOrgIntegrityReport;
   organizations: OrganizationOption[];
+  enableBulkReassignment?: boolean;
 }
 
 type ReassignScopes = VendorOrgReassignScopes;
@@ -41,10 +42,12 @@ function IssueGroupCard({
   group,
   organizations,
   onRefresh,
+  enableBulkReassignment,
 }: {
   group: VendorOrgIssueGroup;
   organizations: OrganizationOption[];
   onRefresh: () => void;
+  enableBulkReassignment?: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
   const [isBulkReassigning, setIsBulkReassigning] = useState(false);
@@ -228,7 +231,8 @@ function IssueGroupCard({
         <div className="flex items-end">
           <button
             type="button"
-            disabled={isBusy || selectedRecordCount === 0}
+            disabled={isBusy || selectedRecordCount === 0 || enableBulkReassignment === false}
+            title={enableBulkReassignment === false ? "Bulk reassignment is currently disabled by administrator" : ""}
             onClick={handleBulkReassign}
             className="w-full xl:w-auto px-5 py-2.5 bg-purple-700 hover:bg-purple-800 disabled:opacity-60 text-white text-xs font-bold rounded-xl cursor-pointer"
           >
@@ -317,6 +321,7 @@ function IssueGroupCard({
 export default function VendorOrgIssuesTab({
   integrityReport,
   organizations,
+  enableBulkReassignment,
 }: VendorOrgIssuesTabProps) {
   const router = useRouter();
 
@@ -379,6 +384,7 @@ export default function VendorOrgIssuesTab({
             group={group}
             organizations={organizations}
             onRefresh={refreshData}
+            enableBulkReassignment={enableBulkReassignment}
           />
         ))}
       </div>

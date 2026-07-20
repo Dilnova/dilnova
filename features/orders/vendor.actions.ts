@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
@@ -30,15 +30,26 @@ import {
 import { requireVendorRole } from '@/shared/auth/vendor-guard';
 
 async function loadVendorOrder(orderId: string, orgId: string) {
-  const [order] = await db
-    .select()
+  const result = await db
+    .select({ order: schema.simulatedOrders })
     .from(schema.simulatedOrders)
-    .where(eq(schema.simulatedOrders.id, orderId))
+    .innerJoin(
+      schema.simulatedOrderItems,
+      eq(schema.simulatedOrders.id, schema.simulatedOrderItems.orderId)
+    )
+    .where(
+      and(
+        eq(schema.simulatedOrders.id, orderId),
+        eq(schema.simulatedOrderItems.vendorOrgId, orgId)
+      )
+    )
     .limit(1);
 
-  if (!order) {
-    throw new Error('Order not found.');
+  if (result.length === 0) {
+    throw new Error('Order not found or access denied.');
   }
+
+  const order = result[0].order;
 
   const vendorOrgRows = await db
     .select({ vendorOrgId: schema.simulatedOrderItems.vendorOrgId })
@@ -46,10 +57,6 @@ async function loadVendorOrder(orderId: string, orgId: string) {
     .where(eq(schema.simulatedOrderItems.orderId, orderId));
 
   const vendorOrgIds = [...new Set(vendorOrgRows.map((row) => row.vendorOrgId))];
-
-  if (!vendorOrgIds.includes(orgId)) {
-    throw new Error('This order does not include items from your organization.');
-  }
 
   if (orderSpansMultipleVendors(vendorOrgIds)) {
     throw new Error(MULTI_VENDOR_VENDOR_ACTION_ERROR);
@@ -245,8 +252,9 @@ export async function cancelVendorOrderAction(orderId: string) {
   });
 }
 
-export async function getVendorPendingPaymentOrderIds(orgId: string): Promise<string[]> {
+export async function getVendorPendingPaymentOrderIds(orgId: string, limit = 100, offset = 0): Promise<string[]> {
   return runWithCorrelationId(async () => {
+    await rateLimit(30, 60 * 1000);
     const { userId, orgId: sessionOrgId, orgRole } = await auth();
 
     if (!userId || !sessionOrgId || orgRole !== 'org:admin' || sessionOrgId !== orgId) {
@@ -257,7 +265,9 @@ export async function getVendorPendingPaymentOrderIds(orgId: string): Promise<st
     const rows = await db
       .select({ orderId: schema.simulatedOrderItems.orderId })
       .from(schema.simulatedOrderItems)
-      .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId));
+      .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId))
+      .limit(limit)
+      .offset(offset);
 
     const orderIds = [...new Set(rows.map((row) => row.orderId))];
     if (orderIds.length === 0) return [];

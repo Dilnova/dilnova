@@ -3,6 +3,8 @@
 import { SignInButton, SignUpButton } from '@clerk/nextjs';
 import { Spinner } from '@/shared/ui/loading';
 import DeliveryAddressFormFields from '@/features/customer/components/DeliveryAddressFormFields';
+import { useState } from 'react';
+import Link from 'next/link';
 
 interface CartCheckoutSidebarProps {
   priceSyncNotice: string | null;
@@ -101,6 +103,8 @@ export function CartCheckoutSidebar({
   handleSendInbox,
   emailStatus,
 }: CartCheckoutSidebarProps) {
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
   return (
     <>
       <div className="bg-white border border-zinc-200/80 rounded-2xl p-6 dark:bg-zinc-950 dark:border-zinc-900 shadow-sm space-y-6">
@@ -231,8 +235,8 @@ export function CartCheckoutSidebar({
                 )}
 
                 {checkoutOptions.fulfillment.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Fulfillment</p>
+                  <fieldset className="space-y-2">
+                    <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Fulfillment</legend>
                     {checkoutOptions.fulfillment.map((option: any) => (
                       <label
                         key={option.id}
@@ -258,7 +262,7 @@ export function CartCheckoutSidebar({
                         </span>
                       </label>
                     ))}
-                  </div>
+                  </fieldset>
                 ) : (
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     {vendorCount > 1
@@ -310,8 +314,8 @@ export function CartCheckoutSidebar({
                 )}
 
                 {compatiblePayments.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Payment</p>
+                  <fieldset className="space-y-2">
+                    <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Payment</legend>
                     {compatiblePayments.map((option: any) => (
                       <label
                         key={option.id}
@@ -337,7 +341,7 @@ export function CartCheckoutSidebar({
                         </span>
                       </label>
                     ))}
-                  </div>
+                  </fieldset>
                 ) : (
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     {checkoutOptions.payment.length > 0 && selectedFulfillment?.requiresBranch
@@ -393,29 +397,44 @@ export function CartCheckoutSidebar({
               </button>
             </SignInButton>
           ) : (
-            <button
-              onClick={() => handleCheckout(optionsLoading)}
-              disabled={
-                checkoutStatus === 'processing' ||
-                optionsLoading ||
-                cartItems.length === 0 ||
-                checkoutErrors.length > 0
-              }
-              className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              {checkoutStatus === 'processing' ? (
-                <>
-                  <Spinner size="sm" />
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <span>
-                  {vendorCount > 1 && selectedVendorSummary
-                    ? `Checkout ${selectedVendorSummary.vendorName}`
-                    : 'Proceed to Checkout'}
+            <div className="space-y-3">
+              <label className="flex items-start gap-2 cursor-pointer px-1">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-0.5 shrink-0 rounded border-zinc-300 text-purple-600 focus:ring-purple-600"
+                />
+                <span className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  I agree to the <Link href="/terms" target="_blank" className="text-indigo-600 dark:text-indigo-400 hover:underline">Terms of Service</Link> and <Link href="/refund" target="_blank" className="text-indigo-600 dark:text-indigo-400 hover:underline">Refund Policy</Link>.
                 </span>
-              )}
-            </button>
+              </label>
+
+              <button
+                onClick={() => handleCheckout(optionsLoading)}
+                disabled={
+                  checkoutStatus === 'processing' ||
+                  optionsLoading ||
+                  cartItems.length === 0 ||
+                  checkoutErrors.length > 0 ||
+                  !agreedToTerms
+                }
+                className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                {checkoutStatus === 'processing' ? (
+                  <>
+                    <Spinner size="sm" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <span>
+                    {vendorCount > 1 && selectedVendorSummary
+                      ? `Checkout ${selectedVendorSummary.vendorName}`
+                      : 'Proceed to Checkout'}
+                  </span>
+                )}
+              </button>
+            </div>
           )}
 
           <button

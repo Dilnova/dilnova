@@ -41,7 +41,7 @@ export default function VendorCarousel({ vendors }: { vendors: any[] }) {
       {/* Navigation Controls */}
       <button 
         onClick={() => scroll('left')}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-6 z-10 w-10 h-10 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-md flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-6 z-10 w-10 h-10 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-md hidden md:flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity disabled:opacity-0"
         aria-label="Scroll left"
       >
         <ChevronLeft className="w-5 h-5" />
@@ -49,7 +49,7 @@ export default function VendorCarousel({ vendors }: { vendors: any[] }) {
       
       <button 
         onClick={() => scroll('right')}
-        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-6 z-10 w-10 h-10 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-md flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-0"
+        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-6 z-10 w-10 h-10 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-md hidden md:flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity disabled:opacity-0"
         aria-label="Scroll right"
       >
         <ChevronRight className="w-5 h-5" />
@@ -58,13 +58,13 @@ export default function VendorCarousel({ vendors }: { vendors: any[] }) {
       {/* Scrollable Container */}
       <div 
         ref={scrollRef}
-        className="flex gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hide py-4 px-2"
+        className="flex gap-6 overflow-x-auto touch-pan-x snap-x snap-mandatory scrollbar-hide py-4 px-2"
       >
         {vendors.map((vendor) => (
           <Link
             key={vendor.id}
             href={`/vendors/${vendor.slug}`}
-            className="flex-none w-[280px] md:w-[320px] snap-start flex flex-col p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 group/card"
+            className="flex-none w-[85vw] sm:w-[280px] md:w-[320px] snap-start flex flex-col p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 group/card"
           >
             <div className="flex items-start justify-between mb-4">
               {vendor.imageUrl ? (

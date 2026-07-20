@@ -1,4 +1,4 @@
-import { clerkClient } from '@clerk/nextjs/server';
+import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,7 +10,6 @@ import ReviewsSection from '@/features/catalog/components/product-detail/Reviews
 import QASection from '@/features/catalog/components/product-detail/QASection';
 import ProductViewTracker from '@/features/catalog/components/product-detail/ProductViewTracker';
 import ProductDetailAddToCart from '@/features/catalog/components/product-detail/ProductDetailAddToCart';
-import { logger } from '@/shared/logging/logger';
 import { isVideoUrl } from '@/shared/media/media';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
@@ -26,6 +25,7 @@ import {
   getProductForMetadata,
   getProductQuestions,
   getProductReviews,
+  getProductReviewStats,
   getProductWithCategory,
 } from '@/features/catalog/queries';
 
@@ -36,6 +36,10 @@ interface PageProps {
 }
 
 export const revalidate = 60; // Cache for 60 seconds (ISR)
+
+export async function generateStaticParams() {
+  return []; // Return empty array to rely entirely on runtime ISR
+}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
@@ -103,17 +107,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
     inventoryRecord
   );
 
-  const [productReviews, productQuestions, verifiedReviewerIds] = await Promise.all([
+  const [productReviews, reviewStats, productQuestions, verifiedReviewerIds] = await Promise.all([
     getProductReviews(id),
+    getProductReviewStats(id),
     getProductQuestions(id),
     getVerifiedReviewerIdsForProduct(id),
   ]);
 
-  // Calculate review stats
-  const totalReviews = productReviews.length;
-  const averageRating = totalReviews
-    ? Number((productReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
-    : 0;
+  const { totalReviews, averageRating } = reviewStats;
 
   // Fetch parent category if this is a subcategory
   let parentCategory = null;
@@ -124,7 +125,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
 
   // 2. Fetch Seller Organization from Clerk (Optimized with cached lookup + fallback)
-  const client = await clerkClient();
+  const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
   let orgDetails: CachedOrg | null = null;
 
   try {
@@ -143,7 +144,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       };
     }
   } catch (err) {
-    logger.error('Failed to resolve seller organization details', err, { productId: product.id, orgId: product.orgId });
+    console.error('Failed to resolve seller organization details', err, { productId: product.id, orgId: product.orgId });
   }
 
   const vendorName = orgDetails ? orgDetails.name : 'Unknown Vendor';
@@ -383,6 +384,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <ReviewsSection
           productId={product.id}
           reviews={productReviews}
+          reviewStats={reviewStats}
           verifiedReviewerIds={[...verifiedReviewerIds]}
           productOrgId={product.orgId}
         />

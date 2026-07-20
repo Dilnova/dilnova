@@ -529,7 +529,8 @@ export async function simulatedCheckoutAction(
   shippingState?: string | null,
   shippingPostalCode?: string | null,
   shippingCountry?: string | null,
-  shippingPhone2?: string | null
+  shippingPhone2?: string | null,
+  idempotencyKey?: string | null
 ) {
   try {
     // ── Input Validation ──
@@ -596,6 +597,15 @@ export async function simulatedCheckoutAction(
 
     // ── Rate Limiting ──
     await rateLimit(5, 60 * 1000); // Max 5 checkouts per minute
+
+    // ── Idempotency Check ──
+    if (idempotencyKey) {
+      const { checkIdempotencyKey } = await import('@/shared/security/idempotency');
+      const isNewRequest = await checkIdempotencyKey(idempotencyKey);
+      if (!isNewRequest) {
+        return { success: false, error: 'This order is already being processed. Please wait or refresh the page.' };
+      }
+    }
 
     // ── Concurrency Safe Stock Validation & Checkout ──
     // ── Verify products, prices, and availability flags server-side (outside transaction) ──
@@ -740,6 +750,7 @@ export async function simulatedCheckoutAction(
         const vendorNames = vendorsMissingBankDetails.map(
           (orgId) => bankDetailsByOrg[orgId]?.vendorName || 'A vendor'
         );
+        logger.warn('Checkout business validation failed', { reason: 'Missing bank details', vendors: vendorNames, cartItems: uniqueItemIds });
         return {
           success: false as const,
           error: `Bank transfer is unavailable because bank details are not configured for: ${vendorNames.join(', ')}. Please contact the store or choose another payment method.`,
@@ -751,6 +762,7 @@ export async function simulatedCheckoutAction(
       const reason = paymentOption.requiresDelivery 
         ? 'delivery orders, not store pickup.'
         : 'store pickup orders, not home delivery.';
+      logger.warn('Checkout business validation failed', { reason: 'Incompatible payment and fulfillment', payment: paymentOption.id, fulfillment: fulfillmentOption.id, cartItems: uniqueItemIds });
       return {
         success: false,
         error: `${paymentOption.label} is only available for ${reason}`,
@@ -774,9 +786,11 @@ export async function simulatedCheckoutAction(
       }
 
       if (!validBranch) {
+        logger.warn('Checkout business validation failed', { reason: 'Invalid pickup branch', pickupBranch, vendorOrgIds, cartItems: uniqueItemIds });
         return { success: false, error: 'Selected pickup branch is invalid.' };
       }
       if (vendorOrgIds.length > 1) {
+        logger.warn('Checkout business validation failed', { reason: 'Multi-vendor store pickup', vendorOrgIds, cartItems: uniqueItemIds });
         return {
           success: false,
           error: 'Store pickup is only available when all items are from the same vendor.',
@@ -831,7 +845,13 @@ export async function simulatedCheckoutAction(
     verifiedItems.sort((a, b) => a.id.localeCompare(b.id));
 
     // ── Concurrency Safe Stock Validation & Checkout (inside transaction) ──
-    const txResult: CheckoutTransactionResult = await db.transaction(async (tx) => {
+    const MAX_RETRIES = 3;
+    let txResult: CheckoutTransactionResult | null = null;
+    let txError: unknown = null;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        txResult = await db.transaction(async (tx) => {
       const stockErrors: string[] = [];
       const stockReservations: { productId: string; quantity: number; reservation: StockReservation }[] = [];
 
@@ -891,6 +911,7 @@ export async function simulatedCheckoutAction(
       }
 
       if (stockErrors.length > 0) {
+        logger.warn('Checkout business validation failed', { reason: 'Insufficient stock', stockErrors, cartItems: uniqueItemIds });
         return {
           success: false,
           error: `Insufficient stock:\n${stockErrors.join('\n')}`,
@@ -1003,6 +1024,23 @@ export async function simulatedCheckoutAction(
         serverSubtotalCents: serverSubtotal,
       };
     });
+        break; // Success
+      } catch (error) {
+        txError = error;
+        logger.warn(`Checkout DB transaction failed (attempt ${attempt}/${MAX_RETRIES})`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        if (attempt === MAX_RETRIES) {
+          break; // Let it fail below
+        }
+        await new Promise((resolve) => setTimeout(resolve, attempt * 200 + Math.random() * 100));
+      }
+    }
+
+    if (!txResult) {
+      logger.error('Checkout DB transaction failed permanently', { error: txError });
+      return { success: false, error: 'A database error occurred while processing your order. Please try again.' };
+    }
 
     if (!txResult.success) {
       return { success: false, error: txResult.error };
@@ -1048,6 +1086,13 @@ export async function simulatedCheckoutAction(
     // ── Vendor Notifications (Web-First / Email Fallback) ──
     const { dispatchVendorOrderNotifications } = await import('@/features/orders/vendor-notification');
     await dispatchVendorOrderNotifications(createdOrderId);
+
+    logger.info('Checkout succeeded', {
+      orderId: createdOrderId,
+      grandTotalCents,
+      paymentMethod: payment,
+      fulfillmentMethod: fulfillment,
+    });
 
     return {
       success: true,

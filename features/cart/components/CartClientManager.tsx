@@ -62,6 +62,11 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
 
   const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success'>('idle');
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success'>('idle');
+  const [idempotencyKey, setIdempotencyKey] = useState<string>('');
+
+  useEffect(() => {
+    setIdempotencyKey(crypto.randomUUID());
+  }, []);
 
   const [confirmedOrderEmail, setConfirmedOrderEmail] = useState('');
   const [confirmedOrderId, setConfirmedOrderId] = useState('');
@@ -520,7 +525,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         requiresDeliveryAddress ? shippingState.trim() : null,
         requiresDeliveryAddress ? shippingPostalCode.trim() : null,
         requiresDeliveryAddress ? shippingCountry.trim() || null : null,
-        requiresDeliveryAddress ? shippingPhone2.trim() || null : null
+        requiresDeliveryAddress ? shippingPhone2.trim() || null : null,
+        idempotencyKey
       );
 
       if (result.success) {
@@ -544,12 +550,15 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         setFulfillmentMethod('store_pickup');
         setPaymentMethod(BANK_TRANSFER_PAYMENT_ID);
         setPickupBranchId('');
+        setIdempotencyKey(crypto.randomUUID());
       } else {
         setCheckoutStatus('idle');
+        setIdempotencyKey(crypto.randomUUID());
         toast.error(result.error || 'Checkout failed.');
       }
     } catch (err) {
       setCheckoutStatus('idle');
+      setIdempotencyKey(crypto.randomUUID());
       toast.error(err instanceof Error ? err.message : 'An unexpected error occurred.');
     }
   };

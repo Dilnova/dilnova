@@ -23,7 +23,7 @@ export default async function AdminPage() {
     client.organizations.getOrganizationMembershipList({
       organizationId: orgId,
       limit: 100,
-    }).catch((err) => { console.error("CLERK ERROR:", err); return { data: [] }; }),
+    }).catch((err) => { console.error("CLERK ERROR", err); return { data: [] }; }),
     getCheckoutOptionsCatalog(),
     getBranchCountForOrg(orgId),
   ]);

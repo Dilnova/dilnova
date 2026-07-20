@@ -35,7 +35,7 @@ export default function DeliveryAddressFormFields({
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2 relative">
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label htmlFor="shippingAddress" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
               Street Address <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -43,6 +43,7 @@ export default function DeliveryAddressFormFields({
                 <MapPin className="w-4 h-4 text-zinc-400" />
               </div>
               <input
+                id="shippingAddress"
                 type="text"
                 name="shippingAddress"
                 value={shippingAddress}
@@ -55,10 +56,11 @@ export default function DeliveryAddressFormFields({
           </div>
           
           <div className="sm:col-span-2 relative">
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label htmlFor="shippingAddressLine2" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
               Apartment, Suite, Unit <span className="text-zinc-400 font-normal">(Optional)</span>
             </label>
             <input
+              id="shippingAddressLine2"
               type="text"
               name="shippingAddressLine2"
               value={shippingAddressLine2 || ''}
@@ -69,7 +71,7 @@ export default function DeliveryAddressFormFields({
           </div>
           
           <div className="relative">
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label htmlFor="shippingCity" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
               City <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -77,6 +79,7 @@ export default function DeliveryAddressFormFields({
                 <Building className="w-4 h-4 text-zinc-400" />
               </div>
               <input
+                id="shippingCity"
                 type="text"
                 name="shippingCity"
                 value={shippingCity}
@@ -89,7 +92,7 @@ export default function DeliveryAddressFormFields({
           </div>
           
           <div className="relative">
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label htmlFor="shippingState" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
               State / Province <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -97,6 +100,7 @@ export default function DeliveryAddressFormFields({
                 <Map className="w-4 h-4 text-zinc-400" />
               </div>
               <input
+                id="shippingState"
                 type="text"
                 name="shippingState"
                 value={shippingState}
@@ -109,7 +113,7 @@ export default function DeliveryAddressFormFields({
           </div>
           
           <div className="relative">
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label htmlFor="shippingPostalCode" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
               Postal Code <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -117,6 +121,7 @@ export default function DeliveryAddressFormFields({
                 <Hash className="w-4 h-4 text-zinc-400" />
               </div>
               <input
+                id="shippingPostalCode"
                 type="text"
                 name="shippingPostalCode"
                 value={shippingPostalCode}
@@ -129,7 +134,7 @@ export default function DeliveryAddressFormFields({
           </div>
           
           <div className="relative">
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label htmlFor="shippingCountry" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
               Country <span className="text-zinc-400 font-normal">(Optional)</span>
             </label>
             <div className="relative">
@@ -137,6 +142,7 @@ export default function DeliveryAddressFormFields({
                 <Globe className="w-4 h-4 text-zinc-400" />
               </div>
               <input
+                id="shippingCountry"
                 type="text"
                 name="shippingCountry"
                 value={shippingCountry || ''}
@@ -157,7 +163,7 @@ export default function DeliveryAddressFormFields({
         </h5>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="relative">
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label htmlFor="shippingPhone" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
               Primary Phone <span className="text-zinc-400 font-normal">(Optional)</span>
             </label>
             <div className="relative">
@@ -165,6 +171,7 @@ export default function DeliveryAddressFormFields({
                 <Phone className="w-4 h-4 text-zinc-400" />
               </div>
               <input
+                id="shippingPhone"
                 type="tel"
                 name="shippingPhone"
                 value={shippingPhone || ''}
@@ -175,7 +182,7 @@ export default function DeliveryAddressFormFields({
             </div>
           </div>
           <div className="relative">
-            <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label htmlFor="shippingPhone2" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
               Secondary Phone <span className="text-zinc-400 font-normal">(Optional)</span>
             </label>
             <div className="relative">
@@ -183,6 +190,7 @@ export default function DeliveryAddressFormFields({
                 <Phone className="w-4 h-4 text-zinc-400 opacity-50" />
               </div>
               <input
+                id="shippingPhone2"
                 type="tel"
                 name="shippingPhone2"
                 value={shippingPhone2 || ''}

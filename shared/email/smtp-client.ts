@@ -1,6 +1,6 @@
 import tls from 'tls';
 import net from 'net';
-import { logger } from '@/shared/logging/logger';
+import { logger, withPerformanceTracking } from '@/shared/logging/logger';
 
 export interface SmtpEmailOptions {
   host: string;
@@ -27,8 +27,8 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
       if (socket) {
         socket.destroy();
       }
-      fail(new Error('SMTP transaction overall deadline exceeded (30 seconds).'));
-    }, 30000);
+      fail(new Error('SMTP transaction overall deadline exceeded (10 seconds).'));
+    }, 10000);
 
     const cleanup = () => {
       clearTimeout(overallTimeout);
@@ -45,10 +45,10 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
     };
 
     const setupSocketTimeout = (sock: net.Socket | tls.TLSSocket) => {
-      sock.setTimeout(30000);
+      sock.setTimeout(10000);
       sock.on('timeout', () => {
         sock.destroy();
-        fail(new Error('SMTP socket inactivity timeout exceeded (30 seconds).'));
+        fail(new Error('SMTP socket inactivity timeout exceeded (10 seconds).'));
       });
     };
 
@@ -214,10 +214,18 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
 /** Custom SMTP transaction client using Node net/tls modules, supporting STARTTLS. With socket timeouts and single retry. */
 export async function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
   try {
-    return await sendRawSmtpEmailAttempt(options);
+    return await withPerformanceTracking(
+      'SMTP Dispatch (Initial)',
+      'http.client.smtp',
+      () => sendRawSmtpEmailAttempt(options)
+    );
   } catch (error) {
     logger.warn('First SMTP attempt failed, retrying once...', { error });
-    return await sendRawSmtpEmailAttempt(options);
+    return await withPerformanceTracking(
+      'SMTP Dispatch (Retry)',
+      'http.client.smtp',
+      () => sendRawSmtpEmailAttempt(options)
+    );
   }
 }
 

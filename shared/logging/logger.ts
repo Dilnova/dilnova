@@ -1,17 +1,35 @@
-import { getRequestId } from '@/shared/security/async-context';
+import { getRequestId, getUserId, getRequestPath, getRequestMethod } from '@/shared/security/async-context';
 
 async function captureSentryError(error: unknown, context?: Record<string, unknown>) {
   if (!process.env.SENTRY_DSN) {
     return;
   }
 
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    try {
-      const Sentry = await import('@sentry/node');
-      Sentry.captureException(error, { extra: context });
-    } catch {
-      // Sentry is optional; never block application flow.
-    }
+  try {
+    const Sentry = await import('@sentry/nextjs');
+    const { tags, ...extra } = context || {};
+    Sentry.captureException(error, { 
+      extra, 
+      tags: tags as Record<string, string> 
+    });
+  } catch {
+    // Sentry is optional; never block application flow.
+  }
+}
+
+function addClientBreadcrumb(level: 'info' | 'warning' | 'error', message: string, data?: Record<string, unknown>) {
+  // Only record manual breadcrumbs in the browser, Server logs are already handled by stdout drains.
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+    import('@sentry/nextjs')
+      .then(Sentry => {
+        Sentry.addBreadcrumb({
+          category: 'logger',
+          message,
+          level,
+          data,
+        });
+      })
+      .catch(() => {});
   }
 }
 
@@ -51,32 +69,12 @@ export function redactSensitiveData(obj: any, seen = new WeakSet()): any {
     };
   }
 
-  const sensitiveKeys = new Set([
-    'email',
-    'phone',
-    'address',
-    'password',
-    'secret',
-    'token',
-    'key',
-    'bankaccountname',
-    'bankaccountnumber',
-    'bankbranchcode',
-    'bankname',
-    'shippingaddress',
-    'shippingphone',
-    'customeremail',
-    'customername',
-    'authorization',
-    'cookie',
-  ]);
+  // Pre-compiled regex for performance (avoids Array.from() inside the loop)
+  const sensitiveKeysRegex = /email|phone|address|password|secret|token|key|bankaccountname|bankaccountnumber|bankbranchcode|bankname|shippingaddress|shippingphone|customeremail|customername|authorization|cookie/i;
 
   const redacted: Record<string, any> = {};
   for (const [k, v] of Object.entries(obj)) {
-    const lowerKey = k.toLowerCase();
-    const isSensitive = Array.from(sensitiveKeys).some(
-      (sk) => lowerKey === sk || lowerKey.includes(sk)
-    );
+    const isSensitive = sensitiveKeysRegex.test(k);
 
     if (isSensitive) {
       redacted[k] = '[REDACTED]';
@@ -105,7 +103,10 @@ export const logger = {
     const requestId = getRequestId();
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
-    const redactedContext = context ? redactSensitiveData(context) : undefined;
+    
+    const baseContext: Record<string, any> = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
+    Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
+    const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
     
     if (process.env.NODE_ENV === 'production') {
       console.log(
@@ -117,6 +118,7 @@ export const logger = {
           timestamp: new Date().toISOString(),
         })
       );
+      addClientBreadcrumb('info', safeMessage, redactedContext);
     } else {
       const idPrefix = safeRequestId ? ` [${safeRequestId}]` : '';
       console.log(
@@ -131,7 +133,10 @@ export const logger = {
     const requestId = getRequestId();
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
-    const redactedContext = context ? redactSensitiveData(context) : undefined;
+    
+    const baseContext: Record<string, any> = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
+    Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
+    const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
     
     if (process.env.NODE_ENV === 'production') {
       console.warn(
@@ -143,6 +148,7 @@ export const logger = {
           timestamp: new Date().toISOString(),
         })
       );
+      addClientBreadcrumb('warning', safeMessage, redactedContext);
     } else {
       const idPrefix = safeRequestId ? ` [${safeRequestId}]` : '';
       console.warn(
@@ -157,7 +163,10 @@ export const logger = {
     const requestId = getRequestId();
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
-    const redactedContext = context ? redactSensitiveData(context) : undefined;
+    
+    const baseContext: Record<string, any> = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
+    Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
+    const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
     
     let redactedError = error;
     if (error) {
@@ -179,6 +188,7 @@ export const logger = {
           timestamp: new Date().toISOString(),
         })
       );
+      addClientBreadcrumb('error', safeMessage, redactedContext);
       
       const sentryErr = error instanceof Error ? error : new Error(safeMessage);
       void captureSentryError(sentryErr, {
@@ -198,3 +208,42 @@ export const logger = {
     }
   },
 };
+
+/**
+ * Wraps an asynchronous operation with performance timing and a Sentry span.
+ * Logs a warning if the operation takes longer than thresholdMs (default 1500ms).
+ */
+export async function withPerformanceTracking<T>(
+  name: string,
+  op: string,
+  fn: () => Promise<T>,
+  thresholdMs = 1500
+): Promise<T> {
+  const start = performance.now();
+
+  const execute = async () => {
+    try {
+      const result = await fn();
+      const duration = performance.now() - start;
+      if (duration > thresholdMs) {
+        logger.warn(`[Slow API ${duration.toFixed(2)}ms] ${name}`);
+      }
+      return result;
+    } catch (error) {
+      const duration = performance.now() - start;
+      logger.error(`[API Failure ${duration.toFixed(2)}ms] ${name} failed`, error);
+      throw error;
+    }
+  };
+
+  if (process.env.NODE_ENV === 'production' && (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)) {
+    try {
+      const Sentry = await import('@sentry/nextjs');
+      return await Sentry.startSpan({ name, op }, execute);
+    } catch {
+      return await execute();
+    }
+  }
+
+  return await execute();
+}

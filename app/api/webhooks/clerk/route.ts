@@ -5,8 +5,9 @@ import { logger } from '@/shared/logging/logger';
 import { invalidateClerkUserCache, invalidateClerkOrgCache } from '@/shared/auth/clerk-cache';
 import { Redis } from '@upstash/redis';
 import { readUpstashEnv } from '@/shared/security/upstash-health';
+import { Client as QStashClient } from '@upstash/qstash';
 
-const processedWebhooks = new Set<string>();
+const processedWebhooksMemory = new Set<string>();
 
 function verifyClerkWebhookSignature(
   rawBody: string,
@@ -64,10 +65,18 @@ function verifyClerkWebhookSignature(
 }
 
 export async function POST(req: NextRequest) {
-  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+  let webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+
+  if (process.env.VERCEL_ENV === 'preview') {
+    if (process.env.PREVIEW_CLERK_WEBHOOK_SECRET) {
+      webhookSecret = process.env.PREVIEW_CLERK_WEBHOOK_SECRET;
+    } else {
+      logger.warn('Preview deployment using production CLERK_WEBHOOK_SECRET. It is highly recommended to set PREVIEW_CLERK_WEBHOOK_SECRET in Vercel for preview environments to avoid cross-contamination.');
+    }
+  }
 
   if (!webhookSecret) {
-    logger.error('CLERK_WEBHOOK_SECRET is not configured on the server');
+    logger.error('CLERK_WEBHOOK_SECRET is not configured on the server', undefined, { tags: { alert: 'webhook_failure', source: 'clerk' } });
     return NextResponse.json(
       { error: 'Webhook secret is not configured.' },
       { status: 500 }
@@ -111,6 +120,31 @@ export async function POST(req: NextRequest) {
 
   // Idempotency check
   const { url, token } = readUpstashEnv();
+  
+  // Helper for DB fallback
+  const fallbackToDbIdempotency = async () => {
+    try {
+      const { db } = await import('@/shared/db/client');
+      const { processedWebhooks } = await import('@/shared/db/schema');
+      
+      logger.info('Falling back to database for webhook idempotency check', { svixId });
+      const result = await db
+        .insert(processedWebhooks)
+        .values({ id: svixId, source: 'clerk' })
+        .onConflictDoNothing({ target: processedWebhooks.id })
+        .returning({ id: processedWebhooks.id });
+      
+      if (result.length === 0) {
+        logger.warn('Clerk webhook duplicate detected via DB fallback, ignoring replay', { svixId });
+        return true; // Is duplicate
+      }
+      return false; // Not duplicate
+    } catch (dbError) {
+      logger.error('Database fallback for webhook idempotency failed', dbError, { tags: { alert: 'webhook_failure', source: 'clerk' } });
+      throw dbError; // Fail closed if even DB fails
+    }
+  };
+
   if (url && token) {
     try {
       const redis = new Redis({ url, token });
@@ -121,23 +155,38 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, message: 'Already processed' });
       }
     } catch (e) {
-      if (process.env.NODE_ENV === 'production') {
-        logger.error('Redis idempotency check failed, failing closed in production', e);
-        return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+      logger.error('Redis idempotency check failed, attempting database fallback', e, { tags: { source: 'clerk' } });
+      try {
+        const isDuplicate = await fallbackToDbIdempotency();
+        if (isDuplicate) {
+          return NextResponse.json({ success: true, message: 'Already processed' });
+        }
+      } catch (dbError) {
+        if (process.env.NODE_ENV === 'production') {
+          return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+        }
       }
-      logger.error('Redis idempotency check failed, proceeding anyway', e);
     }
   } else {
-    if (process.env.NODE_ENV === 'production') {
-      logger.error('Redis required for webhook idempotency in production');
-      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+    try {
+      const isDuplicate = await fallbackToDbIdempotency();
+      if (isDuplicate) {
+        return NextResponse.json({ success: true, message: 'Already processed' });
+      }
+    } catch (e) {
+      if (process.env.NODE_ENV === 'production') {
+        logger.error('Redis and DB idempotency check both failed in production', undefined, { tags: { alert: 'webhook_failure', source: 'clerk' } });
+        return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+      }
+      
+      // Memory fallback for local dev if DB also fails
+      if (processedWebhooksMemory.has(svixId)) {
+        logger.warn('Clerk webhook duplicate detected via memory, ignoring replay', { svixId });
+        return NextResponse.json({ success: true, message: 'Already processed' });
+      }
+      processedWebhooksMemory.add(svixId);
+      setTimeout(() => processedWebhooksMemory.delete(svixId), 10 * 60 * 1000);
     }
-    if (processedWebhooks.has(svixId)) {
-      logger.warn('Clerk webhook duplicate detected via memory, ignoring replay', { svixId });
-      return NextResponse.json({ success: true, message: 'Already processed' });
-    }
-    processedWebhooks.add(svixId);
-    setTimeout(() => processedWebhooks.delete(svixId), 10 * 60 * 1000);
   }
 
   try {
@@ -147,6 +196,7 @@ export async function POST(req: NextRequest) {
     const allowedEventTypes = new Set([
       'user.updated',
       'user.created',
+      'user.deleted',
       'organizationMembership.created',
       'organizationMembership.updated',
       'organizationMembership.deleted',
@@ -165,6 +215,18 @@ export async function POST(req: NextRequest) {
       if (userId) {
         invalidateClerkUserCache(userId);
       }
+    } else if (eventType === 'user.deleted') {
+      const userId = data.id;
+      if (userId) {
+        invalidateClerkUserCache(userId);
+        const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN || '' });
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        await qstash.publishJSON({
+          url: `${appUrl}/api/webhooks/qstash/erase`,
+          body: { targetUserId: userId, adminUserId: 'system_webhook' },
+        });
+        logger.info(`Dispatched background GDPR erasure for deleted user ${userId}`);
+      }
     } else if (
       eventType === 'organizationMembership.created' ||
       eventType === 'organizationMembership.updated' ||
@@ -179,16 +241,28 @@ export async function POST(req: NextRequest) {
       if (userId) {
         invalidateClerkUserCache(userId);
       }
-    } else if (eventType === 'organization.updated' || eventType === 'organization.deleted') {
+    } else if (eventType === 'organization.updated') {
       const orgId = data.id;
       if (orgId) {
         invalidateClerkOrgCache(orgId);
+      }
+    } else if (eventType === 'organization.deleted') {
+      const orgId = data.id;
+      if (orgId) {
+        invalidateClerkOrgCache(orgId);
+        const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN || '' });
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        await qstash.publishJSON({
+          url: `${appUrl}/api/webhooks/qstash/erase-org`,
+          body: { targetOrgId: orgId, adminUserId: 'system_webhook' },
+        });
+        logger.info(`Dispatched background erasure for deleted organization ${orgId}`);
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    logger.error('Failed to process Clerk webhook event payload', error);
+    logger.error('Failed to process Clerk webhook event payload', error, { tags: { alert: 'webhook_failure', source: 'clerk' } });
     return NextResponse.json(
       { error: 'Error processing webhook payload.' },
       { status: 500 }

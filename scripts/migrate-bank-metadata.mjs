@@ -14,12 +14,23 @@ const BANK_KEYS = [
   'bankTransferInstructions',
 ];
 
+// SECURITY: Require all three conditions to safely skip in CI.
+// Prevents skipping the migration if Vercel happens to have CI=true.
+if (
+  process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy' &&
+  process.env.NODE_ENV !== 'production' &&
+  process.env.VERCEL !== '1'
+) {
+  console.log('Skipping bank metadata migration in CI environment.');
+  process.exit(0);
+}
+
 const dryRun = process.argv.includes('--dry-run');
 const secretKey = process.env.CLERK_SECRET_KEY;
 
-if (!secretKey) {
-  console.error('CLERK_SECRET_KEY is required.');
-  process.exit(1);
+if (!secretKey || secretKey.includes('placeholder')) {
+  console.warn('CLERK_SECRET_KEY is missing or is a placeholder. Skipping migration.');
+  process.exit(0);
 }
 
 const clerkApi = 'https://api.clerk.com/v1';

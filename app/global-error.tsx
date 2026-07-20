@@ -1,5 +1,8 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
+import { useEffect } from 'react';
+
 /**
  * Global Error Boundary — catches errors in the root layout itself.
  * Must render its own <html> and <body> tags since the root layout has crashed.
@@ -12,6 +15,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <html lang="en">
       <body style={{ margin: 0, fontFamily: 'system-ui, -apple-system, sans-serif', backgroundColor: '#09090b', color: '#fafafa' }}>
@@ -30,10 +37,10 @@ export default function GlobalError({
             </div>
 
             <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-              Critical Error
+              {typeof error?.message === 'string' && (error.message.toLowerCase().includes('fetch') || error.message.toLowerCase().includes('network')) ? 'Check your connection' : 'Critical Error'}
             </h1>
             <p style={{ fontSize: '0.875rem', color: '#a1a1aa', lineHeight: 1.6, marginBottom: '0.5rem' }}>
-              A critical application error occurred. Please try refreshing the page.
+              {typeof error?.message === 'string' && (error.message.toLowerCase().includes('fetch') || error.message.toLowerCase().includes('network')) ? 'It looks like you are offline or having network issues. Please check your connection and try again.' : 'A critical application error occurred. Please try refreshing the page.'}
             </p>
             {error.digest && (
               <p style={{ fontSize: '0.75rem', color: '#52525b', fontFamily: 'monospace', marginBottom: '1.5rem' }}>

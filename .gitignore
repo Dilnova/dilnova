@@ -61,3 +61,28 @@ next-env.d.ts
 *.tfstate.*
 .terraform/
 .terraform.lock.hcl
+
+# logs and temporary files
+*.log
+*.log.*
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDEs
+.vscode/
+.idea/
+
+# build & tools
+.turbo/
+
+# project specific junk
+scratch/
+*.patch
+*.diff
+jobs.json
+job_log*.txt
+client_components.txt
+git_audit_report.md
+auth_tests_audit.md

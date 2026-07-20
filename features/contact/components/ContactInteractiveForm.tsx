@@ -1,6 +1,5 @@
 'use client';
 
-import { logger } from '@/shared/logging/logger';
 import { useState, useTransition, useEffect, useRef } from 'react';
 import { submitContactFormAction } from '@/features/contact/actions';
 import { toast } from 'sonner';
@@ -10,11 +9,11 @@ import { useSearchParams } from 'next/navigation';
 
 type CategoryType = 'collaboration' | 'registration' | 'info';
 
-interface ContactClientPageProps {
+interface ContactInteractiveFormProps {
   systemName: string;
 }
 
-export default function ContactClientPage({ systemName }: ContactClientPageProps) {
+export default function ContactInteractiveForm({ systemName }: ContactInteractiveFormProps) {
   const { user, isSignedIn, isLoaded } = useUser();
   const searchParams = useSearchParams();
   const plan = searchParams.get('plan');
@@ -54,7 +53,7 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
             });
           }
         } catch (err) {
-          logger.error('Failed to render Turnstile widget:', err);
+          console.error('Failed to render Turnstile widget:', err);
         }
       } else if (checkCount > 50) { // Stop polling after 5 seconds
         clearInterval(checkTurnstile);
@@ -170,24 +169,9 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans px-4 py-12 md:py-20 relative overflow-hidden">
-      {/* Background ambient accents */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="w-full max-w-6xl relative z-10 flex flex-col gap-10">
-        <div className="text-center max-w-2xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 mb-4">
-            Connect with {systemName}
-          </h1>
-          <p className="text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            Whether you want to partner, scale your business by registering as a vendor, or simply want to learn more, we are here to help.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Info cards: Left Column */}
-          <div className="lg:col-span-5 flex flex-col gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* Info cards: Left Column */}
+      <div className="lg:col-span-5 flex flex-col gap-6">
             <h2 className="text-xl font-bold tracking-tight text-zinc-800 dark:text-zinc-200 px-1">
               Choose a topic to learn more
             </h2>
@@ -403,7 +387,5 @@ export default function ContactClientPage({ systemName }: ContactClientPageProps
             </div>
           </div>
         </div>
-      </div>
-    </div>
   );
 }

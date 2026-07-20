@@ -17,6 +17,7 @@ import {
   allocateBranchStockSchema,
   assignBranchMemberSchema,
   removeBranchMemberSchema,
+  initInventorySchema,
 } from '@/features/inventory/schema';
 import {
   validateStockAvailabilityId,
@@ -45,7 +46,10 @@ import type { VendorInventoryFullData } from '@/features/inventory/types';
 export async function getVendorInventoryData(
   options?: GetVendorInventoryDataOptions
 ): Promise<VendorInventoryFullData> {
-  return loadVendorInventoryData('full', options) as Promise<VendorInventoryFullData>;
+  return runWithCorrelationId(async () => {
+    await rateLimit(30, 60 * 1000);
+    return loadVendorInventoryData('full', options) as Promise<VendorInventoryFullData>;
+  });
 }
 
 
@@ -294,24 +298,30 @@ export async function vendorInitInventoryAction(data: {
     await rateLimit(20, 60 * 1000);
     const { userId, orgId } = await verifyVendorAccess();
 
-    if (!data.productId) throw new Error('Product ID is required.');
+    const parsed = initInventorySchema.safeParse(data);
+    if (!parsed.success) {
+      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+    }
+    const validData = parsed.data;
+
+    if (!validData.productId) throw new Error('Product ID is required.');
 
     // Verify product belongs to this vendor org
     const [prod] = await db
       .select()
       .from(schema.products)
-      .where(and(eq(schema.products.id, data.productId), eq(schema.products.orgId, orgId)))
+      .where(and(eq(schema.products.id, validData.productId), eq(schema.products.orgId, orgId)))
       .limit(1);
 
     if (!prod) {
       throw new Error('Product not found or access denied.');
     }
 
-    if (data.supplierId) {
+    if (validData.supplierId) {
       const [supplier] = await db
         .select({ id: schema.suppliers.id })
         .from(schema.suppliers)
-        .where(and(eq(schema.suppliers.id, data.supplierId), eq(schema.suppliers.orgId, orgId)))
+        .where(and(eq(schema.suppliers.id, validData.supplierId), eq(schema.suppliers.orgId, orgId)))
         .limit(1);
 
       if (!supplier) {
@@ -323,15 +333,15 @@ export async function vendorInitInventoryAction(data: {
     const existing = await db
       .select({ id: schema.inventory.id })
       .from(schema.inventory)
-      .where(eq(schema.inventory.productId, data.productId))
+      .where(eq(schema.inventory.productId, validData.productId))
       .limit(1);
 
     if (existing.length > 0) {
       throw new Error('Inventory record already exists.');
     }
 
-    const quantity = data.quantity ?? 0;
-    const availability = await validateStockAvailabilityId(data.stockAvailability || 'in_stock');
+    const quantity = validData.quantity ?? 0;
+    const availability = await validateStockAvailabilityId(validData.stockAvailability || 'in_stock');
     if (!availability) {
       throw new Error('Invalid stock availability status.');
     }
@@ -339,12 +349,12 @@ export async function vendorInitInventoryAction(data: {
     const [inv] = await db
       .insert(schema.inventory)
       .values({
-        productId: data.productId,
-        sku: data.sku || null,
+        productId: validData.productId,
+        sku: validData.sku || null,
         quantity,
-        lowStockThreshold: data.lowStockThreshold ?? 5,
-        binLocation: data.binLocation || null,
-        supplierId: data.supplierId || null,
+        lowStockThreshold: validData.lowStockThreshold ?? 5,
+        binLocation: validData.binLocation || null,
+        supplierId: validData.supplierId || null,
         stockAvailability: availability.id,
       })
       .returning();
@@ -366,7 +376,7 @@ export async function vendorInitInventoryAction(data: {
       action: 'CREATE_INVENTORY',
       targetType: 'inventory',
       targetId: inv.id,
-      metadata: { productId: data.productId, quantity },
+      metadata: { productId: validData.productId, quantity },
     });
 
     revalidateVendorConsole();

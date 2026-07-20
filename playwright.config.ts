@@ -10,10 +10,11 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://127.0.0.1:${PORT}`;
 
 const webServerEnv: Record<string, string> = {
   PORT,
+  CI: process.env.CI || 'true',
   DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://ci:ci@localhost:5432/ci',
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? 'pk_test_dGVzdC5jbGVyay5kZXYk',
-  CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY ?? 'sk_test_ci_dummy',
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_placeholder',
+  CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY || 'sk_test_placeholder',
   UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL ?? 'https://dummy.upstash.io',
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ?? 'dummy-token',
   NEXT_PUBLIC_APP_URL: baseURL,
@@ -34,6 +35,9 @@ const webServerEnv: Record<string, string> = {
   CLERK_WEBHOOK_SECRET: process.env.CLERK_WEBHOOK_SECRET ?? 'whsec_placeholder',
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '1x00000000000000000000AA',
   TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY ?? '1x00000000000000000000AA',
+  QSTASH_TOKEN: process.env.QSTASH_TOKEN ?? 'dummy_qstash_token',
+  SENTRY_DSN: process.env.SENTRY_DSN ?? 'https://public@sentry.example.com/1',
+  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN ?? 'https://public@sentry.example.com/1',
 };
 
 export default defineConfig({
@@ -151,6 +155,24 @@ export default defineConfig({
         storageState: path.join(AUTH_DIR, 'superadmin.json'),
       },
     },
+    {
+      name: 'business-customer',
+      testMatch: /business\/checkout\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: path.join(AUTH_DIR, 'customer.json'),
+      },
+    },
+    {
+      name: 'business-vendor',
+      testMatch: /business\/pos-billing\.spec\.ts/,
+      dependencies: ['auth-setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: path.join(AUTH_DIR, 'vendor-admin.json'),
+      },
+    },
   ],
   webServer: {
     // On CI we start Next.js in the workflow; reuse that server. Locally Playwright can start the server.
@@ -158,7 +180,7 @@ export default defineConfig({
       ? `node ./node_modules/next/dist/bin/next start --port ${PORT}`
       : `sh -c 'pnpm exec next build --webpack && exec node ./node_modules/next/dist/bin/next start --port ${PORT}'`,
     url: baseURL,
-    reuseExistingServer: process.env.CI ? true : false,
+    reuseExistingServer: true,
     timeout: 600_000,
     env: webServerEnv,
   },

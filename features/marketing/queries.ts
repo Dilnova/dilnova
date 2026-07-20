@@ -2,6 +2,7 @@ import { db } from '@/shared/db/client';
 import { categories, products } from '@/shared/db/schema/catalog';
 import { eq, desc, and } from 'drizzle-orm';
 import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
+import { logger } from '@/shared/logging/logger';
 
 export type Product = {
   id: string;
@@ -87,7 +88,7 @@ export async function getFeaturedSeries(): Promise<FeaturedSeries[]> {
     // Only return series that actually have products
     return seriesList.filter(series => series.products.length > 0);
   } catch (error) {
-    console.error("Failed to fetch featured series:", error);
+    logger.error("Failed to fetch featured series", error);
     return [];
   }
 }

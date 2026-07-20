@@ -9,7 +9,8 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/pre-launch-check.mjs && vitest run && next build --webpack",
+    "postbuild": "node scripts/migrate-bank-metadata.mjs && node scripts/migrate-superadmin-metadata.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
@@ -26,8 +27,9 @@
   },
   "dependencies": {
     "@clerk/nextjs": "7.5.17",
-    "@sentry/node": "10.65.0",
+    "@sentry/nextjs": "^10.65.0",
     "@supabase/supabase-js": "2.110.3",
+    "@upstash/qstash": "^2.11.2",
     "@upstash/ratelimit": "2.0.8",
     "@upstash/redis": "1.38.0",
     "@vercel/analytics": "2.0.1",

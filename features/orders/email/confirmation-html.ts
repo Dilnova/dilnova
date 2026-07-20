@@ -211,8 +211,11 @@ export function buildOrderConfirmationEmailHtml(input: {
             </div>
           </div>
 
-          <div style="background-color: #f4f4f5; padding: 16px; text-align: center; border-top: 1px solid #e4e4e7; font-size: 11px; color: #a1a1aa;">
-            ${escapeHtml(systemNameHub)} &copy; ${new Date().getFullYear()}.
+          <div style="background-color: #f4f4f5; padding: 24px 16px; text-align: center; border-top: 1px solid #e4e4e7; font-size: 11px; color: #71717a; line-height: 1.6;">
+            <p style="margin: 0 0 4px 0; font-weight: bold; color: #3f3f46; font-size: 12px;">${escapeHtml(systemNameHub)}</p>
+            <p style="margin: 0 0 4px 0;">123 Commerce Avenue, Suite 400<br/>Colombo, 00100, Sri Lanka</p>
+            <p style="margin: 0 0 12px 0;">Registration No. PV-123456</p>
+            <p style="margin: 0; color: #a1a1aa;">&copy; ${new Date().getFullYear()} ${escapeHtml(systemName)}. All rights reserved.</p>
           </div>
         </div>
       </body>

@@ -270,12 +270,15 @@ export async function getCustomerDsarDataAction(email: string) {
       strict: true,
     });
 
+    const sanitizedOrders = matchingOrders.map(({ customerEmailHash, ...rest }) => rest);
+    const sanitizedSubmissions = matchingSubmissions.map(({ emailHash, ...rest }) => rest);
+
     return {
       success: true,
       data: {
         email: normalizedEmailInput,
-        orders: matchingOrders,
-        contactSubmissions: matchingSubmissions,
+        orders: sanitizedOrders,
+        contactSubmissions: sanitizedSubmissions,
       },
     };
   });
@@ -401,11 +404,13 @@ export async function anonymizeCustomerDataAction(email: string) {
       // Audit Logs
       const userLogs = await db.select({ id: schema.auditLogs.id }).from(schema.auditLogs).where(eq(schema.auditLogs.userId, clerkUserId));
       if (userLogs.length > 0) {
-        await db.update(schema.auditLogs).set({
-          userId: 'gdpr_redacted',
-          ipAddress: null,
-          userAgent: null,
-        }).where(eq(schema.auditLogs.userId, clerkUserId));
+        await db.insert(schema.auditLogs).values({
+          userId: clerkUserId,
+          action: 'GDPR_REDACTION',
+          targetType: 'data_subject_request',
+          targetId: clerkUserId,
+          metadata: { redactedLogsCount: userLogs.length },
+        });
         auditLogsRedacted = userLogs.length;
       }
     }

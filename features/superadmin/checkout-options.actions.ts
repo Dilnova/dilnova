@@ -14,6 +14,7 @@ import {
   type CheckoutOptionDefinition,
 } from '@/features/organization/checkout-options.shared';
 import { updateCheckoutOptionsCatalogSchema } from '@/features/superadmin/schema';
+import { syncSettingToRedis } from '@/shared/platform/settings';
 
 export async function updateCheckoutOptionsCatalogAction(options: CheckoutOptionDefinition[]) {
   return runWithCorrelationId(async () => {
@@ -45,6 +46,8 @@ export async function updateCheckoutOptionsCatalogAction(options: CheckoutOption
         value,
       });
     }
+
+    await syncSettingToRedis(CHECKOUT_OPTIONS_CATALOG_KEY, value);
 
     await logAuditAction({
       userId: user.id,

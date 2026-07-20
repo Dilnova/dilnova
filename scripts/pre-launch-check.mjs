@@ -41,9 +41,11 @@ const required = [
   'CLERK_WEBHOOK_SECRET',
   'NEXT_PUBLIC_TURNSTILE_SITE_KEY',
   'TURNSTILE_SECRET_KEY',
+  'SENTRY_DSN',
+  'NEXT_PUBLIC_SENTRY_DSN',
 ];
 
-const recommended = ['SENTRY_DSN'];
+const recommended = [];
 
 let failed = 0;
 

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
+import { useAuth } from '@clerk/nextjs';
 
 const fetcher = async (url: string) => {
   const response = await fetch(url, { method: 'POST' });
@@ -10,11 +11,8 @@ const fetcher = async (url: string) => {
   return response.json();
 };
 
-export function GlobalNotificationListener({ 
-  userId, 
-}: { 
-  userId?: string | null;
-}) {
+export function GlobalNotificationListener() {
+  const { userId } = useAuth();
   const emptyCountRef = useRef(0);
   const seenIdsRef = useRef<Set<string>>(new Set());
 

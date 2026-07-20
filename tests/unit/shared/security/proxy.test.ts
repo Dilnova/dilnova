@@ -5,13 +5,10 @@ import { NextRequest, NextResponse } from 'next/server';
 vi.mock('@clerk/nextjs/server', () => ({
   clerkMiddleware: vi.fn((handler) => {
     return (req: any, event: any) => {
-      const mockAuth = {
-        protect: vi.fn(),
-      };
+      const mockAuth = {};
       return handler(mockAuth, req, event);
     };
   }),
-  createRouteMatcher: vi.fn(() => () => true),
 }));
 
 // Mock next/server to intercept responses
@@ -41,54 +38,54 @@ describe('Proxy Middleware CSRF Protection', () => {
     vi.clearAllMocks();
   });
 
-  it('allows GET requests without CSRF check', () => {
+  it('allows GET requests without CSRF check', async () => {
     const request = new NextRequest('http://localhost:3000/api/health', {
       method: 'GET',
     });
-    const result = proxy(request, {} as any);
+    const result = await proxy(request, {} as any);
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 
-  it('rejects POST requests without next-action header when origin/host are missing', () => {
+  it('rejects POST requests without next-action header when origin/host are missing', async () => {
     const request = new NextRequest('http://localhost:3000/api/some-custom-post', {
       method: 'POST',
     });
-    const result = proxy(request, {} as any) as any;
+    const result = await proxy(request, {} as any) as any;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain('Missing Origin or Host header');
   });
 
-  it('allows POST requests to webhooks without CSRF check', () => {
+  it('allows POST requests to webhooks without CSRF check', async () => {
     const request = new NextRequest('http://localhost:3000/api/webhooks/clerk', {
       method: 'POST',
     });
-    const result = proxy(request, {} as any);
+    const result = await proxy(request, {} as any);
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 
-  it('allows POST requests to csp-report without CSRF check', () => {
+  it('allows POST requests to csp-report without CSRF check', async () => {
     const request = new NextRequest('http://localhost:3000/api/csp-report', {
       method: 'POST',
     });
-    const result = proxy(request, {} as any);
+    const result = await proxy(request, {} as any);
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 
-  it('rejects POST requests with next-action header but missing origin', () => {
+  it('rejects POST requests with next-action header but missing origin', async () => {
     const request = new NextRequest('http://localhost:3000/some-action', {
       method: 'POST',
       headers: {
         'next-action': 'action-id',
       },
     });
-    const result = proxy(request, {} as any) as any;
+    const result = await proxy(request, {} as any) as any;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain('Missing Origin or Host header');
   });
 
-  it('rejects POST requests with mismatched origin and host', () => {
+  it('rejects POST requests with mismatched origin and host', async () => {
     const request = new NextRequest('http://localhost:3000/some-action', {
       method: 'POST',
       headers: {
@@ -97,13 +94,13 @@ describe('Proxy Middleware CSRF Protection', () => {
         'host': 'localhost:3000',
       },
     });
-    const result = proxy(request, {} as any) as any;
+    const result = await proxy(request, {} as any) as any;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain('Mismatched Origin and Host');
   });
 
-  it('allows POST requests with matching origin and host', () => {
+  it('allows POST requests with matching origin and host', async () => {
     const request = new NextRequest('http://localhost:3000/some-action', {
       method: 'POST',
       headers: {
@@ -112,11 +109,11 @@ describe('Proxy Middleware CSRF Protection', () => {
         'host': 'localhost:3000',
       },
     });
-    const result = proxy(request, {} as any);
+    const result = await proxy(request, {} as any);
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 
-  it('allows POST requests with matching origin and x-forwarded-host', () => {
+  it('allows POST requests with matching origin and x-forwarded-host', async () => {
     const request = new NextRequest('http://localhost:3000/some-action', {
       method: 'POST',
       headers: {
@@ -126,7 +123,7 @@ describe('Proxy Middleware CSRF Protection', () => {
         'x-forwarded-host': 'dilstar.pp.ua',
       },
     });
-    const result = proxy(request, {} as any);
+    const result = await proxy(request, {} as any);
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 });

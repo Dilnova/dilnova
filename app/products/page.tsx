@@ -4,6 +4,15 @@ import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Metadata } from 'next';
+import { unstable_cache } from 'next/cache';
+
+const getCachedCategories = unstable_cache(
+  async () => {
+    return db.select().from(schema.categories);
+  },
+  ['all-categories-list'],
+  { revalidate: 3600, tags: ['categories'] }
+);
 import { getSystemSetting } from '@/shared/platform/settings';
 import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
 import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
@@ -88,7 +97,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const itemsPerPage = 12;
 
   const [categoriesList, stockAvailabilityCatalog, organizations] = await Promise.all([
-    db.select().from(schema.categories),
+    getCachedCategories(),
     getStockAvailabilityCatalog(),
     clerkClient().then((client) => getCachedOrganizations(client)),
   ]);
@@ -148,8 +157,12 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
     productIds.length > 0
       ? db.select({
           productId: schema.reviews.productId,
-          rating: schema.reviews.rating,
-        }).from(schema.reviews).where(inArray(schema.reviews.productId, productIds))
+          count: sql<number>`cast(count(*) as int)`,
+          avgRating: sql<number>`avg(${schema.reviews.rating})`,
+        })
+        .from(schema.reviews)
+        .where(inArray(schema.reviews.productId, productIds))
+        .groupBy(schema.reviews.productId)
       : Promise.resolve([]),
     productIds.length > 0
       ? db
@@ -177,11 +190,9 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
     const vendorLogo = orgMatch ? orgMatch.imageUrl : null;
     const vendorSlug = orgMatch ? orgMatch.slug : null;
 
-    const productReviews = allReviewsForPage.filter((r) => r.productId === product.id);
-    const totalReviews = productReviews.length;
-    const averageRating = totalReviews
-      ? Number((productReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
-      : 0;
+    const reviewStats = allReviewsForPage.find((r) => r.productId === product.id);
+    const totalReviews = reviewStats?.count || 0;
+    const averageRating = totalReviews > 0 ? Number(Number(reviewStats?.avgRating).toFixed(1)) : 0;
 
     const isFavorited = wishlistSet.has(product.id);
     const inventoryInfo = inventoryByProduct.get(product.id);

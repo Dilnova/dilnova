@@ -22,6 +22,7 @@ This file provides quick-reference commands, architecture details, and coding co
     *   **Actions Security**: Always duplicate role validation checks at the Server Action level (`addProductAction`, `deleteProductAction`, etc.) using `auth()`.
 
 ### 2. Code Conventions
+*   **Next.js 16+ Middleware / Proxy**: Starting in Next.js 16, `middleware.ts` has been officially deprecated and replaced by the new `proxy.ts` convention. They are functionally similar, but the name `proxy` clarifies its purpose as a routing and network boundary layer rather than a place to chain heavy business logic. **Use `proxy.ts` instead of `middleware.ts`.**
 *   **Type Safety**: Strictly avoid using `any`. Ensure proper TypeScript annotations for all component properties, forms, and database rows.
 *   **Forms & Validation**: Use `zod` schemas located in `@/utils/schemas` to validate payloads on all server action calls.
 *   **Data Layer**: Access the database using Drizzle ORM. Condition all operations on `orgId` to prevent cross-tenant exposure.

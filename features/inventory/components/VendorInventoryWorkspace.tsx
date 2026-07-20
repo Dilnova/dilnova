@@ -517,6 +517,11 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
           notes: posNotes,
         });
 
+        if (!result.success) {
+          triggerNotification(false, result.error || 'Failed to process POS checkout');
+          return;
+        }
+
         triggerNotification(true, `POS receipt processed. Order Total: $${(result.totalAmount / 100).toFixed(2)}`);
         
         // Save receipt info for print view
