@@ -72,7 +72,7 @@ jobs:
       - name: Test Migrations Execution
         run: pnpm run db:migrate
         env:
-          MIGRATION_DATABASE_URL: "postgresql://postgres:password@localhost:5432/postgres"
+          MIGRATION_DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
           DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
 
   test-unit:
@@ -147,6 +147,7 @@ jobs:
           CLERK_WEBHOOK_SECRET: "whsec_placeholder"
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
+          QSTASH_TOKEN: "dummy_qstash_token"
 
       - name: Generate build attestation
         uses: actions/attest-build-provenance@v4.1.1
