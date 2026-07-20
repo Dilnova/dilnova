@@ -51,22 +51,16 @@ async function handler(req: NextRequest) {
       branchesDeleted = branches.length;
 
       // Products (cascades to reviews, wishlists, questions, inventory, service_configurations)
-      if ('products' in schema) {
-        const products = await tx.delete((schema as any).products).where(eq((schema as any).products.orgId, targetOrgId)).returning({ id: (schema as any).products.id });
-        productsDeleted = products.length;
-      }
+      const products = await tx.delete(schema.products).where(eq(schema.products.orgId, targetOrgId)).returning({ id: schema.products.id });
+      productsDeleted = products.length;
 
       // Suppliers
-      if ('suppliers' in schema) {
-        const suppliers = await tx.delete((schema as any).suppliers).where(eq((schema as any).suppliers.orgId, targetOrgId)).returning({ id: (schema as any).suppliers.id });
-        suppliersDeleted = suppliers.length;
-      }
+      const suppliers = await tx.delete(schema.suppliers).where(eq(schema.suppliers.orgId, targetOrgId)).returning({ id: schema.suppliers.id });
+      suppliersDeleted = suppliers.length;
 
       // Simulated Orders (vendorOrgId matches)
-      if ('simulatedOrders' in schema) {
-        const orders = await tx.delete((schema as any).simulatedOrders).where(eq((schema as any).simulatedOrders.vendorOrgId, targetOrgId)).returning({ id: (schema as any).simulatedOrders.id });
-        simulatedOrdersDeleted = orders.length;
-      }
+      const orders = await tx.delete(schema.simulatedOrders).where(eq(schema.simulatedOrders.vendorOrgId, targetOrgId)).returning({ id: schema.simulatedOrders.id });
+      simulatedOrdersDeleted = orders.length;
     });
 
     await logAuditAction({

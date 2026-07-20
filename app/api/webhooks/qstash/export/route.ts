@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { eq, inArray, sql, InferSelectModel } from 'drizzle-orm';
 import { clerkClient } from '@clerk/nextjs/server';
 import { logger } from '@/shared/logging/logger';
 import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
@@ -57,12 +57,15 @@ async function handler(req: NextRequest) {
     }
 
     // 1. simulatedOrders
+    type Order = InferSelectModel<typeof schema.simulatedOrders>;
+    type OrderItem = InferSelectModel<typeof schema.simulatedOrderItems>;
+    
     const orders = await db.select().from(schema.simulatedOrders).where(eq(schema.simulatedOrders.customerUserId, targetUserId));
-    let populatedOrders: any[] = [];
+    let populatedOrders: (Order & { items: OrderItem[] })[] = [];
     if (orders.length > 0) {
       const orderIds = orders.map((o) => o.id);
       
-      const allItems: any[] = [];
+      const allItems: OrderItem[] = [];
       const CHUNK_SIZE = 100;
       for (let i = 0; i < orderIds.length; i += CHUNK_SIZE) {
         const chunkIds = orderIds.slice(i, i + CHUNK_SIZE);
@@ -85,7 +88,8 @@ async function handler(req: NextRequest) {
     // 2. clerk user to get email for contact submissions
     const client = await clerkClient();
     let clerkUser = null;
-    let contactSubmissions: any[] = [];
+    type ContactSubmission = InferSelectModel<typeof schema.contactSubmissions>;
+    let contactSubmissions: ContactSubmission[] = [];
     try {
       clerkUser = await client.users.getUser(targetUserId);
       const email = clerkUser.emailAddresses[0]?.emailAddress;
@@ -100,11 +104,17 @@ async function handler(req: NextRequest) {
 
     // 3-6. Fetch Carts, Branch Members, Audit Logs, Reviews, Questions, Wishlists concurrently
     let cart = null;
-    let branchMemberships: any[] = [];
-    let logs: any[] = [];
-    let reviews: any[] = [];
-    let questions: any[] = [];
-    let wishlists: any[] = [];
+    type BranchMember = InferSelectModel<typeof schema.branchMembers>;
+    type AuditLog = InferSelectModel<typeof schema.auditLogs>;
+    type Review = InferSelectModel<typeof schema.reviews>;
+    type Question = InferSelectModel<typeof schema.questions>;
+    type Wishlist = InferSelectModel<typeof schema.wishlists>;
+
+    let branchMemberships: BranchMember[] = [];
+    let logs: AuditLog[] = [];
+    let reviews: Review[] = [];
+    let questions: Question[] = [];
+    let wishlists: Wishlist[] = [];
 
     const queries: any[] = [
       db.select().from(schema.customerCarts).where(eq(schema.customerCarts.userId, targetUserId)),
@@ -116,18 +126,14 @@ async function handler(req: NextRequest) {
     let hasQuestions = false;
     let hasWishlists = false;
 
-    if ('reviews' in schema) {
-      hasReviews = true;
-      queries.push(db.select().from((schema as any).reviews).where(eq((schema as any).reviews.userId, targetUserId)));
-    }
-    if ('questions' in schema) {
-      hasQuestions = true;
-      queries.push(db.select().from((schema as any).questions).where(eq((schema as any).questions.userId, targetUserId)));
-    }
-    if ('wishlists' in schema) {
-      hasWishlists = true;
-      queries.push(db.select().from((schema as any).wishlists).where(eq((schema as any).wishlists.userId, targetUserId)));
-    }
+    hasReviews = true;
+    queries.push(db.select().from(schema.reviews).where(eq(schema.reviews.userId, targetUserId)));
+    
+    hasQuestions = true;
+    queries.push(db.select().from(schema.questions).where(eq(schema.questions.userId, targetUserId)));
+    
+    hasWishlists = true;
+    queries.push(db.select().from(schema.wishlists).where(eq(schema.wishlists.userId, targetUserId)));
 
     // Fail loud on any DB errors to prevent silent data loss
     const results = await Promise.all(queries);
@@ -145,9 +151,9 @@ async function handler(req: NextRequest) {
     const sanitizedOrders = populatedOrders.map(({ customerEmailHash, ...rest }) => rest);
     const sanitizedSubmissions = contactSubmissions.map(({ emailHash, ...rest }) => rest);
 
-    const hasRedactionEvent = logs.some((l: any) => l.action === 'GDPR_REDACTION');
+    const hasRedactionEvent = logs.some((l) => l.action === 'GDPR_REDACTION');
     const sanitizedLogs = hasRedactionEvent
-      ? logs.map((l: any) => ({
+      ? logs.map((l) => ({
           ...l,
           userId: 'gdpr_redacted',
           ipAddress: null,

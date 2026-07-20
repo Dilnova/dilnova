@@ -49,7 +49,10 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
     get(target, prop) {
       const orig = target[prop as keyof typeof target];
       if (prop === 'unsafe') {
-        return (query: string, params?: any[]) => {
+        return (
+          query: Parameters<PostgresClient['unsafe']>[0],
+          params?: Parameters<PostgresClient['unsafe']>[1]
+        ): ReturnType<PostgresClient['unsafe']> => {
           const start = performance.now();
           
           let span: any;
@@ -67,7 +70,8 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
             }
           }
 
-          const result = (orig as any).call(target, query, params);
+          const unsafeFn = orig as PostgresClient['unsafe'];
+          const result = unsafeFn.call(target, query, params as any);
           
           const finish = (error?: any) => {
             const duration = performance.now() - start;
@@ -91,7 +95,7 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
           }).catch((err: any) => {
             finish(err);
             throw err;
-          });
+          }) as ReturnType<PostgresClient['unsafe']>;
 
           wrappedResult.values = () => {
             return result.values().then((res: any) => {
@@ -108,14 +112,16 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
       }
       
       if (prop === 'begin' || prop === 'savepoint') {
-        return (cb: any) => {
-          return (orig as any).call(target, (txClient: PostgresClient) => {
+        type TxCallback = (client: PostgresClient) => any;
+        return (cb: TxCallback) => {
+          const txFn = orig as (cb: TxCallback) => any;
+          return txFn.call(target, (txClient: PostgresClient) => {
             return cb(withSlowQueryLogger(txClient));
           });
         };
       }
 
-      return typeof orig === 'function' ? (orig as any).bind(target) : orig;
+      return typeof orig === 'function' ? (orig as Function).bind(target) : orig;
     }
   }) as PostgresClient;
 }

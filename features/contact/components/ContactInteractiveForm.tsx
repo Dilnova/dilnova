@@ -41,11 +41,11 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
     let widgetId: string | null = null;
     const checkTurnstile = setInterval(() => {
       checkCount++;
-      if (typeof window !== 'undefined' && (window as any).turnstile && turnstileRef.current) {
+      if (typeof window !== 'undefined' && window.turnstile && turnstileRef.current) {
         clearInterval(checkTurnstile);
         try {
           if (turnstileRef.current.innerHTML === '') {
-            widgetId = (window as any).turnstile.render(turnstileRef.current, {
+            widgetId = window.turnstile.render(turnstileRef.current, {
               sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
               callback: (token: string) => {
                 setTurnstileToken(token);
@@ -62,9 +62,9 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
 
     return () => {
       clearInterval(checkTurnstile);
-      if (widgetId !== null && typeof window !== 'undefined' && (window as any).turnstile) {
+      if (widgetId !== null && typeof window !== 'undefined' && window.turnstile) {
         try {
-          (window as any).turnstile.remove(widgetId);
+          window.turnstile.remove(widgetId);
         } catch (e) {
           // Ignore cleanup errors
         }
@@ -145,8 +145,8 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
         toast.error(result.error || 'Failed to submit contact form.');
       }
 
-      if (typeof window !== 'undefined' && (window as any).turnstile) {
-        (window as any).turnstile.reset();
+      if (typeof window !== 'undefined' && window.turnstile) {
+        window.turnstile.reset();
         setTurnstileToken(null);
       }
     });
