@@ -126,18 +126,25 @@ async function handler(req: NextRequest) {
       .set({ cashierUserId: 'gdpr_redacted' })
       .where(eq(schema.billingReceipts.cashierUserId, targetUserId));
 
-      await tx.update(schema.reviews).set({
-        userName: 'GDPR REDACTED',
-        userImageUrl: null,
-        comment: '[REDACTED]',
-      }).where(eq(schema.reviews.userId, targetUserId));
+      // Additional schemas if they exist
+      if ('reviews' in schema) {
+          await tx.update((schema as any).reviews).set({
+            userName: 'GDPR REDACTED',
+            userImageUrl: null,
+            comment: '[REDACTED]',
+          }).where(eq((schema as any).reviews.userId, targetUserId));
+      }
 
-      await tx.delete(schema.wishlists).where(eq(schema.wishlists.userId, targetUserId));
+      if ('wishlists' in schema) {
+          await tx.delete((schema as any).wishlists).where(eq((schema as any).wishlists.userId, targetUserId));
+      }
 
-      await tx.update(schema.questions).set({
-        userName: 'GDPR REDACTED',
-        userImageUrl: null,
-      }).where(eq(schema.questions.userId, targetUserId));
+      if ('questions' in schema) {
+          await tx.update((schema as any).questions).set({
+            userName: 'GDPR REDACTED',
+            userImageUrl: null,
+          }).where(eq((schema as any).questions.userId, targetUserId));
+      }
     });
 
     if (paymentSlipUrls.length > 0) {

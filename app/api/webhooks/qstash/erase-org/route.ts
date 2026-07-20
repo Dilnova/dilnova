@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { logger } from '@/shared/logging/logger';
 import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
 import { Redis } from '@upstash/redis';
@@ -51,16 +51,22 @@ async function handler(req: NextRequest) {
       branchesDeleted = branches.length;
 
       // Products (cascades to reviews, wishlists, questions, inventory, service_configurations)
-      const products = await tx.delete(schema.products).where(eq(schema.products.orgId, targetOrgId)).returning({ id: schema.products.id });
-      productsDeleted = products.length;
+      if ('products' in schema) {
+        const products = await tx.delete((schema as any).products).where(eq((schema as any).products.orgId, targetOrgId)).returning({ id: (schema as any).products.id });
+        productsDeleted = products.length;
+      }
 
       // Suppliers
-      const suppliers = await tx.delete(schema.suppliers).where(eq(schema.suppliers.orgId, targetOrgId)).returning({ id: schema.suppliers.id });
-      suppliersDeleted = suppliers.length;
+      if ('suppliers' in schema) {
+        const suppliers = await tx.delete((schema as any).suppliers).where(eq((schema as any).suppliers.orgId, targetOrgId)).returning({ id: (schema as any).suppliers.id });
+        suppliersDeleted = suppliers.length;
+      }
 
       // Simulated Orders (vendorOrgId matches)
-      const orders = await tx.delete(schema.simulatedOrders).where(eq(schema.simulatedOrders.vendorOrgId, targetOrgId)).returning({ id: schema.simulatedOrders.id });
-      simulatedOrdersDeleted = orders.length;
+      if ('simulatedOrders' in schema) {
+        const orders = await tx.delete((schema as any).simulatedOrders).where(eq((schema as any).simulatedOrders.vendorOrgId, targetOrgId)).returning({ id: (schema as any).simulatedOrders.id });
+        simulatedOrdersDeleted = orders.length;
+      }
     });
 
     await logAuditAction({
