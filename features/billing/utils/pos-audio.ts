@@ -1,7 +1,7 @@
 // Web Audio API Synthesizer for instant POS sound effects
 export const playAudioFeedback = (type: 'scan' | 'checkout' | 'error') => {
   try {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
     const osc = ctx.createOscillator();

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useTransition, useEffect } from 'react';
+import React, { useEffect, useState, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useCatalogFilters } from '@/features/catalog/hooks/useCatalogFilters';
 import {
   CATALOG_SORT_LABELS,
   CATALOG_SORT_VALUES,
@@ -324,21 +325,24 @@ export default function CatalogFilters({
   totalCount = 0,
   viewMode = 'grid',
 }: CatalogFiltersProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
-
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const [searchVal, setSearchVal] = useState(currentSearch);
-  const [prevSearch, setPrevSearch] = useState(currentSearch);
-  const [minPriceVal, setMinPriceVal] = useState(currentMinPrice);
-  const [maxPriceVal, setMaxPriceVal] = useState(currentMaxPrice);
-
-  if (currentSearch !== prevSearch) {
-    setSearchVal(currentSearch);
-    setPrevSearch(currentSearch);
-  }
+  const {
+    isPending,
+    searchVal,
+    setSearchVal,
+    minPriceVal,
+    setMinPriceVal,
+    maxPriceVal,
+    setMaxPriceVal,
+    isMobileDrawerOpen,
+    setIsMobileDrawerOpen,
+    updateParams,
+    handleSearchSubmit,
+    handleClearSearch,
+    handlePriceSubmit,
+    handleApplyPresetPrice,
+    handleRemoveSingleFilter,
+    clearAllFilters
+  } = useCatalogFilters();
 
   // Lock background scroll when mobile drawer is open & bind Escape key
   useEffect(() => {
@@ -355,77 +359,6 @@ export default function CatalogFilters({
     }
   }, [isMobileDrawerOpen]);
 
-  const updateParams = (updates: Record<string, string | null>) => {
-    const params = new URLSearchParams(searchParams.toString());
-    Object.entries(updates).forEach(([key, val]) => {
-      if (val === null || val === '' || val === 'all') {
-        params.delete(key);
-      } else {
-        params.set(key, val);
-      }
-    });
-    params.delete('page');
-
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
-    });
-  };
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateParams({ search: searchVal || null });
-  };
-
-  const handleClearSearch = () => {
-    setSearchVal('');
-    updateParams({ search: null });
-  };
-
-  const handlePriceSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateParams({
-      minPrice: minPriceVal || null,
-      maxPrice: maxPriceVal || null,
-    });
-  };
-
-  const handleApplyPresetPrice = (min: string, max: string) => {
-    setMinPriceVal(min);
-    setMaxPriceVal(max);
-    updateParams({
-      minPrice: min || null,
-      maxPrice: max || null,
-    });
-  };
-
-  const handleRemoveSingleFilter = (key: string) => {
-    if (key === 'search') {
-      setSearchVal('');
-      updateParams({ search: null });
-    } else if (key === 'category') {
-      updateParams({ category: null });
-    } else if (key === 'type') {
-      updateParams({ type: null });
-    } else if (key === 'vendor') {
-      updateParams({ vendor: null });
-    } else if (key === 'price') {
-      setMinPriceVal('');
-      setMaxPriceVal('');
-      updateParams({ minPrice: null, maxPrice: null });
-    } else if (key === 'stock') {
-      updateParams({ stock: null });
-    }
-  };
-
-  const clearAllFilters = () => {
-    setSearchVal('');
-    setMinPriceVal('');
-    setMaxPriceVal('');
-    startTransition(() => {
-      router.push(pathname);
-    });
-    setIsMobileDrawerOpen(false);
-  };
 
   // Active filter count logic
   const activeFilterCount = [

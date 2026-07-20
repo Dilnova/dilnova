@@ -52,8 +52,44 @@ import {
 import { aggregateCheckoutItems, type CheckoutTransactionResult } from '@/features/cart/checkout.helpers';
 import { hashPii } from '@/shared/security/encryption';
 import { z } from 'zod';
+import { validateFulfillment, validateShippingAddress } from './services/fulfillment.service';
+import { validatePayment } from './services/payment.service';
+import { executeCheckoutTransaction } from './services/checkout-transaction.service';
 
 const syncCartSchema = z.array(z.string().uuid()).max(50);
+
+async function fetchBranchesForOrgs(orgIds: string[]) {
+  const branchRows =
+    orgIds.length > 0
+      ? await db
+          .select({
+            id: schema.branches.id,
+            orgId: schema.branches.orgId,
+            name: schema.branches.name,
+            address: schema.branches.address,
+            phone: schema.branches.phone,
+          })
+          .from(schema.branches)
+          .where(inArray(schema.branches.orgId, orgIds))
+      : [];
+
+  const branchesByOrg = new Map<
+    string,
+    { id: string; name: string; address: string | null; phone: string | null }[]
+  >();
+  for (const branch of branchRows) {
+    const list = branchesByOrg.get(branch.orgId) || [];
+    list.push({
+      id: branch.id,
+      name: branch.name,
+      address: branch.address,
+      phone: branch.phone,
+    });
+    branchesByOrg.set(branch.orgId, list);
+  }
+
+  return { branchRows, branchesByOrg };
+}
 
 export async function getCustomerDeliveryDetailsAction() {
   try {
@@ -434,34 +470,7 @@ export async function getCartCheckoutOptionsAction(
         ? [resolvedCheckoutVendorOrgId]
         : uniqueOrgIds;
 
-    const branchRows =
-      orgIdsForOptions.length > 0
-        ? await db
-            .select({
-              id: schema.branches.id,
-              orgId: schema.branches.orgId,
-              name: schema.branches.name,
-              address: schema.branches.address,
-              phone: schema.branches.phone,
-            })
-            .from(schema.branches)
-            .where(inArray(schema.branches.orgId, orgIdsForOptions))
-        : [];
-
-    const branchesByOrg = new Map<
-      string,
-      { id: string; name: string; address: string | null; phone: string | null }[]
-    >();
-    for (const branch of branchRows) {
-      const list = branchesByOrg.get(branch.orgId) || [];
-      list.push({
-        id: branch.id,
-        name: branch.name,
-        address: branch.address,
-        phone: branch.phone,
-      });
-      branchesByOrg.set(branch.orgId, list);
-    }
+    const { branchRows, branchesByOrg } = await fetchBranchesForOrgs(orgIdsForOptions);
 
     const resolved = await resolveCheckoutOptionsForOrgs(orgIdsForOptions, branchesByOrg);
     const bankTransferEnabled = resolved.payment.some((o) => o.id === BANK_TRANSFER_PAYMENT_ID);
@@ -701,34 +710,7 @@ export async function simulatedCheckoutAction(
       vendorOrgIds = [resolvedCheckoutVendorOrgId];
     }
 
-    const branchRows =
-      vendorOrgIds.length > 0
-        ? await db
-            .select({
-              id: schema.branches.id,
-              orgId: schema.branches.orgId,
-              name: schema.branches.name,
-              address: schema.branches.address,
-              phone: schema.branches.phone,
-            })
-            .from(schema.branches)
-            .where(inArray(schema.branches.orgId, vendorOrgIds))
-        : [];
-
-    const branchesByOrg = new Map<
-      string,
-      { id: string; name: string; address: string | null; phone: string | null }[]
-    >();
-    for (const branch of branchRows) {
-      const list = branchesByOrg.get(branch.orgId) || [];
-      list.push({
-        id: branch.id,
-        name: branch.name,
-        address: branch.address,
-        phone: branch.phone,
-      });
-      branchesByOrg.set(branch.orgId, list);
-    }
+    const { branchRows, branchesByOrg } = await fetchBranchesForOrgs(vendorOrgIds);
 
     const resolvedOptions = await resolveCheckoutOptionsForOrgs(vendorOrgIds, branchesByOrg);
     const fulfillmentOption = resolvedOptions.fulfillment.find((o) => o.id === fulfillment);
@@ -741,63 +723,31 @@ export async function simulatedCheckoutAction(
       return { success: false, error: 'Selected payment method is not available for this cart.' };
     }
 
-    if (isBankTransferPayment(payment)) {
-      const bankDetailsByOrg = await getBankTransferDetailsForOrgs(vendorOrgIds);
-      const vendorsMissingBankDetails = vendorOrgIds.filter(
-        (orgId) => !hasCompleteBankDetails(bankDetailsByOrg[orgId]?.bankDetails)
-      );
-      if (vendorsMissingBankDetails.length > 0) {
-        const vendorNames = vendorsMissingBankDetails.map(
-          (orgId) => bankDetailsByOrg[orgId]?.vendorName || 'A vendor'
-        );
-        logger.warn('Checkout business validation failed', { reason: 'Missing bank details', vendors: vendorNames, cartItems: uniqueItemIds });
-        return {
-          success: false as const,
-          error: `Bank transfer is unavailable because bank details are not configured for: ${vendorNames.join(', ')}. Please contact the store or choose another payment method.`,
-        };
-      }
+    // --- Extracted Payment Validation ---
+    const bankDetailsByOrg = isBankTransferPayment(payment) ? await getBankTransferDetailsForOrgs(vendorOrgIds) : {};
+    const paymentValidation = validatePayment({
+      payment,
+      paymentOption,
+      fulfillmentOption,
+      vendorOrgIds,
+      bankDetailsByOrg,
+      uniqueItemIds
+    });
+    if (!paymentValidation.success) {
+      return { success: false as const, error: paymentValidation.error! };
     }
 
-    if (!isPaymentCompatibleWithFulfillment(paymentOption, fulfillmentOption)) {
-      const reason = paymentOption.requiresDelivery 
-        ? 'delivery orders, not store pickup.'
-        : 'store pickup orders, not home delivery.';
-      logger.warn('Checkout business validation failed', { reason: 'Incompatible payment and fulfillment', payment: paymentOption.id, fulfillment: fulfillmentOption.id, cartItems: uniqueItemIds });
-      return {
-        success: false,
-        error: `${paymentOption.label} is only available for ${reason}`,
-      };
-    }
-
-    if (fulfillmentOption.requiresBranch) {
-      if (!pickupBranch) {
-        return { success: false, error: 'Please select a pickup branch to continue.' };
-      }
-      let validBranch = branchRows.find(
-        (branch) => branch.id === pickupBranch && vendorOrgIds.includes(branch.orgId)
-      );
-      
-      // Virtual branch bypass for vendors with 0 explicit branches
-      if (!validBranch && pickupBranch === 'main_branch' && vendorOrgIds.length === 1) {
-        const orgBranchesLength = branchesByOrg.get(vendorOrgIds[0])?.length || 0;
-        if (orgBranchesLength === 0) {
-          validBranch = { id: 'main_branch', orgId: vendorOrgIds[0] } as any;
-        }
-      }
-
-      if (!validBranch) {
-        logger.warn('Checkout business validation failed', { reason: 'Invalid pickup branch', pickupBranch, vendorOrgIds, cartItems: uniqueItemIds });
-        return { success: false, error: 'Selected pickup branch is invalid.' };
-      }
-      if (vendorOrgIds.length > 1) {
-        logger.warn('Checkout business validation failed', { reason: 'Multi-vendor store pickup', vendorOrgIds, cartItems: uniqueItemIds });
-        return {
-          success: false,
-          error: 'Store pickup is only available when all items are from the same vendor.',
-        };
-      }
-    } else if (pickupBranch) {
-      return { success: false, error: 'Pickup branch is only required for store pickup orders.' };
+    // --- Extracted Fulfillment Validation ---
+    const fulfillmentValidation = validateFulfillment({
+      fulfillmentOption,
+      pickupBranch: pickupBranch ?? null,
+      vendorOrgIds,
+      branchRows,
+      branchesByOrg,
+      uniqueItemIds
+    });
+    if (!fulfillmentValidation.success) {
+      return { success: false as const, error: fulfillmentValidation.error! };
     }
 
     const normalizedShippingAddress = shippingAddressInput?.trim() || null;
@@ -809,18 +759,17 @@ export async function simulatedCheckoutAction(
     const normalizedShippingPhone = shippingPhoneInput?.trim() || null;
     const normalizedShippingPhone2 = shippingPhone2Input?.trim() || null;
 
-    if (!fulfillmentOption.requiresBranch) {
-      if (!normalizedShippingAddress || normalizedShippingAddress.length < 5 || !normalizedShippingCity || !normalizedShippingState || !normalizedShippingPostalCode || !normalizedShippingCountry) {
-        return {
-          success: false,
-          error: 'Please enter a complete delivery address for home delivery orders (Street, City, State, Postal Code, and Country are required).',
-        };
-      }
-    } else if (normalizedShippingAddress || normalizedShippingPhone) {
-      return {
-        success: false,
-        error: 'Shipping address is only required for home delivery orders.',
-      };
+    const addressValidation = validateShippingAddress({
+      fulfillmentOption,
+      normalizedShippingAddress,
+      normalizedShippingCity,
+      normalizedShippingState,
+      normalizedShippingPostalCode,
+      normalizedShippingCountry,
+      normalizedShippingPhone
+    });
+    if (!addressValidation.success) {
+      return { success: false as const, error: addressValidation.error! };
     }
 
     const checkoutTotals = calculateCheckoutTotals(
@@ -851,179 +800,31 @@ export async function simulatedCheckoutAction(
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        txResult = await db.transaction(async (tx) => {
-      const stockErrors: string[] = [];
-      const stockReservations: { productId: string; quantity: number; reservation: StockReservation }[] = [];
-
-      const productItems = verifiedItems.filter((i) => i.type === 'product');
-      const productIds = productItems.map((i) => i.id);
-
-      const invMetaRecords = productIds.length > 0
-        ? await tx
-            .select({
-              productId: schema.inventory.productId,
-              stockAvailability: schema.inventory.stockAvailability,
-              quantity: schema.inventory.quantity,
-            })
-            .from(schema.inventory)
-            .where(inArray(schema.inventory.productId, productIds))
-            .for('update')
-        : [];
-      
-      const invMetaMap = new Map(invMetaRecords.map(r => [r.productId, r]));
-
-      for (const item of verifiedItems) {
-        if (item.type !== 'product') {
-          continue;
-        }
-
-        const invMeta = invMetaMap.get(item.id);
-
-        if (!invMeta) {
-          stockErrors.push(`"${item.name}" is not available for online purchase (missing inventory record).`);
-          continue;
-        }
-
-        const availability = resolveEffectiveStockAvailability(
+        const orderStatus = resolveInitialOrderStatus(paymentOption);
+        txResult = await executeCheckoutTransaction({
+          verifiedItems,
           availabilityCatalog,
-          invMeta.stockAvailability,
-          invMeta.quantity
-        );
-        if (availability && !availability.allowsPurchase) {
-          stockErrors.push(`"${item.name}" is currently marked as ${availability.label} and cannot be purchased.`);
-          continue;
-        }
-
-        const stockResult = await reserveProductStock(tx, item.id, item.quantity, {
-          branchId: pickupBranchForStock,
-          productName: item.name,
-        });
-
-        if (!stockResult.ok) {
-          stockErrors.push(stockResult.error);
-        } else {
-          stockReservations.push({
-            productId: item.id,
-            quantity: item.quantity,
-            reservation: stockResult.reservation,
-          });
-        }
-      }
-
-      if (stockErrors.length > 0) {
-        logger.warn('Checkout business validation failed', { reason: 'Insufficient stock', stockErrors, cartItems: uniqueItemIds });
-        return {
-          success: false,
-          error: `Insufficient stock:\n${stockErrors.join('\n')}`,
-          stockErrors,
-        };
-      }
-
-      const orderStatus = resolveInitialOrderStatus(paymentOption);
-
-      // Reserve stock at checkout for all orders (including bank transfer / COD).
-      // pending_payment orders hold inventory until fulfilled or cancelled; cancellation restores stock.
-      const [order] = await tx
-        .insert(schema.simulatedOrders)
-        .values({
-          customerName: name,
-          customerEmail: email,
-          customerEmailHash: hashPii(email),
-          customerUserId: userId,
-          subtotalAmount: checkoutTotals.subtotalAmount,
-          taxAmount: checkoutTotals.taxAmount,
-          shippingAmount: checkoutTotals.shippingAmount,
-          totalAmount: checkoutTotals.grandTotal,
-          status: orderStatus,
-          fulfillmentMethod: fulfillment,
-          paymentMethod: payment,
-          pickupBranchId: fulfillmentOption.requiresBranch && pickupBranch !== 'main_branch' ? pickupBranch : null,
-          shippingAddress: fulfillmentOption.requiresBranch ? null : normalizedShippingAddress,
-          shippingAddressLine2: fulfillmentOption.requiresBranch ? null : normalizedShippingAddressLine2,
-          shippingCity: fulfillmentOption.requiresBranch ? null : normalizedShippingCity,
-          shippingState: fulfillmentOption.requiresBranch ? null : normalizedShippingState,
-          shippingPostalCode: fulfillmentOption.requiresBranch ? null : normalizedShippingPostalCode,
-          shippingCountry: fulfillmentOption.requiresBranch ? null : normalizedShippingCountry,
-          shippingPhone: fulfillmentOption.requiresBranch ? null : normalizedShippingPhone,
-          shippingPhone2: fulfillmentOption.requiresBranch ? null : normalizedShippingPhone2,
-          stockDepleted: true,
-        })
-        .returning();
-
-      if (!order) {
-        throw new Error('Failed to create order record.');
-      }
-
-      // ── Insert Order Items using DB-verified information ──
-      if (verifiedItems.length > 0) {
-        await tx.insert(schema.simulatedOrderItems).values(
-          verifiedItems.map((item) => ({
-            orderId: order.id,
-            productId: item.id,
-            productName: item.name,
-            vendorOrgId: item.vendorOrgId,
-            quantity: item.quantity,
-            unitPrice: item.price,
-          }))
-        );
-      }
-
-      for (const { productId, quantity, reservation } of stockReservations) {
-        const item = verifiedItems.find((v) => v.id === productId);
-        if (!item) continue;
-
-        await applyOnlineOrderItemStock(tx, {
-          quantity,
-          reservation,
-          pickupBranchId: pickupBranchForStock ?? null,
-          vendorOrgId: item.vendorOrgId,
-          productId: item.id,
-          orderId: order.id,
-          userId: userId || 'customer',
-        });
-      }
-
-      const vendorSubtotals = new Map<string, number>();
-      for (const item of verifiedItems) {
-        vendorSubtotals.set(
-          item.vendorOrgId,
-          (vendorSubtotals.get(item.vendorOrgId) || 0) + item.price * item.quantity
-        );
-      }
-
-      // Save the latest delivery details to Clerk privateMetadata for returning customers
-      try {
-        if (userId && fulfillmentOption.requiresBranch === false && normalizedShippingAddress) {
-          const client = await clerkClient();
-          await client.users.updateUserMetadata(userId, {
-            privateMetadata: {
-              shippingAddress: normalizedShippingAddress,
-              shippingAddressLine2: normalizedShippingAddressLine2,
-              shippingCity: normalizedShippingCity,
-              shippingState: normalizedShippingState,
-              shippingPostalCode: normalizedShippingPostalCode,
-              shippingCountry: normalizedShippingCountry,
-              shippingPhone: normalizedShippingPhone,
-              shippingPhone2: normalizedShippingPhone2,
-            },
-          });
-        }
-      } catch (metadataError) {
-        logger.error('Failed to update user private metadata during checkout', {
-          error: metadataError instanceof Error ? metadataError.message : String(metadataError),
+          pickupBranchForStock: pickupBranchForStock ?? null,
+          orderStatus,
+          name,
+          email,
           userId,
-        });
-        // We do not fail the order if metadata fails
-      }
-
-      return {
-        success: true as const,
-        orderId: order.id,
-        grandTotalCents: checkoutTotals.grandTotal,
-        vendorSubtotals: Object.fromEntries(vendorSubtotals),
-        serverSubtotalCents: serverSubtotal,
-      };
-    });
+          checkoutTotals,
+          fulfillment,
+          payment,
+          fulfillmentOption,
+          pickupBranch: pickupBranch ?? null,
+          normalizedShippingAddress,
+          normalizedShippingAddressLine2,
+          normalizedShippingCity,
+          normalizedShippingState,
+          normalizedShippingPostalCode,
+          normalizedShippingCountry,
+          normalizedShippingPhone,
+          normalizedShippingPhone2,
+          serverSubtotal,
+          uniqueItemIds
+        }) as CheckoutTransactionResult;
         break; // Success
       } catch (error) {
         txError = error;

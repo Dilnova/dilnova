@@ -27,6 +27,48 @@ import {
 } from '@/shared/storage/payment-slip';
 import { PAYMENT_SLIP_MAX_BYTES, type PaymentSlipMimeType } from '@/shared/storage/config';
 
+async function validateCustomerAndOrder(orderId: string) {
+  const { userId } = await auth();
+  if (!userId) {
+    return { success: false as const, error: 'Please sign in to upload a payment slip.' };
+  }
+
+  const user = await currentUser();
+  if (!user) {
+    return { success: false as const, error: 'Authentication session is invalid. Please sign in again.' };
+  }
+
+  const sessionEmail = getNormalizedClerkUserEmail(user);
+  if (!sessionEmail) {
+    return {
+      success: false as const,
+      error: 'Your account does not have an email address. Please update your profile first.',
+    };
+  }
+
+  const [order] = await db
+    .select()
+    .from(schema.simulatedOrders)
+    .where(eq(schema.simulatedOrders.id, orderId))
+    .limit(1);
+
+  if (!order) {
+    return { success: false as const, error: 'Order not found.' };
+  }
+
+  if (!customerOwnsOrder(order, userId)) {
+    return { success: false as const, error: 'You are not authorized to update this order.' };
+  }
+
+  if (!canUploadPaymentSlip(order)) {
+    return {
+      success: false as const,
+      error: 'This order is not accepting a payment slip upload.',
+    };
+  }
+
+  return { success: true as const, userId, order };
+}
 export async function createPaymentSlipUploadPresignedUrlAction(input: {
   orderId: string;
   fileName: string;
@@ -71,44 +113,11 @@ export async function createPaymentSlipUploadPresignedUrlAction(input: {
       };
     }
 
-    const { userId } = await auth();
-    if (!userId) {
-      return { success: false as const, error: 'Please sign in to upload a payment slip.' };
+    const validation = await validateCustomerAndOrder(parsed.data.orderId);
+    if (!validation.success) {
+      return { success: false as const, error: validation.error };
     }
-
-    const user = await currentUser();
-    if (!user) {
-      return { success: false as const, error: 'Authentication session is invalid. Please sign in again.' };
-    }
-
-    const sessionEmail = getNormalizedClerkUserEmail(user);
-    if (!sessionEmail) {
-      return {
-        success: false as const,
-        error: 'Your account does not have an email address. Please update your profile first.',
-      };
-    }
-
-    const [order] = await db
-      .select()
-      .from(schema.simulatedOrders)
-      .where(eq(schema.simulatedOrders.id, parsed.data.orderId))
-      .limit(1);
-
-    if (!order) {
-      return { success: false as const, error: 'Order not found.' };
-    }
-
-    if (!customerOwnsOrder(order, userId)) {
-      return { success: false as const, error: 'You are not authorized to update this order.' };
-    }
-
-    if (!canUploadPaymentSlip(order)) {
-      return {
-        success: false as const,
-        error: 'This order is not accepting a payment slip upload.',
-      };
-    }
+    const { order } = validation;
 
     try {
       const { signedUrl, storagePath } = await createPaymentSlipSignedUploadUrl({
@@ -169,44 +178,11 @@ export async function submitPaymentSlipPathAction(input: {
       };
     }
 
-    const { userId } = await auth();
-    if (!userId) {
-      return { success: false as const, error: 'Please sign in to upload a payment slip.' };
+    const validation = await validateCustomerAndOrder(parsed.data.orderId);
+    if (!validation.success) {
+      return { success: false as const, error: validation.error };
     }
-
-    const user = await currentUser();
-    if (!user) {
-      return { success: false as const, error: 'Authentication session is invalid. Please sign in again.' };
-    }
-
-    const sessionEmail = getNormalizedClerkUserEmail(user);
-    if (!sessionEmail) {
-      return {
-        success: false as const,
-        error: 'Your account does not have an email address. Please update your profile first.',
-      };
-    }
-
-    const [order] = await db
-      .select()
-      .from(schema.simulatedOrders)
-      .where(eq(schema.simulatedOrders.id, parsed.data.orderId))
-      .limit(1);
-
-    if (!order) {
-      return { success: false as const, error: 'Order not found.' };
-    }
-
-    if (!customerOwnsOrder(order, userId)) {
-      return { success: false as const, error: 'You are not authorized to update this order.' };
-    }
-
-    if (!canUploadPaymentSlip(order)) {
-      return {
-        success: false as const,
-        error: 'This order is not accepting a payment slip upload.',
-      };
-    }
+    const { userId, order } = validation;
 
     const exists = await verifyPaymentSlipFileExists(input.storagePath);
     if (!exists) {

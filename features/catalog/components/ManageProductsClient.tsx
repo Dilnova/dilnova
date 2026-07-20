@@ -19,6 +19,7 @@ export interface Product {
   media?: { url: string; type: 'image' | 'video' }[] | null;
   categoryId: string | null;
   stockQuantity?: number | null;
+  status?: string | null;
 }
 
 interface ManageProductsClientProps {

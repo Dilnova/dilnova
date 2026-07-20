@@ -3,8 +3,24 @@
 import { SignInButton, SignUpButton } from '@clerk/nextjs';
 import { Spinner } from '@/shared/ui/loading';
 import DeliveryAddressFormFields from '@/features/customer/components/DeliveryAddressFormFields';
-import { useState } from 'react';
 import Link from 'next/link';
+import { useState } from 'react';
+
+export interface SidebarFulfillmentOption {
+  id: string;
+  label: string;
+  description?: string;
+  zeroShipping: boolean;
+  requiresBranch: boolean;
+}
+
+export interface SidebarPaymentOption {
+  id: string;
+  label: string;
+  description?: string;
+  requiresDelivery: boolean;
+  pendingPayment?: boolean;
+}
 
 interface CartCheckoutSidebarProps {
   priceSyncNotice: string | null;
@@ -12,7 +28,7 @@ interface CartCheckoutSidebarProps {
   checkoutItemCount: number;
   cartCount: number;
   vendorCount: number;
-  selectedVendorSummary: any;
+  selectedVendorSummary: { vendorName: string } | null;
   checkoutSubtotal: number;
   cartTotal: number;
   estimatedTax: number;
@@ -20,15 +36,15 @@ interface CartCheckoutSidebarProps {
   grandTotal: number;
   formatPrice: (cents: number) => string;
   authRedirectUrl: string | null;
-  user: any;
+  user: { fullName?: string | null, firstName?: string | null, primaryEmailAddress?: { emailAddress: string } | null } | null | undefined;
   optionsLoading: boolean;
   requiresVendorSelection: boolean;
   selectedCheckoutProductIds: string[];
-  checkoutOptions: any;
+  checkoutOptions: { fulfillment: SidebarFulfillmentOption[], payment: SidebarPaymentOption[] };
   fulfillmentMethod: string;
   handleFulfillmentChange: (optionId: string) => void;
-  selectedFulfillment: any;
-  pickupBranches: any[];
+  selectedFulfillment: SidebarFulfillmentOption | null | undefined;
+  pickupBranches: { id: string, name: string, address: string | null, phone?: string | null }[];
   pickupBranchId: string;
   setPickupBranchId: (id: string) => void;
   requiresDeliveryAddress: boolean;
@@ -41,7 +57,7 @@ interface CartCheckoutSidebarProps {
   shippingPhone: string;
   shippingPhone2: string;
   handleAddressChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  compatiblePayments: any[];
+  compatiblePayments: SidebarPaymentOption[];
   paymentMethod: string;
   setPaymentMethod: (id: string) => void;
   bankTransferSelected: boolean;
@@ -49,7 +65,7 @@ interface CartCheckoutSidebarProps {
   checkoutErrors: string[];
   handleCheckout: (optionsLoading: boolean) => void;
   checkoutStatus: string;
-  cartItems: any[];
+  cartItems: unknown[];
   clearCart: () => void;
   handleSendInbox: (e: React.FormEvent) => void;
   emailStatus: string;
@@ -237,7 +253,7 @@ export function CartCheckoutSidebar({
                 {checkoutOptions.fulfillment.length > 0 ? (
                   <fieldset className="space-y-2">
                     <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Fulfillment</legend>
-                    {checkoutOptions.fulfillment.map((option: any) => (
+                    {checkoutOptions.fulfillment.map((option: SidebarFulfillmentOption) => (
                       <label
                         key={option.id}
                         className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
@@ -285,7 +301,7 @@ export function CartCheckoutSidebar({
                         {pickupBranches.length !== 1 && (
                           <option value="">Select a branch</option>
                         )}
-                        {pickupBranches.map((branch: any) => (
+                        {pickupBranches.map((branch) => (
                           <option key={branch.id} value={branch.id}>
                             {branch.name}{branch.address ? ` — ${branch.address}` : ''}
                           </option>
@@ -316,7 +332,7 @@ export function CartCheckoutSidebar({
                 {compatiblePayments.length > 0 ? (
                   <fieldset className="space-y-2">
                     <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Payment</legend>
-                    {compatiblePayments.map((option: any) => (
+                    {compatiblePayments.map((option: SidebarPaymentOption) => (
                       <label
                         key={option.id}
                         className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${

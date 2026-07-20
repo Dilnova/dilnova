@@ -58,11 +58,15 @@ async function handler(req: NextRequest) {
 
     // 1. simulatedOrders
     const orders = await db.select().from(schema.simulatedOrders).where(eq(schema.simulatedOrders.customerUserId, targetUserId));
-    let populatedOrders: any[] = [];
+    
+    type OrderItem = typeof schema.simulatedOrderItems.$inferSelect;
+    type PopulatedOrder = typeof schema.simulatedOrders.$inferSelect & { items: OrderItem[] };
+    let populatedOrders: PopulatedOrder[] = [];
+    
     if (orders.length > 0) {
       const orderIds = orders.map((o) => o.id);
       
-      const allItems: any[] = [];
+      const allItems: OrderItem[] = [];
       const CHUNK_SIZE = 100;
       for (let i = 0; i < orderIds.length; i += CHUNK_SIZE) {
         const chunkIds = orderIds.slice(i, i + CHUNK_SIZE);
@@ -85,7 +89,7 @@ async function handler(req: NextRequest) {
     // 2. clerk user to get email for contact submissions
     const client = await clerkClient();
     let clerkUser = null;
-    let contactSubmissions: any[] = [];
+    let contactSubmissions: (typeof schema.contactSubmissions.$inferSelect)[] = [];
     try {
       clerkUser = await client.users.getUser(targetUserId);
       const email = clerkUser.emailAddresses[0]?.emailAddress;
@@ -100,11 +104,11 @@ async function handler(req: NextRequest) {
 
     // 3-6. Fetch Carts, Branch Members, Audit Logs, Reviews, Questions, Wishlists concurrently
     let cart = null;
-    let branchMemberships: any[] = [];
-    let logs: any[] = [];
-    let reviews: any[] = [];
-    let questions: any[] = [];
-    let wishlists: any[] = [];
+    let branchMemberships: (typeof schema.branchMembers.$inferSelect)[] = [];
+    let logs: (typeof schema.auditLogs.$inferSelect)[] = [];
+    let reviews: (typeof schema.reviews.$inferSelect)[] = [];
+    let questions: (typeof schema.questions.$inferSelect)[] = [];
+    let wishlists: (typeof schema.wishlists.$inferSelect)[] = [];
 
     const queries: any[] = [
       db.select().from(schema.customerCarts).where(eq(schema.customerCarts.userId, targetUserId)),
@@ -112,22 +116,9 @@ async function handler(req: NextRequest) {
       db.select().from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId)),
     ];
 
-    let hasReviews = false;
-    let hasQuestions = false;
-    let hasWishlists = false;
-
-    if ('reviews' in schema) {
-      hasReviews = true;
-      queries.push(db.select().from((schema as any).reviews).where(eq((schema as any).reviews.userId, targetUserId)));
-    }
-    if ('questions' in schema) {
-      hasQuestions = true;
-      queries.push(db.select().from((schema as any).questions).where(eq((schema as any).questions.userId, targetUserId)));
-    }
-    if ('wishlists' in schema) {
-      hasWishlists = true;
-      queries.push(db.select().from((schema as any).wishlists).where(eq((schema as any).wishlists.userId, targetUserId)));
-    }
+    queries.push(db.select().from(schema.reviews).where(eq(schema.reviews.userId, targetUserId)));
+    queries.push(db.select().from(schema.questions).where(eq(schema.questions.userId, targetUserId)));
+    queries.push(db.select().from(schema.wishlists).where(eq(schema.wishlists.userId, targetUserId)));
 
     // Fail loud on any DB errors to prevent silent data loss
     const results = await Promise.all(queries);
@@ -138,16 +129,16 @@ async function handler(req: NextRequest) {
     branchMemberships = results[idx++];
     logs = results[idx++];
     
-    if (hasReviews) reviews = results[idx++];
-    if (hasQuestions) questions = results[idx++];
-    if (hasWishlists) wishlists = results[idx++];
+    reviews = results[idx++];
+    questions = results[idx++];
+    wishlists = results[idx++];
 
     const sanitizedOrders = populatedOrders.map(({ customerEmailHash, ...rest }) => rest);
     const sanitizedSubmissions = contactSubmissions.map(({ emailHash, ...rest }) => rest);
 
-    const hasRedactionEvent = logs.some((l: any) => l.action === 'GDPR_REDACTION');
+    const hasRedactionEvent = logs.some(l => l.action === 'GDPR_REDACTION');
     const sanitizedLogs = hasRedactionEvent
-      ? logs.map((l: any) => ({
+      ? logs.map(l => ({
           ...l,
           userId: 'gdpr_redacted',
           ipAddress: null,
