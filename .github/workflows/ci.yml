@@ -122,8 +122,8 @@ jobs:
       - name: Run Production Build
         run: pnpm run build
         env:
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ github.event_name == 'pull_request' && 'pk_test_ci_dummy' || secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ github.event_name == 'pull_request' && 'sk_test_ci_dummy' || secrets.CLERK_SECRET_KEY }}
           DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
           NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3000"
           NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "placeholder"
@@ -204,8 +204,8 @@ jobs:
         run: pnpm run test:e2e
         env:
           DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ github.event_name == 'pull_request' && 'pk_test_ci_dummy' || secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ github.event_name == 'pull_request' && 'sk_test_ci_dummy' || secrets.CLERK_SECRET_KEY }}
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
@@ -225,4 +225,4 @@ jobs:
           fetch-depth: 0
 
       - name: Gitleaks Secrets Scan
-        run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb detect --source /src -v
+        run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb detect --source /src --redact -v

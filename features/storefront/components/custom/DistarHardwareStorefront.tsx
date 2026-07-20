@@ -19,31 +19,12 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
   const metadata = org.publicMetadata;
 
   return (
-    <div
-      className="min-h-screen font-sans"
-      style={{
-        /* Custom color tokens — change these to rebrand instantly */
-        '--hw-primary': '#F97316',
-        '--hw-primary-dark': '#EA580C',
-        '--hw-surface': '#18181B',
-        '--hw-surface-light': '#27272A',
-        '--hw-text': '#FAFAFA',
-        '--hw-text-muted': '#A1A1AA',
-      } as React.CSSProperties}
-    >
+    <div className="min-h-screen font-sans">
       {/* ── HERO SECTION ─────────────────────────────────────── */}
       <section className="relative bg-zinc-950 overflow-hidden">
         {/* Diagonal geometric background */}
         <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 left-0 w-full h-full"
-            style={{
-              backgroundImage: `
-                linear-gradient(135deg, transparent 25%, rgba(249,115,22,0.08) 25%, rgba(249,115,22,0.08) 50%, transparent 50%),
-                linear-gradient(135deg, transparent 25%, rgba(249,115,22,0.04) 25%, rgba(249,115,22,0.04) 50%, transparent 50%)
-              `,
-              backgroundSize: '80px 80px, 40px 40px',
-            }}
-          />
+          <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(135deg,transparent_25%,rgba(249,115,22,0.08)_25%,rgba(249,115,22,0.08)_50%,transparent_50%),linear-gradient(135deg,transparent_25%,rgba(249,115,22,0.04)_25%,rgba(249,115,22,0.04)_50%,transparent_50%)] bg-[size:80px_80px,40px_40px]" />
         </div>
 
         {/* Orange accent line at top */}

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { isVideoUrl } from '@/shared/media/media';
 import { toast } from 'sonner';
 import { useConfirm } from '@/shared/ui/notifications';
+import SafeProgressBar from '@/shared/ui/SafeProgressBar';
 
 export interface Product {
   id: string;
@@ -222,9 +223,9 @@ export default function ManageProductsClient({
               📦 {used.toLocaleString()} / {limit.toLocaleString()} listings
             </span>
             <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <div
+              <SafeProgressBar
                 className={`h-full rounded-full transition-all duration-500 ${barColor}`}
-                style={{ width: `${pct}%` }}
+                percent={pct}
               />
             </div>
             <span className={`text-[10px] font-mono ${textColor}`}>

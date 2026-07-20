@@ -245,3 +245,14 @@ input, textarea, select { color: #18181b; }
   input, textarea, select { color: #f4f4f5; }
   input::placeholder, textarea::placeholder { color: #71717a; }
 }
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

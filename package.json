@@ -9,8 +9,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/pre-launch-check.mjs && vitest run && next build --webpack",
-    "postbuild": "node scripts/migrate-bank-metadata.mjs && node scripts/migrate-superadmin-metadata.mjs",
+    "build": "node scripts/pre-launch-check.mjs && pnpm run lint && pnpm exec tsc --noEmit && vitest run && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

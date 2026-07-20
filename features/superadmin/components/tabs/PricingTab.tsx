@@ -199,9 +199,8 @@ export default function PricingTab({ pricingPlans }: PricingTabProps) {
       {isPricingModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-40" onClick={() => setIsPricingModalOpen(false)}>
           <div
-            className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl max-h-[90vh] overflow-y-auto safe-area-bottom"
+            className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl max-h-[90vh] overflow-y-auto safe-area-bottom animate-[mobileMenuSlideDown_0.2s_ease-out]"
             onClick={(e) => e.stopPropagation()}
-            style={{ animation: 'mobileMenuSlideDown 0.2s ease-out' }}
           >
             <h3 className="text-base font-extrabold text-zinc-900 dark:text-zinc-50 mb-1">
               {editingPricingPlan ? 'Edit Pricing Plan' : 'Create Pricing Plan'}

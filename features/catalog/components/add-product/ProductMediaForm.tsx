@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { useAddProduct } from './AddProductContext';
 import { Spinner } from '@/shared/ui/loading';
+import SafeProgressBar from '@/shared/ui/SafeProgressBar';
 
 export default function ProductMediaForm() {
   const {
@@ -155,9 +156,9 @@ export default function ProductMediaForm() {
             <span className="font-bold text-purple-600 dark:text-purple-400">{uploadProgress}%</span>
           </div>
           <div className="w-full h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-            <div
+            <SafeProgressBar
               className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-150"
-              style={{ width: `${uploadProgress}%` }}
+              percent={uploadProgress}
             />
           </div>
         </div>

@@ -45,23 +45,8 @@ export default function CookieConsent() {
 
   return (
     <div 
-      className="fixed bottom-4 right-4 left-4 md:left-auto md:max-w-md w-[calc(100%-2rem)] z-[999] bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl shadow-2xl p-5 md:p-6 transition-all duration-300 transform translate-y-0 opacity-100 flex flex-col gap-4 font-sans text-zinc-800 dark:text-zinc-200"
-      style={{
-        animation: 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-      }}
+      className="fixed bottom-4 right-4 left-4 md:left-auto md:max-w-md w-[calc(100%-2rem)] z-[999] bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl shadow-2xl p-5 md:p-6 flex flex-col gap-4 font-sans text-zinc-800 dark:text-zinc-200 animate-[slideUp_0.4s_ease-out]"
     >
-      <style>{`
-        @keyframes slideUp {
-          from {
-            transform: translateY(20px);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
 
       {/* Header */}
       <div className="flex items-start justify-between">

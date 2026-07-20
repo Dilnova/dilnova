@@ -8,6 +8,7 @@ import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
 import { updateSystemSettingAction } from '@/features/superadmin/settings.actions';
 import CheckoutOptionsSettings from '../CheckoutOptionsSettings';
 import { PendingOverlay } from '@/shared/ui/PendingOverlay';
+import SafeProgressBar from '@/shared/ui/SafeProgressBar';
 import StockAvailabilitySettings from '@/features/inventory/components/StockAvailabilitySettings';
 import type { CheckoutOptionDefinition } from '@/features/organization/checkout-options.shared';
 import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
@@ -234,7 +235,7 @@ export default function SettingsTab({
           <input type="file" ref={logoFileInputRef} onChange={handleLogoUpload} accept="image/*" className="hidden" />
           {isLogoUploading && logoUploadProgress !== null && (
             <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <div className="h-full bg-purple-600 rounded-full transition-all" style={{ width: `${logoUploadProgress}%` }} />
+              <SafeProgressBar className="h-full bg-purple-600 rounded-full transition-all" percent={logoUploadProgress} />
             </div>
           )}
         </SuperadminFormCard>
@@ -271,7 +272,7 @@ export default function SettingsTab({
           <input type="file" ref={faviconFileInputRef} onChange={handleFaviconUpload} accept="image/*" className="hidden" />
           {isFaviconUploading && faviconUploadProgress !== null && (
             <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <div className="h-full bg-purple-600 rounded-full transition-all" style={{ width: `${faviconUploadProgress}%` }} />
+              <SafeProgressBar className="h-full bg-purple-600 rounded-full transition-all" percent={faviconUploadProgress} />
             </div>
           )}
         </SuperadminFormCard>
