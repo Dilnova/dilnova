@@ -6,7 +6,7 @@ import ManageProductsClient, { type Product } from '@/features/catalog/component
 import VendorProfileForm from '@/features/vendor/components/VendorProfileForm';
 import VendorInventoryWorkspace from '@/features/inventory/components/VendorInventoryWorkspace';
 import { RestrictedAccessBlock } from '@/shared/components/RestrictedAccessBlock';
-import { getVendorInventoryData } from '@/features/inventory/vendor.actions';
+import { getVendorInventoryData } from '@/features/inventory/vendor-data.actions';
 import { getVendorProductsForOrg } from '@/features/catalog/queries';
 import { getBranchCountForOrg, getOnlineOrderCountForVendor, getCachedOrganization } from '@/features/vendor/queries';
 import { hasBankTransferConfiguredForOrg } from '@/features/billing/bank-transfer-metadata';

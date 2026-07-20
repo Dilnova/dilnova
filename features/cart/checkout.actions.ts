@@ -2,6 +2,7 @@
 
 import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { rateLimit } from '@/shared/security/rate-limit';
+import { handleApiError } from '@/shared/errors/error-handler';
 import { getSystemSetting } from '@/shared/platform/settings';
 import { DEFAULT_APP_URL } from '@/shared/platform/brand';
 import { db } from '@/shared/db/client';
@@ -55,6 +56,7 @@ import { z } from 'zod';
 import { validateFulfillment, validateShippingAddress } from './services/fulfillment.service';
 import { validatePayment } from './services/payment.service';
 import { executeCheckoutTransaction } from './services/checkout-transaction.service';
+import { validateAndPrepareCartItems, processCheckoutSuccess } from './services/checkout-validation.service';
 
 const syncCartSchema = z.array(z.string().uuid()).max(50);
 
@@ -112,10 +114,9 @@ export async function getCustomerDeliveryDetailsAction() {
       };
     }
     return null;
-  } catch (error) {
-    logger.error('Failed to get customer delivery details from Clerk', {
-      error: error instanceof Error ? error.message : String(error),
-    });
+  } catch (error: unknown) {
+    const apiError = handleApiError(error, 'Failed to get customer delivery details from Clerk');
+    logger.error(apiError.message, { error });
     return null;
   }
 }
@@ -322,11 +323,9 @@ export async function sendCartSummaryEmailAction(
 
     return { success: true };
   } catch (error: unknown) {
-    logger.error('Failed to send cart summary email', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    const errorMsg = error instanceof Error ? error.message : 'Unknown server error sending email.';
-    return { success: false, error: errorMsg };
+    const apiError = handleApiError(error, 'Failed to send cart summary email');
+    logger.error(apiError.message, { error });
+    return { success: false, error: apiError.message };
   }
 }
 
@@ -377,10 +376,9 @@ export async function syncCartPricesAction(productIds: string[]) {
       })),
       removedIds: [...missingIds, ...inactiveIds],
     };
-  } catch (error) {
-    logger.error('Failed to sync cart prices', {
-      error: error instanceof Error ? error.message : String(error),
-    });
+  } catch (error: unknown) {
+    const apiError = handleApiError(error, 'Failed to sync cart prices');
+    logger.error(apiError.message, { error });
     return { success: false as const, error: 'Failed to refresh cart prices.' };
   }
 }
@@ -514,10 +512,9 @@ export async function getCartCheckoutOptionsAction(
       ),
       vendorCartSummary,
     };
-  } catch (error) {
-    logger.error('Failed to load checkout options', {
-      error: error instanceof Error ? error.message : String(error),
-    });
+  } catch (error: unknown) {
+    const apiError = handleApiError(error, 'Failed to load checkout options');
+    logger.error(apiError.message, { error });
     return { success: false as const, error: 'Failed to load checkout options.' };
   }
 }
@@ -617,98 +614,22 @@ export async function simulatedCheckoutAction(
     }
 
     // ── Concurrency Safe Stock Validation & Checkout ──
-    // ── Verify products, prices, and availability flags server-side (outside transaction) ──
-    const verifiedItems: {
-      id: string;
-      name: string;
-      price: number;
-      quantity: number;
-      vendorOrgId: string;
-      type: string;
-    }[] = [];
-    let serverSubtotal = 0;
-    const availabilityCatalog = await getStockAvailabilityCatalog();
-
-    const uniqueItemIds = [...new Set(aggregatedItems.map((item) => item.id))];
-    const products = uniqueItemIds.length > 0
-      ? await db
-          .select({
-            id: schema.products.id,
-            name: schema.products.name,
-            price: schema.products.price,
-            orgId: schema.products.orgId,
-            type: schema.products.type,
-            status: schema.products.status,
-          })
-          .from(schema.products)
-          .where(inArray(schema.products.id, uniqueItemIds))
-      : [];
-    const productMap = new Map(products.map((p) => [p.id, p]));
-
-    for (const item of aggregatedItems) {
-      const product = productMap.get(item.id);
-
-      if (!product) {
-        return { success: false, error: `Product not found in catalog: ${item.name}` };
-      }
-      if (product.status !== 'active') {
-        return { success: false, error: `"${product.name}" is no longer available for purchase.` };
-      }
-
-      serverSubtotal += product.price * item.quantity;
-      verifiedItems.push({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        quantity: item.quantity,
-        vendorOrgId: product.orgId,
-        type: product.type,
-      });
-    }
-
-    let vendorOrgIds = [...new Set(verifiedItems.map((item) => item.vendorOrgId))];
-    const resolvedCheckoutVendorOrgId = resolveCheckoutVendorOrgId(
-      buildVendorCartSummaries(
-        aggregatedItems.map((item) => ({
-          id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-        })),
-        new Map(
-          verifiedItems.map((item) => [
-            item.id,
-            { id: item.id, orgId: item.vendorOrgId, price: item.price },
-          ])
-        )
-      ),
-      checkoutVendorOrgIdInput
+    const validationResult = await validateAndPrepareCartItems(
+      aggregatedItems,
+      checkoutVendorOrgIdInput || null
     );
 
-    if (vendorOrgIds.length > 1) {
-      if (!resolvedCheckoutVendorOrgId) {
-        return {
-          success: false as const,
-          error: MULTI_VENDOR_ORDER_CHECKOUT_ERROR,
-        };
-      }
-
-      const filteredItems = verifiedItems.filter(
-        (item) => item.vendorOrgId === resolvedCheckoutVendorOrgId
-      );
-      if (filteredItems.length === 0) {
-        return {
-          success: false as const,
-          error: 'No items found for the selected vendor.',
-        };
-      }
-
-      verifiedItems.splice(0, verifiedItems.length, ...filteredItems);
-      serverSubtotal = filteredItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      );
-      vendorOrgIds = [resolvedCheckoutVendorOrgId];
+    if (!validationResult.success) {
+      return { success: false as const, error: validationResult.error! };
     }
+
+    const {
+      verifiedItems,
+      serverSubtotal,
+      vendorOrgIds,
+      uniqueItemIds,
+      availabilityCatalog
+    } = validationResult;
 
     const { branchRows, branchesByOrg } = await fetchBranchesForOrgs(vendorOrgIds);
 
@@ -847,65 +768,21 @@ export async function simulatedCheckoutAction(
       return { success: false, error: txResult.error };
     }
 
-    const {
-      orderId: createdOrderId,
-      grandTotalCents,
-      vendorSubtotals: createdVendorSubtotals,
-      serverSubtotalCents,
-    } = txResult;
-
-    let bankTransferInstructions: BankTransferCheckoutInstructions | undefined;
-    if (isBankTransferPayment(payment)) {
-      const vendorAmounts = allocateVendorPaymentAmounts(
-        createdVendorSubtotals,
-        serverSubtotalCents,
-        grandTotalCents
-      );
-      bankTransferInstructions = await buildBankTransferCheckoutInstructions({
-        orderId: createdOrderId,
-        grandTotalCents,
-        vendorAmounts,
-      });
-    }
-
-    const emailResult = await sendOrderConfirmationEmailForOrder(createdOrderId, {
-      customerName: name,
-      customerEmail: email,
-      paymentMethod: payment,
-      fulfillmentMethod: fulfillment,
-      bankTransferInstructions,
-      isSignedIn: Boolean(userId),
+    const successResult = await processCheckoutSuccess({
+      orderId: txResult.orderId,
+      grandTotalCents: txResult.grandTotalCents,
+      vendorSubtotals: txResult.vendorSubtotals,
+      serverSubtotalCents: txResult.serverSubtotalCents,
+      payment,
+      fulfillment,
+      name,
+      email,
+      userId: userId || null,
     });
 
-    if (!emailResult.success) {
-      logger.warn('Order placed but confirmation email was not sent', {
-        orderId: createdOrderId,
-        error: emailResult.error,
-      });
-    }
-
-    // ── Vendor Notifications (Web-First / Email Fallback) ──
-    const { dispatchVendorOrderNotifications } = await import('@/features/orders/vendor-notification');
-    await dispatchVendorOrderNotifications(createdOrderId);
-
-    logger.info('Checkout succeeded', {
-      orderId: createdOrderId,
-      grandTotalCents,
-      paymentMethod: payment,
-      fulfillmentMethod: fulfillment,
-    });
-
-    return {
-      success: true,
-      orderId: createdOrderId,
-      bankTransferInstructions,
-      confirmationEmailSent: emailResult.success,
-    };
+    return successResult;
   } catch (error: unknown) {
-    logger.error('Checkout failed', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    const errorMsg = error instanceof Error ? error.message : 'Unknown server error during checkout.';
-    return { success: false, error: errorMsg };
+    const apiError = handleApiError(error, 'Checkout failed');
+    return { success: false, error: apiError.message };
   }
 }

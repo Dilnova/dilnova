@@ -7,7 +7,7 @@ import {
   deleteBranchAction,
   assignBranchMemberAction,
   removeBranchMemberAction,
-} from '@/features/inventory/vendor.actions';
+} from '@/features/inventory/vendor-branch.actions';
 import { toast } from 'sonner';
 
 interface VendorBranchesTabProps {

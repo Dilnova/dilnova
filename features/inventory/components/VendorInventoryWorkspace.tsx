@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { getVendorInventoryData } from '@/features/inventory/vendor.actions';
+import { getVendorInventoryData } from '@/features/inventory/vendor-data.actions';
 import { toast } from 'sonner';
 import { useConfirm } from '@/shared/ui/notifications';
 

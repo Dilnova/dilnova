@@ -8,6 +8,7 @@ import {
   updateCategoryAction,
   deleteCategoryAction,
 } from '@/features/catalog/superadmin.actions';
+import { TabDataTableLayout } from '@/shared/ui/TabDataTableLayout';
 
 export interface Category {
   id: string;
@@ -125,118 +126,37 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
     );
   };
 
-  return (
-    <div className="space-y-4">
-      {isPending && (
-        <div className="fixed inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[2px] flex items-center justify-center z-50 pointer-events-none">
-          <div className="bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 px-5 py-3 rounded-xl shadow-2xl text-xs font-mono font-bold tracking-wider flex items-center gap-2.5">
-            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            SAVING...
-          </div>
-        </div>
-      )}
-
-      {/* Header + Add button */}
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">Category Directory</h2>
-          <p className="text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5 hidden sm:block">Control categories available for listings</p>
-        </div>
-        <button
-          onClick={openAddCategory}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 sm:py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-purple-900/10 cursor-pointer active:scale-[0.97] whitespace-nowrap"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-          </svg>
-          <span className="hidden sm:inline">Create Category</span>
-          <span className="sm:hidden">Add</span>
-        </button>
-      </div>
-
-      {/* Desktop table */}
-      <div className="hidden sm:block bg-white border border-zinc-200 rounded-2xl dark:bg-zinc-950 dark:border-zinc-800 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 uppercase font-mono text-[10px] tracking-wider bg-zinc-50/50 dark:bg-zinc-900/30">
-                <th className="py-3 px-4">Category Name</th>
-                <th className="py-3 px-4">Slug</th>
-                <th className="py-3 px-4">Created</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
-              {categories.map((cat) => (
-                <tr key={cat.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30">
-                  <td className="py-3.5 px-4 text-zinc-900 dark:text-zinc-100">
-                    <div className="font-bold flex items-center gap-2 flex-wrap">
-                      <span>{cat.name}</span>
-                      {cat.parentId ? (
-                        <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-mono text-[9px] uppercase tracking-wider dark:bg-zinc-850 dark:text-zinc-400">
-                          Sub of {categories.find((c) => c.id === cat.parentId)?.name || '?'}
-                        </span>
-                      ) : (
-                        <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-mono text-[9px] uppercase tracking-wider dark:bg-purple-950/20 dark:text-purple-400">
-                          Main
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3.5 px-4 font-mono text-zinc-500">{cat.slug}</td>
-                  <td className="py-3.5 px-4 text-zinc-500 font-mono">{new Date(cat.createdAt).toLocaleDateString()}</td>
-                  <td className="py-3.5 px-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => openEditCategory(cat)}
-                        className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {categories.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="py-12 text-center text-zinc-400 font-mono">No categories configured.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Mobile card list */}
-      <div className="sm:hidden space-y-2">
+  const tableContent = (
+    <table className="w-full text-left border-collapse text-xs">
+      <thead>
+        <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 uppercase font-mono text-[10px] tracking-wider bg-zinc-50/50 dark:bg-zinc-900/30">
+          <th className="py-3 px-4">Category Name</th>
+          <th className="py-3 px-4">Slug</th>
+          <th className="py-3 px-4">Created</th>
+          <th className="py-3 px-4 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
         {categories.map((cat) => (
-          <div key={cat.id} className="bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 rounded-xl p-3.5 shadow-sm">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{cat.name}</span>
-                  {cat.parentId ? (
-                    <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-mono text-[9px] uppercase dark:bg-zinc-850 dark:text-zinc-400">
-                      Sub
-                    </span>
-                  ) : (
-                    <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-mono text-[9px] uppercase dark:bg-purple-950/20 dark:text-purple-400">
-                      Main
-                    </span>
-                  )}
-                </div>
-                <p className="text-[10px] text-zinc-400 font-mono mt-0.5">/{cat.slug}</p>
+          <tr key={cat.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30">
+            <td className="py-3.5 px-4 text-zinc-900 dark:text-zinc-100">
+              <div className="font-bold flex items-center gap-2 flex-wrap">
+                <span>{cat.name}</span>
+                {cat.parentId ? (
+                  <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-mono text-[9px] uppercase tracking-wider dark:bg-zinc-850 dark:text-zinc-400">
+                    Sub of {categories.find((c) => c.id === cat.parentId)?.name || '?'}
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-mono text-[9px] uppercase tracking-wider dark:bg-purple-950/20 dark:text-purple-400">
+                    Main
+                  </span>
+                )}
               </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+            </td>
+            <td className="py-3.5 px-4 font-mono text-zinc-500">{cat.slug}</td>
+            <td className="py-3.5 px-4 text-zinc-500 font-mono">{new Date(cat.createdAt).toLocaleDateString()}</td>
+            <td className="py-3.5 px-4 text-right">
+              <div className="flex items-center justify-end gap-1.5">
                 <button
                   onClick={() => openEditCategory(cat)}
                   className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
@@ -250,86 +170,144 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
                   Delete
                 </button>
               </div>
-            </div>
-          </div>
+            </td>
+          </tr>
         ))}
         {categories.length === 0 && (
-          <div className="py-12 text-center text-zinc-400 text-xs font-mono border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
-            No categories configured.
-          </div>
+          <tr>
+            <td colSpan={4} className="py-12 text-center text-zinc-400 font-mono">No categories configured.</td>
+          </tr>
         )}
-      </div>
+      </tbody>
+    </table>
+  );
 
-      {isCategoryModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-40" onClick={() => setIsCategoryModalOpen(false)}>
-          <div
-            className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl safe-area-bottom"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-                {editingCategory ? 'Edit Category' : 'Create Category'}
-              </h2>
+  const mobileCardContent = (
+    <>
+      {categories.map((cat) => (
+        <div key={cat.id} className="bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 rounded-xl p-3.5 shadow-sm">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{cat.name}</span>
+                {cat.parentId ? (
+                  <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-mono text-[9px] uppercase dark:bg-zinc-850 dark:text-zinc-400">
+                    Sub
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-mono text-[9px] uppercase dark:bg-purple-950/20 dark:text-purple-400">
+                    Main
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-zinc-400 font-mono mt-0.5">/{cat.slug}</p>
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               <button
-                onClick={() => setIsCategoryModalOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 transition-colors cursor-pointer"
+                onClick={() => openEditCategory(cat)}
+                className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
               >
-                ✕
+                Edit
+              </button>
+              <button
+                onClick={() => handleDeleteCategory(cat.id)}
+                className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+              >
+                Delete
               </button>
             </div>
-
-            <form onSubmit={handleSaveCategory} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">Category Name</label>
-                <input
-                  required
-                  type="text"
-                  maxLength={50}
-                  value={categoryName}
-                  onChange={(e) => handleCategoryNameChange(e.target.value)}
-                  className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                  placeholder="e.g. Mechanical Keyboards"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">URL Slug</label>
-                <input
-                  required
-                  type="text"
-                  maxLength={50}
-                  value={categorySlug}
-                  onChange={(e) => setCategorySlug(e.target.value)}
-                  className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-mono text-zinc-500 bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-                />
-                <p className="text-[10px] text-zinc-400">Must be unique and URL-friendly (e.g. mechanical-keyboards)</p>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">Parent Category (Optional)</label>
-                <select
-                  value={categoryParentId}
-                  onChange={(e) => setCategoryParentId(e.target.value)}
-                  className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40 appearance-none"
-                >
-                  {renderCategoryOptions()}
-                </select>
-                <p className="text-[10px] text-zinc-400">Used to build hierarchical catalog navigation (e.g. Electronics / Laptops)</p>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="w-full py-3.5 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl transition-all cursor-pointer shadow-md shadow-purple-900/20 active:scale-[0.98] disabled:opacity-50"
-                >
-                  {isPending ? 'Saving...' : 'Save Category'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
+      ))}
+      {categories.length === 0 && (
+        <div className="py-12 text-center text-zinc-400 text-xs font-mono border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+          No categories configured.
+        </div>
       )}
+    </>
+  );
+
+  const modals = isCategoryModalOpen && (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-40" onClick={() => setIsCategoryModalOpen(false)}>
+      <div
+        className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl safe-area-bottom"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
+            {editingCategory ? 'Edit Category' : 'Create Category'}
+          </h2>
+          <button
+            onClick={() => setIsCategoryModalOpen(false)}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 transition-colors cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSaveCategory} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">Category Name</label>
+            <input
+              required
+              type="text"
+              maxLength={50}
+              value={categoryName}
+              onChange={(e) => handleCategoryNameChange(e.target.value)}
+              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+              placeholder="e.g. Mechanical Keyboards"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">URL Slug</label>
+            <input
+              required
+              type="text"
+              maxLength={50}
+              value={categorySlug}
+              onChange={(e) => setCategorySlug(e.target.value)}
+              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-mono text-zinc-500 bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+            />
+            <p className="text-[10px] text-zinc-400">Must be unique and URL-friendly (e.g. mechanical-keyboards)</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">Parent Category (Optional)</label>
+            <select
+              value={categoryParentId}
+              onChange={(e) => setCategoryParentId(e.target.value)}
+              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40 appearance-none"
+            >
+              {renderCategoryOptions()}
+            </select>
+            <p className="text-[10px] text-zinc-400">Used to build hierarchical catalog navigation (e.g. Electronics / Laptops)</p>
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isPending}
+              className="w-full py-3.5 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl transition-all cursor-pointer shadow-md shadow-purple-900/20 active:scale-[0.98] disabled:opacity-50"
+            >
+              {isPending ? 'Saving...' : 'Save Category'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
+  );
+
+  return (
+    <TabDataTableLayout
+      isPending={isPending}
+      title="Category Directory"
+      subtitle="Control categories available for listings"
+      buttonText="Create Category"
+      onAddClick={openAddCategory}
+      tableContent={tableContent}
+      mobileCardContent={mobileCardContent}
+      modals={modals}
+    />
   );
 }

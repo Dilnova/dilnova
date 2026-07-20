@@ -23,7 +23,7 @@ import {
   buildCatalogWhereClauses,
   parseCatalogQueryParams,
   resolveVendorOrgId,
-} from '@/features/catalog/query';
+} from '@/features/catalog/queries';
 import { getUserWishlistIdsAction } from '@/features/catalog/product-detail.actions';
 
 export const revalidate = 30; // Cache for 30s to prevent rapid re-fetches; vendor actions revalidate on-demand

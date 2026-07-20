@@ -1,11 +1,15 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import filenames from "eslint-plugin-filenames";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    plugins: {
+      filenames,
+    },
     rules: {
       "react-hooks/set-state-in-effect": "off",
       "@typescript-eslint/no-explicit-any": "warn",
@@ -13,6 +17,19 @@ const eslintConfig = defineConfig([
       "react-hooks/exhaustive-deps": "warn",
       "@next/next/no-img-element": "off",
     },
+  },
+  {
+    files: ["**/*.ts"],
+    ignores: ["eslint.config.mjs", "tailwind.config.ts", "next-env.d.ts"],
+    rules: {
+      "filenames/match-regex": ["warn", "^[a-z0-9\\-\\.]+$", true],
+    }
+  },
+  {
+    files: ["**/*.tsx"],
+    rules: {
+      "filenames/match-regex": ["warn", "^[a-z0-9\\-\\.]+$|^[A-Z][a-zA-Z0-9]+$", true],
+    }
   },
   // Override default ignores of eslint-config-next.
   globalIgnores([

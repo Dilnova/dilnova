@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { adjustInventoryAction, createInventoryForProductAction } from '@/features/inventory/superadmin.actions';
 import { toast } from 'sonner';
-import { InventoryItem, ProductForInventory, Supplier } from '../InventoryTab';
+import { InventoryItem, ProductForInventory, Supplier } from '../inventory.types';
 
 interface SuperadminStockTabProps {
   inventoryItems: InventoryItem[];

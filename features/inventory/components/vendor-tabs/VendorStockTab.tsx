@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import {
   vendorAdjustInventoryAction,
   vendorInitInventoryAction,
-} from '@/features/inventory/vendor.actions';
+} from '@/features/inventory/vendor-stock.actions';
 
 interface VendorStockTabProps {
   data: any; // We'll replace this with proper typing later during the TS cleanup

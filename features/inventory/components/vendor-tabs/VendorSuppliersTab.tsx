@@ -5,7 +5,7 @@ import {
   vendorCreateSupplierAction,
   vendorUpdateSupplierAction,
   vendorDeleteSupplierAction,
-} from '@/features/inventory/vendor.actions';
+} from '@/features/inventory/vendor-supplier.actions';
 import { toast } from 'sonner';
 
 interface VendorSuppliersTabProps {

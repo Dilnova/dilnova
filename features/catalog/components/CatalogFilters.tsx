@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useCatalogFilters } from '@/features/catalog/hooks/useCatalogFilters';
+import { useCatalogFilters } from '@/features/catalog/hooks/use-catalog-filters';
 import {
   CATALOG_SORT_LABELS,
   CATALOG_SORT_VALUES,

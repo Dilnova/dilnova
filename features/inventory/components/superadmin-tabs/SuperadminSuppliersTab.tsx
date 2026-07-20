@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Supplier } from '../InventoryTab';
+import { Supplier } from '../inventory.types';
 import { toast } from 'sonner';
 import { useConfirm } from '@/shared/ui/notifications';
 import {
