@@ -113,7 +113,7 @@ export default function POSProductGrid() {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setCategoryFilter(tab.id as any)}
+            onClick={() => setCategoryFilter(tab.id as 'all' | 'products' | 'services' | 'low_stock')}
             className={`px-3 py-1 rounded-lg font-semibold text-xs whitespace-nowrap transition-all cursor-pointer ${
               categoryFilter === tab.id
                 ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'

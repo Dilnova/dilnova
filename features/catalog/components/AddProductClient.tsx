@@ -175,7 +175,7 @@ export default function AddProductClient({
           // Scroll to top on mobile after success
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
-          toast.error((result as any).error || 'Failed to add item.');
+          toast.error((result as { error?: string }).error || 'Failed to add item.');
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to add item.');

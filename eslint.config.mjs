@@ -22,13 +22,11 @@ const eslintConfig = defineConfig([
     files: ["**/*.ts"],
     ignores: ["eslint.config.mjs", "tailwind.config.ts", "next-env.d.ts"],
     rules: {
-      "filenames/match-regex": ["warn", "^[a-z0-9\\-\\.]+$", true],
     }
   },
   {
     files: ["**/*.tsx"],
     rules: {
-      "filenames/match-regex": ["warn", "^[a-z0-9\\-\\.]+$|^[A-Z][a-zA-Z0-9]+$", true],
     }
   },
   // Override default ignores of eslint-config-next.

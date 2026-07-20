@@ -203,7 +203,7 @@ export default function VendorStockTab({
                 <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Adjustment Type</label>
                 <select
                   value={adjustType}
-                  onChange={(e) => setAdjustType(e.target.value as any)}
+                  onChange={(e) => setAdjustType(e.target.value as 'restock' | 'manual_adjustment' | 'damage_loss')}
                   className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900"
                 >
                   <option value="restock">Restock (+)</option>
