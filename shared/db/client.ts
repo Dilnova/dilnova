@@ -32,8 +32,8 @@ const client =
     connection: {
       statement_timeout: 10000, // 10 seconds timeout for hanging queries
     },
-    // Force SSL in production to prevent abrupt "Connection closed" drops
-    ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    // Force SSL in production to prevent abrupt "Connection closed" drops, except for local CI
+    ssl: process.env.NODE_ENV === 'production' && !connectionString.includes('127.0.0.1') && !connectionString.includes('localhost') ? 'require' : false,
   });
 
 if (process.env.NODE_ENV !== 'production') {
