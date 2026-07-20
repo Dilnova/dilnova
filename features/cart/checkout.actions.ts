@@ -3,47 +3,13 @@
 import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { handleApiError } from '@/shared/errors/error-handler';
-import { getSystemSetting } from '@/shared/platform/settings';
-import { DEFAULT_APP_URL } from '@/shared/platform/brand';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, inArray } from 'drizzle-orm';
-import { normalizeCustomerEmail, getNormalizedClerkUserEmail } from '@/features/customer/email';
+import { getNormalizedClerkUserEmail } from '@/features/customer/email';
+import { resolveInitialOrderStatus, isPaymentCompatibleWithFulfillment } from '@/features/organization/checkout-options.shared';
 import { resolveCheckoutOptionsForOrgs } from '@/features/organization/checkout-options';
-import {
-  resolveInitialOrderStatus,
-  isPaymentCompatibleWithFulfillment,
-} from '@/features/organization/checkout-options.shared';
-import { getStockAvailabilityCatalog, resolveEffectiveStockAvailability } from '@/features/inventory/availability.server';
-import {
-  reserveProductStock,
-  applyStockReservation,
-  type StockReservation,
-} from '@/features/inventory/reservation';
 import { calculateCheckoutTotals } from '@/features/billing/checkout-totals';
-import { applyOnlineOrderItemStock } from '@/features/orders/stock';
-import {
-  BANK_TRANSFER_PAYMENT_ID,
-  allocateVendorPaymentAmounts,
-  hasCompleteBankDetails,
-  isBankTransferPayment,
-  toVendorBankTransferAvailability,
-  type BankTransferCheckoutInstructions,
-} from '@/features/billing/bank-transfer';
-import {
-  buildBankTransferCheckoutInstructions,
-  getBankTransferDetailsForOrgs,
-} from '@/features/billing/bank-transfer.server';
-import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
-import { sendOrderConfirmationEmailForOrder } from '@/features/orders/email/confirmation';
-import { escapeHtml, sendRawSmtpEmail } from '@/shared/email/smtp-client';
+import { isBankTransferPayment } from '@/features/billing/bank-transfer';
+import { getBankTransferDetailsForOrgs } from '@/features/billing/bank-transfer.server';
 import { logger } from '@/shared/logging/logger';
-import {
-  buildVendorCartSummaries,
-  filterCartLinesByVendorOrg,
-  resolveCheckoutVendorOrgId,
-} from '@/features/cart/vendor-checkout';
-import { MULTI_VENDOR_ORDER_CHECKOUT_ERROR } from '@/features/orders/vendor-scope';
 import {
   checkoutSchema,
   sendCartEmailSchema,
@@ -51,47 +17,18 @@ import {
   type CheckoutItemInput,
 } from '@/features/cart/schema';
 import { aggregateCheckoutItems, type CheckoutTransactionResult } from '@/features/cart/checkout.helpers';
-import { hashPii } from '@/shared/security/encryption';
 import { z } from 'zod';
 import { validateFulfillment, validateShippingAddress } from './services/fulfillment.service';
 import { validatePayment } from './services/payment.service';
 import { executeCheckoutTransaction } from './services/checkout-transaction.service';
 import { validateAndPrepareCartItems, processCheckoutSuccess } from './services/checkout-validation.service';
 
+// Services
+import { sendCartSummaryEmailService } from './services/cart-email.service';
+import { getCheckoutOptionsService, fetchBranchesForOrgs } from './services/checkout-options.service';
+import { syncCartPricesService } from './services/cart-sync.service';
+
 const syncCartSchema = z.array(z.string().uuid()).max(50);
-
-async function fetchBranchesForOrgs(orgIds: string[]) {
-  const branchRows =
-    orgIds.length > 0
-      ? await db
-          .select({
-            id: schema.branches.id,
-            orgId: schema.branches.orgId,
-            name: schema.branches.name,
-            address: schema.branches.address,
-            phone: schema.branches.phone,
-          })
-          .from(schema.branches)
-          .where(inArray(schema.branches.orgId, orgIds))
-      : [];
-
-  const branchesByOrg = new Map<
-    string,
-    { id: string; name: string; address: string | null; phone: string | null }[]
-  >();
-  for (const branch of branchRows) {
-    const list = branchesByOrg.get(branch.orgId) || [];
-    list.push({
-      id: branch.id,
-      name: branch.name,
-      address: branch.address,
-      phone: branch.phone,
-    });
-    branchesByOrg.set(branch.orgId, list);
-  }
-
-  return { branchRows, branchesByOrg };
-}
 
 export async function getCustomerDeliveryDetailsAction() {
   try {
@@ -128,7 +65,6 @@ export async function sendCartSummaryEmailAction(
   zeroShipping = false
 ) {
   try {
-    // ── Input Validation ──
     const parsedInput = sendCartEmailSchema.safeParse({
       emailAddress,
       cartItems,
@@ -138,7 +74,7 @@ export async function sendCartSummaryEmailAction(
       return { success: false, error: parsedInput.error.issues[0]?.message || 'Invalid input data.' };
     }
 
-    const { cartItems: validatedItems, cartTotal: validatedTotal } = parsedInput.data;
+    const { cartItems: validatedItems } = parsedInput.data;
 
     const { userId } = await auth();
     if (!userId) {
@@ -158,180 +94,15 @@ export async function sendCartSummaryEmailAction(
       };
     }
 
-    // ── Rate Limiting ──
-    // Max 3 emails per minute per IP to prevent spamming/abuse of the SMTP relay
     await rateLimit(3, 60 * 1000);
 
-    const systemName = await getSystemSetting('system_name', 'Dilnova');
-    const systemNameHub = `${systemName} Commerce Hub`;
-
-    const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
-    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPassword = process.env.SMTP_PASSWORD;
-    const emailFromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@dilstar.pp.ua';
-    const emailFromName = process.env.EMAIL_FROM_NAME || `${systemName} Hub`;
-
-    if (!smtpUser || !smtpPassword) {
-      logger.error('SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing');
-      return { success: false, error: 'SMTP configuration is incomplete on the server.' };
-    }
-
-    const uniqueItemIds = [...new Set(validatedItems.map((item) => item.id))];
-    const products = uniqueItemIds.length > 0
-      ? await db
-          .select({ id: schema.products.id, price: schema.products.price, name: schema.products.name })
-          .from(schema.products)
-          .where(inArray(schema.products.id, uniqueItemIds))
-      : [];
-    const productMap = new Map(products.map((p) => [p.id, p]));
-
-    const pricedItems = validatedItems.map((item) => {
-      const product = productMap.get(item.id);
-      return {
-        ...item,
-        name: product?.name || item.name,
-        price: product?.price ?? item.price,
-      };
-    });
-    const syncedSubtotal = pricedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = calculateCheckoutTotals(
-      syncedSubtotal,
-      zeroShipping
-    );
-
-    const formatPrice = (cents: number) => {
-      return (cents / 100).toLocaleString('en-US', {
-        style: 'currency',
-        currency: 'USD',
-      });
-    };
-
-    // Construct beautiful HTML items rows
-    const itemsHtml = pricedItems
-      .map(
-        (item) => `
-        <tr style="border-bottom: 1px solid #e4e4e7;">
-          <td style="padding: 12px 8px; font-size: 14px; color: #18181b;">
-            <strong style="display: block;">${escapeHtml(item.name)}</strong>
-            <span style="font-size: 11px; color: #71717a;">Sold by ${escapeHtml(item.vendorName)}</span>
-          </td>
-          <td style="padding: 12px 8px; font-size: 13px; color: #52525b; text-align: center;">
-            ${item.quantity}
-          </td>
-          <td style="padding: 12px 8px; font-size: 13px; font-family: monospace; color: #52525b; text-align: right;">
-            ${formatPrice(item.price)}
-          </td>
-          <td style="padding: 12px 8px; font-size: 14px; font-family: monospace; font-weight: bold; color: #18181b; text-align: right;">
-            ${formatPrice(item.price * item.quantity)}
-          </td>
-        </tr>
-      `
-      )
-      .join('');
-
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Your ${systemName} Shopping Cart Summary</title>
-        </head>
-          <body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #fafafa; color: #18181b;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-            <!-- Header banner -->
-            <div style="background-color: #6b21a8; padding: 24px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 1px; font-family: inherit;">
-                ${systemNameHub.toUpperCase()}
-              </h1>
-              <p style="margin: 4px 0 0 0; color: #e9d5ff; font-size: 12px;">Your Saved Shopping Cart</p>
-            </div>
-
-            <!-- Content Area -->
-            <div style="padding: 24px;">
-              <p style="font-size: 14px; color: #52525b; line-height: 1.5; margin-bottom: 24px;">
-                Hello, <br/>
-                We saved your cart summary. Here is a breakdown of your selected products and services:
-              </p>
-
-              <!-- Items Table -->
-              <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-                <thead>
-                  <tr style="border-bottom: 2px solid #e4e4e7; text-align: left;">
-                    <th style="padding: 8px; font-size: 11px; font-weight: bold; color: #71717a; text-transform: uppercase;">Item</th>
-                    <th style="padding: 8px; font-size: 11px; font-weight: bold; color: #71717a; text-transform: uppercase; text-align: center;">Qty</th>
-                    <th style="padding: 8px; font-size: 11px; font-weight: bold; color: #71717a; text-transform: uppercase; text-align: right;">Price</th>
-                    <th style="padding: 8px; font-size: 11px; font-weight: bold; color: #71717a; text-transform: uppercase; text-align: right;">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${itemsHtml}
-                </tbody>
-              </table>
-
-              <!-- Order Summary Block -->
-              <div style="background-color: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
-                <table style="width: 100%; font-size: 13px; color: #475569;">
-                  <tr>
-                    <td style="padding: 4px 0;">Subtotal</td>
-                    <td style="padding: 4px 0; text-align: right; font-family: monospace;">${formatPrice(syncedSubtotal)}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 4px 0;">Estimated Tax (8%)</td>
-                    <td style="padding: 4px 0; text-align: right; font-family: monospace;">${formatPrice(estimatedTax)}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 4px 0;">Shipping</td>
-                    <td style="padding: 4px 0; text-align: right; font-family: monospace;">${shippingFee === 0 ? 'FREE' : formatPrice(shippingFee)}</td>
-                  </tr>
-                  <tr style="font-weight: bold; color: #0f172a; font-size: 15px; border-top: 1px dashed #cbd5e1;">
-                    <td style="padding: 12px 0 0 0;">Total</td>
-                    <td style="padding: 12px 0 0 0; text-align: right; font-family: monospace; font-size: 16px;">${formatPrice(grandTotal)}</td>
-                  </tr>
-                </table>
-              </div>
-
-              <!-- Footer Buttons -->
-              <div style="text-align: center; margin-top: 32px;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL}/cart" style="display: inline-block; background-color: #6b21a8; color: #ffffff; font-size: 12px; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(107, 33, 168, 0.2);">
-                  View Cart & Checkout
-                </a>
-              </div>
-            </div>
-
-            <!-- footer disclaimer -->
-            <div style="background-color: #f4f4f5; padding: 16px; text-align: center; border-top: 1px solid #e4e4e7; font-size: 11px; color: #a1a1aa;">
-              ${systemNameHub} &copy; 2026. All rights reserved.
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    // Connect to Brevo SMTP host using configured details (direct SSL/TLS or STARTTLS)
-    await sendRawSmtpEmail({
-      host: smtpHost,
-      port: smtpPort,
-      user: smtpUser,
-      pass: smtpPassword,
-      to: validatedEmail,
-      from: emailFromAddress,
-      fromName: emailFromName,
-      subject: `Your Shopping Cart Summary | ${systemName}`,
-      html: emailHtml,
-    });
-
-    return { success: true };
+    return await sendCartSummaryEmailService(validatedItems, validatedEmail, zeroShipping);
   } catch (error: unknown) {
     const apiError = handleApiError(error, 'Failed to send cart summary email');
     logger.error(apiError.message, { error });
     return { success: false, error: apiError.message };
   }
 }
-
-// ═══════════════════════════════════════════════════════════
-// SIMULATED CHECKOUT — Stock Validation & Order Placement
-// ═══════════════════════════════════════════════════════════
 
 export async function syncCartPricesAction(productIds: string[]) {
   try {
@@ -352,30 +123,7 @@ export async function syncCartPricesAction(productIds: string[]) {
       return { success: true as const, items: [], removedIds: [] };
     }
 
-    const rows = await db
-      .select({
-        id: schema.products.id,
-        name: schema.products.name,
-        price: schema.products.price,
-        status: schema.products.status,
-      })
-      .from(schema.products)
-      .where(inArray(schema.products.id, uniqueIds));
-
-    const foundIds = new Set(rows.map((row) => row.id));
-    const missingIds = uniqueIds.filter((id) => !foundIds.has(id));
-    const inactiveIds = rows.filter((row) => row.status !== 'active').map((row) => row.id);
-    const activeRows = rows.filter((row) => row.status === 'active');
-
-    return {
-      success: true as const,
-      items: activeRows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        price: row.price,
-      })),
-      removedIds: [...missingIds, ...inactiveIds],
-    };
+    return await syncCartPricesService(uniqueIds);
   } catch (error: unknown) {
     const apiError = handleApiError(error, 'Failed to sync cart prices');
     logger.error(apiError.message, { error });
@@ -393,125 +141,7 @@ export async function getCartCheckoutOptionsAction(
       return { success: false as const, error: 'Please sign in to load checkout options.' };
     }
 
-    if (cartLines.length === 0) {
-      return {
-        success: true as const,
-        fulfillment: [],
-        payment: [],
-        pickupBranches: [],
-        singleVendorOrgId: null,
-        vendorCount: 0,
-        vendorBankTransferByOrg: {},
-        vendorCartSummary: [],
-      };
-    }
-
-    const uniqueIds = [...new Set(cartLines.map((line) => line.id))];
-    const products = await db
-      .select({
-        id: schema.products.id,
-        orgId: schema.products.orgId,
-        price: schema.products.price,
-      })
-      .from(schema.products)
-      .where(inArray(schema.products.id, uniqueIds));
-
-    const productById = new Map(products.map((product) => [product.id, product]));
-    const uniqueOrgIds = [...new Set(products.map((product) => product.orgId))];
-
-    const cachedOrgs = await getCachedOrganizations();
-    const vendorNamesByOrg = Object.fromEntries(
-      cachedOrgs.map((org) => [org.id, org.name])
-    );
-
-    const resolvedCheckoutVendorOrgId = resolveCheckoutVendorOrgId(
-      buildVendorCartSummaries(cartLines, productById, vendorNamesByOrg),
-      checkoutVendorOrgId
-    );
-
-    if (uniqueOrgIds.length > 1 && !resolvedCheckoutVendorOrgId) {
-      const bankDetailsByOrg = await getBankTransferDetailsForOrgs(uniqueOrgIds);
-      const vendorCartSummary = buildVendorCartSummaries(
-        cartLines,
-        productById,
-        vendorNamesByOrg
-      );
-
-      return {
-        success: true as const,
-        fulfillment: [],
-        payment: [],
-        pickupBranches: [],
-        singleVendorOrgId: null,
-        vendorCount: uniqueOrgIds.length,
-        checkoutVendorOrgId: null,
-        requiresVendorSelection: true as const,
-        vendorBankTransferByOrg: Object.fromEntries(
-          uniqueOrgIds.map((orgId) => [
-            orgId,
-            toVendorBankTransferAvailability(
-              bankDetailsByOrg[orgId] ?? { vendorName: 'Vendor', bankDetails: null }
-            ),
-          ])
-        ),
-        vendorCartSummary,
-      };
-    }
-
-    const linesForOptions = filterCartLinesByVendorOrg(
-      cartLines,
-      productById,
-      resolvedCheckoutVendorOrgId
-    );
-    const orgIdsForOptions =
-      resolvedCheckoutVendorOrgId != null
-        ? [resolvedCheckoutVendorOrgId]
-        : uniqueOrgIds;
-
-    const { branchRows, branchesByOrg } = await fetchBranchesForOrgs(orgIdsForOptions);
-
-    const resolved = await resolveCheckoutOptionsForOrgs(orgIdsForOptions, branchesByOrg);
-    const bankTransferEnabled = resolved.payment.some((o) => o.id === BANK_TRANSFER_PAYMENT_ID);
-    const bankDetailsByOrg = bankTransferEnabled
-      ? await getBankTransferDetailsForOrgs(uniqueOrgIds)
-      : {};
-    const vendorCartSummary = buildVendorCartSummaries(
-      cartLines,
-      productById,
-      vendorNamesByOrg
-    );
-
-    return {
-      success: true as const,
-      fulfillment: resolved.fulfillment.map((o) => ({
-        id: o.id,
-        label: o.label,
-        description: o.description,
-        zeroShipping: o.zeroShipping === true,
-        requiresBranch: o.requiresBranch === true,
-      })),
-      payment: resolved.payment.map((o) => ({
-        id: o.id,
-        label: o.label,
-        description: o.description,
-        requiresDelivery: o.requiresDelivery === true,
-        pendingPayment: o.pendingPayment === true,
-      })),
-      pickupBranches: resolved.pickupBranches,
-      singleVendorOrgId: resolved.singleVendorOrgId,
-      vendorCount: uniqueOrgIds.length,
-      checkoutVendorOrgId: resolvedCheckoutVendorOrgId,
-      requiresVendorSelection: false as const,
-      vendorBankTransferByOrg: Object.fromEntries(
-        uniqueOrgIds.map((orgId) => [
-          orgId,
-          toVendorBankTransferAvailability(
-            bankDetailsByOrg[orgId] ?? { vendorName: 'Vendor', bankDetails: null }
-          ),
-        ])
-      ),
-      vendorCartSummary,
-    };
+    return await getCheckoutOptionsService(cartLines, checkoutVendorOrgId);
   } catch (error: unknown) {
     const apiError = handleApiError(error, 'Failed to load checkout options');
     logger.error(apiError.message, { error });
@@ -539,7 +169,6 @@ export async function simulatedCheckoutAction(
   idempotencyKey?: string | null
 ) {
   try {
-    // ── Input Validation ──
     const parsed = checkoutSchema.safeParse({
       customerName,
       customerEmail,
@@ -563,7 +192,7 @@ export async function simulatedCheckoutAction(
     }
 
     let name = parsed.data.customerName.trim();
-    let email = normalizeCustomerEmail(parsed.data.customerEmail);
+    let email = customerEmail; // Will be overridden by session email if available
     const aggregatedItems = aggregateCheckoutItems(parsed.data.items);
     const {
       totalAmount: clientGrandTotal,
@@ -601,10 +230,8 @@ export async function simulatedCheckoutAction(
     email = sessionEmail;
     name = user.fullName || user.firstName || name;
 
-    // ── Rate Limiting ──
-    await rateLimit(5, 60 * 1000); // Max 5 checkouts per minute
+    await rateLimit(5, 60 * 1000);
 
-    // ── Idempotency Check ──
     if (idempotencyKey) {
       const { checkIdempotencyKey } = await import('@/shared/security/idempotency');
       const isNewRequest = await checkIdempotencyKey(idempotencyKey);
@@ -613,7 +240,6 @@ export async function simulatedCheckoutAction(
       }
     }
 
-    // ── Concurrency Safe Stock Validation & Checkout ──
     const validationResult = await validateAndPrepareCartItems(
       aggregatedItems,
       checkoutVendorOrgIdInput || null
@@ -644,7 +270,6 @@ export async function simulatedCheckoutAction(
       return { success: false, error: 'Selected payment method is not available for this cart.' };
     }
 
-    // --- Extracted Payment Validation ---
     const bankDetailsByOrg = isBankTransferPayment(payment) ? await getBankTransferDetailsForOrgs(vendorOrgIds) : {};
     const paymentValidation = validatePayment({
       payment,
@@ -658,7 +283,6 @@ export async function simulatedCheckoutAction(
       return { success: false as const, error: paymentValidation.error! };
     }
 
-    // --- Extracted Fulfillment Validation ---
     const fulfillmentValidation = validateFulfillment({
       fulfillmentOption,
       pickupBranch: pickupBranch ?? null,
@@ -704,17 +328,12 @@ export async function simulatedCheckoutAction(
       };
     }
 
-    // Free tier users do not get branchInventory rows (central_intake mode).
-    // Bypassing branch stock validation for single-branch (or virtual branch) vendors correctly routes stock 
-    // depletion strictly against central inventory while preserving pickup semantics.
     const orgBranchesLength = branchesByOrg.get(vendorOrgIds[0])?.length || 0;
     const isVirtualOrSingleBranchOrg = vendorOrgIds.length === 1 && orgBranchesLength <= 1;
     const pickupBranchForStock = fulfillmentOption.requiresBranch && !isVirtualOrSingleBranchOrg ? pickupBranch : null;
 
-    // Sort items by product ID to prevent deadlock during concurrent lock acquisition
     verifiedItems.sort((a, b) => a.id.localeCompare(b.id));
 
-    // ── Concurrency Safe Stock Validation & Checkout (inside transaction) ──
     const MAX_RETRIES = 3;
     let txResult: CheckoutTransactionResult | null = null;
     let txError: unknown = null;
@@ -746,14 +365,14 @@ export async function simulatedCheckoutAction(
           serverSubtotal,
           uniqueItemIds
         }) as CheckoutTransactionResult;
-        break; // Success
+        break; 
       } catch (error) {
         txError = error;
         logger.warn(`Checkout DB transaction failed (attempt ${attempt}/${MAX_RETRIES})`, {
           error: error instanceof Error ? error.message : String(error),
         });
         if (attempt === MAX_RETRIES) {
-          break; // Let it fail below
+          break; 
         }
         await new Promise((resolve) => setTimeout(resolve, attempt * 200 + Math.random() * 100));
       }
