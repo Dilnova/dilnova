@@ -101,8 +101,11 @@ export default async function RootLayout({
     const systemName = await getSystemSetting('system_name', 'Dilnova');
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dilstar.pp.ua';
 
-    const isBetaEnabled = process.env.NEXT_PUBLIC_ENABLE_BETA_ACCESS === 'true' || process.env.CI === 'true';
-    if (process.env.NODE_ENV === 'production' && !isBetaEnabled) {
+    // Enterprise-grade dynamic Beta Lock check
+    const isBetaLocked = await getSystemSetting('enable_beta_lock', 'false') === 'true';
+    const isCI = process.env.CI === 'true';
+
+    if (isBetaLocked && !isCI) {
       return (
         <html lang="en">
           <body className={`${interFont.variable} antialiased min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 p-6`}>
@@ -119,6 +122,7 @@ export default async function RootLayout({
         </html>
       );
     }
+
 
     return (
       <html lang="en">
