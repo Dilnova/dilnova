@@ -37,6 +37,8 @@ const webServerEnv: Record<string, string> = {
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '1x00000000000000000000AA',
   TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY ?? '1x00000000000000000000AA',
   QSTASH_TOKEN: process.env.QSTASH_TOKEN ?? 'dummy_qstash_token',
+  SENTRY_DSN: process.env.SENTRY_DSN ?? 'https://public@sentry.example.com/1',
+  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN ?? 'https://public@sentry.example.com/1',
 };
 
 export default defineConfig({
