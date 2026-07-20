@@ -5,6 +5,8 @@ import { logger } from '@/shared/logging/logger';
 import { invalidateClerkUserCache, invalidateClerkOrgCache } from '@/shared/auth/clerk-cache';
 import { Redis } from '@upstash/redis';
 import { readUpstashEnv } from '@/shared/security/upstash-health';
+import { Client as QStashClient } from '@upstash/qstash';
+
 const processedWebhooksMemory = new Set<string>();
 
 function verifyClerkWebhookSignature(
@@ -194,6 +196,7 @@ export async function POST(req: NextRequest) {
     const allowedEventTypes = new Set([
       'user.updated',
       'user.created',
+      'user.deleted',
       'organizationMembership.created',
       'organizationMembership.updated',
       'organizationMembership.deleted',
@@ -212,6 +215,18 @@ export async function POST(req: NextRequest) {
       if (userId) {
         invalidateClerkUserCache(userId);
       }
+    } else if (eventType === 'user.deleted') {
+      const userId = data.id;
+      if (userId) {
+        invalidateClerkUserCache(userId);
+        const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN || '' });
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        await qstash.publishJSON({
+          url: `${appUrl}/api/webhooks/qstash/erase`,
+          body: { targetUserId: userId, adminUserId: 'system_webhook' },
+        });
+        logger.info(`Dispatched background GDPR erasure for deleted user ${userId}`);
+      }
     } else if (
       eventType === 'organizationMembership.created' ||
       eventType === 'organizationMembership.updated' ||
@@ -226,10 +241,22 @@ export async function POST(req: NextRequest) {
       if (userId) {
         invalidateClerkUserCache(userId);
       }
-    } else if (eventType === 'organization.updated' || eventType === 'organization.deleted') {
+    } else if (eventType === 'organization.updated') {
       const orgId = data.id;
       if (orgId) {
         invalidateClerkOrgCache(orgId);
+      }
+    } else if (eventType === 'organization.deleted') {
+      const orgId = data.id;
+      if (orgId) {
+        invalidateClerkOrgCache(orgId);
+        const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN || '' });
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        await qstash.publishJSON({
+          url: `${appUrl}/api/webhooks/qstash/erase-org`,
+          body: { targetOrgId: orgId, adminUserId: 'system_webhook' },
+        });
+        logger.info(`Dispatched background erasure for deleted organization ${orgId}`);
       }
     }
 
