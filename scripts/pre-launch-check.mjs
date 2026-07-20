@@ -74,9 +74,7 @@ for (const key of recommended) {
   }
 }
 
-console.log('\nClerk migrations (run manually before marketing):');
-console.log('  node scripts/migrate-bank-metadata.mjs --dry-run');
-console.log('  node scripts/migrate-superadmin-metadata.mjs --dry-run');
+console.log('\nClerk metadata migrations are now automated in CI.');
 
 if (failed > 0) {
   console.error(`\n${failed} check(s) failed.`);

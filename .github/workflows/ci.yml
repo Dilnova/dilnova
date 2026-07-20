@@ -119,6 +119,14 @@ jobs:
         env:
           DATABASE_URL: "postgresql://postgres:password@127.0.0.1:5432/postgres"
 
+      - name: Run Clerk Migrations
+        run: |
+          node scripts/migrate-bank-metadata.mjs
+          node scripts/migrate-superadmin-metadata.mjs
+        env:
+          CLERK_SECRET_KEY: ${{ github.event_name == 'pull_request' && 'sk_test_ci_dummy' || secrets.CLERK_SECRET_KEY }}
+          SUPERADMIN_USER_IDS: ${{ secrets.SUPERADMIN_USER_IDS }}
+
       - name: Run Production Build
         run: pnpm run build
         env:
