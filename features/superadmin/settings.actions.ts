@@ -77,7 +77,7 @@ export async function updateSystemSettingAction(key: string, value: string) {
     });
 
     // Clear cache for admin panels and vendor portals to reflect configuration updates immediately
-    revalidateTag('system-settings');
+    revalidateTag('system-settings', 'max');
     revalidatePath('/superadmin');
     revalidateVendorConsole();
     revalidatePath('/', 'layout');
