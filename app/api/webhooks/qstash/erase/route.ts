@@ -54,11 +54,16 @@ async function handler(req: NextRequest) {
          await client.users.deleteUser(targetUserId);
          clerkProfileDeleted = true;
       }
-    } catch (e: any) {
-      if (e.status === 404 || (e.errors && e.errors[0]?.code === 'resource_not_found')) {
+    } catch (e: unknown) {
+      const isNotFound = typeof e === 'object' && e !== null && (
+        ('status' in e && e.status === 404) ||
+        ('errors' in e && Array.isArray((e as any).errors) && (e as any).errors[0]?.code === 'resource_not_found')
+      );
+      
+      if (isNotFound) {
         logger.info(`Clerk user ${targetUserId} already deleted or not found.`);
       } else {
-        logger.error('Unexpected error fetching or deleting user from Clerk during GDPR erasure', e);
+        logger.error('Unexpected error fetching or deleting user from Clerk during GDPR erasure', e instanceof Error ? e.message : String(e));
       }
     }
 

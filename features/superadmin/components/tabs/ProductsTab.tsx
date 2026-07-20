@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useConfirm } from '@/shared/ui/notifications';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
 import { updateProductAction, deleteProductAction } from '@/features/catalog/superadmin.actions';
-import { TabDataTableLayout } from '@/shared/ui/TabDataTableLayout';
+import { TabDataTableLayout, type ColumnDef } from '@/shared/ui/TabDataTableLayout';
 
 export interface Product {
   id: string;
@@ -254,126 +254,117 @@ export default function ProductsTab({ products, categories, organizations, maxMe
     </div>
   );
 
-  const tableContent = (
-    <table className="w-full text-left border-collapse text-xs">
-      <thead>
-        <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 uppercase font-mono text-[10px] tracking-wider bg-zinc-50/50 dark:bg-zinc-900/30">
-          <th className="py-3 px-4">Item Details</th>
-          <th className="py-3 px-4">Type</th>
-          <th className="py-3 px-4">Price</th>
-          <th className="py-3 px-4">Views</th>
-          <th className="py-3 px-4">Vendor Org</th>
-          <th className="py-3 px-4 text-right">Actions</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
-        {filteredProducts.map((p) => (
-          <tr key={p.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30">
-            <td className="py-4 px-4">
-              <div className="font-bold text-zinc-900 dark:text-zinc-100 leading-snug">{p.name}</div>
-              <div className="text-[10px] text-zinc-400 font-mono mt-0.5 truncate max-w-[220px]">
-                Cat: {p.categoryName || 'Uncategorized'}
-              </div>
-            </td>
-            <td className="py-4 px-4">
-              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                p.type === 'service' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400'
-              }`}>
-                {p.type}
-              </span>
-            </td>
-            <td className="py-4 px-4 font-mono font-bold">${(p.price / 100).toFixed(2)}</td>
-            <td className="py-4 px-4 font-mono text-zinc-600 dark:text-zinc-400">👀 {p.views}</td>
-            <td className="py-4 px-4">
-              <div className="font-mono text-[10px] text-zinc-600 dark:text-zinc-400 truncate max-w-[140px]">
-                {orgNameById.get(p.orgId) || 'Unknown Vendor'}
-              </div>
-              <div className="text-[10px] font-mono text-zinc-400 truncate max-w-[140px]">
-                {p.orgId}
-              </div>
-              {!knownOrgIds.has(p.orgId) && (
-                <span className="inline-flex mt-1 text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-700 dark:text-rose-300">
-                  Missing org
-                </span>
-              )}
-            </td>
-            <td className="py-4 px-4 text-right">
-              <div className="flex items-center justify-end gap-1.5">
-                <button
-                  onClick={() => openEditProduct(p)}
-                  className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteProduct(p.id)}
-                  className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-                >
-                  Delete
-                </button>
-              </div>
-            </td>
-          </tr>
-        ))}
-        {filteredProducts.length === 0 && (
-          <tr>
-            <td colSpan={6} className="py-12 text-center text-zinc-400 font-mono">No items found.</td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  );
+  const columns: ColumnDef<Product>[] = [
+    {
+      header: 'Item Details',
+      cell: (p) => (
+        <>
+          <div className="font-bold text-zinc-900 dark:text-zinc-100 leading-snug">{p.name}</div>
+          <div className="text-[10px] text-zinc-400 font-mono mt-0.5 truncate max-w-[220px]">
+            Cat: {p.categoryName || 'Uncategorized'}
+          </div>
+        </>
+      ),
+    },
+    {
+      header: 'Type',
+      cell: (p) => (
+        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+          p.type === 'service' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400'
+        }`}>
+          {p.type}
+        </span>
+      ),
+    },
+    {
+      header: 'Price',
+      cell: (p) => <span className="font-mono font-bold">${(p.price / 100).toFixed(2)}</span>,
+    },
+    {
+      header: 'Views',
+      cell: (p) => <span className="font-mono text-zinc-600 dark:text-zinc-400">👀 {p.views}</span>,
+    },
+    {
+      header: 'Vendor Org',
+      cell: (p) => (
+        <>
+          <div className="font-mono text-[10px] text-zinc-600 dark:text-zinc-400 truncate max-w-[140px]">
+            {orgNameById.get(p.orgId) || 'Unknown Vendor'}
+          </div>
+          <div className="text-[10px] font-mono text-zinc-400 truncate max-w-[140px]">
+            {p.orgId}
+          </div>
+          {!knownOrgIds.has(p.orgId) && (
+            <span className="inline-flex mt-1 text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-700 dark:text-rose-300">
+              Missing org
+            </span>
+          )}
+        </>
+      ),
+    },
+    {
+      header: 'Actions',
+      className: 'text-right',
+      cell: (p) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <button
+            onClick={() => openEditProduct(p)}
+            className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handleDeleteProduct(p.id)}
+            className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+          >
+            Delete
+          </button>
+        </div>
+      ),
+    },
+  ];
 
-  const mobileCardContent = (
-    <>
-      {filteredProducts.map((p) => (
-        <div key={p.id} className="bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 rounded-xl p-3.5 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="w-14 h-14 rounded-lg bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 overflow-hidden relative">
-              {p.imageUrl ? (
-                <Image src={p.imageUrl} alt={p.name} fill className="object-cover" sizes="56px" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-xl opacity-30">📷</div>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{p.name}</span>
-                <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold flex-shrink-0 ${
-                  p.type === 'service' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400'
-                }`}>
-                  {p.type}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-400 font-mono">
-                <span className="font-bold text-zinc-700 dark:text-zinc-300">${(p.price / 100).toFixed(2)}</span>
-                <span>·</span>
-                <span>👀 {p.views}</span>
-              </div>
-            </div>
+  const renderMobileCard = (p: Product) => (
+    <div className="bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 rounded-xl p-3.5 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="w-14 h-14 rounded-lg bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 overflow-hidden relative">
+          {p.imageUrl ? (
+            <Image src={p.imageUrl} alt={p.name} fill className="object-cover" sizes="56px" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-xl opacity-30">📷</div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{p.name}</span>
+            <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold flex-shrink-0 ${
+              p.type === 'service' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400'
+            }`}>
+              {p.type}
+            </span>
           </div>
-          <div className="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80">
-            <button
-              onClick={() => openEditProduct(p)}
-              className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer text-center active:scale-[0.97]"
-            >
-              ✏️ Edit
-            </button>
-            <button
-              onClick={() => handleDeleteProduct(p.id)}
-              className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer text-center active:scale-[0.97]"
-            >
-              🗑️ Delete
-            </button>
+          <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-400 font-mono">
+            <span className="font-bold text-zinc-700 dark:text-zinc-300">${(p.price / 100).toFixed(2)}</span>
+            <span>·</span>
+            <span>👀 {p.views}</span>
           </div>
         </div>
-      ))}
-      {filteredProducts.length === 0 && (
-        <div className="py-12 text-center text-zinc-400 text-xs font-mono border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
-          No items found.
-        </div>
-      )}
-    </>
+      </div>
+      <div className="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80">
+        <button
+          onClick={() => openEditProduct(p)}
+          className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer text-center active:scale-[0.97]"
+        >
+          ✏️ Edit
+        </button>
+        <button
+          onClick={() => handleDeleteProduct(p.id)}
+          className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer text-center active:scale-[0.97]"
+        >
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
   );
 
   const modals = isProductModalOpen && editingProduct && (
@@ -557,8 +548,10 @@ export default function ProductsTab({ products, categories, organizations, maxMe
           </p>
         </>
       }
-      tableContent={tableContent}
-      mobileCardContent={mobileCardContent}
+      data={filteredProducts}
+      columns={columns}
+      renderMobileCard={renderMobileCard}
+      emptyStateMessage="No items found."
       modals={modals}
     />
   );

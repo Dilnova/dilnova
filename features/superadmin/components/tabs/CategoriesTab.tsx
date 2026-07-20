@@ -8,7 +8,7 @@ import {
   updateCategoryAction,
   deleteCategoryAction,
 } from '@/features/catalog/superadmin.actions';
-import { TabDataTableLayout } from '@/shared/ui/TabDataTableLayout';
+import { TabDataTableLayout, type ColumnDef } from '@/shared/ui/TabDataTableLayout';
 
 export interface Category {
   id: string;
@@ -126,105 +126,88 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
     );
   };
 
-  const tableContent = (
-    <table className="w-full text-left border-collapse text-xs">
-      <thead>
-        <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 uppercase font-mono text-[10px] tracking-wider bg-zinc-50/50 dark:bg-zinc-900/30">
-          <th className="py-3 px-4">Category Name</th>
-          <th className="py-3 px-4">Slug</th>
-          <th className="py-3 px-4">Created</th>
-          <th className="py-3 px-4 text-right">Actions</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
-        {categories.map((cat) => (
-          <tr key={cat.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30">
-            <td className="py-3.5 px-4 text-zinc-900 dark:text-zinc-100">
-              <div className="font-bold flex items-center gap-2 flex-wrap">
-                <span>{cat.name}</span>
-                {cat.parentId ? (
-                  <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-mono text-[9px] uppercase tracking-wider dark:bg-zinc-850 dark:text-zinc-400">
-                    Sub of {categories.find((c) => c.id === cat.parentId)?.name || '?'}
-                  </span>
-                ) : (
-                  <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-mono text-[9px] uppercase tracking-wider dark:bg-purple-950/20 dark:text-purple-400">
-                    Main
-                  </span>
-                )}
-              </div>
-            </td>
-            <td className="py-3.5 px-4 font-mono text-zinc-500">{cat.slug}</td>
-            <td className="py-3.5 px-4 text-zinc-500 font-mono">{new Date(cat.createdAt).toLocaleDateString()}</td>
-            <td className="py-3.5 px-4 text-right">
-              <div className="flex items-center justify-end gap-1.5">
-                <button
-                  onClick={() => openEditCategory(cat)}
-                  className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteCategory(cat.id)}
-                  className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-                >
-                  Delete
-                </button>
-              </div>
-            </td>
-          </tr>
-        ))}
-        {categories.length === 0 && (
-          <tr>
-            <td colSpan={4} className="py-12 text-center text-zinc-400 font-mono">No categories configured.</td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  );
+  const columns: ColumnDef<Category>[] = [
+    {
+      header: 'Category Name',
+      cell: (cat) => (
+        <div className="font-bold flex items-center gap-2 flex-wrap text-zinc-900 dark:text-zinc-100">
+          <span>{cat.name}</span>
+          {cat.parentId ? (
+            <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-mono text-[9px] uppercase tracking-wider dark:bg-zinc-850 dark:text-zinc-400">
+              Sub of {categories.find((c) => c.id === cat.parentId)?.name || '?'}
+            </span>
+          ) : (
+            <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-mono text-[9px] uppercase tracking-wider dark:bg-purple-950/20 dark:text-purple-400">
+              Main
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: 'Slug',
+      cell: (cat) => <span className="font-mono text-zinc-500">{cat.slug}</span>,
+    },
+    {
+      header: 'Created',
+      cell: (cat) => <span className="text-zinc-500 font-mono">{new Date(cat.createdAt).toLocaleDateString()}</span>,
+    },
+    {
+      header: 'Actions',
+      className: 'text-right',
+      cell: (cat) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <button
+            onClick={() => openEditCategory(cat)}
+            className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handleDeleteCategory(cat.id)}
+            className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+          >
+            Delete
+          </button>
+        </div>
+      ),
+    },
+  ];
 
-  const mobileCardContent = (
-    <>
-      {categories.map((cat) => (
-        <div key={cat.id} className="bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 rounded-xl p-3.5 shadow-sm">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{cat.name}</span>
-                {cat.parentId ? (
-                  <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-mono text-[9px] uppercase dark:bg-zinc-850 dark:text-zinc-400">
-                    Sub
-                  </span>
-                ) : (
-                  <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-mono text-[9px] uppercase dark:bg-purple-950/20 dark:text-purple-400">
-                    Main
-                  </span>
-                )}
-              </div>
-              <p className="text-[10px] text-zinc-400 font-mono mt-0.5">/{cat.slug}</p>
-            </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <button
-                onClick={() => openEditCategory(cat)}
-                className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDeleteCategory(cat.id)}
-                className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-              >
-                Delete
-              </button>
-            </div>
+  const renderMobileCard = (cat: Category) => (
+    <div className="bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 rounded-xl p-3.5 shadow-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{cat.name}</span>
+            {cat.parentId ? (
+              <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-mono text-[9px] uppercase dark:bg-zinc-850 dark:text-zinc-400">
+                Sub
+              </span>
+            ) : (
+              <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-mono text-[9px] uppercase dark:bg-purple-950/20 dark:text-purple-400">
+                Main
+              </span>
+            )}
           </div>
+          <p className="text-[10px] text-zinc-400 font-mono mt-0.5">/{cat.slug}</p>
         </div>
-      ))}
-      {categories.length === 0 && (
-        <div className="py-12 text-center text-zinc-400 text-xs font-mono border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
-          No categories configured.
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button
+            onClick={() => openEditCategory(cat)}
+            className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handleDeleteCategory(cat.id)}
+            className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
+          >
+            Delete
+          </button>
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 
   const modals = isCategoryModalOpen && (
@@ -305,8 +288,10 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
       subtitle="Control categories available for listings"
       buttonText="Create Category"
       onAddClick={openAddCategory}
-      tableContent={tableContent}
-      mobileCardContent={mobileCardContent}
+      data={categories}
+      columns={columns}
+      renderMobileCard={renderMobileCard}
+      emptyStateMessage="No categories configured."
       modals={modals}
     />
   );

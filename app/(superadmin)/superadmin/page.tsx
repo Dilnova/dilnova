@@ -33,55 +33,30 @@ export const maxDuration = 60; // Allow up to 60s for this heavy page (Vercel se
 /**
  * Safely execute a data-fetching function, returning a fallback value if it fails.
  */
-async function safeQuery<T>(label: string, fn: () => Promise<T>, fallback: T): Promise<{ data: T; error: string | null }> {
-  try {
-    return { data: await fn(), error: null };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error(`SuperAdmin dashboard query failed: ${label}`, err);
-    return { data: fallback, error: `${label}: ${message}` };
-  }
-}
 
 async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const params = await searchParams;
   const activeTab = params.tab || 'overview';
-  const queryErrors: string[] = [];
 
-  const pushError = (err: string | null) => {
-    if (err) queryErrors.push(err);
-  };
 
   // We need vendor org integrity for badges & org issues
   const client = await clerkClient();
   const organizations = await getSuperadminOrganizations(client);
-  const vendorOrgIntegrityResult = await safeQuery('Vendor Org Integrity', () => getVendorOrgIntegrityReport(organizations), {
-    knownOrgCount: 0,
-    issueGroups: [],
-    totals: { orphanOrgIds: 0, products: 0, orderItems: 0, suppliers: 0, branches: 0, billingReceipts: 0 }
-  });
-  pushError(vendorOrgIntegrityResult.error);
-  const vendorOrgIntegrity = vendorOrgIntegrityResult.data;
+  const vendorOrgIntegrity = await getVendorOrgIntegrityReport(organizations);
   const vendorIssuesCount = vendorOrgIntegrity.totals.orphanOrgIds || 0;
 
   // We need contacts for badges
-  const contactsResult = await safeQuery('Contact Submissions', getContactSubmissionsOrderedByCreatedAtDesc, []);
-  pushError(contactsResult.error);
-  const pendingContactsCount = contactsResult.data.filter(c => c.status === 'pending').length;
+  const contacts = await getContactSubmissionsOrderedByCreatedAtDesc();
+  const pendingContactsCount = contacts.filter(c => c.status === 'pending').length;
 
   let content: React.ReactNode = null;
 
   switch (activeTab) {
     case 'overview': {
-      const [categoriesResult, productsResult] = await Promise.all([
-        safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []),
-        safeQuery('Products', getProductsWithCategoryDetails, []),
+      const [categories, products] = await Promise.all([
+        getCategoriesOrderedByCreatedAtDesc(),
+        getProductsWithCategoryDetails(),
       ]);
-      pushError(categoriesResult.error);
-      pushError(productsResult.error);
-
-      const categories = categoriesResult.data;
-      const products = productsResult.data;
       const stats = {
         totalProducts: products.filter(p => p?.type === 'product').length,
         totalServices: products.filter(p => p?.type === 'service').length,
@@ -93,23 +68,20 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
       break;
     }
     case 'categories': {
-      const categoriesResult = await safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []);
-      pushError(categoriesResult.error);
-      content = <CategoriesTab categories={categoriesResult.data} />;
+      const categories = await getCategoriesOrderedByCreatedAtDesc();
+      content = <CategoriesTab categories={categories} />;
       break;
     }
     case 'products': {
-      const [productsResult, categoriesResult, maxMediaSetting] = await Promise.all([
-        safeQuery('Products', getProductsWithCategoryDetails, []),
-        safeQuery('Categories', getCategoriesOrderedByCreatedAtDesc, []),
+      const [products, categories, maxMediaSetting] = await Promise.all([
+        getProductsWithCategoryDetails(),
+        getCategoriesOrderedByCreatedAtDesc(),
         getSystemSetting('max_media_limit', '5'),
       ]);
-      pushError(productsResult.error);
-      pushError(categoriesResult.error);
       content = (
         <ProductsTab
-          products={productsResult.data}
-          categories={categoriesResult.data}
+          products={products}
+          categories={categories}
           organizations={organizations}
           maxMediaLimit={parseInt(maxMediaSetting, 10) || 5}
         />
@@ -117,27 +89,22 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
       break;
     }
     case 'inventory': {
-      const [productsResult, inventoryItemsResult, inventoryMovementsResult, suppliersResult, ordersResult, checkoutOptionsCatalog] = await Promise.all([
-        safeQuery('Products', getProductsWithCategoryDetails, []),
-        safeQuery('Inventory Items', getInventoryItemsWithDetails, []),
-        safeQuery('Inventory Movements', getInventoryMovementsWithProductName, []),
-        safeQuery('Suppliers', getImsSuppliersOrderedByCreatedAtDesc, []),
-        safeQuery('Simulated Orders', getSimulatedOrdersWithItems, []),
+      const [products, inventoryItems, inventoryMovements, suppliers, orders, checkoutOptionsCatalog] = await Promise.all([
+        getProductsWithCategoryDetails(),
+        getInventoryItemsWithDetails(),
+        getInventoryMovementsWithProductName(),
+        getImsSuppliersOrderedByCreatedAtDesc(),
+        getSimulatedOrdersWithItems(),
         getCheckoutOptionsCatalog(),
       ]);
-      pushError(productsResult.error);
-      pushError(inventoryItemsResult.error);
-      pushError(inventoryMovementsResult.error);
-      pushError(suppliersResult.error);
-      pushError(ordersResult.error);
 
-      const productsWithoutInventory = productsResult.data.filter(p => !inventoryItemsResult.data.some(i => i.productId === p.id));
+      const productsWithoutInventory = products.filter(p => !inventoryItems.some(i => i.productId === p.id));
       content = (
         <InventoryTab
-          inventoryItems={inventoryItemsResult.data}
-          movements={inventoryMovementsResult.data}
-          suppliers={suppliersResult.data}
-          simulatedOrders={ordersResult.data}
+          inventoryItems={inventoryItems}
+          movements={inventoryMovements}
+          suppliers={suppliers}
+          simulatedOrders={orders}
           productsWithoutInventory={productsWithoutInventory}
           checkoutOptionsCatalog={checkoutOptionsCatalog}
           organizations={organizations}
@@ -161,13 +128,12 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
       break;
     }
     case 'pricing': {
-      const pricingPlansResult = await safeQuery('Pricing Plans', getPricingPlansOrderedByCreatedAtDesc, []);
-      pushError(pricingPlansResult.error);
-      content = <PricingTab pricingPlans={pricingPlansResult.data} />;
+      const pricingPlans = await getPricingPlansOrderedByCreatedAtDesc();
+      content = <PricingTab pricingPlans={pricingPlans} />;
       break;
     }
     case 'contacts': {
-      content = <ContactsTab contactSubmissions={contactsResult.data} />;
+      content = <ContactsTab contactSubmissions={contacts} />;
       break;
     }
     case 'settings': {
@@ -223,23 +189,7 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
 
   return (
     <>
-      {queryErrors.length > 0 && (
-        <div className="mb-6 mt-6 rounded-lg border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/50 p-4">
-          <h3 className="font-semibold text-red-800 dark:text-red-300 mb-1">
-            ⚠️ Some data could not be loaded
-          </h3>
-          <p className="text-sm text-red-700 dark:text-red-400 mb-2">
-            The following queries failed — this is likely caused by a database timeout or a missing/mismatched{' '}
-            <code className="px-1 py-0.5 bg-red-100 dark:bg-red-900 rounded text-xs font-mono">PII_ENCRYPTION_KEY</code>{' '}
-            environment variable in production.
-          </p>
-          <ul className="list-disc list-inside text-sm text-red-600 dark:text-red-400 space-y-1">
-            {queryErrors.map((err, i) => (
-              <li key={i}>{err}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+
 
       <div className="space-y-6">
         <SuperAdminNavigation 

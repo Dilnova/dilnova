@@ -9,9 +9,11 @@ import {
 } from '@/shared/security/health-probe';
 import { probeUpstashRateLimit } from '@/shared/security/upstash-health';
 
+import { withErrorHandler } from '@/shared/api/api-handler';
+
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
+export const GET = withErrorHandler(async (request: Request) => {
   return runWithCorrelationId(async () => {
     const showDetails = isAuthorizedHealthDetailRequest(request);
     const rateLimit = showDetails ? await probeUpstashRateLimit() : null;
@@ -71,4 +73,4 @@ export async function GET(request: Request) {
       return Response.json(body, { status: 500 });
     }
   });
-}
+});

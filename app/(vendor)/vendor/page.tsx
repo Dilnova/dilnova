@@ -61,23 +61,19 @@ export default async function VendorPage({ searchParams }: PageProps) {
   let onlineOrderCount = 0;
 
   if (orgRole === 'org:admin') {
-    try {
-      const [productsResult, inventoryResult, branchCountRow, onlineOrderCountRow] = await Promise.all([
-        getVendorProductsForOrg(orgId),
-        getVendorInventoryData().catch((err: unknown) => {
-          inventoryErrorMsg = err instanceof Error ? err.message : 'Unable to load inventory data.';
-          return null;
-        }),
-        getBranchCountForOrg(orgId),
-        getOnlineOrderCountForVendor(orgId),
-      ]);
-      vendorProducts = productsResult as Product[];
-      inventoryData = inventoryResult;
-      branchCount = branchCountRow;
-      onlineOrderCount = onlineOrderCountRow;
-    } catch (err) {
-      // Graceful fallback
-    }
+    const [productsResult, inventoryResult, branchCountRow, onlineOrderCountRow] = await Promise.all([
+      getVendorProductsForOrg(orgId),
+      getVendorInventoryData().catch((err: unknown) => {
+        inventoryErrorMsg = err instanceof Error ? err.message : 'Unable to load inventory data.';
+        return null;
+      }),
+      getBranchCountForOrg(orgId),
+      getOnlineOrderCountForVendor(orgId),
+    ]);
+    vendorProducts = productsResult as Product[];
+    inventoryData = inventoryResult;
+    branchCount = branchCountRow;
+    onlineOrderCount = onlineOrderCountRow;
   }
 
   // Compute metrics summary stats for enterprise-grade KPI cards

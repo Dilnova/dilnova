@@ -1,11 +1,13 @@
 'use client';
 
+import SuperadminFormCard from '../ui/SuperadminFormCard';
 import { useState, useTransition, useRef } from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
 import { updateSystemSettingAction } from '@/features/superadmin/settings.actions';
 import CheckoutOptionsSettings from '../CheckoutOptionsSettings';
+import { PendingOverlay } from '@/shared/ui/PendingOverlay';
 import StockAvailabilitySettings from '@/features/inventory/components/StockAvailabilitySettings';
 import type { CheckoutOptionDefinition } from '@/features/organization/checkout-options.shared';
 import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
@@ -157,17 +159,7 @@ export default function SettingsTab({
 
   return (
     <div className="max-w-2xl space-y-4">
-      {isPending && (
-        <div className="fixed inset-0 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-[2px] flex items-center justify-center z-50 pointer-events-none">
-          <div className="bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 px-5 py-3 rounded-xl shadow-2xl text-xs font-mono font-bold tracking-wider flex items-center gap-2.5">
-            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            SAVING...
-          </div>
-        </div>
-      )}
+      <PendingOverlay isPending={isPending} />
 
       <div>
         <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">System Settings</h2>
@@ -176,10 +168,7 @@ export default function SettingsTab({
 
       <form onSubmit={handleSaveSettings} className="space-y-4">
         {/* Application Name */}
-        <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-3">
-          <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-            <span>🏷️</span> Application Name
-          </h3>
+        <SuperadminFormCard title="Application Name" icon="🏷️" className="space-y-3">
           <input
             type="text"
             required
@@ -192,13 +181,10 @@ export default function SettingsTab({
           <p className="text-[10px] text-zinc-400">
             The global display name of the application, used in header titles, layouts, metadata, and automated emails.
           </p>
-        </div>
+        </SuperadminFormCard>
 
         {/* Media Limit */}
-        <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-3">
-          <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-            <span>📊</span> Media Upload Limit
-          </h3>
+        <SuperadminFormCard title="Media Upload Limit" icon="📊" className="space-y-3">
           <input
             type="number"
             min="1"
@@ -212,13 +198,10 @@ export default function SettingsTab({
           <p className="text-[10px] text-zinc-400">
             Max images/videos per product listing (1–20).
           </p>
-        </div>
+        </SuperadminFormCard>
 
         {/* Logo */}
-        <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-3">
-          <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-            <span>🖼️</span> System Logo
-          </h3>
+        <SuperadminFormCard title="System Logo" icon="🖼️" className="space-y-3">
           {logoInput ? (
             <div className="flex items-center gap-3 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
               <div className="relative w-16 h-12 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 flex-shrink-0">
@@ -254,13 +237,10 @@ export default function SettingsTab({
               <div className="h-full bg-purple-600 rounded-full transition-all" style={{ width: `${logoUploadProgress}%` }} />
             </div>
           )}
-        </div>
+        </SuperadminFormCard>
 
         {/* Favicon */}
-        <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-3">
-          <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-            <span>⭐</span> Favicon Icon
-          </h3>
+        <SuperadminFormCard title="Favicon Icon" icon="⭐" className="space-y-3">
           {faviconInput ? (
             <div className="flex items-center gap-3 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
               <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 flex-shrink-0">
@@ -294,13 +274,10 @@ export default function SettingsTab({
               <div className="h-full bg-purple-600 rounded-full transition-all" style={{ width: `${faviconUploadProgress}%` }} />
             </div>
           )}
-        </div>
+        </SuperadminFormCard>
 
         {/* Custom Storefront Toggles */}
-        <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-4">
-          <h3 className="text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5 border-b border-zinc-100 dark:border-zinc-900 pb-2">
-            <span>🎨</span> Custom Storefront Layouts
-          </h3>
+        <SuperadminFormCard title="Custom Storefront Layouts" icon="🎨" className="space-y-4">
           
           <div className="flex items-center justify-between py-1">
             <div className="space-y-0.5">
@@ -405,7 +382,7 @@ export default function SettingsTab({
               />
             </button>
           </div>
-        </div>
+        </SuperadminFormCard>
 
         {/* Save button */}
         <button
