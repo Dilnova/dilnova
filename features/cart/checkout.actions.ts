@@ -845,7 +845,13 @@ export async function simulatedCheckoutAction(
     verifiedItems.sort((a, b) => a.id.localeCompare(b.id));
 
     // ── Concurrency Safe Stock Validation & Checkout (inside transaction) ──
-    const txResult: CheckoutTransactionResult = await db.transaction(async (tx) => {
+    const MAX_RETRIES = 3;
+    let txResult: CheckoutTransactionResult | null = null;
+    let txError: unknown = null;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        txResult = await db.transaction(async (tx) => {
       const stockErrors: string[] = [];
       const stockReservations: { productId: string; quantity: number; reservation: StockReservation }[] = [];
 
@@ -1018,6 +1024,23 @@ export async function simulatedCheckoutAction(
         serverSubtotalCents: serverSubtotal,
       };
     });
+        break; // Success
+      } catch (error) {
+        txError = error;
+        logger.warn(`Checkout DB transaction failed (attempt ${attempt}/${MAX_RETRIES})`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        if (attempt === MAX_RETRIES) {
+          break; // Let it fail below
+        }
+        await new Promise((resolve) => setTimeout(resolve, attempt * 200 + Math.random() * 100));
+      }
+    }
+
+    if (!txResult) {
+      logger.error('Checkout DB transaction failed permanently', { error: txError });
+      return { success: false, error: 'A database error occurred while processing your order. Please try again.' };
+    }
 
     if (!txResult.success) {
       return { success: false, error: txResult.error };

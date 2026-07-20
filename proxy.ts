@@ -86,7 +86,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   return response;
 });
 
-export default function proxy(request: NextRequest, event: NextFetchEvent) {
+export default async function proxy(request: NextRequest, event: NextFetchEvent) {
   // CSRF protection:
   // Enforce that mutating requests (except webhook and csp-report endpoints) have a valid Origin matching Host or X-Forwarded-Host.
   const MUTATING_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
@@ -133,7 +133,16 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
     return NextResponse.next();
   }
 
-  return clerkHandler(request, event);
+  try {
+    const res = await clerkHandler(request, event);
+    return res;
+  } catch (error) {
+    console.error('Clerk Middleware execution failed (API outage):', error);
+    return new NextResponse(
+      'Authentication Service is currently unavailable. Please try again later.',
+      { status: 503 }
+    );
+  }
 }
 
 export const config = {

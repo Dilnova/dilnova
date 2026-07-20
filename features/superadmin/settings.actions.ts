@@ -5,7 +5,9 @@ import * as schema from '@/shared/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { revalidateVendorConsole } from '@/features/vendor/revalidate';
-import { updateSystemSettingSchema } from '@/features/superadmin/schema';
+import { updateSystemSettingSchema, updateCheckoutOptionsCatalogSchema } from '@/features/superadmin/schema';
+import { CHECKOUT_OPTIONS_CATALOG_KEY } from '@/features/organization/checkout-options.shared';
+import { syncSettingToRedis } from '@/shared/platform/settings';
 import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
@@ -24,6 +26,18 @@ export async function updateSystemSettingAction(key: string, value: string) {
     const parsed = updateSystemSettingSchema.safeParse({ key, value });
     if (!parsed.success) {
       throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+    }
+
+    if (parsed.data.key === CHECKOUT_OPTIONS_CATALOG_KEY) {
+      try {
+        const payload = JSON.parse(parsed.data.value);
+        const catalogParsed = updateCheckoutOptionsCatalogSchema.safeParse({ options: payload });
+        if (!catalogParsed.success) {
+          throw new Error(`Strict validation failed for catalog options: ${catalogParsed.error.issues[0]?.message}`);
+        }
+      } catch (err) {
+        throw new Error(`Invalid JSON payload for checkout options catalog: ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
 
     // Check if setting already exists
@@ -49,6 +63,9 @@ export async function updateSystemSettingAction(key: string, value: string) {
         value: parsed.data.value,
       });
     }
+
+    // Sync to Edge Cache Fallback (non-blocking if it fails)
+    await syncSettingToRedis(parsed.data.key, parsed.data.value);
 
     await logAuditAction({
       userId: user.id,

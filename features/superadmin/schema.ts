@@ -17,7 +17,8 @@ const checkoutOptionDefinitionSchema = z.object({
   requiresBranch: z.boolean().optional(),
   pendingPayment: z.boolean().optional(),
   requiresDelivery: z.boolean().optional(),
-});
+  requiresPickup: z.boolean().optional(),
+}).strict();
 
 export const updateCheckoutOptionsCatalogSchema = z.object({
   options: z.array(checkoutOptionDefinitionSchema).min(1, 'At least one checkout option is required.'),
