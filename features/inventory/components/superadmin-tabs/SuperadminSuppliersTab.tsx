@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Supplier } from '../inventory.types';
 import { toast } from 'sonner';
+import InventoryModal from '../InventoryModal';
 import { useConfirm } from '@/shared/ui/notifications';
 import {
   createSupplierAction,
@@ -159,45 +160,43 @@ export default function SuperadminSuppliersTab({ suppliers }: SuperadminSupplier
 
       {/* ── Supplier Modal ── */}
       {isSupplierModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setIsSupplierModalOpen(false)}>
-          <div className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <InventoryModal isOpen={true} onClose={() => setIsSupplierModalOpen(false)} className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="p-5 border-b border-zinc-100 dark:border-zinc-800">
               <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">{editingSupplier ? 'Edit Supplier' : 'Add Supplier'}</h3>
             </div>
             <form onSubmit={handleSaveSupplier} className="p-5 space-y-3">
               {!editingSupplier && (
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Organization ID <span className="text-rose-500">*</span></label>
-                  <input type="text" value={supplierOrgId} onChange={(e) => setSupplierOrgId(e.target.value)} required className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 font-mono transition-all" placeholder="org_..." />
+                  <label htmlFor="supplierOrgId" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Organization ID <span className="text-rose-500">*</span></label>
+                  <input id="supplierOrgId" type="text" value={supplierOrgId} onChange={(e) => setSupplierOrgId(e.target.value)} required className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 font-mono transition-all" placeholder="org_..." />
                 </div>
               )}
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Name <span className="text-rose-500">*</span></label>
-                <input type="text" value={supplierName} onChange={(e) => setSupplierName(e.target.value)} required className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all" placeholder="Acme Supplies" />
+                <label htmlFor="supplierName" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Name <span className="text-rose-500">*</span></label>
+                <input id="supplierName" type="text" value={supplierName} onChange={(e) => setSupplierName(e.target.value)} required className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all" placeholder="Acme Supplies" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Contact Name</label>
-                <input type="text" value={supplierContactName} onChange={(e) => setSupplierContactName(e.target.value)} className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all" placeholder="John Smith" />
+                <label htmlFor="supplierContactName" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Contact Name</label>
+                <input id="supplierContactName" type="text" value={supplierContactName} onChange={(e) => setSupplierContactName(e.target.value)} className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all" placeholder="John Smith" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Email</label>
-                <input type="email" value={supplierEmail} onChange={(e) => setSupplierEmail(e.target.value)} className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all" placeholder="john@acme.com" />
+                <label htmlFor="supplierEmail" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Email</label>
+                <input id="supplierEmail" type="email" value={supplierEmail} onChange={(e) => setSupplierEmail(e.target.value)} className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all" placeholder="john@acme.com" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Phone</label>
-                <input type="tel" value={supplierPhone} onChange={(e) => setSupplierPhone(e.target.value)} className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all" placeholder="+1 (555) 000-0000" />
+                <label htmlFor="supplierPhone" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Phone</label>
+                <input id="supplierPhone" type="tel" value={supplierPhone} onChange={(e) => setSupplierPhone(e.target.value)} className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all" placeholder="+1 (555) 000-0000" />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Address</label>
-                <textarea value={supplierAddress} onChange={(e) => setSupplierAddress(e.target.value)} rows={2} className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all" placeholder="123 Main St..." />
+                <label htmlFor="supplierAddress" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Address</label>
+                <textarea id="supplierAddress" value={supplierAddress} onChange={(e) => setSupplierAddress(e.target.value)} rows={2} className="w-full px-4 py-2.5 border border-zinc-200 rounded-xl text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all" placeholder="123 Main St..." />
               </div>
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => setIsSupplierModalOpen(false)} className="flex-1 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold rounded-xl cursor-pointer">Cancel</button>
                 <button type="submit" disabled={isPending} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md disabled:opacity-50">Save Supplier</button>
               </div>
             </form>
-          </div>
-        </div>
+        </InventoryModal>
       )}
     </div>
   );

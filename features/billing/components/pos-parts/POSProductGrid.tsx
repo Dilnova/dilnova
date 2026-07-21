@@ -83,6 +83,7 @@ export default function POSProductGrid() {
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={handleSearchKeyDown}
           placeholder="Search product name or scan SKU (Enter)... ['/' to focus]"
+          aria-label="Search products or scan SKU"
           className="w-full pl-9 pr-16 py-2 border border-zinc-200 rounded-xl text-xs sm:text-sm bg-zinc-50 dark:bg-zinc-950 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-zinc-400"
         />
         <svg

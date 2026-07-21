@@ -7,6 +7,7 @@ import {
   vendorDeleteSupplierAction,
 } from '@/features/inventory/vendor-supplier.actions';
 import { toast } from 'sonner';
+import InventoryModal from '../InventoryModal';
 
 interface VendorSuppliersTabProps {
   data: any; // Will be properly typed during TS cleanup
@@ -143,13 +144,13 @@ export default function VendorSuppliersTab({
 
       {/* --- Add / Edit Supplier Modal --- */}
       {isSupplierModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-zinc-950 rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+        <InventoryModal isOpen={true} onClose={() => setIsSupplierModalOpen(false)} className="bg-white dark:bg-zinc-950 rounded-3xl p-6 w-full max-w-sm shadow-2xl" backdropClassName="bg-black/50 backdrop-blur-sm">
             <h2 className="text-xl font-bold mb-4">{editingSupplier ? 'Edit Supplier' : 'Add Supplier'}</h2>
             <form onSubmit={handleSaveSupplier} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Company Name</label>
+                <label htmlFor="supplierName" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Company Name</label>
                 <input
+                  id="supplierName"
                   type="text"
                   required
                   value={supplierName}
@@ -158,8 +159,9 @@ export default function VendorSuppliersTab({
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Contact Name (Optional)</label>
+                <label htmlFor="supplierContact" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Contact Name (Optional)</label>
                 <input
+                  id="supplierContact"
                   type="text"
                   value={supplierContact}
                   onChange={(e) => setSupplierContact(e.target.value)}
@@ -168,8 +170,9 @@ export default function VendorSuppliersTab({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Email</label>
+                  <label htmlFor="supplierEmail" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Email</label>
                   <input
+                    id="supplierEmail"
                     type="email"
                     value={supplierEmail}
                     onChange={(e) => setSupplierEmail(e.target.value)}
@@ -177,8 +180,9 @@ export default function VendorSuppliersTab({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Phone</label>
+                  <label htmlFor="supplierPhone" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Phone</label>
                   <input
+                    id="supplierPhone"
                     type="text"
                     value={supplierPhone}
                     onChange={(e) => setSupplierPhone(e.target.value)}
@@ -187,8 +191,9 @@ export default function VendorSuppliersTab({
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Address (Optional)</label>
+                <label htmlFor="supplierAddress" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Address (Optional)</label>
                 <input
+                  id="supplierAddress"
                   type="text"
                   value={supplierAddress}
                   onChange={(e) => setSupplierAddress(e.target.value)}
@@ -212,8 +217,7 @@ export default function VendorSuppliersTab({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </InventoryModal>
       )}
     </div>
   );

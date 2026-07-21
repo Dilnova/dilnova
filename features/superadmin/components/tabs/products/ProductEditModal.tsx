@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
 import { updateProductAction } from '@/features/catalog/superadmin.actions';
+import { AccessibleModal } from '@/shared/ui/AccessibleModal';
 import type { Product, Category } from '../ProductsTab';
 
 interface ProductEditModalProps {
@@ -148,11 +149,7 @@ export function ProductEditModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-40 overflow-y-auto pt-10 sm:pt-0" onClick={onClose}>
-      <div
-        className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-2xl shadow-2xl safe-area-bottom mt-auto sm:mt-0 flex flex-col max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <AccessibleModal isOpen={isOpen} onClose={onClose} backdropClassName="bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 pt-10 sm:pt-0" className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-2xl shadow-2xl safe-area-bottom mt-auto sm:mt-0 flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-zinc-900 flex-shrink-0">
           <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight flex items-center gap-2">
             ✏️ Edit Listing
@@ -308,7 +305,6 @@ export function ProductEditModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </AccessibleModal>
   );
 }

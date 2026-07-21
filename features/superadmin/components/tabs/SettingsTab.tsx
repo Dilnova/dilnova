@@ -206,7 +206,7 @@ export default function SettingsTab({
           {logoInput ? (
             <div className="flex items-center gap-3 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
               <div className="relative w-16 h-12 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 flex-shrink-0">
-                <Image src={logoInput} alt="System Logo Preview" fill className="object-contain" sizes="64px" />
+                <Image src={logoInput} alt="" fill className="object-contain" sizes="64px" />
               </div>
               <button
                 type="button"
@@ -245,7 +245,7 @@ export default function SettingsTab({
           {faviconInput ? (
             <div className="flex items-center gap-3 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
               <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 flex-shrink-0">
-                <Image src={faviconInput} alt="Favicon Preview" fill className="object-contain" sizes="40px" />
+                <Image src={faviconInput} alt="" fill className="object-contain" sizes="40px" />
               </div>
               <button
                 type="button"

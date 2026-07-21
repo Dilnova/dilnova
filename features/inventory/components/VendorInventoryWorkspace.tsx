@@ -95,8 +95,9 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
       {data.premiumStatus.multiBranchActive && (
         <div className="bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-800 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Active Branch Context:</span>
+            <label htmlFor="branchSelect" className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Active Branch Context:</label>
             <select
+              id="branchSelect"
               value={selectedBranchId}
               onChange={(e) => {
                 const newBranchId = e.target.value;

@@ -78,7 +78,7 @@ export default function InventoryTab({
         ].map((card) => (
           <div key={card.label} className="bg-white border border-zinc-200/80 rounded-xl p-4 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] sm:text-xs text-zinc-400 font-medium">{card.label}</span>
+              <span className="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 font-medium">{card.label}</span>
               <span className={`w-8 h-8 rounded-xl ${card.bg} flex items-center justify-center text-base`}>{card.icon}</span>
             </div>
             <span className={`text-2xl sm:text-3xl font-black block ${card.accent}`}>{card.val.toLocaleString()}</span>

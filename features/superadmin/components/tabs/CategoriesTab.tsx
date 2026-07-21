@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { useConfirm } from '@/shared/ui/notifications';
+import { AccessibleModal } from '@/shared/ui/AccessibleModal';
 import {
   createCategoryAction,
   updateCategoryAction,
@@ -211,11 +212,7 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
   );
 
   const modals = isCategoryModalOpen && (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-40" onClick={() => setIsCategoryModalOpen(false)}>
-      <div
-        className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl safe-area-bottom"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <AccessibleModal isOpen={true} onClose={() => setIsCategoryModalOpen(false)} backdropClassName="bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl safe-area-bottom">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
             {editingCategory ? 'Edit Category' : 'Create Category'}
@@ -277,8 +274,7 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </AccessibleModal>
   );
 
   return (
