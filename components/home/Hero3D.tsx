@@ -6,8 +6,11 @@ import { Package, ShieldCheck, Zap, Wrench, Leaf, Cpu, Briefcase, Store } from '
 
 export default function Hero3D() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const bgRef = useRef<HTMLDivElement>(null);
+  const linesRef = useRef<HTMLDivElement>(null);
+  const nodesRef = useRef<HTMLDivElement>(null);
+  const hubRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -17,33 +20,34 @@ export default function Hero3D() {
     return () => mediaQuery.removeEventListener('change', listener);
   }, []);
 
+  const updateTransforms = (x: number, y: number) => {
+    if (prefersReducedMotion) return;
+    if (bgRef.current) bgRef.current.style.transform = `translate3d(${x * -10}px, ${y * -10}px, 0)`;
+    if (linesRef.current) linesRef.current.style.transform = `translate3d(${x * -15}px, ${y * -15}px, 0)`;
+    if (nodesRef.current) nodesRef.current.style.transform = `translate3d(${x * -20}px, ${y * -20}px, 0)`;
+    if (hubRef.current) hubRef.current.style.transform = `translate3d(${x * -35}px, ${y * -35}px, 0)`;
+  };
+
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (prefersReducedMotion || !containerRef.current) return;
+    if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    // Normalize mouse position between -1 and 1
     const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     const y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
-    setMousePos({ x, y });
+    updateTransforms(x, y);
   };
 
   const handleMouseLeave = () => {
-    setMousePos({ x: 0, y: 0 });
+    updateTransforms(0, 0);
   };
-
-  // Parallax multipliers for true depth layering
-  const bgTransform = `translate3d(${mousePos.x * -10}px, ${mousePos.y * -10}px, 0)`;
-  const linesTransform = `translate3d(${mousePos.x * -15}px, ${mousePos.y * -15}px, 0)`;
-  const nodesTransform = `translate3d(${mousePos.x * -20}px, ${mousePos.y * -20}px, 0)`;
-  const hubTransform = `translate3d(${mousePos.x * -35}px, ${mousePos.y * -35}px, 0)`;
 
   // Store nodes configuration
   const nodes = [
-    { id: 'hardware', icon: Wrench, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10 dark:bg-amber-400/10', border: 'border-amber-500/30 dark:border-amber-400/20', pos: { top: '15%', left: '20%' } },
-    { id: 'nursery', icon: Leaf, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10 dark:bg-emerald-400/10', border: 'border-emerald-500/30 dark:border-emerald-400/20', pos: { top: '25%', right: '15%' } },
-    { id: 'tech', icon: Cpu, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-500/10 dark:bg-indigo-400/10', border: 'border-indigo-500/30 dark:border-indigo-400/20', pos: { bottom: '25%', left: '15%' } },
-    { id: 'services', icon: Briefcase, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-500/10 dark:bg-teal-400/10', border: 'border-teal-500/30 dark:border-teal-400/20', pos: { bottom: '20%', right: '25%' } },
-    { id: 'vendor1', icon: Store, color: 'text-zinc-600 dark:text-zinc-400', bg: 'bg-zinc-500/10 dark:bg-zinc-400/10', border: 'border-zinc-500/30 dark:border-zinc-400/20', pos: { top: '10%', right: '40%' } },
-    { id: 'vendor2', icon: Store, color: 'text-zinc-600 dark:text-zinc-400', bg: 'bg-zinc-500/10 dark:bg-zinc-400/10', border: 'border-zinc-500/30 dark:border-zinc-400/20', pos: { bottom: '10%', left: '40%' } },
+    { id: 'hardware', icon: Wrench, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10 dark:bg-amber-400/10', border: 'border-amber-500/30 dark:border-amber-400/20', posClass: 'top-[15%] left-[20%]' },
+    { id: 'nursery', icon: Leaf, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10 dark:bg-emerald-400/10', border: 'border-emerald-500/30 dark:border-emerald-400/20', posClass: 'top-[25%] right-[15%]' },
+    { id: 'tech', icon: Cpu, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-500/10 dark:bg-indigo-400/10', border: 'border-indigo-500/30 dark:border-indigo-400/20', posClass: 'bottom-[25%] left-[15%]' },
+    { id: 'services', icon: Briefcase, color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-500/10 dark:bg-teal-400/10', border: 'border-teal-500/30 dark:border-teal-400/20', posClass: 'bottom-[20%] right-[25%]' },
+    { id: 'vendor1', icon: Store, color: 'text-zinc-600 dark:text-zinc-400', bg: 'bg-zinc-500/10 dark:bg-zinc-400/10', border: 'border-zinc-500/30 dark:border-zinc-400/20', posClass: 'top-[10%] right-[40%]' },
+    { id: 'vendor2', icon: Store, color: 'text-zinc-600 dark:text-zinc-400', bg: 'bg-zinc-500/10 dark:bg-zinc-400/10', border: 'border-zinc-500/30 dark:border-zinc-400/20', posClass: 'bottom-[10%] left-[40%]' },
   ];
 
   return (
@@ -51,16 +55,12 @@ export default function Hero3D() {
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative w-full overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white min-h-[80vh] flex items-center pt-16 pb-12"
-      style={{ perspective: '1000px' }}
+      className="relative w-full overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white min-h-[80vh] flex items-center pt-16 pb-12 [perspective:1000px]"
     >
       {/* Background Layer (Moves slightly) - Replaced blobs with restrained dot grid */}
       <div 
-        className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.05)_1px,transparent_1px)] dark:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:24px_24px]"
-        style={{ 
-          transform: bgTransform,
-          transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
-        }}
+        ref={bgRef}
+        className={`absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.05)_1px,transparent_1px)] dark:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:24px_24px] ${prefersReducedMotion ? '' : 'transition-transform duration-100 ease-out'}`}
       />
 
       <div className="max-w-7xl mx-auto w-full px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
@@ -115,11 +115,8 @@ export default function Hero3D() {
           
           {/* SVG Lines Layer (Mid-background speed) */}
           <div 
-            className="absolute inset-0 z-10"
-            style={{
-              transform: linesTransform,
-              transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
-            }}
+            ref={linesRef}
+            className={`absolute inset-0 z-10 ${prefersReducedMotion ? '' : 'transition-transform duration-100 ease-out'}`}
           >
             <svg className="w-full h-full" preserveAspectRatio="none">
               <g stroke="currentColor" className="text-zinc-900/20 dark:text-white/20" strokeWidth="1.5" strokeDasharray="4 4" fill="none">
@@ -136,19 +133,15 @@ export default function Hero3D() {
 
           {/* Satellite Nodes Layer (Mid-foreground speed) */}
           <div 
-            className="absolute inset-0 z-20"
-            style={{
-              transform: nodesTransform,
-              transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
-            }}
+            ref={nodesRef}
+            className={`absolute inset-0 z-20 ${prefersReducedMotion ? '' : 'transition-transform duration-100 ease-out'}`}
           >
             {nodes.map((node) => {
               const Icon = node.icon;
               return (
                 <div 
                   key={node.id} 
-                  className={`absolute w-12 h-12 flex items-center justify-center rounded-xl border backdrop-blur-sm ${node.bg} ${node.border} shadow-lg`}
-                  style={{ ...node.pos, transform: 'translate(-50%, -50%)' }}
+                  className={`absolute w-12 h-12 flex items-center justify-center rounded-xl border backdrop-blur-sm ${node.bg} ${node.border} shadow-lg -translate-x-1/2 -translate-y-1/2 ${node.posClass}`}
                 >
                   <Icon className={`w-5 h-5 ${node.color}`} />
                 </div>
@@ -158,11 +151,8 @@ export default function Hero3D() {
 
           {/* Central Hub Layer (Foreground speed, moves fastest) */}
           <div 
-            className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none"
-            style={{
-              transform: hubTransform,
-              transition: prefersReducedMotion ? 'none' : 'transform 0.1s ease-out'
-            }}
+            ref={hubRef}
+            className={`absolute inset-0 z-30 flex items-center justify-center pointer-events-none ${prefersReducedMotion ? '' : 'transition-transform duration-100 ease-out'}`}
           >
             <div className="w-24 h-24 bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.1)] dark:shadow-[0_0_40px_rgba(255,255,255,0.05)] flex items-center justify-center backdrop-blur-md relative">
               <div className="absolute inset-0 bg-black/5 dark:bg-white/5 rounded-2xl" />

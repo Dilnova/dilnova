@@ -11,18 +11,24 @@ export {
 export * from '@/features/inventory/schema';
 export {
   getVendorInventoryData,
+} from '@/features/inventory/vendor-data.actions';
+export {
   vendorAdjustInventoryAction,
+  vendorInitInventoryAction,
+} from '@/features/inventory/vendor-stock.actions';
+export {
   vendorCreateSupplierAction,
   vendorUpdateSupplierAction,
   vendorDeleteSupplierAction,
-  vendorInitInventoryAction,
+} from '@/features/inventory/vendor-supplier.actions';
+export {
   createBranchAction,
   updateBranchAction,
   deleteBranchAction,
   allocateBranchStockAction,
   assignBranchMemberAction,
   removeBranchMemberAction,
-} from '@/features/inventory/vendor.actions';
+} from '@/features/inventory/vendor-branch.actions';
 export type { VendorInventoryFullData } from '@/features/inventory/types';
 /** @deprecated Use `@/features/billing` */
 export {
@@ -45,11 +51,13 @@ export { updateProductStockAvailabilityAction } from '@/features/inventory/produ
 export { default as VendorInventoryWorkspace } from '@/features/inventory/components/VendorInventoryWorkspace';
 export {
   default as InventoryTab,
-  type InventoryItem,
-  type Supplier,
-  type InventoryMovement,
-  type SimulatedOrder,
-  type ProductForInventory,
 } from '@/features/inventory/components/InventoryTab';
+export type {
+  InventoryItem,
+  Supplier,
+  InventoryMovement,
+  SimulatedOrder,
+  ProductForInventory,
+} from '@/features/inventory/components/inventory.types';
 export { default as StockAvailabilitySettings } from '@/features/inventory/components/StockAvailabilitySettings';
 export { default as StockAvailabilityBadge } from '@/features/inventory/components/StockAvailabilityBadge';

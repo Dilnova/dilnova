@@ -119,7 +119,7 @@ export default async function Home() {
         createdAt: new Date(),
         updatedAt: new Date()
       }
-    ] as any;
+    ] as typeof plans;
   }
 
   // Fetch all registered organization vendors from Clerk (cached)

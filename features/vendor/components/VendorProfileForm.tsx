@@ -5,6 +5,7 @@ import { updateVendorMetadata } from '@/features/vendor/actions';
 import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import SafeProgressBar from '@/shared/ui/SafeProgressBar';
 
 interface VendorProfileFormProps {
   orgId: string;
@@ -208,9 +209,9 @@ export default function VendorProfileForm({ orgId, initialMetadata, isAdmin = fa
 
         {isBannerUploading && bannerUploadProgress !== null && (
           <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-            <div
+            <SafeProgressBar
               className="h-full bg-purple-600 rounded-full transition-all"
-              style={{ width: `${bannerUploadProgress}%` }}
+              percent={bannerUploadProgress}
             />
           </div>
         )}

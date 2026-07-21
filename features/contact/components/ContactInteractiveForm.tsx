@@ -194,7 +194,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-zinc-950 dark:text-zinc-50 mb-1">Collaborate with Us</h3>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
                     Build integrations, co-market solutions, or join as a strategic technology partner. We love building together.
                   </p>
                 </div>
@@ -219,7 +219,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-zinc-950 dark:text-zinc-50 mb-1">Register Organization / Store</h3>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
                     Set up your storefront, manage products, handle orders, and expand your target audience using {systemName}’s commerce ecosystem.
                   </p>
                 </div>
@@ -244,7 +244,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-zinc-950 dark:text-zinc-50 mb-1">General Inquiry / Info</h3>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
                     Have questions about platform pricing, security compliance, or how the commerce tools can help your specific workflow? Ask away.
                   </p>
                 </div>
@@ -258,7 +258,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
+                    <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-2">
                       Your Name
                     </label>
                     <input
@@ -274,7 +274,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                   </div>
 
                   <div>
-                    <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
+                    <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-2">
                       Email Address
                     </label>
                     <input
@@ -305,7 +305,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                 </div>
 
                 <div>
-                  <label htmlFor="category" className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
+                  <label htmlFor="category" className="block text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-2">
                     Inquiry Type / Topic
                   </label>
                   <select
@@ -322,7 +322,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2">
+                  <label htmlFor="subject" className="block text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-2">
                     Subject
                   </label>
                   <input
@@ -339,7 +339,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
 
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label htmlFor="message" className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    <label htmlFor="message" className="block text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
                       Message Description
                     </label>
                     <button

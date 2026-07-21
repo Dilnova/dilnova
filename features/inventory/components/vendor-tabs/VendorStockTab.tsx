@@ -4,7 +4,9 @@ import { useState, useTransition } from 'react';
 import {
   vendorAdjustInventoryAction,
   vendorInitInventoryAction,
-} from '@/features/inventory/vendor.actions';
+} from '@/features/inventory/vendor-stock.actions';
+import { toast } from 'sonner';
+import InventoryModal from '../InventoryModal';
 
 interface VendorStockTabProps {
   data: any; // We'll replace this with proper typing later during the TS cleanup
@@ -195,15 +197,15 @@ export default function VendorStockTab({
 
       {/* --- Adjust Stock Modal --- */}
       {isAdjustModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-zinc-950 rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+        <InventoryModal isOpen={true} onClose={() => setIsAdjustModalOpen(false)} className="bg-white dark:bg-zinc-950 rounded-3xl p-6 w-full max-w-sm shadow-2xl" backdropClassName="bg-black/50 backdrop-blur-sm">
             <h2 className="text-xl font-bold mb-4">Adjust Stock</h2>
             <form onSubmit={handleAdjustStock} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Adjustment Type</label>
+                <label htmlFor="adjustType" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Adjustment Type</label>
                 <select
+                  id="adjustType"
                   value={adjustType}
-                  onChange={(e) => setAdjustType(e.target.value as any)}
+                  onChange={(e) => setAdjustType(e.target.value as 'restock' | 'manual_adjustment' | 'damage_loss')}
                   className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900"
                 >
                   <option value="restock">Restock (+)</option>
@@ -212,8 +214,9 @@ export default function VendorStockTab({
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Quantity</label>
+                <label htmlFor="adjustQty" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Quantity</label>
                 <input
+                  id="adjustQty"
                   type="number"
                   min="1"
                   required
@@ -223,8 +226,9 @@ export default function VendorStockTab({
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Reason (Optional)</label>
+                <label htmlFor="adjustReason" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Reason (Optional)</label>
                 <input
+                  id="adjustReason"
                   type="text"
                   value={adjustReason}
                   onChange={(e) => setAdjustReason(e.target.value)}
@@ -249,19 +253,18 @@ export default function VendorStockTab({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </InventoryModal>
       )}
 
       {/* --- Init Stock Modal --- */}
       {isInitModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-zinc-950 rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+        <InventoryModal isOpen={true} onClose={() => setIsInitModalOpen(false)} className="bg-white dark:bg-zinc-950 rounded-3xl p-6 w-full max-w-sm shadow-2xl" backdropClassName="bg-black/50 backdrop-blur-sm">
             <h2 className="text-xl font-bold mb-4">Initialize Stock Tracking</h2>
             <form onSubmit={handleInitInventory} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Product</label>
+                <label htmlFor="initProductId" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Product</label>
                 <select
+                  id="initProductId"
                   required
                   value={initProductId}
                   onChange={(e) => setInitProductId(e.target.value)}
@@ -277,8 +280,9 @@ export default function VendorStockTab({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">SKU</label>
+                  <label htmlFor="initSku" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">SKU</label>
                   <input
+                    id="initSku"
                     type="text"
                     value={initSku}
                     onChange={(e) => setInitSku(e.target.value)}
@@ -286,8 +290,9 @@ export default function VendorStockTab({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Bin / Aisle</label>
+                  <label htmlFor="initBin" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Bin / Aisle</label>
                   <input
+                    id="initBin"
                     type="text"
                     value={initBin}
                     onChange={(e) => setInitBin(e.target.value)}
@@ -297,8 +302,9 @@ export default function VendorStockTab({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Initial Qty</label>
+                  <label htmlFor="initQty" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Initial Qty</label>
                   <input
+                    id="initQty"
                     type="number"
                     min="0"
                     required
@@ -308,8 +314,9 @@ export default function VendorStockTab({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Low Alert At</label>
+                  <label htmlFor="initThreshold" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Low Alert At</label>
                   <input
+                    id="initThreshold"
                     type="number"
                     min="0"
                     value={initThreshold}
@@ -319,8 +326,9 @@ export default function VendorStockTab({
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Supplier (Optional)</label>
+                <label htmlFor="initSupplierId" className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Supplier (Optional)</label>
                 <select
+                  id="initSupplierId"
                   value={initSupplierId}
                   onChange={(e) => setInitSupplierId(e.target.value)}
                   className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900"
@@ -350,8 +358,7 @@ export default function VendorStockTab({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </InventoryModal>
       )}
     </div>
   );

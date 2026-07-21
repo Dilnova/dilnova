@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Environment
         uses: ./.github/actions/setup-env
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Environment
         uses: ./.github/actions/setup-env
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Environment
         uses: ./.github/actions/setup-env
@@ -61,7 +61,7 @@ jobs:
           --health-retries 5
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Environment
         uses: ./.github/actions/setup-env
@@ -79,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Environment
         uses: ./.github/actions/setup-env
@@ -109,7 +109,7 @@ jobs:
       attestations: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Environment
         uses: ./.github/actions/setup-env
@@ -148,10 +148,6 @@ jobs:
           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
           QSTASH_TOKEN: "dummy_qstash_token"
 
-      - name: Generate build attestation
-        uses: actions/attest-build-provenance@v4.1.1
-        with:
-          subject-path: 'next.config.ts'
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
@@ -181,7 +177,7 @@ jobs:
           --health-retries 5
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Environment
         uses: ./.github/actions/setup-env
@@ -220,9 +216,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
       - name: Gitleaks Secrets Scan
-        run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb detect --source /src -v
+        run: docker run -v ${{ github.workspace }}:/src zricethezav/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb detect --source /src --redact

@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { usePOSBilling } from '../hooks/usePOSBilling';
+import { usePOSBilling } from '../hooks/use-pos-billing';
 import type { VendorBillingRegisterData } from '@/features/billing/types';
 import { toast } from 'sonner';
 

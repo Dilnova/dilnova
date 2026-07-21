@@ -2,15 +2,16 @@
   "name": "dilnova",
   "version": "0.1.0",
   "private": true,
-  "overrides": {
+  "packageManager": "pnpm@11.5.2",
+  "resolutions": {
     "postcss": ">=8.5.10",
     "js-cookie": ">=3.0.6",
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "brace-expansion": ">=1.1.16"
   },
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/pre-launch-check.mjs && vitest run && next build --webpack",
-    "postbuild": "node scripts/migrate-bank-metadata.mjs && node scripts/migrate-superadmin-metadata.mjs",
+    "build": "node scripts/pre-launch-check.mjs && pnpm run lint && pnpm exec tsc --noEmit && vitest run && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
@@ -58,6 +59,7 @@
     "esbuild": "^0.28.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "16.2.10",
+    "eslint-plugin-filenames": "^1.3.2",
     "tailwindcss": "^4.3.2",
     "tsx": "^4.23.1",
     "typescript": "^6.0.3",

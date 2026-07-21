@@ -9,8 +9,10 @@ export function hasClerkApiKeys(): boolean {
   return Boolean(
     secretKey &&
     !secretKey.includes('placeholder') &&
+    !secretKey.includes('dummy') &&
     publishableKey &&
-    !publishableKey.includes('placeholder')
+    !publishableKey.includes('placeholder') &&
+    !publishableKey.includes('dummy')
   );
 }
 
