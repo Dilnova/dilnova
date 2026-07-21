@@ -1,6 +1,7 @@
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
+import type { PaginatedResponse } from '@/shared/pagination/types';
 
 export async function getUserAssignedBranchNames(userId: string, orgId: string) {
   const userBranches = await db
@@ -112,13 +113,36 @@ export async function getInventoryForProduct(productId: string) {
   return rows[0] || null;
 }
 
-export async function getProductReviews(productId: string, limitAmount: number = 50) {
-  return db
+export async function getProductReviews(productId: string, page: number = 1, limitAmount: number = 50): Promise<PaginatedResponse<typeof schema.reviews.$inferSelect>> {
+  const limit = limitAmount > 0 ? limitAmount : 50;
+  const offset = (page - 1) * limit;
+
+  const items = await db
     .select()
     .from(schema.reviews)
     .where(eq(schema.reviews.productId, productId))
     .orderBy(desc(schema.reviews.createdAt))
-    .limit(limitAmount);
+    .limit(limit)
+    .offset(offset);
+
+  const [countResult] = await db
+    .select({ count: sql<number>`cast(count(*) as int)` })
+    .from(schema.reviews)
+    .where(eq(schema.reviews.productId, productId));
+
+  const total = countResult?.count ?? 0;
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    items,
+    metadata: {
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNextPage: page < totalPages,
+    },
+  };
 }
 
 export async function getProductReviewStats(productId: string) {
@@ -196,8 +220,11 @@ export async function getCategoryById(id: string) {
   return parentResult || null;
 }
 
-export async function getVendorProductsForOrg(orgId: string) {
-  return db
+export async function getVendorProductsForOrg(orgId: string, page: number = 1, limitAmount: number = 100) {
+  const limit = limitAmount > 0 ? limitAmount : 100;
+  const offset = (page - 1) * limit;
+
+  const items = await db
     .select({
       id: schema.products.id,
       name: schema.products.name,
@@ -211,7 +238,28 @@ export async function getVendorProductsForOrg(orgId: string) {
     })
     .from(schema.products)
     .leftJoin(schema.inventory, eq(schema.products.id, schema.inventory.productId))
+    .where(eq(schema.products.orgId, orgId))
+    .limit(limit)
+    .offset(offset);
+
+  const [countResult] = await db
+    .select({ count: sql<number>`cast(count(*) as int)` })
+    .from(schema.products)
     .where(eq(schema.products.orgId, orgId));
+
+  const total = countResult?.count ?? 0;
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    items,
+    metadata: {
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNextPage: page < totalPages,
+    },
+  };
 }
 
 import { ilike, inArray, lte, or, gte } from 'drizzle-orm';

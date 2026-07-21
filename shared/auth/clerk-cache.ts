@@ -186,7 +186,7 @@ export const getCachedUserRole = cache((userId: string) => unstable_cache(
   ['clerk-user-role', userId],
   {
     tags: ['clerk-user-role', `clerk-user-role-${userId}`],
-    revalidate: 15, // Reduce TTL to 15 seconds for security
+    revalidate: 300, // Increased TTL to 5 minutes to prevent rate limiting
   }
 )());
 
@@ -204,7 +204,7 @@ export const getCachedIsSuperAdmin = cache((userId: string) => unstable_cache(
   ['clerk-user-superadmin', userId],
   {
     tags: ['clerk-user-superadmin', `clerk-user-superadmin-${userId}`],
-    revalidate: 15, // Reduce TTL to 15 seconds for security
+    revalidate: 300, // Increased TTL to 5 minutes to prevent rate limiting
   }
 )());
 
@@ -232,7 +232,7 @@ export const getCachedOrgMembers = cache((orgId: string) => unstable_cache(
   ['clerk-org-members', orgId],
   {
     tags: ['clerk-org-members', `clerk-org-members-${orgId}`],
-    revalidate: 60, // Cache for 1 minute
+    revalidate: 300, // Cache for 5 minutes
   }
 )());
 
@@ -271,7 +271,7 @@ export const getCachedUserBelongsToOrg = cache((userId: string) => unstable_cach
   ['clerk-user-has-org', userId],
   {
     tags: ['clerk-user-has-org', `clerk-user-has-org-${userId}`],
-    revalidate: 60, // Cache for 1 minute
+    revalidate: 300, // Cache for 5 minutes
   }
 )());
 

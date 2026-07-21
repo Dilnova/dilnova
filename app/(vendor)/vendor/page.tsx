@@ -68,7 +68,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
       }),
       getBranchCountForOrg(orgId),
     ]);
-    vendorProducts = productsResult as Product[];
+    vendorProducts = productsResult.items as Product[];
     inventoryData = inventoryResult;
     branchCount = branchCountRow;
   }
