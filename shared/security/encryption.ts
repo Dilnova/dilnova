@@ -123,6 +123,20 @@ export function hashPii(text: string | null | undefined): string | null {
     .digest('hex');
 }
 
+function performAes256GcmDecryption(hashedKey: Buffer, ivHex: string, encryptedHex: string, tagHex: string): string {
+  const iv = Buffer.from(ivHex, 'hex');
+  const encrypted = Buffer.from(encryptedHex, 'hex');
+  const tag = Buffer.from(tagHex, 'hex');
+
+  const decipher = crypto.createDecipheriv(ALGORITHM, hashedKey, iv);
+  decipher.setAuthTag(tag);
+
+  return Buffer.concat([
+    decipher.update(encrypted),
+    decipher.final()
+  ]).toString('utf8');
+}
+
 /**
  * Decrypts a ciphertext string created by encryptString.
  * Supports v2, v1, and legacy unversioned decryptions using key fallback.
@@ -151,63 +165,20 @@ export function decryptString(encryptedText: string): string {
   try {
     if (isV2) {
       const parts = encryptedText.split(':');
-      if (parts.length !== 4) {
-        return encryptedText;
-      }
+      if (parts.length !== 4) return encryptedText;
       const [, ivHex, encryptedHex, tagHex] = parts;
-      const hashedKey = getV2Key(key);
-      const iv = Buffer.from(ivHex, 'hex');
-      const encrypted = Buffer.from(encryptedHex, 'hex');
-      const tag = Buffer.from(tagHex, 'hex');
-
-      const decipher = crypto.createDecipheriv(ALGORITHM, hashedKey, iv);
-      decipher.setAuthTag(tag);
-
-      return Buffer.concat([
-        decipher.update(encrypted),
-        decipher.final()
-      ]).toString('utf8');
+      return performAes256GcmDecryption(getV2Key(key), ivHex, encryptedHex, tagHex);
     } else if (isV1) {
       const parts = encryptedText.split(':');
-      if (parts.length !== 4) {
-        return encryptedText;
-      }
+      if (parts.length !== 4) return encryptedText;
       const [, ivHex, encryptedHex, tagHex] = parts;
-      
-      const decryptionKey = fallbackKeyV1 || key;
-      const hashedKey = getV1Key(decryptionKey);
-      const iv = Buffer.from(ivHex, 'hex');
-      const encrypted = Buffer.from(encryptedHex, 'hex');
-      const tag = Buffer.from(tagHex, 'hex');
-
-      const decipher = crypto.createDecipheriv(ALGORITHM, hashedKey, iv);
-      decipher.setAuthTag(tag);
-
-      return Buffer.concat([
-        decipher.update(encrypted),
-        decipher.final()
-      ]).toString('utf8');
+      return performAes256GcmDecryption(getV1Key(fallbackKeyV1 || key), ivHex, encryptedHex, tagHex);
     } else {
       // Legacy unversioned (v0) decryption
       const parts = encryptedText.split(':');
-      if (parts.length !== 3) {
-        return encryptedText;
-      }
+      if (parts.length !== 3) return encryptedText;
       const [ivHex, encryptedHex, tagHex] = parts;
-
-      const decryptionKey = fallbackKeyV1 || key;
-      const hashedKey = getV0Key(decryptionKey);
-      const iv = Buffer.from(ivHex, 'hex');
-      const encrypted = Buffer.from(encryptedHex, 'hex');
-      const tag = Buffer.from(tagHex, 'hex');
-
-      const decipher = crypto.createDecipheriv(ALGORITHM, hashedKey, iv);
-      decipher.setAuthTag(tag);
-
-      return Buffer.concat([
-        decipher.update(encrypted),
-        decipher.final()
-      ]).toString('utf8');
+      return performAes256GcmDecryption(getV0Key(fallbackKeyV1 || key), ivHex, encryptedHex, tagHex);
     }
   } catch (error) {
     if (isProduction()) {

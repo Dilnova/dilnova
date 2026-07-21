@@ -25,7 +25,7 @@ import type { CartItem } from '@/features/cart/types';
 
 export type { CartItem };
 
-interface CartContextType {
+export interface CartContextType {
   cartItems: CartItem[];
   isCartReady: boolean;
   cartMergeNotice: string | null;
@@ -43,7 +43,7 @@ interface CartContextType {
   cartCount: number;
 }
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { isSignedIn, user, isLoaded } = useUser();

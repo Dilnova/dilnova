@@ -7,7 +7,7 @@ import WishlistButton from './product-detail/WishlistButton';
 import AddToCartButton from '@/features/cart/components/AddToCartButton';
 import StockAvailabilityBadge from '@/features/inventory/components/StockAvailabilityBadge';
 import type { StockAvailabilityTone } from '@/features/inventory/availability.shared';
-import { buildCatalogSearchParams } from '../query';
+import { buildCatalogSearchParams } from '../queries';
 import type { CatalogCategoryRef, CatalogVendorRef, CatalogQueryParams } from '../types';
 
 export interface CatalogItemViewData {

@@ -16,27 +16,12 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
   const metadata = org.publicMetadata;
 
   return (
-    <div
-      className="min-h-screen bg-slate-950 text-slate-100 font-sans"
-      style={{
-        '--srv-primary': '#0D9488', // Teal 600
-        '--srv-primary-hover': '#0F766E', // Teal 700
-        '--srv-surface': '#0F172A', // Slate 900
-        '--srv-surface-light': '#1E293B', // Slate 800
-        '--srv-text': '#F8FAFC',
-        '--srv-text-muted': '#94A3B8',
-      } as React.CSSProperties}
-    >
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
       {/* ── HERO SECTION ─────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-slate-900 bg-gradient-to-b from-teal-950/20 via-slate-950 to-slate-950">
         {/* Soft grid background */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-full h-full"
-            style={{
-              backgroundImage: 'linear-gradient(rgba(13, 148, 136, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(13, 148, 136, 0.08) 1px, transparent 1px)',
-              backgroundSize: '30px 30px',
-            }}
-          />
+          <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(rgba(13,148,136,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(13,148,136,0.08)_1px,transparent_1px)] bg-[size:30px_30px]" />
         </div>
 
         {/* Teal gradient accent line */}

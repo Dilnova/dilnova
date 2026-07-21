@@ -63,6 +63,16 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
 
+### Database Security Setup
+
+Before running the application in production, we strongly recommend generating a restricted database role for the application to use.
+Run the following script to create a secure role and output a new connection string:
+
+```bash
+node scripts/setup-db-role.mjs
+```
+Update your `.env.local` or production environment variables with the newly generated `DATABASE_URL` outputted by the script.
+
 ### Install Dependencies & Build
 
 ```bash

@@ -28,13 +28,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   requestHeaders.set('x-request-id', requestId);
   requestHeaders.set('x-nonce', nonce);
 
-
-  const response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
-
+  // Define CSP first to attach to both request and response
   const clerkDomains = [
     'https://img.clerk.com',
     'https://*.clerk.com',
@@ -60,11 +54,15 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     ? `report-uri ${sentryCspUrl};`
     : `report-uri /api/csp-report; report-to csp-endpoint;`;
 
-  // ACCEPTED RISK: 'unsafe-inline' in style-src is maintained as a trade-off for 
-  // Tailwind CSS and React inline style compatibility. The practical risk of CSS 
-  // exfiltration is low given React's rendering model and strict script-src policies.
-  // Consider migrating to CSS-in-JS with nonce support to eliminate unsafe-inline in the future.
-  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:${excludeEval ? '' : " 'unsafe-eval'"}; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:; ${reportingDirectives}${isProd ? ' upgrade-insecure-requests;' : ''}`;
+  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:${excludeEval ? '' : " 'unsafe-eval'"}; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.googleusercontent.com https://avatars.githubusercontent.com https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:; ${reportingDirectives}${isProd ? ' upgrade-insecure-requests;' : ''}`;
+
+  requestHeaders.set('Content-Security-Policy', cspHeader);
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:3000';
   const protocol = req.headers.get('x-forwarded-proto') || 'http';
@@ -120,18 +118,6 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     }
   }
 
-  // SECURITY: Bypass Clerk entirely in CI when dummy keys are present to prevent NXDOMAIN redirect/hangs.
-  // This bypass MUST check all three conditions to prevent an accidental production authentication bypass:
-  // 1. CLERK_SECRET_KEY must be the dummy key.
-  // 2. NODE_ENV must not be production.
-  // 3. VERCEL must not be '1' (ensures it never runs on a Vercel deployment, preview or prod).
-  if (
-    process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy' &&
-    process.env.NODE_ENV !== 'production' &&
-    process.env.VERCEL !== '1'
-  ) {
-    return NextResponse.next();
-  }
 
   try {
     const res = await clerkHandler(request, event);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { InventoryMovement } from '../InventoryTab';
+import { InventoryMovement } from '../inventory.types';
 
 interface SuperadminAuditTabProps {
   movements: InventoryMovement[];

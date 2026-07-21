@@ -21,27 +21,12 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
   const serviceProducts = products.filter(p => p.type === 'service');
 
   return (
-    <div
-      className="min-h-screen font-sans"
-      style={{
-        /* Custom color tokens — change these to rebrand instantly */
-        '--leaf-primary': '#16A34A',
-        '--leaf-secondary': '#15803D',
-        '--leaf-cream': '#FEFCE8',
-        '--leaf-warm': '#FEF9C3',
-      } as React.CSSProperties}
-    >
+    <div className="min-h-screen font-sans">
       {/* ── HERO SECTION ─────────────────────────────────────── */}
       <section className="relative bg-gradient-to-b from-emerald-950 via-emerald-900 to-green-900 overflow-hidden">
         {/* Botanical pattern overlay */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-full h-full"
-            style={{
-              backgroundImage: `radial-gradient(circle at 20% 50%, rgba(34,197,94,0.3) 0%, transparent 50%),
-                                radial-gradient(circle at 80% 20%, rgba(34,197,94,0.2) 0%, transparent 40%),
-                                radial-gradient(circle at 60% 80%, rgba(74,222,128,0.15) 0%, transparent 45%)`,
-            }}
-          />
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_50%,rgba(34,197,94,0.3)_0%,transparent_50%),radial-gradient(circle_at_80%_20%,rgba(34,197,94,0.2)_0%,transparent_40%),radial-gradient(circle_at_60%_80%,rgba(74,222,128,0.15)_0%,transparent_45%)]" />
         </div>
 
         {/* Leaf accent bar */}

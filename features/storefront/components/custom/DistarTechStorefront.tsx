@@ -16,27 +16,12 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
   const metadata = org.publicMetadata;
 
   return (
-    <div
-      className="min-h-screen font-sans bg-zinc-950 text-zinc-100"
-      style={{
-        '--tech-primary': '#06B6D4', // Cyan neon
-        '--tech-accent': '#8B5CF6',  // Violet neon
-        '--tech-surface': '#0B0F19', // Deep dark blue-grey
-        '--tech-surface-light': '#161F30',
-        '--tech-text': '#F9FAFB',
-        '--tech-text-muted': '#9CA3AF',
-      } as React.CSSProperties}
-    >
+    <div className="min-h-screen font-sans bg-zinc-950 text-zinc-100">
       {/* ── HERO SECTION ─────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-zinc-800 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/40 via-zinc-950 to-zinc-950">
         {/* Futuristic Cyber Grid */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-full h-full"
-            style={{
-              backgroundImage: 'linear-gradient(rgba(6, 182, 212, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(6, 182, 212, 0.1) 1px, transparent 1px)',
-              backgroundSize: '24px 24px',
-            }}
-          />
+          <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(rgba(6,182,212,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.1)_1px,transparent_1px)] bg-[size:24px_24px]" />
         </div>
 
         {/* Neon laser line at top */}

@@ -85,23 +85,26 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
             }
           };
 
-          const wrappedResult = result.then((res: any) => {
-            finish();
-            return res;
-          }).catch((err: any) => {
-            finish(err);
-            throw err;
-          });
-
-          (wrappedResult as any).values = () => {
-            return result.values().then((res: any) => {
+          const wrappedResult = Object.assign(
+            result.then((res: unknown) => {
               finish();
               return res;
-            }).catch((err: any) => {
+            }).catch((err: unknown) => {
               finish(err);
               throw err;
-            });
-          };
+            }),
+            {
+              values: () => {
+                return result.values().then((res: unknown) => {
+                  finish();
+                  return res;
+                }).catch((err: unknown) => {
+                  finish(err);
+                  throw err;
+                });
+              }
+            }
+          );
 
           return wrappedResult;
         };

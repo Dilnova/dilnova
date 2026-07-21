@@ -7,10 +7,13 @@ import { applyOnlineOrderItemStock } from '@/features/orders/stock';
 import { hashPii } from '@/shared/security/encryption';
 import { logger } from '@/shared/logging/logger';
 import { clerkClient } from '@clerk/nextjs/server';
+import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
+import type { CheckoutOptionDefinition } from '@/features/organization/checkout-options.shared';
+import type { VerifiedCheckoutItem, DbTransaction } from './checkout.types';
 
 export async function executeCheckoutTransaction(opts: {
-  verifiedItems: any[];
-  availabilityCatalog: any;
+  verifiedItems: VerifiedCheckoutItem[];
+  availabilityCatalog: StockAvailabilityDefinition[];
   pickupBranchForStock: string | null;
   orderStatus: string;
   name: string;
@@ -19,7 +22,7 @@ export async function executeCheckoutTransaction(opts: {
   checkoutTotals: { subtotalAmount: number; taxAmount: number; shippingAmount: number; grandTotal: number };
   fulfillment: string;
   payment: string;
-  fulfillmentOption: any;
+  fulfillmentOption: CheckoutOptionDefinition;
   pickupBranch: string | null;
   normalizedShippingAddress: string | null;
   normalizedShippingAddressLine2: string | null;
@@ -73,7 +76,7 @@ export async function executeCheckoutTransaction(opts: {
         continue;
       }
 
-      const stockResult = await reserveProductStock(tx as any, item.id, item.quantity, {
+      const stockResult = await reserveProductStock(tx as DbTransaction, item.id, item.quantity, {
         branchId: opts.pickupBranchForStock,
         productName: item.name,
       });
@@ -114,7 +117,7 @@ export async function executeCheckoutTransaction(opts: {
         taxAmount: opts.checkoutTotals.taxAmount,
         shippingAmount: opts.checkoutTotals.shippingAmount,
         totalAmount: opts.checkoutTotals.grandTotal,
-        status: opts.orderStatus as any,
+        status: opts.orderStatus,
         fulfillmentMethod: opts.fulfillment,
         paymentMethod: opts.payment,
         pickupBranchId: opts.fulfillmentOption.requiresBranch && opts.pickupBranch !== 'main_branch' ? opts.pickupBranch : null,
@@ -153,7 +156,7 @@ export async function executeCheckoutTransaction(opts: {
       const item = opts.verifiedItems.find((v) => v.id === productId);
       if (!item) continue;
 
-      await applyOnlineOrderItemStock(tx as any, {
+      await applyOnlineOrderItemStock(tx as DbTransaction, {
         quantity,
         reservation,
         pickupBranchId: opts.pickupBranchForStock ?? null,

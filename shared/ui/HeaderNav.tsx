@@ -121,8 +121,7 @@ export default function HeaderNav({ links, mobileExtra }: HeaderNavProps) {
           {/* Menu panel - fixed below header */}
           <div
             ref={menuRef}
-            className="fixed top-14 sm:top-16 left-0 right-0 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/98 dark:bg-zinc-950/98 backdrop-blur-xl shadow-2xl py-3 px-5 flex flex-col gap-1 lg:hidden z-50"
-            style={{ animation: 'mobileMenuSlideDown 0.2s ease-out' }}
+            className="fixed top-14 sm:top-16 left-0 right-0 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/98 dark:bg-zinc-950/98 backdrop-blur-xl shadow-2xl py-3 px-5 flex flex-col gap-1 lg:hidden z-50 animate-[mobileMenuSlideDown_0.2s_ease-out]"
           >
             {links.map((link) => (
               <Link

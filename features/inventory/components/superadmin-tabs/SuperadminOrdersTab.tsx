@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { useConfirm } from '@/shared/ui/notifications';
-import { SimulatedOrder } from '../InventoryTab';
+import { SimulatedOrder } from '../inventory.types';
 import {
   isActiveSimulatedOrder,
   formatOrderStatusLabel,

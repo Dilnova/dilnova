@@ -126,18 +126,19 @@ export default function LanguageSplash({ systemName = 'Dilnova' }: LanguageSplas
               };
               const colors = colorMap[lang.code] || colorMap.en;
 
+              const delayClass = ['delay-[200ms]', 'delay-[300ms]', 'delay-[400ms]'][index] || '';
+
               return (
                 <button
                   key={lang.code}
                   onClick={() => handleSelect(lang.code)}
-                  className={`group relative overflow-hidden rounded-2xl border p-4 sm:p-6 text-left transition-all duration-300 cursor-pointer lang-splash-card w-full flex sm:flex-col items-center sm:items-start gap-4 sm:gap-4 ${
+                  className={`group relative overflow-hidden rounded-2xl border p-4 sm:p-6 text-left transition-all duration-300 cursor-pointer lang-splash-card w-full flex sm:flex-col items-center sm:items-start gap-4 sm:gap-4 ${delayClass} ${
                     isSelected
                       ? 'border-purple-500 scale-[1.02] shadow-2xl shadow-purple-500/20'
                       : isDetected
                       ? `${colors.border} ring-2 ring-purple-500/30 ${colors.bg}`
                       : `${colors.border} ${colors.bg} hover:border-zinc-600 hover:scale-[1.01]`
                   }`}
-                  style={{ animationDelay: `${index * 100 + 200}ms` }}
                 >
                   {/* Glow effect */}
                   <div className={`absolute -top-20 -right-20 w-40 h-40 rounded-full ${colors.glow} blur-3xl pointer-events-none transition-all duration-500 group-hover:opacity-100 opacity-60`} />
