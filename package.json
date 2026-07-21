@@ -2,10 +2,11 @@
   "name": "dilnova",
   "version": "0.1.0",
   "private": true,
-  "overrides": {
+  "resolutions": {
     "postcss": ">=8.5.10",
     "js-cookie": ">=3.0.6",
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "brace-expansion": ">=1.1.16"
   },
   "scripts": {
     "dev": "next dev",
