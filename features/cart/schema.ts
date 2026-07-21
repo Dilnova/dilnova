@@ -43,6 +43,7 @@ export const checkoutSchema = z.object({
   shippingCountry: z.string().max(200).trim().optional().nullable(),
   shippingPhone: phoneField.or(z.literal('')).optional().nullable(),
   shippingPhone2: phoneField.or(z.literal('')).optional().nullable(),
+  idempotencyKey: z.string().uuid(),
   checkoutVendorOrgId: z.string().nullable().optional(),
 });
 

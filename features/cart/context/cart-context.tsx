@@ -98,25 +98,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     void (async () => {
       const previousLineCount = countCartLines(guestItemsForMerge);
 
-      const result = await loadCustomerCartAction();
+      const result = await loadCustomerCartAction({});
       if (hydrateRequestRef.current !== requestId) return;
 
-      if (!result.success) {
+      if (!result?.data?.success) {
         setCartItems(guestItemsForMerge);
         setIsCartReady(true);
         setServerSynced(true);
         return;
       }
 
-      let merged = mergeCartItems(guestItemsForMerge, result.items || []);
+      let merged = mergeCartItems(guestItemsForMerge, result?.data?.items || []);
 
-      const syncResult = await syncCartPricesAction(merged.map((item) => item.id));
+      const syncResult = await syncCartPricesAction({ productIds: merged.map((item) => item.id) });
       if (hydrateRequestRef.current !== requestId) return;
 
       let removedCount = 0;
-      if (syncResult.success) {
-        removedCount = syncResult.removedIds.length;
-        merged = applyCatalogSync(merged, syncResult.items, syncResult.removedIds);
+      if (syncResult?.data?.success) {
+        removedCount = syncResult.data.removedIds.length;
+        merged = applyCatalogSync(merged, syncResult.data.items, syncResult.data.removedIds);
       }
 
       const nextLineCount = countCartLines(merged);
@@ -127,8 +127,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setServerSynced(true);
       setIsCartReady(true);
 
-      if (merged.length > 0 && (guestItemsForMerge.length > 0 || removedCount > 0 || (syncResult.success && syncResult.items.length > 0))) {
-        await saveCustomerCartAction(merged);
+      if (merged.length > 0 && (guestItemsForMerge.length > 0 || removedCount > 0 || (syncResult?.data?.success && syncResult.data.items.length > 0))) {
+        await saveCustomerCartAction({ items: merged });
       }
     })();
   }, [accountKey, isLoaded]);
@@ -153,7 +153,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
 
       saveTimerRef.current = window.setTimeout(() => {
-        void saveCustomerCartAction(items);
+        void saveCustomerCartAction({ items });
       }, 600);
     },
     [accountKey, serverSynced]
@@ -201,7 +201,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (accountKey === 'guest') {
       clearGuestCartStorage();
     } else {
-      void saveCustomerCartAction([]);
+      void saveCustomerCartAction({ items: [] });
     }
   }, [accountKey]);
 

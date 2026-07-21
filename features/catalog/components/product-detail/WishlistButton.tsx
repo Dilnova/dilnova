@@ -68,8 +68,12 @@ export default function WishlistButton({
 
     startTransition(async () => {
       try {
-        const res = await toggleWishlistAction(productId);
-        setIsFavorited(res.isFavorited);
+        const res = await toggleWishlistAction({ productId });
+        if (res?.data?.success) {
+          setIsFavorited(res.data.isFavorited);
+        } else {
+          throw new Error(res?.serverError || 'Failed to toggle wishlist');
+        }
       } catch (err) {
         console.error('Failed to toggle wishlist:', err);
         // Rollback state on error

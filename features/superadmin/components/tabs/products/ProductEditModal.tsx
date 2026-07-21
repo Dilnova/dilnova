@@ -108,15 +108,21 @@ export function ProductEditModal({
     startTransition(async () => {
       try {
         const primaryThumbnail = editProdMedia[0]?.url || '';
-        await updateProductAction(product.id, {
-          name: editProdName,
-          price: Math.round(editProdPrice * 100),
-          categoryId: editProdCategory || null,
-          description: editProdDesc,
-          type: editProdType,
-          imageUrl: primaryThumbnail,
-          media: editProdMedia,
+        const result = await updateProductAction({
+          id: product.id,
+          updates: {
+            name: editProdName,
+            price: Math.round(editProdPrice * 100),
+            categoryId: editProdCategory || null,
+            description: editProdDesc,
+            type: editProdType,
+            imageUrl: primaryThumbnail,
+            media: editProdMedia,
+          }
         });
+        if (!result?.data?.success) {
+          throw new Error(result?.serverError || 'Failed to update product.');
+        }
         triggerNotification(true, 'Product updated successfully.');
         onClose();
       } catch (err: unknown) {

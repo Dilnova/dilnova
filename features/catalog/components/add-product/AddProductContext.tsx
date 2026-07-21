@@ -215,7 +215,7 @@ export function AddProductProvider({
           stockAvailability: type === 'product' ? stockAvailability : undefined,
         });
 
-        if (result.success) {
+        if (result?.data?.success) {
           toast.success(`"${name}" added successfully!`);
           router.refresh();
 
@@ -228,7 +228,7 @@ export function AddProductProvider({
 
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
-          toast.error((result as { error?: string }).error || 'Failed to add item.');
+          toast.error(result?.serverError || 'Failed to add item.');
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to add item.');

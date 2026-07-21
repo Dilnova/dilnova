@@ -1,6 +1,5 @@
 'use server';
 
-import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidateVendorConsole } from '@/features/vendor/revalidate';
@@ -10,67 +9,61 @@ import {
   resolveEffectiveStockAvailability,
 } from '@/features/inventory/availability.server';
 import { reserveProductStock, applyStockReservation } from '@/features/inventory/reservation';
-import { verifyVendorAccess } from '@/features/inventory/vendor-data';
+import { getPremiumStatus } from '@/features/inventory/premium-license';
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { rateLimit } from '@/shared/security/rate-limit';
+import { vendorAction, ActionError } from '@/lib/safe-action';
 
 // ── POS BILLING CHECKOUT (Premium POS Register) ──────────────
 
-class CheckoutValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'CheckoutValidationError';
-  }
-}
-
-export async function processBillingCheckoutAction(data: {
-  branchId: string;
-  items: { productId: string; productName: string; quantity: number; unitPrice: number }[];
-  paymentMethod: 'cash' | 'card' | 'other';
-  customerName?: string;
-  notes?: string;
-}) {
-  return runWithCorrelationId(async () => {
-    try {
+export const processBillingCheckoutAction = vendorAction
+  .schema(processBillingCheckoutSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
       await rateLimit(30, 60 * 1000);
-      // Any org member can process checkout if billing register is active, no checkRole requirement.
-      const { userId, orgId, orgRole, premiumStatus } = await verifyVendorAccess({ allowMember: true });
-      if (!premiumStatus.billingActive) {
-        throw new CheckoutValidationError('POS Billing Register feature is not unlocked on your account tier.');
+
+      const { userId, orgId, orgRole } = ctx;
+      if (!orgId) {
+        throw new ActionError('Not authorized: You must be signed in with an active organization.');
       }
 
-      const parsed = processBillingCheckoutSchema.safeParse(data);
-      if (!parsed.success) {
-        throw new CheckoutValidationError(parsed.error.issues[0]?.message || 'Invalid input.');
+      const premiumStatus = await getPremiumStatus(orgId);
+      if (!premiumStatus.billingActive) {
+        throw new ActionError(
+          'POS Billing Register feature is not unlocked on your account tier.'
+        );
       }
+
+      // vendorAction guarantees the user is org:member or org:admin (or superadmin).
+      // Additional member-level access check already handled by vendorAction.
 
       // Verify branch belongs to org
-      const [branch] = await db
+      const [branch] = await ctx.db
         .select({ id: schema.branches.id, name: schema.branches.name })
         .from(schema.branches)
-        .where(and(eq(schema.branches.id, parsed.data.branchId), eq(schema.branches.orgId, orgId)))
+        .where(and(eq(schema.branches.id, parsedInput.branchId), eq(schema.branches.orgId, orgId)))
         .limit(1);
 
       if (!branch) {
-        throw new CheckoutValidationError('Branch not found or access denied.');
+        throw new ActionError('Branch not found or access denied.');
       }
 
       // Verify cashier assignment to the branch when multi-branch is active and the cashier is not a global admin
       if (premiumStatus.multiBranchActive && orgRole !== 'org:admin') {
-        const [membership] = await db
+        const [membership] = await ctx.db
           .select()
           .from(schema.branchMembers)
           .where(
             and(
-              eq(schema.branchMembers.branchId, parsed.data.branchId),
+              eq(schema.branchMembers.branchId, parsedInput.branchId),
               eq(schema.branchMembers.memberUserId, userId)
             )
           )
           .limit(1);
 
         if (!membership) {
-          throw new CheckoutValidationError('Not authorized: You are not assigned to this branch register.');
+          throw new ActionError('Not authorized: You are not assigned to this branch register.');
         }
       }
 
@@ -78,7 +71,7 @@ export async function processBillingCheckoutAction(data: {
         string,
         { productId: string; productName: string; quantity: number; unitPrice: number }
       >();
-      for (const item of parsed.data.items) {
+      for (const item of parsedInput.items) {
         const existing = aggregatedItems.get(item.productId);
         if (existing) {
           existing.quantity += item.quantity;
@@ -91,7 +84,7 @@ export async function processBillingCheckoutAction(data: {
         a.productId.localeCompare(b.productId)
       );
 
-      return await db.transaction(async (tx) => {
+      return await ctx.db.transaction(async (tx) => {
         let totalAmount = 0;
         const availabilityCatalog = await getStockAvailabilityCatalog();
 
@@ -99,13 +92,13 @@ export async function processBillingCheckoutAction(data: {
         const [receipt] = await tx
           .insert(schema.billingReceipts)
           .values({
-            branchId: parsed.data.branchId,
+            branchId: parsedInput.branchId,
             orgId,
             cashierUserId: userId,
             totalAmount: 0, // update later
-            paymentMethod: parsed.data.paymentMethod,
-            customerName: parsed.data.customerName || null,
-            notes: parsed.data.notes || null,
+            paymentMethod: parsedInput.paymentMethod,
+            customerName: parsedInput.customerName || null,
+            notes: parsedInput.notes || null,
           })
           .returning();
 
@@ -123,13 +116,15 @@ export async function processBillingCheckoutAction(data: {
             .limit(1);
 
           if (!prod) {
-            throw new CheckoutValidationError(`Product not found or access denied: ${item.productName}`);
+            throw new ActionError(`Product not found or access denied: ${item.productName}`);
           }
           if (prod.status !== 'active') {
-            throw new CheckoutValidationError(`"${prod.name}" is not active and cannot be sold.`);
+            throw new ActionError(`"${prod.name}" is not active and cannot be sold.`);
           }
           if (prod.price !== item.unitPrice) {
-            throw new CheckoutValidationError(`Price mismatch for "${prod.name}". Catalog price: ${prod.price}, Received: ${item.unitPrice}`);
+            throw new ActionError(
+              `Price mismatch for "${prod.name}". Catalog price: ${prod.price}, Received: ${item.unitPrice}`
+            );
           }
 
           totalAmount += prod.price * item.quantity;
@@ -145,7 +140,9 @@ export async function processBillingCheckoutAction(data: {
               .limit(1);
 
             if (!invMeta) {
-              throw new CheckoutValidationError(`"${prod.name}" has no inventory record and cannot be sold.`);
+              throw new ActionError(
+                `"${prod.name}" has no inventory record and cannot be sold.`
+              );
             }
 
             const availability = resolveEffectiveStockAvailability(
@@ -154,17 +151,21 @@ export async function processBillingCheckoutAction(data: {
               invMeta.quantity
             );
             if (availability && !availability.allowsPurchase) {
-              throw new CheckoutValidationError(`"${prod.name}" is marked as ${availability.label} and cannot be sold.`);
+              throw new ActionError(
+                `"${prod.name}" is marked as ${availability.label} and cannot be sold.`
+              );
             }
 
             const stockResult = await reserveProductStock(tx, item.productId, item.quantity, {
-              branchId: premiumStatus.multiBranchActive ? parsed.data.branchId : null,
+              branchId: premiumStatus.multiBranchActive ? parsedInput.branchId : null,
               productName: prod.name,
             });
 
             if (!stockResult.ok) {
-              const branchHint = premiumStatus.multiBranchActive ? ` at branch "${branch.name}"` : '';
-              throw new CheckoutValidationError(`${stockResult.error.replace(/\.$/, '')}${branchHint}.`);
+              const branchHint = premiumStatus.multiBranchActive
+                ? ` at branch "${branch.name}"`
+                : '';
+              throw new ActionError(`${stockResult.error.replace(/\.$/, '')}${branchHint}.`);
             }
 
             await applyStockReservation(tx, item.quantity, stockResult.reservation, {
@@ -173,37 +174,35 @@ export async function processBillingCheckoutAction(data: {
             });
           }
 
-        await tx.insert(schema.billingReceiptItems).values({
-          receiptId: receipt.id,
-          productId: item.productId,
-          productName: prod.name,
-          quantity: item.quantity,
-          unitPrice: prod.price,
+          await tx.insert(schema.billingReceiptItems).values({
+            receiptId: receipt.id,
+            productId: item.productId,
+            productName: prod.name,
+            quantity: item.quantity,
+            unitPrice: prod.price,
+          });
+        }
+
+        // Update total on receipt
+        await tx
+          .update(schema.billingReceipts)
+          .set({ totalAmount })
+          .where(eq(schema.billingReceipts.id, receipt.id));
+
+        await logAuditAction({
+          userId,
+          action: 'POS_CHECKOUT',
+          targetType: 'billing_receipt',
+          targetId: receipt.id,
+          metadata: {
+            branchId: parsedInput.branchId,
+            totalAmount,
+            paymentMethod: parsedInput.paymentMethod,
+          },
         });
-      }
 
-      // Update total on receipt
-      await tx
-        .update(schema.billingReceipts)
-        .set({ totalAmount })
-        .where(eq(schema.billingReceipts.id, receipt.id));
-
-      await logAuditAction({
-        userId,
-        action: 'POS_CHECKOUT',
-        targetType: 'billing_receipt',
-        targetId: receipt.id,
-        metadata: { branchId: parsed.data.branchId, totalAmount, paymentMethod: parsed.data.paymentMethod },
+        revalidateVendorConsole();
+        return { success: true as const, receiptId: receipt.id, totalAmount };
       });
-
-      revalidateVendorConsole();
-      return { success: true as const, receiptId: receipt.id, totalAmount };
     });
-    } catch (error) {
-      if (error instanceof CheckoutValidationError) {
-        return { success: false as const, error: error.message };
-      }
-      throw error;
-    }
   });
-}

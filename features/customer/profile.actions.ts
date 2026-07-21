@@ -1,10 +1,11 @@
 'use server';
 
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { clerkClient } from '@clerk/nextjs/server';
 import { z } from 'zod/v3';
 import { phoneField, postalCodeField } from '@/shared/validation/primitives';
 import { logger } from '@/shared/logging/logger';
 import { rateLimit } from '@/shared/security/rate-limit';
+import { authenticatedAction, ActionError } from '@/lib/safe-action';
 import { revalidatePath } from 'next/cache';
 
 const updateDeliverySettingsSchema = z.object({
@@ -20,26 +21,19 @@ const updateDeliverySettingsSchema = z.object({
 
 export type UpdateDeliverySettingsInput = z.infer<typeof updateDeliverySettingsSchema>;
 
-export async function updateCustomerDeliveryDetailsAction(input: UpdateDeliverySettingsInput) {
-  try {
-    const { userId } = await auth();
-    if (!userId) {
-      return { success: false as const, error: 'Unauthorized.' };
-    }
+export const updateCustomerDeliveryDetailsAction = authenticatedAction
+  .schema(updateDeliverySettingsSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { userId } = ctx;
 
     try {
       await rateLimit(5, 60000);
     } catch (error: any) {
       logger.warn('Rate limit exceeded during delivery details update', { userId, error: error?.message });
-      return { success: false as const, error: 'Too many requests. Please try again later.' };
+      throw new ActionError('Too many requests. Please try again later.');
     }
 
-    const parsed = updateDeliverySettingsSchema.safeParse(input);
-    if (!parsed.success) {
-      return { success: false as const, error: parsed.error.issues[0]?.message || 'Invalid delivery details.' };
-    }
-
-    const data = parsed.data;
+    const data = parsedInput;
 
     const client = await clerkClient();
     await client.users.updateUserMetadata(userId, {
@@ -59,10 +53,4 @@ export async function updateCustomerDeliveryDetailsAction(input: UpdateDeliveryS
     revalidatePath('/cart');
 
     return { success: true as const };
-  } catch (error) {
-    logger.error('Failed to update customer delivery details', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return { success: false as const, error: 'Failed to update delivery settings. Please try again.' };
-  }
-}
+  });

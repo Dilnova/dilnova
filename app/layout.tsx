@@ -8,6 +8,7 @@ import { runWithCorrelationId } from '@/shared/security/async-context'
 import HeaderAuthButtons from '@/shared/ui/HeaderAuthButtons'
 import SmartHeader from '@/components/layout/SmartHeader'
 import SmartFooter from '@/components/layout/SmartFooter'
+import serialize from 'serialize-javascript';
 import './globals.css'
 
 import { CartProvider } from '@/features/cart/context/cart-context'
@@ -130,7 +131,7 @@ export default async function RootLayout({
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
+              __html: serialize({
                 '@context': 'https://schema.org',
                 '@graph': [
                   {
@@ -139,7 +140,7 @@ export default async function RootLayout({
                     url: baseUrl,
                     name: systemName,
                     publisher: {
-                      '@id': `${baseUrl}/#organization`
+                      '@id': `${baseUrl}/#organization`,
                     },
                   },
                   {
@@ -149,11 +150,11 @@ export default async function RootLayout({
                     url: baseUrl,
                     logo: {
                       '@type': 'ImageObject',
-                      url: logoUrl || `${baseUrl}/apple-touch-icon.png`
-                    }
-                  }
-                ]
-              })
+                      url: logoUrl || `${baseUrl}/apple-touch-icon.png`,
+                    },
+                  },
+                ],
+              }, { isJSON: true })
             }}
           />
           <ClerkProvider>

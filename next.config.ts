@@ -180,6 +180,9 @@ const nextConfig: NextConfig = {
         key: 'Cross-Origin-Opener-Policy',
         value: 'same-origin',
       },
+    { key: 'Access-Control-Allow-Origin', value: DEFAULT_APP_URL },
+    { key: 'Access-Control-Allow-Methods', value: 'GET,HEAD,POST,OPTIONS' },
+    { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
     ];
 
     if (isProd) {

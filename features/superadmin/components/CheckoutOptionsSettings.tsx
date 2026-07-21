@@ -61,7 +61,10 @@ export default function CheckoutOptionsSettings({
   const handleSave = () => {
     startTransition(async () => {
       try {
-        await updateCheckoutOptionsCatalogAction(catalog);
+        const result = await updateCheckoutOptionsCatalogAction({ options: catalog });
+        if (!result?.data?.success) {
+          throw new Error(result?.serverError || 'Failed to save checkout options.');
+        }
         toast.success('Checkout options catalog saved.');
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to save checkout options.');

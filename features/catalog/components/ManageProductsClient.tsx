@@ -66,11 +66,11 @@ export default function ManageProductsClient({
     setDeletingId(id);
     
     toast.promise(
-      deleteProductAction(id).then((result) => {
-        if (!result.success) throw new Error('Failed to delete item.');
+      deleteProductAction({ productId: id }).then((result) => {
+        if (!result?.data?.success) throw new Error('Failed to delete item.');
         setProducts((prev) => prev.filter((p) => p.id !== id));
         router.refresh();
-        return result;
+        return result.data;
       }).finally(() => {
         setDeletingId(null);
       }),
@@ -91,15 +91,15 @@ export default function ManageProductsClient({
 
     setIsUpdatingStock(true);
     toast.promise(
-      quickUpdateProductStockAction(id, qty).then((result) => {
-        if (!result.success) throw new Error('Failed to update stock.');
+      quickUpdateProductStockAction({ productId: id, newQuantity: qty }).then((result) => {
+        if (!result?.data?.success) throw new Error('Failed to update stock.');
         setProducts((prev) =>
           prev.map((p) => (p.id === id ? { ...p, stockQuantity: qty } : p))
         );
         setEditingStockId(null);
         setEditStockValue('');
         router.refresh();
-        return result;
+        return result.data;
       }).finally(() => {
         setIsUpdatingStock(false);
       }),

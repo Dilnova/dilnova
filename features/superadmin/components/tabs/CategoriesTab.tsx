@@ -94,10 +94,25 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
     startTransition(async () => {
       try {
         if (editingCategory) {
-          await updateCategoryAction(editingCategory.id, categoryName, categorySlug, categoryParentId || null);
+          const result = await updateCategoryAction({
+            id: editingCategory.id,
+            name: categoryName,
+            slug: categorySlug,
+            parentId: categoryParentId || null,
+          });
+          if (!result?.data?.success) {
+            throw new Error(result?.serverError || 'Failed to update category.');
+          }
           triggerNotification(true, 'Category updated successfully.');
         } else {
-          await createCategoryAction(categoryName, categorySlug, categoryParentId || null);
+          const result = await createCategoryAction({
+            name: categoryName,
+            slug: categorySlug,
+            parentId: categoryParentId || null,
+          });
+          if (!result?.data?.success) {
+            throw new Error(result?.serverError || 'Failed to create category.');
+          }
           triggerNotification(true, 'Category created successfully.');
         }
         setIsCategoryModalOpen(false);
@@ -118,7 +133,12 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
     if (!confirmed) return;
 
     toast.promise(
-      deleteCategoryAction(catId),
+      deleteCategoryAction({ id: catId }).then((res) => {
+        if (!res?.data?.success) {
+          throw new Error(res?.serverError || 'Failed to delete category.');
+        }
+        return res.data;
+      }),
       {
         loading: 'Deleting category...',
         success: 'Category deleted successfully.',

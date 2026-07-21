@@ -46,11 +46,11 @@ export default function CustomerDeliverySettingsForm({ initialData }: CustomerDe
 
     startTransition(async () => {
       const result = await updateCustomerDeliveryDetailsAction(formData);
-      if (result.success) {
+      if (result?.data?.success) {
         toast.success('Delivery preferences saved successfully!');
         router.refresh();
       } else {
-        toast.error(result.error);
+        toast.error(result?.serverError || result?.validationErrors?._errors?.[0] || 'Failed to save delivery details');
       }
     });
   };

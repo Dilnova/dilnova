@@ -1,7 +1,6 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
-import { z } from 'zod';
+import { z } from 'zod/v3';
 import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
 import {
   createCloudinaryUploadSignature,
@@ -9,6 +8,7 @@ import {
 } from '@/shared/media/cloudinary-server';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { runWithCorrelationId } from '@/shared/security/async-context';
+import { authenticatedAction, ActionError } from '@/lib/safe-action';
 
 const cloudinaryUploadSignatureSchema = z.object({
   uploadKind: z.enum(['catalog', 'vendor-profile', 'platform']),
@@ -33,64 +33,41 @@ function resolveUploadFolder(uploadKind: CloudinaryUploadKind, orgId: string | n
   return `dilnova/vendors/${orgId}/catalog`;
 }
 
-export async function createCloudinaryUploadSignatureAction(input: {
-  uploadKind: CloudinaryUploadKind;
-  resourceType: CloudinaryResourceType;
-}) {
-  return runWithCorrelationId(async () => {
-    try {
-      await rateLimit(30, 60 * 1000);
+export const createCloudinaryUploadSignatureAction = authenticatedAction
+  .schema(cloudinaryUploadSignatureSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      try {
+        await rateLimit(30, 60 * 1000);
 
-      const parsed = cloudinaryUploadSignatureSchema.safeParse(input);
-      if (!parsed.success) {
-        return {
-          success: false as const,
-          error: parsed.error.issues[0]?.message || 'Invalid upload request.',
-        };
-      }
+        const { userId, orgId, orgRole } = ctx;
 
-      const { userId, orgId, orgRole } = await auth();
-      if (!userId) {
-        return { success: false as const, error: 'Please sign in to upload media.' };
-      }
+        if (parsedInput.uploadKind === 'platform') {
+          await checkSuperAdmin();
+        } else {
+          if (!orgId) {
+            throw new ActionError('Switch to a vendor organization before uploading media.');
+          }
 
-      if (parsed.data.uploadKind === 'platform') {
-        await checkSuperAdmin();
-      } else {
-        if (!orgId) {
-          return {
-            success: false as const,
-            error: 'Switch to a vendor organization before uploading media.',
-          };
+          if (parsedInput.uploadKind === 'vendor-profile' && orgRole !== 'org:admin') {
+            throw new ActionError('Only organization admins can update vendor profile media.');
+          }
+
+          if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
+            throw new ActionError('You are not authorized to upload media for this organization.');
+          }
         }
 
-        if (parsed.data.uploadKind === 'vendor-profile' && orgRole !== 'org:admin') {
-          return {
-            success: false as const,
-            error: 'Only organization admins can update vendor profile media.',
-          };
-        }
+        const folder = resolveUploadFolder(parsedInput.uploadKind, orgId ?? null);
+        const signature = createCloudinaryUploadSignature({
+          folder,
+          resourceType: parsedInput.resourceType,
+        });
 
-        if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
-          return {
-            success: false as const,
-            error: 'You are not authorized to upload media for this organization.',
-          };
-        }
+        return signature;
+      } catch (error) {
+        if (error instanceof ActionError) throw error;
+        throw new ActionError(error instanceof Error ? error.message : 'Failed to prepare media upload.');
       }
-
-      const folder = resolveUploadFolder(parsed.data.uploadKind, orgId ?? null);
-      const signature = createCloudinaryUploadSignature({
-        folder,
-        resourceType: parsed.data.resourceType,
-      });
-
-      return { success: true as const, data: signature };
-    } catch (error) {
-      return {
-        success: false as const,
-        error: error instanceof Error ? error.message : 'Failed to prepare media upload.',
-      };
-    }
+    });
   });
-}

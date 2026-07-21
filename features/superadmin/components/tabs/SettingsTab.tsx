@@ -140,16 +140,18 @@ export default function SettingsTab({
     e.preventDefault();
     startTransition(async () => {
       try {
-        await Promise.all([
-          updateSystemSettingAction('system_name', systemNameInput),
-          updateSystemSettingAction('max_media_per_product', mediaLimitInput.toString()),
-          updateSystemSettingAction('logo_url', logoInput),
-          updateSystemSettingAction('favicon_url', faviconInput),
-          updateSystemSettingAction('custom_hardware_storefront_enabled', hardwareCustomEnabledInput ? 'true' : 'false'),
-          updateSystemSettingAction('custom_nursery_storefront_enabled', nurseryCustomEnabledInput ? 'true' : 'false'),
-          updateSystemSettingAction('custom_tech_storefront_enabled', techCustomEnabledInput ? 'true' : 'false'),
-          updateSystemSettingAction('custom_services_storefront_enabled', servicesCustomEnabledInput ? 'true' : 'false'),
+        const results = await Promise.all([
+          updateSystemSettingAction({ key: 'system_name', value: systemNameInput }),
+          updateSystemSettingAction({ key: 'max_media_per_product', value: mediaLimitInput.toString() }),
+          updateSystemSettingAction({ key: 'logo_url', value: logoInput }),
+          updateSystemSettingAction({ key: 'favicon_url', value: faviconInput }),
+          updateSystemSettingAction({ key: 'custom_hardware_storefront_enabled', value: hardwareCustomEnabledInput ? 'true' : 'false' }),
+          updateSystemSettingAction({ key: 'custom_nursery_storefront_enabled', value: nurseryCustomEnabledInput ? 'true' : 'false' }),
+          updateSystemSettingAction({ key: 'custom_tech_storefront_enabled', value: techCustomEnabledInput ? 'true' : 'false' }),
+          updateSystemSettingAction({ key: 'custom_services_storefront_enabled', value: servicesCustomEnabledInput ? 'true' : 'false' }),
         ]);
+        const firstError = results.find((r) => r?.serverError);
+        if (firstError?.serverError) throw new Error(firstError.serverError);
         triggerNotification(true, 'System settings updated successfully.');
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Failed to update system settings.';
