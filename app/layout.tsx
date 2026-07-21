@@ -10,7 +10,7 @@ import SmartHeader from '@/components/layout/SmartHeader'
 import SmartFooter from '@/components/layout/SmartFooter'
 import './globals.css'
 
-import { CartProvider } from '@/features/cart/context/CartContext'
+import { CartProvider } from '@/features/cart/context/cart-context'
 import CartIcon from '@/features/cart/components/CartIcon'
 import LanguageSelector from '@/shared/ui/language/LanguageSelector'
 import dynamic from 'next/dynamic';

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { isVideoUrl } from '@/shared/media/media';
 import { toast } from 'sonner';
 import { useConfirm } from '@/shared/ui/notifications';
+import SafeProgressBar from '@/shared/ui/SafeProgressBar';
 
 export interface Product {
   id: string;
@@ -150,6 +151,7 @@ export default function ManageProductsClient({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search items..."
+            aria-label="Search items"
             className="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-zinc-200 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 transition-all"
           />
           {search && (
@@ -222,9 +224,9 @@ export default function ManageProductsClient({
               📦 {used.toLocaleString()} / {limit.toLocaleString()} listings
             </span>
             <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <div
+              <SafeProgressBar
                 className={`h-full rounded-full transition-all duration-500 ${barColor}`}
-                style={{ width: `${pct}%` }}
+                percent={pct}
               />
             </div>
             <span className={`text-[10px] font-mono ${textColor}`}>

@@ -58,122 +58,104 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
       }
     };
 
-    const handleData = (chunk: Buffer) => {
+    const parseSmtpResponse = (chunk: Buffer) => {
       const data = chunk.toString();
       responseLog.push(data);
-
       const lines = data.split('\r\n').filter((line) => line.trim().length > 0);
-      const lastLine = lines[lines.length - 1];
+      const lastLine = lines[lines.length - 1] || '';
       const code = parseInt(lastLine.substring(0, 3), 10);
+      return { code, lastLine };
+    };
 
+    const processCommonSmtpState = (code: number): boolean => {
+      if ((useTlsDirectly && step === 1 && code === 250) || (step === 1.6 && code === 250)) {
+        send('AUTH LOGIN');
+        step = 2;
+        return true;
+      } else if (step === 2 && code === 334) {
+        send(Buffer.from(options.user).toString('base64'));
+        step = 3;
+        return true;
+      } else if (step === 3 && code === 334) {
+        send(Buffer.from(options.pass).toString('base64'));
+        step = 4;
+        return true;
+      } else if (step === 4 && code === 235) {
+        send(`MAIL FROM:<${options.from}>`);
+        step = 5;
+        return true;
+      } else if (step === 5 && code === 250) {
+        send(`RCPT TO:<${options.to}>`);
+        step = 6;
+        return true;
+      } else if (step === 6 && code === 250) {
+        send('DATA');
+        step = 7;
+        return true;
+      } else if (step === 7 && code === 354) {
+        send(buildEmailPayload(options));
+        step = 8;
+        return true;
+      } else if (step === 8 && code === 250) {
+        send('QUIT');
+        step = 9;
+        return true;
+      } else if (step === 9) {
+        socket.destroy();
+        succeed(true);
+        return true;
+      }
+      return false;
+    };
+
+    const handleData = (chunk: Buffer) => {
+      const { code, lastLine } = parseSmtpResponse(chunk);
       if (code >= 400) {
         socket.destroy();
         fail(new Error(`SMTP Error at step ${step}: ${lastLine}`));
         return;
       }
 
-      if (useTlsDirectly) {
-        if (step === 0 && code === 220) {
-          send('EHLO localhost');
-          step = 1;
-        } else if (step === 1 && code === 250) {
-          send('AUTH LOGIN');
-          step = 2;
-        } else if (step === 2 && code === 334) {
-          send(Buffer.from(options.user).toString('base64'));
-          step = 3;
-        } else if (step === 3 && code === 334) {
-          send(Buffer.from(options.pass).toString('base64'));
-          step = 4;
-        } else if (step === 4 && code === 235) {
-          send(`MAIL FROM:<${options.from}>`);
-          step = 5;
-        } else if (step === 5 && code === 250) {
-          send(`RCPT TO:<${options.to}>`);
-          step = 6;
-        } else if (step === 6 && code === 250) {
-          send('DATA');
-          step = 7;
-        } else if (step === 7 && code === 354) {
-          send(buildEmailPayload(options));
-          step = 8;
-        } else if (step === 8 && code === 250) {
-          send('QUIT');
-          step = 9;
-        } else if (step === 9) {
-          socket.destroy();
-          succeed(true);
-        }
-      } else if (step === 0 && code === 220) {
+      if (processCommonSmtpState(code)) return;
+
+      if (step === 0 && code === 220) {
         send('EHLO localhost');
         step = 1;
-      } else if (step === 1 && code === 250) {
-        send('STARTTLS');
-        step = 1.5;
-      } else if (step === 1.5 && code === 220) {
-        socket.removeAllListeners('data');
-        socket.removeAllListeners('timeout');
-        const secureSocket = tls.connect(
-          {
-            socket,
-            host: options.host,
-            rejectUnauthorized: true,
-          },
-          () => {
-            step = 1.6;
-            secureSocket.write('EHLO localhost\r\n');
-          }
-        );
+      } else if (!useTlsDirectly) {
+        if (step === 1 && code === 250) {
+          send('STARTTLS');
+          step = 1.5;
+        } else if (step === 1.5 && code === 220) {
+          socket.removeAllListeners('data');
+          socket.removeAllListeners('timeout');
+          const secureSocket = tls.connect(
+            {
+              socket,
+              host: options.host,
+              rejectUnauthorized: true,
+            },
+            () => {
+              step = 1.6;
+              secureSocket.write('EHLO localhost\r\n');
+            }
+          );
 
-        setupSocketTimeout(secureSocket);
-        secureSocket.on('data', handleSecureData);
-        secureSocket.on('error', (err) => fail(err));
-        socket = secureSocket;
+          setupSocketTimeout(secureSocket);
+          secureSocket.on('data', handleSecureData);
+          secureSocket.on('error', (err) => fail(err));
+          socket = secureSocket;
+        }
       }
     };
 
     const handleSecureData = (chunk: Buffer) => {
-      const data = chunk.toString();
-      responseLog.push(data);
-
-      const lines = data.split('\r\n').filter((line) => line.trim().length > 0);
-      const lastLine = lines[lines.length - 1];
-      const code = parseInt(lastLine.substring(0, 3), 10);
-
+      const { code, lastLine } = parseSmtpResponse(chunk);
       if (code >= 400) {
         socket.destroy();
         fail(new Error(`SMTP Error at step ${step}: ${lastLine}`));
         return;
       }
-
-      if (step === 1.6 && code === 250) {
-        send('AUTH LOGIN');
-        step = 2;
-      } else if (step === 2 && code === 334) {
-        send(Buffer.from(options.user).toString('base64'));
-        step = 3;
-      } else if (step === 3 && code === 334) {
-        send(Buffer.from(options.pass).toString('base64'));
-        step = 4;
-      } else if (step === 4 && code === 235) {
-        send(`MAIL FROM:<${options.from}>`);
-        step = 5;
-      } else if (step === 5 && code === 250) {
-        send(`RCPT TO:<${options.to}>`);
-        step = 6;
-      } else if (step === 6 && code === 250) {
-        send('DATA');
-        step = 7;
-      } else if (step === 7 && code === 354) {
-        send(buildEmailPayload(options));
-        step = 8;
-      } else if (step === 8 && code === 250) {
-        send('QUIT');
-        step = 9;
-      } else if (step === 9) {
-        socket.destroy();
-        succeed(true);
-      }
+      processCommonSmtpState(code);
     };
 
     if (useTlsDirectly) {

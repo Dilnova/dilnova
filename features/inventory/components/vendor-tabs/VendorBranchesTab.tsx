@@ -7,8 +7,10 @@ import {
   deleteBranchAction,
   assignBranchMemberAction,
   removeBranchMemberAction,
-} from '@/features/inventory/vendor.actions';
+} from '@/features/inventory/vendor-branch.actions';
 import { toast } from 'sonner';
+import { useConfirm } from '@/shared/ui/notifications';
+import InventoryModal from '../InventoryModal';
 
 interface VendorBranchesTabProps {
   data: any; // Will be properly typed during TS cleanup
@@ -261,10 +263,9 @@ export default function VendorBranchesTab({
         ))}
       </div>
 
-      {/* --- Branch Add/Edit Modal --- */}
+      {/* --- Add / Edit Branch Modal --- */}
       {isBranchModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-md">
+        <InventoryModal isOpen={true} onClose={() => setIsBranchModalOpen(false)}>
             <div className="p-5 border-b border-zinc-100 dark:border-zinc-800">
               <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
                 {editingBranch ? 'Edit Branch Location' : 'Register New Branch'}
@@ -272,8 +273,9 @@ export default function VendorBranchesTab({
             </div>
             <form onSubmit={handleSaveBranch} className="p-5 space-y-3.5">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Branch Name</label>
+                <label htmlFor="branchName" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Branch Name</label>
                 <input
+                  id="branchName"
                   type="text"
                   value={branchName}
                   onChange={(e) => setBranchName(e.target.value)}
@@ -283,8 +285,9 @@ export default function VendorBranchesTab({
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Street Address</label>
+                <label htmlFor="branchAddress" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Street Address</label>
                 <input
+                  id="branchAddress"
                   type="text"
                   value={branchAddress}
                   onChange={(e) => setBranchAddress(e.target.value)}
@@ -293,8 +296,9 @@ export default function VendorBranchesTab({
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Store Phone Contact</label>
+                <label htmlFor="branchPhone" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Store Phone Contact</label>
                 <input
+                  id="branchPhone"
                   type="text"
                   value={branchPhone}
                   onChange={(e) => setBranchPhone(e.target.value)}
@@ -319,21 +323,20 @@ export default function VendorBranchesTab({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </InventoryModal>
       )}
 
       {/* --- Assign Member Modal --- */}
       {isAssignMemberModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-md">
+        <InventoryModal isOpen={true} onClose={() => setIsAssignMemberModalOpen(false)}>
             <div className="p-5 border-b border-zinc-100 dark:border-zinc-800">
               <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">Assign Member/Cashier</h3>
             </div>
             <form onSubmit={handleAssignMember} className="p-5 space-y-3.5">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Select Member</label>
+                <label htmlFor="assignMemberId" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Select Member</label>
                 <select
+                  id="assignMemberId"
                   value={assignMemberId}
                   onChange={(e) => setAssignMemberId(e.target.value)}
                   required
@@ -365,8 +368,7 @@ export default function VendorBranchesTab({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </InventoryModal>
       )}
     </div>
   );

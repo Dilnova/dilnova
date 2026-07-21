@@ -1,11 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/shared/db/client', () => ({
+  db: {}
+}));
 import {
   buildCatalogSearchParams,
   parseCatalogQueryParams,
   parseCatalogSort,
   parsePriceToCents,
   resolveVendorOrgId,
-} from '@/features/catalog/query';
+} from '@/features/catalog/queries';
 
 describe('catalogQuery', () => {
   it('parses catalog query params with defaults', () => {

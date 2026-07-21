@@ -1,7 +1,7 @@
 'use client';
 
 import { SignInButton, SignUpButton } from '@clerk/nextjs';
-import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/useClerkAuthRedirectUrl';
+import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/use-clerk-auth-redirect-url';
 
 interface SignInPromptProps {
   message: string;

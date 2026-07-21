@@ -1,6 +1,6 @@
 'use client';
 
-import { useCart } from '@/features/cart/context/CartContext';
+import { useCart } from '@/features/cart/context/cart-context';
 
 export default function CartCountBadge() {
   const { cartCount } = useCart();

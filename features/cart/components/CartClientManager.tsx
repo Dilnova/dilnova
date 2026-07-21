@@ -1,34 +1,27 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import useSWR from 'swr';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
-import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/useClerkAuthRedirectUrl';
-import { useCart } from '@/features/cart/context/CartContext';
+import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/use-clerk-auth-redirect-url';
+import { useCart } from '@/features/cart/context/cart-context';
 import {
-  getCartCheckoutOptionsAction,
   sendCartSummaryEmailAction,
   simulatedCheckoutAction,
-  syncCartPricesAction,
-  getCustomerDeliveryDetailsAction,
 } from '@/features/cart/checkout.actions';
 import { isPaymentCompatibleWithFulfillment } from '@/features/organization/checkout-options.shared';
 import { calculateCheckoutTotals } from '@/features/billing/checkout-totals';
 import {
   BANK_TRANSFER_PAYMENT_ID,
   isBankTransferPayment,
-  type BankTransferCheckoutInstructions,
 } from '@/features/billing/bank-transfer';
 import {
   clearCheckoutSuccessSnapshot,
-  loadCheckoutSuccessSnapshot,
   saveCheckoutSuccessSnapshot,
 } from '@/features/cart/checkout-success-storage';
 import {
   groupCartItemsByVendor,
   resolveCheckoutCartItems,
-  syncSelectedProductIds,
   toggleAllProductsInSelection,
   toggleProductInSelection,
 } from '@/features/cart/vendor-checkout';
@@ -38,6 +31,10 @@ import { CartLoadingState } from './CartStates';
 import { CheckoutSuccessState } from './CheckoutSuccessState';
 import { CartVendorGroups } from './CartVendorGroups';
 import { CartCheckoutSidebar } from './CartCheckoutSidebar';
+
+import { useShippingAddressState } from '@/features/cart/hooks/use-shipping-address-state';
+import { useCheckoutState } from '@/features/cart/hooks/use-checkout-state';
+import { useCheckoutOptionsState } from '@/features/cart/hooks/use-checkout-options-state';
 
 interface CartClientManagerProps {
   emptyState: React.ReactNode;
@@ -60,276 +57,53 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   const router = useRouter();
   const { isSignedIn, user } = useUser();
 
-  const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success'>('idle');
-  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success'>('idle');
-  const [idempotencyKey, setIdempotencyKey] = useState<string>('');
-
-  useEffect(() => {
-    setIdempotencyKey(crypto.randomUUID());
-  }, []);
-
-  const [confirmedOrderEmail, setConfirmedOrderEmail] = useState('');
-  const [confirmedOrderId, setConfirmedOrderId] = useState('');
-  const [bankTransferInstructions, setBankTransferInstructions] = useState<BankTransferCheckoutInstructions | null>(null);
-  const [confirmationEmailSent, setConfirmationEmailSent] = useState(false);
-  const [fulfillmentMethod, setFulfillmentMethod] = useState('store_pickup');
-  const [paymentMethod, setPaymentMethod] = useState(BANK_TRANSFER_PAYMENT_ID);
-  const [pickupBranchId, setPickupBranchId] = useState('');
-  const [shippingAddress, setShippingAddress] = useState('');
-  const [shippingAddressLine2, setShippingAddressLine2] = useState('');
-  const [shippingCity, setShippingCity] = useState('');
-  const [shippingState, setShippingState] = useState('');
-  const [shippingPostalCode, setShippingPostalCode] = useState('');
-  const [shippingCountry, setShippingCountry] = useState('');
-  const [shippingPhone, setShippingPhone] = useState('');
-  const [shippingPhone2, setShippingPhone2] = useState('');
-
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    switch (name) {
-      case 'shippingAddress': setShippingAddress(value); break;
-      case 'shippingAddressLine2': setShippingAddressLine2(value); break;
-      case 'shippingCity': setShippingCity(value); break;
-      case 'shippingState': setShippingState(value); break;
-      case 'shippingPostalCode': setShippingPostalCode(value); break;
-      case 'shippingCountry': setShippingCountry(value); break;
-      case 'shippingPhone': setShippingPhone(value); break;
-      case 'shippingPhone2': setShippingPhone2(value); break;
-    }
-  };
-
-  const [checkoutOptions, setCheckoutOptions] = useState<{
-    fulfillment: { id: string; label: string; description?: string; zeroShipping: boolean; requiresBranch: boolean }[];
-    payment: { id: string; label: string; description?: string; requiresDelivery: boolean; pendingPayment?: boolean }[];
-    pickupBranches: { orgId: string; branches: { id: string; name: string; address: string | null; phone: string | null }[] }[];
-    vendorBankTransferByOrg: Record<string, { vendorName: string; configured: boolean }>;
-    vendorCartSummary: { orgId: string; vendorName: string; subtotalCents: number; productIds: string[]; itemCount: number }[];
-  }>({ fulfillment: [], payment: [], pickupBranches: [], vendorBankTransferByOrg: {}, vendorCartSummary: [] });
-
-  const [vendorCount, setVendorCount] = useState(0);
-  const [selectedCheckoutVendorOrgId, setSelectedCheckoutVendorOrgId] = useState('');
-  const [requiresVendorSelection, setRequiresVendorSelection] = useState(false);
   const [remainingCartCount, setRemainingCartCount] = useState(0);
-  const [selectedCheckoutProductIds, setSelectedCheckoutProductIds] = useState<string[]>([]);
-  const [priceSyncNotice, setPriceSyncNotice] = useState<string | null>(null);
 
-  const cartItemIds = cartItems.map((item) => item.id).join(',');
-  const cartLinesKey = cartItems.map((item) => `${item.id}:${item.quantity}`).join(',');
-  const prevCartItemIdsRef = useRef<string[]>([]);
-  const prevCheckoutVendorOrgIdRef = useRef('');
+  const {
+    checkoutStatus,
+    setCheckoutStatus,
+    emailStatus,
+    setEmailStatus,
+    idempotencyKey,
+    confirmedOrderEmail,
+    setConfirmedOrderEmail,
+    confirmedOrderId,
+    setConfirmedOrderId,
+    bankTransferInstructions,
+    setBankTransferInstructions,
+    confirmationEmailSent,
+    setConfirmationEmailSent,
+  } = useCheckoutState();
 
-  useEffect(() => {
-    async function loadSavedDeliveryDetails() {
-      if (isSignedIn) {
-        const details = await getCustomerDeliveryDetailsAction();
-        if (details) {
-          if (details.shippingAddress) setShippingAddress(details.shippingAddress);
-          if (details.shippingAddressLine2) setShippingAddressLine2(details.shippingAddressLine2);
-          if (details.shippingCity) setShippingCity(details.shippingCity);
-          if (details.shippingState) setShippingState(details.shippingState);
-          if (details.shippingPostalCode) setShippingPostalCode(details.shippingPostalCode);
-          if (details.shippingCountry) setShippingCountry(details.shippingCountry);
-          if (details.shippingPhone) setShippingPhone(details.shippingPhone);
-          if (details.shippingPhone2) setShippingPhone2(details.shippingPhone2);
-        }
-      }
-    }
-    loadSavedDeliveryDetails();
-  }, [isSignedIn]);
+  const {
+    shippingAddress,
+    shippingAddressLine2,
+    shippingCity,
+    shippingState,
+    shippingPostalCode,
+    shippingCountry,
+    shippingPhone,
+    shippingPhone2,
+    handleAddressChange,
+  } = useShippingAddressState(Boolean(isSignedIn));
 
-  useEffect(() => {
-    const saved = loadCheckoutSuccessSnapshot();
-    if (!saved) return;
-
-    setConfirmedOrderEmail(saved.confirmedOrderEmail);
-    setConfirmedOrderId(saved.orderId);
-    setBankTransferInstructions(saved.bankTransferInstructions);
-    setConfirmationEmailSent(saved.confirmationEmailSent);
-    setCheckoutStatus('success');
-
-    clearCheckoutSuccessSnapshot();
-  }, []);
-
-  useEffect(() => {
-    if (cartItems.length === 0) {
-      setPriceSyncNotice(null);
-      return;
-    }
-
-    let cancelled = false;
-    const timeoutId = setTimeout(() => {
-      syncCartPricesAction(cartItems.map((item) => item.id)).then((result) => {
-        if (cancelled || !result.success) return;
-
-        const previousById = new Map(cartItems.map((item) => [item.id, item]));
-        const priceChanged = result.items.some(
-          (item) => previousById.get(item.id)?.price !== item.price
-        );
-
-        syncCartPrices(result.items, result.removedIds);
-
-        if (result.removedIds.length > 0 && priceChanged) {
-          setPriceSyncNotice('Some items were removed and prices were updated to match the catalog.');
-        } else if (result.removedIds.length > 0) {
-          setPriceSyncNotice('Some unavailable items were removed from your cart.');
-        } else if (priceChanged) {
-          setPriceSyncNotice('Cart prices were updated to match the current catalog.');
-        } else {
-          setPriceSyncNotice(null);
-        }
-      });
-    }, 400);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
-  }, [cartItemIds, syncCartPrices]);
-
-  useEffect(() => {
-    if (!isSignedIn) {
-      setSelectedCheckoutProductIds([]);
-      prevCartItemIdsRef.current = [];
-      prevCheckoutVendorOrgIdRef.current = '';
-      return;
-    }
-
-    const currentIds = cartItems.map((item) => item.id);
-    const previousIds = prevCartItemIdsRef.current;
-    prevCartItemIdsRef.current = currentIds;
-
-    setSelectedCheckoutProductIds((prev) =>
-      syncSelectedProductIds({
-        previousSelection: prev,
-        previousCartIds: previousIds,
-        currentCartIds: currentIds,
-      })
-    );
-  }, [cartLinesKey, isSignedIn, cartItems]);
-
-  const swrKey = isSignedIn && cartItems.length > 0
-    ? ['checkoutOptions', cartLinesKey, selectedCheckoutVendorOrgId]
-    : null;
-
-  const swrFetcher = async () => {
-    const lines = cartItems.map((item) => ({
-      id: item.id,
-      quantity: item.quantity,
-      price: item.price,
-    }));
-    const result = await getCartCheckoutOptionsAction(lines, selectedCheckoutVendorOrgId || null);
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to load checkout options.');
-    }
-    return result;
-  };
-
-  const { 
-    data: checkoutOptionsData, 
-    error: checkoutOptionsError, 
-    isValidating: optionsLoading
-  } = useSWR(swrKey, swrFetcher, { revalidateOnFocus: false, dedupingInterval: 5000 });
-
-  useEffect(() => {
-    if (!isSignedIn || cartItems.length === 0) {
-      if (cartItems.length === 0) {
-        setCheckoutOptions({
-          fulfillment: [],
-          payment: [],
-          pickupBranches: [],
-          vendorBankTransferByOrg: {},
-          vendorCartSummary: [],
-        });
-        setVendorCount(0);
-        setSelectedCheckoutVendorOrgId('');
-        setRequiresVendorSelection(false);
-        setSelectedCheckoutProductIds([]);
-        setPickupBranchId('');
-        prevCartItemIdsRef.current = [];
-        prevCheckoutVendorOrgIdRef.current = '';
-      }
-      return;
-    }
-
-    if (checkoutOptionsError) {
-      toast.error(checkoutOptionsError.message || 'Failed to load checkout options. Please refresh the page.');
-      setCheckoutOptions({
-        fulfillment: [],
-        payment: [],
-        pickupBranches: [],
-        vendorBankTransferByOrg: {},
-        vendorCartSummary: [],
-      });
-      setVendorCount(0);
-      setSelectedCheckoutVendorOrgId('');
-      setRequiresVendorSelection(false);
-      setFulfillmentMethod('');
-      setPaymentMethod('');
-      setPickupBranchId('');
-      return;
-    }
-
-    if (checkoutOptionsData) {
-      const result = checkoutOptionsData;
-      
-      setCheckoutOptions({
-        fulfillment: result.fulfillment,
-        payment: result.payment,
-        pickupBranches: result.pickupBranches,
-        vendorBankTransferByOrg: result.vendorBankTransferByOrg || {},
-        vendorCartSummary: result.vendorCartSummary || [],
-      });
-      setVendorCount(result.vendorCount);
-      setRequiresVendorSelection(result.requiresVendorSelection === true);
-
-      if (result.checkoutVendorOrgId) {
-        setSelectedCheckoutVendorOrgId(result.checkoutVendorOrgId);
-        if (!prevCheckoutVendorOrgIdRef.current) {
-          prevCheckoutVendorOrgIdRef.current = result.checkoutVendorOrgId;
-        }
-      } else if (
-        result.vendorCount > 1 &&
-        result.vendorCartSummary.length > 0 &&
-        !selectedCheckoutVendorOrgId
-      ) {
-        const firstVendor = result.vendorCartSummary[0];
-        setSelectedCheckoutVendorOrgId(firstVendor.orgId);
-        setSelectedCheckoutProductIds(firstVendor.productIds);
-        prevCheckoutVendorOrgIdRef.current = firstVendor.orgId;
-      }
-
-      const nextFulfillmentId = result.fulfillment.some((o) => o.id === fulfillmentMethod)
-        ? fulfillmentMethod
-        : (result.fulfillment[0]?.id || '');
-      const nextFulfillment = result.fulfillment.find((o) => o.id === nextFulfillmentId);
-
-      setFulfillmentMethod(nextFulfillmentId);
-      if (!nextFulfillment?.requiresBranch) {
-        setPickupBranchId('');
-      } else {
-        const allBranches = result.pickupBranches.flatMap((pb: any) => pb.branches);
-        if (allBranches.length === 1) {
-          setPickupBranchId(allBranches[0].id);
-        } else if (!allBranches.some((b: any) => b.id === pickupBranchId)) {
-          setPickupBranchId('');
-        }
-      }
-
-      const compatiblePayments = result.payment.filter((payment) =>
-        nextFulfillment
-          ? isPaymentCompatibleWithFulfillment(
-              { requiresDelivery: payment.requiresDelivery },
-              { requiresBranch: nextFulfillment.requiresBranch }
-            )
-          : true
-      );
-      const nextPaymentId = compatiblePayments.some((o) => o.id === paymentMethod)
-        ? paymentMethod
-        : (compatiblePayments[0]?.id || '');
-      setPaymentMethod(nextPaymentId);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checkoutOptionsData, checkoutOptionsError, isSignedIn, cartItems.length, selectedCheckoutVendorOrgId]);
+  const {
+    fulfillmentMethod,
+    setFulfillmentMethod,
+    paymentMethod,
+    setPaymentMethod,
+    pickupBranchId,
+    setPickupBranchId,
+    checkoutOptions,
+    vendorCount,
+    selectedCheckoutVendorOrgId,
+    setSelectedCheckoutVendorOrgId,
+    requiresVendorSelection,
+    selectedCheckoutProductIds,
+    setSelectedCheckoutProductIds,
+    priceSyncNotice,
+    optionsLoading,
+  } = useCheckoutOptionsState(Boolean(isSignedIn), cartItems, syncCartPrices);
 
   const selectedCheckoutProductIdSet = new Set(selectedCheckoutProductIds);
   const selectedVendorSummary =
@@ -350,8 +124,6 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   const showVendorCheckoutSelection = Boolean(isSignedIn) && vendorCount > 1;
 
   const handleSelectCheckoutVendor = (orgId: string, productIds: string[]) => {
-    if (prevCheckoutVendorOrgIdRef.current === orgId) return;
-    prevCheckoutVendorOrgIdRef.current = orgId;
     setSelectedCheckoutVendorOrgId(orgId);
     setSelectedCheckoutProductIds(productIds);
     setPickupBranchId('');
@@ -406,12 +178,6 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       setPaymentMethod(paymentsForFulfillment[0]?.id || '');
     }
   };
-
-  useEffect(() => {
-    if (selectedFulfillment?.requiresBranch && pickupBranches.length === 1 && !pickupBranchId) {
-      setPickupBranchId(pickupBranches[0].id);
-    }
-  }, [selectedFulfillment, pickupBranches, pickupBranchId]);
 
   const handleSendInbox = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -537,28 +303,25 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
           remainingItems.reduce((sum, item) => sum + item.quantity, 0)
         );
         setConfirmedOrderEmail(customerEmail);
-        setConfirmedOrderId(result.orderId || '');
-        setBankTransferInstructions(result.bankTransferInstructions || null);
-        setConfirmationEmailSent(result.confirmationEmailSent === true);
+        setConfirmedOrderId('orderId' in result ? (result.orderId || '') : '');
+        setBankTransferInstructions('bankTransferInstructions' in result ? (result.bankTransferInstructions || null) : null);
+        setConfirmationEmailSent('confirmationEmailSent' in result ? (result.confirmationEmailSent === true) : false);
         saveCheckoutSuccessSnapshot({
-          orderId: result.orderId || '',
+          orderId: 'orderId' in result ? (result.orderId || '') : '',
           confirmedOrderEmail: customerEmail,
-          bankTransferInstructions: result.bankTransferInstructions || null,
-          confirmationEmailSent: result.confirmationEmailSent === true,
+          bankTransferInstructions: 'bankTransferInstructions' in result ? (result.bankTransferInstructions || null) : null,
+          confirmationEmailSent: 'confirmationEmailSent' in result ? (result.confirmationEmailSent === true) : false,
         });
         setCheckoutStatus('success');
         setFulfillmentMethod('store_pickup');
         setPaymentMethod(BANK_TRANSFER_PAYMENT_ID);
         setPickupBranchId('');
-        setIdempotencyKey(crypto.randomUUID());
       } else {
         setCheckoutStatus('idle');
-        setIdempotencyKey(crypto.randomUUID());
         toast.error(result.error || 'Checkout failed.');
       }
     } catch (err) {
       setCheckoutStatus('idle');
-      setIdempotencyKey(crypto.randomUUID());
       toast.error(err instanceof Error ? err.message : 'An unexpected error occurred.');
     }
   };

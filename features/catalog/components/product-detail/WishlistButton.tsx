@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react';
 import { SignInButton, useAuth } from '@clerk/nextjs';
-import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/useClerkAuthRedirectUrl';
+import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/use-clerk-auth-redirect-url';
 import { toggleWishlistAction } from '@/features/catalog/product-detail.actions';
 
 interface WishlistButtonProps {

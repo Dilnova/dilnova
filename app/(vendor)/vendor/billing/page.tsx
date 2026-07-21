@@ -12,13 +12,7 @@ async function VendorBillingData({ orgId, orgRole }: { orgId: string, orgRole: s
   const client = await clerkClient();
   const org = await client.organizations.getOrganization({ organizationId: orgId });
 
-  let billingData = null;
-  let errorMsg = '';
-  try {
-    billingData = await getVendorBillingRegisterData();
-  } catch (err) {
-    errorMsg = err instanceof Error ? err.message : 'Unable to load billing register.';
-  }
+  const billingData = await getVendorBillingRegisterData();
 
   const systemName = await getSystemSetting('system_name', 'Dilnova');
 
@@ -36,7 +30,7 @@ async function VendorBillingData({ orgId, orgRole }: { orgId: string, orgRole: s
     );
   }
 
-  return <RestrictedAccessBlock type="premium_billing" errorMsg={errorMsg || undefined} />;
+  return <RestrictedAccessBlock type="premium_billing" />;
 }
 
 export default async function VendorBillingPage() {
