@@ -15,7 +15,6 @@ import {
 } from '@/features/organization/checkout-options.shared';
 import { updateCheckoutOptionsCatalogSchema } from '@/features/superadmin/schema';
 import { syncSettingToRedis } from '@/shared/platform/settings';
-import { z } from 'zod/v3';
 
 export const updateCheckoutOptionsCatalogAction = superadminAction
   .schema(updateCheckoutOptionsCatalogSchema)
