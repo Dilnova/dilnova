@@ -57,7 +57,7 @@ export default function StockAvailabilitySettings({
   const handleSave = () => {
     startTransition(async () => {
       try {
-        await updateStockAvailabilityCatalogAction(catalog);
+        await updateStockAvailabilityCatalogAction({ options: catalog });
         toast.success('Stock availability catalog saved.');
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to save stock availability catalog.');

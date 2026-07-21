@@ -29,7 +29,7 @@ export async function getCustomerDashboardData(userId: string) {
     getCheckoutOptionsCatalog(),
     getCachedUserRole(userId),
     getCachedIsSuperAdmin(userId),
-    getCustomerDeliveryDetailsAction(),
+    getCustomerDeliveryDetailsAction({}).then(res => res?.data || null),
   ]);
 
   const orders = await attachPaymentSlipPreviews(rawOrders);

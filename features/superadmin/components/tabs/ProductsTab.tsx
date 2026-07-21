@@ -70,7 +70,10 @@ export default function ProductsTab({ products, categories, organizations, maxMe
     if (!confirmed) return;
 
     toast.promise(
-      deleteProductAction(prodId),
+      deleteProductAction({ id: prodId }).then((res) => {
+        if (!res?.data?.success) throw new Error(res?.serverError || 'Failed to delete product.');
+        return res.data;
+      }),
       {
         loading: 'Deleting product...',
         success: 'Product deleted.',

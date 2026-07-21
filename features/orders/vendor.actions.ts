@@ -1,11 +1,10 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
 import { eq, inArray, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
-import { rejectPaymentSlipSchema, vendorOrderActionSchema } from '@/features/orders/schema';
+import { vendorOrderActionSchema, rejectPaymentSlipSchema } from '@/features/orders/schema';
 import { rateLimit } from '@/shared/security/rate-limit';
 import { runWithCorrelationId } from '@/shared/security/async-context';
 import { logAuditAction } from '@/shared/audit/logger';
@@ -27,7 +26,12 @@ import {
   MULTI_VENDOR_VENDOR_ACTION_ERROR,
   orderSpansMultipleVendors,
 } from '@/features/orders/vendor-scope';
-import { requireVendorRole } from '@/shared/auth/vendor-guard';
+import { orgAdminAction, ActionError } from '@/lib/safe-action';
+import { z } from 'zod/v3';
+
+// ── Internal helpers ──────────────────────────────────────────────────────────
+// Note: auth() is intentionally NOT called here — the orgAdminAction wrapper
+// already validates authentication and org:admin role before the action body runs.
 
 async function loadVendorOrder(orderId: string, orgId: string) {
   const result = await db
@@ -46,7 +50,7 @@ async function loadVendorOrder(orderId: string, orgId: string) {
     .limit(1);
 
   if (result.length === 0) {
-    throw new Error('Order not found or access denied.');
+    throw new ActionError('Order not found or access denied.');
   }
 
   const order = result[0].order;
@@ -59,226 +63,229 @@ async function loadVendorOrder(orderId: string, orgId: string) {
   const vendorOrgIds = [...new Set(vendorOrgRows.map((row) => row.vendorOrgId))];
 
   if (orderSpansMultipleVendors(vendorOrgIds)) {
-    throw new Error(MULTI_VENDOR_VENDOR_ACTION_ERROR);
+    throw new ActionError(MULTI_VENDOR_VENDOR_ACTION_ERROR);
   }
 
   return order;
 }
 
-async function assertVendorAdmin(userId: string | null | undefined, orgId: string | null | undefined, orgRole: string | null | undefined) {
-  if (!userId || !orgId) {
-    throw new Error('Not authorized: You must be signed in with an active organization.');
-  }
-  if (orgRole !== 'org:admin') {
-    throw new Error('Not authorized: Only organization admins can manage orders.');
-  }
-  await requireVendorRole(userId);
-}
+// ── Actions ───────────────────────────────────────────────────────────────────
 
-export async function verifyOrderPaymentAction(orderId: string) {
-  return runWithCorrelationId(async () => {
-    await rateLimit(30, 60 * 1000);
-    const { userId, orgId, orgRole } = await auth();
-    await assertVendorAdmin(userId, orgId, orgRole);
+export const verifyOrderPaymentAction = orgAdminAction
+  .schema(vendorOrderActionSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(30, 60 * 1000);
 
-    const parsed = vendorOrderActionSchema.safeParse({ orderId });
-    if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid order.');
-    }
+      const { userId, orgId } = ctx;
+      if (!orgId) {
+        throw new ActionError('Not authorized: You must be signed in with an active organization.');
+      }
 
-    const order = await loadVendorOrder(parsed.data.orderId, orgId!);
+      const order = await loadVendorOrder(parsedInput.orderId, orgId);
 
-    if (canVerifyBankTransferPayment(order)) {
-      await db.transaction(async (tx) => {
-        await verifyVendorOrderPayment(tx, { order, userId: userId! });
+      if (canVerifyBankTransferPayment(order)) {
+        await db.transaction(async (tx) => {
+          await verifyVendorOrderPayment(tx, { order, userId });
+        });
+      } else if (canFulfillCodOrder(order)) {
+        await db.transaction(async (tx) => {
+          await applySimulatedOrderStatusChange(tx, {
+            order,
+            newStatus: 'fulfilled',
+            userId,
+          });
+        });
+      } else {
+        throw new ActionError('This order cannot be verified or fulfilled in its current state.');
+      }
+
+      await logAuditAction({
+        userId,
+        action: 'VERIFY_ORDER_PAYMENT',
+        targetType: 'simulated_order',
+        targetId: order.id,
+        metadata: { paymentMethod: order.paymentMethod },
       });
-    } else if (canFulfillCodOrder(order)) {
+
+      const emailResult = await sendPaymentVerifiedCustomerEmail(order.id);
+      if (!emailResult.success) {
+        logger.warn('Order verified but customer confirmation email was not sent', {
+          orderId: order.id,
+          error: emailResult.error,
+        });
+        await logAuditAction({
+          userId,
+          action: 'EMAIL_DELIVERY_FAILURE',
+          targetType: 'simulated_order',
+          targetId: order.id,
+          metadata: {
+            emailType: 'payment_verified',
+            error: emailResult.error,
+          },
+        });
+      }
+
+      revalidateVendorConsole();
+      revalidatePath('/customer');
+      revalidatePath('/superadmin');
+
+      return { success: true as const, emailSent: emailResult.success };
+    });
+  });
+
+export const rejectPaymentSlipAction = orgAdminAction
+  .schema(rejectPaymentSlipSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(20, 60 * 1000);
+
+      const { userId, orgId } = ctx;
+      if (!orgId) {
+        throw new ActionError('Not authorized: You must be signed in with an active organization.');
+      }
+
+      const order = await loadVendorOrder(parsedInput.orderId, orgId);
+
+      if (!canVerifyBankTransferPayment(order)) {
+        throw new ActionError('Only submitted bank transfer slips can be rejected.');
+      }
+
+      await db.transaction(async (tx) => {
+        await rejectVendorPaymentSlip(tx, { orderId: order.id });
+      });
+
+      await logAuditAction({
+        userId,
+        action: 'REJECT_PAYMENT_SLIP',
+        targetType: 'simulated_order',
+        targetId: order.id,
+        metadata: { reason: parsedInput.reason || null },
+      });
+
+      const emailResult = await sendPaymentSlipRejectedCustomerEmail(order.id, parsedInput.reason);
+      if (!emailResult.success) {
+        logger.warn('Payment slip rejected but customer notification email was not sent', {
+          orderId: order.id,
+          error: emailResult.error,
+        });
+        await logAuditAction({
+          userId,
+          action: 'EMAIL_DELIVERY_FAILURE',
+          targetType: 'simulated_order',
+          targetId: order.id,
+          metadata: {
+            emailType: 'payment_slip_rejected',
+            reason: parsedInput.reason || null,
+            error: emailResult.error,
+          },
+        });
+      }
+
+      revalidateVendorConsole();
+      revalidatePath('/customer');
+      revalidatePath(`/customer/invoice/${order.id}`);
+
+      return { success: true as const, emailSent: emailResult.success };
+    });
+  });
+
+export const cancelVendorOrderAction = orgAdminAction
+  .schema(vendorOrderActionSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(20, 60 * 1000);
+
+      const { userId, orgId } = ctx;
+      if (!orgId) {
+        throw new ActionError('Not authorized: You must be signed in with an active organization.');
+      }
+
+      const order = await loadVendorOrder(parsedInput.orderId, orgId);
+
+      if (!isActiveSimulatedOrder(order.status)) {
+        throw new ActionError('This order can no longer be cancelled.');
+      }
+
       await db.transaction(async (tx) => {
         await applySimulatedOrderStatusChange(tx, {
           order,
-          newStatus: 'fulfilled',
-          userId: userId!,
+          newStatus: 'cancelled',
+          userId,
         });
       });
-    } else {
-      throw new Error('This order cannot be verified or fulfilled in its current state.');
-    }
 
-    await logAuditAction({
-      userId: userId!,
-      action: 'VERIFY_ORDER_PAYMENT',
-      targetType: 'simulated_order',
-      targetId: order.id,
-      metadata: { paymentMethod: order.paymentMethod },
-    });
-
-    const emailResult = await sendPaymentVerifiedCustomerEmail(order.id);
-    if (!emailResult.success) {
-      logger.warn('Order verified but customer confirmation email was not sent', {
-        orderId: order.id,
-        error: emailResult.error,
-      });
       await logAuditAction({
-        userId: userId!,
-        action: 'EMAIL_DELIVERY_FAILURE',
+        userId,
+        action: 'CANCEL_ORDER',
         targetType: 'simulated_order',
         targetId: order.id,
-        metadata: {
-          emailType: 'payment_verified',
+      });
+
+      const emailResult = await sendOrderCancelledCustomerEmail(order.id);
+      if (!emailResult.success) {
+        logger.warn('Order cancelled but customer notification email was not sent', {
+          orderId: order.id,
           error: emailResult.error,
-        },
-      });
-    }
+        });
+        await logAuditAction({
+          userId,
+          action: 'EMAIL_DELIVERY_FAILURE',
+          targetType: 'simulated_order',
+          targetId: order.id,
+          metadata: {
+            emailType: 'order_cancelled',
+            error: emailResult.error,
+          },
+        });
+      }
 
-    revalidateVendorConsole();
-    revalidatePath('/customer');
-    revalidatePath('/superadmin');
+      revalidateVendorConsole();
+      revalidatePath('/customer');
+      revalidatePath('/superadmin');
 
-    return { success: true as const, emailSent: emailResult.success };
-  });
-}
-
-export async function rejectPaymentSlipAction(orderId: string, reason?: string) {
-  return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
-    const { userId, orgId, orgRole } = await auth();
-    await assertVendorAdmin(userId, orgId, orgRole);
-
-    const parsed = rejectPaymentSlipSchema.safeParse({ orderId, reason });
-    if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid request.');
-    }
-
-    const order = await loadVendorOrder(parsed.data.orderId, orgId!);
-
-    if (!canVerifyBankTransferPayment(order)) {
-      throw new Error('Only submitted bank transfer slips can be rejected.');
-    }
-
-    await db.transaction(async (tx) => {
-      await rejectVendorPaymentSlip(tx, { orderId: order.id });
+      return { success: true as const, emailSent: emailResult.success };
     });
-
-    await logAuditAction({
-      userId: userId!,
-      action: 'REJECT_PAYMENT_SLIP',
-      targetType: 'simulated_order',
-      targetId: order.id,
-      metadata: { reason: parsed.data.reason || null },
-    });
-
-    const emailResult = await sendPaymentSlipRejectedCustomerEmail(order.id, parsed.data.reason);
-    if (!emailResult.success) {
-      logger.warn('Payment slip rejected but customer notification email was not sent', {
-        orderId: order.id,
-        error: emailResult.error,
-      });
-      await logAuditAction({
-        userId: userId!,
-        action: 'EMAIL_DELIVERY_FAILURE',
-        targetType: 'simulated_order',
-        targetId: order.id,
-        metadata: {
-          emailType: 'payment_slip_rejected',
-          reason: parsed.data.reason || null,
-          error: emailResult.error,
-        },
-      });
-    }
-
-    revalidateVendorConsole();
-    revalidatePath('/customer');
-    revalidatePath(`/customer/invoice/${order.id}`);
-
-    return { success: true as const, emailSent: emailResult.success };
   });
-}
 
-export async function cancelVendorOrderAction(orderId: string) {
-  return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
-    const { userId, orgId, orgRole } = await auth();
-    await assertVendorAdmin(userId, orgId, orgRole);
+export const getVendorPendingPaymentOrderIds = orgAdminAction
+  .schema(
+    z.object({
+      orgId: z.string(),
+      limit: z.number().int().optional().default(100),
+      offset: z.number().int().optional().default(0),
+    })
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(30, 60 * 1000);
 
-    const parsed = vendorOrderActionSchema.safeParse({ orderId });
-    if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid order.');
-    }
+      // ctx.orgId is the session org — ensure it matches the requested orgId
+      if (!ctx.orgId || ctx.orgId !== parsedInput.orgId) {
+        throw new ActionError(
+          'Not authorized: Only organization admins can view pending payment orders.'
+        );
+      }
 
-    const order = await loadVendorOrder(parsed.data.orderId, orgId!);
+      const { orgId, limit, offset } = parsedInput;
 
-    if (!isActiveSimulatedOrder(order.status)) {
-      throw new Error('This order can no longer be cancelled.');
-    }
+      const rows = await db
+        .select({ orderId: schema.simulatedOrderItems.orderId })
+        .from(schema.simulatedOrderItems)
+        .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId))
+        .limit(limit)
+        .offset(offset);
 
-    await db.transaction(async (tx) => {
-      await applySimulatedOrderStatusChange(tx, {
-        order,
-        newStatus: 'cancelled',
-        userId: userId!,
-      });
+      const orderIds = [...new Set(rows.map((row) => row.orderId))];
+      if (orderIds.length === 0) return [];
+
+      const orders = await db
+        .select({ id: schema.simulatedOrders.id, status: schema.simulatedOrders.status })
+        .from(schema.simulatedOrders)
+        .where(inArray(schema.simulatedOrders.id, orderIds));
+
+      return orders
+        .filter((order) => order.status === 'payment_submitted')
+        .map((order) => order.id);
     });
-
-    await logAuditAction({
-      userId: userId!,
-      action: 'CANCEL_ORDER',
-      targetType: 'simulated_order',
-      targetId: order.id,
-    });
-
-    const emailResult = await sendOrderCancelledCustomerEmail(order.id);
-    if (!emailResult.success) {
-      logger.warn('Order cancelled but customer notification email was not sent', {
-        orderId: order.id,
-        error: emailResult.error,
-      });
-      await logAuditAction({
-        userId: userId!,
-        action: 'EMAIL_DELIVERY_FAILURE',
-        targetType: 'simulated_order',
-        targetId: order.id,
-        metadata: {
-          emailType: 'order_cancelled',
-          error: emailResult.error,
-        },
-      });
-    }
-
-    revalidateVendorConsole();
-    revalidatePath('/customer');
-    revalidatePath('/superadmin');
-
-    return { success: true as const, emailSent: emailResult.success };
   });
-}
-
-export async function getVendorPendingPaymentOrderIds(orgId: string, limit = 100, offset = 0): Promise<string[]> {
-  return runWithCorrelationId(async () => {
-    await rateLimit(30, 60 * 1000);
-    const { userId, orgId: sessionOrgId, orgRole } = await auth();
-
-    if (!userId || !sessionOrgId || orgRole !== 'org:admin' || sessionOrgId !== orgId) {
-      throw new Error('Not authorized: Only organization admins can view pending payment orders.');
-    }
-    await requireVendorRole(userId);
-
-    const rows = await db
-      .select({ orderId: schema.simulatedOrderItems.orderId })
-      .from(schema.simulatedOrderItems)
-      .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId))
-      .limit(limit)
-      .offset(offset);
-
-    const orderIds = [...new Set(rows.map((row) => row.orderId))];
-    if (orderIds.length === 0) return [];
-
-    const orders = await db
-      .select({ id: schema.simulatedOrders.id, status: schema.simulatedOrders.status })
-      .from(schema.simulatedOrders)
-      .where(inArray(schema.simulatedOrders.id, orderIds));
-
-    return orders
-      .filter((order) => order.status === 'payment_submitted')
-      .map((order) => order.id);
-  });
-}

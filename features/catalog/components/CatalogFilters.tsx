@@ -85,7 +85,7 @@ export default function CatalogFilters({
         window.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [isMobileDrawerOpen]);
+  }, [isMobileDrawerOpen, setIsMobileDrawerOpen]);
 
 
   // Active filter count logic

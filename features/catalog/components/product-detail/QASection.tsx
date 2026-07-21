@@ -54,7 +54,10 @@ export default function QASection({
 
     startTransition(async () => {
       try {
-        await submitQuestionAction(productId, questionContent);
+        const result = await submitQuestionAction({ productId, content: questionContent });
+        if (!result?.data?.success) {
+          throw new Error(result?.serverError || 'Failed to post question.');
+        }
         toast.success('Your question has been posted.');
         setQuestionContent('');
         router.refresh();
@@ -74,7 +77,10 @@ export default function QASection({
 
     startReplyTransition(async () => {
       try {
-        await submitAnswerAction(questionId, replyContent);
+        const result = await submitAnswerAction({ questionId, answer: replyContent });
+        if (!result?.data?.success) {
+          throw new Error(result?.serverError || 'Failed to post answer.');
+        }
         toast.success('Answer posted successfully.');
         setReplyContent('');
         setActiveReplyId(null);

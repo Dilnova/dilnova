@@ -38,14 +38,22 @@ export function POSBillingProvider({
   // Mobile Checkout Drawer State
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
 
+  const {
+    data: { branches },
+    setSelectedBranchId,
+    selectedBranchId
+  } = posState;
+
   useEffect(() => {
-    if (posState.data.branches && posState.data.branches.length > 0) {
-      const defaultBranch = posState.data.branches.find((b) => b.isDefault) || posState.data.branches[0];
+    if (branches && branches.length > 0) {
+      const defaultBranch = branches.find((b) => b.isDefault) || branches[0];
       requestAnimationFrame(() => {
-        posState.setSelectedBranchId(defaultBranch.id);
+        if (!selectedBranchId) {
+          setSelectedBranchId(defaultBranch.id);
+        }
       });
     }
-  }, [posState.data.branches, posState.setSelectedBranchId]);
+  }, [branches, setSelectedBranchId, selectedBranchId]);
 
   // Fullscreen toggle event listener
   useEffect(() => {

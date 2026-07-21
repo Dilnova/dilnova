@@ -41,19 +41,19 @@ export function useCheckoutOptionsState(
 
     let cancelled = false;
     const timeoutId = setTimeout(() => {
-      syncCartPricesAction(cartItems.map((item) => item.id)).then((result) => {
-        if (cancelled || !result.success) return;
+      syncCartPricesAction({ productIds: cartItems.map((item) => item.id) }).then((result) => {
+        if (cancelled || !result?.data?.success) return;
 
         const previousById = new Map(cartItems.map((item) => [item.id, item]));
-        const priceChanged = result.items.some(
+        const priceChanged = result.data.items.some(
           (item) => previousById.get(item.id)?.price !== item.price
         );
 
-        syncCartPrices(result.items, result.removedIds);
+        syncCartPrices(result.data.items, result.data.removedIds);
 
-        if (result.removedIds.length > 0 && priceChanged) {
+        if (result.data.removedIds.length > 0 && priceChanged) {
           setPriceSyncNotice('Some items were removed and prices were updated to match the catalog.');
-        } else if (result.removedIds.length > 0) {
+        } else if (result.data.removedIds.length > 0) {
           setPriceSyncNotice('Some unavailable items were removed from your cart.');
         } else if (priceChanged) {
           setPriceSyncNotice('Cart prices were updated to match the current catalog.');
@@ -100,11 +100,15 @@ export function useCheckoutOptionsState(
       quantity: item.quantity,
       price: item.price,
     }));
-    const result = await getCartCheckoutOptionsAction(lines, selectedCheckoutVendorOrgId || null);
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to load checkout options.');
+    const result = await getCartCheckoutOptionsAction({
+      cartLines: lines,
+      checkoutVendorOrgId: selectedCheckoutVendorOrgId || null
+    });
+    if (!result?.data?.success) {
+      const errorMessage = result?.data && 'error' in result.data ? result.data.error : (result?.serverError || 'Failed to load checkout options.');
+      throw new Error(typeof errorMessage === 'string' ? errorMessage : 'Failed to load checkout options.');
     }
-    return result;
+    return result.data;
   };
 
   const { 

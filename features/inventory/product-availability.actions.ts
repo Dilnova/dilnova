@@ -1,6 +1,5 @@
 'use server';
 
-import { db } from '@/shared/db/client';
 import * as schema from '@/shared/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { revalidateVendorConsole } from '@/features/vendor/revalidate';
@@ -8,62 +7,66 @@ import { revalidatePath } from 'next/cache';
 import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
 import { logAuditAction } from '@/shared/audit/logger';
 import { runWithCorrelationId } from '@/shared/security/async-context';
-import { auth } from '@clerk/nextjs/server';
 import { rateLimit } from '@/shared/security/rate-limit';
-import { requireVendorRole } from '@/shared/auth/vendor-guard';
+import { z } from 'zod/v3';
+import { orgAdminAction, ActionError } from '@/lib/safe-action';
 
-export async function updateProductStockAvailabilityAction(
-  productId: string,
-  stockAvailability: string
-) {
-  return runWithCorrelationId(async () => {
-    await rateLimit(30, 60 * 1000);
-    const { userId, orgId, orgRole } = await auth();
-    if (!userId || !orgId) {
-      throw new Error('Not authorized.');
-    }
-    await requireVendorRole(userId);
-    if (orgRole !== 'org:admin') {
-      throw new Error('Not authorized: Only organization admins can update stock availability.');
-    }
+const actionSchema = z.object({
+  productId: z.string().uuid('Product ID must be a valid UUID.'),
+  stockAvailability: z.string().min(1).max(50),
+});
 
-    const availability = await validateStockAvailabilityId(stockAvailability);
-    if (!availability) {
-      throw new Error('Invalid stock availability status.');
-    }
+export const updateProductStockAvailabilityAction = orgAdminAction
+  .schema(actionSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(30, 60 * 1000);
 
-    const [product] = await db
-      .select({ id: schema.products.id })
-      .from(schema.products)
-      .where(and(eq(schema.products.id, productId), eq(schema.products.orgId, orgId)))
-      .limit(1);
+      // orgAdminAction guarantees: userId, orgId, orgRole === 'org:admin' (or superadmin).
+      const { userId, orgId } = ctx;
+      if (!orgId) {
+        throw new ActionError('No active organization context.');
+      }
 
-    if (!product) {
-      throw new Error('Product not found or access denied.');
-    }
+      const { productId, stockAvailability } = parsedInput;
 
-    const result = await db
-      .update(schema.inventory)
-      .set({ stockAvailability: availability.id, updatedAt: new Date() })
-      .where(eq(schema.inventory.productId, productId))
-      .returning({ id: schema.inventory.id });
+      const availability = await validateStockAvailabilityId(stockAvailability);
+      if (!availability) {
+        throw new ActionError('Invalid stock availability status.');
+      }
 
-    if (result.length === 0) {
-      throw new Error('Inventory record not found for this product.');
-    }
+      const [product] = await ctx.db
+        .select({ id: schema.products.id })
+        .from(schema.products)
+        .where(and(eq(schema.products.id, productId), eq(schema.products.orgId, orgId)))
+        .limit(1);
 
-    await logAuditAction({
-      userId,
-      action: 'UPDATE_INVENTORY_DETAILS',
-      targetType: 'inventory',
-      targetId: result[0].id,
-      metadata: { productId, stockAvailability: availability.id },
+      if (!product) {
+        throw new ActionError('Product not found or access denied.');
+      }
+
+      const result = await ctx.db
+        .update(schema.inventory)
+        .set({ stockAvailability: availability.id, updatedAt: new Date() })
+        .where(eq(schema.inventory.productId, productId))
+        .returning({ id: schema.inventory.id });
+
+      if (result.length === 0) {
+        throw new ActionError('Inventory record not found for this product.');
+      }
+
+      await logAuditAction({
+        userId,
+        action: 'UPDATE_INVENTORY_DETAILS',
+        targetType: 'inventory',
+        targetId: result[0].id,
+        metadata: { productId, stockAvailability: availability.id },
+      });
+
+      revalidateVendorConsole();
+      revalidatePath('/products');
+      revalidatePath(`/products/${productId}`);
+
+      return { success: true };
     });
-
-    revalidateVendorConsole();
-    revalidatePath('/products');
-    revalidatePath(`/products/${productId}`);
-
-    return { success: true };
   });
-}

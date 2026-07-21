@@ -1,7 +1,6 @@
 'use server';
 
-import { auth, clerkClient } from '@clerk/nextjs/server';
-import { db } from '@/shared/db/client';
+import { clerkClient } from '@clerk/nextjs/server';
 import * as schema from '@/shared/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { revalidatePath, updateTag } from 'next/cache';
@@ -15,67 +14,50 @@ import { rateLimit } from '@/shared/security/rate-limit';
 import { getPremiumStatus, DEFAULT_MAX_LISTING_COUNT } from '@/features/inventory/premium-license';
 import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
 import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
-import { requireVendorRole } from '@/shared/auth/vendor-guard';
 import { deleteCloudinaryAsset } from '@/shared/media/cloudinary-server';
+import { z } from 'zod/v3';
+import {
+  vendorAction,
+  orgAdminAction,
+  ActionError,
+} from '@/lib/safe-action';
 
 /**
  * Enterprise-grade Server Action to securely insert a new product/service into PostgreSQL.
  * Validates authentication, roles, and input formatting to prevent injections or cross-tenant write operations.
  */
-export async function addProductAction(data: {
-  name: string;
-  type: 'product' | 'service';
-  description: string;
-  priceInDollars: number;
-  imageUrl: string;
-  media: { url: string; type: 'image' | 'video' }[];
-  categoryId: string;
-  quantity?: number;
-  branchId?: string;
-  stockAvailability?: string;
-}) {
-  return runWithCorrelationId(async () => {
-    try {
+export const addProductAction = vendorAction
+  .schema(addProductSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { userId, orgId, orgRole, db } = ctx;
+
+    return runWithCorrelationId(async () => {
       await rateLimit(20, 60 * 1000);
 
-      // ── Schema Validation ──
-      const parsed = addProductSchema.safeParse(data);
-      if (!parsed.success) {
-        throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      if (!orgId) {
+        throw new ActionError('Not authorized: You must be signed in with an active organization.');
       }
 
-      // 1. Authentication & Organization Context Check
-      const { userId, orgId, orgRole } = await auth();
-      if (!userId || !orgId) {
-        throw new Error('Not authorized: You must be signed in with an active organization.');
-      }
-      await requireVendorRole(userId);
-
-      // 2. Validate that all Cloudinary URLs belong to the current vendor organization
-      if (parsed.data.imageUrl) {
-        if (!isAllowedCloudinaryDeliveryUrl(parsed.data.imageUrl, orgId)) {
-          throw new Error('Invalid product image: The image must belong to your organization folder.');
+      // Validate that all Cloudinary URLs belong to the current vendor organization
+      if (parsedInput.imageUrl) {
+        if (!isAllowedCloudinaryDeliveryUrl(parsedInput.imageUrl, orgId)) {
+          throw new ActionError('Invalid product image: The image must belong to your organization folder.');
         }
       }
-      for (const item of parsed.data.media) {
+      for (const item of parsedInput.media) {
         if (!isAllowedCloudinaryDeliveryUrl(item.url, orgId)) {
-          throw new Error('Invalid product media: The media must belong to your organization folder.');
+          throw new ActionError('Invalid product media: The media must belong to your organization folder.');
         }
-      }
-
-      // 3. Authorization Check: Must be admin or vendor member of the organization
-      if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
-        throw new Error('Not authorized: You do not have permissions to manage this catalog.');
       }
 
       // Convert price to cents to avoid floating-point arithmetic errors
-      const priceInCents = Math.round(parsed.data.priceInDollars * 100);
+      const priceInCents = Math.round(parsedInput.priceInDollars * 100);
 
       // Load max media uploads config and validate
       const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
       const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
 
-      const mediaPayload = parsed.data.media.slice(0, maxMediaLimit);
+      const mediaPayload = parsedInput.media.slice(0, maxMediaLimit);
 
       // Resolve premium status and org stock allocation mode (before starting the transaction)
       const premiumStatus = await getPremiumStatus(orgId);
@@ -105,7 +87,7 @@ export async function addProductAction(data: {
       const currentListingCount = listingCountRow?.count ?? 0;
 
       if (currentListingCount >= resolvedMaxListings) {
-        throw new Error(
+        throw new ActionError(
           `Your organization has reached its maximum listing limit of ${resolvedMaxListings} active item${
             resolvedMaxListings === 1 ? '' : 's'
           }. Please contact support to upgrade your plan.`
@@ -114,37 +96,37 @@ export async function addProductAction(data: {
       // ── End Listing Count Enforcement ────────────────────────────────────────
 
       let resolvedStockAvailability = 'in_stock';
-      if (parsed.data.type === 'product') {
-        const availability = await validateStockAvailabilityId(parsed.data.stockAvailability);
+      if (parsedInput.type === 'product') {
+        const availability = await validateStockAvailabilityId(parsedInput.stockAvailability);
         if (!availability) {
-          throw new Error('Invalid stock availability status selected.');
+          throw new ActionError('Invalid stock availability status selected.');
         }
         resolvedStockAvailability = availability.id;
       }
 
-      // 3. Secure Insert within a database transaction
+      // Secure Insert within a database transaction
       const newProduct = await db.transaction(async (tx) => {
         const [prod] = await tx
           .insert(schema.products)
           .values({
-            name: parsed.data.name,
-            type: parsed.data.type,
-            description: parsed.data.description,
+            name: parsedInput.name,
+            type: parsedInput.type,
+            description: parsedInput.description,
             price: priceInCents,
-            imageUrl: parsed.data.imageUrl || null,
+            imageUrl: parsedInput.imageUrl || null,
             media: mediaPayload,
             orgId: orgId, // Tied securely to user's current session orgId
-            categoryId: parsed.data.categoryId || null,
+            categoryId: parsedInput.categoryId || null,
           })
           .returning();
 
         if (!prod) {
-          throw new Error('Failed to create product record.');
+          throw new ActionError('Failed to create product record.');
         }
 
         // Initialize inventory entry if product type is 'product'
         if (prod.type === 'product') {
-          const initialQty = parsed.data.quantity ?? 0;
+          const initialQty = parsedInput.quantity ?? 0;
 
           const [inv] = await tx
             .insert(schema.inventory)
@@ -179,14 +161,14 @@ export async function addProductAction(data: {
               .from(schema.branches)
               .where(eq(schema.branches.orgId, orgId));
 
-            let targetBranchId = parsed.data.branchId;
+            let targetBranchId = parsedInput.branchId;
             if (!targetBranchId) {
               const defaultBranch = orgBranches.find((b) => b.isDefault) || orgBranches[0];
               targetBranchId = defaultBranch?.id;
             }
 
             if (targetBranchId && !orgBranches.some((b) => b.id === targetBranchId)) {
-              throw new Error('Selected branch is not valid for this organization.');
+              throw new ActionError('Selected branch is not valid for this organization.');
             }
 
             if (orgRole !== 'org:admin' && targetBranchId) {
@@ -202,7 +184,7 @@ export async function addProductAction(data: {
                 .limit(1);
 
               if (!membership) {
-                throw new Error('Not authorized: You are not assigned to the selected branch.');
+                throw new ActionError('Not authorized: You are not assigned to the selected branch.');
               }
             }
 
@@ -238,60 +220,45 @@ export async function addProductAction(data: {
         });
       }
 
-      // 4. Cache Invalidation
+      // Cache Invalidation
       revalidatePath('/products');
       revalidatePath('/vendors');
       revalidateVendorConsole();
       updateTag(`vendor-products-${orgId}`);
 
       return { success: true };
-    } catch (error) {
-      logger.error('Error adding product', error);
-      throw new Error(error instanceof Error ? error.message : 'Internal database error');
-    }
+    });
   });
-}
 
 /**
  * Secures and handles deletion of a product/service.
  * Ensures the product actually belongs to the user's active organization (prevents cross-tenant deletion).
  */
-export async function deleteProductAction(productId: string) {
-  return runWithCorrelationId(async () => {
-    try {
+export const deleteProductAction = orgAdminAction
+  .schema(vendorDeleteProductSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { userId, orgId, db } = ctx;
+
+    return runWithCorrelationId(async () => {
       await rateLimit(20, 60 * 1000);
 
-      // ── Schema Validation ──
-      const parsed = vendorDeleteProductSchema.safeParse({ productId });
-      if (!parsed.success) {
-        throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      if (!orgId) {
+        throw new ActionError('Not authorized: You must be signed in with an active organization.');
       }
 
-      // 1. Authentication & Organization Context Check
-      const { userId, orgId, orgRole } = await auth();
-      if (!userId || !orgId) {
-        throw new Error('Not authorized: You must be signed in with an active organization.');
-      }
-      await requireVendorRole(userId);
-
-      // 2. Authorization Check
-      if (orgRole !== 'org:admin') {
-        throw new Error('Not authorized: Only administrators can modify this catalog.');
-      }
-
-      // 3. Safe Deletion: Conditioned on both Product ID AND Organization ID
+      // Safe Deletion: Conditioned on both Product ID AND Organization ID
       const result = await db
         .delete(schema.products)
         .where(
           and(
-            eq(schema.products.id, parsed.data.productId),
+            eq(schema.products.id, parsedInput.productId),
             eq(schema.products.orgId, orgId) // Prevent deleting items from other vendors
           )
         )
         .returning();
 
       if (result.length === 0) {
-        throw new Error('Item not found or does not belong to your organization.');
+        throw new ActionError('Item not found or does not belong to your organization.');
       }
 
       const deletedProduct = result[0];
@@ -317,45 +284,40 @@ export async function deleteProductAction(productId: string) {
         });
       }
 
-      // 4. Cache Invalidation
+      // Cache Invalidation
       revalidatePath('/products');
       revalidatePath('/vendors');
       revalidateVendorConsole();
       updateTag(`vendor-products-${orgId}`);
 
       return { success: true };
-    } catch (error) {
-      logger.error('Error deleting product', error);
-      throw new Error(error instanceof Error ? error.message : 'Internal database error');
-    }
+    });
   });
-}
 
 /**
  * Enterprise solution for quick stock updates directly from the catalog.
  * Useful for free-tier users who don't have access to the full IMS.
  */
-export async function quickUpdateProductStockAction(productId: string, newQuantity: number) {
-  return runWithCorrelationId(async () => {
-    try {
+export const quickUpdateProductStockAction = vendorAction
+  .schema(
+    z.object({
+      productId: z.string().uuid('Invalid product ID.'),
+      newQuantity: z.number().int('Quantity must be a whole number.').nonnegative('Quantity cannot be negative.'),
+    })
+  )
+  .action(async ({ parsedInput, ctx }) => {
+    const { userId, orgId, db } = ctx;
+
+    return runWithCorrelationId(async () => {
       await rateLimit(20, 60 * 1000);
 
-      if (typeof newQuantity !== 'number' || !Number.isInteger(newQuantity) || newQuantity < 0) {
-        throw new Error('Invalid quantity');
+      if (!orgId) {
+        throw new ActionError('Not authorized: You must be signed in with an active organization.');
       }
 
-      // 1. Authentication & Organization Context Check
-      const { userId, orgId, orgRole } = await auth();
-      if (!userId || !orgId) {
-        throw new Error('Not authorized: You must be signed in with an active organization.');
-      }
-      await requireVendorRole(userId);
+      const { productId, newQuantity } = parsedInput;
 
-      if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
-        throw new Error('Not authorized: You do not have permissions to manage this catalog.');
-      }
-
-      // 2. Transaction for secure lookup and update
+      // Transaction for secure lookup and update
       await db.transaction(async (tx) => {
         // Ensure product belongs to org
         const [prod] = await tx
@@ -370,7 +332,7 @@ export async function quickUpdateProductStockAction(productId: string, newQuanti
           .limit(1);
 
         if (!prod || prod.type !== 'product') {
-          throw new Error('Product not found or not eligible for stock update.');
+          throw new ActionError('Product not found or not eligible for stock update.');
         }
 
         // Get central inventory record
@@ -381,7 +343,7 @@ export async function quickUpdateProductStockAction(productId: string, newQuanti
           .limit(1);
 
         if (!inv) {
-          throw new Error('Inventory record not found. (Legacy product without inventory)');
+          throw new ActionError('Inventory record not found. (Legacy product without inventory)');
         }
 
         const prevQty = inv.quantity;
@@ -404,16 +366,12 @@ export async function quickUpdateProductStockAction(productId: string, newQuanti
         });
       });
 
-      // 3. Cache Invalidation
+      // Cache Invalidation
       revalidatePath('/products');
       revalidatePath('/vendors');
       revalidateVendorConsole();
       updateTag(`vendor-products-${orgId}`);
 
       return { success: true };
-    } catch (error) {
-      logger.error('Error updating stock', error);
-      throw new Error(error instanceof Error ? error.message : 'Internal database error');
-    }
+    });
   });
-}

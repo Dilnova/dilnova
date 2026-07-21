@@ -11,6 +11,7 @@ vi.mock('@clerk/nextjs/server', () => ({
 
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
+  unstable_cache: vi.fn((cb) => cb),
 }));
 
 vi.mock('@/shared/audit/logger', () => ({

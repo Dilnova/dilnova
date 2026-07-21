@@ -15,7 +15,7 @@ export default function WishlistRemoveButton({ productId }: WishlistRemoveButton
   const handleRemove = () => {
     startTransition(async () => {
       try {
-        await toggleWishlistAction(productId);
+        await toggleWishlistAction({ productId });
         router.refresh();
       } catch (err) {
         console.error('Failed to remove wishlist item', err);

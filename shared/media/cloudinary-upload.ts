@@ -37,10 +37,10 @@ export async function uploadToCloudinary(
     resourceType,
   });
 
-  if (!signatureResult.success) {
+  if (!signatureResult?.data) {
     return {
       success: false,
-      error: signatureResult.error,
+      error: signatureResult?.serverError || signatureResult?.validationErrors?._errors?.[0] || 'Failed to get upload signature',
     };
   }
 

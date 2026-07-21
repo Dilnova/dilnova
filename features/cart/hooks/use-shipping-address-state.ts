@@ -14,7 +14,8 @@ export function useShippingAddressState(isSignedIn: boolean) {
   useEffect(() => {
     async function loadSavedDeliveryDetails() {
       if (isSignedIn) {
-        const details = await getCustomerDeliveryDetailsAction();
+        const result = await getCustomerDeliveryDetailsAction({});
+        const details = result?.data;
         if (details) {
           if (details.shippingAddress) setShippingAddress(details.shippingAddress);
           if (details.shippingAddressLine2) setShippingAddressLine2(details.shippingAddressLine2);

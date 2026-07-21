@@ -5,7 +5,15 @@ import crypto from 'crypto';
 import { invalidateClerkUserCache, invalidateClerkOrgCache } from '@/shared/auth/clerk-cache';
 
 vi.mock('@/shared/db/client', () => ({
-  db: {}
+  db: {
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        onConflictDoNothing: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: 'mocked_id' }])
+        })
+      })
+    })
+  }
 }));
 
 vi.mock('@/shared/logging/logger', () => ({

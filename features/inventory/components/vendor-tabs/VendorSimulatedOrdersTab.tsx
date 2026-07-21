@@ -35,9 +35,13 @@ export default function VendorSimulatedOrdersTab({
   const handleVerifyOrderPayment = (orderId: string) => {
     startTransition(async () => {
       try {
-        await verifyOrderPaymentAction(orderId);
-        triggerNotification(true, 'Order payment verified.');
-        refreshData();
+        const result = await verifyOrderPaymentAction({ orderId });
+        if (result?.data?.success) {
+          triggerNotification(true, 'Order payment verified.');
+          refreshData();
+        } else {
+          throw new Error(result?.serverError || 'Verification failed.');
+        }
       } catch (error) {
         triggerNotification(false, error instanceof Error ? error.message : 'Verification failed.');
       }
@@ -47,9 +51,13 @@ export default function VendorSimulatedOrdersTab({
   const handleRejectPaymentSlip = (orderId: string) => {
     startTransition(async () => {
       try {
-        await rejectPaymentSlipAction(orderId);
-        triggerNotification(true, 'Payment slip rejected. Customer can upload again.');
-        refreshData();
+        const result = await rejectPaymentSlipAction({ orderId });
+        if (result?.data?.success) {
+          triggerNotification(true, 'Payment slip rejected. Customer can upload again.');
+          refreshData();
+        } else {
+          throw new Error(result?.serverError || 'Rejection failed.');
+        }
       } catch (error) {
         triggerNotification(false, error instanceof Error ? error.message : 'Rejection failed.');
       }
@@ -59,9 +67,13 @@ export default function VendorSimulatedOrdersTab({
   const handleCancelVendorOrder = (orderId: string) => {
     startTransition(async () => {
       try {
-        await cancelVendorOrderAction(orderId);
-        triggerNotification(true, 'Order cancelled.');
-        refreshData();
+        const result = await cancelVendorOrderAction({ orderId });
+        if (result?.data?.success) {
+          triggerNotification(true, 'Order cancelled.');
+          refreshData();
+        } else {
+          throw new Error(result?.serverError || 'Cancellation failed.');
+        }
       } catch (error) {
         triggerNotification(false, error instanceof Error ? error.message : 'Cancellation failed.');
       }

@@ -1,23 +1,34 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
-import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
+import { clerkClient } from '@clerk/nextjs/server';
+import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
 import { getPremiumStatus } from './premium-license';
+import { authenticatedAction, ActionError } from '@/lib/safe-action';
+import { z } from 'zod/v3';
 
-export async function getPremiumStatusAction(orgId: string) {
-  const { userId, orgId: sessionOrgId } = await auth();
-  if (!userId) {
-    throw new Error('Unauthorized');
-  }
+const actionSchema = z.object({
+  orgId: z.string().min(1, 'Organization ID is required.'),
+});
 
-  if (sessionOrgId !== orgId) {
-    await checkSuperAdmin();
-  }
+export const getPremiumStatusAction = authenticatedAction
+  .schema(actionSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const { orgId } = parsedInput;
 
-  // We can't pass Date objects across the server/client boundary easily without serialization.
-  // We'll just return the boolean we need.
-  const status = await getPremiumStatus(orgId);
-  return {
-    billingActive: status.billingActive
-  };
-}
+    // If the session org matches the requested org, allow directly.
+    // Otherwise, require platform superadmin privileges (dual-gate check).
+    if (ctx.orgId !== orgId) {
+      const client = await clerkClient();
+      const user = await client.users.getUser(ctx.userId);
+      if (!isSuperAdminUser(user)) {
+        throw new ActionError('Unauthorized: You do not have access to this organization.');
+      }
+    }
+
+    // We can't pass Date objects across the server/client boundary easily without
+    // serialization. Return only the boolean flag the client needs.
+    const status = await getPremiumStatus(orgId);
+    return {
+      billingActive: status.billingActive,
+    };
+  });

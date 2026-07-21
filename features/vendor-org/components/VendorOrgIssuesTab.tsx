@@ -104,7 +104,10 @@ function IssueGroupCard({
           toOrgId: targetOrgId,
           scopes,
         });
-        const { counts } = result;
+        if (!result?.data?.success || !result.data.counts) {
+          throw new Error(result?.serverError || 'Reassignment failed.');
+        }
+        const { counts } = result.data;
         toast.success(
           `Reassigned ${formatReassignCounts(counts)} from ${group.orgId.slice(0, 8)}… to ${targetOrgName}.`
         );
@@ -128,7 +131,10 @@ function IssueGroupCard({
 
     startTransition(async () => {
       try {
-        await reassignProductOrgAction(productId, toOrgId);
+        const result = await reassignProductOrgAction({ productId, toOrgId });
+        if (!result?.data?.success) {
+          throw new Error(result?.serverError || 'Product reassignment failed.');
+        }
         toast.success(`Updated vendor org for "${productName}".`);
         onRefresh();
       } catch (error) {

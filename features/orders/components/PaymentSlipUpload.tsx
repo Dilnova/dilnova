@@ -56,12 +56,12 @@ export default function PaymentSlipUpload({
           fileType: file.type,
         });
 
-        if (!presignResult.success) {
-          toast.error(presignResult.error || 'Failed to initialize upload.');
+        if (!presignResult?.data?.success) {
+          toast.error(presignResult?.serverError || 'Failed to initialize upload.');
           return;
         }
 
-        const { signedUrl, storagePath } = presignResult;
+        const { signedUrl, storagePath } = presignResult.data;
 
         // 2. Upload file binary directly to Supabase storage
         const uploadResponse = await fetch(signedUrl, {
@@ -84,13 +84,13 @@ export default function PaymentSlipUpload({
           storagePath,
         });
 
-        if (submitResult.success) {
-          if (submitResult.previewUrl) {
-            setSlipPreviewUrl(submitResult.previewUrl);
+        if (submitResult?.data?.success) {
+          if (submitResult.data.previewUrl) {
+            setSlipPreviewUrl(submitResult.data.previewUrl);
           }
           toast.success('Payment slip submitted. The vendor will review your transfer shortly.');
         } else {
-          toast.error(submitResult.error || 'Failed to save payment slip.');
+          toast.error(submitResult?.serverError || 'Failed to save payment slip.');
         }
       } catch (error) {
         toast.error(

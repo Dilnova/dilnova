@@ -80,7 +80,13 @@ export default function OrgCheckoutOptionsForm({
 
     startTransition(async () => {
       try {
-        await updateOrgCheckoutOptionsAction(orgId, options);
+        const result = await updateOrgCheckoutOptionsAction({
+          organizationId: orgId,
+          checkoutOptions: options
+        });
+        if (!result?.data?.success) {
+          throw new Error(result?.serverError || 'Failed to update checkout options.');
+        }
         toast.success('Checkout options updated successfully!');
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to update checkout options.');

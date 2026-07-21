@@ -75,7 +75,10 @@ export default function ReviewsSection({
 
     startTransition(async () => {
       try {
-        await submitReviewAction(productId, rating, comment);
+        const result = await submitReviewAction({ productId, rating, comment });
+        if (!result?.data?.success) {
+          throw new Error(result?.serverError || 'Failed to submit review.');
+        }
         toast.success(
           userHasReviewed
             ? 'Your review has been updated.'

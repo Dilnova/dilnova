@@ -33,6 +33,7 @@ vi.mock('@/features/catalog/verified-buyer', () => ({
 
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
+  unstable_cache: vi.fn((cb) => cb),
 }));
 
 const productId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
@@ -65,9 +66,9 @@ describe('submitReviewAction', () => {
     vi.mocked(db.select).mockReturnValue(createSelectChain([{ orgId }]) as never);
     vi.mocked(isUserMemberOfOrganization).mockResolvedValue(true);
 
-    await expect(submitReviewAction(productId, 5, 'Great product')).rejects.toThrow(
-      'Vendor members cannot review their own products.'
-    );
+    const result = await submitReviewAction({ productId, rating: 5, comment: 'Great product' });
+
+    expect(result?.serverError).toBe('Vendor members cannot review their own products.');
 
     expect(isUserMemberOfOrganization).toHaveBeenCalledWith('user_vendor', orgId);
     expect(hasCustomerPurchasedProduct).not.toHaveBeenCalled();
@@ -84,9 +85,9 @@ describe('submitReviewAction', () => {
       values: vi.fn().mockResolvedValue(undefined),
     } as never);
 
-    const result = await submitReviewAction(productId, 5, 'Legit review');
+    const result = await submitReviewAction({ productId, rating: 5, comment: 'Legit review' });
 
-    expect(result).toEqual({ success: true });
+    expect(result?.data?.success).toBe(true);
     expect(hasCustomerPurchasedProduct).toHaveBeenCalledWith(productId, 'user_vendor');
     expect(db.insert).toHaveBeenCalled();
   });

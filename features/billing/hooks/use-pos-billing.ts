@@ -1,4 +1,4 @@
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useMemo, useCallback } from 'react';
 import type { VendorBillingRegisterData } from '@/features/billing/types';
 import { getVendorBillingRegisterData } from '@/features/billing/register.actions';
 import { processBillingCheckoutAction } from '@/features/billing/checkout.actions';
@@ -39,7 +39,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
     }
   };
 
-  const isProductPurchasable = (item: (typeof data.inventoryItems)[number]) => {
+  const isProductPurchasable = useCallback((item: (typeof data.inventoryItems)[number]) => {
     if (item.productType === 'service') return true;
     if (!item.id) return false;
     const availability = resolveEffectiveStockAvailability(
@@ -48,9 +48,9 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
       item.quantity ?? 0
     );
     return availability?.allowsPurchase ?? false;
-  };
+  }, [availabilityCatalog]);
 
-  const getProductStockInfo = (productId: string) => {
+  const getProductStockInfo = useCallback((productId: string) => {
     const prod = data.inventoryItems.find((i) => i.productId === productId);
     if (prod?.productType === 'service') {
       return { qty: 999999, sku: 'Service', binLocation: 'N/A' };
@@ -69,7 +69,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
       sku: cInv?.sku || '—',
       binLocation: cInv?.binLocation || '—',
     };
-  };
+  }, [data.inventoryItems, data.branchInventory, selectedBranchId]);
 
   // Filtered products list
   const filteredProducts = useMemo(() => {
@@ -91,7 +91,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
 
       return matchesName || matchesSku || matchesId;
     });
-  }, [data.inventoryItems, searchQuery, categoryFilter, selectedBranchId, data.branchInventory, availabilityCatalog]);
+  }, [data.inventoryItems, searchQuery, categoryFilter, getProductStockInfo, isProductPurchasable]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1;
   const paginatedProducts = useMemo(() => {
@@ -183,17 +183,17 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
           notes,
         });
 
-        if (!result.success) {
+        if (!result?.data?.success) {
           playAudioFeedback('error');
-          toast.error(result.error || 'POS checkout failed.');
+          toast.error(result?.serverError || 'POS checkout failed.');
           return;
         }
 
         playAudioFeedback('checkout');
-        toast.success(`POS receipt processed! Total: $${(result.totalAmount / 100).toFixed(2)}`);
+        toast.success(`POS receipt processed! Total: $${(result.data.totalAmount / 100).toFixed(2)}`);
 
         setReceiptToPrint({
-          id: result.receiptId,
+          id: result.data.receiptId,
           branchName: data.branches.find((b) => b.id === selectedBranchId)?.name || 'Main Register',
           items: cart.map((i) => ({
             name: i.product.productName,
@@ -203,7 +203,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
           subtotal: subtotalAmount,
           discountPercent,
           discountAmount,
-          total: result.totalAmount / 100,
+          total: result.data.totalAmount / 100,
           paymentMethod,
           cashTendered: paymentMethod === 'cash' ? cashTenderedVal : null,
           changeDue: paymentMethod === 'cash' ? changeDue : null,
