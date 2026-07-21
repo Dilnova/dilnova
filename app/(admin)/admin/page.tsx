@@ -7,6 +7,7 @@ import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-opti
 import { getBranchCountForOrg } from '@/features/admin/queries';
 import { bankDetailsToProfileFormFields, hasBankTransferConfiguredForOrg, parseBankDetailsFromClerkOrg } from '@/features/billing/bank-transfer-metadata';
 import Image from 'next/image';
+import SafeProgressBar from '@/shared/ui/SafeProgressBar';
 
 export default async function AdminPage() {
   const { orgId, orgRole } = await auth();
@@ -127,7 +128,7 @@ export default async function AdminPage() {
             <p className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">Setup Progress</p>
             <span className="text-sm font-bold font-mono mt-1 text-purple-700 dark:text-purple-400">{completionPercent}% Complete</span>
             <div className="w-full max-w-[80px] bg-zinc-200 dark:bg-zinc-800 rounded-full h-1 mt-1.5 overflow-hidden">
-              <div className="bg-purple-650 h-1 rounded-full transition-all duration-500" style={{ width: `${completionPercent}%` }} />
+              <SafeProgressBar className="bg-purple-650 h-1 rounded-full transition-all duration-500" percent={completionPercent} />
             </div>
           </div>
         </div>

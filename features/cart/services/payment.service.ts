@@ -1,13 +1,13 @@
 import { logger } from '@/shared/logging/logger';
-import { isBankTransferPayment, hasCompleteBankDetails } from '@/features/billing/bank-transfer';
-import { isPaymentCompatibleWithFulfillment } from '@/features/organization/checkout-options.shared';
+import { isBankTransferPayment, hasCompleteBankDetails, type BankTransferDetails } from '@/features/billing/bank-transfer';
+import { isPaymentCompatibleWithFulfillment, type CheckoutOptionDefinition } from '@/features/organization/checkout-options.shared';
 
 export function validatePayment(opts: {
   payment: string;
-  paymentOption: any;
-  fulfillmentOption: any;
+  paymentOption: CheckoutOptionDefinition;
+  fulfillmentOption: CheckoutOptionDefinition;
   vendorOrgIds: string[];
-  bankDetailsByOrg: Record<string, any>;
+  bankDetailsByOrg: Record<string, { vendorName: string; bankDetails: BankTransferDetails | null }>;
   uniqueItemIds: string[];
 }) {
   const {

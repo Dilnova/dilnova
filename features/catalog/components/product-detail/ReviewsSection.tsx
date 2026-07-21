@@ -8,6 +8,7 @@ import { submitReviewAction, getUserProductStateAction } from '@/features/catalo
 import Image from 'next/image';
 import SignInPrompt from '@/shared/ui/SignInPrompt';
 import { toast } from 'sonner';
+import SafeProgressBar from '@/shared/ui/SafeProgressBar';
 
 interface Review {
   id: string;
@@ -141,9 +142,9 @@ export default function ReviewsSection({
                 <div key={stars} className="flex items-center gap-3 text-xs font-mono text-zinc-500">
                   <span className="w-12 text-right">{stars} star</span>
                   <div className="flex-1 h-2 bg-zinc-100 rounded-full dark:bg-zinc-900 overflow-hidden border border-zinc-200/20 dark:border-zinc-800/30">
-                    <div
+                    <SafeProgressBar
                       className="h-full bg-purple-600 dark:bg-purple-500 rounded-full transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
+                      percent={percentage}
                     />
                   </div>
                   <span className="w-8 text-left">{percentage}%</span>

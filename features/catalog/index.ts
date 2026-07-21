@@ -1,4 +1,4 @@
-export * from '@/features/catalog/query';
+export * from '@/features/catalog/queries';
 export * from '@/features/catalog/schema';
 export {
   addProductAction,

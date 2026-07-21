@@ -1,11 +1,13 @@
 import { logger } from '@/shared/logging/logger';
+import type { CheckoutOptionDefinition } from '@/features/organization/checkout-options.shared';
+import type { BranchRow } from './checkout.types';
 
 export function validateFulfillment(opts: {
-  fulfillmentOption: any;
+  fulfillmentOption: CheckoutOptionDefinition;
   pickupBranch: string | null;
   vendorOrgIds: string[];
-  branchRows: any[];
-  branchesByOrg: Map<string, any[]>;
+  branchRows: BranchRow[];
+  branchesByOrg: Map<string, Omit<BranchRow, 'orgId'>[]>;
   uniqueItemIds: string[];
 }) {
   const {
@@ -29,7 +31,7 @@ export function validateFulfillment(opts: {
     if (!validBranch && pickupBranch === 'main_branch' && vendorOrgIds.length === 1) {
       const orgBranchesLength = branchesByOrg.get(vendorOrgIds[0])?.length || 0;
       if (orgBranchesLength === 0) {
-        validBranch = { id: 'main_branch', orgId: vendorOrgIds[0] } as any;
+        validBranch = { id: 'main_branch', orgId: vendorOrgIds[0], name: 'Main Branch', address: null, phone: null };
       }
     }
 
@@ -61,7 +63,7 @@ export function validateFulfillment(opts: {
 }
 
 export function validateShippingAddress(opts: {
-  fulfillmentOption: any;
+  fulfillmentOption: CheckoutOptionDefinition;
   normalizedShippingAddress: string | null;
   normalizedShippingCity: string | null;
   normalizedShippingState: string | null;

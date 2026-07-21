@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import crypto from 'crypto';
 import { logger } from '@/shared/logging/logger';
+import { handleApiError } from '@/shared/errors/error-handler';
 import { invalidateClerkUserCache, invalidateClerkOrgCache } from '@/shared/auth/clerk-cache';
 import { Redis } from '@upstash/redis';
 import { readUpstashEnv } from '@/shared/security/upstash-health';
@@ -58,8 +59,9 @@ function verifyClerkWebhookSignature(
         }
       }
     }
-  } catch (error) {
-    logger.error('Error verifying Clerk webhook signature', error);
+  } catch (error: unknown) {
+    const apiError = handleApiError(error, 'Error verifying Clerk webhook signature');
+    logger.error(apiError.message, error);
   }
   return false;
 }
@@ -139,8 +141,9 @@ export async function POST(req: NextRequest) {
         return true; // Is duplicate
       }
       return false; // Not duplicate
-    } catch (dbError) {
-      logger.error('Database fallback for webhook idempotency failed', dbError, { tags: { alert: 'webhook_failure', source: 'clerk' } });
+    } catch (dbError: unknown) {
+      const apiError = handleApiError(dbError, 'Database fallback for webhook idempotency failed');
+      logger.error(apiError.message, dbError, { tags: { alert: 'webhook_failure', source: 'clerk' } });
       throw dbError; // Fail closed if even DB fails
     }
   };
@@ -154,14 +157,15 @@ export async function POST(req: NextRequest) {
         logger.warn('Clerk webhook duplicate detected via Redis, ignoring replay', { svixId });
         return NextResponse.json({ success: true, message: 'Already processed' });
       }
-    } catch (e) {
-      logger.error('Redis idempotency check failed, attempting database fallback', e, { tags: { source: 'clerk' } });
+    } catch (e: unknown) {
+      const apiError = handleApiError(e, 'Redis idempotency check failed, attempting database fallback');
+      logger.error(apiError.message, e, { tags: { source: 'clerk' } });
       try {
         const isDuplicate = await fallbackToDbIdempotency();
         if (isDuplicate) {
           return NextResponse.json({ success: true, message: 'Already processed' });
         }
-      } catch (dbError) {
+      } catch (dbError: unknown) {
         if (process.env.NODE_ENV === 'production') {
           return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
         }
@@ -173,9 +177,10 @@ export async function POST(req: NextRequest) {
       if (isDuplicate) {
         return NextResponse.json({ success: true, message: 'Already processed' });
       }
-    } catch (e) {
+    } catch (e: unknown) {
       if (process.env.NODE_ENV === 'production') {
-        logger.error('Redis and DB idempotency check both failed in production', undefined, { tags: { alert: 'webhook_failure', source: 'clerk' } });
+        const apiError = handleApiError(e, 'Redis and DB idempotency check both failed in production');
+        logger.error(apiError.message, undefined, { tags: { alert: 'webhook_failure', source: 'clerk' } });
         return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
       }
       
@@ -261,10 +266,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    logger.error('Failed to process Clerk webhook event payload', error, { tags: { alert: 'webhook_failure', source: 'clerk' } });
+  } catch (error: unknown) {
+    const apiError = handleApiError(error, 'Failed to process Clerk webhook event payload');
+    logger.error(apiError.message, error, { tags: { alert: 'webhook_failure', source: 'clerk' } });
     return NextResponse.json(
-      { error: 'Error processing webhook payload.' },
+      { error: apiError.message },
       { status: 500 }
     );
   }

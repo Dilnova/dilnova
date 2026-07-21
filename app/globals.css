@@ -240,8 +240,20 @@ iframe.skiptranslate,
 }
 
 input, textarea, select { color: #18181b; }
+input::placeholder, textarea::placeholder { color: #71717a; }
 
 @media (prefers-color-scheme: dark) {
   input, textarea, select { color: #f4f4f5; }
-  input::placeholder, textarea::placeholder { color: #71717a; }
+  input::placeholder, textarea::placeholder { color: #a1a1aa; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }

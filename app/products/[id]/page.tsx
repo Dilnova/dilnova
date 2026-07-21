@@ -128,23 +128,19 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
   let orgDetails: CachedOrg | null = null;
 
-  try {
-    const cachedOrgs = await getCachedOrganizations(client);
-    orgDetails = cachedOrgs.find((o) => o.id === product.orgId) || null;
+  const cachedOrgs = await getCachedOrganizations(client);
+  orgDetails = cachedOrgs.find((o) => o.id === product.orgId) || null;
 
-    // Fallback: If not in cached list, query Clerk API directly
-    if (!orgDetails) {
-      const org = await client.organizations.getOrganization({ organizationId: product.orgId });
-      orgDetails = {
-        id: org.id,
-        name: org.name,
-        slug: org.slug,
-        imageUrl: org.imageUrl,
-        publicMetadata: (org.publicMetadata as CachedOrg['publicMetadata']) || {},
-      };
-    }
-  } catch (err) {
-    console.error('Failed to resolve seller organization details', err, { productId: product.id, orgId: product.orgId });
+  // Fallback: If not in cached list, query Clerk API directly
+  if (!orgDetails) {
+    const org = await client.organizations.getOrganization({ organizationId: product.orgId });
+    orgDetails = {
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      imageUrl: org.imageUrl,
+      publicMetadata: (org.publicMetadata as CachedOrg['publicMetadata']) || {},
+    };
   }
 
   const vendorName = orgDetails ? orgDetails.name : 'Unknown Vendor';

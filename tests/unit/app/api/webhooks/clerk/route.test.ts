@@ -4,6 +4,10 @@ import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 import { invalidateClerkUserCache, invalidateClerkOrgCache } from '@/shared/auth/clerk-cache';
 
+vi.mock('@/shared/db/client', () => ({
+  db: {}
+}));
+
 vi.mock('@/shared/logging/logger', () => ({
   logger: {
     info: vi.fn(),

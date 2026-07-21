@@ -1,5 +1,7 @@
 'use client';
 
+import { AccessibleModal } from '@/shared/ui/AccessibleModal';
+
 interface Organization {
   id: string;
   name: string;
@@ -8,19 +10,19 @@ interface Organization {
   publicMetadata: Record<string, any>;
 }
 
-interface IMSLicenseModalProps {
+export interface IMSLicenseModalProps {
   managingOrg: Organization;
   onClose: () => void;
   licenseImsEnabled: boolean;
-  setLicenseImsEnabled: (val: boolean) => void;
+  setLicenseImsEnabled: (v: boolean) => void;
   licenseImsExpiresAt: string;
   setLicenseImsExpiresAt: (val: string) => void;
   licenseImsMultiBranchEnabled: boolean;
-  setLicenseImsMultiBranchEnabled: (val: boolean) => void;
+  setLicenseImsMultiBranchEnabled: (v: boolean) => void;
   licenseImsBillingEnabled: boolean;
-  setLicenseImsBillingEnabled: (val: boolean) => void;
+  setLicenseImsBillingEnabled: (v: boolean) => void;
   licenseMaxListingCount: number;
-  setLicenseMaxListingCount: (val: number) => void;
+  setLicenseMaxListingCount: (v: number) => void;
   handleSaveLicense: (e: React.FormEvent) => void;
   isPending: boolean;
 }
@@ -42,8 +44,7 @@ export default function IMSLicenseModal({
   isPending,
 }: IMSLicenseModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+    <AccessibleModal isOpen={true} onClose={onClose} backdropClassName="bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-md">
         <div className="p-5 border-b border-zinc-100 dark:border-zinc-800">
           <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">Manage IMS License: {managingOrg.name}</h3>
           <p className="text-[10px] text-zinc-450 mt-1 font-mono">Org ID: {managingOrg.id}</p>
@@ -113,7 +114,6 @@ export default function IMSLicenseModal({
             <button type="submit" disabled={isPending} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md disabled:opacity-50">Save License Settings</button>
           </div>
         </form>
-      </div>
-    </div>
+    </AccessibleModal>
   );
 }
