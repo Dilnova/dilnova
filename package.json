@@ -2,6 +2,7 @@
   "name": "dilnova",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.5.2",
   "resolutions": {
     "postcss": ">=8.5.10",
     "js-cookie": ">=3.0.6",
