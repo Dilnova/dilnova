@@ -107,7 +107,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     inventoryRecord
   );
 
-  const [productReviews, reviewStats, productQuestions, verifiedReviewerIds] = await Promise.all([
+  const [{ items: productReviews }, reviewStats, productQuestions, verifiedReviewerIds] = await Promise.all([
     getProductReviews(id),
     getProductReviewStats(id),
     getProductQuestions(id),
