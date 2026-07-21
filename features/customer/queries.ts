@@ -4,13 +4,18 @@ import { buildCustomerOrderAccessWhere } from '@/features/orders/customer-owners
 import { eq, inArray, desc, and } from 'drizzle-orm';
 
 export async function getOrderById(id: string) {
-  const [order] = await db
-    .select()
-    .from(schema.simulatedOrders)
-    .where(eq(schema.simulatedOrders.id, id))
-    .limit(1);
+  try {
+    const [order] = await db
+      .select()
+      .from(schema.simulatedOrders)
+      .where(eq(schema.simulatedOrders.id, id))
+      .limit(1);
 
-  return order ?? null;
+    return order ?? null;
+  } catch (error) {
+    console.error(`[DB Error] Failed to fetch order ${id}:`, error);
+    return null;
+  }
 }
 
 export async function getOrderItems(orderId: string) {
@@ -42,11 +47,16 @@ export async function getCustomerOrders(userId: string | null) {
     return [];
   }
 
-  return db
-    .select()
-    .from(schema.simulatedOrders)
-    .where(buildCustomerOrderAccessWhere(userId))
-    .orderBy(desc(schema.simulatedOrders.createdAt));
+  try {
+    return await db
+      .select()
+      .from(schema.simulatedOrders)
+      .where(buildCustomerOrderAccessWhere(userId))
+      .orderBy(desc(schema.simulatedOrders.createdAt));
+  } catch (error) {
+    console.error(`[DB Error] Failed to fetch orders for customer ${userId}:`, error);
+    return [];
+  }
 }
 
 export async function getPickupBranchNameByIdMap(pickupBranchIds: string[]) {

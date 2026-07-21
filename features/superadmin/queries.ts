@@ -123,66 +123,71 @@ export async function getInventoryMovementsWithProductName() {
  * on-demand client-side via a dedicated API route.
  */
 export async function getSimulatedOrdersWithItems() {
-  const rawOrders = await db
-    .select({
-      id: schema.simulatedOrders.id,
-      customerName: schema.simulatedOrders.customerName,
-      customerEmail: schema.simulatedOrders.customerEmail,
-      totalAmount: schema.simulatedOrders.totalAmount,
-      subtotalAmount: schema.simulatedOrders.subtotalAmount,
-      taxAmount: schema.simulatedOrders.taxAmount,
-      shippingAmount: schema.simulatedOrders.shippingAmount,
-      status: schema.simulatedOrders.status,
-      fulfillmentMethod: schema.simulatedOrders.fulfillmentMethod,
-      paymentMethod: schema.simulatedOrders.paymentMethod,
-      pickupBranchId: schema.simulatedOrders.pickupBranchId,
-      paymentSlipUrl: schema.simulatedOrders.paymentSlipUrl,
-      createdAt: schema.simulatedOrders.createdAt,
-      updatedAt: schema.simulatedOrders.updatedAt,
-    })
-    .from(schema.simulatedOrders)
-    .orderBy(desc(schema.simulatedOrders.createdAt))
-    .limit(50);
+  try {
+    const rawOrders = await db
+      .select({
+        id: schema.simulatedOrders.id,
+        customerName: schema.simulatedOrders.customerName,
+        customerEmail: schema.simulatedOrders.customerEmail,
+        totalAmount: schema.simulatedOrders.totalAmount,
+        subtotalAmount: schema.simulatedOrders.subtotalAmount,
+        taxAmount: schema.simulatedOrders.taxAmount,
+        shippingAmount: schema.simulatedOrders.shippingAmount,
+        status: schema.simulatedOrders.status,
+        fulfillmentMethod: schema.simulatedOrders.fulfillmentMethod,
+        paymentMethod: schema.simulatedOrders.paymentMethod,
+        pickupBranchId: schema.simulatedOrders.pickupBranchId,
+        paymentSlipUrl: schema.simulatedOrders.paymentSlipUrl,
+        createdAt: schema.simulatedOrders.createdAt,
+        updatedAt: schema.simulatedOrders.updatedAt,
+      })
+      .from(schema.simulatedOrders)
+      .orderBy(desc(schema.simulatedOrders.createdAt))
+      .limit(50);
 
-  if (rawOrders.length === 0) {
+    if (rawOrders.length === 0) {
+      return [];
+    }
+
+    const pickupBranchIds = [
+      ...new Set(rawOrders.map((order) => order.pickupBranchId).filter((id): id is string => Boolean(id))),
+    ];
+    const pickupBranchRows =
+      pickupBranchIds.length > 0
+        ? await db
+            .select({ id: schema.branches.id, name: schema.branches.name })
+            .from(schema.branches)
+            .where(inArray(schema.branches.id, pickupBranchIds))
+        : [];
+    const pickupBranchNameById = new Map(pickupBranchRows.map((branch) => [branch.id, branch.name]));
+
+    const orderIds = rawOrders.map((o) => o.id);
+    const allItems = await db
+      .select()
+      .from(schema.simulatedOrderItems)
+      .where(inArray(schema.simulatedOrderItems.orderId, orderIds));
+
+    const itemsByOrderId = new Map<string, typeof allItems>();
+    for (const item of allItems) {
+      const arr = itemsByOrderId.get(item.orderId) || [];
+      arr.push(item);
+      itemsByOrderId.set(item.orderId, arr);
+    }
+
+    // Return orders WITHOUT payment slip preview URLs — they are resolved
+    // on-demand client-side to avoid blocking the SSR render.
+    return rawOrders.map((order) => ({
+      ...order,
+      items: itemsByOrderId.get(order.id) || [],
+      pickupBranchName: order.pickupBranchId
+        ? pickupBranchNameById.get(order.pickupBranchId) ?? null
+        : null,
+      paymentSlipPreviewUrl: null as string | null,
+    }));
+  } catch (error) {
+    console.error('[DB Error] Failed to fetch simulated orders for superadmin:', error);
     return [];
   }
-
-  const pickupBranchIds = [
-    ...new Set(rawOrders.map((order) => order.pickupBranchId).filter((id): id is string => Boolean(id))),
-  ];
-  const pickupBranchRows =
-    pickupBranchIds.length > 0
-      ? await db
-          .select({ id: schema.branches.id, name: schema.branches.name })
-          .from(schema.branches)
-          .where(inArray(schema.branches.id, pickupBranchIds))
-      : [];
-  const pickupBranchNameById = new Map(pickupBranchRows.map((branch) => [branch.id, branch.name]));
-
-  const orderIds = rawOrders.map((o) => o.id);
-  const allItems = await db
-    .select()
-    .from(schema.simulatedOrderItems)
-    .where(inArray(schema.simulatedOrderItems.orderId, orderIds));
-
-  const itemsByOrderId = new Map<string, typeof allItems>();
-  for (const item of allItems) {
-    const arr = itemsByOrderId.get(item.orderId) || [];
-    arr.push(item);
-    itemsByOrderId.set(item.orderId, arr);
-  }
-
-  // Return orders WITHOUT payment slip preview URLs — they are resolved
-  // on-demand client-side to avoid blocking the SSR render.
-  return rawOrders.map((order) => ({
-    ...order,
-    items: itemsByOrderId.get(order.id) || [],
-    pickupBranchName: order.pickupBranchId
-      ? pickupBranchNameById.get(order.pickupBranchId) ?? null
-      : null,
-    paymentSlipPreviewUrl: null as string | null,
-  }));
 }
 
 /**
