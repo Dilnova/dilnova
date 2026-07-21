@@ -186,43 +186,48 @@ export async function loadVendorInventoryData(
     // 5. Fetch Simulated Orders (full IMS workspace only)
     let simulatedOrders: any[] = [];
     if (scope === 'full' && productIds.length > 0) {
-      // Find orders that contain at least one item from this vendor
-      const relatedItems = await db
-        .select()
-        .from(schema.simulatedOrderItems)
-        .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId));
-
-      const orderIds = Array.from(new Set(relatedItems.map((item) => item.orderId)));
-
-      const ordersLimit = options?.ordersLimit ?? 50;
-      const ordersOffset = options?.ordersOffset ?? 0;
-
-      if (orderIds.length > 0) {
-        const ordersList = await db
+      try {
+        // Find orders that contain at least one item from this vendor
+        const relatedItems = await db
           .select()
-          .from(schema.simulatedOrders)
-          .where(inArray(schema.simulatedOrders.id, orderIds))
-          .orderBy(desc(schema.simulatedOrders.createdAt))
-          .limit(ordersLimit)
-          .offset(ordersOffset);
+          .from(schema.simulatedOrderItems)
+          .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId));
 
-        // Attach items
-        const branchNameById = new Map(
-          (await db
-            .select({ id: schema.branches.id, name: schema.branches.name })
-            .from(schema.branches)
-            .where(eq(schema.branches.orgId, orgId))
-            .limit(100))
-            .map((branch) => [branch.id, branch.name])
-        );
+        const orderIds = Array.from(new Set(relatedItems.map((item) => item.orderId)));
 
-        simulatedOrders = await attachPaymentSlipPreviews(
-          ordersList.map((o) => ({
-            ...o,
-            items: relatedItems.filter((ri) => ri.orderId === o.id),
-            pickupBranchName: o.pickupBranchId ? branchNameById.get(o.pickupBranchId) ?? null : null,
-          }))
-        );
+        const ordersLimit = options?.ordersLimit ?? 50;
+        const ordersOffset = options?.ordersOffset ?? 0;
+
+        if (orderIds.length > 0) {
+          const ordersList = await db
+            .select()
+            .from(schema.simulatedOrders)
+            .where(inArray(schema.simulatedOrders.id, orderIds))
+            .orderBy(desc(schema.simulatedOrders.createdAt))
+            .limit(ordersLimit)
+            .offset(ordersOffset);
+
+          // Attach items
+          const branchNameById = new Map(
+            (await db
+              .select({ id: schema.branches.id, name: schema.branches.name })
+              .from(schema.branches)
+              .where(eq(schema.branches.orgId, orgId))
+              .limit(100))
+              .map((branch) => [branch.id, branch.name])
+          );
+
+          simulatedOrders = await attachPaymentSlipPreviews(
+            ordersList.map((o) => ({
+              ...o,
+              items: relatedItems.filter((ri) => ri.orderId === o.id),
+              pickupBranchName: o.pickupBranchId ? branchNameById.get(o.pickupBranchId) ?? null : null,
+            }))
+          );
+        }
+      } catch (error) {
+        console.error('[DB Error] Failed to fetch simulated orders for vendor dashboard:', error);
+        // simulatedOrders remains empty array []
       }
     }
 
