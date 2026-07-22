@@ -1,4 +1,4 @@
-name: "Post-Deploy Smoke Test & Health Verification"
+name: "Post-Deploy Smoke Test"
 
 on:
   deployment_status:
