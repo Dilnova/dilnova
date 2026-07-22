@@ -174,4 +174,21 @@ describe("Proxy Middleware WAF Protection", () => {
     expect(result.status).toBe(403);
     expect(result.body).toContain("WAF Directory Traversal Protection");
   });
+
+  it("handles adversarial ReDoS inputs in linear time without catastrophic backtracking", async () => {
+    const adversarialQuery = "exec" + " ".repeat(20000) + "+".repeat(20000);
+    const request = new NextRequest(
+      `http://localhost:3000/?q=${encodeURIComponent(adversarialQuery)}`,
+      {
+        method: "GET",
+      },
+    );
+
+    const start = performance.now();
+    const result = await proxy(request, {} as any);
+    const duration = performance.now() - start;
+
+    expect(duration).toBeLessThan(100);
+    expect(result).not.toBeInstanceOf(NextResponse);
+  });
 });
