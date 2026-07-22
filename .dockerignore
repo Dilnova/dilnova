@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Logs and Debugging
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+sentry-wizard-installation-error-*.log
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.preview
+.env.*.local
+
+# Git & IDEs
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Testing & Coverage
+coverage/
+playwright-report/
+test-results/
+
+# Temp & Artifacts
+backups/
+scratch/
+*.sql.gz
+*.patch
+*.diff

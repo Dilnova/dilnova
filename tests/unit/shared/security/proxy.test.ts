@@ -127,3 +127,68 @@ describe("Proxy Middleware CSRF Protection", () => {
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 });
+
+describe("Proxy Middleware WAF Protection", () => {
+  it("blocks requests with python-requests User-Agent", async () => {
+    const request = new NextRequest("http://localhost:3000/", {
+      method: "GET",
+      headers: {
+        "user-agent": "python-requests/2.28.1",
+      },
+    });
+    const result = (await proxy(request, {} as any)) as any;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF Bot Protection");
+  });
+
+  it("blocks requests with SQL injection payloads", async () => {
+    const request = new NextRequest(
+      "http://localhost:3000/?search=%27%20UNION%20SELECT%20null%20--",
+      {
+        method: "GET",
+      },
+    );
+    const result = (await proxy(request, {} as any)) as any;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF SQLi Protection");
+  });
+
+  it("blocks requests with stored procedure execution payloads", async () => {
+    const request = new NextRequest("http://localhost:3000/?q=exec+xp_cmdshell", {
+      method: "GET",
+    });
+    const result = (await proxy(request, {} as any)) as any;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF SQLi Protection");
+  });
+
+  it("blocks requests with Directory Traversal payloads", async () => {
+    const request = new NextRequest("http://localhost:3000/?file=../../../../etc/passwd", {
+      method: "GET",
+    });
+    const result = (await proxy(request, {} as any)) as any;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF Directory Traversal Protection");
+  });
+
+  it("handles adversarial ReDoS inputs in linear time without catastrophic backtracking", async () => {
+    const adversarialQuery = "exec" + " ".repeat(20000) + "+".repeat(20000);
+    const request = new NextRequest(
+      `http://localhost:3000/?q=${encodeURIComponent(adversarialQuery)}`,
+      {
+        method: "GET",
+      },
+    );
+
+    const start = performance.now();
+    const result = await proxy(request, {} as any);
+    const duration = performance.now() - start;
+
+    expect(duration).toBeLessThan(100);
+    expect(result).not.toBeInstanceOf(NextResponse);
+  });
+});

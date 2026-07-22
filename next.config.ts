@@ -75,6 +75,7 @@ if (clerkDomain) {
 }
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   /**
    * Safe default size limit for server actions to prevent large payloads and memory exhaustion.
    * Large file uploads (like payment slips) bypass Next.js server actions and go directly to cloud storage.

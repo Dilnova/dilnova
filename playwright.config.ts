@@ -54,6 +54,12 @@ export default defineConfig({
     : [["list"], ["html", { open: "never" }]],
   use: {
     baseURL,
+    extraHTTPHeaders: process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+      ? {
+          "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+          "x-vercel-set-bypass-cookie": "samesite-none",
+        }
+      : undefined,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     actionTimeout: 15_000,
@@ -73,13 +79,11 @@ export default defineConfig({
     {
       name: "public",
       testMatch: /rbac\/public-routes\.spec\.ts/,
-      dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "unauthenticated",
       testMatch: /rbac\/unauthenticated\.spec\.ts/,
-      dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"] },
     },
     {
@@ -121,7 +125,6 @@ export default defineConfig({
     {
       name: "security-unauthenticated",
       testMatch: /security\/unauthenticated-actions\.spec\.ts/,
-      dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"] },
     },
     {

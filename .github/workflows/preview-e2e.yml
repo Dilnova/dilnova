@@ -1,0 +1,40 @@
+name: "Vercel Preview Deployment E2E Smoke Tests"
+
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  preview-e2e:
+    name: Run E2E Smoke Tests on Vercel Preview
+    if: github.event.deployment_status.state == 'success' && github.event.deployment_status.environment == 'Preview'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+
+      - name: Install Playwright Browsers
+        run: pnpm run test:e2e:install
+
+      - name: Run E2E Smoke Tests against Vercel Preview URL
+        run: pnpm run test:e2e --project=public --project=unauthenticated
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.target_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/postgres' }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: vercel-preview-playwright-report
+          path: playwright-report/
+          retention-days: 7

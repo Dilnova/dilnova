@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/clerk";
+import { test, expect } from "@playwright/test";
 import { PUBLIC_ROUTES } from "../helpers/routes";
 
 test.describe("Public routes", () => {

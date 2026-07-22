@@ -85,7 +85,58 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 });
 
 export default async function proxy(request: NextRequest, event: NextFetchEvent) {
-  // CSRF protection:
+  // 1. WAF Edge Security Protections
+  const userAgent = request.headers.get("user-agent") || "";
+  const BLOCKED_USER_AGENTS = [
+    "python-requests",
+    "python-urllib",
+    "httpx",
+    "scrapy",
+    "libwww-perl",
+    "zgrab",
+    "nmap",
+    "masscan",
+    "nikto",
+    "sqlmap",
+  ];
+  if (BLOCKED_USER_AGENTS.some((bot) => userAgent.toLowerCase().includes(bot))) {
+    return new NextResponse("Forbidden: WAF Bot Protection", { status: 403 });
+  }
+
+  const rawUrl = request.url;
+  let decodedUrl = rawUrl;
+  try {
+    decodedUrl = decodeURIComponent(rawUrl);
+  } catch {}
+
+  // Directory Traversal protection
+  const TRAVERSAL_PATTERNS = [
+    /\.\.[\/\\]/,
+    /%2e%2e[%2f%5c]/i,
+    /\/etc\/passwd/i,
+    /\/etc\/shadow/i,
+    /c:\\windows/i,
+    /win\.ini/i,
+  ];
+  if (TRAVERSAL_PATTERNS.some((pattern) => pattern.test(rawUrl) || pattern.test(decodedUrl))) {
+    return new NextResponse("Forbidden: WAF Directory Traversal Protection", { status: 403 });
+  }
+
+  // SQL Injection protection
+  const SQLI_PATTERNS = [
+    /union\s+select/i,
+    /select\s+.*from/i,
+    /insert\s+into/i,
+    /update\s+.*set/i,
+    /delete\s+from/i,
+    /drop\s+table/i,
+    /exec[\s+]+(s|x)p_/i,
+  ];
+  if (SQLI_PATTERNS.some((pattern) => pattern.test(decodedUrl))) {
+    return new NextResponse("Forbidden: WAF SQLi Protection", { status: 403 });
+  }
+
+  // 2. CSRF protection:
   // Enforce that mutating requests (except webhook and csp-report endpoints) have a valid Origin matching Host or X-Forwarded-Host.
   const MUTATING_METHODS = ["POST", "PUT", "PATCH", "DELETE"];
   if (MUTATING_METHODS.includes(request.method)) {
