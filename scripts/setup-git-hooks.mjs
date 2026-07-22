@@ -64,9 +64,37 @@ fi
 
 try {
   fs.writeFileSync(hookPath, hookSource, { mode: 0o755 });
-  // Ensure correct permission is set even if writeFileSync mode isn't fully applied by OS
   fs.chmodSync(hookPath, 0o755);
   console.log(`Successfully installed gitleaks pre-commit hook to ${hookPath}`);
 } catch (error) {
   console.error('Failed to install git pre-commit hook:', error);
 }
+
+const commitMsgHookPath = path.join(hooksDir, 'commit-msg');
+const commitMsgHookSource = `#!/bin/sh
+# Conventional Commits commit-msg hook
+
+msg=$(cat "$1")
+pattern="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\\([a-z0-9-]+\\))?!?: .+"
+
+if ! echo "$msg" | grep -qE "$pattern"; then
+  echo "Error: Invalid commit message format."
+  echo "Commit messages must follow the Conventional Commits specification:"
+  echo "  <type>[optional scope]: <description>"
+  echo ""
+  echo "Examples:"
+  echo "  feat(catalog): add product search filter"
+  echo "  fix(auth): resolve session expiration bug"
+  echo "  docs: update API documentation"
+  exit 1
+fi
+`;
+
+try {
+  fs.writeFileSync(commitMsgHookPath, commitMsgHookSource, { mode: 0o755 });
+  fs.chmodSync(commitMsgHookPath, 0o755);
+  console.log(`Successfully installed conventional commit-msg hook to ${commitMsgHookPath}`);
+} catch (error) {
+  console.error('Failed to install git commit-msg hook:', error);
+}
+
