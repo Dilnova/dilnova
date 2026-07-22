@@ -1,3 +1,9 @@
+## [1.0.4](https://github.com/Dilnova/dilnova/compare/v1.0.3...v1.0.4) (2026-07-22)
+
+### Bug Fixes
+
+- **workflow:** add notice for protected Vercel URLs without bypass secret in uptime monitor ([1c7bcf9](https://github.com/Dilnova/dilnova/commit/1c7bcf9332791972eb5e4147b1ce8fafd01acc4f))
+
 ## [1.0.3](https://github.com/Dilnova/dilnova/compare/v1.0.2...v1.0.3) (2026-07-22)
 
 ### Bug Fixes
