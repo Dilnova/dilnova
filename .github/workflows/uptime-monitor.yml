@@ -24,6 +24,13 @@ jobs:
           HEALTH_SECRET: ${{ secrets.HEALTH_CHECK_SECRET }}
           VERCEL_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET || secrets.VERCEL_PROTECTION_BYPASS }}
         run: |
+          if [[ "$TARGET_URL" == *".vercel.app"* ]] && [ -z "$VERCEL_BYPASS" ]; then
+            echo "Notice: TARGET_URL ($TARGET_URL) is a protected Vercel URL without a bypass secret. Normalizing to canonical domain https://www.dilstar.pp.ua"
+            TARGET_URL="https://www.dilstar.pp.ua"
+          elif [[ "$TARGET_URL" == "https://dilstar.pp.ua" ]]; then
+            TARGET_URL="https://www.dilstar.pp.ua"
+          fi
+
           echo "Pinging health endpoint at $TARGET_URL/api/health"
 
           CURL_ARGS=("-sL" "--location-trusted" "-w" "\n%{http_code}")
