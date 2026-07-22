@@ -204,13 +204,7 @@ export const simulatedCheckoutAction = authenticatedAction
 
       await rateLimit(5, 60 * 1000);
 
-      if (idempotencyKey) {
-        const { checkIdempotencyKey } = await import('@/shared/security/idempotency');
-        const isNewRequest = await checkIdempotencyKey(idempotencyKey);
-        if (!isNewRequest) {
-          return { success: false, error: 'This order is already being processed. Please wait or refresh the page.' };
-        }
-      }
+
 
       const validationResult = await validateAndPrepareCartItems(
         aggregatedItems,
@@ -308,6 +302,14 @@ export const simulatedCheckoutAction = authenticatedAction
         fulfillmentOption.requiresBranch && !isVirtualOrSingleBranchOrg ? pickupBranch : null;
 
       verifiedItems.sort((a, b) => a.id.localeCompare(b.id));
+
+      if (idempotencyKey) {
+        const { checkIdempotencyKey } = await import('@/shared/security/idempotency');
+        const isNewRequest = await checkIdempotencyKey(idempotencyKey);
+        if (!isNewRequest) {
+          return { success: false, error: 'This order is already being processed. Please wait or refresh the page.' };
+        }
+      }
 
       const MAX_RETRIES = 3;
       let txResult: CheckoutTransactionResult | null = null;

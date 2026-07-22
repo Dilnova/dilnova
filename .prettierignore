@@ -1,0 +1,8 @@
+.next/
+node_modules/
+public/
+dist/
+coverage/
+*.d.ts
+playwright-report/
+pnpm-lock.yaml
