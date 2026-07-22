@@ -155,6 +155,16 @@ describe("Proxy Middleware WAF Protection", () => {
     expect(result.body).toContain("WAF SQLi Protection");
   });
 
+  it("blocks requests with plus-encoded SQL injection payloads", async () => {
+    const request = new NextRequest("http://localhost:3000/?search=%27+UNION+SELECT+null+--", {
+      method: "GET",
+    });
+    const result = (await proxy(request, {} as any)) as any;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF SQLi Protection");
+  });
+
   it("blocks requests with stored procedure execution payloads", async () => {
     const request = new NextRequest("http://localhost:3000/?q=exec+xp_cmdshell", {
       method: "GET",
@@ -173,6 +183,39 @@ describe("Proxy Middleware WAF Protection", () => {
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("WAF Directory Traversal Protection");
+  });
+
+  it("blocks requests with double-encoded Directory Traversal payloads", async () => {
+    const request = new NextRequest(
+      "http://localhost:3000/?file=%252e%252e%252f%252e%252e%252fetc%252fpasswd",
+      {
+        method: "GET",
+      },
+    );
+    const result = (await proxy(request, {} as any)) as any;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF Directory Traversal Protection");
+  });
+
+  it("blocks requests with XSS payloads", async () => {
+    const request = new NextRequest("http://localhost:3000/?q=%3Cscript%3Ealert(1)%3C/script%3E", {
+      method: "GET",
+    });
+    const result = (await proxy(request, {} as any)) as any;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF XSS Protection");
+  });
+
+  it("blocks requests with Command Injection payloads", async () => {
+    const request = new NextRequest("http://localhost:3000/?cmd=%3B+cat+/var/log/syslog", {
+      method: "GET",
+    });
+    const result = (await proxy(request, {} as any)) as any;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF Command Injection Protection");
   });
 
   it("handles adversarial ReDoS inputs in linear time without catastrophic backtracking", async () => {

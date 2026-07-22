@@ -85,6 +85,12 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 });
 
 export default async function proxy(request: NextRequest, event: NextFetchEvent) {
+  // 0. Health check endpoint early bypass (prevents Auth middleware 302 redirects and bot checks)
+  const pathname = request.nextUrl.pathname;
+  if (pathname === "/api/health" || pathname.startsWith("/api/health/")) {
+    return NextResponse.next();
+  }
+
   // 1. WAF Edge Security Protections
   const userAgent = request.headers.get("user-agent") || "";
   const BLOCKED_USER_AGENTS = [
@@ -106,34 +112,71 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
   const rawUrl = request.url;
   let decodedUrl = rawUrl;
   try {
-    decodedUrl = decodeURIComponent(rawUrl);
+    decodedUrl = decodeURIComponent(rawUrl.replace(/\+/g, " "));
+  } catch {
+    decodedUrl = rawUrl.replace(/%20/g, " ").replace(/\+/g, " ");
+  }
+
+  let doubleDecodedUrl = decodedUrl;
+  try {
+    doubleDecodedUrl = decodeURIComponent(decodedUrl);
   } catch {}
+
+  const matchesAnyPattern = (patterns: RegExp[]) =>
+    patterns.some(
+      (pattern) =>
+        pattern.test(rawUrl) || pattern.test(decodedUrl) || pattern.test(doubleDecodedUrl),
+    );
 
   // Directory Traversal protection
   const TRAVERSAL_PATTERNS = [
     /\.\.[\/\\]/,
     /%2e%2e[%2f%5c]/i,
+    /%252e%252e/i,
     /\/etc\/passwd/i,
     /\/etc\/shadow/i,
     /c:\\windows/i,
     /win\.ini/i,
   ];
-  if (TRAVERSAL_PATTERNS.some((pattern) => pattern.test(rawUrl) || pattern.test(decodedUrl))) {
+  if (matchesAnyPattern(TRAVERSAL_PATTERNS)) {
     return new NextResponse("Forbidden: WAF Directory Traversal Protection", { status: 403 });
   }
 
   // SQL Injection protection
   const SQLI_PATTERNS = [
-    /union\s+select/i,
-    /select\s+.*from/i,
-    /insert\s+into/i,
-    /update\s+.*set/i,
-    /delete\s+from/i,
-    /drop\s+table/i,
-    /exec[\s+]+(s|x)p_/i,
+    /union[\s\+]+select/i,
+    /select[\s\+]+.*[\s\+]+from/i,
+    /insert[\s\+]+into/i,
+    /update[\s\+]+.*[\s\+]+set/i,
+    /delete[\s\+]+from/i,
+    /drop[\s\+]+table/i,
+    /exec[\s\+]+(s|x)p_/i,
   ];
-  if (SQLI_PATTERNS.some((pattern) => pattern.test(decodedUrl))) {
+  if (matchesAnyPattern(SQLI_PATTERNS)) {
     return new NextResponse("Forbidden: WAF SQLi Protection", { status: 403 });
+  }
+
+  // XSS Protection
+  const XSS_PATTERNS = [
+    /<script[\s\+>]/i,
+    /javascript:/i,
+    /onload[\s\+]*=/i,
+    /onerror[\s\+]*=/i,
+    /eval\(/i,
+  ];
+  if (matchesAnyPattern(XSS_PATTERNS)) {
+    return new NextResponse("Forbidden: WAF XSS Protection", { status: 403 });
+  }
+
+  // Command Injection Protection
+  const CMD_INJECTION_PATTERNS = [
+    /;[\s\+]*cat[\s\+]+/i,
+    /;[\s\+]*ls[\s\+]+/i,
+    /\|[\s\+]*id\b/i,
+    /\$\([^\)]+\)/i,
+  ];
+  if (matchesAnyPattern(CMD_INJECTION_PATTERNS)) {
+    return new NextResponse("Forbidden: WAF Command Injection Protection", { status: 403 });
   }
 
   // 2. CSRF protection:

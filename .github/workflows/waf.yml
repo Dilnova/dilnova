@@ -19,29 +19,69 @@ jobs:
       STAGING_URL: "https://www.dilstar.pp.ua"
 
     steps:
-      - name: Verify Bot Protection (Crawler User-Agent)
+      - name: Verify Bot Protection (Crawler & Scanner User-Agents)
         run: |
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "User-Agent: python-requests" $STAGING_URL)
-          if [ "$HTTP_STATUS" != "403" ]; then
-            echo "Failed: WAF did not block python-requests user-agent (Got $HTTP_STATUS)"
-            exit 1
-          fi
-          echo "Passed: Bot protection active."
+          for ua in "python-requests" "sqlmap" "nikto"; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "User-Agent: $ua" "$STAGING_URL")
+            if [ "$HTTP_STATUS" != "403" ]; then
+              echo "Failed: WAF did not block scanner/bot user-agent '$ua' (Got $HTTP_STATUS)"
+              exit 1
+            fi
+            echo "Passed: Blocked $ua"
+          done
 
-      - name: Verify SQLi Protection
+      - name: Verify SQLi Protection (Standard, Plus-Encoded & Comment Obfuscated)
         run: |
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/?search=%27%20UNION%20SELECT%20null%20--")
-          if [ "$HTTP_STATUS" != "403" ]; then
-            echo "Failed: WAF did not block SQLi payload (Got $HTTP_STATUS)"
-            exit 1
-          fi
-          echo "Passed: SQLi protection active."
+          PAYLOADS=(
+            "?search=%27%20UNION%20SELECT%20null%20--"
+            "?search=%27+UNION+SELECT+null+--"
+            "?search=UNI/**/ON%20SELECT%20null"
+          )
+          for payload in "${PAYLOADS[@]}"; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/$payload")
+            if [ "$HTTP_STATUS" != "403" ]; then
+              echo "Failed: WAF did not block SQLi payload '$payload' (Got $HTTP_STATUS)"
+              exit 1
+            fi
+            echo "Passed: Blocked SQLi payload"
+          done
 
-      - name: Verify Directory Traversal Protection
+      - name: Verify Directory Traversal Protection (Standard & Double-Encoded)
         run: |
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/?file=../../../../etc/passwd")
+          PAYLOADS=(
+            "?file=../../../../etc/passwd"
+            "?file=%252e%252e%252f%252e%252e%252fetc%252fpasswd"
+            "?file=c:\\windows\\win.ini"
+          )
+          for payload in "${PAYLOADS[@]}"; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/$payload")
+            if [ "$HTTP_STATUS" != "403" ]; then
+              echo "Failed: WAF did not block directory traversal payload '$payload' (Got $HTTP_STATUS)"
+              exit 1
+            fi
+            echo "Passed: Blocked Traversal payload"
+          done
+
+      - name: Verify XSS Protection
+        run: |
+          PAYLOADS=(
+            "?q=%3Cscript%3Ealert(1)%3C/script%3E"
+            "?q=%3Cimg%20src=x%20onerror=alert(1)%3E"
+          )
+          for payload in "${PAYLOADS[@]}"; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/$payload")
+            if [ "$HTTP_STATUS" != "403" ]; then
+              echo "Failed: WAF did not block XSS payload '$payload' (Got $HTTP_STATUS)"
+              exit 1
+            fi
+            echo "Passed: Blocked XSS payload"
+          done
+
+      - name: Verify Command Injection Protection
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/?cmd=%3B+cat+/var/log/syslog")
           if [ "$HTTP_STATUS" != "403" ]; then
-            echo "Failed: WAF did not block directory traversal payload (Got $HTTP_STATUS)"
+            echo "Failed: WAF did not block command injection payload (Got $HTTP_STATUS)"
             exit 1
           fi
-          echo "Passed: Directory traversal protection active."
+          echo "Passed: Blocked Command Injection payload"
