@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/Dilnova/dilnova/compare/v1.0.1...v1.0.2) (2026-07-22)
+
+### Bug Fixes
+
+- **security:** deploy WAF edge rules, URL encoding fixes, and health check bypass ([5dee5b2](https://github.com/Dilnova/dilnova/commit/5dee5b222c3665feb4087161eee7613332f2d041))
+
 ## [1.0.1](https://github.com/Dilnova/dilnova/compare/v1.0.0...v1.0.1) (2026-07-22)
 
 ### Bug Fixes
