@@ -27,10 +27,10 @@ jobs:
 
           if [ -n "$HEALTH_SECRET" ]; then
             echo "Using authorized detailed probe"
-            RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $HEALTH_SECRET" "$TARGET_URL/api/health")
+            RESPONSE=$(curl -sL --location-trusted -w "\n%{http_code}" -H "Authorization: Bearer $HEALTH_SECRET" "$TARGET_URL/api/health")
           else
             echo "Using public probe"
-            RESPONSE=$(curl -s -w "\n%{http_code}" "$TARGET_URL/api/health")
+            RESPONSE=$(curl -sL --location-trusted -w "\n%{http_code}" "$TARGET_URL/api/health")
           fi
 
           HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
@@ -63,4 +63,4 @@ jobs:
             The production health check endpoint returned a non-200 status code. 
             View the workflow run here: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
           to: alerts@dilnova.com
-          from: GitHub Actions
+          from: "GitHub Actions <alerts@dilnova.com>"

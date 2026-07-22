@@ -25,7 +25,7 @@ ENV NODE_ENV=production
 ENV NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_placeholder"
 ENV CLERK_SECRET_KEY="sk_test_placeholder"
-ENV DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/postgres"
+ENV DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/postgres"
 
 RUN pnpm run build
 
