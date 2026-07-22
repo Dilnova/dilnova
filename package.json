@@ -18,6 +18,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "analyze:bundle": "node scripts/analyze-bundle-size.mjs",
     "test:e2e": "node ./node_modules/@playwright/test/cli.js test",
     "test:e2e:ui": "node ./node_modules/@playwright/test/cli.js test --ui",
     "test:e2e:install": "node ./node_modules/@playwright/test/cli.js install chromium",
