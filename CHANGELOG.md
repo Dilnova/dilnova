@@ -1,3 +1,9 @@
+## [1.0.3](https://github.com/Dilnova/dilnova/compare/v1.0.2...v1.0.3) (2026-07-22)
+
+### Bug Fixes
+
+- **workflow:** update default TARGET_URL in uptime monitor to canonical URL ([b6e4991](https://github.com/Dilnova/dilnova/commit/b6e4991722fd6205f5fb3297e1325af6efff7093))
+
 ## [1.0.2](https://github.com/Dilnova/dilnova/compare/v1.0.1...v1.0.2) (2026-07-22)
 
 ### Bug Fixes
