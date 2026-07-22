@@ -41,6 +41,7 @@ jobs:
           echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> $GITHUB_PATH
 
       - name: 1. Generate Compressed Database Dump
         env:
@@ -51,6 +52,9 @@ jobs:
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
           BACKUP_FILE="dilnova-db-backup-${TIMESTAMP}.sql.gz"
           CHECKSUM_FILE="${BACKUP_FILE}.sha256"
+
+          echo "Using pg_dump version:"
+          pg_dump --version
 
           echo "Starting production database dump..."
           pg_dump "${MIGRATION_DATABASE_URL:-$DATABASE_URL}" --clean --if-exists --no-owner --no-privileges | gzip > "${BACKUP_FILE}"
