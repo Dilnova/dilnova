@@ -155,6 +155,16 @@ describe("Proxy Middleware WAF Protection", () => {
     expect(result.body).toContain("WAF SQLi Protection");
   });
 
+  it("blocks requests with stored procedure execution payloads", async () => {
+    const request = new NextRequest("http://localhost:3000/?q=exec+xp_cmdshell", {
+      method: "GET",
+    });
+    const result = (await proxy(request, {} as any)) as any;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF SQLi Protection");
+  });
+
   it("blocks requests with Directory Traversal payloads", async () => {
     const request = new NextRequest("http://localhost:3000/?file=../../../../etc/passwd", {
       method: "GET",

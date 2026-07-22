@@ -130,7 +130,7 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     /update\s+.*set/i,
     /delete\s+from/i,
     /drop\s+table/i,
-    /exec(\s+|\+)+(s|x)p_/i,
+    /exec[\s+]+(s|x)p_/i,
   ];
   if (SQLI_PATTERNS.some((pattern) => pattern.test(decodedUrl))) {
     return new NextResponse("Forbidden: WAF SQLi Protection", { status: 403 });
