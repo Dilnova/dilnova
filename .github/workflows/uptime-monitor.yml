@@ -22,16 +22,25 @@ jobs:
           # or finally default to dilstar.pp.ua which is referenced in layout.tsx.
           TARGET_URL: ${{ vars.PRODUCTION_APP_URL || 'https://dilstar.pp.ua' }}
           HEALTH_SECRET: ${{ secrets.HEALTH_CHECK_SECRET }}
+          VERCEL_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET || secrets.VERCEL_PROTECTION_BYPASS }}
         run: |
           echo "Pinging health endpoint at $TARGET_URL/api/health"
 
+          CURL_ARGS=("-sL" "--location-trusted" "-w" "\n%{http_code}")
+
           if [ -n "$HEALTH_SECRET" ]; then
             echo "Using authorized detailed probe"
-            RESPONSE=$(curl -sL --location-trusted -w "\n%{http_code}" -H "Authorization: Bearer $HEALTH_SECRET" "$TARGET_URL/api/health")
+            CURL_ARGS+=("-H" "Authorization: Bearer $HEALTH_SECRET")
           else
             echo "Using public probe"
-            RESPONSE=$(curl -sL --location-trusted -w "\n%{http_code}" "$TARGET_URL/api/health")
           fi
+
+          if [ -n "$VERCEL_BYPASS" ]; then
+            echo "Using Vercel Protection bypass header"
+            CURL_ARGS+=("-H" "x-vercel-protection-bypass: $VERCEL_BYPASS")
+          fi
+
+          RESPONSE=$(curl "${CURL_ARGS[@]}" "$TARGET_URL/api/health")
 
           HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
           HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
