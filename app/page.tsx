@@ -1,22 +1,22 @@
-import { auth, clerkClient } from '@clerk/nextjs/server';
-import Link from 'next/link';
-import type { Metadata } from 'next';
-import { Layers, Shield, ShoppingCart, Zap } from 'lucide-react';
+import { auth, clerkClient } from "@clerk/nextjs/server";
+import Link from "next/link";
+import type { Metadata } from "next";
+import { Layers, Shield, ShoppingCart, Zap } from "lucide-react";
 
-import ScrollRedirector from '@/shared/ui/ScrollRedirector';
-import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
-import { getSystemSetting } from '@/shared/platform/settings';
-import { getPricingPlansOrderedByCreatedAtAsc } from '@/features/superadmin/queries';
-import { getFeaturedSeries } from '@/features/marketing/queries';
+import ScrollRedirector from "@/shared/ui/ScrollRedirector";
+import { getCachedOrganizations } from "@/shared/auth/clerk-cache";
+import { getSystemSetting } from "@/shared/platform/settings";
+import { getPricingPlansOrderedByCreatedAtAsc } from "@/features/superadmin/queries";
+import { getFeaturedSeries } from "@/features/marketing/queries";
 
-import Hero3D from '@/components/home/Hero3D';
-import StoreCard from '@/components/home/StoreCard';
-import VendorCarousel from '@/components/home/VendorCarousel';
-import FeaturedSeriesList from '@/components/home/FeaturedSeries';
-import PricingCards from '@/components/home/PricingCards';
+import Hero3D from "@/components/home/Hero3D";
+import StoreCard from "@/components/home/StoreCard";
+import VendorCarousel from "@/components/home/VendorCarousel";
+import FeaturedSeriesList from "@/components/home/FeaturedSeries";
+import PricingCards from "@/components/home/PricingCards";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const systemName = await getSystemSetting('system_name', 'Dilnova');
+  const systemName = await getSystemSetting("system_name", "Dilnova");
   return {
     title: `${systemName} | Enterprise Commerce Hub`,
     description: `Welcome to the ${systemName} Commerce Hub. Explore our industrial, botanical, consulting, and technological vendor storefronts.`,
@@ -31,11 +31,11 @@ export default async function Home() {
   const plansPromise = getPricingPlansOrderedByCreatedAtAsc();
   const seriesPromise = getFeaturedSeries();
   const settingsPromise = Promise.all([
-    getSystemSetting('system_name', 'Dilnova'),
-    getSystemSetting('custom_storefront_distar-hardware', 'true'),
-    getSystemSetting('custom_storefront_distar-nursery', 'true'),
-    getSystemSetting('custom_storefront_distar-tech', 'true'),
-    getSystemSetting('custom_storefront_dilstar-services', 'true'),
+    getSystemSetting("system_name", "Dilnova"),
+    getSystemSetting("custom_storefront_distar-hardware", "true"),
+    getSystemSetting("custom_storefront_distar-nursery", "true"),
+    getSystemSetting("custom_storefront_distar-tech", "true"),
+    getSystemSetting("custom_storefront_dilstar-services", "true"),
   ]);
 
   const [client, dbPlans, featuredSeries, settingsResult] = await Promise.all([
@@ -53,10 +53,10 @@ export default async function Home() {
     servicesCustomEnabledVal,
   ] = settingsResult;
 
-  const hardwareCustomEnabled = hardwareCustomEnabledVal === 'true';
-  const nurseryCustomEnabled = nurseryCustomEnabledVal === 'true';
-  const techCustomEnabled = techCustomEnabledVal === 'true';
-  const servicesCustomEnabled = servicesCustomEnabledVal === 'true';
+  const hardwareCustomEnabled = hardwareCustomEnabledVal === "true";
+  const nurseryCustomEnabled = nurseryCustomEnabledVal === "true";
+  const techCustomEnabled = techCustomEnabledVal === "true";
+  const servicesCustomEnabled = servicesCustomEnabledVal === "true";
 
   let plans = dbPlans;
 
@@ -64,61 +64,61 @@ export default async function Home() {
   if (plans.length === 0) {
     plans = [
       {
-        id: 'starter',
-        name: 'Starter',
-        price: '$0',
-        period: '/month',
-        description: 'Perfect for independent creators and hobbyists launching their first store.',
+        id: "starter",
+        name: "Starter",
+        price: "$0",
+        period: "/month",
+        description: "Perfect for independent creators and hobbyists launching their first store.",
         features: [
-          '1 Storefront Profile',
-          'Up to 10 active listings',
-          'Standard customer reviews',
-          'Basic profile customization'
+          "1 Storefront Profile",
+          "Up to 10 active listings",
+          "Standard customer reviews",
+          "Basic profile customization",
         ],
         isPopular: false,
-        buttonText: 'Get Started',
-        buttonLink: '/contact?plan=starter',
+        buttonText: "Get Started",
+        buttonLink: "/contact?plan=starter",
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       {
-        id: 'growth',
-        name: 'Growth',
-        price: '$5',
-        period: '/yearly',
-        description: 'Ideal for growing brands and businesses requiring advanced features.',
+        id: "growth",
+        name: "Growth",
+        price: "$5",
+        period: "/yearly",
+        description: "Ideal for growing brands and businesses requiring advanced features.",
         features: [
-          '1 Storefront Profile',
-          'Unlimited active listings',
-          'Interactive Q&A system',
-          'Multiple images & videos per listing',
-          'Premium custom storefront themes'
+          "1 Storefront Profile",
+          "Unlimited active listings",
+          "Interactive Q&A system",
+          "Multiple images & videos per listing",
+          "Premium custom storefront themes",
         ],
         isPopular: true,
-        buttonText: 'Get Growth Plan',
-        buttonLink: '/contact?plan=growth',
+        buttonText: "Get Growth Plan",
+        buttonLink: "/contact?plan=growth",
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       {
-        id: 'enterprise',
-        name: 'Enterprise',
-        price: 'Custom',
-        period: '',
-        description: 'Built for large organizations needing multiple stores and dedicated setups.',
+        id: "enterprise",
+        name: "Enterprise",
+        price: "Custom",
+        period: "",
+        description: "Built for large organizations needing multiple stores and dedicated setups.",
         features: [
-          'Multiple Storefront Profiles',
-          'Unlimited listings & media uploads',
-          'Customer reviews & interactive Q&A',
-          'Custom branding configurations',
-          'Priority support & management'
+          "Multiple Storefront Profiles",
+          "Unlimited listings & media uploads",
+          "Customer reviews & interactive Q&A",
+          "Custom branding configurations",
+          "Priority support & management",
         ],
         isPopular: false,
-        buttonText: 'Contact Sales',
-        buttonLink: '/contact?plan=enterprise',
+        buttonText: "Contact Sales",
+        buttonLink: "/contact?plan=enterprise",
         createdAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     ] as typeof plans;
   }
 
@@ -126,31 +126,34 @@ export default async function Home() {
   const allOrganizations = await getCachedOrganizations(client);
 
   // Filter out the core four portals so we only show "other" custom vendors
-  const coreSlugs = ['distar-hardware', 'distar-nursery', 'distar-tech', 'dilstar-services'];
-  const otherVendors = allOrganizations.filter(
-    (org) => {
-      if (!org.slug) return false;
-      const isCore = coreSlugs.includes(org.slug);
-      const isMainDistar = org.slug === 'distar' || org.slug.startsWith('distar-') || org.name.toLowerCase() === 'distar';
-      const isMainServices = org.slug === 'dilstar-services' || org.slug.startsWith('dilstar-services-') || org.name.toLowerCase() === 'dilstar services';
-      return !isCore && !isMainDistar && !isMainServices;
-    }
-  );
+  const coreSlugs = ["distar-hardware", "distar-nursery", "distar-tech", "dilstar-services"];
+  const otherVendors = allOrganizations.filter((org) => {
+    if (!org.slug) return false;
+    const isCore = coreSlugs.includes(org.slug);
+    const isMainDistar =
+      org.slug === "distar" ||
+      org.slug.startsWith("distar-") ||
+      org.name.toLowerCase() === "distar";
+    const isMainServices =
+      org.slug === "dilstar-services" ||
+      org.slug.startsWith("dilstar-services-") ||
+      org.name.toLowerCase() === "dilstar services";
+    return !isCore && !isMainDistar && !isMainServices;
+  });
 
   const activeCount = [
     hardwareCustomEnabled,
     nurseryCustomEnabled,
     techCustomEnabled,
-    servicesCustomEnabled
+    servicesCustomEnabled,
   ].filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans flex flex-col antialiased selection:bg-indigo-500/30 selection:text-indigo-900 dark:selection:text-indigo-100">
-      
       {/* 1. Hero Section (3D Animated) */}
       <section className="w-full relative border-b border-zinc-200 dark:border-zinc-800">
         <Hero3D />
-        
+
         {/* Trust Row */}
         <div className="absolute bottom-0 left-0 w-full bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800">
           <div className="max-w-7xl mx-auto px-6 py-3 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -178,14 +181,15 @@ export default async function Home() {
                   Our Core Stores
                 </h2>
                 <p className="text-base text-zinc-500 dark:text-zinc-400">
-                  Shop directly from our curated, highly-specialized first-party stores running on the {systemName} infrastructure.
+                  Shop directly from our curated, highly-specialized first-party stores running on
+                  the {systemName} infrastructure.
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {hardwareCustomEnabled && (
-                <StoreCard 
+                <StoreCard
                   type="hardware"
                   title="Distar Hardware"
                   category="Industrial"
@@ -194,7 +198,7 @@ export default async function Home() {
                 />
               )}
               {nurseryCustomEnabled && (
-                <StoreCard 
+                <StoreCard
                   type="nursery"
                   title="Distar Nursery"
                   category="Botanical"
@@ -203,7 +207,7 @@ export default async function Home() {
                 />
               )}
               {techCustomEnabled && (
-                <StoreCard 
+                <StoreCard
                   type="tech"
                   title="Distar Tech Store"
                   category="Technology"
@@ -212,7 +216,7 @@ export default async function Home() {
                 />
               )}
               {servicesCustomEnabled && (
-                <StoreCard 
+                <StoreCard
                   type="services"
                   title="Dilstar Services"
                   category="Consulting"
@@ -241,15 +245,15 @@ export default async function Home() {
               </p>
             </div>
             {otherVendors.length > 0 && (
-              <Link 
-                href="/vendors" 
+              <Link
+                href="/vendors"
                 className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
               >
                 View Directory &rarr;
               </Link>
             )}
           </div>
-          
+
           <VendorCarousel vendors={otherVendors} />
         </div>
       </section>
@@ -265,7 +269,7 @@ export default async function Home() {
               Curated equipment and components from across our global storefronts.
             </p>
           </div>
-          
+
           <FeaturedSeriesList seriesList={featuredSeries} />
         </div>
       </section>
@@ -281,7 +285,8 @@ export default async function Home() {
               Why build on {systemName}?
             </h2>
             <p className="text-base text-zinc-500 dark:text-zinc-400">
-              Our infrastructure provides out-of-the-box isolation, role-based controls, and high-performance checkout.
+              Our infrastructure provides out-of-the-box isolation, role-based controls, and
+              high-performance checkout.
             </p>
           </div>
 
@@ -291,9 +296,12 @@ export default async function Home() {
                 <Layers className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">Multi-Tenant Isolation</h3>
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">
+                  Multi-Tenant Isolation
+                </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Isolate stores at the tenant level. Each vendor operates their catalog, layout, and settings in dedicated workspaces, ensuring secure and autonomous management.
+                  Isolate stores at the tenant level. Each vendor operates their catalog, layout,
+                  and settings in dedicated workspaces, ensuring secure and autonomous management.
                 </p>
               </div>
             </div>
@@ -303,9 +311,12 @@ export default async function Home() {
                 <Shield className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">Role-Based Access Control</h3>
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">
+                  Role-Based Access Control
+                </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Enterprise-grade authorization models. Roles like Customer, Merchant, and Admin cleanly separate consumer shopping experiences from dashboard configuration.
+                  Enterprise-grade authorization models. Roles like Customer, Merchant, and Admin
+                  cleanly separate consumer shopping experiences from dashboard configuration.
                 </p>
               </div>
             </div>
@@ -315,9 +326,12 @@ export default async function Home() {
                 <ShoppingCart className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">Unified Multi-Vendor Cart</h3>
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">
+                  Unified Multi-Vendor Cart
+                </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Add products from completely different vendors—like plants from Nursery and tech parts from Tech Store—to a single persistent cart and checkout seamlessly.
+                  Add products from completely different vendors—like plants from Nursery and tech
+                  parts from Tech Store—to a single persistent cart and checkout seamlessly.
                 </p>
               </div>
             </div>
@@ -327,9 +341,12 @@ export default async function Home() {
                 <Zap className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">High Performance & SEO</h3>
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">
+                  High Performance & SEO
+                </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Built with Next.js App Router for server-side rendering, semantic schema validation, structured SEO, and blazingly fast global edge distribution.
+                  Built with Next.js App Router for server-side rendering, semantic schema
+                  validation, structured SEO, and blazingly fast global edge distribution.
                 </p>
               </div>
             </div>
@@ -347,7 +364,8 @@ export default async function Home() {
             Scale with {systemName}
           </h2>
           <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            Choose the right tier to launch your storefront or build a complete enterprise marketplace.
+            Choose the right tier to launch your storefront or build a complete enterprise
+            marketplace.
           </p>
         </div>
 
@@ -366,7 +384,8 @@ export default async function Home() {
               Ready to transform your commerce operations?
             </h2>
             <p className="text-base md:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              Join industry leaders standardizing on the {systemName} hub. Create your vendor storefront or integrate your custom platform today.
+              Join industry leaders standardizing on the {systemName} hub. Create your vendor
+              storefront or integrate your custom platform today.
             </p>
             <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link

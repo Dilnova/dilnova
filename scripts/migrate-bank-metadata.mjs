@@ -7,40 +7,40 @@
  *   CLERK_SECRET_KEY=sk_... node scripts/migrate-bank-metadata.mjs --dry-run
  */
 const BANK_KEYS = [
-  'bankName',
-  'bankAccountName',
-  'bankAccountNumber',
-  'bankBranchCode',
-  'bankTransferInstructions',
+  "bankName",
+  "bankAccountName",
+  "bankAccountNumber",
+  "bankBranchCode",
+  "bankTransferInstructions",
 ];
 
 // SECURITY: Require all three conditions to safely skip in CI.
 // Prevents skipping the migration if Vercel happens to have CI=true.
 if (
-  process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy' &&
-  process.env.NODE_ENV !== 'production' &&
-  process.env.VERCEL !== '1'
+  process.env.CLERK_SECRET_KEY === "sk_test_ci_dummy" &&
+  process.env.NODE_ENV !== "production" &&
+  process.env.VERCEL !== "1"
 ) {
-  console.log('Skipping bank metadata migration in CI environment.');
+  console.log("Skipping bank metadata migration in CI environment.");
   process.exit(0);
 }
 
-const dryRun = process.argv.includes('--dry-run');
+const dryRun = process.argv.includes("--dry-run");
 const secretKey = process.env.CLERK_SECRET_KEY;
 
-if (!secretKey || secretKey.includes('placeholder')) {
-  console.warn('CLERK_SECRET_KEY is missing or is a placeholder. Skipping migration.');
+if (!secretKey || secretKey.includes("placeholder")) {
+  console.warn("CLERK_SECRET_KEY is missing or is a placeholder. Skipping migration.");
   process.exit(0);
 }
 
-const clerkApi = 'https://api.clerk.com/v1';
+const clerkApi = "https://api.clerk.com/v1";
 
 async function clerkFetch(path, options = {}) {
   const response = await fetch(`${clerkApi}${path}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${secretKey}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(options.headers || {}),
     },
   });
@@ -66,7 +66,7 @@ function stripBankFields(meta) {
 }
 
 function hasBankFields(meta) {
-  return BANK_KEYS.some((key) => typeof meta[key] === 'string' && meta[key].trim());
+  return BANK_KEYS.some((key) => typeof meta[key] === "string" && meta[key].trim());
 }
 
 let migrated = 0;
@@ -87,7 +87,7 @@ while (true) {
 
     const privateMeta = { ...(org.private_metadata || {}) };
     for (const key of BANK_KEYS) {
-      if (typeof publicMeta[key] === 'string') {
+      if (typeof publicMeta[key] === "string") {
         privateMeta[key] = publicMeta[key];
       }
     }
@@ -95,12 +95,12 @@ while (true) {
     const cleanedPublic = stripBankFields(publicMeta);
 
     console.log(
-      `${dryRun ? '[dry-run] ' : ''}Migrate org ${org.id} (${org.name}) — bank fields → private_metadata`
+      `${dryRun ? "[dry-run] " : ""}Migrate org ${org.id} (${org.name}) — bank fields → private_metadata`,
     );
 
     if (!dryRun) {
       await clerkFetch(`/organizations/${org.id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: JSON.stringify({
           public_metadata: cleanedPublic,
           private_metadata: privateMeta,
@@ -118,4 +118,4 @@ while (true) {
   }
 }
 
-console.log(`\nDone. Migrated: ${migrated}, skipped: ${skipped}${dryRun ? ' (dry-run)' : ''}.`);
+console.log(`\nDone. Migrated: ${migrated}, skipped: ${skipped}${dryRun ? " (dry-run)" : ""}.`);

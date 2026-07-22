@@ -1,18 +1,15 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { useUser } from '@clerk/nextjs';
-import {
-  loadCustomerCartAction,
-  saveCustomerCartAction,
-} from '@/features/cart/sync.actions';
-import type { SyncedCartItem } from '@/features/cart/schema';
-import { syncCartPricesAction } from '@/features/cart/checkout.actions';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
+import { useUser } from "@clerk/nextjs";
+import { loadCustomerCartAction, saveCustomerCartAction } from "@/features/cart/sync.actions";
+import type { SyncedCartItem } from "@/features/cart/schema";
+import { syncCartPricesAction } from "@/features/cart/checkout.actions";
 import {
   clearGuestCartStorage,
   readGuestCartFromStorage,
   writeGuestCartToStorage,
-} from '@/features/cart/guest-storage';
+} from "@/features/cart/guest-storage";
 import {
   applyCatalogSync,
   buildCartMergeNotice,
@@ -20,8 +17,8 @@ import {
   getCartAccountKey,
   mergeCartItems,
   type CartAccountKey,
-} from '@/features/cart/cart-session';
-import type { CartItem } from '@/features/cart/types';
+} from "@/features/cart/cart-session";
+import type { CartItem } from "@/features/cart/types";
 
 export type { CartItem };
 
@@ -30,14 +27,14 @@ export interface CartContextType {
   isCartReady: boolean;
   cartMergeNotice: string | null;
   clearCartMergeNotice: () => void;
-  addToCart: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
+  addToCart: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
   removeFromCart: (id: string) => void;
   removeItemsByIds: (ids: string[]) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   syncCartPrices: (
     updates: { id: string; name: string; price: number }[],
-    removedIds?: string[]
+    removedIds?: string[],
   ) => void;
   cartTotal: number;
   cartCount: number;
@@ -72,8 +69,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const previousAccountKey = activeAccountKeyRef.current;
     if (previousAccountKey === accountKey) return;
 
-    const wasGuest = previousAccountKey === 'guest';
-    const isGuest = accountKey === 'guest';
+    const wasGuest = previousAccountKey === "guest";
+    const isGuest = accountKey === "guest";
     activeAccountKeyRef.current = accountKey;
 
     const requestId = ++hydrateRequestRef.current;
@@ -120,14 +117,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
 
       const nextLineCount = countCartLines(merged);
-      
+
       isHydratingRef.current = true;
       setCartItems(merged);
       setCartMergeNotice(buildCartMergeNotice(previousLineCount, nextLineCount, removedCount));
       setServerSynced(true);
       setIsCartReady(true);
 
-      if (merged.length > 0 && (guestItemsForMerge.length > 0 || removedCount > 0 || (syncResult?.data?.success && syncResult.data.items.length > 0))) {
+      if (
+        merged.length > 0 &&
+        (guestItemsForMerge.length > 0 ||
+          removedCount > 0 ||
+          (syncResult?.data?.success && syncResult.data.items.length > 0))
+      ) {
         await saveCustomerCartAction({ items: merged });
       }
     })();
@@ -135,13 +137,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Guest carts only: persist to localStorage. Signed-in carts persist to PostgreSQL only.
   useEffect(() => {
-    if (!isCartReady || accountKey !== 'guest') return;
+    if (!isCartReady || accountKey !== "guest") return;
     writeGuestCartToStorage(cartItems);
   }, [cartItems, isCartReady, accountKey]);
 
   const persistServerCart = useCallback(
     (items: SyncedCartItem[]) => {
-      if (accountKey === 'guest' || !serverSynced) return;
+      if (accountKey === "guest" || !serverSynced) return;
 
       if (isHydratingRef.current) {
         isHydratingRef.current = false;
@@ -156,20 +158,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         void saveCustomerCartAction({ items });
       }, 600);
     },
-    [accountKey, serverSynced]
+    [accountKey, serverSynced],
   );
 
   useEffect(() => {
-    if (!isCartReady || accountKey === 'guest' || !serverSynced) return;
+    if (!isCartReady || accountKey === "guest" || !serverSynced) return;
     persistServerCart(cartItems);
   }, [cartItems, isCartReady, accountKey, serverSynced, persistServerCart]);
 
-  const addToCart = useCallback((item: Omit<CartItem, 'quantity'>, quantity = 1) => {
+  const addToCart = useCallback((item: Omit<CartItem, "quantity">, quantity = 1) => {
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((i) => i.id === item.id);
       if (existingItem) {
         return prevItems.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i
+          i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i,
         );
       }
       return [...prevItems, { ...item, quantity }];
@@ -191,71 +193,70 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setCartItems((prevItems) =>
-      prevItems.map((item) => (item.id === id ? { ...item, quantity } : item))
+      prevItems.map((item) => (item.id === id ? { ...item, quantity } : item)),
     );
   }, []);
 
   const clearCart = useCallback(() => {
     setCartItems([]);
     setCartMergeNotice(null);
-    if (accountKey === 'guest') {
+    if (accountKey === "guest") {
       clearGuestCartStorage();
     } else {
       void saveCustomerCartAction({ items: [] });
     }
   }, [accountKey]);
 
-  const syncCartPrices = useCallback((
-    updates: { id: string; name: string; price: number }[],
-    removedIds: string[] = []
-  ) => {
-    setCartItems((prevItems) => applyCatalogSync(prevItems, updates, removedIds));
-  }, []);
+  const syncCartPrices = useCallback(
+    (updates: { id: string; name: string; price: number }[], removedIds: string[] = []) => {
+      setCartItems((prevItems) => applyCatalogSync(prevItems, updates, removedIds));
+    },
+    [],
+  );
 
   const clearCartMergeNotice = useCallback(() => setCartMergeNotice(null), []);
 
   const cartTotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const cartCount = countCartLines(cartItems);
 
-  const contextValue = React.useMemo(() => ({
-    cartItems,
-    isCartReady,
-    cartMergeNotice,
-    clearCartMergeNotice,
-    addToCart,
-    removeFromCart,
-    removeItemsByIds,
-    updateQuantity,
-    clearCart,
-    syncCartPrices,
-    cartTotal,
-    cartCount,
-  }), [
-    cartItems,
-    isCartReady,
-    cartMergeNotice,
-    clearCartMergeNotice,
-    addToCart,
-    removeFromCart,
-    removeItemsByIds,
-    updateQuantity,
-    clearCart,
-    syncCartPrices,
-    cartTotal,
-    cartCount,
-  ]);
-
-  return (
-    <CartContext.Provider value={contextValue}>
-      {children}
-    </CartContext.Provider>
+  const contextValue = React.useMemo(
+    () => ({
+      cartItems,
+      isCartReady,
+      cartMergeNotice,
+      clearCartMergeNotice,
+      addToCart,
+      removeFromCart,
+      removeItemsByIds,
+      updateQuantity,
+      clearCart,
+      syncCartPrices,
+      cartTotal,
+      cartCount,
+    }),
+    [
+      cartItems,
+      isCartReady,
+      cartMergeNotice,
+      clearCartMergeNotice,
+      addToCart,
+      removeFromCart,
+      removeItemsByIds,
+      updateQuantity,
+      clearCart,
+      syncCartPrices,
+      cartTotal,
+      cartCount,
+    ],
   );
+
+  return <CartContext.Provider value={contextValue}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {
   const context = useContext(CartContext);
   if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
+    throw new Error("useCart must be used within a CartProvider");
   }
   return context;
 }

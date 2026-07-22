@@ -6,14 +6,14 @@
 
 ## Key Docs Links
 
-| Topic | URL |
-|---|---|
-| Getting Started | https://developers.cloudflare.com/turnstile/get-started/ |
-| Client-Side Rendering | https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/ |
+| Topic                  | URL                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| Getting Started        | https://developers.cloudflare.com/turnstile/get-started/                        |
+| Client-Side Rendering  | https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/  |
 | Server-Side Validation | https://developers.cloudflare.com/turnstile/get-started/server-side-validation/ |
-| Widget Types | https://developers.cloudflare.com/turnstile/concepts/widget-types/ |
-| Testing (Dummy Keys) | https://developers.cloudflare.com/turnstile/troubleshooting/testing/ |
-| Dashboard | https://dash.cloudflare.com/?to=/:account/turnstile |
+| Widget Types           | https://developers.cloudflare.com/turnstile/concepts/widget-types/              |
+| Testing (Dummy Keys)   | https://developers.cloudflare.com/turnstile/troubleshooting/testing/            |
+| Dashboard              | https://dash.cloudflare.com/?to=/:account/turnstile                             |
 
 ---
 
@@ -34,17 +34,14 @@ TURNSTILE_SECRET_KEY=0x...
 
 ```ts
 async function validateTurnstile(token: string): Promise<boolean> {
-  const response = await fetch(
-    'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        secret: process.env.TURNSTILE_SECRET_KEY,
-        response: token,
-      }),
-    }
-  );
+  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      secret: process.env.TURNSTILE_SECRET_KEY,
+      response: token,
+    }),
+  });
   const data = await response.json();
   return data.success;
 }

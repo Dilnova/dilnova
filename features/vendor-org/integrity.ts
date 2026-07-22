@@ -65,7 +65,9 @@ export function isKnownVendorOrgId(orgId: string, knownOrgIds: ReadonlySet<strin
   return Boolean(orgId) && knownOrgIds.has(orgId);
 }
 
-export function getDefaultReassignScopesForGroup(group: VendorOrgIssueGroup): VendorOrgReassignScopes {
+export function getDefaultReassignScopesForGroup(
+  group: VendorOrgIssueGroup,
+): VendorOrgReassignScopes {
   return {
     products: group.products.length > 0,
     orderItems: group.orderItems.length > 0,
@@ -77,7 +79,7 @@ export function getDefaultReassignScopesForGroup(group: VendorOrgIssueGroup): Ve
 
 export function countSelectedScopeRecords(
   group: VendorOrgIssueGroup,
-  scopes: VendorOrgReassignScopes
+  scopes: VendorOrgReassignScopes,
 ): number {
   let total = 0;
   if (scopes.products) total += group.products.length;
@@ -96,14 +98,18 @@ export function formatReassignCounts(counts: {
   billingReceipts: number;
 }): string {
   const parts: string[] = [];
-  if (counts.products > 0) parts.push(`${counts.products} product${counts.products === 1 ? '' : 's'}`);
-  if (counts.orderItems > 0) parts.push(`${counts.orderItems} order line${counts.orderItems === 1 ? '' : 's'}`);
-  if (counts.suppliers > 0) parts.push(`${counts.suppliers} supplier${counts.suppliers === 1 ? '' : 's'}`);
-  if (counts.branches > 0) parts.push(`${counts.branches} branch${counts.branches === 1 ? '' : 'es'}`);
+  if (counts.products > 0)
+    parts.push(`${counts.products} product${counts.products === 1 ? "" : "s"}`);
+  if (counts.orderItems > 0)
+    parts.push(`${counts.orderItems} order line${counts.orderItems === 1 ? "" : "s"}`);
+  if (counts.suppliers > 0)
+    parts.push(`${counts.suppliers} supplier${counts.suppliers === 1 ? "" : "s"}`);
+  if (counts.branches > 0)
+    parts.push(`${counts.branches} branch${counts.branches === 1 ? "" : "es"}`);
   if (counts.billingReceipts > 0) {
-    parts.push(`${counts.billingReceipts} receipt${counts.billingReceipts === 1 ? '' : 's'}`);
+    parts.push(`${counts.billingReceipts} receipt${counts.billingReceipts === 1 ? "" : "s"}`);
   }
-  return parts.length > 0 ? parts.join(', ') : '0 records';
+  return parts.length > 0 ? parts.join(", ") : "0 records";
 }
 
 export function buildVendorOrgIntegrityReport(
@@ -114,7 +120,7 @@ export function buildVendorOrgIntegrityReport(
     suppliers: VendorOrgIntegritySupplierRef[];
     branches: VendorOrgIntegrityBranchRef[];
     billingReceipts: VendorOrgIntegrityBillingReceiptRef[];
-  }
+  },
 ): VendorOrgIntegrityReport {
   const groupMap = new Map<string, VendorOrgIssueGroup>();
 

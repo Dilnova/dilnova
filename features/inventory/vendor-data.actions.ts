@@ -1,9 +1,12 @@
-'use server';
+"use server";
 
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { loadVendorInventoryData, type GetVendorInventoryDataOptions } from '@/features/inventory/vendor-data';
-import type { VendorInventoryFullData } from '@/features/inventory/types';
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { rateLimit } from "@/shared/security/rate-limit";
+import {
+  loadVendorInventoryData,
+  type GetVendorInventoryDataOptions,
+} from "@/features/inventory/vendor-data";
+import type { VendorInventoryFullData } from "@/features/inventory/types";
 
 /**
  * Returns the full vendor inventory dataset for the calling vendor org.
@@ -18,11 +21,11 @@ import type { VendorInventoryFullData } from '@/features/inventory/types';
  * auth enforcement.
  */
 export async function getVendorInventoryData(
-  options?: GetVendorInventoryDataOptions
+  options?: GetVendorInventoryDataOptions,
 ): Promise<VendorInventoryFullData> {
   return runWithCorrelationId(async () => {
     await rateLimit(30, 60 * 1000);
     // Auth enforced internally by verifyVendorAccess() inside loadVendorInventoryData.
-    return loadVendorInventoryData('full', options) as Promise<VendorInventoryFullData>;
+    return loadVendorInventoryData("full", options) as Promise<VendorInventoryFullData>;
   });
 }

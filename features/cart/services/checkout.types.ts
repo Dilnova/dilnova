@@ -1,4 +1,4 @@
-import type { db } from '@/shared/db/client';
+import type { db } from "@/shared/db/client";
 
 export type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 

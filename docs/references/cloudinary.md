@@ -7,15 +7,15 @@
 
 ## Key Docs Links
 
-| Topic | URL |
-|---|---|
-| next-cloudinary Docs | https://next.cloudinary.dev |
-| CldUploadWidget | https://next.cloudinary.dev/clduploadwidget/basic-usage |
-| CldImage | https://next.cloudinary.dev/cldimage/basic-usage |
+| Topic                 | URL                                                             |
+| --------------------- | --------------------------------------------------------------- |
+| next-cloudinary Docs  | https://next.cloudinary.dev                                     |
+| CldUploadWidget       | https://next.cloudinary.dev/clduploadwidget/basic-usage         |
+| CldImage              | https://next.cloudinary.dev/cldimage/basic-usage                |
 | Cloudinary Upload API | https://cloudinary.com/documentation/image_upload_api_reference |
-| Transformations | https://cloudinary.com/documentation/image_transformations |
-| Cloudinary Dashboard | https://console.cloudinary.com |
-| Node.js SDK | https://cloudinary.com/documentation/node_integration |
+| Transformations       | https://cloudinary.com/documentation/image_transformations      |
+| Cloudinary Dashboard  | https://console.cloudinary.com                                  |
+| Node.js SDK           | https://cloudinary.com/documentation/node_integration           |
 
 ---
 
@@ -36,9 +36,9 @@ CLOUDINARY_API_SECRET=your_api_secret
 ### Common Pattern
 
 ```tsx
-'use client';
+"use client";
 
-import { CldUploadWidget } from 'next-cloudinary';
+import { CldUploadWidget } from "next-cloudinary";
 
 export function ImageUpload({ onUpload }) {
   return (

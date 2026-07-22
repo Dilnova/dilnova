@@ -1,4 +1,4 @@
-import { clerkClient } from '@clerk/nextjs/server';
+import { clerkClient } from "@clerk/nextjs/server";
 
 const MEMBERSHIP_PAGE_SIZE = 100;
 
@@ -8,7 +8,7 @@ const MEMBERSHIP_PAGE_SIZE = 100;
  */
 export async function isUserMemberOfOrganization(
   userId: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<boolean> {
   const client = await clerkClient();
   let offset = 0;
@@ -21,7 +21,7 @@ export async function isUserMemberOfOrganization(
     });
 
     const isMember = response.data.some(
-      (membership) => membership.publicUserData?.userId === userId
+      (membership) => membership.publicUserData?.userId === userId,
     );
     if (isMember) {
       return true;

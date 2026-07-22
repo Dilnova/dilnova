@@ -1,34 +1,38 @@
-import 'dotenv/config';
-import { db } from '../shared/db/client';
-import { simulatedOrders } from '../shared/db/schema/orders';
-import { contactSubmissions } from '../shared/db/schema/platform';
-import { suppliers } from '../shared/db/schema/inventory';
-import { billingReceipts, branches } from '../shared/db/schema/billing';
-import { reviews, questions } from '../shared/db/schema/catalog';
-import { decryptString } from '../shared/security/encryption';
-import { sql, eq } from 'drizzle-orm';
+import "dotenv/config";
+import { db } from "../shared/db/client";
+import { simulatedOrders } from "../shared/db/schema/orders";
+import { contactSubmissions } from "../shared/db/schema/platform";
+import { suppliers } from "../shared/db/schema/inventory";
+import { billingReceipts, branches } from "../shared/db/schema/billing";
+import { reviews, questions } from "../shared/db/schema/catalog";
+import { decryptString } from "../shared/security/encryption";
+import { sql, eq } from "drizzle-orm";
 
 async function main() {
-  console.log('=== PII Key Rotation Script ===');
+  console.log("=== PII Key Rotation Script ===");
 
   const activeKey = process.env.PII_ENCRYPTION_KEY?.trim();
   const fallbackKey = process.env.PII_ENCRYPTION_KEY_V1?.trim();
 
   if (!activeKey) {
-    console.error('Error: PII_ENCRYPTION_KEY is not defined.');
+    console.error("Error: PII_ENCRYPTION_KEY is not defined.");
     process.exit(1);
   }
 
   if (!fallbackKey) {
-    console.warn('Warning: PII_ENCRYPTION_KEY_V1 is not set.');
-    console.warn('This script will attempt to decrypt older records using the active PII_ENCRYPTION_KEY.');
-    console.warn('If you have changed the key value, please set PII_ENCRYPTION_KEY_V1 to the old key.');
+    console.warn("Warning: PII_ENCRYPTION_KEY_V1 is not set.");
+    console.warn(
+      "This script will attempt to decrypt older records using the active PII_ENCRYPTION_KEY.",
+    );
+    console.warn(
+      "If you have changed the key value, please set PII_ENCRYPTION_KEY_V1 to the old key.",
+    );
     console.log();
   }
 
   try {
     // 1. Process simulated_orders
-    console.log('Scanning simulated_orders...');
+    console.log("Scanning simulated_orders...");
     const staleOrders = await db.execute(sql`
       SELECT id, customer_name, customer_email, shipping_address, shipping_phone
       FROM simulated_orders
@@ -72,7 +76,8 @@ async function main() {
       const decryptedPhone2 = rawPhone2 ? decryptString(rawPhone2) : null;
 
       // Drizzle update will automatically invoke customType's toDriver() (which runs encryptString and uses v2 prefix)
-      await db.update(simulatedOrders)
+      await db
+        .update(simulatedOrders)
         .set({
           customerName: decryptedName ?? undefined,
           customerEmail: decryptedEmail ?? undefined,
@@ -92,7 +97,7 @@ async function main() {
     console.log(`Successfully updated ${updatedOrdersCount} order(s).`);
 
     // 2. Process contact_submissions
-    console.log('\nScanning contact_submissions...');
+    console.log("\nScanning contact_submissions...");
     const staleSubmissions = await db.execute(sql`
       SELECT id, name, email
       FROM contact_submissions
@@ -111,7 +116,8 @@ async function main() {
       const decryptedName = rawName ? decryptString(rawName) : null;
       const decryptedEmail = rawEmail ? decryptString(rawEmail) : null;
 
-      await db.update(contactSubmissions)
+      await db
+        .update(contactSubmissions)
         .set({
           name: decryptedName ?? undefined,
           email: decryptedEmail ?? undefined,
@@ -123,7 +129,7 @@ async function main() {
     console.log(`Successfully updated ${updatedSubmissionsCount} contact submission(s).`);
 
     // 3. Process suppliers
-    console.log('\nScanning suppliers...');
+    console.log("\nScanning suppliers...");
     const staleSuppliers = await db.execute(sql`
       SELECT id, contact_name, email, phone, address
       FROM suppliers
@@ -143,7 +149,8 @@ async function main() {
       const rawPhone = row.phone as string | null;
       const rawAddress = row.address as string | null;
 
-      await db.update(suppliers)
+      await db
+        .update(suppliers)
         .set({
           contactName: rawContactName ? decryptString(rawContactName) : null,
           email: rawEmail ? decryptString(rawEmail) : null,
@@ -157,7 +164,7 @@ async function main() {
     console.log(`Successfully updated ${updatedSuppliersCount} supplier(s).`);
 
     // 4. Process billing_receipts
-    console.log('\nScanning billing_receipts...');
+    console.log("\nScanning billing_receipts...");
     const staleReceipts = await db.execute(sql`
       SELECT id, customer_name
       FROM billing_receipts
@@ -171,7 +178,8 @@ async function main() {
       const id = row.id as string;
       const rawCustomerName = row.customer_name as string | null;
 
-      await db.update(billingReceipts)
+      await db
+        .update(billingReceipts)
         .set({
           customerName: rawCustomerName ? decryptString(rawCustomerName) : null,
         })
@@ -182,7 +190,7 @@ async function main() {
     console.log(`Successfully updated ${updatedReceiptsCount} billing receipt(s).`);
 
     // 5. Process branches
-    console.log('\nScanning branches...');
+    console.log("\nScanning branches...");
     const staleBranches = await db.execute(sql`
       SELECT id, address, phone
       FROM branches
@@ -198,7 +206,8 @@ async function main() {
       const rawAddress = row.address as string | null;
       const rawPhone = row.phone as string | null;
 
-      await db.update(branches)
+      await db
+        .update(branches)
         .set({
           address: rawAddress ? decryptString(rawAddress) : null,
           phone: rawPhone ? decryptString(rawPhone) : null,
@@ -210,7 +219,7 @@ async function main() {
     console.log(`Successfully updated ${updatedBranchesCount} branch(es).`);
 
     // 6. Process reviews
-    console.log('\nScanning reviews...');
+    console.log("\nScanning reviews...");
     const staleReviews = await db.execute(sql`
       SELECT id, user_name
       FROM reviews
@@ -224,7 +233,8 @@ async function main() {
       const id = row.id as string;
       const rawUserName = row.user_name as string;
 
-      await db.update(reviews)
+      await db
+        .update(reviews)
         .set({
           userName: rawUserName ? decryptString(rawUserName) : rawUserName,
         })
@@ -235,7 +245,7 @@ async function main() {
     console.log(`Successfully updated ${updatedReviewsCount} review(s).`);
 
     // 7. Process questions
-    console.log('\nScanning questions...');
+    console.log("\nScanning questions...");
     const staleQuestions = await db.execute(sql`
       SELECT id, user_name
       FROM questions
@@ -249,7 +259,8 @@ async function main() {
       const id = row.id as string;
       const rawUserName = row.user_name as string;
 
-      await db.update(questions)
+      await db
+        .update(questions)
         .set({
           userName: rawUserName ? decryptString(rawUserName) : rawUserName,
         })
@@ -259,9 +270,9 @@ async function main() {
     }
     console.log(`Successfully updated ${updatedQuestionsCount} question(s).`);
 
-    console.log('\nPII Key Rotation Completed successfully.');
+    console.log("\nPII Key Rotation Completed successfully.");
   } catch (error) {
-    console.error('Error executing key rotation:', error);
+    console.error("Error executing key rotation:", error);
     process.exit(1);
   }
 }

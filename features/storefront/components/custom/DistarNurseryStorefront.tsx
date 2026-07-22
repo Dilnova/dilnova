@@ -1,8 +1,8 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import type { StorefrontProps } from './types';
-import { isVideoUrl } from '@/shared/media/media';
-import AddToCartButton from '@/features/cart/components/AddToCartButton';
+import Link from "next/link";
+import Image from "next/image";
+import type { StorefrontProps } from "./types";
+import { isVideoUrl } from "@/shared/media/media";
+import AddToCartButton from "@/features/cart/components/AddToCartButton";
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -17,8 +17,8 @@ import AddToCartButton from '@/features/cart/components/AddToCartButton';
  */
 export default function DistarNurseryStorefront({ org, products }: StorefrontProps) {
   const metadata = org.publicMetadata;
-  const plantProducts = products.filter(p => p.type === 'product');
-  const serviceProducts = products.filter(p => p.type === 'service');
+  const plantProducts = products.filter((p) => p.type === "product");
+  const serviceProducts = products.filter((p) => p.type === "service");
 
   return (
     <div className="min-h-screen font-sans">
@@ -66,7 +66,8 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                 {org.name}
               </h1>
               <p className="text-base text-emerald-200/70 max-w-2xl leading-relaxed">
-                {metadata.description || 'Your destination for premium plants, organic seeds, and expert botanical care. Growing beauty since day one.'}
+                {metadata.description ||
+                  "Your destination for premium plants, organic seeds, and expert botanical care. Growing beauty since day one."}
               </p>
             </div>
           </div>
@@ -82,18 +83,30 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
               Growing with Nature, Not Against It
             </h2>
             <p className="text-sm text-emerald-800/70 leading-relaxed">
-              Every plant in our collection is nurtured with care using organic methods. 
-              We believe in sustainable horticulture that enriches both your space and the planet. 
-              From rare tropicals to everyday greens, each specimen is hand-selected for quality.
+              Every plant in our collection is nurtured with care using organic methods. We believe
+              in sustainable horticulture that enriches both your space and the planet. From rare
+              tropicals to everyday greens, each specimen is hand-selected for quality.
             </p>
           </div>
 
           {/* Feature cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
             {[
-              { icon: '🌱', title: 'Organic Grown', desc: 'No synthetic fertilizers or pesticides. Ever.' },
-              { icon: '📦', title: 'Safe Delivery', desc: 'Plants shipped in protective packaging with care instructions.' },
-              { icon: '🌍', title: 'Eco Packaging', desc: '100% biodegradable pots and recyclable shipping materials.' },
+              {
+                icon: "🌱",
+                title: "Organic Grown",
+                desc: "No synthetic fertilizers or pesticides. Ever.",
+              },
+              {
+                icon: "📦",
+                title: "Safe Delivery",
+                desc: "Plants shipped in protective packaging with care instructions.",
+              },
+              {
+                icon: "🌍",
+                title: "Eco Packaging",
+                desc: "100% biodegradable pots and recyclable shipping materials.",
+              },
             ].map((feature) => (
               <div
                 key={feature.title}
@@ -124,9 +137,9 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {plantProducts.map((product) => {
-                const formattedPrice = (product.price / 100).toLocaleString('en-US', {
-                  style: 'currency',
-                  currency: 'USD',
+                const formattedPrice = (product.price / 100).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
                 });
 
                 return (
@@ -134,7 +147,10 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                     key={product.id}
                     className="group bg-green-50/50 border border-green-200/50 rounded-3xl overflow-hidden hover:shadow-xl hover:shadow-green-100/50 hover:border-green-300/60 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col group/item">
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="flex-1 flex flex-col group/item"
+                    >
                       {/* Image */}
                       <div className="h-52 bg-green-100/30 relative overflow-hidden">
                         {product.imageUrl ? (
@@ -170,7 +186,7 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                             {product.name}
                           </h3>
                           <p className="text-xs text-emerald-700/60 line-clamp-2 mt-1.5 leading-relaxed">
-                            {product.description || 'A beautiful addition to your collection.'}
+                            {product.description || "A beautiful addition to your collection."}
                           </p>
                         </div>
                       </div>
@@ -178,7 +194,9 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
 
                     <div className="px-5 pb-5">
                       <div className="flex items-center justify-between pt-4 border-t border-green-200/40">
-                        <span className="text-lg font-extrabold text-emerald-800">{formattedPrice}</span>
+                        <span className="text-lg font-extrabold text-emerald-800">
+                          {formattedPrice}
+                        </span>
                         <div className="flex items-center gap-2">
                           <AddToCartButton
                             product={{
@@ -223,9 +241,9 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {serviceProducts.map((service) => {
-                const formattedPrice = (service.price / 100).toLocaleString('en-US', {
-                  style: 'currency',
-                  currency: 'USD',
+                const formattedPrice = (service.price / 100).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
                 });
 
                 return (
@@ -246,20 +264,32 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                             className="object-cover w-full h-full"
                           />
                         ) : (
-                          <Image src={service.imageUrl} alt={service.name} fill className="object-cover" sizes="80px" />
+                          <Image
+                            src={service.imageUrl}
+                            alt={service.name}
+                            fill
+                            className="object-cover"
+                            sizes="80px"
+                          />
                         )
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl">🌻</div>
+                        <div className="w-full h-full flex items-center justify-center text-2xl">
+                          🌻
+                        </div>
                       )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-sm font-bold text-emerald-900 group-hover/item:text-green-700 transition-colors">{service.name}</h3>
+                      <h3 className="text-sm font-bold text-emerald-900 group-hover/item:text-green-700 transition-colors">
+                        {service.name}
+                      </h3>
                       <p className="text-xs text-emerald-700/60 mt-1 line-clamp-2 leading-relaxed">
                         {service.description}
                       </p>
                       <div className="flex items-center gap-3 mt-3">
                         <span className="text-sm font-bold text-emerald-800">{formattedPrice}</span>
-                        <span className="text-[10px] font-mono text-emerald-600/40 uppercase">per session</span>
+                        <span className="text-[10px] font-mono text-emerald-600/40 uppercase">
+                          per session
+                        </span>
                       </div>
                     </div>
                   </Link>
@@ -299,7 +329,13 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
       <section className="bg-emerald-950">
         <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Image src={org.imageUrl} alt={org.name} width={32} height={32} className="rounded-full" />
+            <Image
+              src={org.imageUrl}
+              alt={org.name}
+              width={32}
+              height={32}
+              className="rounded-full"
+            />
             <span className="text-xs font-semibold text-emerald-400">{org.name}</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-emerald-600">

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo } from "react";
 
 interface Category {
   id: string;
@@ -30,7 +30,7 @@ export default function CategorySelector({
   onChange,
 }: CategorySelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,7 +52,7 @@ export default function CategorySelector({
       // Return hierarchical list (parents first, then their children)
       const list: SelectableItem[] = [];
       const parents = categories.filter((c) => !c.parentId);
-      
+
       parents.forEach((parent) => {
         // Add parent itself
         list.push({
@@ -103,10 +103,10 @@ export default function CategorySelector({
 
   // Find currently selected category name/path for the display button
   const selectedCategoryLabel = useMemo(() => {
-    if (!selectedId) return 'Select Category';
+    if (!selectedId) return "Select Category";
     const selected = categoryMap.get(selectedId);
-    if (!selected) return 'Select Category';
-    
+    if (!selected) return "Select Category";
+
     if (selected.parentId) {
       const parent = categoryMap.get(selected.parentId);
       return parent ? `${parent.name} › ${selected.name}` : selected.name;
@@ -132,14 +132,14 @@ export default function CategorySelector({
         setIsOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Keyboard navigation handler
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         setIsOpen(true);
       }
@@ -147,25 +147,31 @@ export default function CategorySelector({
     }
 
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        setActiveIndex((prev) => (selectableItems.length > 0 ? (prev + 1) % selectableItems.length : 0));
+        setActiveIndex((prev) =>
+          selectableItems.length > 0 ? (prev + 1) % selectableItems.length : 0,
+        );
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        setActiveIndex((prev) => (selectableItems.length > 0 ? (prev - 1 + selectableItems.length) % selectableItems.length : 0));
+        setActiveIndex((prev) =>
+          selectableItems.length > 0
+            ? (prev - 1 + selectableItems.length) % selectableItems.length
+            : 0,
+        );
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         if (selectableItems[activeIndex]) {
           handleSelect(selectableItems[activeIndex].id);
         }
         break;
-      case 'Escape':
+      case "Escape":
         e.preventDefault();
         setIsOpen(false);
         break;
-      case 'Tab':
+      case "Tab":
         // Let natural tab order occur but close dropdown
         setIsOpen(false);
         break;
@@ -179,7 +185,7 @@ export default function CategorySelector({
     if (isOpen && listRef.current) {
       const activeEl = listRef.current.querySelector('[data-active="true"]');
       if (activeEl) {
-        activeEl.scrollIntoView({ block: 'nearest' });
+        activeEl.scrollIntoView({ block: "nearest" });
       }
     }
   }, [activeIndex, isOpen]);
@@ -187,23 +193,28 @@ export default function CategorySelector({
   const handleSelect = (id: string) => {
     onChange(id);
     setIsOpen(false);
-    setSearchQuery('');
+    setSearchQuery("");
   };
 
   // Helper to highlight matching text in results
   const highlightMatch = (text: string, query: string) => {
     if (!query.trim()) return <span>{text}</span>;
-    const parts = text.split(new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi'));
+    const parts = text.split(
+      new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")})`, "gi"),
+    );
     return (
       <span>
         {parts.map((part, i) =>
           part.toLowerCase() === query.toLowerCase() ? (
-            <mark key={i} className="bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 font-bold px-0.5 rounded-sm">
+            <mark
+              key={i}
+              className="bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 font-bold px-0.5 rounded-sm"
+            >
               {part}
             </mark>
           ) : (
             part
-          )
+          ),
         )}
       </span>
     );
@@ -220,7 +231,13 @@ export default function CategorySelector({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span className={selectedId ? 'text-zinc-800 dark:text-zinc-150 font-medium' : 'text-zinc-400 dark:text-zinc-500'}>
+        <span
+          className={
+            selectedId
+              ? "text-zinc-800 dark:text-zinc-150 font-medium"
+              : "text-zinc-400 dark:text-zinc-500"
+          }
+        >
           {selectedCategoryLabel}
         </span>
         <div className="flex items-center gap-1.5 pl-2">
@@ -228,18 +245,23 @@ export default function CategorySelector({
             <span
               onClick={(e) => {
                 e.stopPropagation();
-                handleSelect('');
+                handleSelect("");
               }}
               className="text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 cursor-pointer p-0.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-all"
               title="Clear selection"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2.5"
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </span>
           )}
           <svg
-            className={`w-4 h-4 text-zinc-400 dark:text-zinc-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 text-zinc-400 dark:text-zinc-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -254,8 +276,18 @@ export default function CategorySelector({
         <div className="absolute z-[70] mt-1.5 w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden animate-in fade-in-50 slide-in-from-top-1 duration-150">
           {/* Search Header */}
           <div className="relative flex items-center bg-zinc-50/80 dark:bg-zinc-900/40 border-b border-zinc-100 dark:border-zinc-800/80 px-3.5 py-2">
-            <svg className="w-4 h-4 text-zinc-400 dark:text-zinc-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="w-4 h-4 text-zinc-400 dark:text-zinc-500 mr-2 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
             <input
               ref={searchInputRef}
@@ -269,11 +301,16 @@ export default function CategorySelector({
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => setSearchQuery('')}
+                onClick={() => setSearchQuery("")}
                 className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5 rounded-full cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             )}
@@ -316,11 +353,11 @@ export default function CategorySelector({
                       onClick={() => handleSelect(item.id)}
                       data-active={isActive}
                       className={`w-full flex items-center justify-between text-left px-3.5 py-2.5 sm:py-2 text-sm transition-colors cursor-pointer select-none ${
-                        !searchQuery.trim() && !item.isParent ? 'pl-7' : 'pl-3.5'
+                        !searchQuery.trim() && !item.isParent ? "pl-7" : "pl-3.5"
                       } ${
                         isActive
-                          ? 'bg-purple-50/50 dark:bg-purple-950/20 text-purple-900 dark:text-purple-200'
-                          : 'text-zinc-700 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-900/40'
+                          ? "bg-purple-50/50 dark:bg-purple-950/20 text-purple-900 dark:text-purple-200"
+                          : "text-zinc-700 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
                       }`}
                       role="option"
                       aria-selected={isSelected}
@@ -331,7 +368,9 @@ export default function CategorySelector({
                           {isSelected && (
                             <span className="w-1.5 h-1.5 rounded-full bg-purple-600 dark:bg-purple-400 flex-shrink-0" />
                           )}
-                          <span className={`truncate font-normal ${isSelected ? 'font-semibold text-purple-700 dark:text-purple-300' : ''}`}>
+                          <span
+                            className={`truncate font-normal ${isSelected ? "font-semibold text-purple-700 dark:text-purple-300" : ""}`}
+                          >
                             {searchQuery.trim()
                               ? highlightMatch(item.displayName, searchQuery)
                               : item.displayName}
@@ -348,8 +387,18 @@ export default function CategorySelector({
 
                       {/* Checkmark icon for selected option */}
                       {isSelected && (
-                        <svg className="w-4 h-4 text-purple-650 dark:text-purple-400 flex-shrink-0 ml-2 animate-scale-in" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-4 h-4 text-purple-650 dark:text-purple-400 flex-shrink-0 ml-2 animate-scale-in"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2.5"
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                       )}
                     </button>

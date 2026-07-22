@@ -1,4 +1,4 @@
-import AgeGatedSignUp from './AgeGatedSignUp';
+import AgeGatedSignUp from "./AgeGatedSignUp";
 
 type SignUpPageProps = {
   searchParams: Promise<{ redirect_url?: string }>;

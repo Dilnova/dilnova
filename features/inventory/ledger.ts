@@ -1,6 +1,6 @@
-import * as schema from '@/shared/db/schema';
-import { eq, and, ne, sql, gte } from 'drizzle-orm';
-import type { db } from '@/shared/db/client';
+import * as schema from "@/shared/db/schema";
+import { eq, and, ne, sql, gte } from "drizzle-orm";
+import type { db } from "@/shared/db/client";
 
 type DbConn = Parameters<Parameters<typeof db.transaction>[0]>[0] | typeof db;
 
@@ -8,7 +8,7 @@ type DbConn = Parameters<Parameters<typeof db.transaction>[0]>[0] | typeof db;
 export async function sumBranchAllocatedQuantity(
   conn: DbConn,
   productId: string,
-  options?: { excludeBranchId?: string }
+  options?: { excludeBranchId?: string },
 ): Promise<number> {
   const conditions = [eq(schema.branchInventory.productId, productId)];
   if (options?.excludeBranchId) {
@@ -28,7 +28,7 @@ export async function sumBranchAllocatedQuantity(
 export function validateBranchAllocationAgainstCentral(
   centralQuantity: number,
   otherBranchesAllocated: number,
-  requestedBranchQuantity: number
+  requestedBranchQuantity: number,
 ): { ok: true } | { ok: false; error: string } {
   const maxAllowed = centralQuantity - otherBranchesAllocated;
   if (requestedBranchQuantity > maxAllowed) {
@@ -42,7 +42,7 @@ export function validateBranchAllocationAgainstCentral(
 
 export function validateCentralQuantityCoversBranches(
   centralQuantity: number,
-  totalBranchAllocated: number
+  totalBranchAllocated: number,
 ): { ok: true } | { ok: false; error: string } {
   if (centralQuantity < totalBranchAllocated) {
     return {
@@ -53,10 +53,7 @@ export function validateCentralQuantityCoversBranches(
   return { ok: true };
 }
 
-export async function getOrgDefaultBranchId(
-  conn: DbConn,
-  orgId: string
-): Promise<string | null> {
+export async function getOrgDefaultBranchId(conn: DbConn, orgId: string): Promise<string | null> {
   const branches = await conn
     .select({ id: schema.branches.id, isDefault: schema.branches.isDefault })
     .from(schema.branches)
@@ -72,7 +69,7 @@ export async function reduceBranchAllocationsForCentralSale(
   conn: DbConn,
   productId: string,
   quantity: number,
-  orgId: string
+  orgId: string,
 ): Promise<void> {
   if (quantity <= 0) return;
 
@@ -85,10 +82,8 @@ export async function reduceBranchAllocationsForCentralSale(
     })
     .from(schema.branchInventory)
     .innerJoin(schema.branches, eq(schema.branchInventory.branchId, schema.branches.id))
-    .where(
-      and(eq(schema.branchInventory.productId, productId), eq(schema.branches.orgId, orgId))
-    )
-    .for('update');
+    .where(and(eq(schema.branchInventory.productId, productId), eq(schema.branches.orgId, orgId)))
+    .for("update");
 
   const sorted = [...rows].sort((a, b) => {
     if (a.isDefault && !b.isDefault) return -1;
@@ -109,10 +104,7 @@ export async function reduceBranchAllocationsForCentralSale(
         updatedAt: new Date(),
       })
       .where(
-        and(
-          eq(schema.branchInventory.id, row.id),
-          gte(schema.branchInventory.quantity, deduct)
-        )
+        and(eq(schema.branchInventory.id, row.id), gte(schema.branchInventory.quantity, deduct)),
       )
       .returning({ id: schema.branchInventory.id });
 
@@ -126,7 +118,7 @@ export async function decrementBranchStock(
   conn: DbConn,
   branchId: string,
   productId: string,
-  quantityDelta: number
+  quantityDelta: number,
 ): Promise<void> {
   if (quantityDelta <= 0) return;
 
@@ -139,10 +131,10 @@ export async function decrementBranchStock(
     .where(
       and(
         eq(schema.branchInventory.branchId, branchId),
-        eq(schema.branchInventory.productId, productId)
-      )
+        eq(schema.branchInventory.productId, productId),
+      ),
     )
-    .for('update')
+    .for("update")
     .limit(1);
 
   if (!existing || existing.quantity <= 0) return;
@@ -161,7 +153,7 @@ export async function decrementDefaultBranchStock(
   conn: DbConn,
   orgId: string,
   productId: string,
-  quantityDelta: number
+  quantityDelta: number,
 ): Promise<void> {
   const branchId = await getOrgDefaultBranchId(conn, orgId);
   if (!branchId) return;
@@ -172,7 +164,7 @@ export async function incrementBranchStock(
   conn: DbConn,
   branchId: string,
   productId: string,
-  quantityDelta: number
+  quantityDelta: number,
 ): Promise<void> {
   if (quantityDelta <= 0) return;
 
@@ -185,10 +177,10 @@ export async function incrementBranchStock(
     .where(
       and(
         eq(schema.branchInventory.branchId, branchId),
-        eq(schema.branchInventory.productId, productId)
-      )
+        eq(schema.branchInventory.productId, productId),
+      ),
     )
-    .for('update')
+    .for("update")
     .limit(1);
 
   if (existing) {
@@ -212,7 +204,7 @@ export async function incrementDefaultBranchStock(
   conn: DbConn,
   orgId: string,
   productId: string,
-  quantityDelta: number
+  quantityDelta: number,
 ): Promise<void> {
   const branchId = await getOrgDefaultBranchId(conn, orgId);
   if (!branchId) return;

@@ -1,22 +1,21 @@
-import { auth, currentUser } from '@clerk/nextjs/server';
-import { notFound, redirect } from 'next/navigation';
-import Link from 'next/link';
-import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
-import { describeOrderCheckout } from '@/features/organization/checkout-options.shared';
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import { getCheckoutOptionsCatalog } from "@/features/organization/checkout-options";
+import { describeOrderCheckout } from "@/features/organization/checkout-options.shared";
+import { getOrderById, getOrderItems, getPickupBranchName } from "@/features/customer/queries";
+import { customerOwnsOrder } from "@/features/orders/customer-ownership";
+import { getOrderDisplayTotals } from "@/features/billing/checkout-totals";
 import {
-  getOrderById,
-  getOrderItems,
-  getPickupBranchName,
-} from '@/features/customer/queries';
-import { customerOwnsOrder } from '@/features/orders/customer-ownership';
-import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
-import { allocateVendorPaymentAmounts, isBankTransferPayment } from '@/features/billing/bank-transfer';
-import { buildBankTransferCheckoutInstructions } from '@/features/billing/bank-transfer.server';
-import BankTransferInstructions from '@/features/billing/components/BankTransferInstructions';
-import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
-import { formatOrderStatusLabel } from '@/features/orders/status';
-import { attachPaymentSlipPreview } from '@/features/orders/payment-slip-preview';
-import { PrintButton } from '@/shared/ui/PrintButton';
+  allocateVendorPaymentAmounts,
+  isBankTransferPayment,
+} from "@/features/billing/bank-transfer";
+import { buildBankTransferCheckoutInstructions } from "@/features/billing/bank-transfer.server";
+import BankTransferInstructions from "@/features/billing/components/BankTransferInstructions";
+import { CustomerPaymentSlipSection } from "@/features/orders/components/OrderPaymentPanels";
+import { formatOrderStatusLabel } from "@/features/orders/status";
+import { attachPaymentSlipPreview } from "@/features/orders/payment-slip-preview";
+import { PrintButton } from "@/shared/ui/PrintButton";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -27,7 +26,7 @@ export default async function InvoicePage({ params }: PageProps) {
   const user = await currentUser();
 
   if (!userId || !user) {
-    redirect('/unauthorized');
+    redirect("/unauthorized");
   }
 
   const { id } = await params;
@@ -43,9 +42,7 @@ export default async function InvoicePage({ params }: PageProps) {
   const [items, checkoutOptionsCatalog, pickupBranch] = await Promise.all([
     getOrderItems(id),
     getCheckoutOptionsCatalog(),
-    order.pickupBranchId
-      ? getPickupBranchName(order.pickupBranchId)
-      : Promise.resolve(null),
+    order.pickupBranchId ? getPickupBranchName(order.pickupBranchId) : Promise.resolve(null),
   ]);
 
   const checkoutDetails = describeOrderCheckout(
@@ -53,11 +50,16 @@ export default async function InvoicePage({ params }: PageProps) {
       ...order,
       pickupBranchName: pickupBranch,
     },
-    checkoutOptionsCatalog
+    checkoutOptionsCatalog,
   );
 
   const orderTotals = getOrderDisplayTotals(order);
-  const { subtotalAmount: subtotal, taxAmount: tax, shippingAmount: shipping, grandTotal } = orderTotals;
+  const {
+    subtotalAmount: subtotal,
+    taxAmount: tax,
+    shippingAmount: shipping,
+    grandTotal,
+  } = orderTotals;
 
   const vendorSubtotals = items.reduce<Record<string, number>>((acc, item) => {
     acc[item.vendorOrgId] = (acc[item.vendorOrgId] || 0) + item.unitPrice * item.quantity;
@@ -66,7 +68,7 @@ export default async function InvoicePage({ params }: PageProps) {
   const serverSubtotal = Object.values(vendorSubtotals).reduce((sum, amount) => sum + amount, 0);
   const showBankTransferInstructions =
     isBankTransferPayment(order.paymentMethod) &&
-    (order.status === 'pending_payment' || order.status === 'payment_submitted');
+    (order.status === "pending_payment" || order.status === "payment_submitted");
   const bankTransferInstructions = showBankTransferInstructions
     ? await buildBankTransferCheckoutInstructions({
         orderId: order.id,
@@ -76,16 +78,16 @@ export default async function InvoicePage({ params }: PageProps) {
     : null;
 
   const formatPrice = (cents: number) => {
-    return (cents / 100).toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return (cents / 100).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
     });
   };
 
-  const invoiceDate = new Date(order.createdAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+  const invoiceDate = new Date(order.createdAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
   return (
@@ -115,18 +117,29 @@ export default async function InvoicePage({ params }: PageProps) {
             </p>
           </div>
           <div className="text-left sm:text-right font-mono text-xs text-zinc-500 dark:text-zinc-400 space-y-1">
-            <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 print:text-black">INVOICE</h2>
+            <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
+              INVOICE
+            </h2>
             <p>Invoice #: INV-{order.id.slice(0, 8).toUpperCase()}</p>
             <p>Date: {invoiceDate}</p>
-            <p>Status: <span className="uppercase font-bold">{formatOrderStatusLabel(order.status)}</span></p>
+            <p>
+              Status:{" "}
+              <span className="uppercase font-bold">{formatOrderStatusLabel(order.status)}</span>
+            </p>
           </div>
         </div>
 
         {/* Bill to section */}
-        <div className={`grid grid-cols-1 gap-8 py-8 text-xs ${order.shippingAddress ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+        <div
+          className={`grid grid-cols-1 gap-8 py-8 text-xs ${order.shippingAddress ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+        >
           <div>
-            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Billed To:</h3>
-            <p className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">{order.customerName}</p>
+            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
+              Billed To:
+            </h3>
+            <p className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
+              {order.customerName}
+            </p>
             <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">{order.customerEmail}</p>
             {order.shippingPhone && (
               <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">{order.shippingPhone}</p>
@@ -137,37 +150,61 @@ export default async function InvoicePage({ params }: PageProps) {
           </div>
           {(order.shippingAddress || order.shippingCity) && (
             <div>
-              <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Ship To:</h3>
+              <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
+                Ship To:
+              </h3>
               <p className="text-zinc-800 dark:text-zinc-200 print:text-black whitespace-pre-line">
                 {[
                   order.shippingAddress,
                   order.shippingAddressLine2,
-                  order.shippingCity ? `${order.shippingCity}, ${order.shippingState || ''} ${order.shippingPostalCode || ''}`.trim() : null,
-                  order.shippingCountry
-                ].filter(Boolean).join('\n')}
+                  order.shippingCity
+                    ? `${order.shippingCity}, ${order.shippingState || ""} ${order.shippingPostalCode || ""}`.trim()
+                    : null,
+                  order.shippingCountry,
+                ]
+                  .filter(Boolean)
+                  .join("\n")}
               </p>
             </div>
           )}
           <div className="sm:text-right">
-            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Issued By:</h3>
-            <p className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">Dilnova Registry Service</p>
-            <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">Automated Simulated Register checkout</p>
+            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
+              Issued By:
+            </h3>
+            <p className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
+              Dilnova Registry Service
+            </p>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Automated Simulated Register checkout
+            </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-8 text-xs border-b border-zinc-150 dark:border-zinc-800">
           <div>
-            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Fulfillment</h3>
-            <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">{checkoutDetails.fulfillment}</p>
+            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
+              Fulfillment
+            </h3>
+            <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">
+              {checkoutDetails.fulfillment}
+            </p>
           </div>
           <div>
-            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Payment</h3>
-            <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">{checkoutDetails.payment}</p>
+            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
+              Payment
+            </h3>
+            <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">
+              {checkoutDetails.payment}
+            </p>
           </div>
           {checkoutDetails.pickup && (
             <div>
-              <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Pickup Branch</h3>
-              <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">{checkoutDetails.pickup}</p>
+              <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
+                Pickup Branch
+              </h3>
+              <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">
+                {checkoutDetails.pickup}
+              </p>
             </div>
           )}
         </div>
@@ -187,12 +224,18 @@ export default async function InvoicePage({ params }: PageProps) {
               {items.map((item) => (
                 <tr key={item.id} className="text-zinc-800 dark:text-zinc-200 print:text-black">
                   <td className="py-4 px-1">
-                    <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black block">{item.productName}</span>
-                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Vendor ID: {item.vendorOrgId.slice(0, 8)}</span>
+                    <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black block">
+                      {item.productName}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                      Vendor ID: {item.vendorOrgId.slice(0, 8)}
+                    </span>
                   </td>
                   <td className="py-4 px-1 text-center font-mono">{item.quantity}</td>
                   <td className="py-4 px-1 text-right font-mono">{formatPrice(item.unitPrice)}</td>
-                  <td className="py-4 px-1 text-right font-mono font-bold">{formatPrice(item.unitPrice * item.quantity)}</td>
+                  <td className="py-4 px-1 text-right font-mono font-bold">
+                    {formatPrice(item.unitPrice * item.quantity)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -223,16 +266,20 @@ export default async function InvoicePage({ params }: PageProps) {
           <div className="w-full sm:w-64 space-y-2 text-xs font-mono text-zinc-600 dark:text-zinc-400 print:text-black">
             <div className="flex justify-between">
               <span>Subtotal:</span>
-              <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">{formatPrice(subtotal)}</span>
+              <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
+                {formatPrice(subtotal)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Estimated Tax (8%):</span>
-              <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">{formatPrice(tax)}</span>
+              <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
+                {formatPrice(tax)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Shipping:</span>
               <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
-                {shipping === 0 ? 'FREE' : formatPrice(shipping)}
+                {shipping === 0 ? "FREE" : formatPrice(shipping)}
               </span>
             </div>
             <div className="flex justify-between text-sm font-bold text-zinc-900 dark:text-zinc-100 print:text-black border-t border-zinc-200 dark:border-zinc-850 pt-2">
@@ -244,8 +291,8 @@ export default async function InvoicePage({ params }: PageProps) {
 
         <div className="mt-16 pt-8 border-t border-zinc-100 dark:border-zinc-800 text-center text-[10px] text-zinc-400 dark:text-zinc-500 print:text-black">
           {showBankTransferInstructions
-            ? 'Complete your bank transfer using the instructions above. Your order will be prepared after payment is verified.'
-            : 'Thank you for shopping with Dilnova Commerce Hub.'}
+            ? "Complete your bank transfer using the instructions above. Your order will be prepared after payment is verified."
+            : "Thank you for shopping with Dilnova Commerce Hub."}
         </div>
       </div>
     </main>

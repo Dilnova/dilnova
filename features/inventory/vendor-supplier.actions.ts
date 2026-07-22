@@ -1,18 +1,18 @@
-'use server';
+"use server";
 
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { revalidateVendorConsole } from '@/features/vendor/revalidate';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq, and } from "drizzle-orm";
+import { revalidateVendorConsole } from "@/features/vendor/revalidate";
 import {
   createSupplierSchema,
   updateSupplierSchema,
   deleteSupplierSchema,
-} from '@/features/inventory/schema';
-import { logAuditAction } from '@/shared/audit/logger';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { verifyVendorAccess } from '@/features/inventory/vendor-data';
+} from "@/features/inventory/schema";
+import { logAuditAction } from "@/shared/audit/logger";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { verifyVendorAccess } from "@/features/inventory/vendor-data";
 
 export async function vendorCreateSupplierAction(data: {
   name: string;
@@ -27,7 +27,7 @@ export async function vendorCreateSupplierAction(data: {
 
     const parsed = createSupplierSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const [supplier] = await db
@@ -44,8 +44,8 @@ export async function vendorCreateSupplierAction(data: {
 
     await logAuditAction({
       userId,
-      action: 'CREATE_SUPPLIER',
-      targetType: 'supplier',
+      action: "CREATE_SUPPLIER",
+      targetType: "supplier",
       targetId: supplier.id,
       metadata: { name: supplier.name, orgId },
     });
@@ -69,7 +69,7 @@ export async function vendorUpdateSupplierAction(data: {
 
     const parsed = updateSupplierSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     // Verify ownership
@@ -80,7 +80,7 @@ export async function vendorUpdateSupplierAction(data: {
       .limit(1);
 
     if (!existing) {
-      throw new Error('Supplier not found or access denied.');
+      throw new Error("Supplier not found or access denied.");
     }
 
     await db
@@ -96,8 +96,8 @@ export async function vendorUpdateSupplierAction(data: {
 
     await logAuditAction({
       userId,
-      action: 'UPDATE_SUPPLIER',
-      targetType: 'supplier',
+      action: "UPDATE_SUPPLIER",
+      targetType: "supplier",
       targetId: parsed.data.id,
       metadata: { name: parsed.data.name },
     });
@@ -114,7 +114,7 @@ export async function vendorDeleteSupplierAction(id: string) {
 
     const parsed = deleteSupplierSchema.safeParse({ id });
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const result = await db
@@ -123,13 +123,13 @@ export async function vendorDeleteSupplierAction(id: string) {
       .returning();
 
     if (result.length === 0) {
-      throw new Error('Supplier not found or access denied.');
+      throw new Error("Supplier not found or access denied.");
     }
 
     await logAuditAction({
       userId,
-      action: 'DELETE_SUPPLIER',
-      targetType: 'supplier',
+      action: "DELETE_SUPPLIER",
+      targetType: "supplier",
       targetId: parsed.data.id,
     });
 

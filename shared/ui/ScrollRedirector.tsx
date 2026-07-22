@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Spinner } from '@/shared/ui/loading';
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Spinner } from "@/shared/ui/loading";
 
 export default function ScrollRedirector() {
   const router = useRouter();
@@ -28,7 +28,7 @@ export default function ScrollRedirector() {
           setIsCancelled(false); // Reset cancellation state when scrolled away
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     const currentSentinel = sentinelRef.current;
@@ -53,7 +53,7 @@ export default function ScrollRedirector() {
           setCountdown(countdown - 1);
         }, 1000);
       } else {
-        router.push('/products');
+        router.push("/products");
       }
     }
 
@@ -65,7 +65,7 @@ export default function ScrollRedirector() {
   }, [countdown, router]);
 
   const handleGoImmediately = () => {
-    router.push('/products');
+    router.push("/products");
   };
 
   const handleCancelRedirect = () => {
@@ -78,7 +78,10 @@ export default function ScrollRedirector() {
   };
 
   return (
-    <div ref={sentinelRef} className="py-16 border-t border-zinc-200 dark:border-zinc-800 text-center bg-zinc-100 dark:bg-zinc-900/60 w-full flex flex-col items-center justify-center">
+    <div
+      ref={sentinelRef}
+      className="py-16 border-t border-zinc-200 dark:border-zinc-800 text-center bg-zinc-100 dark:bg-zinc-900/60 w-full flex flex-col items-center justify-center"
+    >
       <div className="max-w-md mx-auto px-4 flex flex-col items-center gap-4">
         {isCancelled ? (
           <div className="flex flex-col items-center gap-3">
@@ -100,10 +103,10 @@ export default function ScrollRedirector() {
             <div className="flex items-center gap-3">
               <Spinner size="sm" />
               <p className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider font-mono">
-                {countdown > 0 ? `Redirecting in ${countdown}s...` : 'Navigating...'}
+                {countdown > 0 ? `Redirecting in ${countdown}s...` : "Navigating..."}
               </p>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <button
                 onClick={handleGoImmediately}
@@ -118,9 +121,7 @@ export default function ScrollRedirector() {
                 Cancel Redirect
               </button>
             </div>
-            <p className="text-[10px] font-mono text-zinc-400">
-              Scroll up or click Cancel to stop
-            </p>
+            <p className="text-[10px] font-mono text-zinc-400">Scroll up or click Cancel to stop</p>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">

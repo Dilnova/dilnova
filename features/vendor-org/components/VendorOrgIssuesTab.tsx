@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useMemo, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   countSelectedScopeRecords,
   formatReassignCounts,
@@ -9,10 +9,13 @@ import {
   type VendorOrgIntegrityReport,
   type VendorOrgIssueGroup,
   type VendorOrgReassignScopes,
-} from '@/features/vendor-org/integrity';
-import { reassignProductOrgAction, reassignVendorOrgAction } from '@/features/vendor-org/reassign.actions';
-import { toast } from 'sonner';
-import { useConfirm } from '@/shared/ui/notifications';
+} from "@/features/vendor-org/integrity";
+import {
+  reassignProductOrgAction,
+  reassignVendorOrgAction,
+} from "@/features/vendor-org/reassign.actions";
+import { toast } from "sonner";
+import { useConfirm } from "@/shared/ui/notifications";
 
 interface OrganizationOption {
   id: string;
@@ -32,7 +35,7 @@ function getActionErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) {
     return error.message;
   }
-  if (typeof error === 'string' && error.trim()) {
+  if (typeof error === "string" && error.trim()) {
     return error;
   }
   return fallback;
@@ -51,46 +54,48 @@ function IssueGroupCard({
 }) {
   const [isPending, startTransition] = useTransition();
   const [isBulkReassigning, setIsBulkReassigning] = useState(false);
-  const [targetOrgId, setTargetOrgId] = useState('');
-  const [scopes, setScopes] = useState<ReassignScopes>(() => getDefaultReassignScopesForGroup(group));
+  const [targetOrgId, setTargetOrgId] = useState("");
+  const [scopes, setScopes] = useState<ReassignScopes>(() =>
+    getDefaultReassignScopesForGroup(group),
+  );
   const [expanded, setExpanded] = useState(false);
   const [productTargets, setProductTargets] = useState<Record<string, string>>({});
   const { confirmAction } = useConfirm();
 
   const sortedOrganizations = useMemo(
     () => [...organizations].sort((a, b) => a.name.localeCompare(b.name)),
-    [organizations]
+    [organizations],
   );
 
   const selectedRecordCount = useMemo(
     () => countSelectedScopeRecords(group, scopes),
-    [group, scopes]
+    [group, scopes],
   );
 
   const targetOrgName =
-    sortedOrganizations.find((org) => org.id === targetOrgId)?.name || 'the selected organization';
+    sortedOrganizations.find((org) => org.id === targetOrgId)?.name || "the selected organization";
 
   const handleBulkReassign = async () => {
     if (!targetOrgId) {
-      toast.error('Select a target organization.');
+      toast.error("Select a target organization.");
       return;
     }
 
     if (!Object.values(scopes).some(Boolean)) {
-      toast.error('Select at least one record type to reassign.');
+      toast.error("Select at least one record type to reassign.");
       return;
     }
 
     if (selectedRecordCount === 0) {
-      toast.error('No records match the selected record types for this orphan org.');
+      toast.error("No records match the selected record types for this orphan org.");
       return;
     }
 
     const confirmed = await confirmAction({
-      title: 'Confirm Bulk Reassignment',
-      message: `Move ${selectedRecordCount} record${selectedRecordCount === 1 ? '' : 's'} from orphan org ${group.orgId} to ${targetOrgName}?`,
-      confirmText: 'Yes, reassign now',
-      variant: 'warning',
+      title: "Confirm Bulk Reassignment",
+      message: `Move ${selectedRecordCount} record${selectedRecordCount === 1 ? "" : "s"} from orphan org ${group.orgId} to ${targetOrgName}?`,
+      confirmText: "Yes, reassign now",
+      variant: "warning",
     });
 
     if (!confirmed) return;
@@ -105,17 +110,17 @@ function IssueGroupCard({
           scopes,
         });
         if (!result?.data?.success || !result.data.counts) {
-          throw new Error(result?.serverError || 'Reassignment failed.');
+          throw new Error(result?.serverError || "Reassignment failed.");
         }
         const { counts } = result.data;
         toast.success(
-          `Reassigned ${formatReassignCounts(counts)} from ${group.orgId.slice(0, 8)}… to ${targetOrgName}.`
+          `Reassigned ${formatReassignCounts(counts)} from ${group.orgId.slice(0, 8)}… to ${targetOrgName}.`,
         );
-        setTargetOrgId('');
+        setTargetOrgId("");
         setScopes(getDefaultReassignScopesForGroup(group));
         onRefresh();
       } catch (error) {
-        toast.error(getActionErrorMessage(error, 'Reassignment failed.'));
+        toast.error(getActionErrorMessage(error, "Reassignment failed."));
       } finally {
         setIsBulkReassigning(false);
       }
@@ -133,22 +138,22 @@ function IssueGroupCard({
       try {
         const result = await reassignProductOrgAction({ productId, toOrgId });
         if (!result?.data?.success) {
-          throw new Error(result?.serverError || 'Product reassignment failed.');
+          throw new Error(result?.serverError || "Product reassignment failed.");
         }
         toast.success(`Updated vendor org for "${productName}".`);
         onRefresh();
       } catch (error) {
-        toast.error(getActionErrorMessage(error, 'Product reassignment failed.'));
+        toast.error(getActionErrorMessage(error, "Product reassignment failed."));
       }
     });
   };
 
   const scopeOptions: Array<{ key: keyof ReassignScopes; label: string; count: number }> = [
-    { key: 'products', label: 'Products', count: group.products.length },
-    { key: 'orderItems', label: 'Order items', count: group.orderItems.length },
-    { key: 'suppliers', label: 'Suppliers', count: group.suppliers.length },
-    { key: 'branches', label: 'Branches', count: group.branches.length },
-    { key: 'billingReceipts', label: 'Billing receipts', count: group.billingReceipts.length },
+    { key: "products", label: "Products", count: group.products.length },
+    { key: "orderItems", label: "Order items", count: group.orderItems.length },
+    { key: "suppliers", label: "Suppliers", count: group.suppliers.length },
+    { key: "branches", label: "Branches", count: group.branches.length },
+    { key: "billingReceipts", label: "Billing receipts", count: group.billingReceipts.length },
   ];
 
   const isBusy = isPending || isBulkReassigning;
@@ -173,7 +178,9 @@ function IssueGroupCard({
             {group.orderItems.length > 0 && <span>{group.orderItems.length} order lines</span>}
             {group.suppliers.length > 0 && <span>{group.suppliers.length} suppliers</span>}
             {group.branches.length > 0 && <span>{group.branches.length} branches</span>}
-            {group.billingReceipts.length > 0 && <span>{group.billingReceipts.length} receipts</span>}
+            {group.billingReceipts.length > 0 && (
+              <span>{group.billingReceipts.length} receipts</span>
+            )}
           </div>
         </div>
 
@@ -182,7 +189,7 @@ function IssueGroupCard({
           onClick={() => setExpanded((value) => !value)}
           className="self-start text-[11px] font-mono uppercase tracking-wider text-purple-700 dark:text-purple-300 hover:underline cursor-pointer"
         >
-          {expanded ? 'Hide details' : 'Show details'}
+          {expanded ? "Hide details" : "Show details"}
         </button>
       </div>
 
@@ -210,7 +217,7 @@ function IssueGroupCard({
             {scopeOptions.map(({ key, label, count }) => (
               <label
                 key={key}
-                className={`inline-flex items-center gap-2 ${count === 0 ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                className={`inline-flex items-center gap-2 ${count === 0 ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
               >
                 <input
                   type="checkbox"
@@ -230,7 +237,8 @@ function IssueGroupCard({
             ))}
           </div>
           <p className="text-[10px] font-mono text-zinc-500">
-            Selected for reassignment: {selectedRecordCount} record{selectedRecordCount === 1 ? '' : 's'}
+            Selected for reassignment: {selectedRecordCount} record
+            {selectedRecordCount === 1 ? "" : "s"}
           </p>
         </div>
 
@@ -238,11 +246,15 @@ function IssueGroupCard({
           <button
             type="button"
             disabled={isBusy || selectedRecordCount === 0 || enableBulkReassignment === false}
-            title={enableBulkReassignment === false ? "Bulk reassignment is currently disabled by administrator" : ""}
+            title={
+              enableBulkReassignment === false
+                ? "Bulk reassignment is currently disabled by administrator"
+                : ""
+            }
             onClick={handleBulkReassign}
             className="w-full xl:w-auto px-5 py-2.5 bg-purple-700 hover:bg-purple-800 disabled:opacity-60 text-white text-xs font-bold rounded-xl cursor-pointer"
           >
-            {isBusy ? 'Reassigning…' : 'Reassign selected records'}
+            {isBusy ? "Reassigning…" : "Reassign selected records"}
           </button>
         </div>
       </div>
@@ -270,7 +282,7 @@ function IssueGroupCard({
                     </div>
                     <div className="flex items-center gap-2">
                       <select
-                        value={productTargets[product.id] || ''}
+                        value={productTargets[product.id] || ""}
                         onChange={(e) =>
                           setProductTargets((prev) => ({
                             ...prev,
@@ -312,9 +324,7 @@ function IssueGroupCard({
                     {item.productName} · order {item.orderId.slice(0, 8)}…
                   </li>
                 ))}
-                {group.orderItems.length > 20 && (
-                  <li>…and {group.orderItems.length - 20} more</li>
-                )}
+                {group.orderItems.length > 20 && <li>…and {group.orderItems.length - 20} more</li>}
               </ul>
             </details>
           )}
@@ -338,9 +348,12 @@ export default function VendorOrgIssuesTab({
   if (integrityReport.issueGroups.length === 0) {
     return (
       <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/70 dark:bg-emerald-950/20 p-6 text-center">
-        <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">No vendor org issues found</p>
+        <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+          No vendor org issues found
+        </p>
         <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-2">
-          All product, order, supplier, branch, and receipt records point to live Clerk organizations.
+          All product, order, supplier, branch, and receipt records point to live Clerk
+          organizations.
         </p>
       </div>
     );
@@ -353,8 +366,8 @@ export default function VendorOrgIssuesTab({
           Vendor Organization Issues
         </h2>
         <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 max-w-3xl">
-          These records reference Clerk organization IDs that no longer exist. Storefront items will show
-          Unknown Vendor until you reassign them to a live organization.
+          These records reference Clerk organization IDs that no longer exist. Storefront items will
+          show Unknown Vendor until you reassign them to a live organization.
         </p>
       </div>
 

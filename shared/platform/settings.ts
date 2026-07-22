@@ -1,10 +1,10 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
-import { unstable_cache } from 'next/cache';
-import { readUpstashEnv } from '@/shared/security/upstash-health';
-import { Redis } from '@upstash/redis';
-import { logger } from '@/shared/logging/logger';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
+import { readUpstashEnv } from "@/shared/security/upstash-health";
+import { Redis } from "@upstash/redis";
+import { logger } from "@/shared/logging/logger";
 
 let hasLoggedSettingsRedisError = false;
 
@@ -15,7 +15,7 @@ function getSettingsRedisClient(): Redis | null {
     return new Redis({ url, token });
   } catch (err) {
     if (!hasLoggedSettingsRedisError) {
-      logger.error('Failed to init Redis for settings cache', { error: err });
+      logger.error("Failed to init Redis for settings cache", { error: err });
       hasLoggedSettingsRedisError = true;
     }
     return null;
@@ -25,20 +25,21 @@ function getSettingsRedisClient(): Redis | null {
 /**
  * Cached database fetch helper for system settings.
  */
-const getCachedSettingValue = (key: string) => unstable_cache(
-  async () => {
-    const [setting] = await db
-      .select()
-      .from(schema.systemSettings)
-      .where(eq(schema.systemSettings.key, key))
-      .limit(1);
-    return setting ? setting.value : null;
-  },
-  ['system-settings', key],
-  {
-    tags: ['system-settings', `system-settings-${key}`],
-  }
-)();
+const getCachedSettingValue = (key: string) =>
+  unstable_cache(
+    async () => {
+      const [setting] = await db
+        .select()
+        .from(schema.systemSettings)
+        .where(eq(schema.systemSettings.key, key))
+        .limit(1);
+      return setting ? setting.value : null;
+    },
+    ["system-settings", key],
+    {
+      tags: ["system-settings", `system-settings-${key}`],
+    },
+  )();
 
 /**
  * Safely fetches a system setting value by its configuration key.
@@ -56,13 +57,13 @@ export async function getSystemSetting(key: string, defaultValue: string): Promi
         const fallbackVal = await redis.get<string>(`system_setting:${key}`);
         if (fallbackVal !== null && fallbackVal !== undefined) {
           // Redis might parse JSON automatically, ensure string return
-          return typeof fallbackVal === 'string' ? fallbackVal : JSON.stringify(fallbackVal);
+          return typeof fallbackVal === "string" ? fallbackVal : JSON.stringify(fallbackVal);
         }
       }
     } catch (redisErr) {
-      logger.error('Redis fallback also failed for setting', { error: redisErr, key });
+      logger.error("Redis fallback also failed for setting", { error: redisErr, key });
     }
-    
+
     return defaultValue;
   }
 }
@@ -77,7 +78,6 @@ export async function syncSettingToRedis(key: string, value: string): Promise<vo
       await redis.set(`system_setting:${key}`, value);
     }
   } catch (error) {
-    logger.error('Failed to sync setting to Redis fallback', { error, key });
+    logger.error("Failed to sync setting to Redis fallback", { error, key });
   }
 }
-

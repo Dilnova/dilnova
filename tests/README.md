@@ -1,13 +1,13 @@
 # E2E tests (Playwright)
 
-| Folder | Purpose |
-|--------|---------|
-| `e2e/rbac/` | Route-level RBAC checks (public, unauthenticated, role-specific) |
-| `e2e/fixtures/` | Shared Playwright fixtures (Clerk testing token) |
-| `e2e/helpers/` | Route constants, env helpers |
+| Folder           | Purpose                                                            |
+| ---------------- | ------------------------------------------------------------------ |
+| `e2e/rbac/`      | Route-level RBAC checks (public, unauthenticated, role-specific)   |
+| `e2e/fixtures/`  | Shared Playwright fixtures (Clerk testing token)                   |
+| `e2e/helpers/`   | Route constants, env helpers                                       |
 | `unit/features/` | Vitest tests colocated by feature (migrate from `utils/*.test.ts`) |
-| `integration/` | DB + server actions together |
-| `e2e/security/` | Server-action IDOR + invoice route IDOR (cross-tenant) |
+| `integration/`   | DB + server actions together                                       |
+| `e2e/security/`  | Server-action IDOR + invoice route IDOR (cross-tenant)             |
 
 ## Commands
 
@@ -21,11 +21,11 @@ If `pnpm test:e2e` fails with `ERR_PNPM_IGNORED_BUILDS` on first setup, run `pnp
 
 ## RBAC suites
 
-| Suite | Requires sign-in | Env vars |
-|-------|------------------|----------|
-| `public-routes` | No | Clerk keys (via `.env.local`) for testing token |
-| `unauthenticated` | No | Clerk keys |
-| `vendor-admin`, `vendor-member`, `customer`, `superadmin` | Yes | `E2E_*_EMAIL` per role |
+| Suite                                                     | Requires sign-in | Env vars                                        |
+| --------------------------------------------------------- | ---------------- | ----------------------------------------------- |
+| `public-routes`                                           | No               | Clerk keys (via `.env.local`) for testing token |
+| `unauthenticated`                                         | No               | Clerk keys                                      |
+| `vendor-admin`, `vendor-member`, `customer`, `superadmin` | Yes              | `E2E_*_EMAIL` per role                          |
 
 Authenticated suites **skip gracefully** when the corresponding `E2E_*_EMAIL` is unset or sign-in fails.
 

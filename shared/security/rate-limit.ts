@@ -1,8 +1,8 @@
-import { headers } from 'next/headers';
-import { logger } from '@/shared/logging/logger';
-import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
-import { readUpstashEnv } from '@/shared/security/upstash-health';
+import { headers } from "next/headers";
+import { logger } from "@/shared/logging/logger";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+import { readUpstashEnv } from "@/shared/security/upstash-health";
 
 // In-memory fallback map for development/testing when Upstash env vars are not configured
 const memoryTracker = new Map<string, number[]>();
@@ -14,22 +14,25 @@ const ratelimitCache = new Map<string, Ratelimit>();
 let hasLoggedUpstashWarning = false;
 
 const PRODUCTION_RATE_LIMIT_UNAVAILABLE_ERROR =
-  'Rate limiting is temporarily unavailable. Please try again later.';
+  "Rate limiting is temporarily unavailable. Please try again later.";
 
 function isProductionEnvironment(): boolean {
-  return process.env.NODE_ENV === 'production';
+  return process.env.NODE_ENV === "production";
 }
 
 function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
   const { url, token } = readUpstashEnv();
 
   if (!url || !token) {
-    if (process.env.NODE_ENV === 'production' && !hasLoggedUpstashWarning) {
+    if (process.env.NODE_ENV === "production" && !hasLoggedUpstashWarning) {
       hasLoggedUpstashWarning = true;
-      logger.error('Upstash Redis credentials are not configured in production. Rate limiting will be bypassed (fail-open).', {
-        urlPresent: Boolean(url),
-        tokenPresent: Boolean(token),
-      });
+      logger.error(
+        "Upstash Redis credentials are not configured in production. Rate limiting will be bypassed (fail-open).",
+        {
+          urlPresent: Boolean(url),
+          tokenPresent: Boolean(token),
+        },
+      );
     }
     return null;
   }
@@ -50,13 +53,13 @@ function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
       redis,
       limiter: Ratelimit.slidingWindow(limit, `${windowSeconds} s`),
       analytics: true,
-      prefix: '@upstash/ratelimit',
+      prefix: "@upstash/ratelimit",
     });
 
     ratelimitCache.set(key, client);
     return client;
   } catch (error) {
-    logger.error('Failed to create Upstash Ratelimit instance', error, { limit, windowMs });
+    logger.error("Failed to create Upstash Ratelimit instance", error, { limit, windowMs });
     return null;
   }
 }
@@ -64,20 +67,24 @@ function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
 /**
  * Checks if the calling client exceeds the configured rate limit.
  * Uses Upstash Redis when configured, and falls back to an in-memory sliding window.
- * 
+ *
  * @param limit Max number of allowed requests in the window.
  * @param windowMs Time window in milliseconds.
  * @param identifier Optional identifier to limit by (e.g., userId, orgId). Defaults to client IP.
  * @throws Error if the rate limit is exceeded.
  */
-export async function rateLimit(limit: number, windowMs: number, identifier?: string): Promise<void> {
+export async function rateLimit(
+  limit: number,
+  windowMs: number,
+  identifier?: string,
+): Promise<void> {
   const reqHeaders = await headers();
   // Get IP address prioritizing x-real-ip (injected securely by Vercel/Cloudflare at edge)
   // to prevent client header spoofing via custom X-Forwarded-For inputs.
   const ip =
-    reqHeaders.get('x-real-ip')?.trim() ||
-    reqHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    '127.0.0.1';
+    reqHeaders.get("x-real-ip")?.trim() ||
+    reqHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "127.0.0.1";
 
   const limitKey = identifier || ip;
 
@@ -93,10 +100,10 @@ export async function rateLimit(limit: number, windowMs: number, identifier?: st
       return;
     } catch (error) {
       // Re-throw rate limit exceeded errors
-      if (error instanceof Error && error.message.includes('Rate limit exceeded')) {
+      if (error instanceof Error && error.message.includes("Rate limit exceeded")) {
         throw error;
       }
-      logger.error('Upstash rate limiting failed - failing open', error, { limit, windowMs });
+      logger.error("Upstash rate limiting failed - failing open", error, { limit, windowMs });
       if (isProductionEnvironment()) {
         return; // Fail-open strategy: bypass rate limit so critical paths can proceed
       }
@@ -104,7 +111,7 @@ export async function rateLimit(limit: number, windowMs: number, identifier?: st
   }
 
   if (isProductionEnvironment()) {
-    logger.warn('Rate limiter client unavailable in production - failing open');
+    logger.warn("Rate limiter client unavailable in production - failing open");
     return; // Fail-open strategy: bypass rate limit so critical paths can proceed
   }
 
@@ -123,7 +130,7 @@ function runInMemoryRateLimit(key: string, limit: number, windowMs: number): voi
 
   // Hard cap: prevent unbounded memory growth from a DDoS with unique IPs
   if (memoryTracker.size > MAX_TRACKER_SIZE) {
-    logger.warn('Rate limiter memory tracker exceeded max size, performing emergency cleanup.', {
+    logger.warn("Rate limiter memory tracker exceeded max size, performing emergency cleanup.", {
       trackerSize: memoryTracker.size,
     });
     cleanupOldKeys(now, windowMs);
@@ -143,7 +150,7 @@ function runInMemoryRateLimit(key: string, limit: number, windowMs: number): voi
 
   if (activeTimestamps.length >= limit) {
     const oldestTimestamp = activeTimestamps[0] || now;
-    const waitSeconds = Math.max(1, Math.ceil(((oldestTimestamp + windowMs) - now) / 1000));
+    const waitSeconds = Math.max(1, Math.ceil((oldestTimestamp + windowMs - now) / 1000));
     throw new Error(`Rate limit exceeded. Please try again in ${waitSeconds} seconds.`);
   }
 

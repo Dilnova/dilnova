@@ -4,10 +4,10 @@ export default function HomeLoading() {
       {/* Hero 4-Column Split Skeleton */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 min-h-[80vh] w-full border-b border-zinc-200 dark:border-zinc-800 animate-pulse">
         {[
-          { bg: 'bg-zinc-900', accent: 'bg-amber-500/10' },
-          { bg: 'bg-emerald-950', accent: 'bg-emerald-400/10' },
-          { bg: 'bg-indigo-950', accent: 'bg-indigo-500/10' },
-          { bg: 'bg-slate-900', accent: 'bg-teal-500/10' },
+          { bg: "bg-zinc-900", accent: "bg-amber-500/10" },
+          { bg: "bg-emerald-950", accent: "bg-emerald-400/10" },
+          { bg: "bg-indigo-950", accent: "bg-indigo-500/10" },
+          { bg: "bg-slate-900", accent: "bg-teal-500/10" },
         ].map((col, i) => (
           <div
             key={i}
@@ -38,7 +38,10 @@ export default function HomeLoading() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 rounded-2xl overflow-hidden">
+            <div
+              key={i}
+              className="border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 rounded-2xl overflow-hidden"
+            >
               <div className="h-24 bg-zinc-100 dark:bg-zinc-900" />
               <div className="px-6 pb-6 pt-8 space-y-3">
                 <div className="h-5 w-40 bg-zinc-200 dark:bg-zinc-800 rounded" />

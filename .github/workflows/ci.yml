@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   audit:
@@ -27,6 +27,9 @@ jobs:
 
       - name: Setup Environment
         uses: ./.github/actions/setup-env
+
+      - name: Check Formatting
+        run: pnpm run format:check
 
       - name: Check Linting
         run: pnpm run lint
@@ -84,8 +87,16 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup-env
 
-      - name: Run Unit Tests
-        run: pnpm run test
+      - name: Run Unit Tests with Coverage
+        run: pnpm run test:coverage
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: code-coverage-report
+          path: coverage/
+          retention-days: 7
 
   build:
     runs-on: ubuntu-latest
@@ -147,7 +158,10 @@ jobs:
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
           QSTASH_TOKEN: "dummy_qstash_token"
+          ANALYZE: "true"
 
+      - name: Analyze Bundle Size
+        run: pnpm run analyze:bundle
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v7

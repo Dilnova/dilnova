@@ -6,20 +6,20 @@ Multi-tenant eCommerce sandbox: Next.js 16 + Clerk RBAC + Drizzle ORM + PostgreS
 
 ## Commands
 
-| Task | Command |
-|------|---------|
-| Dev server | `pnpm dev` |
-| Full build | `pnpm build` |
-| Lint | `pnpm lint` |
-| Typecheck | `pnpm exec tsc --noEmit` |
-| Unit tests | `pnpm test` |
-| E2E tests | `pnpm test:e2e` |
-| E2E browser install | `pnpm test:e2e:install` |
-| DB generate migration | `pnpm db:generate` |
-| DB migrate | `pnpm db:migrate` |
-| DB push (local only) | `pnpm db:push` |
-| DB verify journal | `pnpm db:verify` |
-| Env check | `pnpm pre-launch` |
+| Task                  | Command                  |
+| --------------------- | ------------------------ |
+| Dev server            | `pnpm dev`               |
+| Full build            | `pnpm build`             |
+| Lint                  | `pnpm lint`              |
+| Typecheck             | `pnpm exec tsc --noEmit` |
+| Unit tests            | `pnpm test`              |
+| E2E tests             | `pnpm test:e2e`          |
+| E2E browser install   | `pnpm test:e2e:install`  |
+| DB generate migration | `pnpm db:generate`       |
+| DB migrate            | `pnpm db:migrate`        |
+| DB push (local only)  | `pnpm db:push`           |
+| DB verify journal     | `pnpm db:verify`         |
+| Env check             | `pnpm pre-launch`        |
 
 **`pnpm build` is a gate**, not just `next build`. It runs: `pre-launch-check → lint → tsc --noEmit → vitest run → next build --webpack`. All must pass.
 
@@ -47,25 +47,30 @@ scripts/       # One-off tooling scripts
 ## Key patterns
 
 ### Multi-tenant isolation (critical)
+
 - All DB queries must be scoped by `orgId` from Clerk's `auth()`.
 - Never skip the `orgId` filter — cross-tenant data exposure is a security bug.
 
 ### RBAC layers
+
 - **Superadmin**: `publicMetadata.role === "admin"` in Clerk → `/superadmin` routes.
 - **Org admin** (`org:admin`): catalog management, member console, full POS.
 - **Org member** (`org:member`): POS checkout, add listings only (no catalog dashboard).
 - Role checks must be duplicated at the Server Action level, not just in UI.
 
 ### Imports and aliases
+
 - `@/*` → project root, `@/features/*` → features, `@/shared/*` → shared.
 - `db/index.ts` and `db/schema.ts` are **deprecated shims** — use `@/shared/db/client` and `@/shared/db/schema`.
 - `@/utils/*` no longer exists — everything moved to `@/shared/`.
 
 ### Validation
+
 - Zod schemas for server actions. Shared primitives at `@/shared/validation/primitives.ts`.
 - Import as `from 'zod/v3'` (compat import path used in this repo).
 
 ### Schema
+
 - Drizzle schema split across `shared/db/schema/` (billing.ts, catalog.ts, inventory.ts, orders.ts, platform.ts).
 - Barrel re-export in `shared/db/schema.ts`.
 - `MIGRATION_DATABASE_URL` for migrations (port 5432 direct), `DATABASE_URL` for app runtime (port 6543 pooler).
@@ -73,11 +78,13 @@ scripts/       # One-off tooling scripts
 ## Testing
 
 ### Unit tests (Vitest)
+
 - Location: `tests/unit/`
 - Config mocks `next/cache`, `next/headers`, `server-only` via aliases in `vitest.config.ts`.
 - `db/seed.ts` is excluded from tsconfig.
 
 ### E2E tests (Playwright)
+
 - Location: `tests/e2e/`
 - Requires Clerk dev keys in `.env.local`.
 - Run `pnpm test:e2e:install` once for Chromium.
@@ -88,6 +95,7 @@ scripts/       # One-off tooling scripts
 - On CI, E2E runs after build artifact upload with dummy env — only smoke tests pass. Full RBAC needs real Clerk keys locally.
 
 ### CI pipeline
+
 Parallel jobs: audit, lint, typecheck, db-verify, test-unit, build. E2E depends on build. Secrets scan (gitleaks) runs separately.
 
 ## Conventions

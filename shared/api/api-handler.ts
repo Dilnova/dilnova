@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
 type RouteHandler = (req: Request, ...args: any[]) => Promise<Response> | Response;
 
@@ -11,13 +11,10 @@ export function withErrorHandler(handler: RouteHandler): RouteHandler {
     try {
       return await handler(req, ...args);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      const safeUrl = req.url.replace(/[\r\n]/g, '');
-      console.error('[API Error]', req.method, safeUrl, error);
-      return NextResponse.json(
-        { error: 'Internal Server Error', message },
-        { status: 500 }
-      );
+      const message = error instanceof Error ? error.message : "Unknown error";
+      const safeUrl = req.url.replace(/[\r\n]/g, "");
+      console.error("[API Error]", req.method, safeUrl, error);
+      return NextResponse.json({ error: "Internal Server Error", message }, { status: 500 });
     }
   };
 }

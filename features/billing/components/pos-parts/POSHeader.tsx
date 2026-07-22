@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { usePOSContext } from '../POSBillingProvider';
+import React from "react";
+import Link from "next/link";
+import { usePOSContext } from "../POSBillingProvider";
 
 export default function POSHeader() {
   const {
@@ -47,7 +47,7 @@ export default function POSHeader() {
           </select>
         ) : (
           <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400 hidden sm:inline">
-            🏬 {data.branches.find((b) => b.id === selectedBranchId)?.name || 'Main Register'}
+            🏬 {data.branches.find((b) => b.id === selectedBranchId)?.name || "Main Register"}
           </span>
         )}
 
@@ -65,7 +65,7 @@ export default function POSHeader() {
           className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 cursor-pointer"
           title="Toggle Fullscreen POS Terminal"
         >
-          {isFullscreen ? 'Exit Fullscreen' : '⛶ Fullscreen'}
+          {isFullscreen ? "Exit Fullscreen" : "⛶ Fullscreen"}
         </button>
       </div>
     </div>

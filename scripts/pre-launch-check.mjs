@@ -6,43 +6,43 @@
  *   node scripts/pre-launch-check.mjs
  *   node scripts/pre-launch-check.mjs --strict   # fail on optional warnings
  */
-import 'dotenv/config';
-import { config } from 'dotenv';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import "dotenv/config";
+import { config } from "dotenv";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Load .env.local (higher priority overrides)
-config({ path: resolve(__dirname, '..', '.env.local'), override: true });
+config({ path: resolve(__dirname, "..", ".env.local"), override: true });
 
-const strict = process.argv.includes('--strict');
+const strict = process.argv.includes("--strict");
 
 const required = [
-  'DATABASE_URL',
-  'PII_ENCRYPTION_KEY',
-  'CLERK_SECRET_KEY',
-  'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
-  'NEXT_PUBLIC_APP_URL',
-  'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME',
-  'CLOUDINARY_API_KEY',
-  'CLOUDINARY_API_SECRET',
-  'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'UPSTASH_REDIS_REST_URL',
-  'UPSTASH_REDIS_REST_TOKEN',
-  'HEALTH_CHECK_SECRET',
-  'SMTP_USER',
-  'SMTP_PASSWORD',
-  'EMAIL_FROM_ADDRESS',
-  'EMAIL_FROM_NAME',
-  'SUPERADMIN_USER_IDS',
-  'CLERK_WEBHOOK_SECRET',
-  'NEXT_PUBLIC_TURNSTILE_SITE_KEY',
-  'TURNSTILE_SECRET_KEY',
-  'SENTRY_DSN',
-  'NEXT_PUBLIC_SENTRY_DSN',
+  "DATABASE_URL",
+  "PII_ENCRYPTION_KEY",
+  "CLERK_SECRET_KEY",
+  "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+  "NEXT_PUBLIC_APP_URL",
+  "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "UPSTASH_REDIS_REST_URL",
+  "UPSTASH_REDIS_REST_TOKEN",
+  "HEALTH_CHECK_SECRET",
+  "SMTP_USER",
+  "SMTP_PASSWORD",
+  "EMAIL_FROM_ADDRESS",
+  "EMAIL_FROM_NAME",
+  "SUPERADMIN_USER_IDS",
+  "CLERK_WEBHOOK_SECRET",
+  "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
+  "TURNSTILE_SECRET_KEY",
+  "SENTRY_DSN",
+  "NEXT_PUBLIC_SENTRY_DSN",
 ];
 
 const recommended = [];
@@ -74,11 +74,11 @@ for (const key of recommended) {
   }
 }
 
-console.log('\nClerk metadata migrations are now automated in CI.');
+console.log("\nClerk metadata migrations are now automated in CI.");
 
 if (failed > 0) {
   console.error(`\n${failed} check(s) failed.`);
   process.exit(1);
 }
 
-console.log('\nAll required environment variables are set.');
+console.log("\nAll required environment variables are set.");

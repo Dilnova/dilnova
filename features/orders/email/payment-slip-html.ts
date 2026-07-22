@@ -1,9 +1,9 @@
-import { escapeHtml } from '@/shared/email/smtp-client';
+import { escapeHtml } from "@/shared/email/smtp-client";
 
 function formatPrice(cents: number): string {
-  return (cents / 100).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return (cents / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
   });
 }
 
@@ -66,7 +66,7 @@ export function buildPaymentVerifiedEmailHtml(input: {
   introText?: string;
 }): string {
   const orderRef = input.orderId.slice(0, 8).toUpperCase();
-  const headline = input.headline || 'Payment Verified';
+  const headline = input.headline || "Payment Verified";
   const introText =
     input.introText ||
     `Hi ${escapeHtml(input.customerName)}, your payment for order <strong>#${orderRef}</strong> has been verified. Your order is now being processed for fulfillment.`;
@@ -97,7 +97,7 @@ export function buildPaymentVerifiedEmailHtml(input: {
               <td style="padding: 8px 0; color: #71717a;">Pickup branch</td>
               <td style="padding: 8px 0; text-align: right;">${escapeHtml(input.pickupBranchName)}</td>
             </tr>`
-                : ''
+                : ""
             }
             <tr>
               <td style="padding: 8px 0; color: #71717a;">Total paid</td>
@@ -174,7 +174,7 @@ export function buildPaymentSlipRejectedEmailHtml(input: {
           ${
             input.reason
               ? `<p style="margin: 0 0 16px 0; font-size: 13px; line-height: 1.6; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 12px; color: #92400e;"><strong>Vendor note:</strong> ${escapeHtml(input.reason)}</p>`
-              : ''
+              : ""
           }
           <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
             <tr>

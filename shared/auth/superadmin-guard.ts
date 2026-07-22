@@ -1,5 +1,5 @@
-import { auth, clerkClient, type User } from '@clerk/nextjs/server';
-import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
+import { auth, clerkClient, type User } from "@clerk/nextjs/server";
+import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
 
 /**
  * Validates that the current user is authenticated and holds platform superadmin access.
@@ -8,14 +8,14 @@ import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
 export async function checkSuperAdmin(): Promise<User> {
   const { userId } = await auth();
   if (!userId) {
-    throw new Error('Unauthorized: You must be logged in.');
+    throw new Error("Unauthorized: You must be logged in.");
   }
 
   const client = await clerkClient();
   const user = await client.users.getUser(userId);
 
   if (!isSuperAdminUser(user)) {
-    throw new Error('Unauthorized: Only global administrators can perform this action.');
+    throw new Error("Unauthorized: Only global administrators can perform this action.");
   }
 
   return user;
@@ -39,7 +39,10 @@ export async function getCurrentSuperAdminUser(): Promise<User | null> {
   } catch (error) {
     // Clerk API timeout / network error — return null so the layout
     // redirects to /unauthorized instead of triggering the error boundary.
-    console.error('[getCurrentSuperAdminUser] Clerk API error, treating as unauthenticated:', error);
+    console.error(
+      "[getCurrentSuperAdminUser] Clerk API error, treating as unauthenticated:",
+      error,
+    );
     return null;
   }
 }

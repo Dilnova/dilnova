@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { usePOSContext } from '../POSBillingProvider';
+import React from "react";
+import { usePOSContext } from "../POSBillingProvider";
 
 export default function POSReceiptModal() {
   const { receiptToPrint, setReceiptToPrint, systemName } = usePOSContext();
@@ -15,7 +15,9 @@ export default function POSReceiptModal() {
           <h3 className="font-black text-base">{systemName} Receipt</h3>
           <p className="text-[11px] text-zinc-500 font-mono">ID: {receiptToPrint.id}</p>
           <p className="text-[11px] text-zinc-500 font-bold">Branch: {receiptToPrint.branchName}</p>
-          <p className="text-[10px] text-zinc-400">{new Date(receiptToPrint.date).toLocaleString()}</p>
+          <p className="text-[10px] text-zinc-400">
+            {new Date(receiptToPrint.date).toLocaleString()}
+          </p>
         </div>
 
         <div className="border-t border-b border-dashed border-zinc-300 py-3 text-xs space-y-2 font-mono">
@@ -40,7 +42,7 @@ export default function POSReceiptModal() {
             <span>${receiptToPrint.total.toFixed(2)}</span>
           </div>
 
-          {receiptToPrint.paymentMethod === 'cash' && receiptToPrint.cashTendered != null && (
+          {receiptToPrint.paymentMethod === "cash" && receiptToPrint.cashTendered != null && (
             <div className="pt-1 text-[11px] text-zinc-600 space-y-0.5">
               <div className="flex justify-between">
                 <span>Cash Tendered:</span>
@@ -55,7 +57,7 @@ export default function POSReceiptModal() {
         </div>
 
         <div className="text-center text-xs text-zinc-500 space-y-1">
-          <p>Customer: {receiptToPrint.customerName || 'Walk-in Customer'}</p>
+          <p>Customer: {receiptToPrint.customerName || "Walk-in Customer"}</p>
           <p className="font-semibold text-zinc-700">Thank you!</p>
         </div>
 

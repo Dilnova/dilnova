@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface PriceFilterProps {
   currentMinPrice?: string;
@@ -14,10 +14,10 @@ interface PriceFilterProps {
 }
 
 const PRICE_PRESETS = [
-  { label: 'Under $25', min: '', max: '25' },
-  { label: '$25 - $50', min: '25', max: '50' },
-  { label: '$50 - $100', min: '50', max: '100' },
-  { label: '$100+', min: '100', max: '' },
+  { label: "Under $25", min: "", max: "25" },
+  { label: "$25 - $50", min: "25", max: "50" },
+  { label: "$50 - $100", min: "50", max: "100" },
+  { label: "$100+", min: "100", max: "" },
 ];
 
 export default function PriceFilter({
@@ -30,7 +30,7 @@ export default function PriceFilter({
   updateParams,
   handlePriceSubmit,
   handleApplyPresetPrice,
-  isPending
+  isPending,
 }: PriceFilterProps) {
   return (
     <div className="space-y-3">
@@ -42,8 +42,8 @@ export default function PriceFilter({
           <button
             type="button"
             onClick={() => {
-              setMinPriceVal('');
-              setMaxPriceVal('');
+              setMinPriceVal("");
+              setMaxPriceVal("");
               updateParams({ minPrice: null, maxPrice: null });
             }}
             className="text-[10px] font-mono text-purple-600 dark:text-purple-400 hover:underline cursor-pointer"
@@ -55,8 +55,7 @@ export default function PriceFilter({
 
       <div className="flex flex-wrap gap-1.5">
         {PRICE_PRESETS.map((preset) => {
-          const isPresetActive =
-            currentMinPrice === preset.min && currentMaxPrice === preset.max;
+          const isPresetActive = currentMinPrice === preset.min && currentMaxPrice === preset.max;
           return (
             <button
               key={preset.label}
@@ -64,8 +63,8 @@ export default function PriceFilter({
               onClick={() => handleApplyPresetPrice(preset.min, preset.max)}
               className={`text-[11px] font-mono px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
                 isPresetActive
-                  ? 'bg-purple-600 text-white border-purple-600 dark:bg-purple-500 dark:border-purple-500 font-semibold'
-                  : 'bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-800 dark:hover:bg-zinc-800'
+                  ? "bg-purple-600 text-white border-purple-600 dark:bg-purple-500 dark:border-purple-500 font-semibold"
+                  : "bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-800 dark:hover:bg-zinc-800"
               }`}
             >
               {preset.label}
@@ -77,7 +76,9 @@ export default function PriceFilter({
       <form onSubmit={handlePriceSubmit} className="space-y-2 pt-1">
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <span className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Min ($)</span>
+            <span className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">
+              Min ($)
+            </span>
             <input
               type="number"
               min="0"
@@ -89,7 +90,9 @@ export default function PriceFilter({
             />
           </div>
           <div>
-            <span className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Max ($)</span>
+            <span className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">
+              Max ($)
+            </span>
             <input
               type="number"
               min="0"

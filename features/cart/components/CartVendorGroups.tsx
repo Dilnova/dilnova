@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { isVideoUrl } from '@/shared/media/media';
+import Image from "next/image";
+import Link from "next/link";
+import { isVideoUrl } from "@/shared/media/media";
 
 interface CartVendorGroupsProps {
   vendorCartGroups: any[];
@@ -30,9 +30,9 @@ export function CartVendorGroups({
   removeFromCart,
 }: CartVendorGroupsProps) {
   const formatPrice = (cents: number) => {
-    return (cents / 100).toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return (cents / 100).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
     });
   };
 
@@ -40,7 +40,8 @@ export function CartVendorGroups({
     <div className="space-y-4">
       {showVendorCheckoutSelection && (
         <p className="text-[11px] text-zinc-600 dark:text-zinc-400 bg-white dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-900 rounded-xl px-4 py-3">
-          Select a vendor, tick the products you want, then checkout. Unticked items stay in your cart.
+          Select a vendor, tick the products you want, then checkout. Unticked items stay in your
+          cart.
         </p>
       )}
       {showProductCheckoutSelection && !showVendorCheckoutSelection && (
@@ -55,14 +56,13 @@ export function CartVendorGroups({
             !showVendorCheckoutSelection || selectedCheckoutVendorOrgId === group.orgId;
           const groupProductIds = group.items.map((item: any) => item.id);
           const groupSelectedCount = group.items.filter((item: any) =>
-            selectedCheckoutProductIdSet.has(item.id)
+            selectedCheckoutProductIdSet.has(item.id),
           ).length;
           const allGroupProductsSelected =
             group.items.length > 0 &&
             group.items.every((item: any) => selectedCheckoutProductIdSet.has(item.id));
           const showProductTicks =
-            showProductCheckoutSelection &&
-            (isSelectedForCheckout || !showVendorCheckoutSelection);
+            showProductCheckoutSelection && (isSelectedForCheckout || !showVendorCheckoutSelection);
 
           return (
             <section
@@ -70,9 +70,9 @@ export function CartVendorGroups({
               className={`bg-white border rounded-2xl p-6 dark:bg-zinc-950 shadow-sm transition-all ${
                 showVendorCheckoutSelection
                   ? isSelectedForCheckout
-                    ? 'border-purple-500/50 bg-purple-500/[0.03] ring-1 ring-purple-500/20'
-                    : 'border-zinc-200/80 dark:border-zinc-900 opacity-75'
-                  : 'border-zinc-200/80 dark:border-zinc-900'
+                    ? "border-purple-500/50 bg-purple-500/[0.03] ring-1 ring-purple-500/20"
+                    : "border-zinc-200/80 dark:border-zinc-900 opacity-75"
+                  : "border-zinc-200/80 dark:border-zinc-900"
               }`}
             >
               <div className="flex items-start justify-between gap-4 pb-5 mb-5 border-b border-zinc-100 dark:border-zinc-900">
@@ -94,7 +94,7 @@ export function CartVendorGroups({
                         {group.vendorName}
                       </span>
                       <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
-                        {group.itemCount} {group.itemCount === 1 ? 'item' : 'items'} ·{' '}
+                        {group.itemCount} {group.itemCount === 1 ? "item" : "items"} ·{" "}
                         {formatPrice(group.subtotalCents)}
                       </span>
                       {isSelectedForCheckout && (
@@ -113,7 +113,7 @@ export function CartVendorGroups({
                       {group.vendorName}
                     </h2>
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
-                      {group.itemCount} {group.itemCount === 1 ? 'item' : 'items'} ·{' '}
+                      {group.itemCount} {group.itemCount === 1 ? "item" : "items"} ·{" "}
                       {formatPrice(group.subtotalCents)}
                     </p>
                   </div>
@@ -125,8 +125,7 @@ export function CartVendorGroups({
                       checked={allGroupProductsSelected}
                       ref={(el) => {
                         if (el) {
-                          el.indeterminate =
-                            groupSelectedCount > 0 && !allGroupProductsSelected;
+                          el.indeterminate = groupSelectedCount > 0 && !allGroupProductsSelected;
                         }
                       }}
                       onChange={() =>
@@ -149,7 +148,7 @@ export function CartVendorGroups({
                     <div
                       key={item.id}
                       className={`flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 first:pt-0 last:pb-0 ${
-                        showProductTicks && !isProductSelected ? 'opacity-50' : ''
+                        showProductTicks && !isProductSelected ? "opacity-50" : ""
                       }`}
                     >
                       <div className="flex gap-4 items-center flex-1 min-w-0">
@@ -192,9 +191,9 @@ export function CartVendorGroups({
                         <div className="flex-1 min-w-0">
                           <span
                             className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                              item.type === 'service'
-                                ? 'bg-teal-500/10 text-teal-650 dark:text-teal-400'
-                                : 'bg-indigo-500/10 text-indigo-650 dark:text-indigo-400'
+                              item.type === "service"
+                                ? "bg-teal-500/10 text-teal-650 dark:text-teal-400"
+                                : "bg-indigo-500/10 text-indigo-650 dark:text-indigo-400"
                             }`}
                           >
                             {item.type}
@@ -245,7 +244,12 @@ export function CartVendorGroups({
                           title="Remove item"
                           aria-label="Remove item"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"

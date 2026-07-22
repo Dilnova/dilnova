@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function NotFound() {
   return (
@@ -14,12 +14,10 @@ export default function NotFound() {
         </div>
 
         <div className="space-y-3 -mt-8 relative">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-            Page not found
-          </h1>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Page not found</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm mx-auto">
-            The page you&apos;re looking for doesn&apos;t exist or has been moved.
-            Check the URL or navigate back to safety.
+            The page you&apos;re looking for doesn&apos;t exist or has been moved. Check the URL or
+            navigate back to safety.
           </p>
         </div>
 
@@ -28,8 +26,18 @@ export default function NotFound() {
             href="/"
             className="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white text-sm font-semibold rounded-lg h-10 px-5 transition-colors"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
+              />
             </svg>
             Back to Home
           </Link>

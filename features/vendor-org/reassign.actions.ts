@@ -1,23 +1,23 @@
-'use server';
+"use server";
 
-import { clerkClient } from '@clerk/nextjs/server';
-import { eq } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { superadminAction, ActionError } from '@/lib/safe-action';
-import { logAuditAction } from '@/shared/audit/logger';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { invalidateClerkCache } from '@/shared/auth/clerk-cache';
-import { reassignProductOrgSchema, reassignVendorOrgSchema } from '@/features/vendor-org/schema';
+import { clerkClient } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { superadminAction, ActionError } from "@/lib/safe-action";
+import { logAuditAction } from "@/shared/audit/logger";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { invalidateClerkCache } from "@/shared/auth/clerk-cache";
+import { reassignProductOrgSchema, reassignVendorOrgSchema } from "@/features/vendor-org/schema";
 
 async function assertClerkOrganizationExists(orgId: string) {
   const client = await clerkClient();
   try {
     await client.organizations.getOrganization({ organizationId: orgId });
   } catch {
-    throw new ActionError('Target organization was not found in Clerk.');
+    throw new ActionError("Target organization was not found in Clerk.");
   }
 }
 
@@ -29,11 +29,11 @@ export const reassignVendorOrgAction = superadminAction
 
       const { fromOrgId, toOrgId, scopes } = parsedInput;
       if (fromOrgId === toOrgId) {
-        throw new ActionError('Source and target organization IDs must be different.');
+        throw new ActionError("Source and target organization IDs must be different.");
       }
 
       if (!Object.values(scopes).some(Boolean)) {
-        throw new ActionError('Select at least one record type to reassign.');
+        throw new ActionError("Select at least one record type to reassign.");
       }
 
       await assertClerkOrganizationExists(toOrgId);
@@ -98,7 +98,7 @@ export const reassignVendorOrgAction = superadminAction
       const totalUpdated = Object.values(counts).reduce((sum, count) => sum + count, 0);
       if (totalUpdated === 0) {
         throw new ActionError(
-          'No records were updated. Confirm the orphan org ID still exists in the database and at least one selected record type has matches.'
+          "No records were updated. Confirm the orphan org ID still exists in the database and at least one selected record type has matches.",
         );
       }
 
@@ -106,17 +106,17 @@ export const reassignVendorOrgAction = superadminAction
 
       await logAuditAction({
         userId: ctx.userId,
-        action: 'REASSIGN_VENDOR_ORG',
-        targetType: 'vendor',
+        action: "REASSIGN_VENDOR_ORG",
+        targetType: "vendor",
         targetId: fromOrgId,
         metadata: { fromOrgId, toOrgId, scopes, counts },
       });
 
-      revalidatePath('/superadmin');
-      revalidatePath('/products');
-      revalidatePath('/vendor');
-      revalidatePath('/vendors');
-      revalidatePath('/');
+      revalidatePath("/superadmin");
+      revalidatePath("/products");
+      revalidatePath("/vendor");
+      revalidatePath("/vendors");
+      revalidatePath("/");
 
       return { success: true as const, counts };
     });
@@ -141,7 +141,7 @@ export const reassignProductOrgAction = superadminAction
         .limit(1);
 
       if (!product) {
-        throw new ActionError('Product not found.');
+        throw new ActionError("Product not found.");
       }
 
       await db
@@ -153,8 +153,8 @@ export const reassignProductOrgAction = superadminAction
 
       await logAuditAction({
         userId: ctx.userId,
-        action: 'REASSIGN_PRODUCT_ORG',
-        targetType: 'product',
+        action: "REASSIGN_PRODUCT_ORG",
+        targetType: "product",
         targetId: parsedInput.productId,
         metadata: {
           productName: product.name,
@@ -163,8 +163,8 @@ export const reassignProductOrgAction = superadminAction
         },
       });
 
-      revalidatePath('/superadmin');
-      revalidatePath('/products');
+      revalidatePath("/superadmin");
+      revalidatePath("/products");
       revalidatePath(`/products/${parsedInput.productId}`);
 
       return { success: true as const };

@@ -1,12 +1,12 @@
-import React from 'react';
-import { Spinner } from './Spinner';
+import React from "react";
+import { Spinner } from "./Spinner";
 
 interface SavingOverlayProps {
   visible: boolean;
   message?: string;
 }
 
-export function SavingOverlay({ visible, message = 'SAVING...' }: SavingOverlayProps) {
+export function SavingOverlay({ visible, message = "SAVING..." }: SavingOverlayProps) {
   if (!visible) return null;
 
   return (

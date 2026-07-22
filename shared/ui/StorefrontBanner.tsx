@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import Image from "next/image";
 
 interface StorefrontBannerProps {
   imageUrl: string;
@@ -10,7 +10,11 @@ interface StorefrontBannerProps {
  * Enterprise-grade Storefront Banner component.
  * Replaces dynamic `style={{ backgroundImage: '...' }}` to support strict CSP (no 'unsafe-inline') and improves LCP via next/image.
  */
-export default function StorefrontBanner({ imageUrl, altText = 'Storefront Banner', className = '' }: StorefrontBannerProps) {
+export default function StorefrontBanner({
+  imageUrl,
+  altText = "Storefront Banner",
+  className = "",
+}: StorefrontBannerProps) {
   if (!imageUrl) {
     return <div className={`bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
   }

@@ -1,8 +1,8 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, sql } from 'drizzle-orm';
-import { createClerkClient } from '@clerk/nextjs/server';
-import { unstable_cache } from 'next/cache';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq, sql } from "drizzle-orm";
+import { createClerkClient } from "@clerk/nextjs/server";
+import { unstable_cache } from "next/cache";
 
 export const getCachedOrganization = unstable_cache(
   async (orgId: string) => {
@@ -16,8 +16,8 @@ export const getCachedOrganization = unstable_cache(
       publicMetadata: org.publicMetadata,
     };
   },
-  ['vendor-org-details-v1'],
-  { tags: ['vendor-org-details'], revalidate: 300 }
+  ["vendor-org-details-v1"],
+  { tags: ["vendor-org-details"], revalidate: 300 },
 );
 
 export async function getBranchCountForOrg(orgId: string) {

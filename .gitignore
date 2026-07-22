@@ -13,6 +13,8 @@
 
 # testing
 /coverage
+/backups/
+*.sql.gz
 
 # next.js
 /.next/

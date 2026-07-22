@@ -1,11 +1,11 @@
-import { clerkClient } from '@clerk/nextjs/server';
-import { ne, sql } from 'drizzle-orm';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { getRoleTestEmail, hasClerkApiKeys } from './env';
-import { loadE2EEnv } from './load-env';
-import { normalizeCustomerEmail } from '@/features/customer/email';
-import { customerOwnsOrder } from '@/features/orders/customer-ownership';
+import { clerkClient } from "@clerk/nextjs/server";
+import { ne, sql } from "drizzle-orm";
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { getRoleTestEmail, hasClerkApiKeys } from "./env";
+import { loadE2EEnv } from "./load-env";
+import { normalizeCustomerEmail } from "@/features/customer/email";
+import { customerOwnsOrder } from "@/features/orders/customer-ownership";
 
 export interface SecurityFixtures {
   /** Order owned by a different customer than the E2E customer account. */
@@ -41,8 +41,8 @@ export async function loadSecurityFixtureContext(): Promise<SecurityFixtureConte
     return null;
   }
 
-  const customerEmail = getRoleTestEmail('customer') ?? null;
-  const vendorAdminEmail = getRoleTestEmail('vendorAdmin') ?? null;
+  const customerEmail = getRoleTestEmail("customer") ?? null;
+  const vendorAdminEmail = getRoleTestEmail("vendorAdmin") ?? null;
 
   const [customerUserId, vendorAdminUserId] = await Promise.all([
     customerEmail ? getClerkUserIdByEmail(customerEmail) : Promise.resolve(null),
@@ -76,7 +76,7 @@ export async function loadSecurityFixtures(
     .limit(50);
 
   const foreignCustomerOrder = orders.find(
-    (order) => !customerOwnsOrder(order, context.customerUserId)
+    (order) => !customerOwnsOrder(order, context.customerUserId),
   );
 
   const products = await db
@@ -135,7 +135,7 @@ export async function loadAnyProductId(): Promise<string | null> {
   const [product] = await db
     .select({ id: schema.products.id })
     .from(schema.products)
-    .where(ne(schema.products.orgId, ''))
+    .where(ne(schema.products.orgId, ""))
     .limit(1);
 
   return product?.id ?? null;

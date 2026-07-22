@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { MapPin, Phone, Building, Map, Hash, Globe } from 'lucide-react';
-import React from 'react';
+import { MapPin, Phone, Building, Map, Hash, Globe } from "lucide-react";
+import React from "react";
 
 export interface DeliveryAddressFormFieldsProps {
   shippingAddress: string;
@@ -32,10 +32,13 @@ export default function DeliveryAddressFormFields({
         <h5 className="text-[10px] font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 font-mono flex items-center gap-1.5">
           <Building className="w-3 h-3" /> Delivery Address
         </h5>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="sm:col-span-2 relative">
-            <label htmlFor="shippingAddress" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label
+              htmlFor="shippingAddress"
+              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
+            >
               Street Address <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -54,24 +57,30 @@ export default function DeliveryAddressFormFields({
               />
             </div>
           </div>
-          
+
           <div className="sm:col-span-2 relative">
-            <label htmlFor="shippingAddressLine2" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label
+              htmlFor="shippingAddressLine2"
+              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
+            >
               Apartment, Suite, Unit <span className="text-zinc-400 font-normal">(Optional)</span>
             </label>
             <input
               id="shippingAddressLine2"
               type="text"
               name="shippingAddressLine2"
-              value={shippingAddressLine2 || ''}
+              value={shippingAddressLine2 || ""}
               onChange={onChange}
               placeholder="e.g. Apt 4B"
               className="w-full h-11 px-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
             />
           </div>
-          
+
           <div className="relative">
-            <label htmlFor="shippingCity" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label
+              htmlFor="shippingCity"
+              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
+            >
               City <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -90,9 +99,12 @@ export default function DeliveryAddressFormFields({
               />
             </div>
           </div>
-          
+
           <div className="relative">
-            <label htmlFor="shippingState" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label
+              htmlFor="shippingState"
+              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
+            >
               State / Province <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -111,9 +123,12 @@ export default function DeliveryAddressFormFields({
               />
             </div>
           </div>
-          
+
           <div className="relative">
-            <label htmlFor="shippingPostalCode" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label
+              htmlFor="shippingPostalCode"
+              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
+            >
               Postal Code <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -132,9 +147,12 @@ export default function DeliveryAddressFormFields({
               />
             </div>
           </div>
-          
+
           <div className="relative">
-            <label htmlFor="shippingCountry" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label
+              htmlFor="shippingCountry"
+              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
+            >
               Country <span className="text-zinc-400 font-normal">(Optional)</span>
             </label>
             <div className="relative">
@@ -145,7 +163,7 @@ export default function DeliveryAddressFormFields({
                 id="shippingCountry"
                 type="text"
                 name="shippingCountry"
-                value={shippingCountry || ''}
+                value={shippingCountry || ""}
                 onChange={onChange}
                 placeholder="e.g. United States"
                 className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
@@ -163,7 +181,10 @@ export default function DeliveryAddressFormFields({
         </h5>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="relative">
-            <label htmlFor="shippingPhone" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label
+              htmlFor="shippingPhone"
+              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
+            >
               Primary Phone <span className="text-zinc-400 font-normal">(Optional)</span>
             </label>
             <div className="relative">
@@ -174,7 +195,7 @@ export default function DeliveryAddressFormFields({
                 id="shippingPhone"
                 type="tel"
                 name="shippingPhone"
-                value={shippingPhone || ''}
+                value={shippingPhone || ""}
                 onChange={onChange}
                 placeholder="e.g. +1 555-0198"
                 className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
@@ -182,7 +203,10 @@ export default function DeliveryAddressFormFields({
             </div>
           </div>
           <div className="relative">
-            <label htmlFor="shippingPhone2" className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1">
+            <label
+              htmlFor="shippingPhone2"
+              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
+            >
               Secondary Phone <span className="text-zinc-400 font-normal">(Optional)</span>
             </label>
             <div className="relative">
@@ -193,7 +217,7 @@ export default function DeliveryAddressFormFields({
                 id="shippingPhone2"
                 type="tel"
                 name="shippingPhone2"
-                value={shippingPhone2 || ''}
+                value={shippingPhone2 || ""}
                 onChange={onChange}
                 placeholder="Alternative contact"
                 className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"

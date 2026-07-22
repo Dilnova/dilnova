@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useTransition, useEffect } from 'react';
-import Image from 'next/image';
-import { toast } from 'sonner';
-import { updateOrgImsLicenseAction } from '@/features/inventory/superadmin.actions';
-import dynamic from 'next/dynamic';
+import { useState, useTransition, useEffect } from "react";
+import Image from "next/image";
+import { toast } from "sonner";
+import { updateOrgImsLicenseAction } from "@/features/inventory/superadmin.actions";
+import dynamic from "next/dynamic";
 
-const IMSLicenseModal = dynamic(() => import('./IMSLicenseModal'), { ssr: false });
+const IMSLicenseModal = dynamic(() => import("./IMSLicenseModal"), { ssr: false });
 
 interface Organization {
   id: string;
@@ -27,12 +27,12 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
   const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
   const [managingOrg, setManagingOrg] = useState<Organization | null>(null);
   const [licenseImsEnabled, setLicenseImsEnabled] = useState(false);
-  const [licenseImsExpiresAt, setLicenseImsExpiresAt] = useState('');
+  const [licenseImsExpiresAt, setLicenseImsExpiresAt] = useState("");
   const [licenseImsMultiBranchEnabled, setLicenseImsMultiBranchEnabled] = useState(false);
   const [licenseImsBillingEnabled, setLicenseImsBillingEnabled] = useState(false);
   const [licenseMaxListingCount, setLicenseMaxListingCount] = useState<number>(10);
   const [now, setNow] = useState<number>(0);
-  
+
   useEffect(() => {
     requestAnimationFrame(() => {
       setNow(Date.now());
@@ -52,10 +52,10 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
           imsBillingEnabled: licenseImsBillingEnabled,
           imsMaxListingCount: licenseMaxListingCount,
         });
-        toast.success('Organization IMS license updated successfully.');
+        toast.success("Organization IMS license updated successfully.");
         setIsLicenseModalOpen(false);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to update license.');
+        toast.error(err instanceof Error ? err.message : "Failed to update license.");
       }
     });
   };
@@ -65,8 +65,12 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">IMS License Management</h2>
-            <p className="text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5">Control premium feature flags and access limits per organization</p>
+            <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">
+              IMS License Management
+            </h2>
+            <p className="text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5">
+              Control premium feature flags and access limits per organization
+            </p>
           </div>
         </div>
 
@@ -91,7 +95,7 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                   const multiBranchEnabled = org.publicMetadata?.ims_multi_branch_enabled === true;
                   const billingEnabled = org.publicMetadata?.ims_billing_enabled === true;
                   const maxListings: number =
-                    typeof org.publicMetadata?.ims_max_listing_count === 'number' &&
+                    typeof org.publicMetadata?.ims_max_listing_count === "number" &&
                     org.publicMetadata.ims_max_listing_count >= 1
                       ? org.publicMetadata.ims_max_listing_count
                       : 10;
@@ -106,10 +110,18 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           {org.imageUrl && (
-                            <Image src={org.imageUrl} alt={org.name} width={24} height={24} className="w-6 h-6 rounded-full" />
+                            <Image
+                              src={org.imageUrl}
+                              alt={org.name}
+                              width={24}
+                              height={24}
+                              className="w-6 h-6 rounded-full"
+                            />
                           )}
                           <div>
-                            <p className="font-semibold text-zinc-900 dark:text-zinc-200">{org.name}</p>
+                            <p className="font-semibold text-zinc-900 dark:text-zinc-200">
+                              {org.name}
+                            </p>
                             <p className="text-[9px] text-zinc-400 font-mono">ID: {org.id}</p>
                           </div>
                         </div>
@@ -117,16 +129,24 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                       <td className="py-3 px-4">
                         {imsEnabled ? (
                           isExpired ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">EXPIRED</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+                              EXPIRED
+                            </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">ACTIVE</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+                              ACTIVE
+                            </span>
                           )
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-150 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">INACTIVE</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-150 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                            INACTIVE
+                          </span>
                         )}
                       </td>
                       <td className="py-3 px-4 font-mono text-zinc-550">
-                        {imsExpiresAt ? new Date(imsExpiresAt).toLocaleDateString() : 'Lifetime Access'}
+                        {imsExpiresAt
+                          ? new Date(imsExpiresAt).toLocaleDateString()
+                          : "Lifetime Access"}
                       </td>
                       <td className="py-3 px-4">
                         {multiBranchEnabled ? (
@@ -152,7 +172,11 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                           onClick={() => {
                             setManagingOrg(org);
                             setLicenseImsEnabled(imsEnabled);
-                            setLicenseImsExpiresAt(imsExpiresAt ? new Date(imsExpiresAt).toISOString().split('T')[0] : '');
+                            setLicenseImsExpiresAt(
+                              imsExpiresAt
+                                ? new Date(imsExpiresAt).toISOString().split("T")[0]
+                                : "",
+                            );
                             setLicenseImsMultiBranchEnabled(multiBranchEnabled);
                             setLicenseImsBillingEnabled(billingEnabled);
                             setLicenseMaxListingCount(maxListings);
@@ -167,7 +191,11 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                   );
                 })}
                 {organizations.length === 0 && (
-                  <tr><td colSpan={7} className="py-12 text-center text-zinc-400 font-mono text-sm">No organizations found.</td></tr>
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-zinc-400 font-mono text-sm">
+                      No organizations found.
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>

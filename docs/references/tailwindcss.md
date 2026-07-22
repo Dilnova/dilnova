@@ -7,19 +7,19 @@
 
 ## Key Docs Links
 
-| Topic | URL |
-|---|---|
-| Installation (PostCSS) | https://tailwindcss.com/docs/installation/using-postcss |
+| Topic                      | URL                                                       |
+| -------------------------- | --------------------------------------------------------- |
+| Installation (PostCSS)     | https://tailwindcss.com/docs/installation/using-postcss   |
 | Utility-First Fundamentals | https://tailwindcss.com/docs/styling-with-utility-classes |
-| Responsive Design | https://tailwindcss.com/docs/responsive-design |
-| Dark Mode | https://tailwindcss.com/docs/dark-mode |
-| Theme Configuration | https://tailwindcss.com/docs/theme |
-| Colors | https://tailwindcss.com/docs/colors |
-| Typography | https://tailwindcss.com/docs/font-size |
-| Flexbox | https://tailwindcss.com/docs/flex |
-| Grid | https://tailwindcss.com/docs/grid-template-columns |
-| Animations | https://tailwindcss.com/docs/animation |
-| Custom Properties | https://tailwindcss.com/docs/adding-custom-styles |
+| Responsive Design          | https://tailwindcss.com/docs/responsive-design            |
+| Dark Mode                  | https://tailwindcss.com/docs/dark-mode                    |
+| Theme Configuration        | https://tailwindcss.com/docs/theme                        |
+| Colors                     | https://tailwindcss.com/docs/colors                       |
+| Typography                 | https://tailwindcss.com/docs/font-size                    |
+| Flexbox                    | https://tailwindcss.com/docs/flex                         |
+| Grid                       | https://tailwindcss.com/docs/grid-template-columns        |
+| Animations                 | https://tailwindcss.com/docs/animation                    |
+| Custom Properties          | https://tailwindcss.com/docs/adding-custom-styles         |
 
 ---
 
@@ -40,7 +40,7 @@
 // postcss.config.mjs
 export default {
   plugins: {
-    '@tailwindcss/postcss': {},
+    "@tailwindcss/postcss": {},
   },
 };
 ```

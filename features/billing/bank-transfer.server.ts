@@ -1,17 +1,17 @@
-import 'server-only';
+import "server-only";
 
-import { createClerkClient } from '@clerk/nextjs/server';
+import { createClerkClient } from "@clerk/nextjs/server";
 import {
   type BankTransferDetails,
   type BankTransferCheckoutInstructions,
   type BankTransferVendorInstruction,
   formatBankTransferReference,
-} from './bank-transfer';
-import { parseBankDetailsFromClerkOrg } from './bank-transfer-metadata';
-import { logger } from '@/shared/logging/logger';
+} from "./bank-transfer";
+import { parseBankDetailsFromClerkOrg } from "./bank-transfer-metadata";
+import { logger } from "@/shared/logging/logger";
 
 export async function getBankTransferDetailsForOrg(
-  orgId: string
+  orgId: string,
 ): Promise<{ vendorName: string; bankDetails: BankTransferDetails | null }> {
   try {
     const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
@@ -21,20 +21,20 @@ export async function getBankTransferDetailsForOrg(
       bankDetails: parseBankDetailsFromClerkOrg(org),
     };
   } catch (error) {
-    logger.error('Failed to load bank transfer details for org', error, { orgId });
-    return { vendorName: 'Vendor', bankDetails: null };
+    logger.error("Failed to load bank transfer details for org", error, { orgId });
+    return { vendorName: "Vendor", bankDetails: null };
   }
 }
 
 export async function getBankTransferDetailsForOrgs(
-  orgIds: string[]
+  orgIds: string[],
 ): Promise<Record<string, { vendorName: string; bankDetails: BankTransferDetails | null }>> {
   const uniqueOrgIds = [...new Set(orgIds.filter(Boolean))];
   const entries = await Promise.all(
     uniqueOrgIds.map(async (orgId) => {
       const details = await getBankTransferDetailsForOrg(orgId);
       return [orgId, details] as const;
-    })
+    }),
   );
   return Object.fromEntries(entries);
 }
@@ -45,12 +45,12 @@ export async function buildBankTransferCheckoutInstructions(input: {
   vendorAmounts: { orgId: string; amountCents: number }[];
 }): Promise<BankTransferCheckoutInstructions> {
   const detailsByOrg = await getBankTransferDetailsForOrgs(
-    input.vendorAmounts.map((entry) => entry.orgId)
+    input.vendorAmounts.map((entry) => entry.orgId),
   );
 
   const vendors: BankTransferVendorInstruction[] = input.vendorAmounts.map((entry) => ({
     orgId: entry.orgId,
-    vendorName: detailsByOrg[entry.orgId]?.vendorName || 'Vendor',
+    vendorName: detailsByOrg[entry.orgId]?.vendorName || "Vendor",
     amountCents: entry.amountCents,
     bankDetails: detailsByOrg[entry.orgId]?.bankDetails ?? null,
   }));

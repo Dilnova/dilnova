@@ -1,11 +1,8 @@
-import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
-import type { db } from '@/shared/db/client';
-import {
-  depleteOnlineOrderItemStock,
-  restoreOnlineOrderItemStock,
-} from '@/features/orders/stock';
-import type { SimulatedOrderStatus } from '@/features/orders/status';
+import * as schema from "@/shared/db/schema";
+import { eq } from "drizzle-orm";
+import type { db } from "@/shared/db/client";
+import { depleteOnlineOrderItemStock, restoreOnlineOrderItemStock } from "@/features/orders/stock";
+import type { SimulatedOrderStatus } from "@/features/orders/status";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -13,7 +10,7 @@ type SimulatedOrderRow = typeof schema.simulatedOrders.$inferSelect;
 
 export type AdminOrderStatusUpdate = Extract<
   SimulatedOrderStatus,
-  'pending' | 'fulfilled' | 'cancelled'
+  "pending" | "fulfilled" | "cancelled"
 >;
 
 export async function applySimulatedOrderStatusChange(
@@ -22,7 +19,7 @@ export async function applySimulatedOrderStatusChange(
     order: SimulatedOrderRow;
     newStatus: AdminOrderStatusUpdate;
     userId: string;
-  }
+  },
 ): Promise<{ stockDepleted: boolean }> {
   const { order, newStatus, userId } = params;
   const previousStatus = order.status;
@@ -42,12 +39,12 @@ export async function applySimulatedOrderStatusChange(
   let stockDepleted = order.stockDepleted;
 
   if (
-    newStatus === 'fulfilled' &&
-    (previousStatus === 'pending_payment' || previousStatus === 'payment_submitted') &&
+    newStatus === "fulfilled" &&
+    (previousStatus === "pending_payment" || previousStatus === "payment_submitted") &&
     !order.stockDepleted
   ) {
     for (const item of orderItems) {
-      if (item.productType !== 'product') continue;
+      if (item.productType !== "product") continue;
 
       await depleteOnlineOrderItemStock(tx, {
         productId: item.productId,
@@ -62,9 +59,9 @@ export async function applySimulatedOrderStatusChange(
     stockDepleted = true;
   }
 
-  if (newStatus === 'cancelled' && order.stockDepleted) {
+  if (newStatus === "cancelled" && order.stockDepleted) {
     for (const item of orderItems) {
-      if (item.productType !== 'product') continue;
+      if (item.productType !== "product") continue;
 
       await restoreOnlineOrderItemStock(tx, {
         productId: item.productId,
@@ -84,12 +81,12 @@ export async function applySimulatedOrderStatusChange(
     updatedAt: new Date(),
   };
 
-  if (newStatus === 'fulfilled' && !order.paymentVerifiedAt) {
+  if (newStatus === "fulfilled" && !order.paymentVerifiedAt) {
     updatePayload.paymentVerifiedAt = new Date();
     updatePayload.paymentVerifiedBy = userId;
   }
 
-  if (newStatus === 'cancelled') {
+  if (newStatus === "cancelled") {
     updatePayload.paymentSlipUrl = null;
     updatePayload.paymentSlipUploadedAt = null;
   }
@@ -107,11 +104,11 @@ export async function verifyVendorOrderPayment(
   params: {
     order: SimulatedOrderRow;
     userId: string;
-  }
+  },
 ): Promise<void> {
   await applySimulatedOrderStatusChange(tx, {
     order: params.order,
-    newStatus: 'fulfilled',
+    newStatus: "fulfilled",
     userId: params.userId,
   });
 }
@@ -120,12 +117,12 @@ export async function rejectVendorPaymentSlip(
   tx: DbTransaction,
   params: {
     orderId: string;
-  }
+  },
 ): Promise<void> {
   await tx
     .update(schema.simulatedOrders)
     .set({
-      status: 'pending_payment',
+      status: "pending_payment",
       paymentSlipUrl: null,
       paymentSlipUploadedAt: null,
       updatedAt: new Date(),

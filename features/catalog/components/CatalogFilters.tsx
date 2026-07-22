@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, useTransition } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useCatalogFilters } from '@/features/catalog/hooks/use-catalog-filters';
+import React, { useEffect, useState, useTransition } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useCatalogFilters } from "@/features/catalog/hooks/use-catalog-filters";
 import {
   CATALOG_SORT_LABELS,
   CATALOG_SORT_VALUES,
@@ -11,10 +11,10 @@ import {
   type CatalogStockFilter,
   type CatalogCategoryRef,
   type CatalogVendorRef,
-} from '@/features/catalog/types';
-import CatalogCategoryPills from './CatalogCategoryPills';
-import ActiveFilterChips from './ActiveFilterChips';
-import FilterAccordionGroup from './filters/FilterAccordionGroup';
+} from "@/features/catalog/types";
+import CatalogCategoryPills from "./CatalogCategoryPills";
+import ActiveFilterChips from "./ActiveFilterChips";
+import FilterAccordionGroup from "./filters/FilterAccordionGroup";
 
 interface CatalogFiltersProps {
   categories: CatalogCategoryRef[];
@@ -28,30 +28,29 @@ interface CatalogFiltersProps {
   currentMaxPrice?: string;
   currentStock?: CatalogStockFilter;
   totalCount?: number;
-  viewMode?: 'grid' | 'list';
+  viewMode?: "grid" | "list";
 }
 
 const PRICE_PRESETS = [
-  { label: 'Under $25', min: '', max: '25' },
-  { label: '$25 - $50', min: '25', max: '50' },
-  { label: '$50 - $100', min: '50', max: '100' },
-  { label: '$100+', min: '100', max: '' },
+  { label: "Under $25", min: "", max: "25" },
+  { label: "$25 - $50", min: "25", max: "50" },
+  { label: "$50 - $100", min: "50", max: "100" },
+  { label: "$100+", min: "100", max: "" },
 ];
-
 
 export default function CatalogFilters({
   categories,
   vendors,
   currentCategory,
-  currentSearch = '',
-  currentType = 'all',
-  currentSort = 'newest',
-  currentVendor = '',
-  currentMinPrice = '',
-  currentMaxPrice = '',
-  currentStock = 'all',
+  currentSearch = "",
+  currentType = "all",
+  currentSort = "newest",
+  currentVendor = "",
+  currentMinPrice = "",
+  currentMaxPrice = "",
+  currentStock = "all",
   totalCount = 0,
-  viewMode = 'grid',
+  viewMode = "grid",
 }: CatalogFiltersProps) {
   const {
     isPending,
@@ -69,34 +68,33 @@ export default function CatalogFilters({
     handlePriceSubmit,
     handleApplyPresetPrice,
     handleRemoveSingleFilter,
-    clearAllFilters
+    clearAllFilters,
   } = useCatalogFilters();
 
   // Lock background scroll when mobile drawer is open & bind Escape key
   useEffect(() => {
     if (isMobileDrawerOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') setIsMobileDrawerOpen(false);
+        if (e.key === "Escape") setIsMobileDrawerOpen(false);
       };
-      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener("keydown", handleKeyDown);
       return () => {
-        document.body.style.overflow = '';
-        window.removeEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = "";
+        window.removeEventListener("keydown", handleKeyDown);
       };
     }
   }, [isMobileDrawerOpen, setIsMobileDrawerOpen]);
-
 
   // Active filter count logic
   const activeFilterCount = [
     Boolean(currentCategory),
     Boolean(currentSearch),
-    currentType !== 'all',
+    currentType !== "all",
     Boolean(currentVendor),
     Boolean(currentMinPrice),
     Boolean(currentMaxPrice),
-    currentStock !== 'all',
+    currentStock !== "all",
   ].filter(Boolean).length;
 
   return (
@@ -132,7 +130,7 @@ export default function CatalogFilters({
             disabled={isPending}
             className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white font-bold text-xs px-4 sm:px-6 py-3 rounded-xl transition-colors cursor-pointer shadow-xs flex items-center justify-center shrink-0 disabled:opacity-50"
           >
-            {isPending ? 'Searching...' : 'Search'}
+            {isPending ? "Searching..." : "Search"}
           </button>
         </form>
 
@@ -163,9 +161,13 @@ export default function CatalogFilters({
 
           {/* Results Count & Pending Indicator */}
           <div className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">
-            <span className="font-bold text-zinc-900 dark:text-zinc-100">{totalCount}</span>{' '}
-            {totalCount === 1 ? 'item found' : 'items found'}
-            {isPending && <span className="ml-2 text-purple-600 dark:text-purple-400 animate-pulse">updating...</span>}
+            <span className="font-bold text-zinc-900 dark:text-zinc-100">{totalCount}</span>{" "}
+            {totalCount === 1 ? "item found" : "items found"}
+            {isPending && (
+              <span className="ml-2 text-purple-600 dark:text-purple-400 animate-pulse">
+                updating...
+              </span>
+            )}
           </div>
         </div>
 
@@ -175,11 +177,11 @@ export default function CatalogFilters({
           <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
             <button
               type="button"
-              onClick={() => updateParams({ view: 'grid' })}
+              onClick={() => updateParams({ view: "grid" })}
               className={`p-1.5 px-2.5 rounded-lg transition-colors cursor-pointer text-xs font-medium ${
-                viewMode === 'grid'
-                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-xs'
-                  : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+                viewMode === "grid"
+                  ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-xs"
+                  : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
               }`}
               title="Grid View"
             >
@@ -187,11 +189,11 @@ export default function CatalogFilters({
             </button>
             <button
               type="button"
-              onClick={() => updateParams({ view: 'list' })}
+              onClick={() => updateParams({ view: "list" })}
               className={`p-1.5 px-2.5 rounded-lg transition-colors cursor-pointer text-xs font-medium ${
-                viewMode === 'list'
-                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-xs'
-                  : 'text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'
+                viewMode === "list"
+                  ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 shadow-xs"
+                  : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
               }`}
               title="List View"
             >
@@ -201,10 +203,14 @@ export default function CatalogFilters({
 
           {/* Sort By Dropdown */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-mono text-zinc-400 uppercase hidden sm:inline">Sort:</span>
+            <span className="text-[11px] font-mono text-zinc-400 uppercase hidden sm:inline">
+              Sort:
+            </span>
             <select
               value={currentSort}
-              onChange={(e) => updateParams({ sort: e.target.value === 'newest' ? null : e.target.value })}
+              onChange={(e) =>
+                updateParams({ sort: e.target.value === "newest" ? null : e.target.value })
+              }
               className="text-xs px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 cursor-pointer shadow-xs font-medium min-h-[38px]"
             >
               {CATALOG_SORT_VALUES.map((sort) => (
@@ -247,7 +253,9 @@ export default function CatalogFilters({
             {/* Header */}
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-900">
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">Filter Catalog</h2>
+                <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
+                  Filter Catalog
+                </h2>
                 {activeFilterCount > 0 && (
                   <span className="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                     {activeFilterCount}
@@ -322,7 +330,7 @@ export function CatalogDesktopSidebar({
   currentStock,
   updateParams: parentUpdateParams,
   isPending: parentIsPending,
-}: Omit<CatalogFiltersProps, 'totalCount' | 'currentSearch' | 'currentSort'> & {
+}: Omit<CatalogFiltersProps, "totalCount" | "currentSearch" | "currentSort"> & {
   updateParams?: (updates: Record<string, string | null>) => void;
   isPending?: boolean;
 }) {
@@ -333,24 +341,26 @@ export function CatalogDesktopSidebar({
 
   const isPending = parentIsPending ?? localIsPending;
 
-  const [minPriceVal, setMinPriceVal] = useState(currentMinPrice || '');
-  const [maxPriceVal, setMaxPriceVal] = useState(currentMaxPrice || '');
+  const [minPriceVal, setMinPriceVal] = useState(currentMinPrice || "");
+  const [maxPriceVal, setMaxPriceVal] = useState(currentMaxPrice || "");
 
-  const updateParams = parentUpdateParams ?? ((updates: Record<string, string | null>) => {
-    const params = new URLSearchParams(searchParams.toString());
-    Object.entries(updates).forEach(([key, val]) => {
-      if (val === null || val === '' || val === 'all') {
-        params.delete(key);
-      } else {
-        params.set(key, val);
-      }
-    });
-    params.delete('page');
+  const updateParams =
+    parentUpdateParams ??
+    ((updates: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([key, val]) => {
+        if (val === null || val === "" || val === "all") {
+          params.delete(key);
+        } else {
+          params.set(key, val);
+        }
+      });
+      params.delete("page");
 
-    startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
+      startTransition(() => {
+        router.push(`${pathname}?${params.toString()}`);
+      });
     });
-  });
 
   const handlePriceSubmit = (e: React.FormEvent) => {
     e.preventDefault();

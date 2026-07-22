@@ -1,24 +1,22 @@
-import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
-import { notFound } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
-import { getCachedOrganizations, type CachedOrg } from '@/shared/auth/clerk-cache';
-import type { Metadata } from 'next';
-import ProductGalleryPlayer from '@/features/catalog/components/product-detail/ProductGalleryPlayer';
-import WishlistButton from '@/features/catalog/components/product-detail/WishlistButton';
-import ReviewsSection from '@/features/catalog/components/product-detail/ReviewsSection';
-import QASection from '@/features/catalog/components/product-detail/QASection';
-import ProductViewTracker from '@/features/catalog/components/product-detail/ProductViewTracker';
-import ProductDetailAddToCart from '@/features/catalog/components/product-detail/ProductDetailAddToCart';
-import { isVideoUrl } from '@/shared/media/media';
-import { getSystemSetting } from '@/shared/platform/settings';
-import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
-import { resolveOnlineProductPurchaseState } from '@/features/inventory/availability.shared';
-import StockAvailabilityBadge from '@/features/inventory/components/StockAvailabilityBadge';
-import { DEFAULT_SUPPORT_EMAIL } from '@/shared/platform/brand';
-import {
-  getVerifiedReviewerIdsForProduct,
-} from '@/features/catalog/verified-buyer';
+import { clerkClient, createClerkClient } from "@clerk/nextjs/server";
+import { notFound } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { getCachedOrganizations, type CachedOrg } from "@/shared/auth/clerk-cache";
+import type { Metadata } from "next";
+import ProductGalleryPlayer from "@/features/catalog/components/product-detail/ProductGalleryPlayer";
+import WishlistButton from "@/features/catalog/components/product-detail/WishlistButton";
+import ReviewsSection from "@/features/catalog/components/product-detail/ReviewsSection";
+import QASection from "@/features/catalog/components/product-detail/QASection";
+import ProductViewTracker from "@/features/catalog/components/product-detail/ProductViewTracker";
+import ProductDetailAddToCart from "@/features/catalog/components/product-detail/ProductDetailAddToCart";
+import { isVideoUrl } from "@/shared/media/media";
+import { getSystemSetting } from "@/shared/platform/settings";
+import { getStockAvailabilityCatalog } from "@/features/inventory/availability.server";
+import { resolveOnlineProductPurchaseState } from "@/features/inventory/availability.shared";
+import StockAvailabilityBadge from "@/features/inventory/components/StockAvailabilityBadge";
+import { DEFAULT_SUPPORT_EMAIL } from "@/shared/platform/brand";
+import { getVerifiedReviewerIdsForProduct } from "@/features/catalog/verified-buyer";
 import {
   getCategoryById,
   getInventoryForProduct,
@@ -27,7 +25,7 @@ import {
   getProductReviews,
   getProductReviewStats,
   getProductWithCategory,
-} from '@/features/catalog/queries';
+} from "@/features/catalog/queries";
 
 interface PageProps {
   params: Promise<{
@@ -43,26 +41,28 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const systemName = await getSystemSetting('system_name', 'Dilnova');
+  const systemName = await getSystemSetting("system_name", "Dilnova");
 
   try {
     const result = await getProductForMetadata(id);
 
-    if (!result || !result.product || result.product.status !== 'active') {
+    if (!result || !result.product || result.product.status !== "active") {
       return {
         title: `Product Not Found | ${systemName}`,
       };
     }
 
     const { product } = result;
-    const formattedPrice = (product.price / 100).toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    const formattedPrice = (product.price / 100).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
     });
 
     const title = `${product.name} | ${systemName}`;
     const description = product.description
-      ? (product.description.length > 150 ? product.description.substring(0, 147) + '...' : product.description)
+      ? product.description.length > 150
+        ? product.description.substring(0, 147) + "..."
+        : product.description
       : `Get ${product.name} for ${formattedPrice} from our multi-vendor catalog on ${systemName}.`;
 
     return {
@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       openGraph: {
         title,
         description,
-        type: 'website',
+        type: "website",
         images: product.imageUrl ? [{ url: product.imageUrl }] : [],
       },
     };
@@ -88,7 +88,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   // 1. Fetch Product with joined Category details
   const result = await getProductWithCategory(id);
 
-  if (!result || !result.product || result.product.status !== 'active') {
+  if (!result || !result.product || result.product.status !== "active") {
     notFound();
   }
 
@@ -96,23 +96,22 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const [stockAvailabilityCatalog, inventoryRecord] = await Promise.all([
     getStockAvailabilityCatalog(),
-    product.type === 'product'
-      ? getInventoryForProduct(id)
-      : Promise.resolve(null),
+    product.type === "product" ? getInventoryForProduct(id) : Promise.resolve(null),
   ]);
 
   const { canPurchase, availabilityDef } = resolveOnlineProductPurchaseState(
     product.type,
     stockAvailabilityCatalog,
-    inventoryRecord
+    inventoryRecord,
   );
 
-  const [{ items: productReviews }, reviewStats, productQuestions, verifiedReviewerIds] = await Promise.all([
-    getProductReviews(id),
-    getProductReviewStats(id),
-    getProductQuestions(id),
-    getVerifiedReviewerIdsForProduct(id),
-  ]);
+  const [{ items: productReviews }, reviewStats, productQuestions, verifiedReviewerIds] =
+    await Promise.all([
+      getProductReviews(id),
+      getProductReviewStats(id),
+      getProductQuestions(id),
+      getVerifiedReviewerIdsForProduct(id),
+    ]);
 
   const { totalReviews, averageRating } = reviewStats;
 
@@ -121,8 +120,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
   if (category?.parentId) {
     parentCategory = await getCategoryById(category.parentId);
   }
-
-
 
   // 2. Fetch Seller Organization from Clerk (Optimized with cached lookup + fallback)
   const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
@@ -139,25 +136,31 @@ export default async function ProductDetailPage({ params }: PageProps) {
       name: org.name,
       slug: org.slug,
       imageUrl: org.imageUrl,
-      publicMetadata: (org.publicMetadata as CachedOrg['publicMetadata']) || {},
+      publicMetadata: (org.publicMetadata as CachedOrg["publicMetadata"]) || {},
     };
   }
 
-  const vendorName = orgDetails ? orgDetails.name : 'Unknown Vendor';
+  const vendorName = orgDetails ? orgDetails.name : "Unknown Vendor";
   const vendorLogo = orgDetails ? orgDetails.imageUrl : null;
   const vendorSlug = orgDetails ? orgDetails.slug : null;
   const vendorMetadata = orgDetails?.publicMetadata || {};
 
-  const formattedPrice = (product.price / 100).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  const formattedPrice = (product.price / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
   });
 
-  const mediaPayload = Array.isArray(product.media) && product.media.length > 0
-    ? (product.media as { url: string; type: 'image' | 'video' }[])
-    : product.imageUrl
-      ? [{ url: product.imageUrl, type: isVideoUrl(product.imageUrl) ? ('video' as const) : ('image' as const) }]
-      : [];
+  const mediaPayload =
+    Array.isArray(product.media) && product.media.length > 0
+      ? (product.media as { url: string; type: "image" | "video" }[])
+      : product.imageUrl
+        ? [
+            {
+              url: product.imageUrl,
+              type: isVideoUrl(product.imageUrl) ? ("video" as const) : ("image" as const),
+            },
+          ]
+        : [];
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans pb-24">
@@ -174,13 +177,19 @@ export default async function ProductDetailPage({ params }: PageProps) {
             <>
               {parentCategory && (
                 <>
-                  <Link href={`/products?category=${parentCategory.slug}`} className="hover:text-purple-500 uppercase transition-colors">
+                  <Link
+                    href={`/products?category=${parentCategory.slug}`}
+                    className="hover:text-purple-500 uppercase transition-colors"
+                  >
                     {parentCategory.name}
                   </Link>
                   <span>/</span>
                 </>
               )}
-              <Link href={`/products?category=${category.slug}`} className="hover:text-purple-500 uppercase transition-colors">
+              <Link
+                href={`/products?category=${category.slug}`}
+                className="hover:text-purple-500 uppercase transition-colors"
+              >
                 {category.name}
               </Link>
               <span>/</span>
@@ -207,7 +216,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
       {/* Main Grid Section */}
       <main className="max-w-6xl mx-auto px-6 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 bg-white border border-zinc-200 rounded-3xl p-6 lg:p-10 dark:bg-zinc-950 dark:border-zinc-800 shadow-xl shadow-zinc-900/5 dark:shadow-none">
-          
           {/* Left Column: Image Area (5 cols) */}
           <div className="lg:col-span-5 space-y-4">
             <ProductGalleryPlayer media={mediaPayload} alt={product.name} type={product.type} />
@@ -215,7 +223,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
           {/* Right Column: Title, Price, Description, Vendor Info (7 cols) */}
           <div className="lg:col-span-7 flex flex-col justify-between space-y-8">
-            
             {/* Upper Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-2">
@@ -237,10 +244,28 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     <span className="text-[10px] text-zinc-400 font-mono">Unrated</span>
                   )}
 
-                  <div className="flex items-center gap-1 text-xs text-zinc-450 dark:text-zinc-500 font-mono" title="Total page views">
-                    <svg className="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  <div
+                    className="flex items-center gap-1 text-xs text-zinc-450 dark:text-zinc-500 font-mono"
+                    title="Total page views"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5 opacity-70"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      />
                     </svg>
                     <span>{product.views + 1} views</span>
                   </div>
@@ -274,7 +299,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   Description
                 </h3>
                 <p className="text-sm text-zinc-600 dark:text-zinc-350 leading-relaxed whitespace-pre-line">
-                  {product.description || 'No detailed description provided by the seller.'}
+                  {product.description || "No detailed description provided by the seller."}
                 </p>
               </div>
             </div>
@@ -296,7 +321,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   </div>
                 )}
                 <div className="flex-1 leading-tight">
-                  <span className="text-[10px] text-zinc-400 block font-mono">AUTHORIZED VENDOR</span>
+                  <span className="text-[10px] text-zinc-400 block font-mono">
+                    AUTHORIZED VENDOR
+                  </span>
                   {vendorSlug ? (
                     <Link
                       href={`/vendors/${vendorSlug}`}
@@ -318,13 +345,17 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   {vendorMetadata.address && (
                     <div>
                       <span className="text-zinc-450 block font-mono text-[10px]">Location</span>
-                      <span className="font-medium text-zinc-850 dark:text-zinc-200">{vendorMetadata.address}</span>
+                      <span className="font-medium text-zinc-850 dark:text-zinc-200">
+                        {vendorMetadata.address}
+                      </span>
                     </div>
                   )}
                   {vendorMetadata.phone && (
                     <div>
                       <span className="text-zinc-455 block font-mono text-[10px]">Contact</span>
-                      <span className="font-medium text-zinc-850 dark:text-zinc-200">{vendorMetadata.phone}</span>
+                      <span className="font-medium text-zinc-850 dark:text-zinc-200">
+                        {vendorMetadata.phone}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -355,7 +386,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     Storefront &rarr;
                   </Link>
                 )}
-                
+
                 <a
                   href={`mailto:${process.env.EMAIL_FROM_ADDRESS || DEFAULT_SUPPORT_EMAIL}?subject=Enquiry: ${encodeURIComponent(product.name)}`}
                   className="flex-1 text-center py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold rounded-lg shadow-sm shadow-purple-900/10 transition-all cursor-pointer"
@@ -371,9 +402,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 />
               </div>
             </div>
-
           </div>
-
         </div>
 
         {/* Reviews Section */}

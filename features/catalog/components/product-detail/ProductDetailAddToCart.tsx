@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useCart } from '@/features/cart/context/cart-context';
+import { useState } from "react";
+import { useCart } from "@/features/cart/context/cart-context";
 
 interface ProductDetailAddToCartProps {
   product: {
@@ -25,8 +25,8 @@ export default function ProductDetailAddToCart({
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
-  const handleIncrement = () => setQuantity(q => q + 1);
-  const handleDecrement = () => setQuantity(q => Math.max(1, q - 1));
+  const handleIncrement = () => setQuantity((q) => q + 1);
+  const handleDecrement = () => setQuantity((q) => Math.max(1, q - 1));
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
@@ -45,7 +45,7 @@ export default function ProductDetailAddToCart({
           disabled
           className="w-full h-10 flex items-center justify-center text-xs font-mono font-bold uppercase tracking-wider rounded-xl bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500 cursor-not-allowed"
         >
-          {stockLabel ? `${stockLabel} — Cannot Add to Cart` : 'Currently Unavailable'}
+          {stockLabel ? `${stockLabel} — Cannot Add to Cart` : "Currently Unavailable"}
         </button>
       </div>
     );
@@ -79,13 +79,15 @@ export default function ProductDetailAddToCart({
         onClick={handleAddToCart}
         className={`flex-1 h-10 flex items-center justify-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider rounded-xl transition-all duration-200 shadow-md ${
           added
-            ? 'bg-emerald-605 bg-emerald-650 text-white shadow-emerald-900/10'
-            : 'bg-purple-700 hover:bg-purple-800 text-white shadow-purple-900/10 cursor-pointer'
+            ? "bg-emerald-605 bg-emerald-650 text-white shadow-emerald-900/10"
+            : "bg-purple-700 hover:bg-purple-800 text-white shadow-purple-900/10 cursor-pointer"
         }`}
       >
         {added ? (
           <>
-            <span>Added {quantity} Item{quantity > 1 ? 's' : ''}!</span>
+            <span>
+              Added {quantity} Item{quantity > 1 ? "s" : ""}!
+            </span>
             <span className="font-sans">✓</span>
           </>
         ) : (

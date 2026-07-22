@@ -7,13 +7,13 @@
 
 ## Key Docs Links
 
-| Topic | URL |
-|---|---|
-| GitHub Repository | https://github.com/gitleaks/gitleaks |
-| Installation | https://github.com/gitleaks/gitleaks#getting-started |
-| Configuration | https://github.com/gitleaks/gitleaks#configuration |
-| GitHub Action | https://github.com/gitleaks/gitleaks-action |
-| Allowlisting | https://github.com/gitleaks/gitleaks#configuration |
+| Topic             | URL                                                  |
+| ----------------- | ---------------------------------------------------- |
+| GitHub Repository | https://github.com/gitleaks/gitleaks                 |
+| Installation      | https://github.com/gitleaks/gitleaks#getting-started |
+| Configuration     | https://github.com/gitleaks/gitleaks#configuration   |
+| GitHub Action     | https://github.com/gitleaks/gitleaks-action          |
+| Allowlisting      | https://github.com/gitleaks/gitleaks#configuration   |
 
 ---
 

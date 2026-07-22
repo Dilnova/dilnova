@@ -1,15 +1,12 @@
-import { test } from '@playwright/test';
-import {
-  loadSecurityFixtureContext,
-  loadSecurityFixtures,
-} from '../helpers/security-fixtures';
-import { NON_EXISTENT_UUID } from '../helpers/security-constants';
-import { skipUnlessSecurityEnv } from '../helpers/security-skip';
+import { test } from "@playwright/test";
+import { loadSecurityFixtureContext, loadSecurityFixtures } from "../helpers/security-fixtures";
+import { NON_EXISTENT_UUID } from "../helpers/security-constants";
+import { skipUnlessSecurityEnv } from "../helpers/security-skip";
 import {
   expectSecurityDenied,
   invokeServerAction,
   waitForServerActionManifest,
-} from '../helpers/server-action';
+} from "../helpers/server-action";
 
 let fixtures: Awaited<ReturnType<typeof loadSecurityFixtures>>;
 
@@ -19,47 +16,47 @@ test.beforeAll(async () => {
   fixtures = context ? await loadSecurityFixtures(context) : null;
 });
 
-test.describe('Vendor member server-action restrictions', () => {
+test.describe("Vendor member server-action restrictions", () => {
   test.beforeEach(({}, testInfo) => {
-    skipUnlessSecurityEnv(testInfo, 'vendor-member', fixtures);
+    skipUnlessSecurityEnv(testInfo, "vendor-member", fixtures);
   });
 
-  test('cannot delete a product in their org', async ({ page }) => {
+  test("cannot delete a product in their org", async ({ page }) => {
     const result = await invokeServerAction(page, {
-      postPath: '/vendor?tab=catalog',
-      moduleFileSuffix: 'catalog/vendor.actions',
-      exportName: 'deleteProductAction',
+      postPath: "/vendor?tab=catalog",
+      moduleFileSuffix: "catalog/vendor.actions",
+      exportName: "deleteProductAction",
       args: [NON_EXISTENT_UUID],
     });
     expectSecurityDenied(result);
   });
 
-  test('cannot verify an order payment', async ({ page }) => {
+  test("cannot verify an order payment", async ({ page }) => {
     const result = await invokeServerAction(page, {
-      postPath: '/vendor?tab=inventory&imsTab=orders',
-      moduleFileSuffix: 'orders/vendor.actions',
-      exportName: 'verifyOrderPaymentAction',
+      postPath: "/vendor?tab=inventory&imsTab=orders",
+      moduleFileSuffix: "orders/vendor.actions",
+      exportName: "verifyOrderPaymentAction",
       args: [fixtures!.foreignVendorOrderId],
     });
     expectSecurityDenied(result);
   });
 
-  test('cannot cancel a vendor order', async ({ page }) => {
+  test("cannot cancel a vendor order", async ({ page }) => {
     const result = await invokeServerAction(page, {
-      postPath: '/vendor?tab=inventory&imsTab=orders',
-      moduleFileSuffix: 'orders/vendor.actions',
-      exportName: 'cancelVendorOrderAction',
+      postPath: "/vendor?tab=inventory&imsTab=orders",
+      moduleFileSuffix: "orders/vendor.actions",
+      exportName: "cancelVendorOrderAction",
       args: [fixtures!.foreignVendorOrderId],
     });
     expectSecurityDenied(result);
   });
 
-  test('cannot reject a payment slip', async ({ page }) => {
+  test("cannot reject a payment slip", async ({ page }) => {
     const result = await invokeServerAction(page, {
-      postPath: '/vendor?tab=inventory&imsTab=orders',
-      moduleFileSuffix: 'orders/vendor.actions',
-      exportName: 'rejectPaymentSlipAction',
-      args: [fixtures!.foreignVendorOrderId, 'E2E rejection attempt'],
+      postPath: "/vendor?tab=inventory&imsTab=orders",
+      moduleFileSuffix: "orders/vendor.actions",
+      exportName: "rejectPaymentSlipAction",
+      args: [fixtures!.foreignVendorOrderId, "E2E rejection attempt"],
     });
     expectSecurityDenied(result);
   });

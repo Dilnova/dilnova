@@ -1,19 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   createCategorySchema,
   submitReviewSchema,
   addProductSchema,
-} from '@/features/catalog/schema';
-import { uploadPaymentSlipFormSchema } from '@/features/orders/schema';
-import { updateMemberRoleSchema } from '@/features/admin/schema';
+} from "@/features/catalog/schema";
+import { uploadPaymentSlipFormSchema } from "@/features/orders/schema";
+import { updateMemberRoleSchema } from "@/features/admin/schema";
 
-describe('Zod Input Schemas Validation', () => {
+describe("Zod Input Schemas Validation", () => {
   const originalCloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const sampleCloudinaryUrl =
-    'https://res.cloudinary.com/deg48jhcz/image/upload/v1780290518/catalog/product.jpg';
+    "https://res.cloudinary.com/deg48jhcz/image/upload/v1780290518/catalog/product.jpg";
 
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = 'deg48jhcz';
+    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "deg48jhcz";
   });
 
   afterEach(() => {
@@ -24,160 +24,162 @@ describe('Zod Input Schemas Validation', () => {
     }
   });
 
-  describe('createCategorySchema', () => {
-    it('should validate categories with proper slugs and names', () => {
+  describe("createCategorySchema", () => {
+    it("should validate categories with proper slugs and names", () => {
       const valid = createCategorySchema.safeParse({
-        name: 'Tools & Machining',
-        slug: 'tools-machining',
+        name: "Tools & Machining",
+        slug: "tools-machining",
       });
       expect(valid.success).toBe(true);
     });
 
-    it('should reject categories with uppercase characters or underscores in slugs', () => {
+    it("should reject categories with uppercase characters or underscores in slugs", () => {
       const invalid = createCategorySchema.safeParse({
-        name: 'Tools & Machining',
-        slug: 'tools_machining', // hyphens only, not underscores
+        name: "Tools & Machining",
+        slug: "tools_machining", // hyphens only, not underscores
       });
       expect(invalid.success).toBe(false);
       if (!invalid.success) {
-        expect(invalid.error.issues[0].message).toContain('Slug must be lowercase alphanumeric with hyphens only');
+        expect(invalid.error.issues[0].message).toContain(
+          "Slug must be lowercase alphanumeric with hyphens only",
+        );
       }
     });
 
-    it('should reject categories with empty names', () => {
+    it("should reject categories with empty names", () => {
       const invalid = createCategorySchema.safeParse({
-        name: '',
-        slug: 'valid-slug',
+        name: "",
+        slug: "valid-slug",
       });
       expect(invalid.success).toBe(false);
     });
   });
 
-  describe('submitReviewSchema', () => {
-    it('should validate correct review parameters', () => {
+  describe("submitReviewSchema", () => {
+    it("should validate correct review parameters", () => {
       const valid = submitReviewSchema.safeParse({
-        productId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        productId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         rating: 4,
-        comment: 'Excellent product quality!',
+        comment: "Excellent product quality!",
       });
       expect(valid.success).toBe(true);
     });
 
-    it('should reject out of range ratings (e.g. 6)', () => {
+    it("should reject out of range ratings (e.g. 6)", () => {
       const invalid = submitReviewSchema.safeParse({
-        productId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        productId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         rating: 6,
-        comment: 'Perfect',
+        comment: "Perfect",
       });
       expect(invalid.success).toBe(false);
     });
 
-    it('should reject non-integer ratings', () => {
+    it("should reject non-integer ratings", () => {
       const invalid = submitReviewSchema.safeParse({
-        productId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        productId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         rating: 4.5,
-        comment: 'Nice',
+        comment: "Nice",
       });
       expect(invalid.success).toBe(false);
     });
   });
 
-  describe('uploadPaymentSlipFormSchema', () => {
-    it('accepts a valid order id', () => {
+  describe("uploadPaymentSlipFormSchema", () => {
+    it("accepts a valid order id", () => {
       const valid = uploadPaymentSlipFormSchema.safeParse({
-        orderId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        orderId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
       });
       expect(valid.success).toBe(true);
     });
   });
 
-  describe('updateMemberRoleSchema', () => {
-    it('should validate allowed Clerk organization roles', () => {
+  describe("updateMemberRoleSchema", () => {
+    it("should validate allowed Clerk organization roles", () => {
       const valid1 = updateMemberRoleSchema.safeParse({
-        organizationId: 'org_123',
-        userId: 'user_123',
-        newRole: 'org:admin',
+        organizationId: "org_123",
+        userId: "user_123",
+        newRole: "org:admin",
       });
       const valid2 = updateMemberRoleSchema.safeParse({
-        organizationId: 'org_123',
-        userId: 'user_123',
-        newRole: 'org:member',
+        organizationId: "org_123",
+        userId: "user_123",
+        newRole: "org:member",
       });
       expect(valid1.success).toBe(true);
       expect(valid2.success).toBe(true);
     });
 
-    it('should reject unsupported organization roles', () => {
+    it("should reject unsupported organization roles", () => {
       const invalid = updateMemberRoleSchema.safeParse({
-        organizationId: 'org_123',
-        userId: 'user_123',
-        newRole: 'superadmin',
+        organizationId: "org_123",
+        userId: "user_123",
+        newRole: "superadmin",
       });
       expect(invalid.success).toBe(false);
     });
   });
 
-  describe('addProductSchema', () => {
-    it('should validate correct product details', () => {
+  describe("addProductSchema", () => {
+    it("should validate correct product details", () => {
       const valid = addProductSchema.safeParse({
-        name: 'Circular Saw 15A',
-        type: 'product',
-        description: 'High power motor circular saw',
+        name: "Circular Saw 15A",
+        type: "product",
+        description: "High power motor circular saw",
         priceInDollars: 99.99,
         imageUrl: sampleCloudinaryUrl,
         media: [],
-        categoryId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        categoryId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         quantity: 10,
       });
       expect(valid.success).toBe(true);
     });
 
-    it('should reject non-Cloudinary image URLs', () => {
+    it("should reject non-Cloudinary image URLs", () => {
       const invalid = addProductSchema.safeParse({
-        name: 'Circular Saw 15A',
-        type: 'product',
-        description: 'High power motor circular saw',
+        name: "Circular Saw 15A",
+        type: "product",
+        description: "High power motor circular saw",
         priceInDollars: 99.99,
-        imageUrl: 'https://evil.example/tracker.gif',
+        imageUrl: "https://evil.example/tracker.gif",
         media: [],
-        categoryId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        categoryId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
       });
       expect(invalid.success).toBe(false);
     });
 
-    it('should reject negative price values', () => {
+    it("should reject negative price values", () => {
       const invalid = addProductSchema.safeParse({
-        name: 'Circular Saw 15A',
-        type: 'product',
-        description: 'High power motor circular saw',
+        name: "Circular Saw 15A",
+        type: "product",
+        description: "High power motor circular saw",
         priceInDollars: -10,
-        imageUrl: '',
+        imageUrl: "",
         media: [],
-        categoryId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        categoryId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
       });
       expect(invalid.success).toBe(false);
     });
 
-    it('should validate non-negative integer quantity and reject negative/float quantity values', () => {
+    it("should validate non-negative integer quantity and reject negative/float quantity values", () => {
       const validZero = addProductSchema.safeParse({
-        name: 'Circular Saw 15A',
-        type: 'product',
+        name: "Circular Saw 15A",
+        type: "product",
         priceInDollars: 99.99,
         quantity: 0,
       });
       expect(validZero.success).toBe(true);
 
       const invalidNegative = addProductSchema.safeParse({
-        name: 'Circular Saw 15A',
-        type: 'product',
+        name: "Circular Saw 15A",
+        type: "product",
         priceInDollars: 99.99,
         quantity: -5,
       });
       expect(invalidNegative.success).toBe(false);
 
       const invalidFloat = addProductSchema.safeParse({
-        name: 'Circular Saw 15A',
-        type: 'product',
+        name: "Circular Saw 15A",
+        type: "product",
         priceInDollars: 99.99,
         quantity: 5.5,
       });

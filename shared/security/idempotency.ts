@@ -1,6 +1,6 @@
-import { Redis } from '@upstash/redis';
-import { readUpstashEnv } from '@/shared/security/upstash-health';
-import { logger } from '@/shared/logging/logger';
+import { Redis } from "@upstash/redis";
+import { readUpstashEnv } from "@/shared/security/upstash-health";
+import { logger } from "@/shared/logging/logger";
 
 const memoryIdempotencyTracker = new Set<string>();
 const MAX_MEMORY_TRACKER_SIZE = 10_000;
@@ -11,7 +11,10 @@ const MAX_MEMORY_TRACKER_SIZE = 10_000;
  * @param ttlSeconds How long the key should be kept (default 1 hour).
  * @returns true if the key is new (first request), false if it's a duplicate.
  */
-export async function checkIdempotencyKey(key: string, ttlSeconds: number = 60 * 60): Promise<boolean> {
+export async function checkIdempotencyKey(
+  key: string,
+  ttlSeconds: number = 60 * 60,
+): Promise<boolean> {
   const { url, token } = readUpstashEnv();
 
   if (url && token) {
@@ -23,9 +26,9 @@ export async function checkIdempotencyKey(key: string, ttlSeconds: number = 60 *
       });
       return result === "OK";
     } catch (error) {
-      logger.error('Upstash Redis failed for idempotency check, falling back to memory', { 
-        error: error instanceof Error ? error.message : String(error), 
-        key 
+      logger.error("Upstash Redis failed for idempotency check, falling back to memory", {
+        error: error instanceof Error ? error.message : String(error),
+        key,
       });
     }
   }
@@ -38,11 +41,11 @@ export async function checkIdempotencyKey(key: string, ttlSeconds: number = 60 *
   if (memoryIdempotencyTracker.has(key)) {
     return false; // Duplicate
   }
-  
+
   memoryIdempotencyTracker.add(key);
   setTimeout(() => {
     memoryIdempotencyTracker.delete(key);
   }, ttlSeconds * 1000);
-  
+
   return true; // First time
 }

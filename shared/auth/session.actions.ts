@@ -1,8 +1,8 @@
-'use server';
+"use server";
 
-import { auth } from '@clerk/nextjs/server';
-import { getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-cache';
-import { getPremiumStatus } from '@/features/inventory/premium-license';
+import { auth } from "@clerk/nextjs/server";
+import { getCachedUserRole, getCachedIsSuperAdmin } from "@/shared/auth/clerk-cache";
+import { getPremiumStatus } from "@/features/inventory/premium-license";
 
 export async function getClientSessionContextAction() {
   const { orgId, orgRole, userId } = await auth();
@@ -19,10 +19,10 @@ export async function getClientSessionContextAction() {
     billingActive = status.billingActive;
   }
 
-  const isUserVendorOrAdmin = userRole === 'vendor' || isSuperAdmin;
+  const isUserVendorOrAdmin = userRole === "vendor" || isSuperAdmin;
   let canCreateOrg = false;
   if (orgId) {
-    canCreateOrg = orgRole === 'org:admin' || orgRole === 'org:member';
+    canCreateOrg = orgRole === "org:admin" || orgRole === "org:member";
   } else {
     canCreateOrg = isUserVendorOrAdmin;
   }

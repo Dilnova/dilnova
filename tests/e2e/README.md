@@ -10,11 +10,11 @@
 
 CI runs on every push/PR to `main`/`master` (`.github/workflows/ci.yml`):
 
-| Job | What runs |
-|-----|-----------|
-| **quality** | `pnpm lint`, `tsc`, `pnpm test`, Drizzle verify |
-| **build** | `pnpm build` (dummy env) |
-| **e2e** | `pnpm test:e2e` smoke (public + unauthenticated) |
+| Job         | What runs                                        |
+| ----------- | ------------------------------------------------ |
+| **quality** | `pnpm lint`, `tsc`, `pnpm test`, Drizzle verify  |
+| **build**   | `pnpm build` (dummy env)                         |
+| **e2e**     | `pnpm test:e2e` smoke (public + unauthenticated) |
 
 **Vercel environment variables** are what your live app uses — you do **not** need to duplicate them in GitHub unless you want full RBAC/security E2E on every PR in CI.
 
@@ -26,16 +26,16 @@ CI runs on every push/PR to `main`/`master` (`.github/workflows/ci.yml`):
 
 Optional GitHub secrets (only if you want authenticated E2E in CI):
 
-| Secret | Purpose |
-|--------|---------|
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk dev publishable key |
-| `CLERK_SECRET_KEY` | Clerk dev secret (Clerk testing token) |
-| `DATABASE_URL` | Staging DB for cross-tenant IDOR fixtures |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Rate limit parity with prod |
-| `E2E_VENDOR_ADMIN_EMAIL` | Pre-created vendor admin test user |
-| `E2E_VENDOR_MEMBER_EMAIL` | Pre-created vendor member test user |
-| `E2E_CUSTOMER_EMAIL` | Pre-created customer test user |
-| `E2E_SUPERADMIN_EMAIL` | User with `privateMetadata.platformRole = "superadmin"` (or listed in `SUPERADMIN_USER_IDS`) |
+| Secret                                                | Purpose                                                                                      |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`                   | Clerk dev publishable key                                                                    |
+| `CLERK_SECRET_KEY`                                    | Clerk dev secret (Clerk testing token)                                                       |
+| `DATABASE_URL`                                        | Staging DB for cross-tenant IDOR fixtures                                                    |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Rate limit parity with prod                                                                  |
+| `E2E_VENDOR_ADMIN_EMAIL`                              | Pre-created vendor admin test user                                                           |
+| `E2E_VENDOR_MEMBER_EMAIL`                             | Pre-created vendor member test user                                                          |
+| `E2E_CUSTOMER_EMAIL`                                  | Pre-created customer test user                                                               |
+| `E2E_SUPERADMIN_EMAIL`                                | User with `privateMetadata.platformRole = "superadmin"` (or listed in `SUPERADMIN_USER_IDS`) |
 
 Without GitHub secrets, CI runs **smoke E2E** only (authenticated suites skip). Run `pnpm test:e2e` locally before deploy for the full 47-test matrix.
 
@@ -45,12 +45,12 @@ Public + unauthenticated RBAC tests run with Clerk keys only.
 
 Create four test users in your **Clerk dev instance**:
 
-| User | Requirement |
-|------|-------------|
-| Vendor admin | Active org, role `org:admin` |
-| Vendor member | Same org, role `org:member` |
-| Customer | Signed-in user, no vendor org (or different org) |
-| Superadmin | `privateMetadata.platformRole = "superadmin"` (required; run `scripts/migrate-superadmin-metadata.mjs`) |
+| User          | Requirement                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| Vendor admin  | Active org, role `org:admin`                                                                            |
+| Vendor member | Same org, role `org:member`                                                                             |
+| Customer      | Signed-in user, no vendor org (or different org)                                                        |
+| Superadmin    | `privateMetadata.platformRole = "superadmin"` (required; run `scripts/migrate-superadmin-metadata.mjs`) |
 
 Add to `.env.local`:
 

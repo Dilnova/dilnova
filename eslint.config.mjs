@@ -21,13 +21,11 @@ const eslintConfig = defineConfig([
   {
     files: ["**/*.ts"],
     ignores: ["eslint.config.mjs", "tailwind.config.ts", "next-env.d.ts"],
-    rules: {
-    }
+    rules: {},
   },
   {
     files: ["**/*.tsx"],
-    rules: {
-    }
+    rules: {},
   },
   // Override default ignores of eslint-config-next.
   globalIgnores([

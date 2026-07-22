@@ -10,15 +10,15 @@ export function isAllowedCloudinaryDeliveryUrl(url: string, orgId?: string | nul
 
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== 'https:') return false;
-    if (parsed.hostname !== 'res.cloudinary.com') return false;
+    if (parsed.protocol !== "https:") return false;
+    if (parsed.hostname !== "res.cloudinary.com") return false;
 
-    const parts = parsed.pathname.split('/').filter(Boolean);
+    const parts = parsed.pathname.split("/").filter(Boolean);
     const pathCloudName = parts[0];
     if (pathCloudName !== cloudName) return false;
 
-    const dilnovaIndex = parts.indexOf('dilnova');
-    if (dilnovaIndex !== -1 && parts[dilnovaIndex + 1] === 'vendors') {
+    const dilnovaIndex = parts.indexOf("dilnova");
+    if (dilnovaIndex !== -1 && parts[dilnovaIndex + 1] === "vendors") {
       const urlOrgId = parts[dilnovaIndex + 2];
       if (orgId && urlOrgId !== orgId) {
         return false;

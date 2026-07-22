@@ -1,38 +1,45 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { inArray } from 'drizzle-orm';
-import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
-import { resolveCheckoutVendorOrgId, buildVendorCartSummaries } from '@/features/cart/vendor-checkout';
-import { MULTI_VENDOR_ORDER_CHECKOUT_ERROR } from '@/features/orders/vendor-scope';
-import { allocateVendorPaymentAmounts } from '@/features/billing/bank-transfer';
-import { type BankTransferCheckoutInstructions, isBankTransferPayment } from '@/features/billing/bank-transfer';
-import { buildBankTransferCheckoutInstructions } from '@/features/billing/bank-transfer.server';
-import { sendOrderConfirmationEmailForOrder } from '@/features/orders/email/confirmation';
-import { logger } from '@/shared/logging/logger';
-import type { VerifiedCheckoutItem } from './checkout.types';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { inArray } from "drizzle-orm";
+import { getStockAvailabilityCatalog } from "@/features/inventory/availability.server";
+import {
+  resolveCheckoutVendorOrgId,
+  buildVendorCartSummaries,
+} from "@/features/cart/vendor-checkout";
+import { MULTI_VENDOR_ORDER_CHECKOUT_ERROR } from "@/features/orders/vendor-scope";
+import { allocateVendorPaymentAmounts } from "@/features/billing/bank-transfer";
+import {
+  type BankTransferCheckoutInstructions,
+  isBankTransferPayment,
+} from "@/features/billing/bank-transfer";
+import { buildBankTransferCheckoutInstructions } from "@/features/billing/bank-transfer.server";
+import { sendOrderConfirmationEmailForOrder } from "@/features/orders/email/confirmation";
+import { logger } from "@/shared/logging/logger";
+import type { VerifiedCheckoutItem } from "./checkout.types";
 
 export async function validateAndPrepareCartItems(
   aggregatedItems: { id: string; quantity: number; price: number; name: string }[],
-  checkoutVendorOrgIdInput: string | null
+  checkoutVendorOrgIdInput: string | null,
 ) {
   const verifiedItems: VerifiedCheckoutItem[] = [];
   let serverSubtotal = 0;
   const availabilityCatalog = await getStockAvailabilityCatalog();
 
   const uniqueItemIds = [...new Set(aggregatedItems.map((item) => item.id))];
-  const products = uniqueItemIds.length > 0
-    ? await db
-        .select({
-          id: schema.products.id,
-          name: schema.products.name,
-          price: schema.products.price,
-          orgId: schema.products.orgId,
-          type: schema.products.type,
-          status: schema.products.status,
-        })
-        .from(schema.products)
-        .where(inArray(schema.products.id, uniqueItemIds))
-    : [];
+  const products =
+    uniqueItemIds.length > 0
+      ? await db
+          .select({
+            id: schema.products.id,
+            name: schema.products.name,
+            price: schema.products.price,
+            orgId: schema.products.orgId,
+            type: schema.products.type,
+            status: schema.products.status,
+          })
+          .from(schema.products)
+          .where(inArray(schema.products.id, uniqueItemIds))
+      : [];
   const productMap = new Map(products.map((p) => [p.id, p]));
 
   for (const item of aggregatedItems) {
@@ -41,8 +48,11 @@ export async function validateAndPrepareCartItems(
     if (!product) {
       return { success: false as const, error: `Product not found in catalog: ${item.name}` };
     }
-    if (product.status !== 'active') {
-      return { success: false as const, error: `"${product.name}" is no longer available for purchase.` };
+    if (product.status !== "active") {
+      return {
+        success: false as const,
+        error: `"${product.name}" is no longer available for purchase.`,
+      };
     }
 
     serverSubtotal += product.price * item.quantity;
@@ -68,10 +78,10 @@ export async function validateAndPrepareCartItems(
         verifiedItems.map((item) => [
           item.id,
           { id: item.id, orgId: item.vendorOrgId, price: item.price },
-        ])
-      )
+        ]),
+      ),
     ),
-    checkoutVendorOrgIdInput
+    checkoutVendorOrgIdInput,
   );
 
   if (vendorOrgIds.length > 1) {
@@ -83,20 +93,17 @@ export async function validateAndPrepareCartItems(
     }
 
     const filteredItems = verifiedItems.filter(
-      (item) => item.vendorOrgId === resolvedCheckoutVendorOrgId
+      (item) => item.vendorOrgId === resolvedCheckoutVendorOrgId,
     );
     if (filteredItems.length === 0) {
       return {
         success: false as const,
-        error: 'No items found for the selected vendor.',
+        error: "No items found for the selected vendor.",
       };
     }
 
     verifiedItems.splice(0, verifiedItems.length, ...filteredItems);
-    serverSubtotal = filteredItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+    serverSubtotal = filteredItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     vendorOrgIds = [resolvedCheckoutVendorOrgId];
   }
 
@@ -106,7 +113,7 @@ export async function validateAndPrepareCartItems(
     serverSubtotal,
     vendorOrgIds,
     uniqueItemIds,
-    availabilityCatalog
+    availabilityCatalog,
   };
 }
 
@@ -138,7 +145,7 @@ export async function processCheckoutSuccess(opts: {
     const vendorAmounts = allocateVendorPaymentAmounts(
       createdVendorSubtotals,
       serverSubtotalCents,
-      grandTotalCents
+      grandTotalCents,
     );
     bankTransferInstructions = await buildBankTransferCheckoutInstructions({
       orderId: createdOrderId,
@@ -157,17 +164,18 @@ export async function processCheckoutSuccess(opts: {
   });
 
   if (!emailResult.success) {
-    logger.warn('Order placed but confirmation email was not sent', {
+    logger.warn("Order placed but confirmation email was not sent", {
       orderId: createdOrderId,
       error: emailResult.error,
     });
   }
 
   // ── Vendor Notifications (Web-First / Email Fallback) ──
-  const { dispatchVendorOrderNotifications } = await import('@/features/orders/vendor-notification');
+  const { dispatchVendorOrderNotifications } =
+    await import("@/features/orders/vendor-notification");
   await dispatchVendorOrderNotifications(createdOrderId);
 
-  logger.info('Checkout succeeded', {
+  logger.info("Checkout succeeded", {
     orderId: createdOrderId,
     grandTotalCents,
     paymentMethod: payment,

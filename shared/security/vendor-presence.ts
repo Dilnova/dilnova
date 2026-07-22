@@ -1,6 +1,6 @@
-import { Redis } from '@upstash/redis';
-import { readUpstashEnv } from './upstash-health';
-import { logger } from '@/shared/logging/logger';
+import { Redis } from "@upstash/redis";
+import { readUpstashEnv } from "./upstash-health";
+import { logger } from "@/shared/logging/logger";
 
 function getRedisClient(): Redis | null {
   const { url, token } = readUpstashEnv();
@@ -10,7 +10,7 @@ function getRedisClient(): Redis | null {
   try {
     return new Redis({ url, token });
   } catch (error) {
-    logger.error('Failed to initialize Redis for vendor presence', error);
+    logger.error("Failed to initialize Redis for vendor presence", error);
     return null;
   }
 }
@@ -23,7 +23,7 @@ function getRawRedisClient(): Redis | null {
   try {
     return new Redis({ url, token, automaticDeserialization: false });
   } catch (error) {
-    logger.error('Failed to initialize raw Redis for vendor presence', error);
+    logger.error("Failed to initialize raw Redis for vendor presence", error);
     return null;
   }
 }
@@ -37,10 +37,10 @@ export async function setVendorOnlineStatus(userId: string): Promise<boolean> {
   if (!redis) return false;
 
   try {
-    await redis.set(`vendor_online:${userId}`, '1', { ex: 75 });
+    await redis.set(`vendor_online:${userId}`, "1", { ex: 75 });
     return true;
   } catch (error) {
-    logger.error('Failed to set vendor online status', error, { userId });
+    logger.error("Failed to set vendor online status", error, { userId });
     return false;
   }
 }
@@ -54,9 +54,9 @@ export async function isVendorOnline(userId: string): Promise<boolean> {
 
   try {
     const status = await redis.get(`vendor_online:${userId}`);
-    return status === '1' || status === 1;
+    return status === "1" || status === 1;
   } catch (error) {
-    logger.error('Failed to check vendor online status', error, { userId });
+    logger.error("Failed to check vendor online status", error, { userId });
     return false;
   }
 }
@@ -71,17 +71,18 @@ export async function queueVendorNotification(userId: string, payload: any): Pro
 
   try {
     const key = `vendor_notifications:${userId}`;
-    
+
     // Inject a unique ID so the client can selectively acknowledge it later
-    const enrichedPayload = typeof payload === 'object' && payload !== null 
-      ? { id: crypto.randomUUID(), ...payload } 
-      : payload;
+    const enrichedPayload =
+      typeof payload === "object" && payload !== null
+        ? { id: crypto.randomUUID(), ...payload }
+        : payload;
 
     await redis.lpush(key, JSON.stringify(enrichedPayload));
     await redis.expire(key, 300); // 5 minutes
     return true;
   } catch (error) {
-    logger.error('Failed to queue vendor notification', error, { userId });
+    logger.error("Failed to queue vendor notification", error, { userId });
     return false;
   }
 }
@@ -96,17 +97,17 @@ export async function peekVendorNotifications(userId: string): Promise<any[]> {
 
   try {
     const key = `vendor_notifications:${userId}`;
-    
+
     // Just lrange, no del
     const items = await redis.lrange(key, 0, -1);
-    
+
     if (!items || items.length === 0) return [];
-    
+
     // Upstash automatically parses JSON strings for lrange.
     // If it's already an object, use it directly. Otherwise, try parsing it.
-    return items.map(item => typeof item === 'string' ? JSON.parse(item) : item);
+    return items.map((item) => (typeof item === "string" ? JSON.parse(item) : item));
   } catch (error) {
-    logger.error('Failed to peek vendor notifications', error, { userId });
+    logger.error("Failed to peek vendor notifications", error, { userId });
     return [];
   }
 }
@@ -121,13 +122,13 @@ export async function ackVendorNotifications(userId: string, ackIds: string[]): 
 
   try {
     const key = `vendor_notifications:${userId}`;
-    
+
     const items = await rawRedis.lrange<string>(key, 0, -1);
     if (!items || items.length === 0) return true;
 
     const pipeline = rawRedis.pipeline();
     for (const item of items) {
-      if (typeof item !== 'string') continue; // Safety check
+      if (typeof item !== "string") continue; // Safety check
       try {
         const parsed = JSON.parse(item);
         if (parsed.id && ackIds.includes(parsed.id)) {
@@ -138,11 +139,11 @@ export async function ackVendorNotifications(userId: string, ackIds: string[]): 
         // Skip invalid JSON
       }
     }
-    
+
     await pipeline.exec();
     return true;
   } catch (error) {
-    logger.error('Failed to ack vendor notifications', error, { userId });
+    logger.error("Failed to ack vendor notifications", error, { userId });
     return false;
   }
 }

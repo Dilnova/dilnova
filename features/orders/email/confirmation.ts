@@ -1,17 +1,20 @@
-import 'server-only';
+import "server-only";
 
-import { eq } from 'drizzle-orm';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { DEFAULT_APP_URL } from '@/shared/platform/brand';
-import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
-import { describeOrderCheckout } from '@/features/organization/checkout-options.shared';
-import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
-import { type BankTransferCheckoutInstructions, isBankTransferPayment } from '@/features/billing/bank-transfer';
-import { buildOrderConfirmationEmailHtml } from '@/features/orders/email/confirmation-html';
-import { sendRawSmtpEmail } from '@/shared/email/smtp-client';
-import { getSystemSetting } from '@/shared/platform/settings';
-import { logger } from '@/shared/logging/logger';
+import { eq } from "drizzle-orm";
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { DEFAULT_APP_URL } from "@/shared/platform/brand";
+import { getCheckoutOptionsCatalog } from "@/features/organization/checkout-options";
+import { describeOrderCheckout } from "@/features/organization/checkout-options.shared";
+import { getOrderDisplayTotals } from "@/features/billing/checkout-totals";
+import {
+  type BankTransferCheckoutInstructions,
+  isBankTransferPayment,
+} from "@/features/billing/bank-transfer";
+import { buildOrderConfirmationEmailHtml } from "@/features/orders/email/confirmation-html";
+import { sendRawSmtpEmail } from "@/shared/email/smtp-client";
+import { getSystemSetting } from "@/shared/platform/settings";
+import { logger } from "@/shared/logging/logger";
 
 export interface OrderConfirmationEmailContext {
   customerName: string;
@@ -24,7 +27,7 @@ export interface OrderConfirmationEmailContext {
 
 export async function sendOrderConfirmationEmailForOrder(
   orderId: string,
-  context: OrderConfirmationEmailContext
+  context: OrderConfirmationEmailContext,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const [order] = await db
@@ -34,7 +37,7 @@ export async function sendOrderConfirmationEmailForOrder(
       .limit(1);
 
     if (!order) {
-      return { success: false, error: 'Order not found.' };
+      return { success: false, error: "Order not found." };
     }
 
     const [items, checkoutOptionsCatalog, pickupBranch, systemName] = await Promise.all([
@@ -55,7 +58,7 @@ export async function sendOrderConfirmationEmailForOrder(
             .limit(1)
             .then((rows) => rows[0]?.name ?? null)
         : Promise.resolve(null),
-      getSystemSetting('system_name', 'Dilnova'),
+      getSystemSetting("system_name", "Dilnova"),
     ]);
 
     const checkoutDetails = describeOrderCheckout(
@@ -65,22 +68,24 @@ export async function sendOrderConfirmationEmailForOrder(
         pickupBranchId: order.pickupBranchId,
         pickupBranchName: pickupBranch,
       },
-      checkoutOptionsCatalog
+      checkoutOptionsCatalog,
     );
 
     const orderTotals = getOrderDisplayTotals(order);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
 
-    const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
-    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+    const smtpHost = process.env.SMTP_HOST || "smtp-relay.brevo.com";
+    const smtpPort = parseInt(process.env.SMTP_PORT || "587", 10);
     const smtpUser = process.env.SMTP_USER;
     const smtpPassword = process.env.SMTP_PASSWORD;
-    const emailFromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@dilstar.pp.ua';
+    const emailFromAddress = process.env.EMAIL_FROM_ADDRESS || "info@dilstar.pp.ua";
     const emailFromName = process.env.EMAIL_FROM_NAME || `${systemName} Hub`;
 
     if (!smtpUser || !smtpPassword) {
-      logger.warn('Order confirmation email skipped: SMTP credentials are not configured', { orderId });
-      return { success: false, error: 'SMTP configuration is incomplete on the server.' };
+      logger.warn("Order confirmation email skipped: SMTP credentials are not configured", {
+        orderId,
+      });
+      return { success: false, error: "SMTP configuration is incomplete on the server." };
     }
 
     const emailHtml = buildOrderConfirmationEmailHtml({
@@ -94,10 +99,14 @@ export async function sendOrderConfirmationEmailForOrder(
       shippingAddress: [
         order.shippingAddress,
         order.shippingAddressLine2,
-        order.shippingCity ? `${order.shippingCity}, ${order.shippingState || ''} ${order.shippingPostalCode || ''}`.trim() : null,
-        order.shippingCountry
-      ].filter(Boolean).join('\n'),
-      shippingPhone: [order.shippingPhone, order.shippingPhone2].filter(Boolean).join(' / '),
+        order.shippingCity
+          ? `${order.shippingCity}, ${order.shippingState || ""} ${order.shippingPostalCode || ""}`.trim()
+          : null,
+        order.shippingCountry,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      shippingPhone: [order.shippingPhone, order.shippingPhone2].filter(Boolean).join(" / "),
       items,
       subtotalAmount: orderTotals.subtotalAmount,
       taxAmount: orderTotals.taxAmount,
@@ -109,8 +118,8 @@ export async function sendOrderConfirmationEmailForOrder(
     });
 
     const subjectPrefix = isBankTransferPayment(context.paymentMethod)
-      ? 'Order Received — Bank Transfer Required'
-      : 'Order Confirmation';
+      ? "Order Received — Bank Transfer Required"
+      : "Order Confirmation";
 
     await sendRawSmtpEmail({
       host: smtpHost,
@@ -126,10 +135,11 @@ export async function sendOrderConfirmationEmailForOrder(
 
     return { success: true };
   } catch (error) {
-    logger.error('Failed to send order confirmation email', error, { orderId });
+    logger.error("Failed to send order confirmation email", error, { orderId });
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error sending order confirmation email.',
+      error:
+        error instanceof Error ? error.message : "Unknown error sending order confirmation email.",
     };
   }
 }

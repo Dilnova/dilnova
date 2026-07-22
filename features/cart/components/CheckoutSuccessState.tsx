@@ -1,9 +1,12 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { BANK_TRANSFER_PAYMENT_ID, type BankTransferCheckoutInstructions } from '@/features/billing/bank-transfer';
-import BankTransferInstructions from '@/features/billing/components/BankTransferInstructions';
-import { CustomerPaymentSlipSection } from '@/features/orders/components/OrderPaymentPanels';
+import Link from "next/link";
+import {
+  BANK_TRANSFER_PAYMENT_ID,
+  type BankTransferCheckoutInstructions,
+} from "@/features/billing/bank-transfer";
+import BankTransferInstructions from "@/features/billing/components/BankTransferInstructions";
+import { CustomerPaymentSlipSection } from "@/features/orders/components/OrderPaymentPanels";
 
 interface CheckoutSuccessStateProps {
   confirmedOrderId: string;
@@ -32,7 +35,7 @@ export function CheckoutSuccessState({
             ✓
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight">
-            {isBankTransferOrder ? 'Order Placed' : 'Order Confirmed!'}
+            {isBankTransferOrder ? "Order Placed" : "Order Confirmed!"}
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             {isBankTransferOrder ? (
@@ -40,11 +43,20 @@ export function CheckoutSuccessState({
                 Your order has been received and is awaiting bank transfer payment.
                 {confirmedOrderEmail && (
                   <>
-                    {' '}
+                    {" "}
                     {confirmationEmailSent ? (
-                      <>A confirmation with payment instructions was sent to <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+                      <>
+                        A confirmation with payment instructions was sent to{" "}
+                        <strong className="text-zinc-700 dark:text-zinc-200">
+                          {confirmedOrderEmail}
+                        </strong>
+                        .
+                      </>
                     ) : (
-                      <>Use the details below to complete your transfer. Save this page or note your payment reference.</>
+                      <>
+                        Use the details below to complete your transfer. Save this page or note your
+                        payment reference.
+                      </>
                     )}
                   </>
                 )}
@@ -54,11 +66,23 @@ export function CheckoutSuccessState({
                 Thank you for your order.
                 {confirmedOrderEmail && (
                   <>
-                    {' '}
+                    {" "}
                     {confirmationEmailSent ? (
-                      <>A confirmation was sent to <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+                      <>
+                        A confirmation was sent to{" "}
+                        <strong className="text-zinc-700 dark:text-zinc-200">
+                          {confirmedOrderEmail}
+                        </strong>
+                        .
+                      </>
                     ) : (
-                      <>Order updates will use <strong className="text-zinc-700 dark:text-zinc-200">{confirmedOrderEmail}</strong>.</>
+                      <>
+                        Order updates will use{" "}
+                        <strong className="text-zinc-700 dark:text-zinc-200">
+                          {confirmedOrderEmail}
+                        </strong>
+                        .
+                      </>
                     )}
                   </>
                 )}
@@ -72,7 +96,8 @@ export function CheckoutSuccessState({
           )}
           {remainingCartCount > 0 && (
             <p className="text-[11px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
-              {remainingCartCount} item{remainingCartCount === 1 ? '' : 's'} from other vendors remain in your cart. Return to the cart to checkout the next vendor.
+              {remainingCartCount} item{remainingCartCount === 1 ? "" : "s"} from other vendors
+              remain in your cart. Return to the cart to checkout the next vendor.
             </p>
           )}
         </div>
@@ -86,7 +111,7 @@ export function CheckoutSuccessState({
             order={{
               id: confirmedOrderId,
               paymentMethod: BANK_TRANSFER_PAYMENT_ID,
-              status: 'pending_payment',
+              status: "pending_payment",
               customerEmail: confirmedOrderEmail,
             }}
           />
@@ -105,7 +130,7 @@ export function CheckoutSuccessState({
             onClick={onClose}
             className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer"
           >
-            {remainingCartCount > 0 ? 'Back to Cart' : 'Continue Shopping'}
+            {remainingCartCount > 0 ? "Back to Cart" : "Continue Shopping"}
           </button>
         </div>
       </div>

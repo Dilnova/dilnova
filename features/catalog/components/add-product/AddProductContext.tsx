@@ -1,11 +1,18 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useRef, useTransition, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { addProductAction } from '@/features/catalog/vendor.actions';
-import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
-import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useTransition,
+  useEffect,
+} from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { addProductAction } from "@/features/catalog/vendor.actions";
+import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
+import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
 
 interface Category {
   id: string;
@@ -22,7 +29,7 @@ interface Branch {
 
 interface MediaItem {
   url: string;
-  type: 'image' | 'video';
+  type: "image" | "video";
 }
 
 interface AddProductContextType {
@@ -31,14 +38,14 @@ interface AddProductContextType {
   maxMediaLimit: number;
   branches: Branch[];
   isMultiBranchActive: boolean;
-  stockAllocationMode: 'target_branch' | 'central_intake';
+  stockAllocationMode: "target_branch" | "central_intake";
   stockAvailabilityOptions: StockAvailabilityDefinition[];
 
   // Form State
   name: string;
   setName: (v: string) => void;
-  type: 'product' | 'service';
-  setType: (v: 'product' | 'service') => void;
+  type: "product" | "service";
+  setType: (v: "product" | "service") => void;
   description: string;
   setDescription: (v: string) => void;
   price: string;
@@ -51,7 +58,7 @@ interface AddProductContextType {
   setStockAvailability: (v: string) => void;
   selectedBranchId: string;
   setSelectedBranchId: (v: string) => void;
-  
+
   // Media State
   media: MediaItem[];
   uploadProgress: number | null;
@@ -73,7 +80,7 @@ const AddProductContext = createContext<AddProductContextType | null>(null);
 
 export function useAddProduct() {
   const ctx = useContext(AddProductContext);
-  if (!ctx) throw new Error('useAddProduct must be used within an AddProductProvider');
+  if (!ctx) throw new Error("useAddProduct must be used within an AddProductProvider");
   return ctx;
 }
 
@@ -83,7 +90,7 @@ export function AddProductProvider({
   maxMediaLimit,
   branches = [],
   isMultiBranchActive = false,
-  stockAllocationMode = 'central_intake',
+  stockAllocationMode = "central_intake",
   stockAvailabilityOptions = [],
 }: {
   children: React.ReactNode;
@@ -91,20 +98,22 @@ export function AddProductProvider({
   maxMediaLimit: number;
   branches?: Branch[];
   isMultiBranchActive?: boolean;
-  stockAllocationMode?: 'target_branch' | 'central_intake';
+  stockAllocationMode?: "target_branch" | "central_intake";
   stockAvailabilityOptions?: StockAvailabilityDefinition[];
 }) {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [type, setType] = useState<'product' | 'service'>('product');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [quantity, setQuantity] = useState('0');
+  const [name, setName] = useState("");
+  const [type, setType] = useState<"product" | "service">("product");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [quantity, setQuantity] = useState("0");
   const [stockAvailability, setStockAvailability] = useState(
-    stockAvailabilityOptions.find((o) => o.id === 'in_stock')?.id || stockAvailabilityOptions[0]?.id || 'in_stock'
+    stockAvailabilityOptions.find((o) => o.id === "in_stock")?.id ||
+      stockAvailabilityOptions[0]?.id ||
+      "in_stock",
   );
-  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [selectedBranchId, setSelectedBranchId] = useState("");
 
   // Default to main/default branch
   useEffect(() => {
@@ -113,7 +122,7 @@ export function AddProductProvider({
       setSelectedBranchId(def.id);
     }
   }, [branches]);
-  
+
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -144,7 +153,7 @@ export function AddProductProvider({
       setIsUploading(true);
       setUploadProgress(0);
 
-      const fileType = file.type.startsWith('video/') ? ('video' as const) : ('image' as const);
+      const fileType = file.type.startsWith("video/") ? ("video" as const) : ("image" as const);
 
       try {
         const result = await uploadToCloudinary(file, (progress) => {
@@ -154,22 +163,22 @@ export function AddProductProvider({
         if (result.success && result.publicUrl) {
           const newItem = { url: result.publicUrl, type: fileType };
           setMedia((prev) => [...prev, newItem]);
-          toast.success(`${fileType === 'video' ? 'Video' : 'Image'} uploaded!`);
+          toast.success(`${fileType === "video" ? "Video" : "Image"} uploaded!`);
         } else {
-          toast.error(result.error || 'Upload failed');
+          toast.error(result.error || "Upload failed");
         }
       } catch (err) {
-        console.error('Error', err);
-        toast.error('Upload error. Please try again.');
+        console.error("Error", err);
+        toast.error("Upload error. Please try again.");
       } finally {
         setIsUploading(false);
         setUploadProgress(null);
       }
     }
 
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
-    if (videoCameraInputRef.current) videoCameraInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (videoCameraInputRef.current) videoCameraInputRef.current.value = "";
   };
 
   const handleRemoveMedia = (index: number) => {
@@ -180,28 +189,28 @@ export function AddProductProvider({
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error('Item name is required.');
+      toast.error("Item name is required.");
       return;
     }
 
     const priceNum = parseFloat(price);
     if (isNaN(priceNum) || priceNum <= 0) {
-      toast.error('Please enter a valid positive price.');
+      toast.error("Please enter a valid positive price.");
       return;
     }
 
     let quantityNum = 0;
-    if (type === 'product') {
+    if (type === "product") {
       quantityNum = parseInt(quantity, 10);
       if (isNaN(quantityNum) || quantityNum < 0) {
-        toast.error('Please enter a valid non-negative quantity.');
+        toast.error("Please enter a valid non-negative quantity.");
         return;
       }
     }
 
     startTransition(async () => {
       try {
-        const primaryThumbnail = media[0]?.url || '';
+        const primaryThumbnail = media[0]?.url || "";
         const result = await addProductAction({
           name,
           type,
@@ -210,59 +219,72 @@ export function AddProductProvider({
           imageUrl: primaryThumbnail,
           media: media,
           categoryId,
-          quantity: type === 'product' ? quantityNum : undefined,
-          branchId: type === 'product' && isMultiBranchActive && stockAllocationMode === 'target_branch' ? selectedBranchId : undefined,
-          stockAvailability: type === 'product' ? stockAvailability : undefined,
+          quantity: type === "product" ? quantityNum : undefined,
+          branchId:
+            type === "product" && isMultiBranchActive && stockAllocationMode === "target_branch"
+              ? selectedBranchId
+              : undefined,
+          stockAvailability: type === "product" ? stockAvailability : undefined,
         });
 
         if (result?.data?.success) {
           toast.success(`"${name}" added successfully!`);
           router.refresh();
 
-          setName('');
-          setDescription('');
-          setPrice('');
-          setCategoryId('');
+          setName("");
+          setDescription("");
+          setPrice("");
+          setCategoryId("");
           setMedia([]);
-          setQuantity('0');
+          setQuantity("0");
 
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          window.scrollTo({ top: 0, behavior: "smooth" });
         } else {
-          toast.error(result?.serverError || 'Failed to add item.');
+          toast.error(result?.serverError || "Failed to add item.");
         }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to add item.');
+        toast.error(err instanceof Error ? err.message : "Failed to add item.");
       }
     });
   };
 
   return (
-    <AddProductContext.Provider value={{
-      categories,
-      maxMediaLimit,
-      branches,
-      isMultiBranchActive,
-      stockAllocationMode,
-      stockAvailabilityOptions,
-      name, setName,
-      type, setType,
-      description, setDescription,
-      price, setPrice,
-      categoryId, setCategoryId,
-      quantity, setQuantity,
-      stockAvailability, setStockAvailability,
-      selectedBranchId, setSelectedBranchId,
-      media,
-      uploadProgress,
-      isUploading,
-      fileInputRef,
-      cameraInputRef,
-      videoCameraInputRef,
-      handleFileUpload,
-      handleRemoveMedia,
-      handleAddItem,
-      isPending
-    }}>
+    <AddProductContext.Provider
+      value={{
+        categories,
+        maxMediaLimit,
+        branches,
+        isMultiBranchActive,
+        stockAllocationMode,
+        stockAvailabilityOptions,
+        name,
+        setName,
+        type,
+        setType,
+        description,
+        setDescription,
+        price,
+        setPrice,
+        categoryId,
+        setCategoryId,
+        quantity,
+        setQuantity,
+        stockAvailability,
+        setStockAvailability,
+        selectedBranchId,
+        setSelectedBranchId,
+        media,
+        uploadProgress,
+        isUploading,
+        fileInputRef,
+        cameraInputRef,
+        videoCameraInputRef,
+        handleFileUpload,
+        handleRemoveMedia,
+        handleAddItem,
+        isPending,
+      }}
+    >
       {children}
     </AddProductContext.Provider>
   );

@@ -1,15 +1,21 @@
-import type { SyncedCartItem } from '@/features/cart/schema';
+import type { SyncedCartItem } from "@/features/cart/schema";
 
-export type CartAccountKey = 'guest' | `user:${string}`;
+export type CartAccountKey = "guest" | `user:${string}`;
 
-export function getCartAccountKey(isSignedIn: boolean, userId: string | null | undefined): CartAccountKey {
+export function getCartAccountKey(
+  isSignedIn: boolean,
+  userId: string | null | undefined,
+): CartAccountKey {
   if (isSignedIn && userId) {
     return `user:${userId}`;
   }
-  return 'guest';
+  return "guest";
 }
 
-export function mergeCartItems(local: SyncedCartItem[], remote: SyncedCartItem[]): SyncedCartItem[] {
+export function mergeCartItems(
+  local: SyncedCartItem[],
+  remote: SyncedCartItem[],
+): SyncedCartItem[] {
   const byId = new Map<string, SyncedCartItem>();
 
   for (const item of remote) {
@@ -35,7 +41,7 @@ export function mergeCartItems(local: SyncedCartItem[], remote: SyncedCartItem[]
 export function applyCatalogSync(
   items: SyncedCartItem[],
   updates: { id: string; name: string; price: number }[],
-  removedIds: string[]
+  removedIds: string[],
 ): SyncedCartItem[] {
   const removedSet = new Set(removedIds);
   const updateById = new Map(updates.map((item) => [item.id, item]));
@@ -52,24 +58,24 @@ export function applyCatalogSync(
 export function buildCartMergeNotice(
   previousCount: number,
   nextCount: number,
-  removedCount: number
+  removedCount: number,
 ): string | null {
   if (nextCount <= 0) {
     if (removedCount > 0) {
-      return 'Some unavailable items were removed from your cart during sync.';
+      return "Some unavailable items were removed from your cart during sync.";
     }
     return null;
   }
 
   if (removedCount > 0) {
-    return `Cart synced — ${nextCount} item${nextCount === 1 ? '' : 's'} ready (${removedCount} unavailable item${removedCount === 1 ? '' : 's'} removed).`;
+    return `Cart synced — ${nextCount} item${nextCount === 1 ? "" : "s"} ready (${removedCount} unavailable item${removedCount === 1 ? "" : "s"} removed).`;
   }
 
   if (previousCount === 0) {
-    return `Cart restored — ${nextCount} item${nextCount === 1 ? '' : 's'} ready for checkout.`;
+    return `Cart restored — ${nextCount} item${nextCount === 1 ? "" : "s"} ready for checkout.`;
   }
 
-  return `Cart synced — ${nextCount} item${nextCount === 1 ? '' : 's'} ready for checkout.`;
+  return `Cart synced — ${nextCount} item${nextCount === 1 ? "" : "s"} ready for checkout.`;
 }
 
 export function countCartLines(items: SyncedCartItem[]): number {

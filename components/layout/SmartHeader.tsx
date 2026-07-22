@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 export default function SmartHeader({ children }: { children: React.ReactNode }) {
   const [isVisible, setIsVisible] = useState(true);
@@ -24,14 +24,14 @@ export default function SmartHeader({ children }: { children: React.ReactNode })
       lastScrollY.current = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
-    <header 
+    <header
       className={`sticky top-0 z-50 flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md min-h-[3.5rem] sm:min-h-[4rem] max-w-full transition-transform duration-300 ease-in-out ${
-        isVisible ? 'translate-y-0' : '-translate-y-full'
+        isVisible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
       {children}

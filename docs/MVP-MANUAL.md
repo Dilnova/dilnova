@@ -42,30 +42,30 @@ This is an **MVP / simulation** environment. It does not process real card payme
 
 ### In scope
 
-| Area | Included |
-|------|----------|
-| **Catalog** | Categories, products/services, media, stock badges, vendor pages |
-| **Cart** | Guest local cart; **signed-in checkout**; price sync; fulfillment/payment options |
-| **Orders** | Simulated online orders; bank transfer slip review; vendor admin verify/reject/cancel |
-| **Stock** | Central inventory, branch allocation (premium), POS + online depletion |
-| **RBAC** | Superadmin, org admin, org member (limited), customer portal |
-| **Checkout config** | Platform catalog + per-org toggles (delivery, pickup, COD, bank transfer) |
-| **POS** | Branch register, receipts, stock + availability checks (premium) |
-| **IMS** | Suppliers, adjustments, movement log, multi-branch, simulated orders (premium) |
-| **Emails** | Order confirmation, payment verified/rejected, cancellation (SMTP-dependent) |
+| Area                | Included                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| **Catalog**         | Categories, products/services, media, stock badges, vendor pages                      |
+| **Cart**            | Guest local cart; **signed-in checkout**; price sync; fulfillment/payment options     |
+| **Orders**          | Simulated online orders; bank transfer slip review; vendor admin verify/reject/cancel |
+| **Stock**           | Central inventory, branch allocation (premium), POS + online depletion                |
+| **RBAC**            | Superadmin, org admin, org member (limited), customer portal                          |
+| **Checkout config** | Platform catalog + per-org toggles (delivery, pickup, COD, bank transfer)             |
+| **POS**             | Branch register, receipts, stock + availability checks (premium)                      |
+| **IMS**             | Suppliers, adjustments, movement log, multi-branch, simulated orders (premium)        |
+| **Emails**          | Order confirmation, payment verified/rejected, cancellation (SMTP-dependent)          |
 
 ### Out of scope
 
-| Area | Not included |
-|------|----------------|
-| **Real payments** | Stripe/PayPal/etc. — no payment gateway integration |
-| **`pay_online`** | Deprecated; removed from org settings and checkout catalog |
-| **Guest checkout** | Guests cannot complete checkout without signing in |
-| **Real shipping** | No carriers, labels, or tracking — flat $5 / free over $50 estimate |
-| **Real tax** | Fixed 8% estimate — no per-jurisdiction tax classes |
-| **Split payouts** | No per-vendor settlement in multi-vendor carts |
-| **Production hardening** | No enterprise audit/compliance or multi-region WMS |
-| **Mobile apps** | Web only |
+| Area                     | Not included                                                        |
+| ------------------------ | ------------------------------------------------------------------- |
+| **Real payments**        | Stripe/PayPal/etc. — no payment gateway integration                 |
+| **`pay_online`**         | Deprecated; removed from org settings and checkout catalog          |
+| **Guest checkout**       | Guests cannot complete checkout without signing in                  |
+| **Real shipping**        | No carriers, labels, or tracking — flat $5 / free over $50 estimate |
+| **Real tax**             | Fixed 8% estimate — no per-jurisdiction tax classes                 |
+| **Split payouts**        | No per-vendor settlement in multi-vendor carts                      |
+| **Production hardening** | No enterprise audit/compliance or multi-region WMS                  |
+| **Mobile apps**          | Web only                                                            |
 
 ---
 
@@ -73,37 +73,37 @@ This is an **MVP / simulation** environment. It does not process real card payme
 
 ### Platform roles (Clerk user `publicMetadata.role`)
 
-| Role | Access |
-|------|--------|
-| **admin** (superadmin) | `/superadmin` — full platform |
-| **vendor** | Can create orgs when not in org context |
-| **customer** | Default buyer role; `/customer` portal |
+| Role                   | Access                                  |
+| ---------------------- | --------------------------------------- |
+| **admin** (superadmin) | `/superadmin` — full platform           |
+| **vendor**             | Can create orgs when not in org context |
+| **customer**           | Default buyer role; `/customer` portal  |
 
 ### Organization roles (Clerk org membership)
 
-| Role | Can do | Cannot do |
-|------|--------|-----------|
-| **org:admin** | `/admin`, catalog/IMS, checkout options, profile, POS (all branches), delete products, verify/reject/cancel online orders | Superadmin console |
-| **org:member** | Add products (`/vendor/products/add`), POS (assigned branch when multi-branch) | Inventory admin, suppliers, branches, org settings, checkout toggles, profile edits, delete products, order verify/cancel |
-| **Signed-in user** | `/customer`, cart checkout, wishlist, invoices (own userId or email) | Vendor/admin consoles (unless also org member/admin) |
+| Role               | Can do                                                                                                                    | Cannot do                                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **org:admin**      | `/admin`, catalog/IMS, checkout options, profile, POS (all branches), delete products, verify/reject/cancel online orders | Superadmin console                                                                                                        |
+| **org:member**     | Add products (`/vendor/products/add`), POS (assigned branch when multi-branch)                                            | Inventory admin, suppliers, branches, org settings, checkout toggles, profile edits, delete products, order verify/cancel |
+| **Signed-in user** | `/customer`, cart checkout, wishlist, invoices (own userId or email)                                                      | Vendor/admin consoles (unless also org member/admin)                                                                      |
 
 ### Route map
 
-| Route | Who |
-|-------|-----|
-| `/` | Public |
-| `/products`, `/products/[id]` | Public |
-| `/vendors`, `/vendors/[slug]` | Public |
-| `/cart` | Public browse cart; **checkout requires sign-in** |
-| `/contact` | Public |
-| `/customer`, `/customer/invoice/[id]` | Signed-in user (order ownership enforced) |
-| `/vendor` | Org member/admin |
-| `/vendor?tab=catalog\|inventory\|storefront` | Org admin (phase checklists) |
-| `/vendor/products/add` | Org member/admin |
-| `/vendor/products` | Redirects → `/vendor?tab=catalog` (admin) or `/vendor` (member) |
-| `/vendor/billing` | Org member/admin (billing license) |
-| `/admin` | Org admin only |
-| `/superadmin` | Platform superadmin only |
+| Route                                        | Who                                                             |
+| -------------------------------------------- | --------------------------------------------------------------- |
+| `/`                                          | Public                                                          |
+| `/products`, `/products/[id]`                | Public                                                          |
+| `/vendors`, `/vendors/[slug]`                | Public                                                          |
+| `/cart`                                      | Public browse cart; **checkout requires sign-in**               |
+| `/contact`                                   | Public                                                          |
+| `/customer`, `/customer/invoice/[id]`        | Signed-in user (order ownership enforced)                       |
+| `/vendor`                                    | Org member/admin                                                |
+| `/vendor?tab=catalog\|inventory\|storefront` | Org admin (phase checklists)                                    |
+| `/vendor/products/add`                       | Org member/admin                                                |
+| `/vendor/products`                           | Redirects → `/vendor?tab=catalog` (admin) or `/vendor` (member) |
+| `/vendor/billing`                            | Org member/admin (billing license)                              |
+| `/admin`                                     | Org admin only                                                  |
+| `/superadmin`                                | Platform superadmin only                                        |
 
 ---
 
@@ -113,15 +113,15 @@ This is an **MVP / simulation** environment. It does not process real card payme
 
 **Goal:** Browse, add to cart, sign in, checkout, upload bank slip (if applicable), view orders.
 
-| Step | Action |
-|------|--------|
-| 1 | Browse `/products` or a vendor at `/vendors/[slug]` |
-| 2 | Add items to cart (blocked if out of stock, non-purchasable, or **missing inventory record**) |
-| 3 | Open `/cart` — **sign in** to proceed to checkout |
-| 4 | Select **fulfillment** (delivery / pickup if enabled) and **payment** (bank transfer / COD) |
-| 5 | Review subtotal + 8% tax + shipping → **Proceed to Checkout** |
-| 6 | View orders at `/customer`; upload bank payment slip when status is **Pending Payment** |
-| 7 | Print invoice from `/customer/invoice/[id]` |
+| Step | Action                                                                                        |
+| ---- | --------------------------------------------------------------------------------------------- |
+| 1    | Browse `/products` or a vendor at `/vendors/[slug]`                                           |
+| 2    | Add items to cart (blocked if out of stock, non-purchasable, or **missing inventory record**) |
+| 3    | Open `/cart` — **sign in** to proceed to checkout                                             |
+| 4    | Select **fulfillment** (delivery / pickup if enabled) and **payment** (bank transfer / COD)   |
+| 5    | Review subtotal + 8% tax + shipping → **Proceed to Checkout**                                 |
+| 6    | View orders at `/customer`; upload bank payment slip when status is **Pending Payment**       |
+| 7    | Print invoice from `/customer/invoice/[id]`                                                   |
 
 **Rules to remember:**
 
@@ -140,38 +140,38 @@ This is an **MVP / simulation** environment. It does not process real card payme
 
 #### A. Storefront & checkout (`/admin`, `/vendor?tab=storefront`)
 
-| Step | Action |
-|------|--------|
-| 1 | Edit public profile: description, address, phone, banner |
-| 2 | Set **stock allocation mode**: `central_intake` or `target_branch` |
-| 3 | Complete **bank transfer** fields if enabling bank transfer |
-| 4 | Enable **checkout options** — at least one fulfillment + one payment |
-| 5 | If enabling **store pickup**, create at least one branch (Inventory or DB) |
+| Step | Action                                                                     |
+| ---- | -------------------------------------------------------------------------- |
+| 1    | Edit public profile: description, address, phone, banner                   |
+| 2    | Set **stock allocation mode**: `central_intake` or `target_branch`         |
+| 3    | Complete **bank transfer** fields if enabling bank transfer                |
+| 4    | Enable **checkout options** — at least one fulfillment + one payment       |
+| 5    | If enabling **store pickup**, create at least one branch (Inventory or DB) |
 
 #### B. Catalog (`/vendor?tab=catalog`)
 
-| Step | Action |
-|------|--------|
-| 1 | View/delete products in catalog grid |
-| 2 | Add products via `/vendor/products/add` (auto-creates inventory row for products) |
-| 3 | Verify listings on `/products` and `/vendors/[slug]` |
+| Step | Action                                                                            |
+| ---- | --------------------------------------------------------------------------------- |
+| 1    | View/delete products in catalog grid                                              |
+| 2    | Add products via `/vendor/products/add` (auto-creates inventory row for products) |
+| 3    | Verify listings on `/products` and `/vendors/[slug]`                              |
 
 #### C. IMS (`/vendor?tab=inventory`) — requires IMS license
 
-| Step | Action |
-|------|--------|
-| 1 | Stock levels, suppliers, movement log, branches |
-| 2 | **Simulated Orders** tab — verify bank transfers, fulfill COD, reject slips, cancel |
-| 3 | Deep link: `/vendor?tab=inventory&imsTab=orders` |
+| Step | Action                                                                              |
+| ---- | ----------------------------------------------------------------------------------- |
+| 1    | Stock levels, suppliers, movement log, branches                                     |
+| 2    | **Simulated Orders** tab — verify bank transfers, fulfill COD, reject slips, cancel |
+| 3    | Deep link: `/vendor?tab=inventory&imsTab=orders`                                    |
 
 #### D. POS (`/vendor/billing`) — requires billing license
 
-| Step | Action |
-|------|--------|
-| 1 | Select branch register |
-| 2 | Add products to sale |
-| 3 | Complete checkout — stock depletes per branch rules |
-| 4 | Print receipt |
+| Step | Action                                              |
+| ---- | --------------------------------------------------- |
+| 1    | Select branch register                              |
+| 2    | Add products to sale                                |
+| 3    | Complete checkout — stock depletes per branch rules |
+| 4    | Print receipt                                       |
 
 ---
 
@@ -179,12 +179,12 @@ This is an **MVP / simulation** environment. It does not process real card payme
 
 **Goal:** Add listings and run POS at assigned branch.
 
-| Step | Action |
-|------|--------|
-| 1 | Add products at `/vendor/products/add` |
-| 2 | Open POS at `/vendor/billing` (billing license required) |
-| 3 | Select **assigned** branch when multi-branch is enabled |
-| 4 | Process sales — server enforces stock availability and branch assignment |
+| Step | Action                                                                   |
+| ---- | ------------------------------------------------------------------------ |
+| 1    | Add products at `/vendor/products/add`                                   |
+| 2    | Open POS at `/vendor/billing` (billing license required)                 |
+| 3    | Select **assigned** branch when multi-branch is enabled                  |
+| 4    | Process sales — server enforces stock availability and branch assignment |
 
 **Restrictions:** Cannot change inventory, org settings, checkout options, profile, delete products, or manage online orders.
 
@@ -196,15 +196,15 @@ This is an **MVP / simulation** environment. It does not process real card payme
 
 #### Console tabs (`/superadmin`)
 
-| Tab | Purpose |
-|-----|---------|
-| Overview | Platform stats |
-| Categories | Category tree |
-| Products | Global product view |
-| Inventory | IMS across orgs, simulated orders, licenses |
-| Pricing | Landing pricing plans |
-| Contacts | Contact submissions + vendor/customer role sync |
-| Settings | Branding, checkout catalog, stock availability catalog |
+| Tab        | Purpose                                                |
+| ---------- | ------------------------------------------------------ |
+| Overview   | Platform stats                                         |
+| Categories | Category tree                                          |
+| Products   | Global product view                                    |
+| Inventory  | IMS across orgs, simulated orders, licenses            |
+| Pricing    | Landing pricing plans                                  |
+| Contacts   | Contact submissions + vendor/customer role sync        |
+| Settings   | Branding, checkout catalog, stock availability catalog |
 
 #### Order operations
 
@@ -212,11 +212,11 @@ Superadmin **can** fulfill/cancel orders platform-wide. In normal vendor operati
 
 #### License assignment (per org)
 
-| Flag | Enables |
-|------|---------|
-| `ims_enabled` + expiry | IMS workspace |
+| Flag                       | Enables                     |
+| -------------------------- | --------------------------- |
+| `ims_enabled` + expiry     | IMS workspace               |
 | `ims_multi_branch_enabled` | Branches + branch inventory |
-| `ims_billing_enabled` | POS register |
+| `ims_billing_enabled`      | POS register                |
 
 #### First-time platform bootstrap
 
@@ -233,14 +233,14 @@ Superadmin **can** fulfill/cancel orders platform-wide. In normal vendor operati
 
 Use these **in order** during sandbox QA. Each phase has a live checklist in the vendor console.
 
-| Phase | Focus | Route |
-|-------|-------|-------|
-| **1** | Org setup (profile, bank transfer, checkout options) | `/admin` |
-| **2** | Catalog listings | `/vendor?tab=catalog` |
-| **3** | IMS stock, suppliers, branches | `/vendor?tab=inventory` |
-| **4** | POS register | `/vendor/billing` |
-| **5** | Online order lifecycle (verify/reject/COD/cancel) | `/vendor?tab=inventory&imsTab=orders` |
-| **6** | Public storefront E2E (guest browse + customer checkout) | `/vendor?tab=storefront` |
+| Phase | Focus                                                    | Route                                 |
+| ----- | -------------------------------------------------------- | ------------------------------------- |
+| **1** | Org setup (profile, bank transfer, checkout options)     | `/admin`                              |
+| **2** | Catalog listings                                         | `/vendor?tab=catalog`                 |
+| **3** | IMS stock, suppliers, branches                           | `/vendor?tab=inventory`               |
+| **4** | POS register                                             | `/vendor/billing`                     |
+| **5** | Online order lifecycle (verify/reject/COD/cancel)        | `/vendor?tab=inventory&imsTab=orders` |
+| **6** | Public storefront E2E (guest browse + customer checkout) | `/vendor?tab=storefront`              |
 
 **Recommended test accounts:** one `org:admin` and one `org:member` in the same org, plus a separate signed-in customer account.
 
@@ -268,20 +268,20 @@ Central inventory (source of truth)
 
 ### 6.2 Online checkout totals
 
-| Component | Rule |
-|-----------|------|
-| Subtotal | Sum of line items (server-validated) |
-| Tax | 8% of subtotal |
-| Shipping | $5 flat; free when subtotal > $50; $0 for store pickup |
-| Grand total | Subtotal + tax + shipping (stored on order) |
+| Component   | Rule                                                   |
+| ----------- | ------------------------------------------------------ |
+| Subtotal    | Sum of line items (server-validated)                   |
+| Tax         | 8% of subtotal                                         |
+| Shipping    | $5 flat; free when subtotal > $50; $0 for store pickup |
+| Grand total | Subtotal + tax + shipping (stored on order)            |
 
 ### 6.3 Online checkout — payment vs stock
 
-| Payment | Initial status | Stock timing |
-|---------|----------------|--------------|
-| **Bank transfer** | `pending_payment` | **Reserved/depleted at checkout**; restored on cancel |
-| **COD** | `pending_payment` | **Reserved/depleted at checkout**; restored on cancel |
-| **Bank slip uploaded** | `payment_submitted` | Stock remains depleted until cancel |
+| Payment                | Initial status      | Stock timing                                          |
+| ---------------------- | ------------------- | ----------------------------------------------------- |
+| **Bank transfer**      | `pending_payment`   | **Reserved/depleted at checkout**; restored on cancel |
+| **COD**                | `pending_payment`   | **Reserved/depleted at checkout**; restored on cancel |
+| **Bank slip uploaded** | `payment_submitted` | Stock remains depleted until cancel                   |
 
 Vendor admin **Verify Payment** (bank transfer) or **Mark COD Fulfilled** → `fulfilled`.
 
@@ -310,24 +310,24 @@ Platform catalog (superadmin)
 
 **Built-in options (active):**
 
-| ID | Type | Notes |
-|----|------|-------|
-| `standard_delivery` | Fulfillment | Home delivery |
-| `store_pickup` | Fulfillment | Requires branch; zero shipping |
-| `cash_on_delivery` | Payment | `pending_payment`; delivery only |
-| `bank_transfer` | Payment | `pending_payment`; requires vendor bank details |
+| ID                  | Type        | Notes                                           |
+| ------------------- | ----------- | ----------------------------------------------- |
+| `standard_delivery` | Fulfillment | Home delivery                                   |
+| `store_pickup`      | Fulfillment | Requires branch; zero shipping                  |
+| `cash_on_delivery`  | Payment     | `pending_payment`; delivery only                |
+| `bank_transfer`     | Payment     | `pending_payment`; requires vendor bank details |
 
 **Deprecated:** `pay_online` — filtered from catalog and org settings.
 
 ### 6.6 Order statuses
 
-| Status | Label | Vendor admin actions |
-|--------|-------|----------------------|
-| `pending` | Pending | Cancel |
-| `pending_payment` | Pending Payment | Cancel; COD fulfill; await bank slip |
-| `payment_submitted` | Slip Submitted | Verify payment; reject slip; cancel |
-| `fulfilled` | Fulfilled | Terminal |
-| `cancelled` | Cancelled | Terminal |
+| Status              | Label           | Vendor admin actions                 |
+| ------------------- | --------------- | ------------------------------------ |
+| `pending`           | Pending         | Cancel                               |
+| `pending_payment`   | Pending Payment | Cancel; COD fulfill; await bank slip |
+| `payment_submitted` | Slip Submitted  | Verify payment; reject slip; cancel  |
+| `fulfilled`         | Fulfilled       | Terminal                             |
+| `cancelled`         | Cancelled       | Terminal                             |
 
 Active orders (`pending`, `pending_payment`, `payment_submitted`) can be cancelled by org admin.
 
@@ -397,18 +397,18 @@ psql $DATABASE_URL -f drizzle/0006_order_stock_depleted.sql
 
 ### 7.4 Key source files
 
-| Area | Path |
-|------|------|
-| Cart / checkout | `app/cart/page.tsx`, `app/cart/actions.ts`, `app/context/CartContext.tsx` |
-| Checkout options | `utils/checkoutOptionsShared.ts`, `utils/checkoutOptions.ts` |
-| Bank transfer | `utils/bankTransfer.ts`, `utils/bankTransferServer.ts` |
-| Order payment rules | `utils/orderPayment.ts`, `utils/simulatedOrderTransitions.ts` |
-| Customer portal / slip | `app/(customer)/customer/`, `app/components/PaymentSlipUpload.tsx` |
-| Stock / availability | `utils/stockAvailabilityShared.ts`, `utils/storefrontPurchase.ts` |
-| Vendor orders | `app/(vendor)/vendor/orderActions.ts`, `VendorInventoryWorkspace.tsx` |
-| Vendor IMS/POS | `app/(vendor)/vendor/products/inventoryActions.ts`, `app/(vendor)/vendor/billing/` |
-| Phase checklists | `app/(admin)/admin/page.tsx`, `app/(vendor)/vendor/page.tsx`, `app/(vendor)/vendor/billing/page.tsx` |
-| Schema | `db/schema.ts` |
+| Area                   | Path                                                                                                 |
+| ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| Cart / checkout        | `app/cart/page.tsx`, `app/cart/actions.ts`, `app/context/CartContext.tsx`                            |
+| Checkout options       | `utils/checkoutOptionsShared.ts`, `utils/checkoutOptions.ts`                                         |
+| Bank transfer          | `utils/bankTransfer.ts`, `utils/bankTransferServer.ts`                                               |
+| Order payment rules    | `utils/orderPayment.ts`, `utils/simulatedOrderTransitions.ts`                                        |
+| Customer portal / slip | `app/(customer)/customer/`, `app/components/PaymentSlipUpload.tsx`                                   |
+| Stock / availability   | `utils/stockAvailabilityShared.ts`, `utils/storefrontPurchase.ts`                                    |
+| Vendor orders          | `app/(vendor)/vendor/orderActions.ts`, `VendorInventoryWorkspace.tsx`                                |
+| Vendor IMS/POS         | `app/(vendor)/vendor/products/inventoryActions.ts`, `app/(vendor)/vendor/billing/`                   |
+| Phase checklists       | `app/(admin)/admin/page.tsx`, `app/(vendor)/vendor/page.tsx`, `app/(vendor)/vendor/billing/page.tsx` |
+| Schema                 | `db/schema.ts`                                                                                       |
 
 ---
 
@@ -474,18 +474,18 @@ Home delivery              → depletes central + reduces branch allocations
 
 ## 9. Limitation board (decision log)
 
-| Question | MVP answer |
-|----------|------------|
-| Do we process real card payments? | **No** |
-| Can guests checkout without signing in? | **No** — sign in required |
+| Question                                    | MVP answer                                      |
+| ------------------------------------------- | ----------------------------------------------- |
+| Do we process real card payments?           | **No**                                          |
+| Can guests checkout without signing in?     | **No** — sign in required                       |
 | Do vendors fulfill their own online orders? | **Yes** — org admin on IMS Simulated Orders tab |
-| Can COD + pickup be combined? | **No** |
-| Is tax legally correct? | **No** — 8% display estimate |
-| Multi-vendor cart settlement? | **No** — single order, one total |
-| Real-time inventory across warehouses? | **Partial** — central + branch rules |
-| Email order confirmations? | **Yes** — when SMTP is configured |
-| Public API for third parties? | **No** |
-| Is `pay_online` available? | **No** — deprecated |
+| Can COD + pickup be combined?               | **No**                                          |
+| Is tax legally correct?                     | **No** — 8% display estimate                    |
+| Multi-vendor cart settlement?               | **No** — single order, one total                |
+| Real-time inventory across warehouses?      | **Partial** — central + branch rules            |
+| Email order confirmations?                  | **Yes** — when SMTP is configured               |
+| Public API for third parties?               | **No**                                          |
+| Is `pay_online` available?                  | **No** — deprecated                             |
 
 ---
 
@@ -514,17 +514,17 @@ Use before demo or sandbox go-live:
 
 ## 11. Glossary
 
-| Term | Meaning |
-|------|---------|
-| **Simulated order** | Online checkout record; not a real payment capture |
-| **Central inventory** | Org-wide stock pool (`inventory` table) |
-| **Branch inventory** | Per-branch allocation (`branch_inventory` table) |
-| **COD** | Cash on Delivery → `pending_payment`; vendor marks fulfilled |
-| **Bank transfer** | Manual payment → slip upload → vendor verifies |
-| **IMS** | Inventory Management System (premium license) |
-| **POS** | Point of Sale billing register (premium license) |
-| **Intersection** | Cart checkout options = enabled by every vendor in cart |
-| **Stock depleted flag** | `stock_depleted` on order — controls cancel stock restore |
+| Term                    | Meaning                                                      |
+| ----------------------- | ------------------------------------------------------------ |
+| **Simulated order**     | Online checkout record; not a real payment capture           |
+| **Central inventory**   | Org-wide stock pool (`inventory` table)                      |
+| **Branch inventory**    | Per-branch allocation (`branch_inventory` table)             |
+| **COD**                 | Cash on Delivery → `pending_payment`; vendor marks fulfilled |
+| **Bank transfer**       | Manual payment → slip upload → vendor verifies               |
+| **IMS**                 | Inventory Management System (premium license)                |
+| **POS**                 | Point of Sale billing register (premium license)             |
+| **Intersection**        | Cart checkout options = enabled by every vendor in cart      |
+| **Stock depleted flag** | `stock_depleted` on order — controls cancel stock restore    |
 
 ---
 
@@ -532,17 +532,17 @@ Use before demo or sandbox go-live:
 
 Items identified in audits that are **not** fully closed:
 
-| Item | Status |
-|------|--------|
-| Cart quantity not capped to available stock at UI level | Open — fails at checkout |
-| `syncCartPrices` does not remove non-purchasable/out-of-stock items | Open |
-| Vendor stock-availability edit UI | Partial — server action exists, IMS UI not fully wired |
-| Unassigned multi-branch member sees all branches on Add Item | Open — server rejects; UX confusing |
-| Premium license cache (~5 min) | By design — revocation may lag briefly |
-| Automated vendor/customer RBAC integration tests | Open |
-| Multi-vendor order vendor subtotals display | Partial |
-| Real payment gateway integration | Out of scope |
-| Fulfilled → cancelled edge cases | Partial |
+| Item                                                                | Status                                                 |
+| ------------------------------------------------------------------- | ------------------------------------------------------ |
+| Cart quantity not capped to available stock at UI level             | Open — fails at checkout                               |
+| `syncCartPrices` does not remove non-purchasable/out-of-stock items | Open                                                   |
+| Vendor stock-availability edit UI                                   | Partial — server action exists, IMS UI not fully wired |
+| Unassigned multi-branch member sees all branches on Add Item        | Open — server rejects; UX confusing                    |
+| Premium license cache (~5 min)                                      | By design — revocation may lag briefly                 |
+| Automated vendor/customer RBAC integration tests                    | Open                                                   |
+| Multi-vendor order vendor subtotals display                         | Partial                                                |
+| Real payment gateway integration                                    | Out of scope                                           |
+| Fulfilled → cancelled edge cases                                    | Partial                                                |
 
 **Recently addressed (for reference):**
 
@@ -557,15 +557,15 @@ Items identified in audits that are **not** fully closed:
 
 Run in **incognito** unless noted.
 
-| Step | Action | Pass criteria |
-|------|--------|---------------|
-| 1 | Open site (use **`https://www.dilstar.pp.ua`** only — not bare domain) | No repeated full-screen language block after first visit |
-| 2 | Browse `/products`, add **2 in-stock items** to cart | Cart badge shows 2 |
-| 3 | Open `/cart` | Items visible; no flash of “empty cart” before load completes |
-| 4 | Click **Sign In to Checkout** and complete sign-in | Return to `/cart` with **both items** still present |
-| 5 | After sign-in | Green toast: “Cart restored / synced — N items ready” (if items merged) |
-| 6 | Refresh `/cart` while signed in | Same items remain |
-| 7 | Sign out, sign back in | Cart still merges from localStorage + server |
+| Step | Action                                                                 | Pass criteria                                                           |
+| ---- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 1    | Open site (use **`https://www.dilstar.pp.ua`** only — not bare domain) | No repeated full-screen language block after first visit                |
+| 2    | Browse `/products`, add **2 in-stock items** to cart                   | Cart badge shows 2                                                      |
+| 3    | Open `/cart`                                                           | Items visible; no flash of “empty cart” before load completes           |
+| 4    | Click **Sign In to Checkout** and complete sign-in                     | Return to `/cart` with **both items** still present                     |
+| 5    | After sign-in                                                          | Green toast: “Cart restored / synced — N items ready” (if items merged) |
+| 6    | Refresh `/cart` while signed in                                        | Same items remain                                                       |
+| 7    | Sign out, sign back in                                                 | Cart still merges from localStorage + server                            |
 
 **Failure signals to report:**
 
@@ -576,4 +576,4 @@ Run in **incognito** unless noted.
 
 ---
 
-*Last updated: June 2026 — Phase 0 guest cart/sign-in, sign-in checkout, bank transfer slip flow, vendor order ops, phase checklists.*
+_Last updated: June 2026 — Phase 0 guest cart/sign-in, sign-in checkout, bank transfer slip flow, vendor order ops, phase checklists._

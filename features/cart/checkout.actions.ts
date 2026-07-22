@@ -1,34 +1,43 @@
-'use server';
+"use server";
 
-import { currentUser, clerkClient } from '@clerk/nextjs/server';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { handleApiError } from '@/shared/errors/error-handler';
-import { getNormalizedClerkUserEmail } from '@/features/customer/email';
-import { resolveInitialOrderStatus } from '@/features/organization/checkout-options.shared';
-import { resolveCheckoutOptionsForOrgs } from '@/features/organization/checkout-options';
-import { calculateCheckoutTotals } from '@/features/billing/checkout-totals';
-import { isBankTransferPayment } from '@/features/billing/bank-transfer';
-import { getBankTransferDetailsForOrgs } from '@/features/billing/bank-transfer.server';
-import { logger } from '@/shared/logging/logger';
+import { currentUser, clerkClient } from "@clerk/nextjs/server";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { handleApiError } from "@/shared/errors/error-handler";
+import { getNormalizedClerkUserEmail } from "@/features/customer/email";
+import { resolveInitialOrderStatus } from "@/features/organization/checkout-options.shared";
+import { resolveCheckoutOptionsForOrgs } from "@/features/organization/checkout-options";
+import { calculateCheckoutTotals } from "@/features/billing/checkout-totals";
+import { isBankTransferPayment } from "@/features/billing/bank-transfer";
+import { getBankTransferDetailsForOrgs } from "@/features/billing/bank-transfer.server";
+import { logger } from "@/shared/logging/logger";
 import {
   checkoutSchema,
   sendCartEmailSchema,
   type CartLineInput,
   type CheckoutItemInput,
-} from '@/features/cart/schema';
-import { aggregateCheckoutItems, type CheckoutTransactionResult } from '@/features/cart/checkout.helpers';
-import { z } from 'zod/v3';
-import { validateFulfillment, validateShippingAddress } from './services/fulfillment.service';
-import { validatePayment } from './services/payment.service';
-import { executeCheckoutTransaction } from './services/checkout-transaction.service';
-import { validateAndPrepareCartItems, processCheckoutSuccess } from './services/checkout-validation.service';
+} from "@/features/cart/schema";
+import {
+  aggregateCheckoutItems,
+  type CheckoutTransactionResult,
+} from "@/features/cart/checkout.helpers";
+import { z } from "zod/v3";
+import { validateFulfillment, validateShippingAddress } from "./services/fulfillment.service";
+import { validatePayment } from "./services/payment.service";
+import { executeCheckoutTransaction } from "./services/checkout-transaction.service";
+import {
+  validateAndPrepareCartItems,
+  processCheckoutSuccess,
+} from "./services/checkout-validation.service";
 
 // Services
-import { sendCartSummaryEmailService } from './services/cart-email.service';
-import { getCheckoutOptionsService, fetchBranchesForOrgs } from './services/checkout-options.service';
-import { syncCartPricesService } from './services/cart-sync.service';
+import { sendCartSummaryEmailService } from "./services/cart-email.service";
+import {
+  getCheckoutOptionsService,
+  fetchBranchesForOrgs,
+} from "./services/checkout-options.service";
+import { syncCartPricesService } from "./services/cart-sync.service";
 
-import { authenticatedAction, ActionError } from '@/lib/safe-action';
+import { authenticatedAction, ActionError } from "@/lib/safe-action";
 
 const syncCartSchema = z.array(z.string().uuid()).max(50);
 
@@ -41,19 +50,19 @@ export const getCustomerDeliveryDetailsAction = authenticatedAction
 
       if (user && user.privateMetadata) {
         return {
-          shippingAddress: (user.privateMetadata.shippingAddress as string) || '',
-          shippingAddressLine2: (user.privateMetadata.shippingAddressLine2 as string) || '',
-          shippingCity: (user.privateMetadata.shippingCity as string) || '',
-          shippingState: (user.privateMetadata.shippingState as string) || '',
-          shippingPostalCode: (user.privateMetadata.shippingPostalCode as string) || '',
-          shippingCountry: (user.privateMetadata.shippingCountry as string) || '',
-          shippingPhone: (user.privateMetadata.shippingPhone as string) || '',
-          shippingPhone2: (user.privateMetadata.shippingPhone2 as string) || '',
+          shippingAddress: (user.privateMetadata.shippingAddress as string) || "",
+          shippingAddressLine2: (user.privateMetadata.shippingAddressLine2 as string) || "",
+          shippingCity: (user.privateMetadata.shippingCity as string) || "",
+          shippingState: (user.privateMetadata.shippingState as string) || "",
+          shippingPostalCode: (user.privateMetadata.shippingPostalCode as string) || "",
+          shippingCountry: (user.privateMetadata.shippingCountry as string) || "",
+          shippingPhone: (user.privateMetadata.shippingPhone as string) || "",
+          shippingPhone2: (user.privateMetadata.shippingPhone2 as string) || "",
         };
       }
       return null;
     } catch (error: unknown) {
-      const apiError = handleApiError(error, 'Failed to get customer delivery details from Clerk');
+      const apiError = handleApiError(error, "Failed to get customer delivery details from Clerk");
       logger.error(apiError.message, { error });
       return null;
     }
@@ -72,11 +81,11 @@ export const sendCartSummaryEmailAction = authenticatedAction
           quantity: z.number().int().min(1),
           vendorName: z.string(),
           type: z.string(),
-        })
+        }),
       ),
       cartTotal: z.number().nonnegative(),
       zeroShipping: z.boolean().optional().default(false),
-    })
+    }),
   )
   .action(async ({ parsedInput, ctx }) => {
     try {
@@ -86,29 +95,39 @@ export const sendCartSummaryEmailAction = authenticatedAction
         cartTotal: parsedInput.cartTotal,
       });
       if (!parsedCartInput.success) {
-        return { success: false, error: parsedCartInput.error.issues[0]?.message || 'Invalid input data.' };
+        return {
+          success: false,
+          error: parsedCartInput.error.issues[0]?.message || "Invalid input data.",
+        };
       }
 
       const { cartItems: validatedItems } = parsedCartInput.data;
 
       const user = await currentUser();
       if (!user) {
-        return { success: false, error: 'Authentication session is invalid. Please sign in again.' };
+        return {
+          success: false,
+          error: "Authentication session is invalid. Please sign in again.",
+        };
       }
 
       const validatedEmail = getNormalizedClerkUserEmail(user);
       if (!validatedEmail) {
         return {
           success: false,
-          error: 'Your account does not have an email address. Please update your profile first.',
+          error: "Your account does not have an email address. Please update your profile first.",
         };
       }
 
       await rateLimit(3, 60 * 1000);
 
-      return await sendCartSummaryEmailService(validatedItems, validatedEmail, parsedInput.zeroShipping);
+      return await sendCartSummaryEmailService(
+        validatedItems,
+        validatedEmail,
+        parsedInput.zeroShipping,
+      );
     } catch (error: unknown) {
-      const apiError = handleApiError(error, 'Failed to send cart summary email');
+      const apiError = handleApiError(error, "Failed to send cart summary email");
       logger.error(apiError.message, { error });
       return { success: false, error: apiError.message };
     }
@@ -118,7 +137,7 @@ export const syncCartPricesAction = authenticatedAction
   .schema(
     z.object({
       productIds: syncCartSchema,
-    })
+    }),
   )
   .action(async ({ parsedInput }) => {
     try {
@@ -131,9 +150,9 @@ export const syncCartPricesAction = authenticatedAction
 
       return await syncCartPricesService(uniqueIds);
     } catch (error: unknown) {
-      const apiError = handleApiError(error, 'Failed to sync cart prices');
+      const apiError = handleApiError(error, "Failed to sync cart prices");
       logger.error(apiError.message, { error });
-      return { success: false as const, error: 'Failed to refresh cart prices.' };
+      return { success: false as const, error: "Failed to refresh cart prices." };
     }
   });
 
@@ -145,18 +164,21 @@ export const getCartCheckoutOptionsAction = authenticatedAction
           id: z.string(),
           quantity: z.number(),
           price: z.number(),
-        })
+        }),
       ),
       checkoutVendorOrgId: z.string().nullable().optional(),
-    })
+    }),
   )
   .action(async ({ parsedInput }) => {
     try {
-      return await getCheckoutOptionsService(parsedInput.cartLines, parsedInput.checkoutVendorOrgId);
+      return await getCheckoutOptionsService(
+        parsedInput.cartLines,
+        parsedInput.checkoutVendorOrgId,
+      );
     } catch (error: unknown) {
-      const apiError = handleApiError(error, 'Failed to load checkout options');
+      const apiError = handleApiError(error, "Failed to load checkout options");
       logger.error(apiError.message, { error });
-      return { success: false as const, error: 'Failed to load checkout options.' };
+      return { success: false as const, error: "Failed to load checkout options." };
     }
   });
 
@@ -164,7 +186,7 @@ export const simulatedCheckoutAction = authenticatedAction
   .schema(
     checkoutSchema.extend({
       idempotencyKey: z.string().uuid().optional().nullable(),
-    })
+    }),
   )
   .action(async ({ parsedInput, ctx }) => {
     try {
@@ -189,14 +211,18 @@ export const simulatedCheckoutAction = authenticatedAction
 
       const user = await currentUser();
       if (!user) {
-        return { success: false, error: 'Authentication session is invalid. Please sign in again.' };
+        return {
+          success: false,
+          error: "Authentication session is invalid. Please sign in again.",
+        };
       }
 
       const sessionEmail = getNormalizedClerkUserEmail(user);
       if (!sessionEmail) {
         return {
           success: false,
-          error: 'Your account does not have an email address. Please update your profile before checkout.',
+          error:
+            "Your account does not have an email address. Please update your profile before checkout.",
         };
       }
       const email = sessionEmail;
@@ -204,30 +230,17 @@ export const simulatedCheckoutAction = authenticatedAction
 
       await rateLimit(5, 60 * 1000);
 
-      if (idempotencyKey) {
-        const { checkIdempotencyKey } = await import('@/shared/security/idempotency');
-        const isNewRequest = await checkIdempotencyKey(idempotencyKey);
-        if (!isNewRequest) {
-          return { success: false, error: 'This order is already being processed. Please wait or refresh the page.' };
-        }
-      }
-
       const validationResult = await validateAndPrepareCartItems(
         aggregatedItems,
-        checkoutVendorOrgIdInput || null
+        checkoutVendorOrgIdInput || null,
       );
 
       if (!validationResult.success) {
         return { success: false as const, error: validationResult.error! };
       }
 
-      const {
-        verifiedItems,
-        serverSubtotal,
-        vendorOrgIds,
-        uniqueItemIds,
-        availabilityCatalog,
-      } = validationResult;
+      const { verifiedItems, serverSubtotal, vendorOrgIds, uniqueItemIds, availabilityCatalog } =
+        validationResult;
 
       const { branchRows, branchesByOrg } = await fetchBranchesForOrgs(vendorOrgIds);
 
@@ -236,10 +249,13 @@ export const simulatedCheckoutAction = authenticatedAction
       const paymentOption = resolvedOptions.payment.find((o) => o.id === payment);
 
       if (!fulfillmentOption) {
-        return { success: false, error: 'Selected fulfillment method is not available for this cart.' };
+        return {
+          success: false,
+          error: "Selected fulfillment method is not available for this cart.",
+        };
       }
       if (!paymentOption) {
-        return { success: false, error: 'Selected payment method is not available for this cart.' };
+        return { success: false, error: "Selected payment method is not available for this cart." };
       }
 
       const bankDetailsByOrg = isBankTransferPayment(payment)
@@ -293,7 +309,7 @@ export const simulatedCheckoutAction = authenticatedAction
 
       const checkoutTotals = calculateCheckoutTotals(
         serverSubtotal,
-        fulfillmentOption.zeroShipping === true
+        fulfillmentOption.zeroShipping === true,
       );
       if (checkoutTotals.grandTotal !== clientGrandTotal) {
         return {
@@ -308,6 +324,17 @@ export const simulatedCheckoutAction = authenticatedAction
         fulfillmentOption.requiresBranch && !isVirtualOrSingleBranchOrg ? pickupBranch : null;
 
       verifiedItems.sort((a, b) => a.id.localeCompare(b.id));
+
+      if (idempotencyKey) {
+        const { checkIdempotencyKey } = await import("@/shared/security/idempotency");
+        const isNewRequest = await checkIdempotencyKey(idempotencyKey);
+        if (!isNewRequest) {
+          return {
+            success: false,
+            error: "This order is already being processed. Please wait or refresh the page.",
+          };
+        }
+      }
 
       const MAX_RETRIES = 3;
       let txResult: CheckoutTransactionResult | null = null;
@@ -354,10 +381,10 @@ export const simulatedCheckoutAction = authenticatedAction
       }
 
       if (!txResult) {
-        logger.error('Checkout DB transaction failed permanently', { error: txError });
+        logger.error("Checkout DB transaction failed permanently", { error: txError });
         return {
           success: false,
-          error: 'A database error occurred while processing your order. Please try again.',
+          error: "A database error occurred while processing your order. Please try again.",
         };
       }
 
@@ -379,7 +406,7 @@ export const simulatedCheckoutAction = authenticatedAction
 
       return successResult;
     } catch (error: unknown) {
-      const apiError = handleApiError(error, 'Checkout failed');
+      const apiError = handleApiError(error, "Checkout failed");
       return { success: false, error: apiError.message };
     }
   });

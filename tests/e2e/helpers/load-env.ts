@@ -1,5 +1,5 @@
-import path from 'node:path';
-import dotenv from 'dotenv';
+import path from "node:path";
+import dotenv from "dotenv";
 
 let loaded = false;
 
@@ -8,7 +8,7 @@ export function loadE2EEnv(): void {
   if (loaded) {
     return;
   }
-  dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+  dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
   process.env.CLERK_PUBLISHABLE_KEY ??= process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   loaded = true;
 }

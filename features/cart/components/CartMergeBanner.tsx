@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useCart } from '@/features/cart/context/cart-context';
+import { useEffect } from "react";
+import { useCart } from "@/features/cart/context/cart-context";
 
 const AUTO_DISMISS_MS = 4000;
 

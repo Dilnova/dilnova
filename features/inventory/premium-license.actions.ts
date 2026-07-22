@@ -1,13 +1,13 @@
-'use server';
+"use server";
 
-import { clerkClient } from '@clerk/nextjs/server';
-import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
-import { getPremiumStatus } from './premium-license';
-import { authenticatedAction, ActionError } from '@/lib/safe-action';
-import { z } from 'zod/v3';
+import { clerkClient } from "@clerk/nextjs/server";
+import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
+import { getPremiumStatus } from "./premium-license";
+import { authenticatedAction, ActionError } from "@/lib/safe-action";
+import { z } from "zod/v3";
 
 const actionSchema = z.object({
-  orgId: z.string().min(1, 'Organization ID is required.'),
+  orgId: z.string().min(1, "Organization ID is required."),
 });
 
 export const getPremiumStatusAction = authenticatedAction
@@ -21,7 +21,7 @@ export const getPremiumStatusAction = authenticatedAction
       const client = await clerkClient();
       const user = await client.users.getUser(ctx.userId);
       if (!isSuperAdminUser(user)) {
-        throw new ActionError('Unauthorized: You do not have access to this organization.');
+        throw new ActionError("Unauthorized: You do not have access to this organization.");
       }
     }
 

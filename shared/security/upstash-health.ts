@@ -1,5 +1,5 @@
-import { Redis } from '@upstash/redis';
-import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
 
 export type UpstashRateLimitProbe = {
   configured: boolean;
@@ -8,7 +8,7 @@ export type UpstashRateLimitProbe = {
   urlLooksValid: boolean;
   pingOk: boolean;
   limitOk: boolean;
-  status: 'ok' | 'missing_env' | 'invalid_url' | 'ping_failed' | 'limit_failed';
+  status: "ok" | "missing_env" | "invalid_url" | "ping_failed" | "limit_failed";
   hint: string;
   error?: string;
 };
@@ -34,7 +34,10 @@ export function readUpstashEnv(): { url?: string; token?: string } {
 export function isValidUpstashRestUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'https:' && (parsed.hostname === 'upstash.io' || parsed.hostname.endsWith('.upstash.io'));
+    return (
+      parsed.protocol === "https:" &&
+      (parsed.hostname === "upstash.io" || parsed.hostname.endsWith(".upstash.io"))
+    );
   } catch {
     return false;
   }
@@ -53,8 +56,8 @@ export async function probeUpstashRateLimit(): Promise<UpstashRateLimitProbe> {
       urlLooksValid: false,
       pingOk: false,
       limitOk: false,
-      status: 'missing_env',
-      hint: 'Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel Production env, then redeploy.',
+      status: "missing_env",
+      hint: "Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel Production env, then redeploy.",
     };
   }
 
@@ -66,16 +69,16 @@ export async function probeUpstashRateLimit(): Promise<UpstashRateLimitProbe> {
       urlLooksValid: false,
       pingOk: false,
       limitOk: false,
-      status: 'invalid_url',
-      hint: 'Use the REST URL from Upstash (https://....upstash.io), not the rediss:// connection string.',
-      error: 'UPSTASH_REDIS_REST_URL must be an https://....upstash.io REST endpoint.',
+      status: "invalid_url",
+      hint: "Use the REST URL from Upstash (https://....upstash.io), not the rediss:// connection string.",
+      error: "UPSTASH_REDIS_REST_URL must be an https://....upstash.io REST endpoint.",
     };
   }
 
   try {
     const redis = new Redis({ url, token });
     const ping = await redis.ping();
-    if (ping !== 'PONG') {
+    if (ping !== "PONG") {
       return {
         configured: true,
         urlPresent,
@@ -83,18 +86,18 @@ export async function probeUpstashRateLimit(): Promise<UpstashRateLimitProbe> {
         urlLooksValid: true,
         pingOk: false,
         limitOk: false,
-        status: 'ping_failed',
-        hint: 'Upstash ping did not return PONG. Verify the database is active and the token matches this URL.',
+        status: "ping_failed",
+        hint: "Upstash ping did not return PONG. Verify the database is active and the token matches this URL.",
         error: `Unexpected ping response: ${String(ping)}`,
       };
     }
 
     const client = new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(3, '60 s'),
-      prefix: '@upstash/ratelimit-health',
+      limiter: Ratelimit.slidingWindow(3, "60 s"),
+      prefix: "@upstash/ratelimit-health",
     });
-    const result = await client.limit('health-probe');
+    const result = await client.limit("health-probe");
 
     if (!result.success && result.remaining === 0 && result.limit === 0) {
       return {
@@ -104,9 +107,9 @@ export async function probeUpstashRateLimit(): Promise<UpstashRateLimitProbe> {
         urlLooksValid: true,
         pingOk: true,
         limitOk: false,
-        status: 'limit_failed',
-        hint: 'Upstash ping works but rate limit call failed. Check token permissions for this database.',
-        error: 'Ratelimit.limit returned an unexpected result.',
+        status: "limit_failed",
+        hint: "Upstash ping works but rate limit call failed. Check token permissions for this database.",
+        error: "Ratelimit.limit returned an unexpected result.",
       };
     }
 
@@ -117,11 +120,11 @@ export async function probeUpstashRateLimit(): Promise<UpstashRateLimitProbe> {
       urlLooksValid: true,
       pingOk: true,
       limitOk: true,
-      status: 'ok',
-      hint: 'Upstash rate limiting is configured and reachable.',
+      status: "ok",
+      hint: "Upstash rate limiting is configured and reachable.",
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown Upstash error';
+    const message = error instanceof Error ? error.message : "Unknown Upstash error";
     return {
       configured: true,
       urlPresent,
@@ -129,11 +132,14 @@ export async function probeUpstashRateLimit(): Promise<UpstashRateLimitProbe> {
       urlLooksValid: isValidUpstashRestUrl(url),
       pingOk: false,
       limitOk: false,
-      status: message.includes('401') || message.toLowerCase().includes('unauthorized') ? 'ping_failed' : 'limit_failed',
+      status:
+        message.includes("401") || message.toLowerCase().includes("unauthorized")
+          ? "ping_failed"
+          : "limit_failed",
       hint:
-        message.includes('401') || message.toLowerCase().includes('unauthorized')
-          ? 'Upstash rejected the token (401). Copy a fresh UPSTASH_REDIS_REST_TOKEN from the Upstash REST API tab.'
-          : 'Upstash request failed. Confirm URL + token belong to the same database and redeploy.',
+        message.includes("401") || message.toLowerCase().includes("unauthorized")
+          ? "Upstash rejected the token (401). Copy a fresh UPSTASH_REDIS_REST_TOKEN from the Upstash REST API tab."
+          : "Upstash request failed. Confirm URL + token belong to the same database and redeploy.",
       error: message,
     };
   }

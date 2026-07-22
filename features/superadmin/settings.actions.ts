@@ -1,18 +1,18 @@
-'use server';
+"use server";
 
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { revalidateVendorConsole } from '@/features/vendor/revalidate';
-import { updateSystemSettingSchema } from '@/features/superadmin/schema';
-import { updateCheckoutOptionsCatalogSchema } from '@/features/superadmin/schema';
-import { CHECKOUT_OPTIONS_CATALOG_KEY } from '@/features/organization/checkout-options.shared';
-import { syncSettingToRedis } from '@/shared/platform/settings';
-import { superadminAction, ActionError } from '@/lib/safe-action';
-import { logAuditAction } from '@/shared/audit/logger';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { rateLimit } from '@/shared/security/rate-limit';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq } from "drizzle-orm";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateVendorConsole } from "@/features/vendor/revalidate";
+import { updateSystemSettingSchema } from "@/features/superadmin/schema";
+import { updateCheckoutOptionsCatalogSchema } from "@/features/superadmin/schema";
+import { CHECKOUT_OPTIONS_CATALOG_KEY } from "@/features/organization/checkout-options.shared";
+import { syncSettingToRedis } from "@/shared/platform/settings";
+import { superadminAction, ActionError } from "@/lib/safe-action";
+import { logAuditAction } from "@/shared/audit/logger";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { rateLimit } from "@/shared/security/rate-limit";
 
 /**
  * Enterprise Server Action to configure system-wide parameters (e.g., max media upload limit).
@@ -29,10 +29,14 @@ export const updateSystemSettingAction = superadminAction
           const payload = JSON.parse(parsedInput.value);
           const catalogParsed = updateCheckoutOptionsCatalogSchema.safeParse({ options: payload });
           if (!catalogParsed.success) {
-            throw new ActionError(`Strict validation failed for catalog options: ${catalogParsed.error.issues[0]?.message}`);
+            throw new ActionError(
+              `Strict validation failed for catalog options: ${catalogParsed.error.issues[0]?.message}`,
+            );
           }
         } catch (err) {
-          throw new ActionError(`Invalid JSON payload for checkout options catalog: ${err instanceof Error ? err.message : String(err)}`);
+          throw new ActionError(
+            `Invalid JSON payload for checkout options catalog: ${err instanceof Error ? err.message : String(err)}`,
+          );
         }
       }
 
@@ -65,18 +69,18 @@ export const updateSystemSettingAction = superadminAction
 
       await logAuditAction({
         userId: ctx.userId,
-        action: 'UPDATE_SYSTEM_SETTING',
-        targetType: 'system_setting',
+        action: "UPDATE_SYSTEM_SETTING",
+        targetType: "system_setting",
         targetId: parsedInput.key,
         metadata: { value: parsedInput.value },
         strict: true,
       });
 
       // Clear cache for admin panels and vendor portals to reflect configuration updates immediately
-      revalidateTag('system-settings', 'max');
-      revalidatePath('/superadmin');
+      revalidateTag("system-settings", "max");
+      revalidatePath("/superadmin");
       revalidateVendorConsole();
-      revalidatePath('/', 'layout');
+      revalidatePath("/", "layout");
 
       return { success: true };
     });

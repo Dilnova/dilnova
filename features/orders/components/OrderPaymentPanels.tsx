@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { isActiveSimulatedOrder } from '@/features/orders/status';
+import Image from "next/image";
+import { isActiveSimulatedOrder } from "@/features/orders/status";
 import {
   canFulfillCodOrder,
   canUploadPaymentSlip,
   canVerifyBankTransferPayment,
-} from '@/features/orders/payment.rules';
-import { isBankTransferPayment } from '@/features/billing/bank-transfer';
-import PaymentSlipUpload from '@/features/orders/components/PaymentSlipUpload';
+} from "@/features/orders/payment.rules";
+import { isBankTransferPayment } from "@/features/billing/bank-transfer";
+import PaymentSlipUpload from "@/features/orders/components/PaymentSlipUpload";
 
 interface VendorOrderPaymentPanelProps {
   order: {
@@ -40,13 +40,15 @@ export function VendorOrderPaymentPanel({
   const verifyBank = canVerifyBankTransferPayment(order);
   const fulfillCod = canFulfillCodOrder(order);
   const awaitingSlip =
-    isBankTransferPayment(order.paymentMethod) && order.status === 'pending_payment';
+    isBankTransferPayment(order.paymentMethod) && order.status === "pending_payment";
 
   return (
     <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 mt-3 space-y-3">
       {showSlip && order.paymentSlipPreviewUrl && (
         <div className="space-y-2">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Payment slip</p>
+          <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+            Payment slip
+          </p>
           <a
             href={order.paymentSlipPreviewUrl}
             target="_blank"
@@ -128,7 +130,7 @@ interface CustomerPaymentSlipSectionProps {
 
 export function CustomerPaymentSlipSection({ order }: CustomerPaymentSlipSectionProps) {
   if (!canUploadPaymentSlip(order)) {
-    if (order.status === 'payment_submitted') {
+    if (order.status === "payment_submitted") {
       return (
         <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
           Your payment slip was submitted and is awaiting vendor verification.

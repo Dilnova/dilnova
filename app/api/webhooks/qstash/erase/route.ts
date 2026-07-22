@@ -1,25 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, inArray } from 'drizzle-orm';
-import { clerkClient } from '@clerk/nextjs/server';
-import { logger } from '@/shared/logging/logger';
-import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
-import { Redis } from '@upstash/redis';
-import { logAuditAction } from '@/shared/audit/logger';
-import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq, inArray } from "drizzle-orm";
+import { clerkClient } from "@clerk/nextjs/server";
+import { logger } from "@/shared/logging/logger";
+import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
+import { Redis } from "@upstash/redis";
+import { logAuditAction } from "@/shared/audit/logger";
+import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
 
 export const maxDuration = 300;
 
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+  url: process.env.UPSTASH_REDIS_REST_URL || "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
 });
 
 async function handler(req: NextRequest) {
-  const messageId = req.headers.get('upstash-message-id');
+  const messageId = req.headers.get("upstash-message-id");
   if (!messageId) {
-    return NextResponse.json({ error: 'Missing upstash-message-id' }, { status: 400 });
+    return NextResponse.json({ error: "Missing upstash-message-id" }, { status: 400 });
   }
 
   try {
@@ -27,21 +27,26 @@ async function handler(req: NextRequest) {
     const isDone = await redis.get(`erase:msg_id:${messageId}:done`);
     if (isDone) {
       logger.info(`Idempotency caught duplicate execution for QStash message ${messageId}`);
-      return NextResponse.json({ success: true, message: 'Duplicate message ignored' }, { status: 200 });
+      return NextResponse.json(
+        { success: true, message: "Duplicate message ignored" },
+        { status: 200 },
+      );
     }
 
     // Acquire a short-lived processing lock to prevent concurrent identical deliveries
     const lock = await redis.set(`erase:msg_id:${messageId}:lock`, "1", { nx: true, ex: 120 });
     if (!lock) {
-      logger.warn(`QStash message ${messageId} is currently being processed. Returning 409 to trigger retry.`);
-      return NextResponse.json({ error: 'Currently processing' }, { status: 409 });
+      logger.warn(
+        `QStash message ${messageId} is currently being processed. Returning 409 to trigger retry.`,
+      );
+      return NextResponse.json({ error: "Currently processing" }, { status: 409 });
     }
 
     const body = await req.json();
     const { targetUserId, adminUserId } = body;
 
     if (!targetUserId || !adminUserId) {
-      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
     const client = await clerkClient();
@@ -51,19 +56,25 @@ async function handler(req: NextRequest) {
       const clerkUser = await client.users.getUser(targetUserId);
       email = clerkUser.emailAddresses[0]?.emailAddress?.toLowerCase() || null;
       if (!isSuperAdminUser(clerkUser)) {
-         await client.users.deleteUser(targetUserId);
-         clerkProfileDeleted = true;
+        await client.users.deleteUser(targetUserId);
+        clerkProfileDeleted = true;
       }
     } catch (e: unknown) {
-      const isNotFound = typeof e === 'object' && e !== null && (
-        ('status' in e && e.status === 404) ||
-        ('errors' in e && Array.isArray((e as any).errors) && (e as any).errors[0]?.code === 'resource_not_found')
-      );
-      
+      const isNotFound =
+        typeof e === "object" &&
+        e !== null &&
+        (("status" in e && e.status === 404) ||
+          ("errors" in e &&
+            Array.isArray((e as any).errors) &&
+            (e as any).errors[0]?.code === "resource_not_found"));
+
       if (isNotFound) {
         logger.info(`Clerk user ${targetUserId} already deleted or not found.`);
       } else {
-        logger.error('Unexpected error fetching or deleting user from Clerk during GDPR erasure', e instanceof Error ? e.message : String(e));
+        logger.error(
+          "Unexpected error fetching or deleting user from Clerk during GDPR erasure",
+          e instanceof Error ? e.message : String(e),
+        );
       }
     }
 
@@ -73,83 +84,106 @@ async function handler(req: NextRequest) {
     let paymentSlipUrls: string[] = [];
 
     await db.transaction(async (tx) => {
-      const orders = await tx.select().from(schema.simulatedOrders).where(eq(schema.simulatedOrders.customerUserId, targetUserId));
+      const orders = await tx
+        .select()
+        .from(schema.simulatedOrders)
+        .where(eq(schema.simulatedOrders.customerUserId, targetUserId));
       ordersAnonymized = orders.length;
-      paymentSlipUrls = orders.map(o => o.paymentSlipUrl).filter(Boolean) as string[];
+      paymentSlipUrls = orders.map((o) => o.paymentSlipUrl).filter(Boolean) as string[];
 
       if (orders.length > 0) {
-        await tx.update(schema.simulatedOrders).set({
-          customerName: 'GDPR REDACTED',
-          customerEmail: 'redacted@example.com',
-          customerUserId: null,
-          shippingAddress: 'REDACTED',
-          shippingAddressLine2: 'REDACTED',
-          shippingCity: 'REDACTED',
-          shippingState: 'REDACTED',
-          shippingPostalCode: 'REDACTED',
-          shippingCountry: 'REDACTED',
-          shippingPhone: 'REDACTED',
-          shippingPhone2: 'REDACTED',
-          paymentSlipUrl: null,
-          updatedAt: new Date(),
-        }).where(eq(schema.simulatedOrders.customerUserId, targetUserId));
+        await tx
+          .update(schema.simulatedOrders)
+          .set({
+            customerName: "GDPR REDACTED",
+            customerEmail: "redacted@example.com",
+            customerUserId: null,
+            shippingAddress: "REDACTED",
+            shippingAddressLine2: "REDACTED",
+            shippingCity: "REDACTED",
+            shippingState: "REDACTED",
+            shippingPostalCode: "REDACTED",
+            shippingCountry: "REDACTED",
+            shippingPhone: "REDACTED",
+            shippingPhone2: "REDACTED",
+            paymentSlipUrl: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.simulatedOrders.customerUserId, targetUserId));
       }
 
       if (email) {
-        const allSubmissions = await tx.select({ id: schema.contactSubmissions.id, email: schema.contactSubmissions.email }).from(schema.contactSubmissions);
+        const allSubmissions = await tx
+          .select({ id: schema.contactSubmissions.id, email: schema.contactSubmissions.email })
+          .from(schema.contactSubmissions);
         const toDeleteIds = allSubmissions
-          .filter(sub => sub.email && sub.email.trim().toLowerCase() === email)
-          .map(sub => sub.id);
+          .filter((sub) => sub.email && sub.email.trim().toLowerCase() === email)
+          .map((sub) => sub.id);
 
         if (toDeleteIds.length > 0) {
-          await tx.delete(schema.contactSubmissions).where(inArray(schema.contactSubmissions.id, toDeleteIds));
+          await tx
+            .delete(schema.contactSubmissions)
+            .where(inArray(schema.contactSubmissions.id, toDeleteIds));
           submissionsDeleted = toDeleteIds.length;
         }
       }
 
       // Customer Carts
       await tx.delete(schema.customerCarts).where(eq(schema.customerCarts.userId, targetUserId));
-      
+
       // Branch Members
-      await tx.delete(schema.branchMembers).where(eq(schema.branchMembers.memberUserId, targetUserId));
+      await tx
+        .delete(schema.branchMembers)
+        .where(eq(schema.branchMembers.memberUserId, targetUserId));
 
       // Audit logs
-      const userLogs = await tx.select({ id: schema.auditLogs.id }).from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId));
+      const userLogs = await tx
+        .select({ id: schema.auditLogs.id })
+        .from(schema.auditLogs)
+        .where(eq(schema.auditLogs.userId, targetUserId));
       if (userLogs.length > 0) {
-          await tx.insert(schema.auditLogs).values({
-              userId: targetUserId,
-              action: 'GDPR_REDACTION',
-              targetType: 'data_subject_request',
-              targetId: targetUserId,
-              metadata: { redactedLogsCount: userLogs.length },
-          });
-          auditLogsRedacted = userLogs.length;
+        await tx.insert(schema.auditLogs).values({
+          userId: targetUserId,
+          action: "GDPR_REDACTION",
+          targetType: "data_subject_request",
+          targetId: targetUserId,
+          metadata: { redactedLogsCount: userLogs.length },
+        });
+        auditLogsRedacted = userLogs.length;
       }
-      
+
       // Billing receipts cashier anonymization
-      await tx.update(schema.billingReceipts)
-      .set({ cashierUserId: 'gdpr_redacted' })
-      .where(eq(schema.billingReceipts.cashierUserId, targetUserId));
+      await tx
+        .update(schema.billingReceipts)
+        .set({ cashierUserId: "gdpr_redacted" })
+        .where(eq(schema.billingReceipts.cashierUserId, targetUserId));
 
       // Associated user content
-      await tx.update(schema.reviews).set({
-        userName: 'GDPR REDACTED',
-        userImageUrl: null,
-        comment: '[REDACTED]',
-      }).where(eq(schema.reviews.userId, targetUserId));
+      await tx
+        .update(schema.reviews)
+        .set({
+          userName: "GDPR REDACTED",
+          userImageUrl: null,
+          comment: "[REDACTED]",
+        })
+        .where(eq(schema.reviews.userId, targetUserId));
 
       await tx.delete(schema.wishlists).where(eq(schema.wishlists.userId, targetUserId));
 
-      await tx.update(schema.questions).set({
-        userName: 'GDPR REDACTED',
-        userImageUrl: null,
-      }).where(eq(schema.questions.userId, targetUserId));
+      await tx
+        .update(schema.questions)
+        .set({
+          userName: "GDPR REDACTED",
+          userImageUrl: null,
+        })
+        .where(eq(schema.questions.userId, targetUserId));
     });
 
     if (paymentSlipUrls.length > 0) {
-      const { createSupabaseAdminClient, isSupabaseStorageConfigured } = await import('@/shared/storage/admin-client');
+      const { createSupabaseAdminClient, isSupabaseStorageConfigured } =
+        await import("@/shared/storage/admin-client");
       if (isSupabaseStorageConfigured()) {
-        const { PAYMENT_SLIPS_BUCKET } = await import('@/shared/storage/config');
+        const { PAYMENT_SLIPS_BUCKET } = await import("@/shared/storage/config");
         const supabase = createSupabaseAdminClient();
         await supabase.storage.from(PAYMENT_SLIPS_BUCKET).remove(paymentSlipUrls);
       }
@@ -157,8 +191,8 @@ async function handler(req: NextRequest) {
 
     await logAuditAction({
       userId: adminUserId,
-      action: 'API_GDPR_ERASURE_BACKGROUND',
-      targetType: 'data_subject_request',
+      action: "API_GDPR_ERASURE_BACKGROUND",
+      targetType: "data_subject_request",
       targetId: targetUserId,
       metadata: { ordersAnonymized, submissionsDeleted, clerkProfileDeleted, auditLogsRedacted },
       strict: true,
@@ -172,16 +206,16 @@ async function handler(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    logger.error('GDPR Background Erasure Error', error);
-    
+    logger.error("GDPR Background Erasure Error", error);
+
     // Release the lock so QStash retries can process it
     try {
       await redis.del(`erase:msg_id:${messageId}:lock`);
     } catch (e) {
-      logger.error('Failed to release idempotency lock', e);
+      logger.error("Failed to release idempotency lock", e);
     }
-    
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { SignInButton } from '@clerk/nextjs';
-import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/use-clerk-auth-redirect-url';
+import { SignInButton } from "@clerk/nextjs";
+import { useClerkAuthRedirectUrl } from "@/features/auth/hooks/use-clerk-auth-redirect-url";
 
 interface FollowButtonProps {
   orgName: string;

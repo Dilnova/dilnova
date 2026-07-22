@@ -1,7 +1,7 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { buildCustomerOrderAccessWhere } from '@/features/orders/customer-ownership';
-import { eq, inArray, desc, and } from 'drizzle-orm';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { buildCustomerOrderAccessWhere } from "@/features/orders/customer-ownership";
+import { eq, inArray, desc, and } from "drizzle-orm";
 
 export async function getOrderById(id: string) {
   try {
@@ -36,10 +36,7 @@ export async function getPickupBranchName(branchId: string) {
 }
 
 export async function getUserWishlist(userId: string) {
-  return db
-    .select()
-    .from(schema.wishlists)
-    .where(eq(schema.wishlists.userId, userId));
+  return db.select().from(schema.wishlists).where(eq(schema.wishlists.userId, userId));
 }
 
 export async function getCustomerOrders(userId: string | null) {
@@ -83,12 +80,7 @@ export async function getWishlistProducts(productIds: string[]) {
     })
     .from(schema.products)
     .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
-    .where(
-      and(
-        inArray(schema.products.id, productIds),
-        eq(schema.products.status, 'active')
-      )
-    );
+    .where(and(inArray(schema.products.id, productIds), eq(schema.products.status, "active")));
 }
 
 export async function getOrderItemsForOrders(orderIds: string[]) {

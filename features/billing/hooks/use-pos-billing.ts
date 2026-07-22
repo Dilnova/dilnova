@@ -1,32 +1,34 @@
-import { useState, useTransition, useMemo, useCallback } from 'react';
-import type { VendorBillingRegisterData } from '@/features/billing/types';
-import { getVendorBillingRegisterData } from '@/features/billing/register.actions';
-import { processBillingCheckoutAction } from '@/features/billing/checkout.actions';
-import { resolveEffectiveStockAvailability } from '@/features/inventory/availability.shared';
-import { toast } from 'sonner';
-import { playAudioFeedback } from '../utils/pos-audio';
+import { useState, useTransition, useMemo, useCallback } from "react";
+import type { VendorBillingRegisterData } from "@/features/billing/types";
+import { getVendorBillingRegisterData } from "@/features/billing/register.actions";
+import { processBillingCheckoutAction } from "@/features/billing/checkout.actions";
+import { resolveEffectiveStockAvailability } from "@/features/inventory/availability.shared";
+import { toast } from "sonner";
+import { playAudioFeedback } from "../utils/pos-audio";
 
 export function usePOSBilling(initialData: VendorBillingRegisterData) {
   const [isPending, startTransition] = useTransition();
   const [data, setData] = useState(initialData);
 
   // Search & Filtering State
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'products' | 'services' | 'low_stock'>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<
+    "all" | "products" | "services" | "low_stock"
+  >("all");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 24;
 
   // Cart State
   const [cart, setCart] = useState<{ product: any; quantity: number }[]>([]);
-  const [customerName, setCustomerName] = useState('');
-  const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'other'>('cash');
-  const [cashTendered, setCashTendered] = useState<string>('');
+  const [customerName, setCustomerName] = useState("");
+  const [notes, setNotes] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "other">("cash");
+  const [cashTendered, setCashTendered] = useState<string>("");
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [receiptToPrint, setReceiptToPrint] = useState<any>(null);
 
   // Branch Selector
-  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
 
   const availabilityCatalog = data.stockAvailabilityCatalog || [];
 
@@ -35,52 +37,61 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
       const fresh = await getVendorBillingRegisterData();
       setData(fresh);
     } catch (err) {
-      toast.error('Failed to refresh data.');
+      toast.error("Failed to refresh data.");
     }
   };
 
-  const isProductPurchasable = useCallback((item: (typeof data.inventoryItems)[number]) => {
-    if (item.productType === 'service') return true;
-    if (!item.id) return false;
-    const availability = resolveEffectiveStockAvailability(
-      availabilityCatalog,
-      item.stockAvailability,
-      item.quantity ?? 0
-    );
-    return availability?.allowsPurchase ?? false;
-  }, [availabilityCatalog]);
+  const isProductPurchasable = useCallback(
+    (item: (typeof data.inventoryItems)[number]) => {
+      if (item.productType === "service") return true;
+      if (!item.id) return false;
+      const availability = resolveEffectiveStockAvailability(
+        availabilityCatalog,
+        item.stockAvailability,
+        item.quantity ?? 0,
+      );
+      return availability?.allowsPurchase ?? false;
+    },
+    [availabilityCatalog],
+  );
 
-  const getProductStockInfo = useCallback((productId: string) => {
-    const prod = data.inventoryItems.find((i) => i.productId === productId);
-    if (prod?.productType === 'service') {
-      return { qty: 999999, sku: 'Service', binLocation: 'N/A' };
-    }
-    if (selectedBranchId) {
-      const bInv = data.branchInventory.find((bi) => bi.branchId === selectedBranchId && bi.productId === productId);
+  const getProductStockInfo = useCallback(
+    (productId: string) => {
+      const prod = data.inventoryItems.find((i) => i.productId === productId);
+      if (prod?.productType === "service") {
+        return { qty: 999999, sku: "Service", binLocation: "N/A" };
+      }
+      if (selectedBranchId) {
+        const bInv = data.branchInventory.find(
+          (bi) => bi.branchId === selectedBranchId && bi.productId === productId,
+        );
+        return {
+          qty: bInv?.quantity ?? 0,
+          sku: bInv?.sku || "—",
+          binLocation: bInv?.binLocation || "—",
+        };
+      }
+      const cInv = data.inventoryItems.find((i) => i.productId === productId);
       return {
-        qty: bInv?.quantity ?? 0,
-        sku: bInv?.sku || '—',
-        binLocation: bInv?.binLocation || '—',
+        qty: cInv?.quantity ?? 0,
+        sku: cInv?.sku || "—",
+        binLocation: cInv?.binLocation || "—",
       };
-    }
-    const cInv = data.inventoryItems.find((i) => i.productId === productId);
-    return {
-      qty: cInv?.quantity ?? 0,
-      sku: cInv?.sku || '—',
-      binLocation: cInv?.binLocation || '—',
-    };
-  }, [data.inventoryItems, data.branchInventory, selectedBranchId]);
+    },
+    [data.inventoryItems, data.branchInventory, selectedBranchId],
+  );
 
   // Filtered products list
   const filteredProducts = useMemo(() => {
     return data.inventoryItems.filter((item) => {
       if (!isProductPurchasable(item)) return false;
 
-      if (categoryFilter === 'products' && item.productType !== 'product') return false;
-      if (categoryFilter === 'services' && item.productType !== 'service') return false;
+      if (categoryFilter === "products" && item.productType !== "product") return false;
+      if (categoryFilter === "services" && item.productType !== "service") return false;
 
       const info = getProductStockInfo(item.productId);
-      if (categoryFilter === 'low_stock' && (item.productType === 'service' || info.qty > 5)) return false;
+      if (categoryFilter === "low_stock" && (item.productType === "service" || info.qty > 5))
+        return false;
 
       const query = searchQuery.trim().toLowerCase();
       if (!query) return true;
@@ -101,8 +112,8 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
 
   const addToCart = (product: any, playSound = true) => {
     if (!isProductPurchasable(product)) {
-      toast.error('This item is not available for sale.');
-      playAudioFeedback('error');
+      toast.error("This item is not available for sale.");
+      playAudioFeedback("error");
       return;
     }
     const stock = getProductStockInfo(product.productId);
@@ -111,30 +122,40 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
 
     if (stock.qty <= currentQtyInCart) {
       toast.error(`Insufficient stock! Only ${stock.qty} units available.`);
-      playAudioFeedback('error');
+      playAudioFeedback("error");
       return;
     }
 
     if (existing) {
-      setCart(cart.map((item) => (item.product.productId === product.productId ? { ...item, quantity: item.quantity + 1 } : item)));
+      setCart(
+        cart.map((item) =>
+          item.product.productId === product.productId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item,
+        ),
+      );
     } else {
       setCart([...cart, { product, quantity: 1 }]);
     }
 
-    if (playSound) playAudioFeedback('scan');
+    if (playSound) playAudioFeedback("scan");
   };
 
   const updateCartQty = (productId: string, qty: number) => {
     const stock = getProductStockInfo(productId);
     if (qty > stock.qty) {
       toast.error(`Only ${stock.qty} units available.`);
-      playAudioFeedback('error');
+      playAudioFeedback("error");
       return;
     }
     if (qty <= 0) {
       setCart(cart.filter((item) => item.product.productId !== productId));
     } else {
-      setCart(cart.map((item) => (item.product.productId === productId ? { ...item, quantity: qty } : item)));
+      setCart(
+        cart.map((item) =>
+          item.product.productId === productId ? { ...item, quantity: qty } : item,
+        ),
+      );
     }
   };
 
@@ -142,7 +163,10 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
     setCart(cart.filter((item) => item.product.productId !== productId));
   };
 
-  const subtotalAmount = cart.reduce((sum, item) => sum + item.quantity * (item.product.productPrice / 100), 0);
+  const subtotalAmount = cart.reduce(
+    (sum, item) => sum + item.quantity * (item.product.productPrice / 100),
+    0,
+  );
   const discountAmount = (subtotalAmount * discountPercent) / 100;
   const totalAmount = Math.max(0, subtotalAmount - discountAmount);
   const totalItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -153,20 +177,24 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
   const handlePOSCheckout = (onSuccess?: () => void) => {
     if (cart.length === 0) return;
     if (!selectedBranchId) {
-      toast.error('Select a branch register first.');
-      playAudioFeedback('error');
+      toast.error("Select a branch register first.");
+      playAudioFeedback("error");
       return;
     }
-    if (paymentMethod === 'cash' && cashTenderedVal < totalAmount && cashTenderedVal > 0) {
-      toast.error(`Cash tendered ($${cashTenderedVal.toFixed(2)}) is less than total ($${totalAmount.toFixed(2)}).`);
-      playAudioFeedback('error');
+    if (paymentMethod === "cash" && cashTenderedVal < totalAmount && cashTenderedVal > 0) {
+      toast.error(
+        `Cash tendered ($${cashTenderedVal.toFixed(2)}) is less than total ($${totalAmount.toFixed(2)}).`,
+      );
+      playAudioFeedback("error");
       return;
     }
 
     startTransition(async () => {
       try {
         const payload = cart.map((item) => {
-          const effectivePriceCents = Math.round((item.product.productPrice * (100 - discountPercent)) / 100);
+          const effectivePriceCents = Math.round(
+            (item.product.productPrice * (100 - discountPercent)) / 100,
+          );
           return {
             productId: item.product.productId,
             productName: item.product.productName,
@@ -184,17 +212,19 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
         });
 
         if (!result?.data?.success) {
-          playAudioFeedback('error');
-          toast.error(result?.serverError || 'POS checkout failed.');
+          playAudioFeedback("error");
+          toast.error(result?.serverError || "POS checkout failed.");
           return;
         }
 
-        playAudioFeedback('checkout');
-        toast.success(`POS receipt processed! Total: $${(result.data.totalAmount / 100).toFixed(2)}`);
+        playAudioFeedback("checkout");
+        toast.success(
+          `POS receipt processed! Total: $${(result.data.totalAmount / 100).toFixed(2)}`,
+        );
 
         setReceiptToPrint({
           id: result.data.receiptId,
-          branchName: data.branches.find((b) => b.id === selectedBranchId)?.name || 'Main Register',
+          branchName: data.branches.find((b) => b.id === selectedBranchId)?.name || "Main Register",
           items: cart.map((i) => ({
             name: i.product.productName,
             qty: i.quantity,
@@ -205,22 +235,22 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
           discountAmount,
           total: result.data.totalAmount / 100,
           paymentMethod,
-          cashTendered: paymentMethod === 'cash' ? cashTenderedVal : null,
-          changeDue: paymentMethod === 'cash' ? changeDue : null,
+          cashTendered: paymentMethod === "cash" ? cashTenderedVal : null,
+          changeDue: paymentMethod === "cash" ? changeDue : null,
           customerName,
           date: new Date(),
         });
 
         setCart([]);
-        setCustomerName('');
-        setNotes('');
-        setCashTendered('');
+        setCustomerName("");
+        setNotes("");
+        setCashTendered("");
         setDiscountPercent(0);
         onSuccess?.();
         await refreshData();
       } catch (err) {
-        playAudioFeedback('error');
-        toast.error(err instanceof Error ? err.message : 'POS checkout failed.');
+        playAudioFeedback("error");
+        toast.error(err instanceof Error ? err.message : "POS checkout failed.");
       }
     });
   };

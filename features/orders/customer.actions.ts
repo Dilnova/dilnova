@@ -1,20 +1,20 @@
-'use server';
+"use server";
 
-import { currentUser } from '@clerk/nextjs/server';
-import { eq } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { uploadPaymentSlipFormSchema } from '@/features/orders/schema';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { getNormalizedClerkUserEmail } from '@/features/customer/email';
-import { canUploadPaymentSlip } from '@/features/orders/payment.rules';
-import { customerOwnsOrder } from '@/features/orders/customer-ownership';
-import { logAuditAction } from '@/shared/audit/logger';
-import { sendPaymentSlipUploadedNotifications } from '@/features/orders/email/payment-slip';
-import { logger } from '@/shared/logging/logger';
-import { isSupabaseStorageConfigured } from '@/shared/storage/admin-client';
+import { currentUser } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { uploadPaymentSlipFormSchema } from "@/features/orders/schema";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { getNormalizedClerkUserEmail } from "@/features/customer/email";
+import { canUploadPaymentSlip } from "@/features/orders/payment.rules";
+import { customerOwnsOrder } from "@/features/orders/customer-ownership";
+import { logAuditAction } from "@/shared/audit/logger";
+import { sendPaymentSlipUploadedNotifications } from "@/features/orders/email/payment-slip";
+import { logger } from "@/shared/logging/logger";
+import { isSupabaseStorageConfigured } from "@/shared/storage/admin-client";
 import {
   createPaymentSlipSignedUrl,
   resolvePaymentSlipExtension,
@@ -23,17 +23,17 @@ import {
   verifyPaymentSlipFileExists,
   verifyPaymentSlipMagicBytes,
   isPaymentSlipStoragePath,
-} from '@/shared/storage/payment-slip';
-import { PAYMENT_SLIP_MAX_BYTES } from '@/shared/storage/config';
-import { authenticatedAction, ActionError } from '@/lib/safe-action';
-import { z } from 'zod/v3';
+} from "@/shared/storage/payment-slip";
+import { PAYMENT_SLIP_MAX_BYTES } from "@/shared/storage/config";
+import { authenticatedAction, ActionError } from "@/lib/safe-action";
+import { z } from "zod/v3";
 
 // ── Internal helper ───────────────────────────────────────────────────────────
 // userId is passed in from the action ctx — no auth() call needed here.
 
 async function validateCustomerAndOrder(
   orderId: string,
-  userId: string
+  userId: string,
 ): Promise<
   | { success: false; error: string }
   | {
@@ -45,14 +45,14 @@ async function validateCustomerAndOrder(
 > {
   const user = await currentUser();
   if (!user) {
-    return { success: false, error: 'Authentication session is invalid. Please sign in again.' };
+    return { success: false, error: "Authentication session is invalid. Please sign in again." };
   }
 
   const sessionEmail = getNormalizedClerkUserEmail(user);
   if (!sessionEmail) {
     return {
       success: false,
-      error: 'Your account does not have an email address. Please update your profile first.',
+      error: "Your account does not have an email address. Please update your profile first.",
     };
   }
 
@@ -63,17 +63,17 @@ async function validateCustomerAndOrder(
     .limit(1);
 
   if (!order) {
-    return { success: false, error: 'Order not found.' };
+    return { success: false, error: "Order not found." };
   }
 
   if (!customerOwnsOrder(order, userId)) {
-    return { success: false, error: 'You are not authorized to update this order.' };
+    return { success: false, error: "You are not authorized to update this order." };
   }
 
   if (!canUploadPaymentSlip(order)) {
     return {
       success: false,
-      error: 'This order is not accepting a payment slip upload.',
+      error: "This order is not accepting a payment slip upload.",
     };
   }
 
@@ -89,7 +89,7 @@ export const createPaymentSlipUploadPresignedUrlAction = authenticatedAction
       fileName: z.string(),
       fileSize: z.number(),
       fileType: z.string(),
-    })
+    }),
   )
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
@@ -98,7 +98,7 @@ export const createPaymentSlipUploadPresignedUrlAction = authenticatedAction
       if (!isSupabaseStorageConfigured()) {
         return {
           success: false as const,
-          error: 'Payment slip storage is not configured. Contact support.',
+          error: "Payment slip storage is not configured. Contact support.",
         };
       }
 
@@ -108,16 +108,16 @@ export const createPaymentSlipUploadPresignedUrlAction = authenticatedAction
       if (!orderIdParsed.success) {
         return {
           success: false as const,
-          error: orderIdParsed.error.issues[0]?.message || 'Invalid order ID.',
+          error: orderIdParsed.error.issues[0]?.message || "Invalid order ID.",
         };
       }
 
       if (parsedInput.fileSize === 0) {
-        return { success: false as const, error: 'The selected file is empty.' };
+        return { success: false as const, error: "The selected file is empty." };
       }
 
       if (parsedInput.fileSize > PAYMENT_SLIP_MAX_BYTES) {
-        return { success: false as const, error: 'Image must be 8 MB or smaller.' };
+        return { success: false as const, error: "Image must be 8 MB or smaller." };
       }
 
       const contentType =
@@ -126,7 +126,7 @@ export const createPaymentSlipUploadPresignedUrlAction = authenticatedAction
       if (!contentType) {
         return {
           success: false as const,
-          error: 'Please upload an image file (JPG, PNG, WebP, or GIF).',
+          error: "Please upload an image file (JPG, PNG, WebP, or GIF).",
         };
       }
 
@@ -148,10 +148,10 @@ export const createPaymentSlipUploadPresignedUrlAction = authenticatedAction
           storagePath,
         };
       } catch (error) {
-        logger.error('Failed to generate pre-signed upload URL', { orderId: order.id, error });
+        logger.error("Failed to generate pre-signed upload URL", { orderId: order.id, error });
         return {
           success: false as const,
-          error: 'Failed to initialize payment slip upload. Please try again.',
+          error: "Failed to initialize payment slip upload. Please try again.",
         };
       }
     });
@@ -162,7 +162,7 @@ export const submitPaymentSlipPathAction = authenticatedAction
     z.object({
       orderId: z.string(),
       storagePath: z.string(),
-    })
+    }),
   )
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
@@ -171,7 +171,7 @@ export const submitPaymentSlipPathAction = authenticatedAction
       if (!isSupabaseStorageConfigured()) {
         return {
           success: false as const,
-          error: 'Payment slip storage is not configured. Contact support.',
+          error: "Payment slip storage is not configured. Contact support.",
         };
       }
 
@@ -181,21 +181,21 @@ export const submitPaymentSlipPathAction = authenticatedAction
       if (!orderIdParsed.success) {
         return {
           success: false as const,
-          error: orderIdParsed.error.issues[0]?.message || 'Invalid order ID.',
+          error: orderIdParsed.error.issues[0]?.message || "Invalid order ID.",
         };
       }
 
       if (!parsedInput.storagePath.startsWith(`orders/${orderIdParsed.data.orderId}/`)) {
         return {
           success: false as const,
-          error: 'Invalid storage path.',
+          error: "Invalid storage path.",
         };
       }
 
       if (!isPaymentSlipStoragePath(parsedInput.storagePath)) {
         return {
           success: false as const,
-          error: 'Invalid storage path format.',
+          error: "Invalid storage path format.",
         };
       }
 
@@ -209,7 +209,8 @@ export const submitPaymentSlipPathAction = authenticatedAction
       if (!exists) {
         return {
           success: false as const,
-          error: 'Uploaded payment slip could not be verified in storage. Please try uploading again.',
+          error:
+            "Uploaded payment slip could not be verified in storage. Please try uploading again.",
         };
       }
 
@@ -217,7 +218,7 @@ export const submitPaymentSlipPathAction = authenticatedAction
       if (!hasValidMagicBytes) {
         return {
           success: false as const,
-          error: 'Uploaded file appears to be corrupted or is not a valid image format.',
+          error: "Uploaded file appears to be corrupted or is not a valid image format.",
         };
       }
 
@@ -226,28 +227,28 @@ export const submitPaymentSlipPathAction = authenticatedAction
         .set({
           paymentSlipUrl: parsedInput.storagePath,
           paymentSlipUploadedAt: new Date(),
-          status: 'payment_submitted',
+          status: "payment_submitted",
           updatedAt: new Date(),
         })
         .where(eq(schema.simulatedOrders.id, order.id));
 
       await logAuditAction({
         userId,
-        action: 'SUBMIT_PAYMENT_SLIP',
-        targetType: 'simulated_order',
+        action: "SUBMIT_PAYMENT_SLIP",
+        targetType: "simulated_order",
         targetId: order.id,
-        metadata: { paymentMethod: order.paymentMethod, storage: 'supabase' },
+        metadata: { paymentMethod: order.paymentMethod, storage: "supabase" },
       });
 
-      revalidatePath('/cart');
-      revalidatePath('/customer');
+      revalidatePath("/cart");
+      revalidatePath("/customer");
       revalidatePath(`/customer/invoice/${order.id}`);
-      revalidatePath('/vendor');
-      revalidatePath('/superadmin');
+      revalidatePath("/vendor");
+      revalidatePath("/superadmin");
 
       void sendPaymentSlipUploadedNotifications(order.id).then((emailResult) => {
         if (!emailResult.success) {
-          logger.warn('Payment slip saved but vendor notification email was not sent', {
+          logger.warn("Payment slip saved but vendor notification email was not sent", {
             orderId: order.id,
             error: emailResult.error,
             notifiedCount: emailResult.notifiedCount,

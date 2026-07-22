@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { useAddProduct } from './AddProductContext';
-import ProductBasicDetailsForm from './ProductBasicDetailsForm';
-import ProductDescriptionForm from './ProductDescriptionForm';
-import ProductMediaForm from './ProductMediaForm';
-import ProductTipsSidebar from './ProductTipsSidebar';
-import { Spinner } from '@/shared/ui/loading';
+import React from "react";
+import { useAddProduct } from "./AddProductContext";
+import ProductBasicDetailsForm from "./ProductBasicDetailsForm";
+import ProductDescriptionForm from "./ProductDescriptionForm";
+import ProductMediaForm from "./ProductMediaForm";
+import ProductTipsSidebar from "./ProductTipsSidebar";
+import { Spinner } from "@/shared/ui/loading";
 
 export default function AddProductLayout() {
   const { handleAddItem, isPending, isUploading } = useAddProduct();
@@ -33,7 +33,12 @@ export default function AddProductLayout() {
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 4v16m8-8H4"
+                    />
                   </svg>
                   Add Catalog Item
                 </>
@@ -49,7 +54,7 @@ export default function AddProductLayout() {
         <button
           type="button"
           onClick={() => {
-            const form = document.querySelector('form');
+            const form = document.querySelector("form");
             if (form) {
               form.requestSubmit();
             }
@@ -70,7 +75,12 @@ export default function AddProductLayout() {
           ) : (
             <>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
               Add Catalog Item
             </>

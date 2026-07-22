@@ -1,30 +1,32 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface VendorMovementLogsTabProps {
   data: any; // Will be properly typed during TS cleanup
 }
 
 export default function VendorMovementLogsTab({ data }: VendorMovementLogsTabProps) {
-  const [movementTypeFilter, setMovementTypeFilter] = useState<string>('all');
+  const [movementTypeFilter, setMovementTypeFilter] = useState<string>("all");
 
   const filteredMovements = data.movements.filter(
-    (m: any) => movementTypeFilter === 'all' || m.type === movementTypeFilter
+    (m: any) => movementTypeFilter === "all" || m.type === movementTypeFilter,
   );
 
   const movementTypeLabels: Record<string, string> = {
-    restock: '📥 Restock',
-    sale_depletion: '📤 Sale',
-    manual_adjustment: '🔧 Adjustment',
-    damage_loss: '⚠️ Damage/Loss',
-    order_cancellation: '↩️ Cancellation',
+    restock: "📥 Restock",
+    sale_depletion: "📤 Sale",
+    manual_adjustment: "🔧 Adjustment",
+    damage_loss: "⚠️ Damage/Loss",
+    order_cancellation: "↩️ Cancellation",
   };
 
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-50">Inventory Audit History</h3>
+        <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-50">
+          Inventory Audit History
+        </h3>
         <select
           value={movementTypeFilter}
           onChange={(e) => setMovementTypeFilter(e.target.value)}
@@ -53,21 +55,23 @@ export default function VendorMovementLogsTab({ data }: VendorMovementLogsTabPro
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
             {filteredMovements.map((m: any) => (
               <tr key={m.id} className="hover:bg-zinc-50/20">
-                <td className="p-3 text-zinc-500 font-mono">{new Date(m.createdAt).toLocaleDateString()}</td>
+                <td className="p-3 text-zinc-500 font-mono">
+                  {new Date(m.createdAt).toLocaleDateString()}
+                </td>
                 <td className="p-3 font-bold text-zinc-900 dark:text-zinc-200">{m.productName}</td>
                 <td className="p-3 font-semibold text-zinc-900 dark:text-zinc-200">
                   {movementTypeLabels[m.type] || m.type}
                 </td>
                 <td className="p-3 font-bold font-mono">
-                  <span className={m.quantityChanged > 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                    {m.quantityChanged > 0 ? '+' : ''}
+                  <span className={m.quantityChanged > 0 ? "text-emerald-600" : "text-rose-600"}>
+                    {m.quantityChanged > 0 ? "+" : ""}
                     {m.quantityChanged}
                   </span>
                 </td>
                 <td className="p-3 text-zinc-500 font-mono">
                   {m.previousQuantity} → {m.newQuantity}
                 </td>
-                <td className="p-3 text-zinc-500 max-w-[200px] truncate">{m.reason || '—'}</td>
+                <td className="p-3 text-zinc-500 max-w-[200px] truncate">{m.reason || "—"}</td>
               </tr>
             ))}
           </tbody>

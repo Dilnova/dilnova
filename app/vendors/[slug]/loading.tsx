@@ -8,11 +8,11 @@ export default function StorefrontLoading() {
       <section className="bg-zinc-900/30 border-b border-zinc-905 py-20">
         <div className="max-w-6xl mx-auto px-6 w-full animate-pulse">
           <div className="h-4 w-32 bg-zinc-800 rounded-lg mb-8" />
-          
+
           <div className="flex flex-col md:flex-row md:items-end gap-8">
             {/* Logo placeholder */}
             <div className="w-28 h-28 md:w-36 md:h-36 rounded-2xl bg-zinc-800 flex-shrink-0" />
-            
+
             {/* Title / Meta placeholder */}
             <div className="flex-1 space-y-4">
               <div className="flex gap-3">

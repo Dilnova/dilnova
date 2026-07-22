@@ -1,5 +1,5 @@
-import { useState, useTransition, useEffect } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useState, useTransition, useEffect } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 export function useCatalogFilters() {
   const router = useRouter();
@@ -7,9 +7,9 @@ export function useCatalogFilters() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const currentSearch = searchParams.get('search') || '';
-  const currentMinPrice = searchParams.get('minPrice') || '';
-  const currentMaxPrice = searchParams.get('maxPrice') || '';
+  const currentSearch = searchParams.get("search") || "";
+  const currentMinPrice = searchParams.get("minPrice") || "";
+  const currentMaxPrice = searchParams.get("maxPrice") || "";
 
   const [searchVal, setSearchVal] = useState(currentSearch);
   const [minPriceVal, setMinPriceVal] = useState(currentMinPrice);
@@ -25,12 +25,12 @@ export function useCatalogFilters() {
 
   const updateParams = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
-    
+
     // Always reset to page 1 when filters change (if pagination existed, we'd do it here)
     // params.delete('page');
 
     Object.entries(updates).forEach(([key, value]) => {
-      if (value === null || value === '') {
+      if (value === null || value === "") {
         params.delete(key);
       } else {
         params.set(key, value);
@@ -48,7 +48,7 @@ export function useCatalogFilters() {
   };
 
   const handleClearSearch = () => {
-    setSearchVal('');
+    setSearchVal("");
     updateParams({ search: null });
   };
 
@@ -67,28 +67,28 @@ export function useCatalogFilters() {
   };
 
   const handleRemoveSingleFilter = (key: string) => {
-    if (key === 'search') {
-      setSearchVal('');
+    if (key === "search") {
+      setSearchVal("");
       updateParams({ search: null });
-    } else if (key === 'category') {
+    } else if (key === "category") {
       updateParams({ category: null });
-    } else if (key === 'type') {
+    } else if (key === "type") {
       updateParams({ type: null });
-    } else if (key === 'vendor') {
+    } else if (key === "vendor") {
       updateParams({ vendor: null });
-    } else if (key === 'price') {
-      setMinPriceVal('');
-      setMaxPriceVal('');
+    } else if (key === "price") {
+      setMinPriceVal("");
+      setMaxPriceVal("");
       updateParams({ minPrice: null, maxPrice: null });
-    } else if (key === 'stock') {
+    } else if (key === "stock") {
       updateParams({ stock: null });
     }
   };
 
   const clearAllFilters = () => {
-    setSearchVal('');
-    setMinPriceVal('');
-    setMaxPriceVal('');
+    setSearchVal("");
+    setMinPriceVal("");
+    setMaxPriceVal("");
     startTransition(() => {
       router.push(pathname);
     });
@@ -111,6 +111,6 @@ export function useCatalogFilters() {
     handlePriceSubmit,
     handleApplyPresetPrice,
     handleRemoveSingleFilter,
-    clearAllFilters
+    clearAllFilters,
   };
 }

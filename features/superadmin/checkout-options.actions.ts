@@ -1,20 +1,20 @@
-'use server';
+"use server";
 
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { superadminAction, ActionError } from '@/lib/safe-action';
-import { logAuditAction } from '@/shared/audit/logger';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { rateLimit } from '@/shared/security/rate-limit';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq } from "drizzle-orm";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { superadminAction, ActionError } from "@/lib/safe-action";
+import { logAuditAction } from "@/shared/audit/logger";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { rateLimit } from "@/shared/security/rate-limit";
 import {
   CHECKOUT_OPTIONS_CATALOG_KEY,
   buildCheckoutOptionsCatalogPayload,
   type CheckoutOptionDefinition,
-} from '@/features/organization/checkout-options.shared';
-import { updateCheckoutOptionsCatalogSchema } from '@/features/superadmin/schema';
-import { syncSettingToRedis } from '@/shared/platform/settings';
+} from "@/features/organization/checkout-options.shared";
+import { updateCheckoutOptionsCatalogSchema } from "@/features/superadmin/schema";
+import { syncSettingToRedis } from "@/shared/platform/settings";
 
 export const updateCheckoutOptionsCatalogAction = superadminAction
   .schema(updateCheckoutOptionsCatalogSchema)
@@ -47,16 +47,16 @@ export const updateCheckoutOptionsCatalogAction = superadminAction
 
       await logAuditAction({
         userId: ctx.userId,
-        action: 'UPDATE_SYSTEM_SETTING',
-        targetType: 'system_setting',
+        action: "UPDATE_SYSTEM_SETTING",
+        targetType: "system_setting",
         targetId: CHECKOUT_OPTIONS_CATALOG_KEY,
         metadata: { optionCount: payload.length },
       });
 
-      revalidateTag('system-settings', 'max');
-      revalidatePath('/superadmin');
-      revalidatePath('/cart');
-      revalidatePath('/admin');
+      revalidateTag("system-settings", "max");
+      revalidatePath("/superadmin");
+      revalidatePath("/cart");
+      revalidatePath("/admin");
 
       return { success: true };
     });

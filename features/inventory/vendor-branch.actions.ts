@@ -1,10 +1,10 @@
-'use server';
+"use server";
 
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
-import { revalidateVendorConsole } from '@/features/vendor/revalidate';
-import { clerkClient } from '@clerk/nextjs/server';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq, and, sql } from "drizzle-orm";
+import { revalidateVendorConsole } from "@/features/vendor/revalidate";
+import { clerkClient } from "@clerk/nextjs/server";
 import {
   createBranchSchema,
   updateBranchSchema,
@@ -12,14 +12,14 @@ import {
   allocateBranchStockSchema,
   assignBranchMemberSchema,
   removeBranchMemberSchema,
-} from '@/features/inventory/schema';
+} from "@/features/inventory/schema";
 import {
   sumBranchAllocatedQuantity,
   validateBranchAllocationAgainstCentral,
-} from '@/features/inventory/ledger';
-import { logAuditAction } from '@/shared/audit/logger';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { verifyVendorAccess } from '@/features/inventory/vendor-data';
+} from "@/features/inventory/ledger";
+import { logAuditAction } from "@/shared/audit/logger";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { verifyVendorAccess } from "@/features/inventory/vendor-data";
 
 export async function createBranchAction(data: { name: string; address?: string; phone?: string }) {
   return runWithCorrelationId(async () => {
@@ -29,16 +29,16 @@ export async function createBranchAction(data: { name: string; address?: string;
       .select({ count: sql<number>`count(*)` })
       .from(schema.branches)
       .where(eq(schema.branches.orgId, orgId));
-    
+
     const count = Number(existingCountResult[0].count);
 
     if (count > 0 && !premiumStatus.multiBranchActive) {
-      throw new Error('Multi-branch stock tracking is not unlocked on your account tier.');
+      throw new Error("Multi-branch stock tracking is not unlocked on your account tier.");
     }
 
     const parsed = createBranchSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     // Check if default exists, if not this is default
@@ -63,8 +63,8 @@ export async function createBranchAction(data: { name: string; address?: string;
 
     await logAuditAction({
       userId,
-      action: 'CREATE_BRANCH',
-      targetType: 'branch',
+      action: "CREATE_BRANCH",
+      targetType: "branch",
       targetId: branch.id,
       metadata: { name: branch.name, isDefault },
     });
@@ -74,16 +74,21 @@ export async function createBranchAction(data: { name: string; address?: string;
   });
 }
 
-export async function updateBranchAction(data: { id: string; name: string; address?: string; phone?: string }) {
+export async function updateBranchAction(data: {
+  id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+}) {
   return runWithCorrelationId(async () => {
     const { userId, orgId, premiumStatus } = await verifyVendorAccess();
     if (!premiumStatus.multiBranchActive) {
-      throw new Error('Multi-branch stock tracking is not unlocked on your account tier.');
+      throw new Error("Multi-branch stock tracking is not unlocked on your account tier.");
     }
 
     const parsed = updateBranchSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const [branch] = await db
@@ -98,13 +103,13 @@ export async function updateBranchAction(data: { id: string; name: string; addre
       .returning();
 
     if (!branch) {
-      throw new Error('Branch not found or access denied.');
+      throw new Error("Branch not found or access denied.");
     }
 
     await logAuditAction({
       userId,
-      action: 'UPDATE_BRANCH',
-      targetType: 'branch',
+      action: "UPDATE_BRANCH",
+      targetType: "branch",
       targetId: parsed.data.id,
       metadata: { name: parsed.data.name },
     });
@@ -118,12 +123,12 @@ export async function deleteBranchAction(id: string) {
   return runWithCorrelationId(async () => {
     const { userId, orgId, premiumStatus } = await verifyVendorAccess();
     if (!premiumStatus.multiBranchActive) {
-      throw new Error('Multi-branch stock tracking is not unlocked.');
+      throw new Error("Multi-branch stock tracking is not unlocked.");
     }
 
     const parsed = deleteBranchSchema.safeParse({ id });
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     // Don't delete if it is default
@@ -134,11 +139,11 @@ export async function deleteBranchAction(id: string) {
       .limit(1);
 
     if (!branch) {
-      throw new Error('Branch not found or access denied.');
+      throw new Error("Branch not found or access denied.");
     }
 
     if (branch.isDefault) {
-      throw new Error('Cannot delete the default Main Warehouse branch.');
+      throw new Error("Cannot delete the default Main Warehouse branch.");
     }
 
     await db
@@ -147,8 +152,8 @@ export async function deleteBranchAction(id: string) {
 
     await logAuditAction({
       userId,
-      action: 'DELETE_BRANCH',
-      targetType: 'branch',
+      action: "DELETE_BRANCH",
+      targetType: "branch",
       targetId: parsed.data.id,
     });
 
@@ -168,12 +173,12 @@ export async function allocateBranchStockAction(data: {
   return runWithCorrelationId(async () => {
     const { userId, orgId, premiumStatus } = await verifyVendorAccess();
     if (!premiumStatus.multiBranchActive) {
-      throw new Error('Multi-branch stock tracking is not unlocked.');
+      throw new Error("Multi-branch stock tracking is not unlocked.");
     }
 
     const parsed = allocateBranchStockSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     // Verify branch belongs to vendor org
@@ -185,7 +190,7 @@ export async function allocateBranchStockAction(data: {
         .limit(1);
 
       if (!branch) {
-        throw new Error('Branch not found or access denied.');
+        throw new Error("Branch not found or access denied.");
       }
 
       const [product] = await tx
@@ -195,18 +200,18 @@ export async function allocateBranchStockAction(data: {
         .limit(1);
 
       if (!product) {
-        throw new Error('Product not found or access denied.');
+        throw new Error("Product not found or access denied.");
       }
 
       const [centralInv] = await tx
         .select({ quantity: schema.inventory.quantity })
         .from(schema.inventory)
         .where(eq(schema.inventory.productId, parsed.data.productId))
-        .for('update')
+        .for("update")
         .limit(1);
 
       if (!centralInv) {
-        throw new Error('Central inventory record not found for this product.');
+        throw new Error("Central inventory record not found for this product.");
       }
 
       const otherBranchesAllocated = await sumBranchAllocatedQuantity(tx, parsed.data.productId, {
@@ -215,7 +220,7 @@ export async function allocateBranchStockAction(data: {
       const allocationCheck = validateBranchAllocationAgainstCentral(
         centralInv.quantity,
         otherBranchesAllocated,
-        parsed.data.quantity
+        parsed.data.quantity,
       );
       if (!allocationCheck.ok) {
         throw new Error(allocationCheck.error);
@@ -227,10 +232,10 @@ export async function allocateBranchStockAction(data: {
         .where(
           and(
             eq(schema.branchInventory.branchId, parsed.data.branchId),
-            eq(schema.branchInventory.productId, parsed.data.productId)
-          )
+            eq(schema.branchInventory.productId, parsed.data.productId),
+          ),
         )
-        .for('update')
+        .for("update")
         .limit(1);
 
       if (existing) {
@@ -245,8 +250,8 @@ export async function allocateBranchStockAction(data: {
           .where(
             and(
               eq(schema.branchInventory.id, existing.id),
-              eq(schema.branchInventory.branchId, parsed.data.branchId)
-            )
+              eq(schema.branchInventory.branchId, parsed.data.branchId),
+            ),
           );
       } else {
         await tx.insert(schema.branchInventory).values({
@@ -266,16 +271,20 @@ export async function allocateBranchStockAction(data: {
 
 // ── BRANCH MEMBER ASSIGNMENT ─────────────────────────────────
 
-export async function assignBranchMemberAction(data: { branchId: string; memberUserId: string; role: 'cashier' | 'manager' }) {
+export async function assignBranchMemberAction(data: {
+  branchId: string;
+  memberUserId: string;
+  role: "cashier" | "manager";
+}) {
   return runWithCorrelationId(async () => {
     const { userId, orgId, premiumStatus } = await verifyVendorAccess();
     if (!premiumStatus.multiBranchActive) {
-      throw new Error('Multi-branch features are not unlocked.');
+      throw new Error("Multi-branch features are not unlocked.");
     }
 
     const parsed = assignBranchMemberSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     // Check branch ownership
@@ -286,7 +295,7 @@ export async function assignBranchMemberAction(data: { branchId: string; memberU
       .limit(1);
 
     if (!branch) {
-      throw new Error('Branch not found or access denied.');
+      throw new Error("Branch not found or access denied.");
     }
 
     const client = await clerkClient();
@@ -295,17 +304,22 @@ export async function assignBranchMemberAction(data: { branchId: string; memberU
       limit: 100,
     });
     const isOrgMember = memberships.data.some(
-      (membership) => membership.publicUserData?.userId === parsed.data.memberUserId
+      (membership) => membership.publicUserData?.userId === parsed.data.memberUserId,
     );
     if (!isOrgMember) {
-      throw new Error('Selected user is not a member of this organization.');
+      throw new Error("Selected user is not a member of this organization.");
     }
 
     // Check if user is already assigned to a branch
     const [existing] = await db
       .select()
       .from(schema.branchMembers)
-      .where(and(eq(schema.branchMembers.branchId, parsed.data.branchId), eq(schema.branchMembers.memberUserId, parsed.data.memberUserId)))
+      .where(
+        and(
+          eq(schema.branchMembers.branchId, parsed.data.branchId),
+          eq(schema.branchMembers.memberUserId, parsed.data.memberUserId),
+        ),
+      )
       .limit(1);
 
     if (existing) {
@@ -315,8 +329,8 @@ export async function assignBranchMemberAction(data: { branchId: string; memberU
         .where(
           and(
             eq(schema.branchMembers.id, existing.id),
-            eq(schema.branchMembers.branchId, parsed.data.branchId)
-          )
+            eq(schema.branchMembers.branchId, parsed.data.branchId),
+          ),
         );
     } else {
       await db.insert(schema.branchMembers).values({
@@ -335,12 +349,12 @@ export async function removeBranchMemberAction(id: string) {
   return runWithCorrelationId(async () => {
     const { userId, orgId, premiumStatus } = await verifyVendorAccess();
     if (!premiumStatus.multiBranchActive) {
-      throw new Error('Multi-branch features are not unlocked.');
+      throw new Error("Multi-branch features are not unlocked.");
     }
 
     const parsed = removeBranchMemberSchema.safeParse({ id });
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     // Verify branch belongs to vendor org
@@ -355,13 +369,16 @@ export async function removeBranchMemberAction(id: string) {
       .limit(1);
 
     if (!member) {
-      throw new Error('Record not found or access denied.');
+      throw new Error("Record not found or access denied.");
     }
 
     await db
       .delete(schema.branchMembers)
       .where(
-        and(eq(schema.branchMembers.id, member.id), eq(schema.branchMembers.branchId, member.branchId))
+        and(
+          eq(schema.branchMembers.id, member.id),
+          eq(schema.branchMembers.branchId, member.branchId),
+        ),
       );
 
     revalidateVendorConsole();

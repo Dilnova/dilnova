@@ -11,13 +11,13 @@ Next.js **only allows async functions** to be exported from files marked `'use s
 
 ## Where those belong instead
 
-| Export kind | File |
-|-------------|------|
-| Zod schemas | `features/<domain>/schema.ts` |
-| Types | `features/<domain>/types.ts` |
-| Pure helpers | `features/<domain>/query.ts`, `*.shared.ts`, etc. |
-| Server utilities (not client actions) | `'server-only'` module (no `'use server'`) |
-| Async mutations callable from client | `*.actions.ts` with **only** `export async function` |
+| Export kind                           | File                                                 |
+| ------------------------------------- | ---------------------------------------------------- |
+| Zod schemas                           | `features/<domain>/schema.ts`                        |
+| Types                                 | `features/<domain>/types.ts`                         |
+| Pure helpers                          | `features/<domain>/query.ts`, `*.shared.ts`, etc.    |
+| Server utilities (not client actions) | `'server-only'` module (no `'use server'`)           |
+| Async mutations callable from client  | `*.actions.ts` with **only** `export async function` |
 
 ## Refactor impact
 

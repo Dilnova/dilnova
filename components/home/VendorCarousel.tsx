@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useRef } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Store } from 'lucide-react';
+import { useRef } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { ChevronLeft, ChevronRight, Store } from "lucide-react";
 
 export default function VendorCarousel({ vendors }: { vendors: any[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const scroll = (direction: 'left' | 'right') => {
+  const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
       const { current } = scrollRef;
-      const scrollAmount = direction === 'left' ? -400 : 400;
-      current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      const scrollAmount = direction === "left" ? -400 : 400;
+      current.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
 
@@ -22,11 +22,14 @@ export default function VendorCarousel({ vendors }: { vendors: any[] }) {
         <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
           <Store className="w-8 h-8 text-zinc-400" />
         </div>
-        <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Vendor Spots Open</h3>
+        <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
+          Vendor Spots Open
+        </h3>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto mb-6">
-          Our marketplace is expanding. Be among the first independent sellers to join the hub and reach our enterprise customer base.
+          Our marketplace is expanding. Be among the first independent sellers to join the hub and
+          reach our enterprise customer base.
         </p>
-        <Link 
+        <Link
           href="/contact"
           className="inline-flex items-center justify-center h-10 px-6 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm transition-colors"
         >
@@ -39,16 +42,16 @@ export default function VendorCarousel({ vendors }: { vendors: any[] }) {
   return (
     <div className="relative group">
       {/* Navigation Controls */}
-      <button 
-        onClick={() => scroll('left')}
+      <button
+        onClick={() => scroll("left")}
         className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-6 z-10 w-10 h-10 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-md hidden md:flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity disabled:opacity-0"
         aria-label="Scroll left"
       >
         <ChevronLeft className="w-5 h-5" />
       </button>
-      
-      <button 
-        onClick={() => scroll('right')}
+
+      <button
+        onClick={() => scroll("right")}
         className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-6 z-10 w-10 h-10 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-md hidden md:flex items-center justify-center text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity disabled:opacity-0"
         aria-label="Scroll right"
       >
@@ -56,7 +59,7 @@ export default function VendorCarousel({ vendors }: { vendors: any[] }) {
       </button>
 
       {/* Scrollable Container */}
-      <div 
+      <div
         ref={scrollRef}
         className="flex gap-6 overflow-x-auto touch-pan-x snap-x snap-mandatory scrollbar-hide py-4 px-2"
       >
@@ -69,9 +72,9 @@ export default function VendorCarousel({ vendors }: { vendors: any[] }) {
             <div className="flex items-start justify-between mb-4">
               {vendor.imageUrl ? (
                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 relative">
-                  <Image 
-                    src={vendor.imageUrl} 
-                    alt={`${vendor.name} logo`} 
+                  <Image
+                    src={vendor.imageUrl}
+                    alt={`${vendor.name} logo`}
                     fill
                     sizes="48px"
                     className="object-cover"
@@ -86,7 +89,7 @@ export default function VendorCarousel({ vendors }: { vendors: any[] }) {
                 Marketplace
               </span>
             </div>
-            
+
             <div className="flex-grow">
               <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100 mb-1 group-hover/card:text-indigo-600 dark:group-hover/card:text-indigo-400 transition-colors">
                 {vendor.name}

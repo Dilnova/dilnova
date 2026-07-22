@@ -14,12 +14,12 @@
  * so downstream middleware never re-invokes auth() redundantly.
  */
 
-import { createSafeActionClient } from 'next-safe-action';
-import { auth, clerkClient } from '@clerk/nextjs/server';
-import { db } from '@/shared/db/client';
-import { logger } from '@/shared/logging/logger';
-import { getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-cache';
-import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
+import { createSafeActionClient } from "next-safe-action";
+import { auth, clerkClient } from "@clerk/nextjs/server";
+import { db } from "@/shared/db/client";
+import { logger } from "@/shared/logging/logger";
+import { getCachedUserRole, getCachedIsSuperAdmin } from "@/shared/auth/clerk-cache";
+import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
 
 // ─── Custom typed error ────────────────────────────────────────────────────────
 // Next.js redacts arbitrary thrown Error messages in production. Throwing
@@ -27,7 +27,7 @@ import { isSuperAdminUser } from '@/shared/auth/superadmin.server';
 export class ActionError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ActionError';
+    this.name = "ActionError";
   }
 }
 
@@ -35,13 +35,13 @@ export class ActionError extends Error {
 export const actionClient = createSafeActionClient({
   handleServerError(e) {
     // Always log the full error server-side so it lands in Sentry / logger.
-    logger.error('Server Action unhandled error', e);
+    logger.error("Server Action unhandled error", e);
 
     // Return human-readable message for ActionError; redact everything else.
     if (e instanceof ActionError) {
       return e.message;
     }
-    return 'An unexpected error occurred. Please try again.';
+    return "An unexpected error occurred. Please try again.";
   },
 });
 
@@ -52,7 +52,7 @@ export const authenticatedAction = actionClient.use(async ({ next }) => {
   const { userId, orgId, orgRole, sessionClaims } = await auth();
 
   if (!userId) {
-    throw new ActionError('Unauthenticated: You must be signed in.');
+    throw new ActionError("Unauthenticated: You must be signed in.");
   }
 
   return next({
@@ -62,7 +62,8 @@ export const authenticatedAction = actionClient.use(async ({ next }) => {
       orgRole: orgRole ?? null,
       // Pass publicMetadata from session claims to avoid re-fetching auth()
       // in downstream middleware layers.
-      publicMetadata: (sessionClaims as Record<string, unknown> | null)?.['public_metadata'] as Record<string, unknown> | undefined,
+      publicMetadata: (sessionClaims as Record<string, unknown> | null)?.["public_metadata"] as
+        Record<string, unknown> | undefined,
       db,
     },
   });
@@ -77,16 +78,15 @@ export const vendorAction = authenticatedAction.use(async ({ ctx, next }) => {
     getCachedIsSuperAdmin(ctx.userId),
   ]);
 
-  if (role === 'customer') {
-    throw new ActionError('Unauthorized: Customers cannot perform vendor actions.');
+  if (role === "customer") {
+    throw new ActionError("Unauthorized: Customers cannot perform vendor actions.");
   }
 
   const isOrgVendor =
-    ctx.orgId != null &&
-    (ctx.orgRole === 'org:admin' || ctx.orgRole === 'org:member');
+    ctx.orgId != null && (ctx.orgRole === "org:admin" || ctx.orgRole === "org:member");
 
-  if (!isSuperAdmin && role !== 'vendor' && !isOrgVendor) {
-    throw new ActionError('Unauthorized: You do not have vendor permissions.');
+  if (!isSuperAdmin && role !== "vendor" && !isOrgVendor) {
+    throw new ActionError("Unauthorized: You do not have vendor permissions.");
   }
 
   return next({ ctx: { ...ctx, isSuperAdmin, userRole: role } });
@@ -96,11 +96,13 @@ export const vendorAction = authenticatedAction.use(async ({ ctx, next }) => {
 // Guarantees: user is org:admin of the active org OR a platform superadmin.
 // Use for actions that a regular org:member must NOT perform (e.g., catalog delete).
 export const orgAdminAction = vendorAction.use(async ({ ctx, next }) => {
-  const isOrgAdmin = ctx.orgRole === 'org:admin';
+  const isOrgAdmin = ctx.orgRole === "org:admin";
   const isSuperAdmin = ctx.isSuperAdmin;
 
   if (!isOrgAdmin && !isSuperAdmin) {
-    throw new ActionError('Unauthorized: Only organization administrators can perform this action.');
+    throw new ActionError(
+      "Unauthorized: Only organization administrators can perform this action.",
+    );
   }
 
   return next({ ctx });
@@ -114,7 +116,7 @@ export const superadminAction = authenticatedAction.use(async ({ ctx, next }) =>
   const user = await client.users.getUser(ctx.userId);
 
   if (!isSuperAdminUser(user)) {
-    throw new ActionError('Unauthorized: Only global administrators can perform this action.');
+    throw new ActionError("Unauthorized: Only global administrators can perform this action.");
   }
 
   return next({ ctx });

@@ -1,32 +1,27 @@
-'use server';
+"use server";
 
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { revalidateVendorConsole } from '@/features/vendor/revalidate';
-import {
-  adjustInventorySchema,
-  initInventorySchema,
-} from '@/features/inventory/schema';
-import {
-  validateStockAvailabilityId,
-} from '@/features/inventory/availability.server';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq, and } from "drizzle-orm";
+import { revalidateVendorConsole } from "@/features/vendor/revalidate";
+import { adjustInventorySchema, initInventorySchema } from "@/features/inventory/schema";
+import { validateStockAvailabilityId } from "@/features/inventory/availability.server";
 import {
   sumBranchAllocatedQuantity,
   validateCentralQuantityCoversBranches,
   incrementBranchStock,
   decrementBranchStock,
   getOrgDefaultBranchId,
-} from '@/features/inventory/ledger';
-import { logAuditAction } from '@/shared/audit/logger';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { verifyVendorAccess } from '@/features/inventory/vendor-data';
+} from "@/features/inventory/ledger";
+import { logAuditAction } from "@/shared/audit/logger";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { verifyVendorAccess } from "@/features/inventory/vendor-data";
 
 export async function vendorAdjustInventoryAction(data: {
   inventoryId: string;
   quantityChange: number;
-  type: 'restock' | 'manual_adjustment' | 'damage_loss';
+  type: "restock" | "manual_adjustment" | "damage_loss";
   reason?: string;
   branchId?: string;
 }) {
@@ -36,7 +31,7 @@ export async function vendorAdjustInventoryAction(data: {
 
     const parsed = adjustInventorySchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const newQuantity = await db.transaction(async (tx) => {
@@ -48,12 +43,14 @@ export async function vendorAdjustInventoryAction(data: {
         })
         .from(schema.inventory)
         .innerJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
-        .where(and(eq(schema.inventory.id, parsed.data.inventoryId), eq(schema.products.orgId, orgId)))
-        .for('update')
+        .where(
+          and(eq(schema.inventory.id, parsed.data.inventoryId), eq(schema.products.orgId, orgId)),
+        )
+        .for("update")
         .limit(1);
 
       if (!inv) {
-        throw new Error('Inventory record not found or access denied.');
+        throw new Error("Inventory record not found or access denied.");
       }
 
       const previousQuantity = inv.quantity;
@@ -64,7 +61,7 @@ export async function vendorAdjustInventoryAction(data: {
       }
 
       if (premiumStatus.multiBranchActive) {
-        const targetBranchId = parsed.data.branchId ?? await getOrgDefaultBranchId(tx, orgId);
+        const targetBranchId = parsed.data.branchId ?? (await getOrgDefaultBranchId(tx, orgId));
 
         if (targetBranchId) {
           if (parsed.data.quantityChange > 0) {
@@ -72,14 +69,14 @@ export async function vendorAdjustInventoryAction(data: {
               tx,
               targetBranchId,
               inv.productId,
-              parsed.data.quantityChange
+              parsed.data.quantityChange,
             );
           } else if (parsed.data.quantityChange < 0) {
             await decrementBranchStock(
               tx,
               targetBranchId,
               inv.productId,
-              -parsed.data.quantityChange
+              -parsed.data.quantityChange,
             );
           }
         }
@@ -87,7 +84,10 @@ export async function vendorAdjustInventoryAction(data: {
         // Validate that the new central quantity covers the total branch allocations
         // This is strictly checked AFTER branch modifications are applied in the transaction
         const totalBranchAllocated = await sumBranchAllocatedQuantity(tx, inv.productId);
-        const branchCheck = validateCentralQuantityCoversBranches(nextQuantity, totalBranchAllocated);
+        const branchCheck = validateCentralQuantityCoversBranches(
+          nextQuantity,
+          totalBranchAllocated,
+        );
         if (!branchCheck.ok) {
           throw new Error(branchCheck.error);
         }
@@ -96,9 +96,7 @@ export async function vendorAdjustInventoryAction(data: {
       await tx
         .update(schema.inventory)
         .set({ quantity: nextQuantity, updatedAt: new Date() })
-        .where(
-          and(eq(schema.inventory.id, inv.id), eq(schema.inventory.productId, inv.productId))
-        );
+        .where(and(eq(schema.inventory.id, inv.id), eq(schema.inventory.productId, inv.productId)));
 
       await tx.insert(schema.inventoryMovements).values({
         inventoryId: parsed.data.inventoryId,
@@ -114,8 +112,8 @@ export async function vendorAdjustInventoryAction(data: {
 
     await logAuditAction({
       userId,
-      action: 'ADJUST_INVENTORY',
-      targetType: 'inventory',
+      action: "ADJUST_INVENTORY",
+      targetType: "inventory",
       targetId: parsed.data.inventoryId,
       metadata: { change: parsed.data.quantityChange, newQuantity },
     });
@@ -140,11 +138,11 @@ export async function vendorInitInventoryAction(data: {
 
     const parsed = initInventorySchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || 'Invalid input.');
+      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
     }
     const validData = parsed.data;
 
-    if (!validData.productId) throw new Error('Product ID is required.');
+    if (!validData.productId) throw new Error("Product ID is required.");
 
     // Verify product belongs to this vendor org
     const [prod] = await db
@@ -154,18 +152,20 @@ export async function vendorInitInventoryAction(data: {
       .limit(1);
 
     if (!prod) {
-      throw new Error('Product not found or access denied.');
+      throw new Error("Product not found or access denied.");
     }
 
     if (validData.supplierId) {
       const [supplier] = await db
         .select({ id: schema.suppliers.id })
         .from(schema.suppliers)
-        .where(and(eq(schema.suppliers.id, validData.supplierId), eq(schema.suppliers.orgId, orgId)))
+        .where(
+          and(eq(schema.suppliers.id, validData.supplierId), eq(schema.suppliers.orgId, orgId)),
+        )
         .limit(1);
 
       if (!supplier) {
-        throw new Error('Supplier not found or access denied.');
+        throw new Error("Supplier not found or access denied.");
       }
     }
 
@@ -177,13 +177,15 @@ export async function vendorInitInventoryAction(data: {
       .limit(1);
 
     if (existing.length > 0) {
-      throw new Error('Inventory record already exists.');
+      throw new Error("Inventory record already exists.");
     }
 
     const quantity = validData.quantity ?? 0;
-    const availability = await validateStockAvailabilityId(validData.stockAvailability || 'in_stock');
+    const availability = await validateStockAvailabilityId(
+      validData.stockAvailability || "in_stock",
+    );
     if (!availability) {
-      throw new Error('Invalid stock availability status.');
+      throw new Error("Invalid stock availability status.");
     }
 
     const [inv] = await db
@@ -202,19 +204,19 @@ export async function vendorInitInventoryAction(data: {
     if (inv && quantity > 0) {
       await db.insert(schema.inventoryMovements).values({
         inventoryId: inv.id,
-        type: 'restock',
+        type: "restock",
         quantityChanged: quantity,
         previousQuantity: 0,
         newQuantity: quantity,
-        reason: 'Initial setup',
+        reason: "Initial setup",
         userId,
       });
     }
 
     await logAuditAction({
       userId,
-      action: 'CREATE_INVENTORY',
-      targetType: 'inventory',
+      action: "CREATE_INVENTORY",
+      targetType: "inventory",
       targetId: inv.id,
       metadata: { productId: validData.productId, quantity },
     });

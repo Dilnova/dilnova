@@ -1,37 +1,67 @@
-import { useState, useRef, useEffect } from 'react';
-import useSWR from 'swr';
-import { getCartCheckoutOptionsAction, syncCartPricesAction } from '@/features/cart/checkout.actions';
-import { syncSelectedProductIds } from '@/features/cart/vendor-checkout';
-import { BANK_TRANSFER_PAYMENT_ID } from '@/features/billing/bank-transfer';
-import type { CartItem } from '@/features/cart/types';
+import { useState, useRef, useEffect } from "react";
+import useSWR from "swr";
+import {
+  getCartCheckoutOptionsAction,
+  syncCartPricesAction,
+} from "@/features/cart/checkout.actions";
+import { syncSelectedProductIds } from "@/features/cart/vendor-checkout";
+import { BANK_TRANSFER_PAYMENT_ID } from "@/features/billing/bank-transfer";
+import type { CartItem } from "@/features/cart/types";
 
 export function useCheckoutOptionsState(
   isSignedIn: boolean,
   cartItems: CartItem[],
-  syncCartPrices: (items: any[], removedIds: string[]) => void
+  syncCartPrices: (items: any[], removedIds: string[]) => void,
 ) {
-  const [fulfillmentMethod, setFulfillmentMethod] = useState('store_pickup');
+  const [fulfillmentMethod, setFulfillmentMethod] = useState("store_pickup");
   const [paymentMethod, setPaymentMethod] = useState(BANK_TRANSFER_PAYMENT_ID);
-  const [pickupBranchId, setPickupBranchId] = useState('');
+  const [pickupBranchId, setPickupBranchId] = useState("");
 
   const [checkoutOptions, setCheckoutOptions] = useState<{
-    fulfillment: { id: string; label: string; description?: string; zeroShipping: boolean; requiresBranch: boolean }[];
-    payment: { id: string; label: string; description?: string; requiresDelivery: boolean; pendingPayment?: boolean }[];
-    pickupBranches: { orgId: string; branches: { id: string; name: string; address: string | null; phone: string | null }[] }[];
+    fulfillment: {
+      id: string;
+      label: string;
+      description?: string;
+      zeroShipping: boolean;
+      requiresBranch: boolean;
+    }[];
+    payment: {
+      id: string;
+      label: string;
+      description?: string;
+      requiresDelivery: boolean;
+      pendingPayment?: boolean;
+    }[];
+    pickupBranches: {
+      orgId: string;
+      branches: { id: string; name: string; address: string | null; phone: string | null }[];
+    }[];
     vendorBankTransferByOrg: Record<string, { vendorName: string; configured: boolean }>;
-    vendorCartSummary: { orgId: string; vendorName: string; subtotalCents: number; productIds: string[]; itemCount: number }[];
-  }>({ fulfillment: [], payment: [], pickupBranches: [], vendorBankTransferByOrg: {}, vendorCartSummary: [] });
+    vendorCartSummary: {
+      orgId: string;
+      vendorName: string;
+      subtotalCents: number;
+      productIds: string[];
+      itemCount: number;
+    }[];
+  }>({
+    fulfillment: [],
+    payment: [],
+    pickupBranches: [],
+    vendorBankTransferByOrg: {},
+    vendorCartSummary: [],
+  });
 
   const [vendorCount, setVendorCount] = useState(0);
-  const [selectedCheckoutVendorOrgId, setSelectedCheckoutVendorOrgId] = useState('');
+  const [selectedCheckoutVendorOrgId, setSelectedCheckoutVendorOrgId] = useState("");
   const [requiresVendorSelection, setRequiresVendorSelection] = useState(false);
   const [selectedCheckoutProductIds, setSelectedCheckoutProductIds] = useState<string[]>([]);
   const [priceSyncNotice, setPriceSyncNotice] = useState<string | null>(null);
 
-  const cartItemIds = cartItems.map((item) => item.id).join(',');
-  const cartLinesKey = cartItems.map((item) => `${item.id}:${item.quantity}`).join(',');
+  const cartItemIds = cartItems.map((item) => item.id).join(",");
+  const cartLinesKey = cartItems.map((item) => `${item.id}:${item.quantity}`).join(",");
   const prevCartItemIdsRef = useRef<string[]>([]);
-  const prevCheckoutVendorOrgIdRef = useRef('');
+  const prevCheckoutVendorOrgIdRef = useRef("");
 
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -46,17 +76,19 @@ export function useCheckoutOptionsState(
 
         const previousById = new Map(cartItems.map((item) => [item.id, item]));
         const priceChanged = result.data.items.some(
-          (item) => previousById.get(item.id)?.price !== item.price
+          (item) => previousById.get(item.id)?.price !== item.price,
         );
 
         syncCartPrices(result.data.items, result.data.removedIds);
 
         if (result.data.removedIds.length > 0 && priceChanged) {
-          setPriceSyncNotice('Some items were removed and prices were updated to match the catalog.');
+          setPriceSyncNotice(
+            "Some items were removed and prices were updated to match the catalog.",
+          );
         } else if (result.data.removedIds.length > 0) {
-          setPriceSyncNotice('Some unavailable items were removed from your cart.');
+          setPriceSyncNotice("Some unavailable items were removed from your cart.");
         } else if (priceChanged) {
-          setPriceSyncNotice('Cart prices were updated to match the current catalog.');
+          setPriceSyncNotice("Cart prices were updated to match the current catalog.");
         } else {
           setPriceSyncNotice(null);
         }
@@ -73,7 +105,7 @@ export function useCheckoutOptionsState(
     if (!isSignedIn) {
       setSelectedCheckoutProductIds([]);
       prevCartItemIdsRef.current = [];
-      prevCheckoutVendorOrgIdRef.current = '';
+      prevCheckoutVendorOrgIdRef.current = "";
       return;
     }
 
@@ -86,13 +118,14 @@ export function useCheckoutOptionsState(
         previousSelection: prev,
         previousCartIds: previousIds,
         currentCartIds: currentIds,
-      })
+      }),
     );
   }, [cartLinesKey, isSignedIn, cartItems]);
 
-  const swrKey = isSignedIn && cartItems.length > 0
-    ? ['checkoutOptions', cartLinesKey, selectedCheckoutVendorOrgId]
-    : null;
+  const swrKey =
+    isSignedIn && cartItems.length > 0
+      ? ["checkoutOptions", cartLinesKey, selectedCheckoutVendorOrgId]
+      : null;
 
   const swrFetcher = async () => {
     const lines = cartItems.map((item) => ({
@@ -102,19 +135,24 @@ export function useCheckoutOptionsState(
     }));
     const result = await getCartCheckoutOptionsAction({
       cartLines: lines,
-      checkoutVendorOrgId: selectedCheckoutVendorOrgId || null
+      checkoutVendorOrgId: selectedCheckoutVendorOrgId || null,
     });
     if (!result?.data?.success) {
-      const errorMessage = result?.data && 'error' in result.data ? result.data.error : (result?.serverError || 'Failed to load checkout options.');
-      throw new Error(typeof errorMessage === 'string' ? errorMessage : 'Failed to load checkout options.');
+      const errorMessage =
+        result?.data && "error" in result.data
+          ? result.data.error
+          : result?.serverError || "Failed to load checkout options.";
+      throw new Error(
+        typeof errorMessage === "string" ? errorMessage : "Failed to load checkout options.",
+      );
     }
     return result.data;
   };
 
-  const { 
-    data: checkoutOptionsData, 
-    error: checkoutOptionsError, 
-    isValidating: optionsLoading
+  const {
+    data: checkoutOptionsData,
+    error: checkoutOptionsError,
+    isValidating: optionsLoading,
   } = useSWR(swrKey, swrFetcher, { revalidateOnFocus: false, dedupingInterval: 5000 });
 
   useEffect(() => {
@@ -128,12 +166,12 @@ export function useCheckoutOptionsState(
           vendorCartSummary: [],
         });
         setVendorCount(0);
-        setSelectedCheckoutVendorOrgId('');
+        setSelectedCheckoutVendorOrgId("");
         setRequiresVendorSelection(false);
         setSelectedCheckoutProductIds([]);
-        setPickupBranchId('');
+        setPickupBranchId("");
         prevCartItemIdsRef.current = [];
-        prevCheckoutVendorOrgIdRef.current = '';
+        prevCheckoutVendorOrgIdRef.current = "";
       }
       return;
     }
@@ -152,17 +190,25 @@ export function useCheckoutOptionsState(
 
       if (checkoutOptionsData.checkoutVendorOrgId) {
         setSelectedCheckoutVendorOrgId(checkoutOptionsData.checkoutVendorOrgId);
-        
+
         if (prevCheckoutVendorOrgIdRef.current !== checkoutOptionsData.checkoutVendorOrgId) {
-           const vendorItemIds = checkoutOptionsData.vendorCartSummary
-             .find(v => v.orgId === checkoutOptionsData.checkoutVendorOrgId)?.productIds || [];
-           setSelectedCheckoutProductIds(vendorItemIds);
-           prevCheckoutVendorOrgIdRef.current = checkoutOptionsData.checkoutVendorOrgId;
+          const vendorItemIds =
+            checkoutOptionsData.vendorCartSummary.find(
+              (v) => v.orgId === checkoutOptionsData.checkoutVendorOrgId,
+            )?.productIds || [];
+          setSelectedCheckoutProductIds(vendorItemIds);
+          prevCheckoutVendorOrgIdRef.current = checkoutOptionsData.checkoutVendorOrgId;
         }
 
         if (checkoutOptionsData.pickupBranches.length > 0) {
           const defaultBranch = checkoutOptionsData.pickupBranches[0].branches[0];
-          if (defaultBranch && (!pickupBranchId || !checkoutOptionsData.pickupBranches.some(o => o.branches.some(b => b.id === pickupBranchId)))) {
+          if (
+            defaultBranch &&
+            (!pickupBranchId ||
+              !checkoutOptionsData.pickupBranches.some((o) =>
+                o.branches.some((b) => b.id === pickupBranchId),
+              ))
+          ) {
             setPickupBranchId(defaultBranch.id);
           }
         }

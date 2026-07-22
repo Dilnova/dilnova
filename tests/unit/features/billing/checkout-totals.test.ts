@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 import {
   calculateCheckoutTotals,
   getOrderDisplayTotals,
   CHECKOUT_TAX_RATE,
   CHECKOUT_STANDARD_SHIPPING_CENTS,
-} from '@/features/billing/checkout-totals';
+} from "@/features/billing/checkout-totals";
 
-describe('Checkout Totals (Billing)', () => {
-  describe('calculateCheckoutTotals()', () => {
-    it('calculates totals correctly below the free shipping threshold', () => {
+describe("Checkout Totals (Billing)", () => {
+  describe("calculateCheckoutTotals()", () => {
+    it("calculates totals correctly below the free shipping threshold", () => {
       // $20.00 subtotal (below $50.00 threshold)
       const subtotalCents = 2000;
       const result = calculateCheckoutTotals(subtotalCents);
@@ -19,7 +19,7 @@ describe('Checkout Totals (Billing)', () => {
       expect(result.grandTotal).toBe(2000 + 160 + 500); // 2660
     });
 
-    it('calculates totals correctly above the free shipping threshold', () => {
+    it("calculates totals correctly above the free shipping threshold", () => {
       // $60.00 subtotal (above $50.00 threshold)
       const subtotalCents = 6000;
       const result = calculateCheckoutTotals(subtotalCents);
@@ -30,7 +30,7 @@ describe('Checkout Totals (Billing)', () => {
       expect(result.grandTotal).toBe(6000 + 480 + 0); // 6480
     });
 
-    it('forces zero shipping if zeroShipping flag is true', () => {
+    it("forces zero shipping if zeroShipping flag is true", () => {
       // $20.00 subtotal (would normally have shipping)
       const subtotalCents = 2000;
       const result = calculateCheckoutTotals(subtotalCents, true);
@@ -40,7 +40,7 @@ describe('Checkout Totals (Billing)', () => {
       expect(result.grandTotal).toBe(2000 + 160); // 2160
     });
 
-    it('handles zero subtotal correctly', () => {
+    it("handles zero subtotal correctly", () => {
       const result = calculateCheckoutTotals(0);
       expect(result.subtotalAmount).toBe(0);
       expect(result.taxAmount).toBe(0);
@@ -48,7 +48,7 @@ describe('Checkout Totals (Billing)', () => {
       expect(result.grandTotal).toBe(500);
     });
 
-    it('handles negative subtotal by clamping to zero', () => {
+    it("handles negative subtotal by clamping to zero", () => {
       const result = calculateCheckoutTotals(-500);
       expect(result.subtotalAmount).toBe(0);
       expect(result.taxAmount).toBe(0);
@@ -57,8 +57,8 @@ describe('Checkout Totals (Billing)', () => {
     });
   });
 
-  describe('getOrderDisplayTotals()', () => {
-    it('returns exact breakdown when full breakdown is provided', () => {
+  describe("getOrderDisplayTotals()", () => {
+    it("returns exact breakdown when full breakdown is provided", () => {
       const order = {
         totalAmount: 3000,
         subtotalAmount: 2000,
@@ -73,7 +73,7 @@ describe('Checkout Totals (Billing)', () => {
       expect(result.grandTotal).toBe(3000);
     });
 
-    it('infers tax and zero shipping for legacy orders missing breakdown', () => {
+    it("infers tax and zero shipping for legacy orders missing breakdown", () => {
       // Only totalAmount provided
       const order = {
         totalAmount: 1000,

@@ -1,14 +1,14 @@
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { isVideoUrl } from '@/shared/media/media';
-import CatalogFilters, { CatalogDesktopSidebar } from './CatalogFilters';
-import WishlistButton from './product-detail/WishlistButton';
-import AddToCartButton from '@/features/cart/components/AddToCartButton';
-import StockAvailabilityBadge from '@/features/inventory/components/StockAvailabilityBadge';
-import type { StockAvailabilityTone } from '@/features/inventory/availability.shared';
-import { buildCatalogSearchParams } from '../queries';
-import type { CatalogCategoryRef, CatalogVendorRef, CatalogQueryParams } from '../types';
+import React from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { isVideoUrl } from "@/shared/media/media";
+import CatalogFilters, { CatalogDesktopSidebar } from "./CatalogFilters";
+import WishlistButton from "./product-detail/WishlistButton";
+import AddToCartButton from "@/features/cart/components/AddToCartButton";
+import StockAvailabilityBadge from "@/features/inventory/components/StockAvailabilityBadge";
+import type { StockAvailabilityTone } from "@/features/inventory/availability.shared";
+import { buildCatalogSearchParams } from "../queries";
+import type { CatalogCategoryRef, CatalogVendorRef, CatalogQueryParams } from "../types";
 
 export interface CatalogItemViewData {
   product: {
@@ -49,7 +49,7 @@ interface CatalogLayoutProps {
   totalCount: number;
   totalPages: number;
   items: CatalogItemViewData[];
-  viewMode: 'grid' | 'list';
+  viewMode: "grid" | "list";
 }
 
 export default function CatalogLayout({
@@ -73,8 +73,8 @@ export default function CatalogLayout({
         currentType={catalogQuery.type}
         currentSort={catalogQuery.sort}
         currentVendor={catalogQuery.vendorSlug}
-        currentMinPrice={rawParams.minPrice || ''}
-        currentMaxPrice={rawParams.maxPrice || ''}
+        currentMinPrice={rawParams.minPrice || ""}
+        currentMaxPrice={rawParams.maxPrice || ""}
         currentStock={catalogQuery.stock}
         totalCount={totalCount}
         viewMode={viewMode}
@@ -90,8 +90,8 @@ export default function CatalogLayout({
             currentCategory={catalogQuery.categorySlug}
             currentType={catalogQuery.type}
             currentVendor={catalogQuery.vendorSlug}
-            currentMinPrice={rawParams.minPrice || ''}
-            currentMaxPrice={rawParams.maxPrice || ''}
+            currentMinPrice={rawParams.minPrice || ""}
+            currentMaxPrice={rawParams.maxPrice || ""}
             currentStock={catalogQuery.stock}
           />
         </div>
@@ -108,7 +108,8 @@ export default function CatalogLayout({
                   No Catalog Items Found
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm mx-auto">
-                  No products or services matched your active search & filter criteria. Try clearing some filters or searching for standard keywords.
+                  No products or services matched your active search & filter criteria. Try clearing
+                  some filters or searching for standard keywords.
                 </p>
               </div>
               <Link
@@ -121,13 +122,24 @@ export default function CatalogLayout({
           ) : (
             <>
               {/* Product Layout Grid vs List */}
-              {viewMode === 'grid' ? (
+              {viewMode === "grid" ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                   {items.map((item, index) => {
-                    const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, isFavorited, canPurchase, availabilityBadge } = item;
-                    const formattedPrice = (product.price / 100).toLocaleString('en-US', {
-                      style: 'currency',
-                      currency: 'USD',
+                    const {
+                      product,
+                      categoryName,
+                      vendorName,
+                      vendorLogo,
+                      vendorSlug,
+                      averageRating,
+                      totalReviews,
+                      isFavorited,
+                      canPurchase,
+                      availabilityBadge,
+                    } = item;
+                    const formattedPrice = (product.price / 100).toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "USD",
                     });
 
                     return (
@@ -135,7 +147,10 @@ export default function CatalogLayout({
                         key={product.id}
                         className="group flex flex-col justify-between border border-zinc-200/80 dark:border-zinc-850/80 bg-white dark:bg-zinc-950 rounded-2xl overflow-hidden hover:border-purple-500/40 dark:hover:border-purple-500/40 hover:shadow-lg transition-all duration-300"
                       >
-                        <Link href={`/products/${product.id}`} className="flex-1 flex flex-col group">
+                        <Link
+                          href={`/products/${product.id}`}
+                          className="flex-1 flex flex-col group"
+                        >
                           {/* Image Thumbnail */}
                           <div className="h-48 bg-zinc-100 dark:bg-zinc-900 relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
                             {product.imageUrl ? (
@@ -177,9 +192,9 @@ export default function CatalogLayout({
                             {/* Type Badge */}
                             <span
                               className={`absolute top-3 right-3 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-xs ${
-                                product.type === 'service'
-                                  ? 'bg-teal-500 text-teal-950'
-                                  : 'bg-indigo-500 text-indigo-50'
+                                product.type === "service"
+                                  ? "bg-teal-500 text-teal-950"
+                                  : "bg-indigo-500 text-indigo-50"
                               }`}
                             >
                               {product.type}
@@ -218,7 +233,7 @@ export default function CatalogLayout({
                               </div>
 
                               <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed min-h-[2.5rem]">
-                                {product.description || 'No description provided.'}
+                                {product.description || "No description provided."}
                               </p>
                             </div>
                           </div>
@@ -232,9 +247,24 @@ export default function CatalogLayout({
                                 {formattedPrice}
                               </span>
                               <div className="flex items-center gap-1 text-[9px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5">
-                                <svg className="w-3 h-3 opacity-60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                <svg
+                                  className="w-3 h-3 opacity-60 shrink-0"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                  />
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                  />
                                 </svg>
                                 <span>{product.views} views</span>
                               </div>
@@ -295,10 +325,21 @@ export default function CatalogLayout({
                 /* List View Layout */
                 <div className="space-y-4">
                   {items.map((item) => {
-                    const { product, categoryName, vendorName, vendorLogo, vendorSlug, averageRating, totalReviews, isFavorited, canPurchase, availabilityBadge } = item;
-                    const formattedPrice = (product.price / 100).toLocaleString('en-US', {
-                      style: 'currency',
-                      currency: 'USD',
+                    const {
+                      product,
+                      categoryName,
+                      vendorName,
+                      vendorLogo,
+                      vendorSlug,
+                      averageRating,
+                      totalReviews,
+                      isFavorited,
+                      canPurchase,
+                      availabilityBadge,
+                    } = item;
+                    const formattedPrice = (product.price / 100).toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "USD",
                     });
 
                     return (
@@ -345,9 +386,9 @@ export default function CatalogLayout({
 
                           <span
                             className={`absolute top-3 right-3 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-xs ${
-                              product.type === 'service'
-                                ? 'bg-teal-500 text-teal-950'
-                                : 'bg-indigo-500 text-indigo-50'
+                              product.type === "service"
+                                ? "bg-teal-500 text-teal-950"
+                                : "bg-indigo-500 text-indigo-50"
                             }`}
                           >
                             {product.type}
@@ -366,7 +407,9 @@ export default function CatalogLayout({
                               {totalReviews > 0 && (
                                 <span className="text-xs font-bold text-amber-500 flex items-center gap-0.5 shrink-0">
                                   <span>★</span>
-                                  <span>{averageRating} ({totalReviews} reviews)</span>
+                                  <span>
+                                    {averageRating} ({totalReviews} reviews)
+                                  </span>
                                 </span>
                               )}
                             </div>
@@ -378,7 +421,7 @@ export default function CatalogLayout({
                             </Link>
 
                             <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed mb-3">
-                              {product.description || 'No description provided.'}
+                              {product.description || "No description provided."}
                             </p>
 
                             <div className="flex items-center gap-3 text-[11px] text-zinc-400 dark:text-zinc-500 font-mono flex-wrap">
@@ -409,7 +452,7 @@ export default function CatalogLayout({
                                 </div>
                               )}
                               <span className="text-xs text-zinc-600 dark:text-zinc-400 truncate">
-                                Sold by{' '}
+                                Sold by{" "}
                                 {vendorSlug ? (
                                   <Link
                                     href={`/vendors/${vendorSlug}`}

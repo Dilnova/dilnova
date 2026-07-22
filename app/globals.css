@@ -67,7 +67,11 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  font-family:
+    var(--font-geist-sans),
+    system-ui,
+    -apple-system,
+    sans-serif;
   top: 0px !important;
   width: 100%;
   position: relative;
@@ -210,25 +214,55 @@ iframe.skiptranslate,
 }
 
 @keyframes ui-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes ui-slide-in-from-top {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes ui-scale-in {
-  from { opacity: 0; transform: scale(0.92); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.animate-fade-in { animation: ui-fade-in 0.3s ease-out forwards; }
-.animate-in { animation-duration: 150ms; animation-fill-mode: both; animation-timing-function: ease-out; }
-.fade-in, .fade-in-50 { animation-name: ui-fade-in; }
-.slide-in-from-top-1, .slide-in-from-top-2 { animation-name: ui-slide-in-from-top; }
-.animate-scale-in { animation: ui-scale-in 0.2s ease-out forwards; }
+.animate-fade-in {
+  animation: ui-fade-in 0.3s ease-out forwards;
+}
+.animate-in {
+  animation-duration: 150ms;
+  animation-fill-mode: both;
+  animation-timing-function: ease-out;
+}
+.fade-in,
+.fade-in-50 {
+  animation-name: ui-fade-in;
+}
+.slide-in-from-top-1,
+.slide-in-from-top-2 {
+  animation-name: ui-slide-in-from-top;
+}
+.animate-scale-in {
+  animation: ui-scale-in 0.2s ease-out forwards;
+}
 
 /* Keep emoji glyphs visible across font weights and dark mode */
 .emoji {
@@ -239,12 +273,26 @@ iframe.skiptranslate,
   display: inline-block;
 }
 
-input, textarea, select { color: #18181b; }
-input::placeholder, textarea::placeholder { color: #71717a; }
+input,
+textarea,
+select {
+  color: #18181b;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #71717a;
+}
 
 @media (prefers-color-scheme: dark) {
-  input, textarea, select { color: #f4f4f5; }
-  input::placeholder, textarea::placeholder { color: #a1a1aa; }
+  input,
+  textarea,
+  select {
+    color: #f4f4f5;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #a1a1aa;
+  }
 }
 
 @keyframes slideUp {

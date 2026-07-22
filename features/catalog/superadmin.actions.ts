@@ -1,22 +1,22 @@
-'use server';
+"use server";
 
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import {
   createCategorySchema,
   updateCategorySchema,
   deleteCategorySchema,
   updateProductSchema,
   deleteProductSchema,
-} from '@/features/catalog/schema';
-import { superadminAction, ActionError } from '@/lib/safe-action';
-import { logAuditAction } from '@/shared/audit/logger';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
-import { deleteCloudinaryAsset } from '@/shared/media/cloudinary-server';
+} from "@/features/catalog/schema";
+import { superadminAction, ActionError } from "@/lib/safe-action";
+import { logAuditAction } from "@/shared/audit/logger";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { isAllowedCloudinaryDeliveryUrl } from "@/shared/media/cloudinary-url";
+import { deleteCloudinaryAsset } from "@/shared/media/cloudinary-server";
 
 export const createCategoryAction = superadminAction
   .schema(createCategorySchema)
@@ -36,15 +36,15 @@ export const createCategoryAction = superadminAction
       if (category) {
         await logAuditAction({
           userId: ctx.userId,
-          action: 'CREATE_CATEGORY',
-          targetType: 'category',
+          action: "CREATE_CATEGORY",
+          targetType: "category",
           targetId: category.id,
           metadata: { name: category.name, slug: category.slug, parentId: category.parentId },
         });
       }
 
-      revalidatePath('/superadmin');
-      revalidatePath('/products');
+      revalidatePath("/superadmin");
+      revalidatePath("/products");
       return { success: true };
     });
   });
@@ -56,7 +56,7 @@ export const updateCategoryAction = superadminAction
       await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
 
       if (parsedInput.parentId === parsedInput.id) {
-        throw new ActionError('A category cannot refer to itself as its parent.');
+        throw new ActionError("A category cannot refer to itself as its parent.");
       }
 
       await db
@@ -70,14 +70,18 @@ export const updateCategoryAction = superadminAction
 
       await logAuditAction({
         userId: ctx.userId,
-        action: 'UPDATE_CATEGORY',
-        targetType: 'category',
+        action: "UPDATE_CATEGORY",
+        targetType: "category",
         targetId: parsedInput.id,
-        metadata: { name: parsedInput.name, slug: parsedInput.slug, parentId: parsedInput.parentId },
+        metadata: {
+          name: parsedInput.name,
+          slug: parsedInput.slug,
+          parentId: parsedInput.parentId,
+        },
       });
 
-      revalidatePath('/superadmin');
-      revalidatePath('/products');
+      revalidatePath("/superadmin");
+      revalidatePath("/products");
       return { success: true };
     });
   });
@@ -96,20 +100,22 @@ export const deleteCategoryAction = superadminAction
         .limit(1);
 
       if (associatedProducts.length > 0) {
-        throw new ActionError('Cannot delete category: It is currently linked to active products or services.');
+        throw new ActionError(
+          "Cannot delete category: It is currently linked to active products or services.",
+        );
       }
 
       await db.delete(schema.categories).where(eq(schema.categories.id, parsedInput.id));
 
       await logAuditAction({
         userId: ctx.userId,
-        action: 'DELETE_CATEGORY',
-        targetType: 'category',
+        action: "DELETE_CATEGORY",
+        targetType: "category",
         targetId: parsedInput.id,
       });
 
-      revalidatePath('/superadmin');
-      revalidatePath('/products');
+      revalidatePath("/superadmin");
+      revalidatePath("/products");
       return { success: true };
     });
   });
@@ -130,18 +136,22 @@ export const updateProductAction = superadminAction
         .limit(1);
       const productOrgId = existing[0]?.orgId;
       if (!productOrgId) {
-        throw new ActionError('Product not found.');
+        throw new ActionError("Product not found.");
       }
 
       if (parsedInput.updates.imageUrl) {
         if (!isAllowedCloudinaryDeliveryUrl(parsedInput.updates.imageUrl, productOrgId)) {
-          throw new ActionError('Invalid product image: The image must belong to the product organization folder.');
+          throw new ActionError(
+            "Invalid product image: The image must belong to the product organization folder.",
+          );
         }
       }
       if (parsedInput.updates.media) {
         for (const item of parsedInput.updates.media) {
           if (!isAllowedCloudinaryDeliveryUrl(item.url, productOrgId)) {
-            throw new ActionError('Invalid product media: The media must belong to the product organization folder.');
+            throw new ActionError(
+              "Invalid product media: The media must belong to the product organization folder.",
+            );
           }
         }
       }
@@ -178,21 +188,18 @@ export const updateProductAction = superadminAction
         setClause.media = parsedInput.updates.media;
       }
 
-      await db
-        .update(schema.products)
-        .set(setClause)
-        .where(eq(schema.products.id, parsedInput.id));
+      await db.update(schema.products).set(setClause).where(eq(schema.products.id, parsedInput.id));
 
       await logAuditAction({
         userId: ctx.userId,
-        action: 'UPDATE_PRODUCT',
-        targetType: 'product',
+        action: "UPDATE_PRODUCT",
+        targetType: "product",
         targetId: parsedInput.id,
         metadata: { updates: parsedInput.updates },
       });
 
-      revalidatePath('/superadmin');
-      revalidatePath('/products');
+      revalidatePath("/superadmin");
+      revalidatePath("/products");
       revalidatePath(`/products/${parsedInput.id}`);
       return { success: true };
     });
@@ -204,7 +211,10 @@ export const deleteProductAction = superadminAction
     return runWithCorrelationId(async () => {
       await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
 
-      const [deleted] = await db.delete(schema.products).where(eq(schema.products.id, parsedInput.id)).returning();
+      const [deleted] = await db
+        .delete(schema.products)
+        .where(eq(schema.products.id, parsedInput.id))
+        .returning();
 
       if (deleted?.imageUrl) {
         await deleteCloudinaryAsset(deleted.imageUrl);
@@ -217,13 +227,13 @@ export const deleteProductAction = superadminAction
 
       await logAuditAction({
         userId: ctx.userId,
-        action: 'DELETE_PRODUCT',
-        targetType: 'product',
+        action: "DELETE_PRODUCT",
+        targetType: "product",
         targetId: parsedInput.id,
       });
 
-      revalidatePath('/superadmin');
-      revalidatePath('/products');
+      revalidatePath("/superadmin");
+      revalidatePath("/products");
       return { success: true };
     });
   });

@@ -1,26 +1,22 @@
-'use server';
+"use server";
 
-import { clerkClient } from '@clerk/nextjs/server';
-import * as schema from '@/shared/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
-import { revalidatePath, updateTag } from 'next/cache';
-import { revalidateVendorConsole } from '@/features/vendor/revalidate';
-import { getSystemSetting } from '@/shared/platform/settings';
-import { logger } from '@/shared/logging/logger';
-import { addProductSchema, vendorDeleteProductSchema } from '@/features/catalog/schema';
-import { logAuditAction } from '@/shared/audit/logger';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { getPremiumStatus, DEFAULT_MAX_LISTING_COUNT } from '@/features/inventory/premium-license';
-import { validateStockAvailabilityId } from '@/features/inventory/availability.server';
-import { isAllowedCloudinaryDeliveryUrl } from '@/shared/media/cloudinary-url';
-import { deleteCloudinaryAsset } from '@/shared/media/cloudinary-server';
-import { z } from 'zod/v3';
-import {
-  vendorAction,
-  orgAdminAction,
-  ActionError,
-} from '@/lib/safe-action';
+import { clerkClient } from "@clerk/nextjs/server";
+import * as schema from "@/shared/db/schema";
+import { eq, and, sql } from "drizzle-orm";
+import { revalidatePath, updateTag } from "next/cache";
+import { revalidateVendorConsole } from "@/features/vendor/revalidate";
+import { getSystemSetting } from "@/shared/platform/settings";
+import { logger } from "@/shared/logging/logger";
+import { addProductSchema, vendorDeleteProductSchema } from "@/features/catalog/schema";
+import { logAuditAction } from "@/shared/audit/logger";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { getPremiumStatus, DEFAULT_MAX_LISTING_COUNT } from "@/features/inventory/premium-license";
+import { validateStockAvailabilityId } from "@/features/inventory/availability.server";
+import { isAllowedCloudinaryDeliveryUrl } from "@/shared/media/cloudinary-url";
+import { deleteCloudinaryAsset } from "@/shared/media/cloudinary-server";
+import { z } from "zod/v3";
+import { vendorAction, orgAdminAction, ActionError } from "@/lib/safe-action";
 
 /**
  * Enterprise-grade Server Action to securely insert a new product/service into PostgreSQL.
@@ -35,18 +31,22 @@ export const addProductAction = vendorAction
       await rateLimit(20, 60 * 1000);
 
       if (!orgId) {
-        throw new ActionError('Not authorized: You must be signed in with an active organization.');
+        throw new ActionError("Not authorized: You must be signed in with an active organization.");
       }
 
       // Validate that all Cloudinary URLs belong to the current vendor organization
       if (parsedInput.imageUrl) {
         if (!isAllowedCloudinaryDeliveryUrl(parsedInput.imageUrl, orgId)) {
-          throw new ActionError('Invalid product image: The image must belong to your organization folder.');
+          throw new ActionError(
+            "Invalid product image: The image must belong to your organization folder.",
+          );
         }
       }
       for (const item of parsedInput.media) {
         if (!isAllowedCloudinaryDeliveryUrl(item.url, orgId)) {
-          throw new ActionError('Invalid product media: The media must belong to your organization folder.');
+          throw new ActionError(
+            "Invalid product media: The media must belong to your organization folder.",
+          );
         }
       }
 
@@ -54,7 +54,7 @@ export const addProductAction = vendorAction
       const priceInCents = Math.round(parsedInput.priceInDollars * 100);
 
       // Load max media uploads config and validate
-      const maxMediaLimitSetting = await getSystemSetting('max_media_limit', '5');
+      const maxMediaLimitSetting = await getSystemSetting("max_media_limit", "5");
       const maxMediaLimit = parseInt(maxMediaLimitSetting, 10) || 5;
 
       const mediaPayload = parsedInput.media.slice(0, maxMediaLimit);
@@ -64,16 +64,16 @@ export const addProductAction = vendorAction
       const client = await clerkClient();
       const org = await client.organizations.getOrganization({ organizationId: orgId });
       const orgMetadata = (org.publicMetadata || {}) as {
-        stockAllocationMode?: 'target_branch' | 'central_intake';
+        stockAllocationMode?: "target_branch" | "central_intake";
         ims_max_listing_count?: number;
       };
-      const stockAllocationMode = orgMetadata.stockAllocationMode || 'central_intake';
+      const stockAllocationMode = orgMetadata.stockAllocationMode || "central_intake";
 
       // ── Listing Count Enforcement ────────────────────────────────────────────
       // Resolve org-specific limit: fall back to DEFAULT_MAX_LISTING_COUNT (10)
       // if the superadmin has not set an explicit override in Clerk metadata.
       const resolvedMaxListings =
-        typeof orgMetadata.ims_max_listing_count === 'number' &&
+        typeof orgMetadata.ims_max_listing_count === "number" &&
         Number.isInteger(orgMetadata.ims_max_listing_count) &&
         orgMetadata.ims_max_listing_count >= 1
           ? orgMetadata.ims_max_listing_count
@@ -82,24 +82,24 @@ export const addProductAction = vendorAction
       const [listingCountRow] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(schema.products)
-        .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, 'active')));
+        .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, "active")));
 
       const currentListingCount = listingCountRow?.count ?? 0;
 
       if (currentListingCount >= resolvedMaxListings) {
         throw new ActionError(
           `Your organization has reached its maximum listing limit of ${resolvedMaxListings} active item${
-            resolvedMaxListings === 1 ? '' : 's'
-          }. Please contact support to upgrade your plan.`
+            resolvedMaxListings === 1 ? "" : "s"
+          }. Please contact support to upgrade your plan.`,
         );
       }
       // ── End Listing Count Enforcement ────────────────────────────────────────
 
-      let resolvedStockAvailability = 'in_stock';
-      if (parsedInput.type === 'product') {
+      let resolvedStockAvailability = "in_stock";
+      if (parsedInput.type === "product") {
         const availability = await validateStockAvailabilityId(parsedInput.stockAvailability);
         if (!availability) {
-          throw new ActionError('Invalid stock availability status selected.');
+          throw new ActionError("Invalid stock availability status selected.");
         }
         resolvedStockAvailability = availability.id;
       }
@@ -121,11 +121,11 @@ export const addProductAction = vendorAction
           .returning();
 
         if (!prod) {
-          throw new ActionError('Failed to create product record.');
+          throw new ActionError("Failed to create product record.");
         }
 
         // Initialize inventory entry if product type is 'product'
-        if (prod.type === 'product') {
+        if (prod.type === "product") {
           const initialQty = parsedInput.quantity ?? 0;
 
           const [inv] = await tx
@@ -144,18 +144,18 @@ export const addProductAction = vendorAction
           if (inv && initialQty > 0) {
             await tx.insert(schema.inventoryMovements).values({
               inventoryId: inv.id,
-              type: 'restock',
+              type: "restock",
               quantityChanged: initialQty,
               previousQuantity: 0,
               newQuantity: initialQty,
-              reason: 'Initial setup on item creation',
+              reason: "Initial setup on item creation",
               userId,
             });
           }
 
           // Multi-branch: only seed branch stock in target_branch mode.
           // central_intake keeps all quantity at central until an admin allocates to a branch.
-          if (premiumStatus.multiBranchActive && stockAllocationMode === 'target_branch') {
+          if (premiumStatus.multiBranchActive && stockAllocationMode === "target_branch") {
             const orgBranches = await tx
               .select({ id: schema.branches.id, isDefault: schema.branches.isDefault })
               .from(schema.branches)
@@ -168,23 +168,25 @@ export const addProductAction = vendorAction
             }
 
             if (targetBranchId && !orgBranches.some((b) => b.id === targetBranchId)) {
-              throw new ActionError('Selected branch is not valid for this organization.');
+              throw new ActionError("Selected branch is not valid for this organization.");
             }
 
-            if (orgRole !== 'org:admin' && targetBranchId) {
+            if (orgRole !== "org:admin" && targetBranchId) {
               const [membership] = await tx
                 .select({ id: schema.branchMembers.id })
                 .from(schema.branchMembers)
                 .where(
                   and(
                     eq(schema.branchMembers.branchId, targetBranchId),
-                    eq(schema.branchMembers.memberUserId, userId)
-                  )
+                    eq(schema.branchMembers.memberUserId, userId),
+                  ),
                 )
                 .limit(1);
 
               if (!membership) {
-                throw new ActionError('Not authorized: You are not assigned to the selected branch.');
+                throw new ActionError(
+                  "Not authorized: You are not assigned to the selected branch.",
+                );
               }
             }
 
@@ -208,8 +210,8 @@ export const addProductAction = vendorAction
       if (newProduct) {
         await logAuditAction({
           userId,
-          action: 'CREATE_PRODUCT',
-          targetType: 'product',
+          action: "CREATE_PRODUCT",
+          targetType: "product",
           targetId: newProduct.id,
           metadata: {
             name: newProduct.name,
@@ -221,8 +223,8 @@ export const addProductAction = vendorAction
       }
 
       // Cache Invalidation
-      revalidatePath('/products');
-      revalidatePath('/vendors');
+      revalidatePath("/products");
+      revalidatePath("/vendors");
       revalidateVendorConsole();
       updateTag(`vendor-products-${orgId}`);
 
@@ -243,7 +245,7 @@ export const deleteProductAction = orgAdminAction
       await rateLimit(20, 60 * 1000);
 
       if (!orgId) {
-        throw new ActionError('Not authorized: You must be signed in with an active organization.');
+        throw new ActionError("Not authorized: You must be signed in with an active organization.");
       }
 
       // Safe Deletion: Conditioned on both Product ID AND Organization ID
@@ -252,13 +254,13 @@ export const deleteProductAction = orgAdminAction
         .where(
           and(
             eq(schema.products.id, parsedInput.productId),
-            eq(schema.products.orgId, orgId) // Prevent deleting items from other vendors
-          )
+            eq(schema.products.orgId, orgId), // Prevent deleting items from other vendors
+          ),
         )
         .returning();
 
       if (result.length === 0) {
-        throw new ActionError('Item not found or does not belong to your organization.');
+        throw new ActionError("Item not found or does not belong to your organization.");
       }
 
       const deletedProduct = result[0];
@@ -274,8 +276,8 @@ export const deleteProductAction = orgAdminAction
 
         await logAuditAction({
           userId,
-          action: 'DELETE_PRODUCT',
-          targetType: 'product',
+          action: "DELETE_PRODUCT",
+          targetType: "product",
           targetId: deletedProduct.id,
           metadata: {
             name: deletedProduct.name,
@@ -285,8 +287,8 @@ export const deleteProductAction = orgAdminAction
       }
 
       // Cache Invalidation
-      revalidatePath('/products');
-      revalidatePath('/vendors');
+      revalidatePath("/products");
+      revalidatePath("/vendors");
       revalidateVendorConsole();
       updateTag(`vendor-products-${orgId}`);
 
@@ -301,9 +303,12 @@ export const deleteProductAction = orgAdminAction
 export const quickUpdateProductStockAction = vendorAction
   .schema(
     z.object({
-      productId: z.string().uuid('Invalid product ID.'),
-      newQuantity: z.number().int('Quantity must be a whole number.').nonnegative('Quantity cannot be negative.'),
-    })
+      productId: z.string().uuid("Invalid product ID."),
+      newQuantity: z
+        .number()
+        .int("Quantity must be a whole number.")
+        .nonnegative("Quantity cannot be negative."),
+    }),
   )
   .action(async ({ parsedInput, ctx }) => {
     const { userId, orgId, db } = ctx;
@@ -312,7 +317,7 @@ export const quickUpdateProductStockAction = vendorAction
       await rateLimit(20, 60 * 1000);
 
       if (!orgId) {
-        throw new ActionError('Not authorized: You must be signed in with an active organization.');
+        throw new ActionError("Not authorized: You must be signed in with an active organization.");
       }
 
       const { productId, newQuantity } = parsedInput;
@@ -323,16 +328,11 @@ export const quickUpdateProductStockAction = vendorAction
         const [prod] = await tx
           .select({ id: schema.products.id, type: schema.products.type })
           .from(schema.products)
-          .where(
-            and(
-              eq(schema.products.id, productId),
-              eq(schema.products.orgId, orgId)
-            )
-          )
+          .where(and(eq(schema.products.id, productId), eq(schema.products.orgId, orgId)))
           .limit(1);
 
-        if (!prod || prod.type !== 'product') {
-          throw new ActionError('Product not found or not eligible for stock update.');
+        if (!prod || prod.type !== "product") {
+          throw new ActionError("Product not found or not eligible for stock update.");
         }
 
         // Get central inventory record
@@ -343,7 +343,7 @@ export const quickUpdateProductStockAction = vendorAction
           .limit(1);
 
         if (!inv) {
-          throw new ActionError('Inventory record not found. (Legacy product without inventory)');
+          throw new ActionError("Inventory record not found. (Legacy product without inventory)");
         }
 
         const prevQty = inv.quantity;
@@ -357,18 +357,18 @@ export const quickUpdateProductStockAction = vendorAction
         // Create movement log
         await tx.insert(schema.inventoryMovements).values({
           inventoryId: inv.id,
-          type: 'manual_adjustment',
+          type: "manual_adjustment",
           quantityChanged: newQuantity - prevQty,
           previousQuantity: prevQty,
           newQuantity: newQuantity,
-          reason: 'Quick stock update from catalog (Free Tier / Quick Edit)',
+          reason: "Quick stock update from catalog (Free Tier / Quick Edit)",
           userId,
         });
       });
 
       // Cache Invalidation
-      revalidatePath('/products');
-      revalidatePath('/vendors');
+      revalidatePath("/products");
+      revalidatePath("/vendors");
       revalidateVendorConsole();
       updateTag(`vendor-products-${orgId}`);
 

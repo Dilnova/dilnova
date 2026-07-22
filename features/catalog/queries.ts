@@ -1,33 +1,23 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, desc, and, sql } from 'drizzle-orm';
-import type { PaginatedResponse } from '@/shared/pagination/types';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq, desc, and, sql } from "drizzle-orm";
+import type { PaginatedResponse } from "@/shared/pagination/types";
 
 export async function getUserAssignedBranchNames(userId: string, orgId: string) {
   const userBranches = await db
     .select({ name: schema.branches.name })
     .from(schema.branchMembers)
     .innerJoin(schema.branches, eq(schema.branchMembers.branchId, schema.branches.id))
-    .where(
-      and(
-        eq(schema.branchMembers.memberUserId, userId),
-        eq(schema.branches.orgId, orgId)
-      )
-    );
+    .where(and(eq(schema.branchMembers.memberUserId, userId), eq(schema.branches.orgId, orgId)));
 
-  return userBranches.map((b) => b.name).join(', ');
+  return userBranches.map((b) => b.name).join(", ");
 }
 
 export async function getDefaultBranchName(orgId: string) {
   const [defaultBranch] = await db
     .select({ name: schema.branches.name })
     .from(schema.branches)
-    .where(
-      and(
-        eq(schema.branches.orgId, orgId),
-        eq(schema.branches.isDefault, true)
-      )
-    )
+    .where(and(eq(schema.branches.orgId, orgId), eq(schema.branches.isDefault, true)))
     .limit(1);
 
   if (defaultBranch) {
@@ -40,7 +30,7 @@ export async function getDefaultBranchName(orgId: string) {
     .where(eq(schema.branches.orgId, orgId))
     .limit(1);
 
-  return firstBranch ? firstBranch.name : 'Main Register';
+  return firstBranch ? firstBranch.name : "Main Register";
 }
 
 export async function getAllCategories() {
@@ -113,7 +103,11 @@ export async function getInventoryForProduct(productId: string) {
   return rows[0] || null;
 }
 
-export async function getProductReviews(productId: string, page: number = 1, limitAmount: number = 50): Promise<PaginatedResponse<typeof schema.reviews.$inferSelect>> {
+export async function getProductReviews(
+  productId: string,
+  page: number = 1,
+  limitAmount: number = 50,
+): Promise<PaginatedResponse<typeof schema.reviews.$inferSelect>> {
   const limit = limitAmount > 0 ? limitAmount : 50;
   const offset = (page - 1) * limit;
 
@@ -184,12 +178,7 @@ export async function getWishlistEntryForUser(userId: string, productId: string)
   const rows = await db
     .select()
     .from(schema.wishlists)
-    .where(
-      and(
-        eq(schema.wishlists.userId, userId),
-        eq(schema.wishlists.productId, productId)
-      )
-    )
+    .where(and(eq(schema.wishlists.userId, userId), eq(schema.wishlists.productId, productId)))
     .limit(1);
 
   return rows[0];
@@ -199,12 +188,7 @@ export async function getUserReviewForProduct(userId: string, productId: string)
   const rows = await db
     .select()
     .from(schema.reviews)
-    .where(
-      and(
-        eq(schema.reviews.userId, userId),
-        eq(schema.reviews.productId, productId)
-      )
-    )
+    .where(and(eq(schema.reviews.userId, userId), eq(schema.reviews.productId, productId)))
     .limit(1);
 
   return rows[0];
@@ -220,7 +204,11 @@ export async function getCategoryById(id: string) {
   return parentResult || null;
 }
 
-export async function getVendorProductsForOrg(orgId: string, page: number = 1, limitAmount: number = 100) {
+export async function getVendorProductsForOrg(
+  orgId: string,
+  page: number = 1,
+  limitAmount: number = 100,
+) {
   const limit = limitAmount > 0 ? limitAmount : 100;
   const offset = (page - 1) * limit;
 
@@ -262,7 +250,7 @@ export async function getVendorProductsForOrg(orgId: string, page: number = 1, l
   };
 }
 
-import { ilike, inArray, lte, or, gte } from 'drizzle-orm';
+import { ilike, inArray, lte, or, gte } from "drizzle-orm";
 import {
   CATALOG_SORT_VALUES,
   type CatalogSort,
@@ -272,7 +260,7 @@ import {
   type CatalogCategoryRef,
   type CatalogVendorRef,
   CATALOG_SORT_LABELS,
-} from './types';
+} from "./types";
 
 export {
   CATALOG_SORT_VALUES,
@@ -285,7 +273,7 @@ export {
   CATALOG_SORT_LABELS,
 };
 
-const DEFAULT_SORT: CatalogSort = 'newest';
+const DEFAULT_SORT: CatalogSort = "newest";
 
 export function parseCatalogSort(value: string | undefined): CatalogSort {
   if (value && (CATALOG_SORT_VALUES as readonly string[]).includes(value)) {
@@ -298,7 +286,7 @@ export function parseCatalogStockFilter(value: string | undefined): CatalogStock
   if (value && (CATALOG_STOCK_FILTER_VALUES as readonly string[]).includes(value)) {
     return value as CatalogStockFilter;
   }
-  return 'all';
+  return "all";
 }
 
 export function parsePriceToCents(value: string | undefined): number | null {
@@ -309,23 +297,23 @@ export function parsePriceToCents(value: string | undefined): number | null {
 }
 
 export function parseCatalogPage(value: string | undefined): number {
-  const parsed = Number.parseInt(value || '1', 10);
+  const parsed = Number.parseInt(value || "1", 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
 export function parseCatalogQueryParams(
-  raw: Record<string, string | undefined>
+  raw: Record<string, string | undefined>,
 ): CatalogQueryParams {
   const minPriceCents = parsePriceToCents(raw.minPrice);
   const maxPriceCents = parsePriceToCents(raw.maxPrice);
 
   return {
-    search: raw.search?.trim() || '',
-    categorySlug: raw.category?.trim() || '',
-    type: raw.type?.trim() || 'all',
+    search: raw.search?.trim() || "",
+    categorySlug: raw.category?.trim() || "",
+    type: raw.type?.trim() || "all",
     page: parseCatalogPage(raw.page),
     sort: parseCatalogSort(raw.sort),
-    vendorSlug: raw.vendor?.trim() || '',
+    vendorSlug: raw.vendor?.trim() || "",
     minPriceCents,
     maxPriceCents:
       minPriceCents != null && maxPriceCents != null && maxPriceCents < minPriceCents
@@ -335,10 +323,7 @@ export function parseCatalogQueryParams(
   };
 }
 
-export function resolveVendorOrgId(
-  vendorSlug: string,
-  vendors: CatalogVendorRef[]
-): string | null {
+export function resolveVendorOrgId(vendorSlug: string, vendors: CatalogVendorRef[]): string | null {
   if (!vendorSlug) return null;
   const match = vendors.find((vendor) => vendor.slug === vendorSlug);
   return match?.id ?? null;
@@ -357,24 +342,26 @@ export function buildCatalogWhereClauses(params: {
   const whereClauses: any[] = [];
 
   if (params.search) {
-    const sanitizedSearch = params.search.replace(/[\\%_]/g, '\\$&');
+    const sanitizedSearch = params.search.replace(/[\\%_]/g, "\\$&");
     whereClauses.push(
       or(
         ilike(schema.products.name, `%${sanitizedSearch}%`),
-        ilike(schema.products.description, `%${sanitizedSearch}%`)
-      )!
+        ilike(schema.products.description, `%${sanitizedSearch}%`),
+      )!,
     );
   }
 
   if (params.categorySlug) {
-    const selectedCategory = params.categories.find((category) => category.slug === params.categorySlug);
+    const selectedCategory = params.categories.find(
+      (category) => category.slug === params.categorySlug,
+    );
     if (selectedCategory) {
       if (!selectedCategory.parentId) {
         const subCategoryIds = params.categories
           .filter((category) => category.parentId === selectedCategory.id)
           .map((category) => category.id);
         whereClauses.push(
-          inArray(schema.products.categoryId, [selectedCategory.id, ...subCategoryIds])
+          inArray(schema.products.categoryId, [selectedCategory.id, ...subCategoryIds]),
         );
       } else {
         whereClauses.push(eq(schema.products.categoryId, selectedCategory.id));
@@ -382,7 +369,7 @@ export function buildCatalogWhereClauses(params: {
     }
   }
 
-  if (params.type !== 'all') {
+  if (params.type !== "all") {
     whereClauses.push(eq(schema.products.type, params.type));
   }
 
@@ -398,44 +385,44 @@ export function buildCatalogWhereClauses(params: {
     whereClauses.push(lte(schema.products.price, params.maxPriceCents));
   }
 
-  if (params.stock === 'in_stock') {
+  if (params.stock === "in_stock") {
     whereClauses.push(
       or(
-        eq(schema.products.type, 'service'),
+        eq(schema.products.type, "service"),
         sql`EXISTS (
           SELECT 1 FROM ${schema.inventory}
           WHERE ${schema.inventory.productId} = ${schema.products.id}
             AND ${schema.inventory.quantity} > 0
-        )`
-      )!
+        )`,
+      )!,
     );
   }
 
-  whereClauses.push(eq(schema.products.status, 'active'));
+  whereClauses.push(eq(schema.products.status, "active"));
 
   return and(...whereClauses);
 }
 
 export function buildCatalogOrderBy(sort: CatalogSort) {
   switch (sort) {
-    case 'oldest':
+    case "oldest":
       return [schema.products.createdAt];
-    case 'price_asc':
+    case "price_asc":
       return [schema.products.price, desc(schema.products.createdAt)];
-    case 'price_desc':
+    case "price_desc":
       return [desc(schema.products.price), desc(schema.products.createdAt)];
-    case 'name_asc':
+    case "name_asc":
       return [schema.products.name];
-    case 'name_desc':
+    case "name_desc":
       return [desc(schema.products.name)];
-    case 'views_desc':
+    case "views_desc":
       return [desc(schema.products.views), desc(schema.products.createdAt)];
-    case 'rating_desc':
+    case "rating_desc":
       return [
         sql`(SELECT COALESCE(AVG(${schema.reviews.rating}), 0) FROM ${schema.reviews} WHERE ${schema.reviews.productId} = ${schema.products.id}) DESC`,
         desc(schema.products.createdAt),
       ];
-    case 'newest':
+    case "newest":
     default:
       return [desc(schema.products.createdAt)];
   }
@@ -443,25 +430,25 @@ export function buildCatalogOrderBy(sort: CatalogSort) {
 
 export function buildCatalogSearchParams(
   params: CatalogQueryParams,
-  page?: number
+  page?: number,
 ): URLSearchParams {
   const searchParams = new URLSearchParams();
 
-  if (params.search) searchParams.set('search', params.search);
-  if (params.categorySlug) searchParams.set('category', params.categorySlug);
-  if (params.type !== 'all') searchParams.set('type', params.type);
-  if (params.sort !== DEFAULT_SORT) searchParams.set('sort', params.sort);
-  if (params.vendorSlug) searchParams.set('vendor', params.vendorSlug);
+  if (params.search) searchParams.set("search", params.search);
+  if (params.categorySlug) searchParams.set("category", params.categorySlug);
+  if (params.type !== "all") searchParams.set("type", params.type);
+  if (params.sort !== DEFAULT_SORT) searchParams.set("sort", params.sort);
+  if (params.vendorSlug) searchParams.set("vendor", params.vendorSlug);
   if (params.minPriceCents != null) {
-    searchParams.set('minPrice', (params.minPriceCents / 100).toFixed(2));
+    searchParams.set("minPrice", (params.minPriceCents / 100).toFixed(2));
   }
   if (params.maxPriceCents != null) {
-    searchParams.set('maxPrice', (params.maxPriceCents / 100).toFixed(2));
+    searchParams.set("maxPrice", (params.maxPriceCents / 100).toFixed(2));
   }
-  if (params.stock !== 'all') searchParams.set('stock', params.stock);
+  if (params.stock !== "all") searchParams.set("stock", params.stock);
 
   const nextPage = page ?? params.page;
-  if (nextPage > 1) searchParams.set('page', String(nextPage));
+  if (nextPage > 1) searchParams.set("page", String(nextPage));
 
   return searchParams;
 }

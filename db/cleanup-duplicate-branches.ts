@@ -16,23 +16,23 @@
  * Safe to run multiple times — it is fully idempotent.
  */
 
-import * as dotenv from 'dotenv';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
-import { sql } from 'drizzle-orm';
+import * as dotenv from "dotenv";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { sql } from "drizzle-orm";
 
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: ".env.local" });
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  throw new Error('DATABASE_URL is missing in .env.local');
+  throw new Error("DATABASE_URL is missing in .env.local");
 }
 
 async function main() {
   const client = postgres(connectionString!, { prepare: false });
   const db = drizzle(client);
 
-  console.log('🔍 Scanning for organizations with duplicate default branches...\n');
+  console.log("🔍 Scanning for organizations with duplicate default branches...\n");
 
   // Step 1: Find all orgs that have more than one default branch
   const duplicateOrgs = await db.execute<{ org_id: string; branch_count: number }>(sql`
@@ -45,16 +45,18 @@ async function main() {
   `);
 
   if (duplicateOrgs.length === 0) {
-    console.log('✅ No duplicate default branches found. Database is clean.\n');
+    console.log("✅ No duplicate default branches found. Database is clean.\n");
     await client.end();
     return;
   }
 
-  console.log(`⚠️  Found ${duplicateOrgs.length} organization(s) with duplicate default branches:\n`);
+  console.log(
+    `⚠️  Found ${duplicateOrgs.length} organization(s) with duplicate default branches:\n`,
+  );
   for (const row of duplicateOrgs) {
     console.log(`   org_id: ${row.org_id}  →  ${row.branch_count} default branches`);
   }
-  console.log('');
+  console.log("");
 
   let totalDeleted = 0;
   let totalReassigned = 0;
@@ -91,7 +93,9 @@ async function main() {
       `);
       const receiptCount = (receiptResult as any).count ?? 0;
       if (receiptCount > 0) {
-        console.log(`   ↳ Reassigned ${receiptCount} billing receipt(s) from ${dupId} → ${keeper.id}`);
+        console.log(
+          `   ↳ Reassigned ${receiptCount} billing receipt(s) from ${dupId} → ${keeper.id}`,
+        );
         totalReassigned += Number(receiptCount);
       }
     }
@@ -153,17 +157,17 @@ async function main() {
     }
   }
 
-  console.log(`\n${'═'.repeat(60)}`);
+  console.log(`\n${"═".repeat(60)}`);
   console.log(`✅ Cleanup complete.`);
   console.log(`   Deleted:    ${totalDeleted} duplicate branch(es)`);
   console.log(`   Reassigned: ${totalReassigned} record(s)`);
   console.log(`   Affected:   ${duplicateOrgs.length} organization(s)`);
-  console.log(`${'═'.repeat(60)}\n`);
+  console.log(`${"═".repeat(60)}\n`);
 
   await client.end();
 }
 
 main().catch((err) => {
-  console.error('❌ Cleanup script failed:', err);
+  console.error("❌ Cleanup script failed:", err);
   process.exit(1);
 });

@@ -1,18 +1,21 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import type { Page } from '@playwright/test';
+import fs from "node:fs";
+import path from "node:path";
+import type { Page } from "@playwright/test";
 
-const MANIFEST_PATH = path.join(process.cwd(), '.next/server/server-reference-manifest.json');
+const MANIFEST_PATH = path.join(process.cwd(), ".next/server/server-reference-manifest.json");
 
 type RscClient = {
-  encodeReply: (value: unknown, options: { temporaryReferences: unknown }) => Promise<string | FormData>;
+  encodeReply: (
+    value: unknown,
+    options: { temporaryReferences: unknown },
+  ) => Promise<string | FormData>;
   createTemporaryReferenceSet: () => unknown;
 };
 
 function getRscClient(): RscClient {
   // Lazy-load CJS encoder so Playwright ESM test files can import this module safely.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require('./rsc-encode.cjs') as RscClient;
+  return require("./rsc-encode.cjs") as RscClient;
 }
 
 type ManifestEntry = {
@@ -66,20 +69,20 @@ function readManifest(): ServerReferenceManifest | null {
     return null;
   }
   try {
-    return JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8')) as ServerReferenceManifest;
+    return JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8")) as ServerReferenceManifest;
   } catch {
     return null;
   }
 }
 
 function workerHintFromPostPath(postPath: string): string | null {
-  const pathname = postPath.split('?')[0];
-  if (pathname.startsWith('/vendor')) return 'app/(vendor)/vendor/page';
-  if (pathname.startsWith('/superadmin')) return 'app/(superadmin)/superadmin/page';
-  if (pathname.startsWith('/admin')) return 'app/(admin)/admin/page';
-  if (pathname.startsWith('/customer/invoice')) return 'app/(customer)/customer/invoice/[id]/page';
-  if (pathname.startsWith('/customer')) return 'app/(customer)/customer/page';
-  if (pathname.startsWith('/cart')) return 'app/cart/page';
+  const pathname = postPath.split("?")[0];
+  if (pathname.startsWith("/vendor")) return "app/(vendor)/vendor/page";
+  if (pathname.startsWith("/superadmin")) return "app/(superadmin)/superadmin/page";
+  if (pathname.startsWith("/admin")) return "app/(admin)/admin/page";
+  if (pathname.startsWith("/customer/invoice")) return "app/(customer)/customer/invoice/[id]/page";
+  if (pathname.startsWith("/customer")) return "app/(customer)/customer/page";
+  if (pathname.startsWith("/cart")) return "app/cart/page";
   return null;
 }
 
@@ -141,9 +144,9 @@ export function isSecurityDenial(text: string, status: number): boolean {
   }
   // Unsigned sessions often receive an HTML document instead of an RSC action payload.
   if (
-    text.includes('<!DOCTYPE html>') &&
+    text.includes("<!DOCTYPE html>") &&
     !/"success"\s*:\s*true/i.test(text) &&
-    !text.includes('text/x-component')
+    !text.includes("text/x-component")
   ) {
     return true;
   }
@@ -184,27 +187,25 @@ export async function invokeServerAction(
   const body = await rscClient.encodeReply(options.args, { temporaryReferences });
 
   const headers = {
-    Accept: 'text/x-component',
-    'next-action': actionId,
+    Accept: "text/x-component",
+    "next-action": actionId,
   };
 
   let response;
-  if (typeof body === 'string') {
+  if (typeof body === "string") {
     response = await page.request.post(options.postPath, { headers, data: body });
   } else if (body instanceof FormData) {
-    const multipart: Record<
-      string,
-      string | { name: string; mimeType: string; buffer: Buffer }
-    > = {};
+    const multipart: Record<string, string | { name: string; mimeType: string; buffer: Buffer }> =
+      {};
     for (const [key, value] of body.entries()) {
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         multipart[key] = value;
         continue;
       }
       const blob = value as Blob;
       multipart[key] = {
         name: value instanceof File && value.name ? value.name : `${key}.bin`,
-        mimeType: blob.type || 'application/octet-stream',
+        mimeType: blob.type || "application/octet-stream",
         buffer: Buffer.from(await blob.arrayBuffer()),
       };
     }
@@ -217,7 +218,7 @@ export async function invokeServerAction(
   }
 
   const text = await response.text();
-  const actionNotFound = response.headers()['next-action-not-found'] === '1';
+  const actionNotFound = response.headers()["next-action-not-found"] === "1";
 
   return {
     status: response.status(),
@@ -225,7 +226,7 @@ export async function invokeServerAction(
     actionNotFound,
     denied:
       actionNotFound ||
-      text.includes('Server action not found') ||
+      text.includes("Server action not found") ||
       isSecurityDenial(text, response.status()),
   };
 }
@@ -240,6 +241,6 @@ export function expectSecurityDenied(result: ServerActionInvokeResult): void {
     );
   }
   if (/"success"\s*:\s*true/i.test(result.text)) {
-    throw new Error('Server action unexpectedly succeeded.');
+    throw new Error("Server action unexpectedly succeeded.");
   }
 }

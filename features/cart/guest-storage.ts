@@ -1,6 +1,6 @@
-import { cartLineSchema, type SyncedCartItem } from '@/features/cart/schema';
+import { cartLineSchema, type SyncedCartItem } from "@/features/cart/schema";
 
-export const GUEST_CART_STORAGE_KEY = 'dilnova_cart';
+export const GUEST_CART_STORAGE_KEY = "dilnova_cart";
 
 export interface GuestCartSnapshotItem {
   id: string;
@@ -17,11 +17,11 @@ function parseGuestCartSnapshot(raw: string | null): GuestCartSnapshotItem[] {
     return parsed
       .filter(
         (item): item is GuestCartSnapshotItem =>
-          typeof item === 'object' &&
+          typeof item === "object" &&
           item !== null &&
-          typeof (item as GuestCartSnapshotItem).id === 'string' &&
-          typeof (item as GuestCartSnapshotItem).quantity === 'number' &&
-          (item as GuestCartSnapshotItem).quantity > 0
+          typeof (item as GuestCartSnapshotItem).id === "string" &&
+          typeof (item as GuestCartSnapshotItem).quantity === "number" &&
+          (item as GuestCartSnapshotItem).quantity > 0,
       )
       .map((item) => ({ id: item.id, quantity: item.quantity }));
   } catch {
@@ -50,17 +50,17 @@ function parseGuestCartItems(raw: string | null): SyncedCartItem[] {
 }
 
 export function readGuestCartFromStorage(): SyncedCartItem[] {
-  if (typeof globalThis.localStorage === 'undefined') return [];
+  if (typeof globalThis.localStorage === "undefined") return [];
   return parseGuestCartItems(globalThis.localStorage.getItem(GUEST_CART_STORAGE_KEY));
 }
 
 export function writeGuestCartToStorage(items: SyncedCartItem[]): void {
-  if (typeof globalThis.localStorage === 'undefined') return;
+  if (typeof globalThis.localStorage === "undefined") return;
   globalThis.localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(items));
 }
 
 export function clearGuestCartStorage(): void {
-  if (typeof globalThis.localStorage === 'undefined') return;
+  if (typeof globalThis.localStorage === "undefined") return;
   globalThis.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
 }
 
@@ -74,6 +74,6 @@ export function guestCartHasItems(): boolean {
 
 /** @deprecated Use readGuestCartFromStorage — kept for snapshot-only callers. */
 export function readGuestCartSnapshotFromStorage(): GuestCartSnapshotItem[] {
-  if (typeof globalThis.localStorage === 'undefined') return [];
+  if (typeof globalThis.localStorage === "undefined") return [];
   return parseGuestCartSnapshot(globalThis.localStorage.getItem(GUEST_CART_STORAGE_KEY));
 }

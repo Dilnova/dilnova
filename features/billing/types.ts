@@ -1,6 +1,6 @@
-import type * as schema from '@/shared/db/schema';
-import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
-import type { PremiumStatus } from '@/features/inventory/premium-license';
+import type * as schema from "@/shared/db/schema";
+import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
+import type { PremiumStatus } from "@/features/inventory/premium-license";
 
 export type VendorBillingRegisterData = {
   inventoryItems: Array<{
@@ -18,7 +18,7 @@ export type VendorBillingRegisterData = {
     productPrice: number | null;
     supplierName: string | null;
   }>;
-  branches: Array<(typeof schema.branches.$inferSelect)>;
+  branches: Array<typeof schema.branches.$inferSelect>;
   branchInventory: Array<{
     id: string;
     branchId: string;

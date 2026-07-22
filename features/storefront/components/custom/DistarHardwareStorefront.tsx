@@ -1,8 +1,8 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import type { StorefrontProps } from './types';
-import { isVideoUrl } from '@/shared/media/media';
-import AddToCartButton from '@/features/cart/components/AddToCartButton';
+import Link from "next/link";
+import Image from "next/image";
+import type { StorefrontProps } from "./types";
+import { isVideoUrl } from "@/shared/media/media";
+import AddToCartButton from "@/features/cart/components/AddToCartButton";
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -64,7 +64,8 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
                 {org.name}
               </h1>
               <p className="text-base text-zinc-400 max-w-2xl leading-relaxed">
-                {metadata.description || 'Professional-grade tools and industrial equipment for contractors, builders, and tradespeople.'}
+                {metadata.description ||
+                  "Professional-grade tools and industrial equipment for contractors, builders, and tradespeople."}
               </p>
             </div>
           </div>
@@ -73,13 +74,17 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
           <div className="mt-10 flex flex-wrap gap-6 border-t border-zinc-800 pt-8">
             <div>
               <span className="text-2xl font-black text-orange-500">{products.length}</span>
-              <span className="text-xs text-zinc-500 ml-1.5 uppercase tracking-wider">Products</span>
+              <span className="text-xs text-zinc-500 ml-1.5 uppercase tracking-wider">
+                Products
+              </span>
             </div>
             <div>
               <span className="text-2xl font-black text-orange-500">
-                {products.filter(p => p.type === 'service').length}
+                {products.filter((p) => p.type === "service").length}
               </span>
-              <span className="text-xs text-zinc-500 ml-1.5 uppercase tracking-wider">Services</span>
+              <span className="text-xs text-zinc-500 ml-1.5 uppercase tracking-wider">
+                Services
+              </span>
             </div>
             <div>
               <span className="text-2xl font-black text-orange-500">4.9</span>
@@ -98,18 +103,20 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
         <div className="max-w-6xl mx-auto px-6 py-12">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-1 h-6 bg-orange-500 rounded-full" />
-            <h2 className="text-xl font-bold text-white tracking-tight">
-              Shop by Category
-            </h2>
+            <h2 className="text-xl font-bold text-white tracking-tight">Shop by Category</h2>
           </div>
 
           {/* Category cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { icon: '🔨', label: 'Hand Tools', count: products.filter(p => p.categorySlug === 'hardware').length },
-              { icon: '⚡', label: 'Power Tools', count: 0 },
-              { icon: '🔩', label: 'Fasteners', count: 0 },
-              { icon: '🦺', label: 'Safety Gear', count: 0 },
+              {
+                icon: "🔨",
+                label: "Hand Tools",
+                count: products.filter((p) => p.categorySlug === "hardware").length,
+              },
+              { icon: "⚡", label: "Power Tools", count: 0 },
+              { icon: "🔩", label: "Fasteners", count: 0 },
+              { icon: "🦺", label: "Safety Gear", count: 0 },
             ].map((cat) => (
               <div
                 key={cat.label}
@@ -131,9 +138,7 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
           <div className="flex items-center justify-between mb-10">
             <div className="flex items-center gap-3">
               <div className="w-1 h-6 bg-orange-500 rounded-full" />
-              <h2 className="text-xl font-bold text-white tracking-tight">
-                All Products
-              </h2>
+              <h2 className="text-xl font-bold text-white tracking-tight">All Products</h2>
               <span className="text-xs font-mono text-zinc-600 ml-2">
                 {products.length} items available
               </span>
@@ -147,9 +152,9 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => {
-                const formattedPrice = (product.price / 100).toLocaleString('en-US', {
-                  style: 'currency',
-                  currency: 'USD',
+                const formattedPrice = (product.price / 100).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
                 });
 
                 return (
@@ -157,7 +162,10 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
                     key={product.id}
                     className="group relative bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-orange-500/40 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col group/item">
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="flex-1 flex flex-col group/item"
+                    >
                       {/* Product Image */}
                       <div className="h-48 bg-zinc-800 relative overflow-hidden">
                         {product.imageUrl ? (
@@ -186,11 +194,13 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
                         )}
 
                         {/* Type badge */}
-                        <span className={`absolute top-3 right-3 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-1 rounded ${
-                          product.type === 'service'
-                            ? 'bg-teal-500 text-teal-950'
-                            : 'bg-orange-500 text-orange-950'
-                        }`}>
+                        <span
+                          className={`absolute top-3 right-3 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-1 rounded ${
+                            product.type === "service"
+                              ? "bg-teal-500 text-teal-950"
+                              : "bg-orange-500 text-orange-950"
+                          }`}
+                        >
                           {product.type}
                         </span>
                       </div>
@@ -207,7 +217,7 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
                             {product.name}
                           </h3>
                           <p className="text-xs text-zinc-500 line-clamp-2 mt-1.5 leading-relaxed">
-                            {product.description || 'No description available.'}
+                            {product.description || "No description available."}
                           </p>
                         </div>
                       </div>
@@ -270,7 +280,13 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
       <section className="bg-zinc-950 border-t border-zinc-800">
         <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Image src={org.imageUrl} alt={org.name} width={32} height={32} className="rounded-lg" />
+            <Image
+              src={org.imageUrl}
+              alt={org.name}
+              width={32}
+              height={32}
+              className="rounded-lg"
+            />
             <span className="text-xs font-bold text-zinc-400">{org.name}</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-zinc-600">

@@ -1,8 +1,8 @@
-import 'server-only';
+import "server-only";
 
-import { clerkClient, createClerkClient } from '@clerk/nextjs/server';
-import { logger } from '@/shared/logging/logger';
-import { unstable_cache, revalidateTag } from 'next/cache';
+import { clerkClient, createClerkClient } from "@clerk/nextjs/server";
+import { logger } from "@/shared/logging/logger";
+import { unstable_cache, revalidateTag } from "next/cache";
 
 /** Default maximum active listings allowed for a free-tier organization. */
 export const DEFAULT_MAX_LISTING_COUNT = 10;
@@ -62,14 +62,14 @@ const fetchRawStatus = unstable_cache(
     const meta = (org.publicMetadata || {}) as Record<string, unknown>;
 
     const imsEnabled = meta.ims_enabled === true;
-    const imsExpiresAtRaw = typeof meta.ims_expires_at === 'string' ? meta.ims_expires_at : null;
+    const imsExpiresAtRaw = typeof meta.ims_expires_at === "string" ? meta.ims_expires_at : null;
     const imsMultiBranchEnabled = meta.ims_multi_branch_enabled === true;
     const imsBillingEnabled = meta.ims_billing_enabled === true;
 
     // Resolve listing count limit — fall back to the platform default for free-tier orgs
     const rawMaxListing = meta.ims_max_listing_count;
     const maxListingCount =
-      typeof rawMaxListing === 'number' && Number.isInteger(rawMaxListing) && rawMaxListing >= 1
+      typeof rawMaxListing === "number" && Number.isInteger(rawMaxListing) && rawMaxListing >= 1
         ? rawMaxListing
         : DEFAULT_MAX_LISTING_COUNT;
 
@@ -91,11 +91,11 @@ const fetchRawStatus = unstable_cache(
       maxListingCount,
     };
   },
-  ['clerk-premium-status'],
+  ["clerk-premium-status"],
   {
-    tags: ['clerk-premium-status'],
+    tags: ["clerk-premium-status"],
     revalidate: 300, // Cache for 5 minutes
-  }
+  },
 );
 
 export async function getPremiumStatus(orgId: string): Promise<PremiumStatus> {
@@ -110,7 +110,7 @@ export async function getPremiumStatus(orgId: string): Promise<PremiumStatus> {
       maxListingCount: raw.maxListingCount,
     };
   } catch (error) {
-    logger.error('Failed to read premium license status', error, { orgId });
+    logger.error("Failed to read premium license status", error, { orgId });
     // Fail-closed: deny access if we can't verify.
     // maxListingCount falls back to the free-tier default to avoid undefined enforcement.
     return {
@@ -130,7 +130,7 @@ export async function getPremiumStatus(orgId: string): Promise<PremiumStatus> {
  */
 export async function updateOrgImsLicense(
   orgId: string,
-  flags: Partial<ImsLicenseFlags>
+  flags: Partial<ImsLicenseFlags>,
 ): Promise<void> {
   const client = await clerkClient();
   const org = await client.organizations.getOrganization({ organizationId: orgId });
@@ -158,6 +158,6 @@ export async function updateOrgImsLicense(
     publicMetadata: updatedMeta,
   });
 
-  revalidateTag('clerk-premium-status', 'max');
-  revalidateTag('clerk-organizations', 'max');
+  revalidateTag("clerk-premium-status", "max");
+  revalidateTag("clerk-organizations", "max");
 }

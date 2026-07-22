@@ -1,12 +1,25 @@
-import { db } from '@/shared/db/client';
-import { auditLogs } from '@/shared/db/schema';
-import { logger, redactSensitiveData } from '@/shared/logging/logger';
-import { headers } from 'next/headers';
+import { db } from "@/shared/db/client";
+import { auditLogs } from "@/shared/db/schema";
+import { logger, redactSensitiveData } from "@/shared/logging/logger";
+import { headers } from "next/headers";
 
 export interface AuditLogParams {
   userId: string;
   action: string;
-  targetType: 'category' | 'product' | 'system_setting' | 'membership' | 'vendor' | 'pricing_plan' | 'contact' | 'supplier' | 'inventory' | 'simulated_order' | 'branch' | 'billing_receipt' | 'data_subject_request';
+  targetType:
+    | "category"
+    | "product"
+    | "system_setting"
+    | "membership"
+    | "vendor"
+    | "pricing_plan"
+    | "contact"
+    | "supplier"
+    | "inventory"
+    | "simulated_order"
+    | "branch"
+    | "billing_receipt"
+    | "data_subject_request";
   targetId: string;
   metadata?: Record<string, unknown> | null;
   strict?: boolean;
@@ -30,11 +43,11 @@ export async function logAuditAction({
 
   try {
     const headersList = await headers();
-    const forwardedFor = headersList.get('x-forwarded-for');
+    const forwardedFor = headersList.get("x-forwarded-for");
     ipAddress = forwardedFor
-      ? forwardedFor.split(',')[0].trim()
-      : headersList.get('x-real-ip') || null;
-    userAgent = headersList.get('user-agent') || null;
+      ? forwardedFor.split(",")[0].trim()
+      : headersList.get("x-real-ip") || null;
+    userAgent = headersList.get("user-agent") || null;
   } catch {
     // Ignore error if headers() is called outside of request context (e.g. background tasks or tests)
   }
@@ -73,7 +86,9 @@ export async function logAuditAction({
     });
 
     if (strict) {
-      throw new Error(`Audit Log Failure: Failed to persist audit trail for critical action '${action}'.`);
+      throw new Error(
+        `Audit Log Failure: Failed to persist audit trail for critical action '${action}'.`,
+      );
     }
   }
 }

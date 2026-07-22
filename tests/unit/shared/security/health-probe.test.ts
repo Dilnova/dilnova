@@ -1,7 +1,7 @@
-import { describe, expect, it, afterEach } from 'vitest';
-import { isAuthorizedHealthDetailRequest } from '@/shared/security/health-probe';
+import { describe, expect, it, afterEach } from "vitest";
+import { isAuthorizedHealthDetailRequest } from "@/shared/security/health-probe";
 
-describe('isAuthorizedHealthDetailRequest', () => {
+describe("isAuthorizedHealthDetailRequest", () => {
   const originalSecret = process.env.HEALTH_CHECK_SECRET;
   const originalNodeEnv = process.env.NODE_ENV;
 
@@ -14,22 +14,20 @@ describe('isAuthorizedHealthDetailRequest', () => {
     process.env.NODE_ENV = originalNodeEnv;
   });
 
-  it('allows detailed probes in non-production without a secret', () => {
+  it("allows detailed probes in non-production without a secret", () => {
     delete process.env.HEALTH_CHECK_SECRET;
-    process.env.NODE_ENV = 'development';
+    process.env.NODE_ENV = "development";
 
-    expect(
-      isAuthorizedHealthDetailRequest(new Request('http://localhost/api/health'))
-    ).toBe(true);
+    expect(isAuthorizedHealthDetailRequest(new Request("http://localhost/api/health"))).toBe(true);
   });
 
-  it('requires bearer auth in production when a secret is configured', () => {
-    process.env.HEALTH_CHECK_SECRET = 'probe-secret';
-    process.env.NODE_ENV = 'production';
+  it("requires bearer auth in production when a secret is configured", () => {
+    process.env.HEALTH_CHECK_SECRET = "probe-secret";
+    process.env.NODE_ENV = "production";
 
-    const unauthorized = new Request('http://localhost/api/health');
-    const authorized = new Request('http://localhost/api/health', {
-      headers: { authorization: 'Bearer probe-secret' },
+    const unauthorized = new Request("http://localhost/api/health");
+    const authorized = new Request("http://localhost/api/health", {
+      headers: { authorization: "Bearer probe-secret" },
     });
 
     expect(isAuthorizedHealthDetailRequest(unauthorized)).toBe(false);

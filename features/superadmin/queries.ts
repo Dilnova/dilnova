@@ -1,11 +1,16 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, desc, inArray, asc } from 'drizzle-orm';
-import { buildVendorOrgIntegrityReport } from '@/features/vendor-org';
-import { rateLimit } from '@/shared/security/rate-limit';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq, desc, inArray, asc } from "drizzle-orm";
+import { buildVendorOrgIntegrityReport } from "@/features/vendor-org";
+import { rateLimit } from "@/shared/security/rate-limit";
 
 export async function getPricingPlansOrderedByCreatedAtAsc(limit = 200, offset = 0) {
-  return db.select().from(schema.pricingPlans).orderBy(asc(schema.pricingPlans.createdAt)).limit(limit).offset(offset);
+  return db
+    .select()
+    .from(schema.pricingPlans)
+    .orderBy(asc(schema.pricingPlans.createdAt))
+    .limit(limit)
+    .offset(offset);
 }
 
 export async function getPricingPlansOrderedByCreatedAtDesc(limit = 200, offset = 0) {
@@ -18,11 +23,7 @@ export async function getPricingPlansOrderedByCreatedAtDesc(limit = 200, offset 
 }
 
 export async function getCategoriesOrderedByCreatedAtDesc() {
-  return db
-    .select()
-    .from(schema.categories)
-    .orderBy(desc(schema.categories.createdAt))
-    .limit(200);
+  return db.select().from(schema.categories).orderBy(desc(schema.categories.createdAt)).limit(200);
 }
 
 export async function getProductsWithCategoryDetails() {
@@ -51,11 +52,7 @@ export async function getContactSubmissionsOrderedByCreatedAtDesc() {
 }
 
 export async function getImsSuppliersOrderedByCreatedAtDesc() {
-  return db
-    .select()
-    .from(schema.suppliers)
-    .orderBy(desc(schema.suppliers.createdAt))
-    .limit(200);
+  return db.select().from(schema.suppliers).orderBy(desc(schema.suppliers.createdAt)).limit(200);
 }
 
 export async function getInventoryItemsWithDetails() {
@@ -87,9 +84,9 @@ export async function getInventoryItemsWithDetails() {
     supplierId: row.inventory.supplierId,
     stockAvailability: row.inventory.stockAvailability,
     updatedAt: row.inventory.updatedAt,
-    productName: row.product?.name || 'Unknown Product',
-    productType: row.product?.type || 'product',
-    productOrgId: row.product?.orgId || '',
+    productName: row.product?.name || "Unknown Product",
+    productType: row.product?.type || "product",
+    productOrgId: row.product?.orgId || "",
     supplierName: row.supplier?.name || null,
   }));
 }
@@ -150,7 +147,9 @@ export async function getSimulatedOrdersWithItems() {
     }
 
     const pickupBranchIds = [
-      ...new Set(rawOrders.map((order) => order.pickupBranchId).filter((id): id is string => Boolean(id))),
+      ...new Set(
+        rawOrders.map((order) => order.pickupBranchId).filter((id): id is string => Boolean(id)),
+      ),
     ];
     const pickupBranchRows =
       pickupBranchIds.length > 0
@@ -159,7 +158,9 @@ export async function getSimulatedOrdersWithItems() {
             .from(schema.branches)
             .where(inArray(schema.branches.id, pickupBranchIds))
         : [];
-    const pickupBranchNameById = new Map(pickupBranchRows.map((branch) => [branch.id, branch.name]));
+    const pickupBranchNameById = new Map(
+      pickupBranchRows.map((branch) => [branch.id, branch.name]),
+    );
 
     const orderIds = rawOrders.map((o) => o.id);
     const allItems = await db
@@ -180,12 +181,12 @@ export async function getSimulatedOrdersWithItems() {
       ...order,
       items: itemsByOrderId.get(order.id) || [],
       pickupBranchName: order.pickupBranchId
-        ? pickupBranchNameById.get(order.pickupBranchId) ?? null
+        ? (pickupBranchNameById.get(order.pickupBranchId) ?? null)
         : null,
       paymentSlipPreviewUrl: null as string | null,
     }));
   } catch (error) {
-    console.error('[DB Error] Failed to fetch simulated orders for superadmin:', error);
+    console.error("[DB Error] Failed to fetch simulated orders for superadmin:", error);
     return [];
   }
 }
@@ -206,7 +207,7 @@ export function computeProductsWithoutInventory(
 export async function getVendorOrgIntegrityReport(
   organizations: { id: string }[],
   limit = 1000,
-  offset = 0
+  offset = 0,
 ) {
   // Rate limit the query since it can be heavy
   await rateLimit(10, 60 * 1000);
@@ -266,14 +267,11 @@ export async function getVendorOrgIntegrityReport(
       .offset(offset),
   ]);
 
-  return buildVendorOrgIntegrityReport(
-    new Set(organizations.map((org) => org.id)),
-    {
-      products: integrityProducts,
-      orderItems: integrityOrderItems,
-      suppliers: integritySuppliers,
-      branches: integrityBranches,
-      billingReceipts: integrityBillingReceipts,
-    }
-  );
+  return buildVendorOrgIntegrityReport(new Set(organizations.map((org) => org.id)), {
+    products: integrityProducts,
+    orderItems: integrityOrderItems,
+    suppliers: integritySuppliers,
+    branches: integrityBranches,
+    billingReceipts: integrityBillingReceipts,
+  });
 }
