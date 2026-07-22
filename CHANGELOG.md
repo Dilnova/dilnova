@@ -1,3 +1,9 @@
+# [1.1.0](https://github.com/Dilnova/dilnova/compare/v1.0.4...v1.1.0) (2026-07-22)
+
+### Features
+
+- **workflow:** add post-deploy smoke test and health verification script ([dd79874](https://github.com/Dilnova/dilnova/commit/dd798747b23b0f253864fcee064a159f6808e6e2))
+
 ## [1.0.4](https://github.com/Dilnova/dilnova/compare/v1.0.3...v1.0.4) (2026-07-22)
 
 ### Bug Fixes
