@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/Dilnova/dilnova/compare/v1.0.0...v1.0.1) (2026-07-22)
+
+### Bug Fixes
+
+- **workflow:** add PostgreSQL binary path to GITHUB_PATH and log pg_dump version ([a585cc8](https://github.com/Dilnova/dilnova/commit/a585cc8dd8a196f75eb6436d2e0cf0a66e51c3fd))
+
 # 1.0.0 (2026-07-22)
 
 ### Bug Fixes
