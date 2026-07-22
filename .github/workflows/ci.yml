@@ -87,8 +87,16 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup-env
 
-      - name: Run Unit Tests
-        run: pnpm run test
+      - name: Run Unit Tests with Coverage
+        run: pnpm run test:coverage
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: code-coverage-report
+          path: coverage/
+          retention-days: 7
 
   build:
     runs-on: ubuntu-latest

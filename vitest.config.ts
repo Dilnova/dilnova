@@ -7,6 +7,19 @@ export default defineConfig({
     globals: true,
     include: ['tests/unit/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/tests/e2e/**', '**/playwright/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      exclude: [
+        'node_modules/**',
+        '.next/**',
+        'drizzle/**',
+        'tests/**',
+        'scripts/**',
+        '**/*.d.ts',
+        '**/*.config.*',
+      ],
+    },
   },
   resolve: {
     alias: {
