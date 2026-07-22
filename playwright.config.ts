@@ -73,13 +73,11 @@ export default defineConfig({
     {
       name: "public",
       testMatch: /rbac\/public-routes\.spec\.ts/,
-      dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "unauthenticated",
       testMatch: /rbac\/unauthenticated\.spec\.ts/,
-      dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"] },
     },
     {
@@ -121,7 +119,6 @@ export default defineConfig({
     {
       name: "security-unauthenticated",
       testMatch: /security\/unauthenticated-actions\.spec\.ts/,
-      dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"] },
     },
     {
