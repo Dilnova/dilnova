@@ -49,7 +49,14 @@ if (!fs.existsSync(hooksDir)) {
 
 const hookPath = path.join(hooksDir, "pre-commit");
 const hookSource = `#!/bin/sh
-# Gitleaks pre-commit hook to scan for secrets
+# Pre-commit hook: Auto-format staged files and scan for secrets
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\\.(js|jsx|ts|tsx|json|css|md|yml|yaml|mjs|cjs)$' || true)
+if [ -n "$STAGED_FILES" ]; then
+  echo "Auto-formatting staged files with Prettier..."
+  pnpm exec prettier --write $STAGED_FILES
+  git add $STAGED_FILES
+fi
 
 if command -v gitleaks >/dev/null 2>&1; then
   echo "Running local gitleaks secret scanning..."
