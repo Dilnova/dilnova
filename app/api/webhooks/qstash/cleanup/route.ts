@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/shared/logging/logger';
-import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
-import { createSupabaseAdminClient } from '@/shared/storage/admin-client';
-import { GDPR_EXPORTS_BUCKET } from '@/shared/storage/config';
+import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/shared/logging/logger";
+import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
+import { createSupabaseAdminClient } from "@/shared/storage/admin-client";
+import { GDPR_EXPORTS_BUCKET } from "@/shared/storage/config";
 
 export const maxDuration = 60;
 
@@ -12,7 +12,7 @@ async function handler(req: NextRequest) {
     const { storagePath } = body;
 
     if (!storagePath) {
-      return NextResponse.json({ error: 'Missing storagePath' }, { status: 400 });
+      return NextResponse.json({ error: "Missing storagePath" }, { status: 400 });
     }
 
     const supabase = createSupabaseAdminClient();
@@ -25,8 +25,8 @@ async function handler(req: NextRequest) {
     logger.info(`Cleaned up GDPR export file: ${storagePath}`);
     return NextResponse.json({ success: true });
   } catch (error) {
-    logger.error('GDPR Cleanup Worker Error', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    logger.error("GDPR Cleanup Worker Error", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 

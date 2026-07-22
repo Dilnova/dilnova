@@ -10,46 +10,46 @@ export interface Language {
   subtitle: string;
 }
 
-export const LANG_PREFERENCE_STORAGE_KEY = 'dilnova_lang';
+export const LANG_PREFERENCE_STORAGE_KEY = "dilnova_lang";
 
 export const LANGUAGES: Language[] = [
   {
-    code: 'en',
-    name: 'English',
-    nativeName: 'English',
-    flag: '🇬🇧',
-    greeting: 'Welcome',
-    subtitle: 'Continue in English',
+    code: "en",
+    name: "English",
+    nativeName: "English",
+    flag: "🇬🇧",
+    greeting: "Welcome",
+    subtitle: "Continue in English",
   },
   {
-    code: 'si',
-    name: 'Sinhala',
-    nativeName: 'සිංහල',
-    flag: '🇱🇰',
-    greeting: 'සාදරයෙන් පිළිගනිමු',
-    subtitle: 'සිංහලෙන් ඉදිරියට යන්න',
+    code: "si",
+    name: "Sinhala",
+    nativeName: "සිංහල",
+    flag: "🇱🇰",
+    greeting: "සාදරයෙන් පිළිගනිමු",
+    subtitle: "සිංහලෙන් ඉදිරියට යන්න",
   },
   {
-    code: 'ta',
-    name: 'Tamil',
-    nativeName: 'தமிழ்',
-    flag: '🇱🇰',
-    greeting: 'வரவேற்கிறோம்',
-    subtitle: 'தமிழில் தொடரவும்',
+    code: "ta",
+    name: "Tamil",
+    nativeName: "தமிழ்",
+    flag: "🇱🇰",
+    greeting: "வரவேற்கிறோம்",
+    subtitle: "தமிழில் தொடரவும்",
   },
 ];
 
 /** Read a cookie by name */
 export function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
+  if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
   return null;
 }
 
 function readLangPreferenceFromStorage(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   try {
     const stored = window.localStorage.getItem(LANG_PREFERENCE_STORAGE_KEY)?.trim();
     if (stored && LANGUAGES.some((lang) => lang.code === stored)) {
@@ -62,7 +62,7 @@ function readLangPreferenceFromStorage(): string | null {
 }
 
 function writeLangPreferenceToStorage(lang: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(LANG_PREFERENCE_STORAGE_KEY, lang);
   } catch {
@@ -75,34 +75,34 @@ export function setGoogTransCookie(lang: string): void {
   const host = window.location.hostname;
 
   // Collect all domain variants to clear old cookies
-  const domains = ['', `; domain=${host}`, `; domain=.${host}`];
-  if (!host.includes('localhost') && host.includes('.')) {
-    const parts = host.split('.');
+  const domains = ["", `; domain=${host}`, `; domain=.${host}`];
+  if (!host.includes("localhost") && host.includes(".")) {
+    const parts = host.split(".");
     if (parts.length > 2) {
-      const rootDomain = parts.slice(-2).join('.');
+      const rootDomain = parts.slice(-2).join(".");
       domains.push(`; domain=.${rootDomain}`);
       domains.push(`; domain=${rootDomain}`);
     }
   }
 
-  const secure = window.location.protocol === 'https:' ? '; secure' : '';
+  const secure = window.location.protocol === "https:" ? "; secure" : "";
 
   // Delete all existing googtrans cookies
   domains.forEach((d) => {
     document.cookie = `googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT${d}; SameSite=Lax${secure}`;
   });
 
-  if (lang === 'en') {
+  if (lang === "en") {
     return;
   }
 
   // Write new googtrans cookie
   document.cookie = `googtrans=/en/${lang}; path=/; SameSite=Lax${secure}`;
   document.cookie = `googtrans=/en/${lang}; path=/; domain=${host}; SameSite=Lax${secure}`;
-  if (!host.includes('localhost') && host.includes('.')) {
-    const parts = host.split('.');
+  if (!host.includes("localhost") && host.includes(".")) {
+    const parts = host.split(".");
     if (parts.length > 2) {
-      const rootDomain = parts.slice(-2).join('.');
+      const rootDomain = parts.slice(-2).join(".");
       document.cookie = `googtrans=/en/${lang}; path=/; domain=.${rootDomain}; SameSite=Lax${secure}`;
     }
   }
@@ -112,14 +112,14 @@ export function setGoogTransCookie(lang: string): void {
 export function setLangPreferenceCookie(lang: string): void {
   // Persist for 1 year
   const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
-  const secure = window.location.protocol === 'https:' ? '; secure' : '';
+  const secure = window.location.protocol === "https:" ? "; secure" : "";
   document.cookie = `lang_preference=${lang}; path=/; expires=${expires}; SameSite=Lax${secure}`;
   writeLangPreferenceToStorage(lang);
 }
 
 /** Get the persisted language preference */
 export function getLangPreference(): string | null {
-  const fromCookie = getCookie('lang_preference');
+  const fromCookie = getCookie("lang_preference");
   if (fromCookie && LANGUAGES.some((lang) => lang.code === fromCookie)) {
     return fromCookie;
   }
@@ -129,33 +129,33 @@ export function getLangPreference(): string | null {
 
 /** Get current language from googtrans cookie */
 export function getCurrentLangFromCookie(): string {
-  const cookieVal = getCookie('googtrans');
+  const cookieVal = getCookie("googtrans");
   if (cookieVal) {
-    const parts = cookieVal.split('/');
+    const parts = cookieVal.split("/");
     const code = parts[parts.length - 1];
     if (LANGUAGES.some((l) => l.code === code)) {
       return code;
     }
   }
-  return 'en';
+  return "en";
 }
 
 /** Detect best language from browser locale */
 export function detectBrowserLanguage(): string {
-  if (typeof navigator === 'undefined') return 'en';
+  if (typeof navigator === "undefined") return "en";
   const browserLang = navigator.language.toLowerCase();
-  if (browserLang.startsWith('si')) return 'si';
-  if (browserLang.startsWith('ta')) return 'ta';
-  return 'en';
+  if (browserLang.startsWith("si")) return "si";
+  if (browserLang.startsWith("ta")) return "ta";
+  return "en";
 }
 
 export function hasLanguageChoice(): boolean {
   if (getLangPreference()) return true;
   if (readLangPreferenceFromStorage()) return true;
 
-  const googtrans = getCookie('googtrans');
+  const googtrans = getCookie("googtrans");
   if (googtrans) {
-    const code = googtrans.split('/').pop();
+    const code = googtrans.split("/").pop();
     if (code && LANGUAGES.some((lang) => lang.code === code)) {
       return true;
     }

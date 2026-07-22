@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useAddProduct } from './AddProductContext';
+import React, { useState } from "react";
+import { useAddProduct } from "./AddProductContext";
 
 export default function ProductTipsSidebar() {
   const { maxMediaLimit } = useAddProduct();
@@ -19,7 +19,7 @@ export default function ProductTipsSidebar() {
             <span>💡</span> Tips for Great Listings
           </h3>
           <svg
-            className={`w-4 h-4 text-zinc-400 transition-transform duration-200 sm:hidden ${showTips ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 text-zinc-400 transition-transform duration-200 sm:hidden ${showTips ? "rotate-180" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -27,7 +27,7 @@ export default function ProductTipsSidebar() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-        <div className={`px-4 sm:px-5 pb-4 sm:pb-5 ${showTips ? 'block' : 'hidden sm:block'}`}>
+        <div className={`px-4 sm:px-5 pb-4 sm:pb-5 ${showTips ? "block" : "hidden sm:block"}`}>
           <ul className="space-y-2.5 text-xs text-zinc-500 dark:text-zinc-400">
             <li className="flex items-start gap-2">
               <span className="text-purple-500 mt-0.5">•</span>
@@ -60,7 +60,9 @@ export default function ProductTipsSidebar() {
         <div className="space-y-2 text-xs">
           <div className="flex items-center justify-between py-1.5 border-b border-zinc-200/50 dark:border-zinc-800/50">
             <span className="text-zinc-500 dark:text-zinc-400">Max media per item</span>
-            <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">{maxMediaLimit}</span>
+            <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+              {maxMediaLimit}
+            </span>
           </div>
           <div className="flex items-center justify-between py-1.5 border-b border-zinc-200/50 dark:border-zinc-800/50">
             <span className="text-zinc-500 dark:text-zinc-400">Max file size</span>
@@ -68,7 +70,9 @@ export default function ProductTipsSidebar() {
           </div>
           <div className="flex items-center justify-between py-1.5">
             <span className="text-zinc-500 dark:text-zinc-400">Accepted formats</span>
-            <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">PNG, JPG, WEBP, MP4</span>
+            <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+              PNG, JPG, WEBP, MP4
+            </span>
           </div>
         </div>
       </div>

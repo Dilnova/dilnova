@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { incrementProductViewsAction } from '@/features/catalog/product-detail.actions';
+import { useEffect, useRef } from "react";
+import { incrementProductViewsAction } from "@/features/catalog/product-detail.actions";
 
 interface ProductViewTrackerProps {
   productId: string;
@@ -21,7 +21,7 @@ export default function ProductViewTracker({ productId }: ProductViewTrackerProp
 
     incrementProductViewsAction(productId).catch((err) => {
       // Silently catch error to prevent degrading the user experience
-      console.warn('[View Tracker] Failed to trigger views increment:', err);
+      console.warn("[View Tracker] Failed to trigger views increment:", err);
     });
   }, [productId]);
 

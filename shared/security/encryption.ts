@@ -1,7 +1,7 @@
-import { logger } from '@/shared/logging/logger';
-import crypto from 'node:crypto';
+import { logger } from "@/shared/logging/logger";
+import crypto from "node:crypto";
 
-const ALGORITHM = 'aes-256-gcm';
+const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 
 const cachedV2Keys = new Map<string, Buffer>();
@@ -11,7 +11,7 @@ const cachedHashKeys = new Map<string, Buffer>();
 let hasLoggedDecryptionError = false;
 
 function isProduction(): boolean {
-  return process.env.NODE_ENV === 'production';
+  return process.env.NODE_ENV === "production";
 }
 
 function getV2Key(key: string): Buffer {
@@ -19,7 +19,7 @@ function getV2Key(key: string): Buffer {
   if (cached) return cached;
   // lgtm [js/hardcoded-cryptographic-key]
   // lgtm [js/insecure-cryptographic-algorithm]
-  const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v2', 'aes-256-gcm', 32);
+  const keyArrayBuffer = crypto.hkdfSync("sha256", key, "dilnova-pii-v2", "aes-256-gcm", 32);
   cached = Buffer.from(keyArrayBuffer);
   cachedV2Keys.set(key, cached);
   return cached;
@@ -30,7 +30,7 @@ function getV1Key(key: string): Buffer {
   if (cached) return cached;
   // lgtm [js/hardcoded-cryptographic-key]
   // lgtm [js/insecure-cryptographic-algorithm]
-  const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-v1', 'aes-256-gcm', 32);
+  const keyArrayBuffer = crypto.hkdfSync("sha256", key, "dilnova-pii-v1", "aes-256-gcm", 32);
   cached = Buffer.from(keyArrayBuffer);
   cachedV1Keys.set(key, cached);
   return cached;
@@ -41,7 +41,7 @@ function getV0Key(key: string): Buffer {
   if (cached) return cached;
   // lgtm [js/insecure-cryptographic-algorithm]
   // lgtm [js/weak-cryptographic-algorithm]
-  cached = crypto.createHash('sha256').update(key).digest();
+  cached = crypto.createHash("sha256").update(key).digest();
   cachedV0Keys.set(key, cached);
   return cached;
 }
@@ -49,7 +49,7 @@ function getV0Key(key: string): Buffer {
 function getHashKey(key: string): Buffer {
   let cached = cachedHashKeys.get(key);
   if (cached) return cached;
-  const keyArrayBuffer = crypto.hkdfSync('sha256', key, 'dilnova-pii-hash-v1', 'sha256', 32);
+  const keyArrayBuffer = crypto.hkdfSync("sha256", key, "dilnova-pii-hash-v1", "sha256", 32);
   cached = Buffer.from(keyArrayBuffer);
   cachedHashKeys.set(key, cached);
   return cached;
@@ -65,12 +65,12 @@ function getHashKey(key: string): Buffer {
  */
 export function encryptString(text: string): string {
   if (!text) return text;
-  
+
   const key = process.env.PII_ENCRYPTION_KEY?.trim();
   if (!key) {
     if (isProduction()) {
       throw new Error(
-        'PII_ENCRYPTION_KEY is not configured. Cannot store sensitive data without encryption in production.'
+        "PII_ENCRYPTION_KEY is not configured. Cannot store sensitive data without encryption in production.",
       );
     }
     return text;
@@ -80,20 +80,17 @@ export function encryptString(text: string): string {
     const hashedKey = getV2Key(key);
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(ALGORITHM, hashedKey, iv);
-    
-    const encrypted = Buffer.concat([
-      cipher.update(text, 'utf8'),
-      cipher.final()
-    ]);
+
+    const encrypted = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
     const tag = cipher.getAuthTag();
 
     // Package with "v2" prefix
-    return `v2:${iv.toString('hex')}:${encrypted.toString('hex')}:${tag.toString('hex')}`;
+    return `v2:${iv.toString("hex")}:${encrypted.toString("hex")}:${tag.toString("hex")}`;
   } catch (error) {
     if (isProduction()) {
-      throw new Error('Encryption failed. Refusing to store PII in cleartext.');
+      throw new Error("Encryption failed. Refusing to store PII in cleartext.");
     }
-    logger.error('Encryption failed, returning cleartext:', error);
+    logger.error("Encryption failed, returning cleartext:", error);
     return text;
   }
 }
@@ -104,37 +101,37 @@ export function encryptString(text: string): string {
  */
 export function hashPii(text: string | null | undefined): string | null {
   if (!text) return null;
-  
+
   const key = process.env.PII_ENCRYPTION_KEY?.trim();
   if (!key) {
     if (isProduction()) {
       throw new Error(
-        'PII_ENCRYPTION_KEY is not configured. Cannot hash sensitive data in production.'
+        "PII_ENCRYPTION_KEY is not configured. Cannot hash sensitive data in production.",
       );
     }
     // Fallback for dev without key: just sha256 without a secret key
-    return crypto.createHash('sha256').update(text.trim().toLowerCase()).digest('hex');
+    return crypto.createHash("sha256").update(text.trim().toLowerCase()).digest("hex");
   }
 
   const hashKey = getHashKey(key);
-  
-  return crypto.createHmac('sha256', hashKey)
-    .update(text.trim().toLowerCase())
-    .digest('hex');
+
+  return crypto.createHmac("sha256", hashKey).update(text.trim().toLowerCase()).digest("hex");
 }
 
-function performAes256GcmDecryption(hashedKey: Buffer, ivHex: string, encryptedHex: string, tagHex: string): string {
-  const iv = Buffer.from(ivHex, 'hex');
-  const encrypted = Buffer.from(encryptedHex, 'hex');
-  const tag = Buffer.from(tagHex, 'hex');
+function performAes256GcmDecryption(
+  hashedKey: Buffer,
+  ivHex: string,
+  encryptedHex: string,
+  tagHex: string,
+): string {
+  const iv = Buffer.from(ivHex, "hex");
+  const encrypted = Buffer.from(encryptedHex, "hex");
+  const tag = Buffer.from(tagHex, "hex");
 
   const decipher = crypto.createDecipheriv(ALGORITHM, hashedKey, iv);
   decipher.setAuthTag(tag);
 
-  return Buffer.concat([
-    decipher.update(encrypted),
-    decipher.final()
-  ]).toString('utf8');
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
 }
 
 /**
@@ -153,40 +150,53 @@ export function decryptString(encryptedText: string): string {
   if (!key) {
     if (isProduction()) {
       throw new Error(
-        'PII_ENCRYPTION_KEY is not configured. Cannot decrypt sensitive data in production.'
+        "PII_ENCRYPTION_KEY is not configured. Cannot decrypt sensitive data in production.",
       );
     }
     return encryptedText;
   }
 
-  const isV2 = encryptedText.startsWith('v2:');
-  const isV1 = encryptedText.startsWith('v1:');
+  const isV2 = encryptedText.startsWith("v2:");
+  const isV1 = encryptedText.startsWith("v1:");
 
   try {
     if (isV2) {
-      const parts = encryptedText.split(':');
+      const parts = encryptedText.split(":");
       if (parts.length !== 4) return encryptedText;
       const [, ivHex, encryptedHex, tagHex] = parts;
       return performAes256GcmDecryption(getV2Key(key), ivHex, encryptedHex, tagHex);
     } else if (isV1) {
-      const parts = encryptedText.split(':');
+      const parts = encryptedText.split(":");
       if (parts.length !== 4) return encryptedText;
       const [, ivHex, encryptedHex, tagHex] = parts;
-      return performAes256GcmDecryption(getV1Key(fallbackKeyV1 || key), ivHex, encryptedHex, tagHex);
+      return performAes256GcmDecryption(
+        getV1Key(fallbackKeyV1 || key),
+        ivHex,
+        encryptedHex,
+        tagHex,
+      );
     } else {
       // Legacy unversioned (v0) decryption
-      const parts = encryptedText.split(':');
+      const parts = encryptedText.split(":");
       if (parts.length !== 3) return encryptedText;
       const [ivHex, encryptedHex, tagHex] = parts;
-      return performAes256GcmDecryption(getV0Key(fallbackKeyV1 || key), ivHex, encryptedHex, tagHex);
+      return performAes256GcmDecryption(
+        getV0Key(fallbackKeyV1 || key),
+        ivHex,
+        encryptedHex,
+        tagHex,
+      );
     }
   } catch (error) {
     if (isProduction()) {
       if (!hasLoggedDecryptionError) {
-        console.error('Decryption failed. The PII_ENCRYPTION_KEY may have changed or the data is corrupted. Suppressing further identical logs.', error);
+        console.error(
+          "Decryption failed. The PII_ENCRYPTION_KEY may have changed or the data is corrupted. Suppressing further identical logs.",
+          error,
+        );
         hasLoggedDecryptionError = true;
       }
-      return '[Decryption Failed]';
+      return "[Decryption Failed]";
     }
     return encryptedText;
   }

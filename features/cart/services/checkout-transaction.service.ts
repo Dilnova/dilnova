@@ -1,15 +1,19 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { inArray } from 'drizzle-orm';
-import { resolveEffectiveStockAvailability } from '@/features/inventory/availability.server';
-import { reserveProductStock, applyStockReservation, type StockReservation } from '@/features/inventory/reservation';
-import { applyOnlineOrderItemStock } from '@/features/orders/stock';
-import { hashPii } from '@/shared/security/encryption';
-import { logger } from '@/shared/logging/logger';
-import { clerkClient } from '@clerk/nextjs/server';
-import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
-import type { CheckoutOptionDefinition } from '@/features/organization/checkout-options.shared';
-import type { VerifiedCheckoutItem, DbTransaction } from './checkout.types';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { inArray } from "drizzle-orm";
+import { resolveEffectiveStockAvailability } from "@/features/inventory/availability.server";
+import {
+  reserveProductStock,
+  applyStockReservation,
+  type StockReservation,
+} from "@/features/inventory/reservation";
+import { applyOnlineOrderItemStock } from "@/features/orders/stock";
+import { hashPii } from "@/shared/security/encryption";
+import { logger } from "@/shared/logging/logger";
+import { clerkClient } from "@clerk/nextjs/server";
+import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
+import type { CheckoutOptionDefinition } from "@/features/organization/checkout-options.shared";
+import type { VerifiedCheckoutItem, DbTransaction } from "./checkout.types";
 
 export async function executeCheckoutTransaction(opts: {
   verifiedItems: VerifiedCheckoutItem[];
@@ -19,7 +23,12 @@ export async function executeCheckoutTransaction(opts: {
   name: string;
   email: string;
   userId: string | null;
-  checkoutTotals: { subtotalAmount: number; taxAmount: number; shippingAmount: number; grandTotal: number };
+  checkoutTotals: {
+    subtotalAmount: number;
+    taxAmount: number;
+    shippingAmount: number;
+    grandTotal: number;
+  };
   fulfillment: string;
   payment: string;
   fulfillmentOption: CheckoutOptionDefinition;
@@ -37,42 +46,51 @@ export async function executeCheckoutTransaction(opts: {
 }) {
   return await db.transaction(async (tx) => {
     const stockErrors: string[] = [];
-    const stockReservations: { productId: string; quantity: number; reservation: StockReservation }[] = [];
+    const stockReservations: {
+      productId: string;
+      quantity: number;
+      reservation: StockReservation;
+    }[] = [];
 
-    const productItems = opts.verifiedItems.filter((i) => i.type === 'product');
+    const productItems = opts.verifiedItems.filter((i) => i.type === "product");
     const productIds = productItems.map((i) => i.id);
 
-    const invMetaRecords = productIds.length > 0
-      ? await tx
-          .select({
-            productId: schema.inventory.productId,
-            stockAvailability: schema.inventory.stockAvailability,
-            quantity: schema.inventory.quantity,
-          })
-          .from(schema.inventory)
-          .where(inArray(schema.inventory.productId, productIds))
-          .for('update')
-      : [];
-    
-    const invMetaMap = new Map(invMetaRecords.map(r => [r.productId, r]));
+    const invMetaRecords =
+      productIds.length > 0
+        ? await tx
+            .select({
+              productId: schema.inventory.productId,
+              stockAvailability: schema.inventory.stockAvailability,
+              quantity: schema.inventory.quantity,
+            })
+            .from(schema.inventory)
+            .where(inArray(schema.inventory.productId, productIds))
+            .for("update")
+        : [];
+
+    const invMetaMap = new Map(invMetaRecords.map((r) => [r.productId, r]));
 
     for (const item of opts.verifiedItems) {
-      if (item.type !== 'product') continue;
+      if (item.type !== "product") continue;
 
       const invMeta = invMetaMap.get(item.id);
 
       if (!invMeta) {
-        stockErrors.push(`"${item.name}" is not available for online purchase (missing inventory record).`);
+        stockErrors.push(
+          `"${item.name}" is not available for online purchase (missing inventory record).`,
+        );
         continue;
       }
 
       const availability = resolveEffectiveStockAvailability(
         opts.availabilityCatalog,
         invMeta.stockAvailability,
-        invMeta.quantity
+        invMeta.quantity,
       );
       if (availability && !availability.allowsPurchase) {
-        stockErrors.push(`"${item.name}" is currently marked as ${availability.label} and cannot be purchased.`);
+        stockErrors.push(
+          `"${item.name}" is currently marked as ${availability.label} and cannot be purchased.`,
+        );
         continue;
       }
 
@@ -93,14 +111,14 @@ export async function executeCheckoutTransaction(opts: {
     }
 
     if (stockErrors.length > 0) {
-      logger.warn('Checkout business validation failed', { 
-        reason: 'Insufficient stock', 
-        stockErrors, 
-        cartItems: opts.uniqueItemIds 
+      logger.warn("Checkout business validation failed", {
+        reason: "Insufficient stock",
+        stockErrors,
+        cartItems: opts.uniqueItemIds,
       });
       return {
         success: false as const,
-        error: `Insufficient stock:\n${stockErrors.join('\n')}`,
+        error: `Insufficient stock:\n${stockErrors.join("\n")}`,
         stockErrors,
       };
     }
@@ -120,21 +138,34 @@ export async function executeCheckoutTransaction(opts: {
         status: opts.orderStatus,
         fulfillmentMethod: opts.fulfillment,
         paymentMethod: opts.payment,
-        pickupBranchId: opts.fulfillmentOption.requiresBranch && opts.pickupBranch !== 'main_branch' ? opts.pickupBranch : null,
-        shippingAddress: opts.fulfillmentOption.requiresBranch ? null : opts.normalizedShippingAddress,
-        shippingAddressLine2: opts.fulfillmentOption.requiresBranch ? null : opts.normalizedShippingAddressLine2,
+        pickupBranchId:
+          opts.fulfillmentOption.requiresBranch && opts.pickupBranch !== "main_branch"
+            ? opts.pickupBranch
+            : null,
+        shippingAddress: opts.fulfillmentOption.requiresBranch
+          ? null
+          : opts.normalizedShippingAddress,
+        shippingAddressLine2: opts.fulfillmentOption.requiresBranch
+          ? null
+          : opts.normalizedShippingAddressLine2,
         shippingCity: opts.fulfillmentOption.requiresBranch ? null : opts.normalizedShippingCity,
         shippingState: opts.fulfillmentOption.requiresBranch ? null : opts.normalizedShippingState,
-        shippingPostalCode: opts.fulfillmentOption.requiresBranch ? null : opts.normalizedShippingPostalCode,
-        shippingCountry: opts.fulfillmentOption.requiresBranch ? null : opts.normalizedShippingCountry,
+        shippingPostalCode: opts.fulfillmentOption.requiresBranch
+          ? null
+          : opts.normalizedShippingPostalCode,
+        shippingCountry: opts.fulfillmentOption.requiresBranch
+          ? null
+          : opts.normalizedShippingCountry,
         shippingPhone: opts.fulfillmentOption.requiresBranch ? null : opts.normalizedShippingPhone,
-        shippingPhone2: opts.fulfillmentOption.requiresBranch ? null : opts.normalizedShippingPhone2,
+        shippingPhone2: opts.fulfillmentOption.requiresBranch
+          ? null
+          : opts.normalizedShippingPhone2,
         stockDepleted: true,
       })
       .returning();
 
     if (!order) {
-      throw new Error('Failed to create order record.');
+      throw new Error("Failed to create order record.");
     }
 
     // Insert Order Items
@@ -147,7 +178,7 @@ export async function executeCheckoutTransaction(opts: {
           vendorOrgId: item.vendorOrgId,
           quantity: item.quantity,
           unitPrice: item.price,
-        }))
+        })),
       );
     }
 
@@ -163,7 +194,7 @@ export async function executeCheckoutTransaction(opts: {
         vendorOrgId: item.vendorOrgId,
         productId: item.id,
         orderId: order.id,
-        userId: opts.userId || 'customer',
+        userId: opts.userId || "customer",
       });
     }
 
@@ -171,13 +202,17 @@ export async function executeCheckoutTransaction(opts: {
     for (const item of opts.verifiedItems) {
       vendorSubtotals.set(
         item.vendorOrgId,
-        (vendorSubtotals.get(item.vendorOrgId) || 0) + item.price * item.quantity
+        (vendorSubtotals.get(item.vendorOrgId) || 0) + item.price * item.quantity,
       );
     }
 
     // Update Metadata
     try {
-      if (opts.userId && opts.fulfillmentOption.requiresBranch === false && opts.normalizedShippingAddress) {
+      if (
+        opts.userId &&
+        opts.fulfillmentOption.requiresBranch === false &&
+        opts.normalizedShippingAddress
+      ) {
         const client = await clerkClient();
         await client.users.updateUserMetadata(opts.userId, {
           privateMetadata: {
@@ -193,7 +228,7 @@ export async function executeCheckoutTransaction(opts: {
         });
       }
     } catch (metadataError) {
-      logger.error('Failed to update user private metadata during checkout', {
+      logger.error("Failed to update user private metadata during checkout", {
         error: metadataError instanceof Error ? metadataError.message : String(metadataError),
         userId: opts.userId,
       });

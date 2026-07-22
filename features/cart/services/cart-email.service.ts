@@ -1,40 +1,45 @@
-import { getSystemSetting } from '@/shared/platform/settings';
-import { DEFAULT_APP_URL } from '@/shared/platform/brand';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { inArray } from 'drizzle-orm';
-import { calculateCheckoutTotals } from '@/features/billing/checkout-totals';
-import { escapeHtml, sendRawSmtpEmail } from '@/shared/email/smtp-client';
-import { logger } from '@/shared/logging/logger';
-import type { CartLineInput } from '@/features/cart/schema';
+import { getSystemSetting } from "@/shared/platform/settings";
+import { DEFAULT_APP_URL } from "@/shared/platform/brand";
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { inArray } from "drizzle-orm";
+import { calculateCheckoutTotals } from "@/features/billing/checkout-totals";
+import { escapeHtml, sendRawSmtpEmail } from "@/shared/email/smtp-client";
+import { logger } from "@/shared/logging/logger";
+import type { CartLineInput } from "@/features/cart/schema";
 
 export async function sendCartSummaryEmailService(
   validatedItems: CartLineInput[],
   validatedEmail: string,
-  zeroShipping: boolean
+  zeroShipping: boolean,
 ) {
-  const systemName = await getSystemSetting('system_name', 'Dilnova');
+  const systemName = await getSystemSetting("system_name", "Dilnova");
   const systemNameHub = `${systemName} Commerce Hub`;
 
-  const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
-  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+  const smtpHost = process.env.SMTP_HOST || "smtp-relay.brevo.com";
+  const smtpPort = parseInt(process.env.SMTP_PORT || "587", 10);
   const smtpUser = process.env.SMTP_USER;
   const smtpPassword = process.env.SMTP_PASSWORD;
-  const emailFromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@dilstar.pp.ua';
+  const emailFromAddress = process.env.EMAIL_FROM_ADDRESS || "info@dilstar.pp.ua";
   const emailFromName = process.env.EMAIL_FROM_NAME || `${systemName} Hub`;
 
   if (!smtpUser || !smtpPassword) {
-    logger.error('SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing');
-    return { success: false, error: 'SMTP configuration is incomplete on the server.' };
+    logger.error("SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing");
+    return { success: false, error: "SMTP configuration is incomplete on the server." };
   }
 
   const uniqueItemIds = [...new Set(validatedItems.map((item) => item.id))];
-  const products = uniqueItemIds.length > 0
-    ? await db
-        .select({ id: schema.products.id, price: schema.products.price, name: schema.products.name })
-        .from(schema.products)
-        .where(inArray(schema.products.id, uniqueItemIds))
-    : [];
+  const products =
+    uniqueItemIds.length > 0
+      ? await db
+          .select({
+            id: schema.products.id,
+            price: schema.products.price,
+            name: schema.products.name,
+          })
+          .from(schema.products)
+          .where(inArray(schema.products.id, uniqueItemIds))
+      : [];
   const productMap = new Map(products.map((p) => [p.id, p]));
 
   const pricedItems = validatedItems.map((item) => {
@@ -46,15 +51,16 @@ export async function sendCartSummaryEmailService(
     };
   });
   const syncedSubtotal = pricedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = calculateCheckoutTotals(
-    syncedSubtotal,
-    zeroShipping
-  );
+  const {
+    taxAmount: estimatedTax,
+    shippingAmount: shippingFee,
+    grandTotal,
+  } = calculateCheckoutTotals(syncedSubtotal, zeroShipping);
 
   const formatPrice = (cents: number) => {
-    return (cents / 100).toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return (cents / 100).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
     });
   };
 
@@ -77,9 +83,9 @@ export async function sendCartSummaryEmailService(
           ${formatPrice(item.price * item.quantity)}
         </td>
       </tr>
-    `
+    `,
     )
-    .join('');
+    .join("");
 
   const emailHtml = `
     <!DOCTYPE html>
@@ -133,7 +139,7 @@ export async function sendCartSummaryEmailService(
                 </tr>
                 <tr>
                   <td style="padding: 4px 0;">Shipping</td>
-                  <td style="padding: 4px 0; text-align: right; font-family: monospace;">${shippingFee === 0 ? 'FREE' : formatPrice(shippingFee)}</td>
+                  <td style="padding: 4px 0; text-align: right; font-family: monospace;">${shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}</td>
                 </tr>
                 <tr style="font-weight: bold; color: #0f172a; font-size: 15px; border-top: 1px dashed #cbd5e1;">
                   <td style="padding: 12px 0 0 0;">Total</td>

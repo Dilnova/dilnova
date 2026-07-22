@@ -1,4 +1,4 @@
-import { clerkClient } from '@clerk/nextjs/server';
+import { clerkClient } from "@clerk/nextjs/server";
 
 export async function getClerkUserIdByEmail(email: string): Promise<string | null> {
   const client = await clerkClient();

@@ -1,36 +1,36 @@
-import 'server-only';
+import "server-only";
 
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, and, desc, sql, inArray } from 'drizzle-orm';
-import { auth, clerkClient } from '@clerk/nextjs/server';
-import { getCachedOrgMembers } from '@/shared/auth/clerk-cache';
-import { getPremiumStatus } from '@/features/inventory/premium-license';
-import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
-import type { VendorBillingRegisterData } from '@/features/billing/types';
-import type { VendorInventoryFullData } from '@/features/inventory/types';
-import { attachPaymentSlipPreviews } from '@/features/orders/payment-slip-preview';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { auth, clerkClient } from "@clerk/nextjs/server";
+import { getCachedOrgMembers } from "@/shared/auth/clerk-cache";
+import { getPremiumStatus } from "@/features/inventory/premium-license";
+import { getStockAvailabilityCatalog } from "@/features/inventory/availability.server";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { getCheckoutOptionsCatalog } from "@/features/organization/checkout-options";
+import type { VendorBillingRegisterData } from "@/features/billing/types";
+import type { VendorInventoryFullData } from "@/features/inventory/types";
+import { attachPaymentSlipPreviews } from "@/features/orders/payment-slip-preview";
 
 export async function verifyVendorAccess(options?: { allowMember?: boolean }) {
   const { userId, orgId, orgRole } = await auth();
   if (!userId || !orgId) {
-    throw new Error('Not authorized: You must be signed in with an active organization.');
+    throw new Error("Not authorized: You must be signed in with an active organization.");
   }
 
   const allowMember = options?.allowMember === true;
   if (allowMember) {
-    if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
-      throw new Error('Not authorized: You do not have access to this organization.');
+    if (orgRole !== "org:admin" && orgRole !== "org:member") {
+      throw new Error("Not authorized: You do not have access to this organization.");
     }
-  } else if (orgRole !== 'org:admin') {
-    throw new Error('Not authorized: Only organization admins can perform this action.');
+  } else if (orgRole !== "org:admin") {
+    throw new Error("Not authorized: Only organization admins can perform this action.");
   }
 
   const premiumStatus = await getPremiumStatus(orgId);
   if (!premiumStatus.imsActive) {
-    throw new Error('Inventory Management System access is disabled or expired.');
+    throw new Error("Inventory Management System access is disabled or expired.");
   }
 
   return { userId, orgId, orgRole, premiumStatus };
@@ -50,16 +50,16 @@ export type GetVendorInventoryDataOptions = {
 // ── GET VENDOR IMS DATA ──────────────────────────────────────
 
 export async function loadVendorInventoryData(
-  scope: 'full' | 'billing',
-  options?: GetVendorInventoryDataOptions
+  scope: "full" | "billing",
+  options?: GetVendorInventoryDataOptions,
 ): Promise<VendorInventoryFullData | VendorBillingRegisterData> {
   return runWithCorrelationId(async () => {
     const { userId, orgId, orgRole, premiumStatus } = await verifyVendorAccess({
       allowMember: options?.allowMember === true,
     });
 
-    if (scope === 'billing' && !premiumStatus.billingActive) {
-      throw new Error('POS Billing Register feature is not unlocked on your account tier.');
+    if (scope === "billing" && !premiumStatus.billingActive) {
+      throw new Error("POS Billing Register feature is not unlocked on your account tier.");
     }
 
     const productsLimit = options?.productsLimit ?? 200;
@@ -95,7 +95,7 @@ export async function loadVendorInventoryData(
 
       // Identify products of type 'product' that do not have an inventory row yet
       const missingInventoryProducts = vendorProducts.filter(
-        (p) => p.type === 'product' && !trackedProductIdsSet.has(p.id)
+        (p) => p.type === "product" && !trackedProductIdsSet.has(p.id),
       );
 
       // Bulk initialize missing inventory records
@@ -108,8 +108,8 @@ export async function loadVendorInventoryData(
             lowStockThreshold: 5,
             binLocation: null,
             supplierId: null,
-            stockAvailability: 'in_stock',
-          }))
+            stockAvailability: "in_stock",
+          })),
         );
       }
 
@@ -139,16 +139,16 @@ export async function loadVendorInventoryData(
     }
 
     let productsWithoutInventory: typeof vendorProducts = [];
-    if (scope === 'full') {
+    if (scope === "full") {
       const trackedProductIds = new Set(inventoryItems.map((i) => i.productId));
       productsWithoutInventory = vendorProducts.filter(
-        (p) => !trackedProductIds.has(p.id) && p.type === 'product'
+        (p) => !trackedProductIds.has(p.id) && p.type === "product",
       );
     }
 
     // 3. Fetch Suppliers (full IMS workspace only)
     let suppliers: (typeof schema.suppliers.$inferSelect)[] = [];
-    if (scope === 'full') {
+    if (scope === "full") {
       const suppliersLimit = options?.suppliersLimit ?? 100;
       suppliers = await db
         .select()
@@ -159,7 +159,7 @@ export async function loadVendorInventoryData(
 
     // 4. Fetch Inventory Movements (full IMS workspace only)
     let movements: any[] = [];
-    if (scope === 'full' && inventoryItems.length > 0) {
+    if (scope === "full" && inventoryItems.length > 0) {
       const inventoryIds = inventoryItems.map((i) => i.id);
       const movementsLimit = options?.movementsLimit ?? 100;
       movements = await db
@@ -185,7 +185,7 @@ export async function loadVendorInventoryData(
 
     // 5. Fetch Simulated Orders (full IMS workspace only)
     let simulatedOrders: any[] = [];
-    if (scope === 'full' && productIds.length > 0) {
+    if (scope === "full" && productIds.length > 0) {
       try {
         // Find orders that contain at least one item from this vendor
         const relatedItems = await db
@@ -209,24 +209,27 @@ export async function loadVendorInventoryData(
 
           // Attach items
           const branchNameById = new Map(
-            (await db
-              .select({ id: schema.branches.id, name: schema.branches.name })
-              .from(schema.branches)
-              .where(eq(schema.branches.orgId, orgId))
-              .limit(100))
-              .map((branch) => [branch.id, branch.name])
+            (
+              await db
+                .select({ id: schema.branches.id, name: schema.branches.name })
+                .from(schema.branches)
+                .where(eq(schema.branches.orgId, orgId))
+                .limit(100)
+            ).map((branch) => [branch.id, branch.name]),
           );
 
           simulatedOrders = await attachPaymentSlipPreviews(
             ordersList.map((o) => ({
               ...o,
               items: relatedItems.filter((ri) => ri.orderId === o.id),
-              pickupBranchName: o.pickupBranchId ? branchNameById.get(o.pickupBranchId) ?? null : null,
-            }))
+              pickupBranchName: o.pickupBranchId
+                ? (branchNameById.get(o.pickupBranchId) ?? null)
+                : null,
+            })),
           );
         }
       } catch (error) {
-        console.error('[DB Error] Failed to fetch simulated orders for vendor dashboard:', error);
+        console.error("[DB Error] Failed to fetch simulated orders for vendor dashboard:", error);
         // simulatedOrders remains empty array []
       }
     }
@@ -253,7 +256,7 @@ export async function loadVendorInventoryData(
           .insert(schema.branches)
           .values({
             orgId,
-            name: 'Main Register',
+            name: "Main Register",
             isDefault: true,
           })
           .onConflictDoNothing();
@@ -277,7 +280,7 @@ export async function loadVendorInventoryData(
           const defaultProductIdsSet = new Set(existingDefaultInv.map((bi) => bi.productId));
 
           const missingDefaultBranchInv = inventoryItems.filter(
-            (item) => item.productType === 'product' && !defaultProductIdsSet.has(item.productId)
+            (item) => item.productType === "product" && !defaultProductIdsSet.has(item.productId),
           );
 
           if (missingDefaultBranchInv.length > 0) {
@@ -288,14 +291,14 @@ export async function loadVendorInventoryData(
                 quantity: item.quantity ?? 0,
                 sku: item.sku,
                 binLocation: item.binLocation,
-              }))
+              })),
             );
           }
         }
       }
 
       // Filter branches for non-admin users if multi-branch is active
-      if (premiumStatus.multiBranchActive && orgRole !== 'org:admin') {
+      if (premiumStatus.multiBranchActive && orgRole !== "org:admin") {
         const memberAssignments = await db
           .select({ branchId: schema.branchMembers.branchId })
           .from(schema.branchMembers)
@@ -337,7 +340,7 @@ export async function loadVendorInventoryData(
           }));
         }
 
-        if (scope === 'full') {
+        if (scope === "full") {
           branchMembersList = await db
             .select()
             .from(schema.branchMembers)
@@ -348,7 +351,7 @@ export async function loadVendorInventoryData(
 
     const stockAvailabilityCatalog = await getStockAvailabilityCatalog();
 
-    if (scope === 'billing') {
+    if (scope === "billing") {
       const [receiptCountRow] = await db
         .select({ count: sql<number>`cast(count(*) as int)` })
         .from(schema.billingReceipts)

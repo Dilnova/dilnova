@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useTransition } from 'react';
-import { toast } from 'sonner';
-import { useConfirm } from '@/shared/ui/notifications';
-import { AccessibleModal } from '@/shared/ui/AccessibleModal';
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import { useConfirm } from "@/shared/ui/notifications";
+import { AccessibleModal } from "@/shared/ui/AccessibleModal";
 import {
   createCategoryAction,
   updateCategoryAction,
   deleteCategoryAction,
-} from '@/features/catalog/superadmin.actions';
-import { TabDataTableLayout, type ColumnDef } from '@/shared/ui/TabDataTableLayout';
+} from "@/features/catalog/superadmin.actions";
+import { TabDataTableLayout, type ColumnDef } from "@/shared/ui/TabDataTableLayout";
 
 export interface Category {
   id: string;
@@ -28,9 +28,9 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
   const { confirmAction } = useConfirm();
 
   // Category Form State
-  const [categoryName, setCategoryName] = useState('');
-  const [categorySlug, setCategorySlug] = useState('');
-  const [categoryParentId, setCategoryParentId] = useState('');
+  const [categoryName, setCategoryName] = useState("");
+  const [categorySlug, setCategorySlug] = useState("");
+  const [categoryParentId, setCategoryParentId] = useState("");
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
@@ -44,8 +44,8 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
     setCategorySlug(
       name
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)+/g, '')
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, ""),
     );
   };
 
@@ -53,8 +53,8 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
     const mainCats = categories.filter((c) => !c.parentId);
     return (
       <>
-        <option value={includeAllOption ? 'all' : ''}>
-          {includeAllOption ? 'All Categories' : 'Uncategorized'}
+        <option value={includeAllOption ? "all" : ""}>
+          {includeAllOption ? "All Categories" : "Uncategorized"}
         </option>
         {mainCats.map((main) => {
           const subs = categories.filter((c) => c.parentId === main.id);
@@ -75,9 +75,9 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
 
   const openAddCategory = () => {
     setEditingCategory(null);
-    setCategoryName('');
-    setCategorySlug('');
-    setCategoryParentId('');
+    setCategoryName("");
+    setCategorySlug("");
+    setCategoryParentId("");
     setIsCategoryModalOpen(true);
   };
 
@@ -85,7 +85,7 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
     setEditingCategory(cat);
     setCategoryName(cat.name);
     setCategorySlug(cat.slug);
-    setCategoryParentId(cat.parentId || '');
+    setCategoryParentId(cat.parentId || "");
     setIsCategoryModalOpen(true);
   };
 
@@ -101,9 +101,9 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
             parentId: categoryParentId || null,
           });
           if (!result?.data?.success) {
-            throw new Error(result?.serverError || 'Failed to update category.');
+            throw new Error(result?.serverError || "Failed to update category.");
           }
-          triggerNotification(true, 'Category updated successfully.');
+          triggerNotification(true, "Category updated successfully.");
         } else {
           const result = await createCategoryAction({
             name: categoryName,
@@ -111,13 +111,13 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
             parentId: categoryParentId || null,
           });
           if (!result?.data?.success) {
-            throw new Error(result?.serverError || 'Failed to create category.');
+            throw new Error(result?.serverError || "Failed to create category.");
           }
-          triggerNotification(true, 'Category created successfully.');
+          triggerNotification(true, "Category created successfully.");
         }
         setIsCategoryModalOpen(false);
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Failed to save category.';
+        const msg = err instanceof Error ? err.message : "Failed to save category.";
         triggerNotification(false, msg);
       }
     });
@@ -125,37 +125,38 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
 
   const handleDeleteCategory = async (catId: string) => {
     const confirmed = await confirmAction({
-      title: 'Delete Category',
-      message: 'Are you sure you want to delete this category? This operation will fail if products are linked.',
-      confirmText: 'Delete',
-      variant: 'danger'
+      title: "Delete Category",
+      message:
+        "Are you sure you want to delete this category? This operation will fail if products are linked.",
+      confirmText: "Delete",
+      variant: "danger",
     });
     if (!confirmed) return;
 
     toast.promise(
       deleteCategoryAction({ id: catId }).then((res) => {
         if (!res?.data?.success) {
-          throw new Error(res?.serverError || 'Failed to delete category.');
+          throw new Error(res?.serverError || "Failed to delete category.");
         }
         return res.data;
       }),
       {
-        loading: 'Deleting category...',
-        success: 'Category deleted successfully.',
-        error: (err) => err instanceof Error ? err.message : 'Failed to delete category.'
-      }
+        loading: "Deleting category...",
+        success: "Category deleted successfully.",
+        error: (err) => (err instanceof Error ? err.message : "Failed to delete category."),
+      },
     );
   };
 
   const columns: ColumnDef<Category>[] = [
     {
-      header: 'Category Name',
+      header: "Category Name",
       cell: (cat) => (
         <div className="font-bold flex items-center gap-2 flex-wrap text-zinc-900 dark:text-zinc-100">
           <span>{cat.name}</span>
           {cat.parentId ? (
             <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 font-mono text-[9px] uppercase tracking-wider dark:bg-zinc-850 dark:text-zinc-400">
-              Sub of {categories.find((c) => c.id === cat.parentId)?.name || '?'}
+              Sub of {categories.find((c) => c.id === cat.parentId)?.name || "?"}
             </span>
           ) : (
             <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-mono text-[9px] uppercase tracking-wider dark:bg-purple-950/20 dark:text-purple-400">
@@ -166,16 +167,20 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
       ),
     },
     {
-      header: 'Slug',
+      header: "Slug",
       cell: (cat) => <span className="font-mono text-zinc-500">{cat.slug}</span>,
     },
     {
-      header: 'Created',
-      cell: (cat) => <span className="text-zinc-500 font-mono">{new Date(cat.createdAt).toLocaleDateString()}</span>,
+      header: "Created",
+      cell: (cat) => (
+        <span className="text-zinc-500 font-mono">
+          {new Date(cat.createdAt).toLocaleDateString()}
+        </span>
+      ),
     },
     {
-      header: 'Actions',
-      className: 'text-right',
+      header: "Actions",
+      className: "text-right",
       cell: (cat) => (
         <div className="flex items-center justify-end gap-1.5">
           <button
@@ -232,68 +237,83 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
   );
 
   const modals = isCategoryModalOpen && (
-    <AccessibleModal isOpen={true} onClose={() => setIsCategoryModalOpen(false)} backdropClassName="bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl safe-area-bottom">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-            {editingCategory ? 'Edit Category' : 'Create Category'}
-          </h2>
-          <button
-            onClick={() => setIsCategoryModalOpen(false)}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 transition-colors cursor-pointer"
-          >
-            ✕
-          </button>
+    <AccessibleModal
+      isOpen={true}
+      onClose={() => setIsCategoryModalOpen(false)}
+      backdropClassName="bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+      className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl safe-area-bottom"
+    >
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
+          {editingCategory ? "Edit Category" : "Create Category"}
+        </h2>
+        <button
+          onClick={() => setIsCategoryModalOpen(false)}
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 transition-colors cursor-pointer"
+        >
+          ✕
+        </button>
+      </div>
+
+      <form onSubmit={handleSaveCategory} className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+            Category Name
+          </label>
+          <input
+            required
+            type="text"
+            maxLength={50}
+            value={categoryName}
+            onChange={(e) => handleCategoryNameChange(e.target.value)}
+            className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+            placeholder="e.g. Mechanical Keyboards"
+          />
         </div>
 
-        <form onSubmit={handleSaveCategory} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">Category Name</label>
-            <input
-              required
-              type="text"
-              maxLength={50}
-              value={categoryName}
-              onChange={(e) => handleCategoryNameChange(e.target.value)}
-              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-              placeholder="e.g. Mechanical Keyboards"
-            />
-          </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+            URL Slug
+          </label>
+          <input
+            required
+            type="text"
+            maxLength={50}
+            value={categorySlug}
+            onChange={(e) => setCategorySlug(e.target.value)}
+            className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-mono text-zinc-500 bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+          />
+          <p className="text-[10px] text-zinc-400">
+            Must be unique and URL-friendly (e.g. mechanical-keyboards)
+          </p>
+        </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">URL Slug</label>
-            <input
-              required
-              type="text"
-              maxLength={50}
-              value={categorySlug}
-              onChange={(e) => setCategorySlug(e.target.value)}
-              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-mono text-zinc-500 bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-            />
-            <p className="text-[10px] text-zinc-400">Must be unique and URL-friendly (e.g. mechanical-keyboards)</p>
-          </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+            Parent Category (Optional)
+          </label>
+          <select
+            value={categoryParentId}
+            onChange={(e) => setCategoryParentId(e.target.value)}
+            className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40 appearance-none"
+          >
+            {renderCategoryOptions()}
+          </select>
+          <p className="text-[10px] text-zinc-400">
+            Used to build hierarchical catalog navigation (e.g. Electronics / Laptops)
+          </p>
+        </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">Parent Category (Optional)</label>
-            <select
-              value={categoryParentId}
-              onChange={(e) => setCategoryParentId(e.target.value)}
-              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40 appearance-none"
-            >
-              {renderCategoryOptions()}
-            </select>
-            <p className="text-[10px] text-zinc-400">Used to build hierarchical catalog navigation (e.g. Electronics / Laptops)</p>
-          </div>
-
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={isPending}
-              className="w-full py-3.5 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl transition-all cursor-pointer shadow-md shadow-purple-900/20 active:scale-[0.98] disabled:opacity-50"
-            >
-              {isPending ? 'Saving...' : 'Save Category'}
-            </button>
-          </div>
-        </form>
+        <div className="pt-2">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="w-full py-3.5 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl transition-all cursor-pointer shadow-md shadow-purple-900/20 active:scale-[0.98] disabled:opacity-50"
+          >
+            {isPending ? "Saving..." : "Save Category"}
+          </button>
+        </div>
+      </form>
     </AccessibleModal>
   );
 

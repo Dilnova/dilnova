@@ -1,11 +1,18 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { inArray } from 'drizzle-orm';
-import { resolveCheckoutOptionsForOrgs } from '@/features/organization/checkout-options';
-import { BANK_TRANSFER_PAYMENT_ID, toVendorBankTransferAvailability } from '@/features/billing/bank-transfer';
-import { getBankTransferDetailsForOrgs } from '@/features/billing/bank-transfer.server';
-import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
-import { buildVendorCartSummaries, filterCartLinesByVendorOrg, resolveCheckoutVendorOrgId } from '@/features/cart/vendor-checkout';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { inArray } from "drizzle-orm";
+import { resolveCheckoutOptionsForOrgs } from "@/features/organization/checkout-options";
+import {
+  BANK_TRANSFER_PAYMENT_ID,
+  toVendorBankTransferAvailability,
+} from "@/features/billing/bank-transfer";
+import { getBankTransferDetailsForOrgs } from "@/features/billing/bank-transfer.server";
+import { getCachedOrganizations } from "@/shared/auth/clerk-cache";
+import {
+  buildVendorCartSummaries,
+  filterCartLinesByVendorOrg,
+  resolveCheckoutVendorOrgId,
+} from "@/features/cart/vendor-checkout";
 
 export async function fetchBranchesForOrgs(orgIds: string[]) {
   const branchRows =
@@ -42,7 +49,7 @@ export async function fetchBranchesForOrgs(orgIds: string[]) {
 
 export async function getCheckoutOptionsService(
   cartLines: { id: string; quantity: number; price: number }[],
-  checkoutVendorOrgId?: string | null
+  checkoutVendorOrgId?: string | null,
 ) {
   if (cartLines.length === 0) {
     return {
@@ -71,22 +78,16 @@ export async function getCheckoutOptionsService(
   const uniqueOrgIds = [...new Set(products.map((product) => product.orgId))];
 
   const cachedOrgs = await getCachedOrganizations();
-  const vendorNamesByOrg = Object.fromEntries(
-    cachedOrgs.map((org) => [org.id, org.name])
-  );
+  const vendorNamesByOrg = Object.fromEntries(cachedOrgs.map((org) => [org.id, org.name]));
 
   const resolvedCheckoutVendorOrgId = resolveCheckoutVendorOrgId(
     buildVendorCartSummaries(cartLines, productById, vendorNamesByOrg),
-    checkoutVendorOrgId
+    checkoutVendorOrgId,
   );
 
   if (uniqueOrgIds.length > 1 && !resolvedCheckoutVendorOrgId) {
     const bankDetailsByOrg = await getBankTransferDetailsForOrgs(uniqueOrgIds);
-    const vendorCartSummary = buildVendorCartSummaries(
-      cartLines,
-      productById,
-      vendorNamesByOrg
-    );
+    const vendorCartSummary = buildVendorCartSummaries(cartLines, productById, vendorNamesByOrg);
 
     return {
       success: true as const,
@@ -101,18 +102,16 @@ export async function getCheckoutOptionsService(
         uniqueOrgIds.map((orgId) => [
           orgId,
           toVendorBankTransferAvailability(
-            bankDetailsByOrg[orgId] ?? { vendorName: 'Vendor', bankDetails: null }
+            bankDetailsByOrg[orgId] ?? { vendorName: "Vendor", bankDetails: null },
           ),
-        ])
+        ]),
       ),
       vendorCartSummary,
     };
   }
 
   const orgIdsForOptions =
-    resolvedCheckoutVendorOrgId != null
-      ? [resolvedCheckoutVendorOrgId]
-      : uniqueOrgIds;
+    resolvedCheckoutVendorOrgId != null ? [resolvedCheckoutVendorOrgId] : uniqueOrgIds;
 
   const { branchesByOrg } = await fetchBranchesForOrgs(orgIdsForOptions);
 
@@ -121,11 +120,7 @@ export async function getCheckoutOptionsService(
   const bankDetailsByOrg = bankTransferEnabled
     ? await getBankTransferDetailsForOrgs(uniqueOrgIds)
     : {};
-  const vendorCartSummary = buildVendorCartSummaries(
-    cartLines,
-    productById,
-    vendorNamesByOrg
-  );
+  const vendorCartSummary = buildVendorCartSummaries(cartLines, productById, vendorNamesByOrg);
 
   return {
     success: true as const,
@@ -152,9 +147,9 @@ export async function getCheckoutOptionsService(
       uniqueOrgIds.map((orgId) => [
         orgId,
         toVendorBankTransferAvailability(
-          bankDetailsByOrg[orgId] ?? { vendorName: 'Vendor', bankDetails: null }
+          bankDetailsByOrg[orgId] ?? { vendorName: "Vendor", bankDetails: null },
         ),
-      ])
+      ]),
     ),
     vendorCartSummary,
   };

@@ -1,19 +1,19 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { inArray } from 'drizzle-orm';
-import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
-import {
-  resolveOnlineProductPurchaseState,
-} from '@/features/inventory/availability.shared';
-import type { VendorProduct } from '@/features/storefront/components/custom/types';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { inArray } from "drizzle-orm";
+import { getStockAvailabilityCatalog } from "@/features/inventory/availability.server";
+import { resolveOnlineProductPurchaseState } from "@/features/inventory/availability.shared";
+import type { VendorProduct } from "@/features/storefront/components/custom/types";
 
 export async function enrichVendorProductsWithPurchaseFlags(
-  products: VendorProduct[]
+  products: VendorProduct[],
 ): Promise<VendorProduct[]> {
   if (products.length === 0) return products;
 
   const stockAvailabilityCatalog = await getStockAvailabilityCatalog();
-  const productIds = products.filter((product) => product.type === 'product').map((product) => product.id);
+  const productIds = products
+    .filter((product) => product.type === "product")
+    .map((product) => product.id);
 
   const inventoryRows =
     productIds.length > 0
@@ -27,15 +27,13 @@ export async function enrichVendorProductsWithPurchaseFlags(
           .where(inArray(schema.inventory.productId, productIds))
       : [];
 
-  const inventoryByProductId = new Map(
-    inventoryRows.map((row) => [row.productId, row])
-  );
+  const inventoryByProductId = new Map(inventoryRows.map((row) => [row.productId, row]));
 
   return products.map((product) => {
     const { canPurchase } = resolveOnlineProductPurchaseState(
       product.type,
       stockAvailabilityCatalog,
-      inventoryByProductId.get(product.id)
+      inventoryByProductId.get(product.id),
     );
 
     return {

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { PendingOverlay } from './PendingOverlay';
+import React from "react";
+import { PendingOverlay } from "./PendingOverlay";
 
 export interface ColumnDef<T> {
   header: string;
@@ -32,7 +32,7 @@ export function TabDataTableLayout<T>({
   data,
   columns,
   renderMobileCard,
-  emptyStateMessage = 'No items found.',
+  emptyStateMessage = "No items found.",
   modals,
   filters,
 }: TabDataTableLayoutProps<T>) {
@@ -43,8 +43,12 @@ export function TabDataTableLayout<T>({
       {/* Header + Add button */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">{title}</h2>
-          <p className="text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5 hidden sm:block">{subtitle}</p>
+          <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">
+            {title}
+          </h2>
+          <p className="text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5 hidden sm:block">
+            {subtitle}
+          </p>
         </div>
         {onAddClick && buttonText && (
           <button
@@ -52,7 +56,12 @@ export function TabDataTableLayout<T>({
             className="inline-flex items-center gap-1.5 px-3.5 py-2.5 sm:py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-purple-900/10 cursor-pointer active:scale-[0.97] whitespace-nowrap"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2.5"
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             <span className="hidden sm:inline">{buttonText}</span>
             <span className="sm:hidden">Add</span>
@@ -69,7 +78,9 @@ export function TabDataTableLayout<T>({
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 uppercase font-mono text-[10px] tracking-wider bg-zinc-50/50 dark:bg-zinc-900/30">
                 {columns.map((col, idx) => (
-                  <th key={idx} className={`py-3 px-4 ${col.className || ''}`}>{col.header}</th>
+                  <th key={idx} className={`py-3 px-4 ${col.className || ""}`}>
+                    {col.header}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -77,7 +88,7 @@ export function TabDataTableLayout<T>({
               {data.map((item, rowIdx) => (
                 <tr key={rowIdx} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30">
                   {columns.map((col, colIdx) => (
-                    <td key={colIdx} className={`py-3.5 px-4 ${col.className || ''}`}>
+                    <td key={colIdx} className={`py-3.5 px-4 ${col.className || ""}`}>
                       {col.cell(item)}
                     </td>
                   ))}
@@ -85,7 +96,10 @@ export function TabDataTableLayout<T>({
               ))}
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length} className="py-12 text-center text-zinc-400 font-mono">
+                  <td
+                    colSpan={columns.length}
+                    className="py-12 text-center text-zinc-400 font-mono"
+                  >
                     {emptyStateMessage}
                   </td>
                 </tr>
@@ -98,9 +112,7 @@ export function TabDataTableLayout<T>({
       {/* Mobile card list */}
       <div className="sm:hidden space-y-2">
         {data.map((item, idx) => (
-          <React.Fragment key={idx}>
-            {renderMobileCard(item)}
-          </React.Fragment>
+          <React.Fragment key={idx}>{renderMobileCard(item)}</React.Fragment>
         ))}
         {data.length === 0 && (
           <div className="py-12 text-center text-zinc-400 text-xs font-mono border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">

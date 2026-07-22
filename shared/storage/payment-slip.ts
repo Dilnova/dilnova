@@ -1,17 +1,20 @@
-import 'server-only';
+import "server-only";
 
 import {
   PAYMENT_SLIP_MIME_TO_EXT,
   PAYMENT_SLIP_SIGNED_URL_TTL_SECONDS,
   PAYMENT_SLIPS_BUCKET,
   type PaymentSlipMimeType,
-} from '@/shared/storage/config';
-import { createSupabaseAdminClient, isSupabaseStorageConfigured } from '@/shared/storage/admin-client';
+} from "@/shared/storage/config";
+import {
+  createSupabaseAdminClient,
+  isSupabaseStorageConfigured,
+} from "@/shared/storage/admin-client";
 import {
   buildPaymentSlipStoragePath,
   isLegacyPaymentSlipUrl,
   isPaymentSlipStoragePath,
-} from '@/shared/storage/payment-slip.shared';
+} from "@/shared/storage/payment-slip.shared";
 
 export {
   buildPaymentSlipStoragePath,
@@ -19,7 +22,7 @@ export {
   isPaymentSlipStoragePath,
   resolvePaymentSlipExtension,
   resolvePaymentSlipExtensionFromFilename,
-} from '@/shared/storage/payment-slip.shared';
+} from "@/shared/storage/payment-slip.shared";
 
 export async function uploadPaymentSlipToStorage(input: {
   orderId: string;
@@ -30,13 +33,15 @@ export async function uploadPaymentSlipToStorage(input: {
   const storagePath = buildPaymentSlipStoragePath(input.orderId, extension);
   const supabase = createSupabaseAdminClient();
 
-  const { error } = await supabase.storage.from(PAYMENT_SLIPS_BUCKET).upload(storagePath, input.bytes, {
-    contentType: input.contentType,
-    upsert: false,
-  });
+  const { error } = await supabase.storage
+    .from(PAYMENT_SLIPS_BUCKET)
+    .upload(storagePath, input.bytes, {
+      contentType: input.contentType,
+      upsert: false,
+    });
 
   if (error) {
-    throw new Error(error.message || 'Failed to upload payment slip to storage.');
+    throw new Error(error.message || "Failed to upload payment slip to storage.");
   }
 
   return storagePath;
@@ -60,7 +65,7 @@ export async function createPaymentSlipSignedUrl(storagePath: string): Promise<s
 }
 
 export async function resolvePaymentSlipPreviewUrl(
-  storedValue: string | null | undefined
+  storedValue: string | null | undefined,
 ): Promise<string | null> {
   if (!storedValue) {
     return null;
@@ -95,7 +100,7 @@ export async function createPaymentSlipSignedUploadUrl(input: {
     .createSignedUploadUrl(storagePath);
 
   if (error || !data?.signedUrl) {
-    throw new Error(error?.message || 'Failed to generate signed upload URL.');
+    throw new Error(error?.message || "Failed to generate signed upload URL.");
   }
 
   return {
@@ -110,8 +115,8 @@ export async function verifyPaymentSlipFileExists(storagePath: string): Promise<
   }
 
   const supabase = createSupabaseAdminClient();
-  const parts = storagePath.split('/');
-  const folderPath = parts.slice(0, -1).join('/');
+  const parts = storagePath.split("/");
+  const folderPath = parts.slice(0, -1).join("/");
   const fileName = parts[parts.length - 1];
 
   const { data, error } = await supabase.storage
@@ -134,10 +139,10 @@ export async function verifyPaymentSlipMagicBytes(storagePath: string): Promise<
     const timeout = setTimeout(() => controller.abort(), 5000);
 
     const response = await fetch(signedUrl, {
-      headers: { Range: 'bytes=0-31' },
+      headers: { Range: "bytes=0-31" },
       signal: controller.signal,
     });
-    
+
     clearTimeout(timeout);
     if (!response.ok) return false;
 
@@ -145,20 +150,42 @@ export async function verifyPaymentSlipMagicBytes(storagePath: string): Promise<
     const bytes = new Uint8Array(buffer);
 
     // PNG: 89 50 4E 47 0D 0A 1A 0A
-    const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47 && bytes[4] === 0x0D && bytes[5] === 0x0A && bytes[6] === 0x1A && bytes[7] === 0x0A;
-    
+    const isPng =
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x4e &&
+      bytes[3] === 0x47 &&
+      bytes[4] === 0x0d &&
+      bytes[5] === 0x0a &&
+      bytes[6] === 0x1a &&
+      bytes[7] === 0x0a;
+
     // JPEG: FF D8 FF
-    const isJpeg = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
-    
+    const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+
     // GIF: GIF87a or GIF89a
-    const isGif = bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61;
-    
+    const isGif =
+      bytes[0] === 0x47 &&
+      bytes[1] === 0x49 &&
+      bytes[2] === 0x46 &&
+      bytes[3] === 0x38 &&
+      (bytes[4] === 0x37 || bytes[4] === 0x39) &&
+      bytes[5] === 0x61;
+
     // WebP: RIFF ... WEBP
-    const isWebP = bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
+    const isWebP =
+      bytes.length >= 12 &&
+      bytes[0] === 0x52 &&
+      bytes[1] === 0x49 &&
+      bytes[2] === 0x46 &&
+      bytes[3] === 0x46 &&
+      bytes[8] === 0x57 &&
+      bytes[9] === 0x45 &&
+      bytes[10] === 0x42 &&
+      bytes[11] === 0x50;
 
     return isPng || isJpeg || isGif || isWebP;
   } catch {
     return false;
   }
 }
-

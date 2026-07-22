@@ -1,40 +1,37 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
-import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/use-clerk-auth-redirect-url';
-import { useCart } from '@/features/cart/context/cart-context';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { useClerkAuthRedirectUrl } from "@/features/auth/hooks/use-clerk-auth-redirect-url";
+import { useCart } from "@/features/cart/context/cart-context";
 import {
   sendCartSummaryEmailAction,
   simulatedCheckoutAction,
-} from '@/features/cart/checkout.actions';
-import { isPaymentCompatibleWithFulfillment } from '@/features/organization/checkout-options.shared';
-import { calculateCheckoutTotals } from '@/features/billing/checkout-totals';
-import {
-  BANK_TRANSFER_PAYMENT_ID,
-  isBankTransferPayment,
-} from '@/features/billing/bank-transfer';
+} from "@/features/cart/checkout.actions";
+import { isPaymentCompatibleWithFulfillment } from "@/features/organization/checkout-options.shared";
+import { calculateCheckoutTotals } from "@/features/billing/checkout-totals";
+import { BANK_TRANSFER_PAYMENT_ID, isBankTransferPayment } from "@/features/billing/bank-transfer";
 import {
   clearCheckoutSuccessSnapshot,
   saveCheckoutSuccessSnapshot,
-} from '@/features/cart/checkout-success-storage';
+} from "@/features/cart/checkout-success-storage";
 import {
   groupCartItemsByVendor,
   resolveCheckoutCartItems,
   toggleAllProductsInSelection,
   toggleProductInSelection,
-} from '@/features/cart/vendor-checkout';
-import { toast } from 'sonner';
+} from "@/features/cart/vendor-checkout";
+import { toast } from "sonner";
 
-import { CartLoadingState } from './CartStates';
-import { CheckoutSuccessState } from './CheckoutSuccessState';
-import { CartVendorGroups } from './CartVendorGroups';
-import { CartCheckoutSidebar } from './CartCheckoutSidebar';
+import { CartLoadingState } from "./CartStates";
+import { CheckoutSuccessState } from "./CheckoutSuccessState";
+import { CartVendorGroups } from "./CartVendorGroups";
+import { CartCheckoutSidebar } from "./CartCheckoutSidebar";
 
-import { useShippingAddressState } from '@/features/cart/hooks/use-shipping-address-state';
-import { useCheckoutState } from '@/features/cart/hooks/use-checkout-state';
-import { useCheckoutOptionsState } from '@/features/cart/hooks/use-checkout-options-state';
+import { useShippingAddressState } from "@/features/cart/hooks/use-shipping-address-state";
+import { useCheckoutState } from "@/features/cart/hooks/use-checkout-state";
+import { useCheckoutOptionsState } from "@/features/cart/hooks/use-checkout-options-state";
 
 interface CartClientManagerProps {
   emptyState: React.ReactNode;
@@ -107,16 +104,17 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
 
   const selectedCheckoutProductIdSet = new Set(selectedCheckoutProductIds);
   const selectedVendorSummary =
-    checkoutOptions.vendorCartSummary.find((vendor) => vendor.orgId === selectedCheckoutVendorOrgId) ||
-    checkoutOptions.vendorCartSummary[0];
+    checkoutOptions.vendorCartSummary.find(
+      (vendor) => vendor.orgId === selectedCheckoutVendorOrgId,
+    ) || checkoutOptions.vendorCartSummary[0];
   const checkoutCartItems = resolveCheckoutCartItems(
     cartItems,
     selectedCheckoutProductIds,
-    vendorCount > 1 ? selectedVendorSummary?.productIds : null
+    vendorCount > 1 ? selectedVendorSummary?.productIds : null,
   );
   const checkoutSubtotal = checkoutCartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
-    0
+    0,
   );
   const checkoutItemCount = checkoutCartItems.reduce((sum, item) => sum + item.quantity, 0);
   const vendorCartGroups = groupCartItemsByVendor(cartItems, checkoutOptions.vendorCartSummary);
@@ -126,7 +124,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   const handleSelectCheckoutVendor = (orgId: string, productIds: string[]) => {
     setSelectedCheckoutVendorOrgId(orgId);
     setSelectedCheckoutProductIds(productIds);
-    setPickupBranchId('');
+    setPickupBranchId("");
   };
 
   const toggleProductCheckout = (productId: string) => {
@@ -135,19 +133,21 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
 
   const toggleAllProductsInGroup = (productIds: string[], checked: boolean) => {
     setSelectedCheckoutProductIds((prev) =>
-      toggleAllProductsInSelection(prev, productIds, checked)
+      toggleAllProductsInSelection(prev, productIds, checked),
     );
   };
 
   const selectedFulfillment = checkoutOptions.fulfillment.find((o) => o.id === fulfillmentMethod);
-  const requiresDeliveryAddress = Boolean(selectedFulfillment && !selectedFulfillment.requiresBranch);
+  const requiresDeliveryAddress = Boolean(
+    selectedFulfillment && !selectedFulfillment.requiresBranch,
+  );
   const compatiblePayments = checkoutOptions.payment.filter((payment) =>
     selectedFulfillment
       ? isPaymentCompatibleWithFulfillment(
           { requiresDelivery: payment.requiresDelivery },
-          { requiresBranch: selectedFulfillment.requiresBranch }
+          { requiresBranch: selectedFulfillment.requiresBranch },
         )
-      : true
+      : true,
   );
   const selectedPayment = compatiblePayments.find((o) => o.id === paymentMethod);
   const pickupBranches = checkoutOptions.pickupBranches[0]?.branches || [];
@@ -156,13 +156,13 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     const option = checkoutOptions.fulfillment.find((o) => o.id === optionId);
     setFulfillmentMethod(optionId);
     if (!option?.requiresBranch) {
-      setPickupBranchId('');
+      setPickupBranchId("");
     } else {
       const allBranches = checkoutOptions.pickupBranches.flatMap((pb) => pb.branches);
       if (allBranches.length === 1) {
         setPickupBranchId(allBranches[0].id);
       } else if (!allBranches.some((b: any) => b.id === pickupBranchId)) {
-        setPickupBranchId('');
+        setPickupBranchId("");
       }
     }
 
@@ -170,12 +170,12 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       option
         ? isPaymentCompatibleWithFulfillment(
             { requiresDelivery: payment.requiresDelivery },
-            { requiresBranch: option.requiresBranch }
+            { requiresBranch: option.requiresBranch },
           )
-        : true
+        : true,
     );
     if (!paymentsForFulfillment.some((o) => o.id === paymentMethod)) {
-      setPaymentMethod(paymentsForFulfillment[0]?.id || '');
+      setPaymentMethod(paymentsForFulfillment[0]?.id || "");
     }
   };
 
@@ -186,86 +186,96 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     const targetEmail = user?.primaryEmailAddress?.emailAddress;
     if (!targetEmail) return;
 
-    setEmailStatus('sending');
+    setEmailStatus("sending");
     try {
       const res = await sendCartSummaryEmailAction({
         emailAddress: targetEmail,
         cartItems,
         cartTotal,
-        zeroShipping: selectedFulfillment?.zeroShipping ?? false
+        zeroShipping: selectedFulfillment?.zeroShipping ?? false,
       });
       if (res?.data?.success) {
-        setEmailStatus('idle');
+        setEmailStatus("idle");
         toast.success(`Cart list successfully sent to ${targetEmail}!`);
       } else {
-        setEmailStatus('idle');
-        toast.error(res?.data?.error || 'Failed to send email.');
+        setEmailStatus("idle");
+        toast.error(res?.data?.error || "Failed to send email.");
       }
     } catch (err: unknown) {
-      setEmailStatus('idle');
-      const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      setEmailStatus("idle");
+      const errMsg = err instanceof Error ? err.message : "An unexpected error occurred.";
       toast.error(errMsg);
     }
   };
 
   const formatPrice = (cents: number) => {
-    return (cents / 100).toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return (cents / 100).toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
     });
   };
 
   const handleCheckout = async (optionsLoadingArg: boolean) => {
     if (!isSignedIn) return;
     if (checkoutItemCount === 0) {
-      toast.error('No items selected for checkout.');
+      toast.error("No items selected for checkout.");
       return;
     }
     if (optionsLoadingArg) {
       return;
     }
-    const customerName = user?.fullName || user?.firstName || 'Customer';
-    const customerEmail = user?.primaryEmailAddress?.emailAddress || '';
+    const customerName = user?.fullName || user?.firstName || "Customer";
+    const customerEmail = user?.primaryEmailAddress?.emailAddress || "";
 
     if (!customerEmail) {
-      toast.error('Your account does not have an email address. Please update your profile before checkout.');
+      toast.error(
+        "Your account does not have an email address. Please update your profile before checkout.",
+      );
       return;
     }
 
     if (!selectedFulfillment) {
-      toast.error('Please select a fulfillment method.');
+      toast.error("Please select a fulfillment method.");
       return;
     }
     if (!selectedPayment) {
-      toast.error('Please select a payment method.');
+      toast.error("Please select a payment method.");
       return;
     }
     if (selectedFulfillment.requiresBranch && !pickupBranchId) {
-      toast.error('Please select a store branch for pickup.');
+      toast.error("Please select a store branch for pickup.");
       return;
     }
     if (requiresDeliveryAddress) {
-      if (!shippingAddress.trim() || shippingAddress.trim().length < 5 || !shippingCity.trim() || !shippingState.trim() || !shippingPostalCode.trim()) {
-        toast.error('Please enter a complete delivery address for home delivery (Street, City, State, and Postal Code are required).');
+      if (
+        !shippingAddress.trim() ||
+        shippingAddress.trim().length < 5 ||
+        !shippingCity.trim() ||
+        !shippingState.trim() ||
+        !shippingPostalCode.trim()
+      ) {
+        toast.error(
+          "Please enter a complete delivery address for home delivery (Street, City, State, and Postal Code are required).",
+        );
         return;
       }
     }
 
     if (vendorCount > 1 && !selectedCheckoutVendorOrgId) {
-      toast.error('Select a vendor to checkout.');
+      toast.error("Select a vendor to checkout.");
       return;
     }
     if (checkoutCartItems.length === 0) {
-      toast.error('Tick at least one product to checkout.');
+      toast.error("Tick at least one product to checkout.");
       return;
     }
 
     const checkoutTotalsForOrder = calculateCheckoutTotals(
       checkoutSubtotal,
-      selectedFulfillment?.zeroShipping ?? false
+      selectedFulfillment?.zeroShipping ?? false,
     );
 
-    setCheckoutStatus('processing');
+    setCheckoutStatus("processing");
 
     try {
       const result = await simulatedCheckoutAction({
@@ -292,55 +302,70 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         shippingPostalCode: requiresDeliveryAddress ? shippingPostalCode.trim() : null,
         shippingCountry: requiresDeliveryAddress ? shippingCountry.trim() || null : null,
         shippingPhone2: requiresDeliveryAddress ? shippingPhone2.trim() || null : null,
-        idempotencyKey
+        idempotencyKey,
       });
 
       if (result?.data?.success) {
         const checkedOutIds = checkoutCartItems.map((item) => item.id);
         const remainingItems = cartItems.filter((item) => !checkedOutIds.includes(item.id));
         removeItemsByIds(checkedOutIds);
-        setRemainingCartCount(
-          remainingItems.reduce((sum, item) => sum + item.quantity, 0)
-        );
+        setRemainingCartCount(remainingItems.reduce((sum, item) => sum + item.quantity, 0));
         setConfirmedOrderEmail(customerEmail);
-        setConfirmedOrderId('orderId' in result.data ? (result.data.orderId || '') : '');
-        setBankTransferInstructions('bankTransferInstructions' in result.data ? (result.data.bankTransferInstructions || null) : null);
-        setConfirmationEmailSent('confirmationEmailSent' in result.data ? (result.data.confirmationEmailSent === true) : false);
+        setConfirmedOrderId("orderId" in result.data ? result.data.orderId || "" : "");
+        setBankTransferInstructions(
+          "bankTransferInstructions" in result.data
+            ? result.data.bankTransferInstructions || null
+            : null,
+        );
+        setConfirmationEmailSent(
+          "confirmationEmailSent" in result.data
+            ? result.data.confirmationEmailSent === true
+            : false,
+        );
         saveCheckoutSuccessSnapshot({
-          orderId: 'orderId' in result.data ? (result.data.orderId || '') : '',
+          orderId: "orderId" in result.data ? result.data.orderId || "" : "",
           confirmedOrderEmail: customerEmail,
-          bankTransferInstructions: 'bankTransferInstructions' in result.data ? (result.data.bankTransferInstructions || null) : null,
-          confirmationEmailSent: 'confirmationEmailSent' in result.data ? (result.data.confirmationEmailSent === true) : false,
+          bankTransferInstructions:
+            "bankTransferInstructions" in result.data
+              ? result.data.bankTransferInstructions || null
+              : null,
+          confirmationEmailSent:
+            "confirmationEmailSent" in result.data
+              ? result.data.confirmationEmailSent === true
+              : false,
         });
-        setCheckoutStatus('success');
-        setFulfillmentMethod('store_pickup');
+        setCheckoutStatus("success");
+        setFulfillmentMethod("store_pickup");
         setPaymentMethod(BANK_TRANSFER_PAYMENT_ID);
-        setPickupBranchId('');
+        setPickupBranchId("");
       } else {
-        setCheckoutStatus('idle');
-        const errorMessage = result?.data && 'error' in result.data ? result.data.error : (result?.serverError || 'Checkout failed.');
-        toast.error(typeof errorMessage === 'string' ? errorMessage : 'Checkout failed.');
+        setCheckoutStatus("idle");
+        const errorMessage =
+          result?.data && "error" in result.data
+            ? result.data.error
+            : result?.serverError || "Checkout failed.";
+        toast.error(typeof errorMessage === "string" ? errorMessage : "Checkout failed.");
       }
     } catch (err) {
-      setCheckoutStatus('idle');
-      toast.error(err instanceof Error ? err.message : 'An unexpected error occurred.');
+      setCheckoutStatus("idle");
+      toast.error(err instanceof Error ? err.message : "An unexpected error occurred.");
     }
   };
 
   const handleSuccessClose = () => {
     clearCheckoutSuccessSnapshot();
-    setCheckoutStatus('idle');
+    setCheckoutStatus("idle");
     setRemainingCartCount(0);
     if (remainingCartCount > 0) {
-      router.push('/cart');
+      router.push("/cart");
       return;
     }
-    router.push('/products');
+    router.push("/products");
   };
 
   const checkoutTotals = calculateCheckoutTotals(
     checkoutSubtotal,
-    selectedFulfillment?.zeroShipping ?? false
+    selectedFulfillment?.zeroShipping ?? false,
   );
   const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = checkoutTotals;
   const bankTransferSelected =
@@ -354,29 +379,39 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   const checkoutErrors: string[] = [];
   if (isSignedIn && cartItems.length > 0) {
     if (vendorCount > 1 && !selectedCheckoutVendorOrgId) {
-      checkoutErrors.push('Select a vendor to checkout.');
+      checkoutErrors.push("Select a vendor to checkout.");
     }
     if (checkoutCartItems.length === 0 || selectedCheckoutProductIds.length === 0) {
-      checkoutErrors.push('Tick at least one product to checkout.');
+      checkoutErrors.push("Tick at least one product to checkout.");
     }
     if (!selectedFulfillment) {
-      checkoutErrors.push('Select a Delivery & Payment option (Fulfillment).');
+      checkoutErrors.push("Select a Delivery & Payment option (Fulfillment).");
     } else if (selectedFulfillment.requiresBranch && !pickupBranchId) {
-      checkoutErrors.push('Select a store branch for pickup.');
+      checkoutErrors.push("Select a store branch for pickup.");
     }
     if (requiresDeliveryAddress) {
-      if (!shippingAddress.trim() || shippingAddress.trim().length < 5 || !shippingCity.trim() || !shippingState.trim() || !shippingPostalCode.trim()) {
-        checkoutErrors.push('Provide complete delivery details (Street, City, State, and Postal Code are required).');
+      if (
+        !shippingAddress.trim() ||
+        shippingAddress.trim().length < 5 ||
+        !shippingCity.trim() ||
+        !shippingState.trim() ||
+        !shippingPostalCode.trim()
+      ) {
+        checkoutErrors.push(
+          "Provide complete delivery details (Street, City, State, and Postal Code are required).",
+        );
       }
     }
     if (!paymentMethod) {
-      checkoutErrors.push('Select a payment method.');
+      checkoutErrors.push("Select a payment method.");
     } else if (bankTransferMissingDetails) {
-      checkoutErrors.push('Selected bank transfer but the vendor has not configured their bank details.');
+      checkoutErrors.push(
+        "Selected bank transfer but the vendor has not configured their bank details.",
+      );
     }
   }
 
-  if (checkoutStatus === 'success') {
+  if (checkoutStatus === "success") {
     return (
       <CheckoutSuccessState
         confirmedOrderId={confirmedOrderId}
@@ -465,12 +500,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-      <div className="lg:col-span-8 space-y-4">
-        {leftCol}
-      </div>
-      <div className="lg:col-span-4 space-y-4">
-        {rightCol}
-      </div>
+      <div className="lg:col-span-8 space-y-4">{leftCol}</div>
+      <div className="lg:col-span-4 space-y-4">{rightCol}</div>
     </div>
   );
 }

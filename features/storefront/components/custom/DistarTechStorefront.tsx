@@ -1,8 +1,8 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import type { StorefrontProps } from './types';
-import { isVideoUrl } from '@/shared/media/media';
-import AddToCartButton from '@/features/cart/components/AddToCartButton';
+import Link from "next/link";
+import Image from "next/image";
+import type { StorefrontProps } from "./types";
+import { isVideoUrl } from "@/shared/media/media";
+import AddToCartButton from "@/features/cart/components/AddToCartButton";
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -61,7 +61,8 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
                 {org.name}
               </h1>
               <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
-                {metadata.description || 'Enterprise workstations, developer-grade components, network gear, IoT setups, and high-performance server accessories.'}
+                {metadata.description ||
+                  "Enterprise workstations, developer-grade components, network gear, IoT setups, and high-performance server accessories."}
               </p>
             </div>
           </div>
@@ -69,16 +70,22 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
           {/* Monospace stats */}
           <div className="mt-10 flex flex-wrap gap-8 border-t border-zinc-900 pt-8 font-mono text-xs text-zinc-400">
             <div>
-              <span className="text-zinc-500">&gt;_ LISTINGS:</span> <span className="text-cyan-400 font-bold text-sm">{products.length}</span>
+              <span className="text-zinc-500">&gt;_ LISTINGS:</span>{" "}
+              <span className="text-cyan-400 font-bold text-sm">{products.length}</span>
             </div>
             <div>
-              <span className="text-zinc-500">&gt;_ SERVICES:</span> <span className="text-cyan-400 font-bold text-sm">{products.filter(p => p.type === 'service').length}</span>
+              <span className="text-zinc-500">&gt;_ SERVICES:</span>{" "}
+              <span className="text-cyan-400 font-bold text-sm">
+                {products.filter((p) => p.type === "service").length}
+              </span>
             </div>
             <div>
-              <span className="text-zinc-500">&gt;_ NET_RATING:</span> <span className="text-purple-400 font-bold text-sm">5.0 / 5.0</span>
+              <span className="text-zinc-500">&gt;_ NET_RATING:</span>{" "}
+              <span className="text-purple-400 font-bold text-sm">5.0 / 5.0</span>
             </div>
             <div>
-              <span className="text-zinc-500">&gt;_ TOTAL_NODES:</span> <span className="text-zinc-300 font-bold text-sm">342+</span>
+              <span className="text-zinc-500">&gt;_ TOTAL_NODES:</span>{" "}
+              <span className="text-zinc-300 font-bold text-sm">342+</span>
             </div>
           </div>
         </div>
@@ -96,10 +103,10 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { icon: '💻', label: 'Workstations', count: products.length },
-              { icon: '💾', label: 'Memory & Storage', count: 0 },
-              { icon: '🔌', label: 'IoT Dev Kits', count: 0 },
-              { icon: '🌐', label: 'Server Hardware', count: 0 },
+              { icon: "💻", label: "Workstations", count: products.length },
+              { icon: "💾", label: "Memory & Storage", count: 0 },
+              { icon: "🔌", label: "IoT Dev Kits", count: 0 },
+              { icon: "🌐", label: "Server Hardware", count: 0 },
             ].map((cat) => (
               <div
                 key={cat.label}
@@ -137,9 +144,9 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => {
-                const formattedPrice = (product.price / 100).toLocaleString('en-US', {
-                  style: 'currency',
-                  currency: 'USD',
+                const formattedPrice = (product.price / 100).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
                 });
 
                 return (
@@ -147,7 +154,10 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
                     key={product.id}
                     className="group relative bg-[#0b0f19] border border-zinc-800 rounded-xl overflow-hidden hover:border-cyan-500/40 hover:shadow-xl hover:shadow-cyan-500/5 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col group/item">
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="flex-1 flex flex-col group/item"
+                    >
                       {/* Product Image */}
                       <div className="h-48 bg-zinc-900 relative overflow-hidden border-b border-zinc-800">
                         {product.imageUrl ? (

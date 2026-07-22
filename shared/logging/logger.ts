@@ -1,4 +1,9 @@
-import { getRequestId, getUserId, getRequestPath, getRequestMethod } from '@/shared/security/async-context';
+import {
+  getRequestId,
+  getUserId,
+  getRequestPath,
+  getRequestMethod,
+} from "@/shared/security/async-context";
 
 async function captureSentryError(error: unknown, context?: Record<string, unknown>) {
   if (!process.env.SENTRY_DSN) {
@@ -6,24 +11,28 @@ async function captureSentryError(error: unknown, context?: Record<string, unkno
   }
 
   try {
-    const Sentry = await import('@sentry/nextjs');
+    const Sentry = await import("@sentry/nextjs");
     const { tags, ...extra } = context || {};
-    Sentry.captureException(error, { 
-      extra, 
-      tags: tags as Record<string, string> 
+    Sentry.captureException(error, {
+      extra,
+      tags: tags as Record<string, string>,
     });
   } catch {
     // Sentry is optional; never block application flow.
   }
 }
 
-function addClientBreadcrumb(level: 'info' | 'warning' | 'error', message: string, data?: Record<string, unknown>) {
+function addClientBreadcrumb(
+  level: "info" | "warning" | "error",
+  message: string,
+  data?: Record<string, unknown>,
+) {
   // Only record manual breadcrumbs in the browser, Server logs are already handled by stdout drains.
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
-    import('@sentry/nextjs')
-      .then(Sentry => {
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "production") {
+    import("@sentry/nextjs")
+      .then((Sentry) => {
         Sentry.addBreadcrumb({
-          category: 'logger',
+          category: "logger",
           message,
           level,
           data,
@@ -37,23 +46,23 @@ function redactSensitiveString(text: string): string {
   if (!text) return text;
   // Replace email addresses with a redacted placeholder
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-  return text.replace(emailRegex, '[REDACTED_EMAIL]');
+  return text.replace(emailRegex, "[REDACTED_EMAIL]");
 }
 
 export function redactSensitiveData(obj: any, seen = new WeakSet()): any {
   if (obj === null || obj === undefined) {
     return obj;
   }
-  
-  if (typeof obj !== 'object') {
-    if (typeof obj === 'string') {
+
+  if (typeof obj !== "object") {
+    if (typeof obj === "string") {
       return redactSensitiveString(obj);
     }
     return obj;
   }
 
   if (seen.has(obj)) {
-    return '[Circular]';
+    return "[Circular]";
   }
   seen.add(obj);
 
@@ -70,15 +79,16 @@ export function redactSensitiveData(obj: any, seen = new WeakSet()): any {
   }
 
   // Pre-compiled regex for performance (avoids Array.from() inside the loop)
-  const sensitiveKeysRegex = /email|phone|address|password|secret|token|key|bankaccountname|bankaccountnumber|bankbranchcode|bankname|shippingaddress|shippingphone|customeremail|customername|authorization|cookie/i;
+  const sensitiveKeysRegex =
+    /email|phone|address|password|secret|token|key|bankaccountname|bankaccountnumber|bankbranchcode|bankname|shippingaddress|shippingphone|customeremail|customername|authorization|cookie/i;
 
   const redacted: Record<string, any> = {};
   for (const [k, v] of Object.entries(obj)) {
     const isSensitive = sensitiveKeysRegex.test(k);
 
     if (isSensitive) {
-      redacted[k] = '[REDACTED]';
-    } else if (typeof v === 'object' && v !== null) {
+      redacted[k] = "[REDACTED]";
+    } else if (typeof v === "object" && v !== null) {
       redacted[k] = redactSensitiveData(v, seen);
     } else {
       redacted[k] = v;
@@ -89,8 +99,8 @@ export function redactSensitiveData(obj: any, seen = new WeakSet()): any {
 }
 
 function sanitizeLogString(val: string | undefined | null): string {
-  if (!val) return '';
-  return String(val).replace(/[\r\n]/g, ' ');
+  if (!val) return "";
+  return String(val).replace(/[\r\n]/g, " ");
 }
 
 /**
@@ -103,29 +113,35 @@ export const logger = {
     const requestId = getRequestId();
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
-    
-    const baseContext: Record<string, any> = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
-    Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
-    const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
-    
-    if (process.env.NODE_ENV === 'production') {
+
+    const baseContext: Record<string, any> = {
+      userId: getUserId(),
+      path: getRequestPath(),
+      method: getRequestMethod(),
+      ...context,
+    };
+    Object.keys(baseContext).forEach((k) => baseContext[k] === undefined && delete baseContext[k]);
+    const redactedContext =
+      Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
+
+    if (process.env.NODE_ENV === "production") {
       console.log(
         JSON.stringify({
-          level: 'info',
+          level: "info",
           message: safeMessage,
           requestId: safeRequestId || undefined,
           context: redactedContext,
           timestamp: new Date().toISOString(),
-        })
+        }),
       );
-      addClientBreadcrumb('info', safeMessage, redactedContext);
+      addClientBreadcrumb("info", safeMessage, redactedContext);
     } else {
-      const idPrefix = safeRequestId ? ` [${safeRequestId}]` : '';
+      const idPrefix = safeRequestId ? ` [${safeRequestId}]` : "";
       console.log(
-        '%s %s %s',
+        "%s %s %s",
         `[INFO]${idPrefix}`,
         safeMessage,
-        redactedContext ? JSON.stringify(redactedContext, null, 2) : ''
+        redactedContext ? JSON.stringify(redactedContext, null, 2) : "",
       );
     }
   },
@@ -133,29 +149,35 @@ export const logger = {
     const requestId = getRequestId();
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
-    
-    const baseContext: Record<string, any> = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
-    Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
-    const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
-    
-    if (process.env.NODE_ENV === 'production') {
+
+    const baseContext: Record<string, any> = {
+      userId: getUserId(),
+      path: getRequestPath(),
+      method: getRequestMethod(),
+      ...context,
+    };
+    Object.keys(baseContext).forEach((k) => baseContext[k] === undefined && delete baseContext[k]);
+    const redactedContext =
+      Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
+
+    if (process.env.NODE_ENV === "production") {
       console.warn(
         JSON.stringify({
-          level: 'warn',
+          level: "warn",
           message: safeMessage,
           requestId: safeRequestId || undefined,
           context: redactedContext,
           timestamp: new Date().toISOString(),
-        })
+        }),
       );
-      addClientBreadcrumb('warning', safeMessage, redactedContext);
+      addClientBreadcrumb("warning", safeMessage, redactedContext);
     } else {
-      const idPrefix = safeRequestId ? ` [${safeRequestId}]` : '';
+      const idPrefix = safeRequestId ? ` [${safeRequestId}]` : "";
       console.warn(
-        '%s %s %s',
+        "%s %s %s",
         `[WARN]${idPrefix}`,
         safeMessage,
-        redactedContext ? JSON.stringify(redactedContext, null, 2) : ''
+        redactedContext ? JSON.stringify(redactedContext, null, 2) : "",
       );
     }
   },
@@ -163,33 +185,39 @@ export const logger = {
     const requestId = getRequestId();
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
-    
-    const baseContext: Record<string, any> = { userId: getUserId(), path: getRequestPath(), method: getRequestMethod(), ...context };
-    Object.keys(baseContext).forEach(k => baseContext[k] === undefined && delete baseContext[k]);
-    const redactedContext = Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
-    
+
+    const baseContext: Record<string, any> = {
+      userId: getUserId(),
+      path: getRequestPath(),
+      method: getRequestMethod(),
+      ...context,
+    };
+    Object.keys(baseContext).forEach((k) => baseContext[k] === undefined && delete baseContext[k]);
+    const redactedContext =
+      Object.keys(baseContext).length > 0 ? redactSensitiveData(baseContext) : undefined;
+
     let redactedError = error;
     if (error) {
       try {
         redactedError = redactSensitiveData(error);
       } catch {
-        redactedError = '[Unresolvable Error Object]';
+        redactedError = "[Unresolvable Error Object]";
       }
     }
 
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       console.error(
         JSON.stringify({
-          level: 'error',
+          level: "error",
           message: safeMessage,
           requestId: safeRequestId || undefined,
           error: redactedError,
           context: redactedContext,
           timestamp: new Date().toISOString(),
-        })
+        }),
       );
-      addClientBreadcrumb('error', safeMessage, redactedContext);
-      
+      addClientBreadcrumb("error", safeMessage, redactedContext);
+
       const sentryErr = error instanceof Error ? error : new Error(safeMessage);
       void captureSentryError(sentryErr, {
         ...redactedContext,
@@ -197,13 +225,17 @@ export const logger = {
         logMessage: safeMessage,
       });
     } else {
-      const idPrefix = safeRequestId ? ` [${safeRequestId}]` : '';
+      const idPrefix = safeRequestId ? ` [${safeRequestId}]` : "";
       console.error(
-        '%s %s %s %s',
+        "%s %s %s %s",
         `[ERROR]${idPrefix}`,
         safeMessage,
-        redactedError ? (typeof redactedError === 'string' ? sanitizeLogString(redactedError) : JSON.stringify(redactedError, null, 2)) : '',
-        redactedContext ? JSON.stringify(redactedContext, null, 2) : ''
+        redactedError
+          ? typeof redactedError === "string"
+            ? sanitizeLogString(redactedError)
+            : JSON.stringify(redactedError, null, 2)
+          : "",
+        redactedContext ? JSON.stringify(redactedContext, null, 2) : "",
       );
     }
   },
@@ -217,7 +249,7 @@ export async function withPerformanceTracking<T>(
   name: string,
   op: string,
   fn: () => Promise<T>,
-  thresholdMs = 1500
+  thresholdMs = 1500,
 ): Promise<T> {
   const start = performance.now();
 
@@ -236,9 +268,12 @@ export async function withPerformanceTracking<T>(
     }
   };
 
-  if (process.env.NODE_ENV === 'production' && (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)) {
+  if (
+    process.env.NODE_ENV === "production" &&
+    (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)
+  ) {
     try {
-      const Sentry = await import('@sentry/nextjs');
+      const Sentry = await import("@sentry/nextjs");
       return await Sentry.startSpan({ name, op }, execute);
     } catch {
       return await execute();

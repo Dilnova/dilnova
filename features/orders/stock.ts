@@ -1,15 +1,15 @@
-import * as schema from '@/shared/db/schema';
-import { eq, and } from 'drizzle-orm';
-import type { db } from '@/shared/db/client';
+import * as schema from "@/shared/db/schema";
+import { eq, and } from "drizzle-orm";
+import type { db } from "@/shared/db/client";
 import {
   reserveProductStock,
   applyStockReservation,
   type StockReservation,
-} from '@/features/inventory/reservation';
+} from "@/features/inventory/reservation";
 import {
   incrementDefaultBranchStock,
   reduceBranchAllocationsForCentralSale,
-} from '@/features/inventory/ledger';
+} from "@/features/inventory/ledger";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -24,7 +24,7 @@ export async function applyOnlineOrderItemStock(
     productId: string;
     orderId: string;
     userId: string;
-  }
+  },
 ): Promise<void> {
   await applyStockReservation(tx, params.quantity, params.reservation, {
     userId: params.userId,
@@ -36,7 +36,7 @@ export async function applyOnlineOrderItemStock(
       tx,
       params.productId,
       params.quantity,
-      params.vendorOrgId
+      params.vendorOrgId,
     );
   }
 }
@@ -51,7 +51,7 @@ export async function depleteOnlineOrderItemStock(
     vendorOrgId: string;
     orderId: string;
     userId: string;
-  }
+  },
 ): Promise<void> {
   const stockResult = await reserveProductStock(tx, params.productId, params.quantity, {
     branchId: params.pickupBranchId,
@@ -82,13 +82,13 @@ export async function restoreOnlineOrderItemStock(
     vendorOrgId: string;
     orderId: string;
     userId: string;
-  }
+  },
 ): Promise<void> {
   const [inv] = await tx
     .select({ id: schema.inventory.id, quantity: schema.inventory.quantity })
     .from(schema.inventory)
     .where(eq(schema.inventory.productId, params.productId))
-    .for('update')
+    .for("update")
     .limit(1);
 
   if (!inv) return;
@@ -103,7 +103,7 @@ export async function restoreOnlineOrderItemStock(
 
   await tx.insert(schema.inventoryMovements).values({
     inventoryId: inv.id,
-    type: 'order_cancellation',
+    type: "order_cancellation",
     quantityChanged: params.quantity,
     previousQuantity: prevQty,
     newQuantity: newQty,
@@ -118,10 +118,10 @@ export async function restoreOnlineOrderItemStock(
       .where(
         and(
           eq(schema.branchInventory.branchId, params.pickupBranchId),
-          eq(schema.branchInventory.productId, params.productId)
-        )
+          eq(schema.branchInventory.productId, params.productId),
+        ),
       )
-      .for('update')
+      .for("update")
       .limit(1);
 
     if (branchInv) {
@@ -134,11 +134,6 @@ export async function restoreOnlineOrderItemStock(
         .where(eq(schema.branchInventory.id, branchInv.id));
     }
   } else {
-    await incrementDefaultBranchStock(
-      tx,
-      params.vendorOrgId,
-      params.productId,
-      params.quantity
-    );
+    await incrementDefaultBranchStock(tx, params.vendorOrgId, params.productId, params.quantity);
   }
 }

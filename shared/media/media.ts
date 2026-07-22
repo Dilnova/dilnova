@@ -4,20 +4,20 @@
  */
 export function isVideoUrl(url: string | null | undefined): boolean {
   if (!url) return false;
-  
+
   // Cloudinary video URL formats contain /video/upload/
-  if (url.includes('/video/upload/')) {
+  if (url.includes("/video/upload/")) {
     return true;
   }
-  
+
   // Also check standard video extensions
-  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv', '.3gp', '.flv', '.wmv'];
+  const videoExtensions = [".mp4", ".webm", ".ogg", ".mov", ".avi", ".mkv", ".3gp", ".flv", ".wmv"];
   try {
     const urlPath = new URL(url).pathname.toLowerCase();
-    return videoExtensions.some(ext => urlPath.endsWith(ext));
+    return videoExtensions.some((ext) => urlPath.endsWith(ext));
   } catch {
     // If URL parsing fails, fallback to simple string check
     const lowerUrl = url.toLowerCase();
-    return videoExtensions.some(ext => lowerUrl.endsWith(ext) || lowerUrl.includes(ext + '?'));
+    return videoExtensions.some((ext) => lowerUrl.endsWith(ext) || lowerUrl.includes(ext + "?"));
   }
 }

@@ -1,7 +1,12 @@
-'use client';
+"use client";
 
-import React from 'react';
-import type { CatalogCategoryRef, CatalogVendorRef, CatalogSort, CatalogStockFilter } from '../types';
+import React from "react";
+import type {
+  CatalogCategoryRef,
+  CatalogVendorRef,
+  CatalogSort,
+  CatalogStockFilter,
+} from "../types";
 
 interface ActiveFilterChipsProps {
   categories: CatalogCategoryRef[];
@@ -35,29 +40,37 @@ export default function ActiveFilterChips({
   const chips: { key: string; label: string; valueLabel: string }[] = [];
 
   if (currentSearch) {
-    chips.push({ key: 'search', label: 'Search', valueLabel: `"${currentSearch}"` });
+    chips.push({ key: "search", label: "Search", valueLabel: `"${currentSearch}"` });
   }
 
   if (currentCategory) {
     const cat = categories.find((c) => c.slug === currentCategory);
-    chips.push({ key: 'category', label: 'Category', valueLabel: cat ? cat.name : currentCategory });
+    chips.push({
+      key: "category",
+      label: "Category",
+      valueLabel: cat ? cat.name : currentCategory,
+    });
   }
 
-  if (currentType && currentType !== 'all') {
+  if (currentType && currentType !== "all") {
     chips.push({
-      key: 'type',
-      label: 'Type',
-      valueLabel: currentType === 'product' ? 'Products' : 'Services',
+      key: "type",
+      label: "Type",
+      valueLabel: currentType === "product" ? "Products" : "Services",
     });
   }
 
   if (currentVendor) {
     const vendor = vendors.find((v) => v.slug === currentVendor);
-    chips.push({ key: 'vendor', label: 'Vendor', valueLabel: vendor ? vendor.name : currentVendor });
+    chips.push({
+      key: "vendor",
+      label: "Vendor",
+      valueLabel: vendor ? vendor.name : currentVendor,
+    });
   }
 
   if (currentMinPrice || currentMaxPrice) {
-    let priceText = '';
+    let priceText = "";
     if (currentMinPrice && currentMaxPrice) {
       priceText = `$${currentMinPrice} - $${currentMaxPrice}`;
     } else if (currentMinPrice) {
@@ -65,11 +78,11 @@ export default function ActiveFilterChips({
     } else if (currentMaxPrice) {
       priceText = `Max $${currentMaxPrice}`;
     }
-    chips.push({ key: 'price', label: 'Price', valueLabel: priceText });
+    chips.push({ key: "price", label: "Price", valueLabel: priceText });
   }
 
-  if (currentStock === 'in_stock') {
-    chips.push({ key: 'stock', label: 'Availability', valueLabel: 'In Stock Only' });
+  if (currentStock === "in_stock") {
+    chips.push({ key: "stock", label: "Availability", valueLabel: "In Stock Only" });
   }
 
   if (chips.length === 0) {

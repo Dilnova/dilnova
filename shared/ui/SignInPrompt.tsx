@@ -1,20 +1,18 @@
-'use client';
+"use client";
 
-import { SignInButton, SignUpButton } from '@clerk/nextjs';
-import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/use-clerk-auth-redirect-url';
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { useClerkAuthRedirectUrl } from "@/features/auth/hooks/use-clerk-auth-redirect-url";
 
 interface SignInPromptProps {
   message: string;
   className?: string;
 }
 
-export default function SignInPrompt({ message, className = '' }: SignInPromptProps) {
+export default function SignInPrompt({ message, className = "" }: SignInPromptProps) {
   const redirectUrl = useClerkAuthRedirectUrl();
 
   return (
-    <div
-      className={`border-t border-zinc-100 dark:border-zinc-900 pt-4 space-y-3 ${className}`}
-    >
+    <div className={`border-t border-zinc-100 dark:border-zinc-900 pt-4 space-y-3 ${className}`}>
       <p className="text-xs text-zinc-450 dark:text-zinc-550 font-mono">{message}</p>
       <div className="flex flex-wrap items-center gap-2">
         <SignInButton mode="modal" forceRedirectUrl={redirectUrl}>

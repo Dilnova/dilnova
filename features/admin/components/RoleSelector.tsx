@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useTransition } from 'react';
-import { updateOrganizationMemberRole } from '@/features/admin/actions';
+import { useState, useTransition } from "react";
+import { updateOrganizationMemberRole } from "@/features/admin/actions";
 
 interface RoleSelectorProps {
   orgId: string;
@@ -10,7 +10,7 @@ interface RoleSelectorProps {
 }
 
 export default function RoleSelector({ orgId, userId, currentRole }: RoleSelectorProps) {
-  const [role, setRole] = useState(currentRole || 'org:member');
+  const [role, setRole] = useState(currentRole || "org:member");
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -23,8 +23,10 @@ export default function RoleSelector({ orgId, userId, currentRole }: RoleSelecto
       try {
         await updateOrganizationMemberRole(orgId, userId, newRole);
       } catch (err) {
-        setErrorMessage(err instanceof Error ? err.message : 'Failed to update organization member role');
-        setRole(currentRole || 'org:member');
+        setErrorMessage(
+          err instanceof Error ? err.message : "Failed to update organization member role",
+        );
+        setRole(currentRole || "org:member");
       }
     });
   };
@@ -42,9 +44,7 @@ export default function RoleSelector({ orgId, userId, currentRole }: RoleSelecto
           <option value="org:admin">org:admin (Administrator)</option>
         </select>
         {isPending && (
-          <span className="text-[10px] text-zinc-400 font-mono animate-pulse">
-            saving...
-          </span>
+          <span className="text-[10px] text-zinc-400 font-mono animate-pulse">saving...</span>
         )}
       </div>
       {errorMessage && (

@@ -6,7 +6,7 @@ permissions:
 on:
   schedule:
     # Run every 5 minutes
-    - cron: '*/5 * * * *'
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -18,13 +18,13 @@ jobs:
       - name: Ping API Health Endpoint
         id: ping
         env:
-          # Use the production URL variable, 
+          # Use the production URL variable,
           # or finally default to dilstar.pp.ua which is referenced in layout.tsx.
           TARGET_URL: ${{ vars.PRODUCTION_APP_URL || 'https://dilstar.pp.ua' }}
           HEALTH_SECRET: ${{ secrets.HEALTH_CHECK_SECRET }}
         run: |
           echo "Pinging health endpoint at $TARGET_URL/api/health"
-          
+
           if [ -n "$HEALTH_SECRET" ]; then
             echo "Using authorized detailed probe"
             RESPONSE=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $HEALTH_SECRET" "$TARGET_URL/api/health")
@@ -32,18 +32,18 @@ jobs:
             echo "Using public probe"
             RESPONSE=$(curl -s -w "\n%{http_code}" "$TARGET_URL/api/health")
           fi
-          
+
           HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
           HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
-          
+
           echo "Status Code: $HTTP_STATUS"
           echo "Response Body: $HTTP_BODY"
-          
+
           if [ "$HTTP_STATUS" -ne 200 ]; then
             echo "::error title=Health Check Failed::The health endpoint returned status $HTTP_STATUS"
             exit 1
           fi
-          
+
           # Optional: Parse JSON to check internal detailed status if authorized
           if echo "$HTTP_BODY" | grep -q '"status":"degraded"'; then
             echo "::error title=System Degraded::The health check returned 200 but system is in a degraded state (e.g. Upstash rate limiting failed)."
@@ -58,7 +58,7 @@ jobs:
           server_port: 465
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
-          subject: 🚨 Uptime Monitor Failed! 
+          subject: 🚨 Uptime Monitor Failed!
           body: |
             The production health check endpoint returned a non-200 status code. 
             View the workflow run here: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

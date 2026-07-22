@@ -1,56 +1,53 @@
-'use client';
+"use client";
 
-import { useState, useTransition } from 'react';
-import { updateCheckoutOptionsCatalogAction } from '@/features/superadmin/checkout-options.actions';
+import { useState, useTransition } from "react";
+import { updateCheckoutOptionsCatalogAction } from "@/features/superadmin/checkout-options.actions";
 import {
   createCustomCheckoutOption,
   type CheckoutOptionDefinition,
   type CheckoutOptionType,
-} from '@/features/organization/checkout-options.shared';
-import { toast } from 'sonner';
+} from "@/features/organization/checkout-options.shared";
+import { toast } from "sonner";
 
 interface CheckoutOptionsSettingsProps {
   initialCatalog: CheckoutOptionDefinition[];
 }
 
-export default function CheckoutOptionsSettings({
-  initialCatalog,
-}: CheckoutOptionsSettingsProps) {
+export default function CheckoutOptionsSettings({ initialCatalog }: CheckoutOptionsSettingsProps) {
   const [catalog, setCatalog] = useState<CheckoutOptionDefinition[]>(initialCatalog);
-  const [newLabel, setNewLabel] = useState('');
-  const [newType, setNewType] = useState<CheckoutOptionType>('fulfillment');
+  const [newLabel, setNewLabel] = useState("");
+  const [newType, setNewType] = useState<CheckoutOptionType>("fulfillment");
   const [isPending, startTransition] = useTransition();
 
   const togglePlatformEnabled = (id: string) => {
     setCatalog((prev) =>
       prev.map((option) =>
-        option.id === id ? { ...option, platformEnabled: !option.platformEnabled } : option
-      )
+        option.id === id ? { ...option, platformEnabled: !option.platformEnabled } : option,
+      ),
     );
   };
 
   const toggleOptionFlag = (
     id: string,
-    flag: 'zeroShipping' | 'requiresBranch' | 'pendingPayment' | 'requiresDelivery' | 'requiresPickup'
+    flag:
+      "zeroShipping" | "requiresBranch" | "pendingPayment" | "requiresDelivery" | "requiresPickup",
   ) => {
     setCatalog((prev) =>
-      prev.map((option) =>
-        option.id === id ? { ...option, [flag]: !option[flag] } : option
-      )
+      prev.map((option) => (option.id === id ? { ...option, [flag]: !option[flag] } : option)),
     );
   };
 
   const handleAddCustom = () => {
     const label = newLabel.trim();
     if (!label) {
-      toast.error('Enter a label for the new checkout option.');
+      toast.error("Enter a label for the new checkout option.");
       return;
     }
 
     const existingIds = catalog.map((o) => o.id);
     const custom = createCustomCheckoutOption(label, newType, existingIds);
     setCatalog((prev) => [...prev, custom]);
-    setNewLabel('');
+    setNewLabel("");
     toast.success(`Added "${custom.label}". Save to apply platform-wide.`);
   };
 
@@ -63,17 +60,17 @@ export default function CheckoutOptionsSettings({
       try {
         const result = await updateCheckoutOptionsCatalogAction({ options: catalog });
         if (!result?.data?.success) {
-          throw new Error(result?.serverError || 'Failed to save checkout options.');
+          throw new Error(result?.serverError || "Failed to save checkout options.");
         }
-        toast.success('Checkout options catalog saved.');
+        toast.success("Checkout options catalog saved.");
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to save checkout options.');
+        toast.error(err instanceof Error ? err.message : "Failed to save checkout options.");
       }
     });
   };
 
-  const fulfillmentOptions = catalog.filter((o) => o.type === 'fulfillment');
-  const paymentOptions = catalog.filter((o) => o.type === 'payment');
+  const fulfillmentOptions = catalog.filter((o) => o.type === "fulfillment");
+  const paymentOptions = catalog.filter((o) => o.type === "payment");
 
   return (
     <div className="bg-white border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-4">
@@ -82,7 +79,8 @@ export default function CheckoutOptionsSettings({
           <span>🛒</span> Checkout Options Catalog
         </h3>
         <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
-          Define fulfillment and payment methods available platform-wide. Organization admins can enable or disable each option for their store.
+          Define fulfillment and payment methods available platform-wide. Organization admins can
+          enable or disable each option for their store.
         </p>
       </div>
 
@@ -138,7 +136,7 @@ export default function CheckoutOptionsSettings({
         disabled={isPending}
         className="w-full py-2.5 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl transition-all cursor-pointer"
       >
-        {isPending ? 'Saving Catalog...' : 'Save Checkout Catalog'}
+        {isPending ? "Saving Catalog..." : "Save Checkout Catalog"}
       </button>
     </div>
   );
@@ -154,14 +152,20 @@ function OptionGroup({
   title: string;
   options: CheckoutOptionDefinition[];
   onToggle: (id: string) => void;
-  onToggleFlag: (id: string, flag: 'zeroShipping' | 'requiresBranch' | 'pendingPayment' | 'requiresDelivery' | 'requiresPickup') => void;
+  onToggleFlag: (
+    id: string,
+    flag:
+      "zeroShipping" | "requiresBranch" | "pendingPayment" | "requiresDelivery" | "requiresPickup",
+  ) => void;
   onRemoveCustom: (id: string) => void;
 }) {
   if (options.length === 0) return null;
 
   return (
     <div className="space-y-2">
-      <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 font-mono">{title}</h4>
+      <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 font-mono">
+        {title}
+      </h4>
       {options.map((option) => (
         <div
           key={option.id}
@@ -171,43 +175,43 @@ function OptionGroup({
             <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">{option.label}</p>
             <p className="text-[10px] text-zinc-400 font-mono truncate">
               {option.id}
-              {option.isBuiltIn ? ' · built-in' : ' · custom'}
-              {option.type === 'fulfillment' && option.zeroShipping ? ' · free shipping' : ''}
-              {option.type === 'fulfillment' && option.requiresBranch ? ' · requires branch' : ''}
-              {option.type === 'payment' && option.pendingPayment ? ' · pending payment' : ''}
-              {option.type === 'payment' && option.requiresDelivery ? ' · delivery only' : ''}
-              {option.type === 'payment' && option.requiresPickup ? ' · pickup only' : ''}
+              {option.isBuiltIn ? " · built-in" : " · custom"}
+              {option.type === "fulfillment" && option.zeroShipping ? " · free shipping" : ""}
+              {option.type === "fulfillment" && option.requiresBranch ? " · requires branch" : ""}
+              {option.type === "payment" && option.pendingPayment ? " · pending payment" : ""}
+              {option.type === "payment" && option.requiresDelivery ? " · delivery only" : ""}
+              {option.type === "payment" && option.requiresPickup ? " · pickup only" : ""}
             </p>
-            {!option.isBuiltIn && option.type === 'fulfillment' && (
+            {!option.isBuiltIn && option.type === "fulfillment" && (
               <div className="flex flex-wrap gap-2 mt-1.5">
                 <FlagToggle
                   label="Free shipping"
                   enabled={option.zeroShipping === true}
-                  onToggle={() => onToggleFlag(option.id, 'zeroShipping')}
+                  onToggle={() => onToggleFlag(option.id, "zeroShipping")}
                 />
                 <FlagToggle
                   label="Requires branch"
                   enabled={option.requiresBranch === true}
-                  onToggle={() => onToggleFlag(option.id, 'requiresBranch')}
+                  onToggle={() => onToggleFlag(option.id, "requiresBranch")}
                 />
               </div>
             )}
-            {!option.isBuiltIn && option.type === 'payment' && (
+            {!option.isBuiltIn && option.type === "payment" && (
               <div className="flex flex-wrap gap-2 mt-1.5">
                 <FlagToggle
                   label="Pending payment (COD)"
                   enabled={option.pendingPayment === true}
-                  onToggle={() => onToggleFlag(option.id, 'pendingPayment')}
+                  onToggle={() => onToggleFlag(option.id, "pendingPayment")}
                 />
                 <FlagToggle
                   label="Delivery only"
                   enabled={option.requiresDelivery === true}
-                  onToggle={() => onToggleFlag(option.id, 'requiresDelivery')}
+                  onToggle={() => onToggleFlag(option.id, "requiresDelivery")}
                 />
                 <FlagToggle
                   label="Pickup only"
                   enabled={option.requiresPickup === true}
-                  onToggle={() => onToggleFlag(option.id, 'requiresPickup')}
+                  onToggle={() => onToggleFlag(option.id, "requiresPickup")}
                 />
               </div>
             )}
@@ -226,13 +230,13 @@ function OptionGroup({
               type="button"
               onClick={() => onToggle(option.id)}
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
-                option.platformEnabled ? 'bg-purple-600' : 'bg-zinc-200 dark:bg-zinc-800'
+                option.platformEnabled ? "bg-purple-600" : "bg-zinc-200 dark:bg-zinc-800"
               }`}
               aria-pressed={option.platformEnabled}
             >
               <span
                 className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  option.platformEnabled ? 'translate-x-4' : 'translate-x-0'
+                  option.platformEnabled ? "translate-x-4" : "translate-x-0"
                 }`}
               />
             </button>
@@ -258,11 +262,11 @@ function FlagToggle({
       onClick={onToggle}
       className={`text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md border transition-colors cursor-pointer ${
         enabled
-          ? 'border-purple-500/40 bg-purple-500/10 text-purple-700 dark:text-purple-300'
-          : 'border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+          ? "border-purple-500/40 bg-purple-500/10 text-purple-700 dark:text-purple-300"
+          : "border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
       }`}
     >
-      {label}: {enabled ? 'on' : 'off'}
+      {label}: {enabled ? "on" : "off"}
     </button>
   );
 }

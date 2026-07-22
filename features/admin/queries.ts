@@ -1,6 +1,6 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 export async function getBranchCountForOrg(orgId: string) {
   return db

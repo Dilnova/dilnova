@@ -7,23 +7,23 @@
 
 ## Key Docs Links
 
-| Topic | URL |
-|---|---|
-| Overview | https://orm.drizzle.team/docs/overview |
-| PostgreSQL Setup | https://orm.drizzle.team/docs/get-started/postgresql-new |
-| Schema Declaration | https://orm.drizzle.team/docs/sql-schema-declaration |
-| Column Types (PostgreSQL) | https://orm.drizzle.team/docs/column-types/pg |
-| Select (Queries) | https://orm.drizzle.team/docs/select |
-| Insert | https://orm.drizzle.team/docs/insert |
-| Update | https://orm.drizzle.team/docs/update |
-| Delete | https://orm.drizzle.team/docs/delete |
-| Joins | https://orm.drizzle.team/docs/joins |
-| Filters (`where`) | https://orm.drizzle.team/docs/operators |
-| Transactions | https://orm.drizzle.team/docs/transactions |
-| Relations (Relational Queries) | https://orm.drizzle.team/docs/rqb |
-| Migrations | https://orm.drizzle.team/docs/migrations |
-| Drizzle Kit CLI | https://orm.drizzle.team/docs/kit-overview |
-| `drizzle.config.ts` | https://orm.drizzle.team/docs/drizzle-config-file |
+| Topic                          | URL                                                      |
+| ------------------------------ | -------------------------------------------------------- |
+| Overview                       | https://orm.drizzle.team/docs/overview                   |
+| PostgreSQL Setup               | https://orm.drizzle.team/docs/get-started/postgresql-new |
+| Schema Declaration             | https://orm.drizzle.team/docs/sql-schema-declaration     |
+| Column Types (PostgreSQL)      | https://orm.drizzle.team/docs/column-types/pg            |
+| Select (Queries)               | https://orm.drizzle.team/docs/select                     |
+| Insert                         | https://orm.drizzle.team/docs/insert                     |
+| Update                         | https://orm.drizzle.team/docs/update                     |
+| Delete                         | https://orm.drizzle.team/docs/delete                     |
+| Joins                          | https://orm.drizzle.team/docs/joins                      |
+| Filters (`where`)              | https://orm.drizzle.team/docs/operators                  |
+| Transactions                   | https://orm.drizzle.team/docs/transactions               |
+| Relations (Relational Queries) | https://orm.drizzle.team/docs/rqb                        |
+| Migrations                     | https://orm.drizzle.team/docs/migrations                 |
+| Drizzle Kit CLI                | https://orm.drizzle.team/docs/kit-overview               |
+| `drizzle.config.ts`            | https://orm.drizzle.team/docs/drizzle-config-file        |
 
 ---
 
@@ -47,9 +47,9 @@ pnpm db:verify      # Verify migration journal matches SQL files
 
 ```ts
 // Query with filter
-import { db } from '@/shared/db';
-import { products } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from "@/shared/db";
+import { products } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 
 const items = await db
   .select()
@@ -60,7 +60,7 @@ const items = await db
 ```ts
 // Insert
 await db.insert(products).values({
-  name: 'Widget',
+  name: "Widget",
   orgId,
   price: 1999,
 });

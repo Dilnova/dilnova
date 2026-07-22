@@ -1,8 +1,8 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import type { StorefrontProps } from './types';
-import { isVideoUrl } from '@/shared/media/media';
-import AddToCartButton from '@/features/cart/components/AddToCartButton';
+import Link from "next/link";
+import Image from "next/image";
+import type { StorefrontProps } from "./types";
+import { isVideoUrl } from "@/shared/media/media";
+import AddToCartButton from "@/features/cart/components/AddToCartButton";
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -61,7 +61,8 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
                 {org.name}
               </h1>
               <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">
-                {metadata.description || 'Schedule consultation calls with master gardeners, custom project builders, tech architects, and heavy machinery operators.'}
+                {metadata.description ||
+                  "Schedule consultation calls with master gardeners, custom project builders, tech architects, and heavy machinery operators."}
               </p>
             </div>
           </div>
@@ -69,13 +70,15 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
           {/* Stats details */}
           <div className="mt-10 flex flex-wrap gap-8 border-t border-slate-900/60 pt-8 text-xs text-slate-500 font-mono">
             <div>
-              SERVICES_ACTIVE: <span className="text-teal-400 font-semibold text-sm">{products.length}</span>
+              SERVICES_ACTIVE:{" "}
+              <span className="text-teal-400 font-semibold text-sm">{products.length}</span>
             </div>
             <div>
               SATISFACTION_RATE: <span className="text-teal-400 font-semibold text-sm">99.2%</span>
             </div>
             <div>
-              RESPONSE_TIME: <span className="text-teal-400 font-semibold text-sm">&lt; 2 Hours</span>
+              RESPONSE_TIME:{" "}
+              <span className="text-teal-400 font-semibold text-sm">&lt; 2 Hours</span>
             </div>
           </div>
         </div>
@@ -93,10 +96,10 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { icon: '🪴', label: 'Landscaping Care', desc: 'Planting & nursery setups' },
-              { icon: '🔧', label: 'Equipment Repair', desc: 'Hardware diagnostics' },
-              { icon: '🖥️', label: 'Tech Architecture', desc: 'Workstation deployment' },
-              { icon: '📅', label: 'Site Consultations', desc: 'On-site inspections' },
+              { icon: "🪴", label: "Landscaping Care", desc: "Planting & nursery setups" },
+              { icon: "🔧", label: "Equipment Repair", desc: "Hardware diagnostics" },
+              { icon: "🖥️", label: "Tech Architecture", desc: "Workstation deployment" },
+              { icon: "📅", label: "Site Consultations", desc: "On-site inspections" },
             ].map((cat) => (
               <div
                 key={cat.label}
@@ -134,9 +137,9 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => {
-                const formattedPrice = (product.price / 100).toLocaleString('en-US', {
-                  style: 'currency',
-                  currency: 'USD',
+                const formattedPrice = (product.price / 100).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "USD",
                 });
 
                 return (
@@ -144,7 +147,10 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
                     key={product.id}
                     className="group relative bg-[#0f172a] border border-slate-800 rounded-xl overflow-hidden hover:border-teal-500/40 hover:shadow-xl hover:shadow-teal-500/5 transition-all duration-300 flex flex-col justify-between"
                   >
-                    <Link href={`/products/${product.id}`} className="flex-1 flex flex-col group/item">
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="flex-1 flex flex-col group/item"
+                    >
                       {/* Product Image */}
                       <div className="h-48 bg-slate-900 relative overflow-hidden border-b border-slate-800">
                         {product.imageUrl ? (
@@ -195,9 +201,7 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
                     </Link>
 
                     <div className="px-5 pb-5 flex items-center justify-between border-t border-slate-900 pt-4">
-                      <span className="text-sm font-extrabold text-teal-400">
-                        {formattedPrice}
-                      </span>
+                      <span className="text-sm font-extrabold text-teal-400">{formattedPrice}</span>
                       <div className="flex items-center gap-2">
                         <AddToCartButton
                           product={{

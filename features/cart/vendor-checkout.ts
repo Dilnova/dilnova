@@ -13,7 +13,7 @@ export type VendorCartSummaryEntry = {
 export function buildVendorCartSummaries(
   cartLines: CartCheckoutLine[],
   productById: Map<string, CartProductOrgRef>,
-  vendorNamesByOrg: Record<string, string> = {}
+  vendorNamesByOrg: Record<string, string> = {},
 ): VendorCartSummaryEntry[] {
   const byOrg = new Map<string, { subtotal: number; productIds: string[]; itemCount: number }>();
 
@@ -32,7 +32,7 @@ export function buildVendorCartSummaries(
 
   return [...byOrg.entries()].map(([orgId, data]) => ({
     orgId,
-    vendorName: vendorNamesByOrg[orgId] || 'Vendor',
+    vendorName: vendorNamesByOrg[orgId] || "Vendor",
     subtotalCents: data.subtotal,
     productIds: data.productIds,
     itemCount: data.itemCount,
@@ -42,7 +42,7 @@ export function buildVendorCartSummaries(
 export function filterCartLinesByVendorOrg(
   cartLines: CartCheckoutLine[],
   productById: Map<string, CartProductOrgRef>,
-  checkoutVendorOrgId: string | null | undefined
+  checkoutVendorOrgId: string | null | undefined,
 ): CartCheckoutLine[] {
   if (!checkoutVendorOrgId) return cartLines;
   return cartLines.filter((line) => productById.get(line.id)?.orgId === checkoutVendorOrgId);
@@ -50,7 +50,7 @@ export function filterCartLinesByVendorOrg(
 
 export function resolveCheckoutVendorOrgId(
   vendorSummaries: VendorCartSummaryEntry[],
-  requestedOrgId: string | null | undefined
+  requestedOrgId: string | null | undefined,
 ): string | null {
   if (vendorSummaries.length === 0) return null;
   if (vendorSummaries.length === 1) return vendorSummaries[0].orgId;
@@ -78,7 +78,7 @@ export type VendorCartGroupView<T extends VendorCartGroupItem = VendorCartGroupI
 /** Build display groups from the full cart. Checkout ticks must not filter this list. */
 export function groupCartItemsByVendor<T extends VendorCartGroupItem>(
   cartItems: T[],
-  vendorSummaries: VendorCartSummaryEntry[]
+  vendorSummaries: VendorCartSummaryEntry[],
 ): VendorCartGroupView<T>[] {
   if (vendorSummaries.length > 0) {
     return vendorSummaries
@@ -143,7 +143,7 @@ export function syncSelectedProductIds(params: {
 export function resolveCheckoutCartItems<T extends { id: string }>(
   cartItems: T[],
   selectedProductIds: readonly string[],
-  vendorProductIds?: readonly string[] | null
+  vendorProductIds?: readonly string[] | null,
 ): T[] {
   const selectedSet = new Set(selectedProductIds);
   const vendorSet = vendorProductIds ? new Set(vendorProductIds) : null;
@@ -157,7 +157,7 @@ export function resolveCheckoutCartItems<T extends { id: string }>(
 
 export function toggleProductInSelection(
   selectedProductIds: readonly string[],
-  productId: string
+  productId: string,
 ): string[] {
   return selectedProductIds.includes(productId)
     ? selectedProductIds.filter((id) => id !== productId)
@@ -167,7 +167,7 @@ export function toggleProductInSelection(
 export function toggleAllProductsInSelection(
   selectedProductIds: readonly string[],
   productIds: readonly string[],
-  checked: boolean
+  checked: boolean,
 ): string[] {
   if (checked) {
     return [...new Set([...selectedProductIds, ...productIds])];

@@ -1,14 +1,14 @@
-import { clerkClient } from '@clerk/nextjs/server';
-import Link from 'next/link';
-import Image from 'next/image';
-import type { Metadata } from 'next';
-import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
-import { getSystemSetting } from '@/shared/platform/settings';
+import { clerkClient } from "@clerk/nextjs/server";
+import Link from "next/link";
+import Image from "next/image";
+import type { Metadata } from "next";
+import { getCachedOrganizations } from "@/shared/auth/clerk-cache";
+import { getSystemSetting } from "@/shared/platform/settings";
 
 export const revalidate = 30; // ISR: cache and regenerate in background
 
 export async function generateMetadata(): Promise<Metadata> {
-  const systemName = await getSystemSetting('system_name', 'Dilnova');
+  const systemName = await getSystemSetting("system_name", "Dilnova");
   return {
     title: `Active Vendors Directory | ${systemName}`,
     description: `Explore the registered local sub-vendors, stores, and service providers offering catalog items inside the ${systemName} Commerce Hub.`,
@@ -26,11 +26,10 @@ export default async function VendorsDirectoryPage() {
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-900/50 mb-4">
           Direct Directory Feed
         </span>
-        <h1 className="text-4xl font-extrabold tracking-tight mb-3">
-          Explore Registered Vendors
-        </h1>
+        <h1 className="text-4xl font-extrabold tracking-tight mb-3">Explore Registered Vendors</h1>
         <p className="max-w-xl mx-auto text-sm text-zinc-500 dark:text-zinc-400">
-          Browse profiles, banners, and descriptions managed securely by each independent organization on our B2B2C marketplace.
+          Browse profiles, banners, and descriptions managed securely by each independent
+          organization on our B2B2C marketplace.
         </p>
       </section>
 
@@ -40,7 +39,8 @@ export default async function VendorsDirectoryPage() {
           <div className="max-w-md mx-auto text-center border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-sm">
             <h2 className="text-lg font-bold mb-2">No Active Vendors</h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed mb-6">
-              There are no organization profiles registered on this system yet. Log into the Clerk Dashboard to create your first vendor organization.
+              There are no organization profiles registered on this system yet. Log into the Clerk
+              Dashboard to create your first vendor organization.
             </p>
             <Link
               href="/"
@@ -100,11 +100,12 @@ export default async function VendorsDirectoryPage() {
                           {vendor.name}
                         </h2>
                         <span className="text-[10px] font-mono text-zinc-400 block mb-3">
-                          @{vendor.slug || 'no-slug'}
+                          @{vendor.slug || "no-slug"}
                         </span>
-                        
+
                         <p className="text-xs text-zinc-650 dark:text-zinc-400 line-clamp-3 leading-relaxed min-h-[4.5rem]">
-                          {metadata.description || 'No custom description provided by this vendor yet.'}
+                          {metadata.description ||
+                            "No custom description provided by this vendor yet."}
                         </p>
                       </div>
                     </div>

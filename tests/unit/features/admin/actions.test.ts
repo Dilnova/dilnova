@@ -1,43 +1,43 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { updateOrganizationMemberRole } from '@/features/admin/actions';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { updateOrganizationMemberRole } from "@/features/admin/actions";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 
-vi.mock('@/shared/security/rate-limit', () => ({
+vi.mock("@/shared/security/rate-limit", () => ({
   rateLimit: vi.fn(() => Promise.resolve()),
 }));
 
-vi.mock('@/shared/audit/logger', () => ({
+vi.mock("@/shared/audit/logger", () => ({
   logAuditAction: vi.fn(() => Promise.resolve()),
 }));
 
-vi.mock('@clerk/nextjs/server', () => ({
+vi.mock("@clerk/nextjs/server", () => ({
   auth: vi.fn(),
   clerkClient: vi.fn(),
 }));
 
-describe('updateOrganizationMemberRole', () => {
+describe("updateOrganizationMemberRole", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('calls rateLimit and updates membership role successfully', async () => {
+  it("calls rateLimit and updates membership role successfully", async () => {
     const mockAuth = auth as any;
     mockAuth.mockResolvedValue({
-      orgId: 'org_123',
-      orgRole: 'org:admin',
-      userId: 'user_caller',
+      orgId: "org_123",
+      orgRole: "org:admin",
+      userId: "user_caller",
     });
 
     const mockGetOrganizationMembershipList = vi.fn().mockResolvedValue({
       data: [
         {
-          role: 'org:admin',
-          publicUserData: { userId: 'user_target' },
+          role: "org:admin",
+          publicUserData: { userId: "user_target" },
         },
         {
-          role: 'org:admin',
-          publicUserData: { userId: 'other_user' },
+          role: "org:admin",
+          publicUserData: { userId: "other_user" },
         },
       ],
     });
@@ -50,14 +50,14 @@ describe('updateOrganizationMemberRole', () => {
       },
     });
 
-    const res = await updateOrganizationMemberRole('org_123', 'user_target', 'org:member');
+    const res = await updateOrganizationMemberRole("org_123", "user_target", "org:member");
 
     expect(res).toEqual({ success: true });
     expect(rateLimit).toHaveBeenCalledWith(10, 60 * 1000);
     expect(mockUpdateOrganizationMembership).toHaveBeenCalledWith({
-      organizationId: 'org_123',
-      userId: 'user_target',
-      role: 'org:member',
+      organizationId: "org_123",
+      userId: "user_target",
+      role: "org:member",
     });
   });
 });

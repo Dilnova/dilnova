@@ -1,10 +1,10 @@
-import { type BankTransferCheckoutInstructions } from '@/features/billing/bank-transfer';
-import { escapeHtml } from '@/shared/email/smtp-client';
+import { type BankTransferCheckoutInstructions } from "@/features/billing/bank-transfer";
+import { escapeHtml } from "@/shared/email/smtp-client";
 
 function formatPrice(cents: number): string {
-  return (cents / 100).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return (cents / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
   });
 }
 
@@ -68,9 +68,9 @@ export function buildOrderConfirmationEmailHtml(input: {
             ${formatPrice(item.unitPrice * item.quantity)}
           </td>
         </tr>
-      `
+      `,
     )
-    .join('');
+    .join("");
 
   const bankTransferHtml = bankTransferInstructions
     ? `
@@ -102,27 +102,25 @@ export function buildOrderConfirmationEmailHtml(input: {
             return `
               <div style="background-color: #ffffff; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
                 <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: bold; color: #78350f;">
-                  ${escapeHtml(vendor.vendorName)}${bankTransferInstructions.vendors.length > 1 ? ` — ${formatPrice(vendor.amountCents)}` : ''}
+                  ${escapeHtml(vendor.vendorName)}${bankTransferInstructions.vendors.length > 1 ? ` — ${formatPrice(vendor.amountCents)}` : ""}
                 </p>
                 <p style="margin: 0; font-size: 11px; color: #92400e; line-height: 1.6; font-family: monospace;">
                   Bank: ${escapeHtml(vendor.bankDetails.bankName)}<br/>
                   Account name: ${escapeHtml(vendor.bankDetails.accountName)}<br/>
                   Account number: ${escapeHtml(vendor.bankDetails.accountNumber)}
-                  ${vendor.bankDetails.branchCode ? `<br/>Branch / sort code: ${escapeHtml(vendor.bankDetails.branchCode)}` : ''}
-                  ${vendor.bankDetails.instructions ? `<br/><span style="font-family: inherit;">${escapeHtml(vendor.bankDetails.instructions)}</span>` : ''}
+                  ${vendor.bankDetails.branchCode ? `<br/>Branch / sort code: ${escapeHtml(vendor.bankDetails.branchCode)}` : ""}
+                  ${vendor.bankDetails.instructions ? `<br/><span style="font-family: inherit;">${escapeHtml(vendor.bankDetails.instructions)}</span>` : ""}
                 </p>
               </div>
             `;
           })
-          .join('')}
+          .join("")}
       </div>
     `
-    : '';
+    : "";
 
-  const ctaUrl = isSignedIn
-    ? `${appUrl}/customer/invoice/${orderId}`
-    : `${appUrl}/customer`;
-  const ctaLabel = isSignedIn ? 'View Invoice' : 'Sign In to Track Order';
+  const ctaUrl = isSignedIn ? `${appUrl}/customer/invoice/${orderId}` : `${appUrl}/customer`;
+  const ctaLabel = isSignedIn ? "View Invoice" : "Sign In to Track Order";
 
   return `
     <!DOCTYPE html>
@@ -138,7 +136,7 @@ export function buildOrderConfirmationEmailHtml(input: {
               ${escapeHtml(systemNameHub.toUpperCase())}
             </h1>
             <p style="margin: 4px 0 0 0; color: #e9d5ff; font-size: 12px;">
-              ${isBankTransfer ? 'Order Received — Awaiting Payment' : 'Order Confirmation'}
+              ${isBankTransfer ? "Order Received — Awaiting Payment" : "Order Confirmation"}
             </p>
           </div>
 
@@ -147,8 +145,8 @@ export function buildOrderConfirmationEmailHtml(input: {
               Hello ${escapeHtml(customerName)},<br/>
               ${
                 isBankTransfer
-                  ? 'Thank you for your order. Please complete your bank transfer using the instructions below.'
-                  : 'Thank you for your order. Here is your order summary.'
+                  ? "Thank you for your order. Please complete your bank transfer using the instructions below."
+                  : "Thank you for your order. Here is your order summary."
               }
             </p>
 
@@ -156,9 +154,9 @@ export function buildOrderConfirmationEmailHtml(input: {
               <p style="margin: 0 0 6px 0;"><strong>Order ID:</strong> ${orderRef}</p>
               <p style="margin: 0 0 6px 0;"><strong>Fulfillment:</strong> ${escapeHtml(fulfillmentLabel)}</p>
               <p style="margin: 0 0 6px 0;"><strong>Payment:</strong> ${escapeHtml(paymentLabel)}</p>
-              ${pickupBranchName ? `<p style="margin: 0 0 6px 0;"><strong>Pickup branch:</strong> ${escapeHtml(pickupBranchName)}</p>` : ''}
-              ${shippingAddress ? `<p style="margin: 0 0 6px 0;"><strong>Delivery address:</strong> ${escapeHtml(shippingAddress).replace(/\n/g, '<br/>')}</p>` : ''}
-              ${shippingPhone ? `<p style="margin: 0;"><strong>Delivery phone:</strong> ${escapeHtml(shippingPhone)}</p>` : ''}
+              ${pickupBranchName ? `<p style="margin: 0 0 6px 0;"><strong>Pickup branch:</strong> ${escapeHtml(pickupBranchName)}</p>` : ""}
+              ${shippingAddress ? `<p style="margin: 0 0 6px 0;"><strong>Delivery address:</strong> ${escapeHtml(shippingAddress).replace(/\n/g, "<br/>")}</p>` : ""}
+              ${shippingPhone ? `<p style="margin: 0;"><strong>Delivery phone:</strong> ${escapeHtml(shippingPhone)}</p>` : ""}
             </div>
 
             ${bankTransferHtml}
@@ -187,7 +185,7 @@ export function buildOrderConfirmationEmailHtml(input: {
                 </tr>
                 <tr>
                   <td style="padding: 4px 0;">Shipping</td>
-                  <td style="padding: 4px 0; text-align: right; font-family: monospace;">${shippingAmount === 0 ? 'FREE' : formatPrice(shippingAmount)}</td>
+                  <td style="padding: 4px 0; text-align: right; font-family: monospace;">${shippingAmount === 0 ? "FREE" : formatPrice(shippingAmount)}</td>
                 </tr>
                 <tr style="font-weight: bold; color: #0f172a; font-size: 15px; border-top: 1px dashed #cbd5e1;">
                   <td style="padding: 12px 0 0 0;">Total</td>
@@ -201,7 +199,7 @@ export function buildOrderConfirmationEmailHtml(input: {
                 ? `<p style="font-size: 12px; color: #71717a; line-height: 1.5; margin-bottom: 24px;">
                     Sign in with this email address (<strong>${escapeHtml(customerEmail)}</strong>) to view your order history and invoice.
                   </p>`
-                : ''
+                : ""
             }
 
             <div style="text-align: center;">

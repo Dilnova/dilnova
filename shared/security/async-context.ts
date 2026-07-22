@@ -1,12 +1,12 @@
-import type { AsyncLocalStorage } from 'node:async_hooks';
+import type { AsyncLocalStorage } from "node:async_hooks";
 
 let requestStore: AsyncLocalStorage<RequestContext> | null = null;
 
-if (typeof window === 'undefined') {
+if (typeof window === "undefined") {
   try {
     // Dynamically require node:async_hooks so it doesn't fail bundler analysis for Edge/Client runtimes.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { AsyncLocalStorage } = require('node:async_hooks');
+    const { AsyncLocalStorage } = require("node:async_hooks");
     requestStore = new AsyncLocalStorage();
   } catch {
     // Node.js async_hooks not available (e.g. Edge runtime or during static build)
@@ -51,30 +51,30 @@ export function getRequestMethod(): string | undefined {
  * It will extract the correlation ID from request headers, falling back to a new UUID.
  */
 export async function runWithCorrelationId<T>(fn: () => Promise<T>): Promise<T> {
-  let requestId = '';
+  let requestId = "";
   let userId: string | undefined;
   let path: string | undefined;
   let method: string | undefined;
-  
-  if (typeof window === 'undefined') {
+
+  if (typeof window === "undefined") {
     try {
-      const { headers } = await import('next/headers');
+      const { headers } = await import("next/headers");
       const headersList = await headers();
-      requestId = headersList.get('x-request-id') || '';
-      
-      const invokePath = headersList.get('x-invoke-path');
-      const referer = headersList.get('referer');
+      requestId = headersList.get("x-request-id") || "";
+
+      const invokePath = headersList.get("x-invoke-path");
+      const referer = headersList.get("referer");
       path = invokePath || (referer ? new URL(referer).pathname : undefined);
-      
-      if (headersList.get('next-action')) {
-        method = 'ACTION';
+
+      if (headersList.get("next-action")) {
+        method = "ACTION";
       }
     } catch {
       // headers() can throw during static build or testing when outside request context
     }
 
     try {
-      const { auth } = await import('@clerk/nextjs/server');
+      const { auth } = await import("@clerk/nextjs/server");
       const authObj = await auth();
       userId = authObj?.userId || undefined;
     } catch {

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { SignInButton, SignUpButton } from '@clerk/nextjs';
-import { Spinner } from '@/shared/ui/loading';
-import DeliveryAddressFormFields from '@/features/customer/components/DeliveryAddressFormFields';
-import Link from 'next/link';
-import { useState } from 'react';
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { Spinner } from "@/shared/ui/loading";
+import DeliveryAddressFormFields from "@/features/customer/components/DeliveryAddressFormFields";
+import Link from "next/link";
+import { useState } from "react";
 
 export interface SidebarFulfillmentOption {
   id: string;
@@ -36,15 +36,22 @@ interface CartCheckoutSidebarProps {
   grandTotal: number;
   formatPrice: (cents: number) => string;
   authRedirectUrl: string | null;
-  user: { fullName?: string | null, firstName?: string | null, primaryEmailAddress?: { emailAddress: string } | null } | null | undefined;
+  user:
+    | {
+        fullName?: string | null;
+        firstName?: string | null;
+        primaryEmailAddress?: { emailAddress: string } | null;
+      }
+    | null
+    | undefined;
   optionsLoading: boolean;
   requiresVendorSelection: boolean;
   selectedCheckoutProductIds: string[];
-  checkoutOptions: { fulfillment: SidebarFulfillmentOption[], payment: SidebarPaymentOption[] };
+  checkoutOptions: { fulfillment: SidebarFulfillmentOption[]; payment: SidebarPaymentOption[] };
   fulfillmentMethod: string;
   handleFulfillmentChange: (optionId: string) => void;
   selectedFulfillment: SidebarFulfillmentOption | null | undefined;
-  pickupBranches: { id: string, name: string, address: string | null, phone?: string | null }[];
+  pickupBranches: { id: string; name: string; address: string | null; phone?: string | null }[];
   pickupBranchId: string;
   setPickupBranchId: (id: string) => void;
   requiresDeliveryAddress: boolean;
@@ -137,18 +144,18 @@ export function CartCheckoutSidebar({
         <div className="space-y-3 text-xs font-mono">
           {isSignedIn && checkoutItemCount > 0 && checkoutItemCount < cartCount && (
             <p className="text-[10px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
-              Checkout totals for {checkoutItemCount} ticked{' '}
-              {checkoutItemCount === 1 ? 'item' : 'items'}
+              Checkout totals for {checkoutItemCount} ticked{" "}
+              {checkoutItemCount === 1 ? "item" : "items"}
               {vendorCount > 1 && selectedVendorSummary
                 ? ` from ${selectedVendorSummary.vendorName}`
-                : ''}
+                : ""}
               . Unticked items stay in your cart.
             </p>
           )}
           {vendorCount > 1 && selectedVendorSummary && checkoutItemCount === cartCount && (
             <p className="text-[10px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
-              Checkout totals for {selectedVendorSummary.vendorName} ({checkoutItemCount}{' '}
-              {checkoutItemCount === 1 ? 'item' : 'items'}). Other vendors stay in your cart.
+              Checkout totals for {selectedVendorSummary.vendorName} ({checkoutItemCount}{" "}
+              {checkoutItemCount === 1 ? "item" : "items"}). Other vendors stay in your cart.
             </p>
           )}
 
@@ -161,19 +168,22 @@ export function CartCheckoutSidebar({
 
           <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
             <span>Estimated Tax (8%)</span>
-            <span className="font-bold text-zinc-900 dark:text-zinc-200">{formatPrice(estimatedTax)}</span>
+            <span className="font-bold text-zinc-900 dark:text-zinc-200">
+              {formatPrice(estimatedTax)}
+            </span>
           </div>
 
           <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
             <span>Shipping</span>
             <span className="font-bold text-zinc-900 dark:text-zinc-200">
-              {shippingFee === 0 ? 'FREE' : formatPrice(shippingFee)}
+              {shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}
             </span>
           </div>
 
           {shippingFee > 0 && (
             <p className="text-[10px] text-purple-600 dark:text-purple-400 block text-right mt-1">
-              Add {formatPrice(5000 - (vendorCount > 1 ? checkoutSubtotal : cartTotal))} more for free shipping!
+              Add {formatPrice(5000 - (vendorCount > 1 ? checkoutSubtotal : cartTotal))} more for
+              free shipping!
             </p>
           )}
 
@@ -192,10 +202,11 @@ export function CartCheckoutSidebar({
                 Sign in to checkout
               </h3>
               <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                An account is required to place orders, track status, upload payment slips, and view invoices.
+                An account is required to place orders, track status, upload payment slips, and view
+                invoices.
               </p>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2 pt-1">
-                <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? '/cart'}>
+                <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? "/cart"}>
                   <button
                     type="button"
                     className="w-full sm:w-auto px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl transition-all cursor-pointer"
@@ -203,7 +214,7 @@ export function CartCheckoutSidebar({
                     Sign In
                   </button>
                 </SignInButton>
-                <SignUpButton mode="modal" forceRedirectUrl={authRedirectUrl ?? '/cart'}>
+                <SignUpButton mode="modal" forceRedirectUrl={authRedirectUrl ?? "/cart"}>
                   <button
                     type="button"
                     className="w-full sm:w-auto px-5 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 text-xs font-bold font-mono uppercase tracking-wider rounded-xl transition-all cursor-pointer"
@@ -220,7 +231,7 @@ export function CartCheckoutSidebar({
               Checkout as
             </h3>
             <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-              {user?.fullName || user?.firstName || 'Customer'}
+              {user?.fullName || user?.firstName || "Customer"}
             </p>
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
               {user?.primaryEmailAddress?.emailAddress}
@@ -236,30 +247,37 @@ export function CartCheckoutSidebar({
             </h3>
 
             {optionsLoading ? (
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Loading checkout options...</p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                Loading checkout options...
+              </p>
             ) : (
               <>
                 {requiresVendorSelection && (
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Select a vendor on the left and tick products to load delivery and payment options.
+                    Select a vendor on the left and tick products to load delivery and payment
+                    options.
                   </p>
                 )}
-                {isSignedIn && selectedCheckoutProductIds.length === 0 && !requiresVendorSelection && (
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Tick at least one product on the left to checkout.
-                  </p>
-                )}
+                {isSignedIn &&
+                  selectedCheckoutProductIds.length === 0 &&
+                  !requiresVendorSelection && (
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Tick at least one product on the left to checkout.
+                    </p>
+                  )}
 
                 {checkoutOptions.fulfillment.length > 0 ? (
                   <fieldset className="space-y-2">
-                    <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Fulfillment</legend>
+                    <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">
+                      Fulfillment
+                    </legend>
                     {checkoutOptions.fulfillment.map((option: SidebarFulfillmentOption) => (
                       <label
                         key={option.id}
                         className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
                           fulfillmentMethod === option.id
-                            ? 'border-purple-500/50 bg-purple-500/5'
-                            : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30'
+                            ? "border-purple-500/50 bg-purple-500/5"
+                            : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30"
                         }`}
                       >
                         <input
@@ -271,9 +289,13 @@ export function CartCheckoutSidebar({
                           className="mt-0.5"
                         />
                         <span className="min-w-0">
-                          <span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200">{option.label}</span>
+                          <span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                            {option.label}
+                          </span>
                           {option.description && (
-                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">{option.description}</span>
+                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                              {option.description}
+                            </span>
                           )}
                         </span>
                       </label>
@@ -283,27 +305,28 @@ export function CartCheckoutSidebar({
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     {vendorCount > 1
                       ? requiresVendorSelection
-                        ? 'Select a vendor on the left to see available fulfillment methods.'
-                        : 'No fulfillment methods are enabled for the selected vendor. Contact the store or try another vendor.'
-                      : 'No fulfillment methods are enabled for this vendor. Contact the store or try again later.'}
+                        ? "Select a vendor on the left to see available fulfillment methods."
+                        : "No fulfillment methods are enabled for the selected vendor. Contact the store or try another vendor."
+                      : "No fulfillment methods are enabled for this vendor. Contact the store or try again later."}
                   </p>
                 )}
 
                 {selectedFulfillment?.requiresBranch && (
                   <div className="space-y-2">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Pickup Branch</p>
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                      Pickup Branch
+                    </p>
                     {pickupBranches.length > 0 ? (
                       <select
                         value={pickupBranchId}
                         onChange={(e) => setPickupBranchId(e.target.value)}
                         className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50"
                       >
-                        {pickupBranches.length !== 1 && (
-                          <option value="">Select a branch</option>
-                        )}
+                        {pickupBranches.length !== 1 && <option value="">Select a branch</option>}
                         {pickupBranches.map((branch) => (
                           <option key={branch.id} value={branch.id}>
-                            {branch.name}{branch.address ? ` — ${branch.address}` : ''}
+                            {branch.name}
+                            {branch.address ? ` — ${branch.address}` : ""}
                           </option>
                         ))}
                       </select>
@@ -331,14 +354,16 @@ export function CartCheckoutSidebar({
 
                 {compatiblePayments.length > 0 ? (
                   <fieldset className="space-y-2">
-                    <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Payment</legend>
+                    <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">
+                      Payment
+                    </legend>
                     {compatiblePayments.map((option: SidebarPaymentOption) => (
                       <label
                         key={option.id}
                         className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
                           paymentMethod === option.id
-                            ? 'border-purple-500/50 bg-purple-500/5'
-                            : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30'
+                            ? "border-purple-500/50 bg-purple-500/5"
+                            : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30"
                         }`}
                       >
                         <input
@@ -350,9 +375,13 @@ export function CartCheckoutSidebar({
                           className="mt-0.5"
                         />
                         <span className="min-w-0">
-                          <span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200">{option.label}</span>
+                          <span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                            {option.label}
+                          </span>
                           {option.description && (
-                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">{option.description}</span>
+                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                              {option.description}
+                            </span>
                           )}
                         </span>
                       </label>
@@ -361,12 +390,12 @@ export function CartCheckoutSidebar({
                 ) : (
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
                     {checkoutOptions.payment.length > 0 && selectedFulfillment?.requiresBranch
-                      ? 'No payment methods are available for store pickup with the current selection. Choose home delivery or another fulfillment option.'
+                      ? "No payment methods are available for store pickup with the current selection. Choose home delivery or another fulfillment option."
                       : vendorCount > 1
                         ? requiresVendorSelection
-                          ? 'Select a vendor on the left to see available payment methods.'
-                          : 'No payment methods are enabled for the selected vendor.'
-                        : 'No payment methods are enabled for this vendor. Contact the store or try again later.'}
+                          ? "Select a vendor on the left to see available payment methods."
+                          : "No payment methods are enabled for the selected vendor."
+                        : "No payment methods are enabled for this vendor. Contact the store or try again later."}
                   </p>
                 )}
 
@@ -374,12 +403,14 @@ export function CartCheckoutSidebar({
                   <div className="space-y-2">
                     {bankTransferMissingDetails ? (
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        Bank transfer cannot be completed until {selectedVendorSummary?.vendorName || 'this vendor'} configures bank account details.
+                        Bank transfer cannot be completed until{" "}
+                        {selectedVendorSummary?.vendorName || "this vendor"} configures bank account
+                        details.
                       </p>
                     ) : (
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        Bank account details and your payment reference will be shown after you place the order
-                        (confirmation screen, email, and invoice).
+                        Bank account details and your payment reference will be shown after you
+                        place the order (confirmation screen, email, and invoice).
                       </p>
                     )}
                   </div>
@@ -404,7 +435,7 @@ export function CartCheckoutSidebar({
           )}
 
           {!isSignedIn ? (
-            <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? '/cart'}>
+            <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? "/cart"}>
               <button
                 type="button"
                 className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer"
@@ -422,14 +453,30 @@ export function CartCheckoutSidebar({
                   className="mt-0.5 shrink-0 rounded border-zinc-300 text-purple-600 focus:ring-purple-600"
                 />
                 <span className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  I agree to the <Link href="/terms" target="_blank" className="text-indigo-600 dark:text-indigo-400 hover:underline">Terms of Service</Link> and <Link href="/refund" target="_blank" className="text-indigo-600 dark:text-indigo-400 hover:underline">Refund Policy</Link>.
+                  I agree to the{" "}
+                  <Link
+                    href="/terms"
+                    target="_blank"
+                    className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    href="/refund"
+                    target="_blank"
+                    className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Refund Policy
+                  </Link>
+                  .
                 </span>
               </label>
 
               <button
                 onClick={() => handleCheckout(optionsLoading)}
                 disabled={
-                  checkoutStatus === 'processing' ||
+                  checkoutStatus === "processing" ||
                   optionsLoading ||
                   cartItems.length === 0 ||
                   checkoutErrors.length > 0 ||
@@ -437,7 +484,7 @@ export function CartCheckoutSidebar({
                 }
                 className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                {checkoutStatus === 'processing' ? (
+                {checkoutStatus === "processing" ? (
                   <>
                     <Spinner size="sm" />
                     <span>Processing...</span>
@@ -446,7 +493,7 @@ export function CartCheckoutSidebar({
                   <span>
                     {vendorCount > 1 && selectedVendorSummary
                       ? `Checkout ${selectedVendorSummary.vendorName}`
-                      : 'Proceed to Checkout'}
+                      : "Proceed to Checkout"}
                   </span>
                 )}
               </button>
@@ -467,13 +514,13 @@ export function CartCheckoutSidebar({
         <h2 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
           Send Cart to Inbox
         </h2>
-        
+
         {!isSignedIn ? (
           <div className="space-y-3">
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
               Sign in to email a summary of your cart items to your account address.
             </p>
-            <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? '/cart'}>
+            <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? "/cart"}>
               <button
                 type="button"
                 className="w-full text-center py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer"
@@ -494,10 +541,10 @@ export function CartCheckoutSidebar({
 
             <button
               type="submit"
-              disabled={emailStatus === 'sending'}
+              disabled={emailStatus === "sending"}
               className="w-full text-center py-2.5 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
             >
-              {emailStatus === 'sending' ? (
+              {emailStatus === "sending" ? (
                 <>
                   <Spinner size="sm" />
                   <span>Sending...</span>

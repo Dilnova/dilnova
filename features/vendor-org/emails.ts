@@ -1,10 +1,10 @@
-import 'server-only';
+import "server-only";
 
-import { createClerkClient } from '@clerk/nextjs/server';
-import { logger } from '@/shared/logging/logger';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
+import { createClerkClient } from "@clerk/nextjs/server";
+import { logger } from "@/shared/logging/logger";
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function getOrgAdminEmails(orgId: string): Promise<string[]> {
   try {
@@ -15,7 +15,7 @@ export async function getOrgAdminEmails(orgId: string): Promise<string[]> {
     });
 
     const adminUserIds = memberships.data
-      .filter((membership) => membership.role === 'org:admin')
+      .filter((membership) => membership.role === "org:admin")
       .map((membership) => membership.publicUserData?.userId)
       .filter((userId): userId is string => Boolean(userId));
 
@@ -25,19 +25,19 @@ export async function getOrgAdminEmails(orgId: string): Promise<string[]> {
       try {
         const user = await client.users.getUser(userId);
         const primaryEmail =
-          user.emailAddresses.find((entry) => entry.id === user.primaryEmailAddressId)?.emailAddress ||
-          user.emailAddresses[0]?.emailAddress;
+          user.emailAddresses.find((entry) => entry.id === user.primaryEmailAddressId)
+            ?.emailAddress || user.emailAddresses[0]?.emailAddress;
         if (primaryEmail) {
           emails.push(primaryEmail.trim().toLowerCase());
         }
       } catch (error) {
-        logger.warn('Failed to resolve vendor admin email', { orgId, userId, error });
+        logger.warn("Failed to resolve vendor admin email", { orgId, userId, error });
       }
     }
 
     return [...new Set(emails)];
   } catch (error) {
-    logger.error('Failed to load organization admin emails', error, { orgId });
+    logger.error("Failed to load organization admin emails", error, { orgId });
     return [];
   }
 }
@@ -48,13 +48,13 @@ export async function getOrganizationName(orgId: string): Promise<string> {
     const org = await client.organizations.getOrganization({ organizationId: orgId });
     return org.name;
   } catch {
-    return 'Vendor';
+    return "Vendor";
   }
 }
 
 export async function getVendorOrderNotificationTargets(
   orgId: string,
-  branchId: string | null
+  branchId: string | null,
 ): Promise<{ userId: string; email: string }[]> {
   try {
     let targetUserIds: string[] = [];
@@ -65,7 +65,7 @@ export async function getVendorOrderNotificationTargets(
         .select({ memberUserId: schema.branchMembers.memberUserId })
         .from(schema.branchMembers)
         .where(eq(schema.branchMembers.branchId, branchId));
-        
+
       targetUserIds = members.map((m) => m.memberUserId);
     }
 
@@ -78,7 +78,7 @@ export async function getVendorOrderNotificationTargets(
       });
 
       targetUserIds = memberships.data
-        .filter((membership) => membership.role === 'org:admin')
+        .filter((membership) => membership.role === "org:admin")
         .map((membership) => membership.publicUserData?.userId)
         .filter((userId): userId is string => Boolean(userId));
     }
@@ -90,19 +90,19 @@ export async function getVendorOrderNotificationTargets(
       try {
         const user = await client.users.getUser(userId);
         const primaryEmail =
-          user.emailAddresses.find((entry) => entry.id === user.primaryEmailAddressId)?.emailAddress ||
-          user.emailAddresses[0]?.emailAddress;
+          user.emailAddresses.find((entry) => entry.id === user.primaryEmailAddressId)
+            ?.emailAddress || user.emailAddresses[0]?.emailAddress;
         if (primaryEmail) {
           targets.push({ userId, email: primaryEmail.trim().toLowerCase() });
         }
       } catch (error) {
-        logger.warn('Failed to resolve target user email', { orgId, userId, error });
+        logger.warn("Failed to resolve target user email", { orgId, userId, error });
       }
     }
 
     return targets;
   } catch (error) {
-    logger.error('Failed to get notification targets', error, { orgId, branchId });
+    logger.error("Failed to get notification targets", error, { orgId, branchId });
     return [];
   }
 }

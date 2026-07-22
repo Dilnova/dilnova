@@ -72,33 +72,33 @@ shared/*    → MUST NOT import features/*
 
 ```ts
 // Page
-import { VendorOrgIssuesTab } from '@/features/vendor-org';
-import { buildVendorOrgIntegrityReport } from '@/features/vendor-org';
+import { VendorOrgIssuesTab } from "@/features/vendor-org";
+import { buildVendorOrgIntegrityReport } from "@/features/vendor-org";
 
 // Server action inside a feature
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
-import { rateLimit } from '@/shared/security/rate-limit';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
+import { rateLimit } from "@/shared/security/rate-limit";
 ```
 
 ## Migration phases
 
-| Phase | Work |
-|-------|------|
-| **1** ✅ | Add `features/`, `shared/`, docs, tsconfig paths |
-| **2** ✅ | Pilot: `features/vendor-org/` |
-| **3** ✅ | Migrate `features/cart/` |
-| **4** ✅ | Migrate `features/orders/` |
-| **5** ✅ | Migrate `features/inventory/` |
-| **6** ✅ | Migrate `features/catalog/` |
-| **7** ✅ | Migrate `features/billing/` |
-| **8** ✅ | Move `shared/security`, `shared/audit`, `shared/auth` (real code, not shims) |
-| **9** ✅ | Split `db/schema.ts` under `shared/db/schema/` |
-| **10** ✅ | Split `utils/schemas.ts` per feature |
-| **11** ✅ | Add Playwright E2E under `tests/e2e/` |
+| Phase     | Work                                                                                                             |
+| --------- | ---------------------------------------------------------------------------------------------------------------- |
+| **1** ✅  | Add `features/`, `shared/`, docs, tsconfig paths                                                                 |
+| **2** ✅  | Pilot: `features/vendor-org/`                                                                                    |
+| **3** ✅  | Migrate `features/cart/`                                                                                         |
+| **4** ✅  | Migrate `features/orders/`                                                                                       |
+| **5** ✅  | Migrate `features/inventory/`                                                                                    |
+| **6** ✅  | Migrate `features/catalog/`                                                                                      |
+| **7** ✅  | Migrate `features/billing/`                                                                                      |
+| **8** ✅  | Move `shared/security`, `shared/audit`, `shared/auth` (real code, not shims)                                     |
+| **9** ✅  | Split `db/schema.ts` under `shared/db/schema/`                                                                   |
+| **10** ✅ | Split `utils/schemas.ts` per feature                                                                             |
+| **11** ✅ | Add Playwright E2E under `tests/e2e/`                                                                            |
 | **12** ✅ | Structure cleanup: move remaining `app/` actions + `utils/` real code → `features/` / `shared/` (shims retained) |
-| **13** ✅ | Import cutover to `@/shared/*` / `@/features/*`; move domain UI → `features/*/components/` |
+| **13** ✅ | Import cutover to `@/shared/*` / `@/features/*`; move domain UI → `features/*/components/`                       |
 
 ## Remaining optional cleanup (no logic changes)
 

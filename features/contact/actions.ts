@@ -1,79 +1,82 @@
-'use server';
+"use server";
 
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { hashPii } from '@/shared/security/encryption';
-import { z } from 'zod';
-import { getSystemSetting } from '@/shared/platform/settings';
-import { escapeHtml, sanitizeSmtpHeader, sendRawSmtpEmail } from '@/shared/email/smtp-client';
-import { logger } from '@/shared/logging/logger';
-import { withActionHandler } from '@/shared/errors/action-handler';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { hashPii } from "@/shared/security/encryption";
+import { z } from "zod";
+import { getSystemSetting } from "@/shared/platform/settings";
+import { escapeHtml, sanitizeSmtpHeader, sendRawSmtpEmail } from "@/shared/email/smtp-client";
+import { logger } from "@/shared/logging/logger";
+import { withActionHandler } from "@/shared/errors/action-handler";
 
 const contactFormSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters.'),
-  email: z.string().email('Invalid email address format.'),
-  category: z.enum(['collaboration', 'registration', 'info'], {
-    message: 'Please select a valid inquiry category.',
+  name: z.string().min(2, "Name must be at least 2 characters."),
+  email: z.string().email("Invalid email address format."),
+  category: z.enum(["collaboration", "registration", "info"], {
+    message: "Please select a valid inquiry category.",
   }),
-  subject: z.string().min(3, 'Subject must be at least 3 characters.'),
-  message: z.string().min(10, 'Message must be at least 10 characters.'),
+  subject: z.string().min(3, "Subject must be at least 3 characters."),
+  message: z.string().min(10, "Message must be at least 10 characters."),
 });
 
 export async function submitContactFormAction(prevState: unknown, formData: FormData) {
-  return withActionHandler('submitContactFormAction', async () => {
-    const rawHoneypot = formData.get('middleName') as string;
+  return withActionHandler("submitContactFormAction", async () => {
+    const rawHoneypot = formData.get("middleName") as string;
     if (rawHoneypot && rawHoneypot.trim().length > 0) {
-      logger.warn('Spam contact submission detected and blocked via honeypot field.');
+      logger.warn("Spam contact submission detected and blocked via honeypot field.");
       return;
     }
 
     // Cloudflare Turnstile CAPTCHA Verification
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
     if (turnstileSecret) {
-      const turnstileToken = formData.get('cf-turnstile-response') as string;
+      const turnstileToken = formData.get("cf-turnstile-response") as string;
       if (!turnstileToken) {
-        throw new Error('Please complete the CAPTCHA.');
+        throw new Error("Please complete the CAPTCHA.");
       }
 
       let verifyData;
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
-        
-        const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+
+        const verifyResponse = await fetch(
+          "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `secret=${encodeURIComponent(turnstileSecret)}&response=${encodeURIComponent(turnstileToken)}`,
+            signal: controller.signal,
           },
-          body: `secret=${encodeURIComponent(turnstileSecret)}&response=${encodeURIComponent(turnstileToken)}`,
-          signal: controller.signal,
-        });
-        
+        );
+
         clearTimeout(timeout);
         verifyData = await verifyResponse.json();
       } catch (error) {
-        logger.error('Failed to verify Turnstile CAPTCHA due to network error', error);
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error('CAPTCHA verification service is unavailable. Please try again later.');
+        logger.error("Failed to verify Turnstile CAPTCHA due to network error", error);
+        if (process.env.NODE_ENV === "production") {
+          throw new Error("CAPTCHA verification service is unavailable. Please try again later.");
         } else {
-          throw new Error('CAPTCHA verification service is unavailable. Please try again later.');
+          throw new Error("CAPTCHA verification service is unavailable. Please try again later.");
         }
       }
 
       if (!verifyData?.success) {
-        logger.warn('Turnstile CAPTCHA verification failed', {
-          errorCodes: verifyData?.['error-codes'],
+        logger.warn("Turnstile CAPTCHA verification failed", {
+          errorCodes: verifyData?.["error-codes"],
         });
-        throw new Error('CAPTCHA verification failed. Please try again.');
+        throw new Error("CAPTCHA verification failed. Please try again.");
       }
     }
 
-    const rawName = formData.get('name') as string;
-    const rawEmail = formData.get('email') as string;
-    const rawCategory = formData.get('category') as string;
-    const rawSubject = formData.get('subject') as string;
-    const rawMessage = formData.get('message') as string;
+    const rawName = formData.get("name") as string;
+    const rawEmail = formData.get("email") as string;
+    const rawCategory = formData.get("category") as string;
+    const rawSubject = formData.get("subject") as string;
+    const rawMessage = formData.get("message") as string;
 
     const parsedInput = contactFormSchema.parse({
       name: rawName,
@@ -100,28 +103,30 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
       category: parsedInput.category,
       subject: sanitizedSubject,
       message: escapeHtml(message),
-      status: 'pending',
+      status: "pending",
     });
 
-    const systemName = await getSystemSetting('system_name', 'Dilnova');
+    const systemName = await getSystemSetting("system_name", "Dilnova");
     const systemNameHub = `${systemName} Commerce Hub`;
 
-    const smtpHost = process.env.SMTP_HOST || 'smtp-relay.brevo.com';
-    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
+    const smtpHost = process.env.SMTP_HOST || "smtp-relay.brevo.com";
+    const smtpPort = parseInt(process.env.SMTP_PORT || "587", 10);
     const smtpUser = process.env.SMTP_USER;
     const smtpPassword = process.env.SMTP_PASSWORD;
-    const emailFromAddress = process.env.EMAIL_FROM_ADDRESS || 'info@dilstar.pp.ua';
+    const emailFromAddress = process.env.EMAIL_FROM_ADDRESS || "info@dilstar.pp.ua";
     const emailFromName = process.env.EMAIL_FROM_NAME || `${systemName} Contact Form`;
 
     if (!smtpUser || !smtpPassword) {
-      logger.error('SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing');
-      throw new Error('SMTP configuration is incomplete on the server.');
+      logger.error("SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing");
+      throw new Error("SMTP configuration is incomplete on the server.");
     }
 
-    const categoryLabel = 
-      category === 'collaboration' ? 'Collaboration / Partnership' : 
-      category === 'registration' ? 'Organization / Vendor Registration' : 
-      'General Inquiry / Learn More';
+    const categoryLabel =
+      category === "collaboration"
+        ? "Collaboration / Partnership"
+        : category === "registration"
+          ? "Organization / Vendor Registration"
+          : "General Inquiry / Learn More";
 
     const emailHtml = `
       <!DOCTYPE html>

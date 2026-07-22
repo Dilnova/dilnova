@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import ProductImageZoom from './ProductImageZoom';
+import { useState } from "react";
+import Image from "next/image";
+import ProductImageZoom from "./ProductImageZoom";
 
 interface MediaItem {
   url: string;
-  type: 'image' | 'video';
+  type: "image" | "video";
 }
 
 interface ProductGalleryPlayerProps {
@@ -32,7 +32,7 @@ export default function ProductGalleryPlayer({ media, alt, type }: ProductGaller
     <div className="space-y-4">
       {/* 1. Main Display Area */}
       <div className="relative w-full aspect-square rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-inner bg-zinc-100 dark:bg-zinc-900">
-        {activeItem.type === 'video' ? (
+        {activeItem.type === "video" ? (
           <div className="w-full h-full bg-black flex items-center justify-center relative">
             <video
               src={activeItem.url}
@@ -52,11 +52,11 @@ export default function ProductGalleryPlayer({ media, alt, type }: ProductGaller
         )}
 
         {/* Type Badge */}
-        <span className={`absolute top-4 right-4 text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-md z-10 ${
-          type === 'service'
-            ? 'bg-emerald-500 text-emerald-950'
-            : 'bg-indigo-500 text-indigo-50'
-        }`}>
+        <span
+          className={`absolute top-4 right-4 text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-md z-10 ${
+            type === "service" ? "bg-emerald-500 text-emerald-950" : "bg-indigo-500 text-indigo-50"
+          }`}
+        >
           {type}
         </span>
       </div>
@@ -72,11 +72,11 @@ export default function ProductGalleryPlayer({ media, alt, type }: ProductGaller
                 onClick={() => setActiveIndex(index)}
                 className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border bg-zinc-100 dark:bg-zinc-900 transition-all duration-200 cursor-pointer outline-none ${
                   isActive
-                    ? 'ring-2 ring-purple-600 dark:ring-purple-400 border-transparent scale-95 shadow-md'
-                    : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 hover:scale-105'
+                    ? "ring-2 ring-purple-600 dark:ring-purple-400 border-transparent scale-95 shadow-md"
+                    : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 hover:scale-105"
                 }`}
               >
-                {item.type === 'video' ? (
+                {item.type === "video" ? (
                   <div className="relative w-full h-full bg-zinc-950 flex items-center justify-center">
                     {/* Preload first frames if supported or fallback to a play overlay */}
                     <video

@@ -1,6 +1,6 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { inArray } from 'drizzle-orm';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { inArray } from "drizzle-orm";
 
 export async function syncCartPricesService(uniqueIds: string[]) {
   const rows = await db
@@ -15,8 +15,8 @@ export async function syncCartPricesService(uniqueIds: string[]) {
 
   const foundIds = new Set(rows.map((row) => row.id));
   const missingIds = uniqueIds.filter((id) => !foundIds.has(id));
-  const inactiveIds = rows.filter((row) => row.status !== 'active').map((row) => row.id);
-  const activeRows = rows.filter((row) => row.status === 'active');
+  const inactiveIds = rows.filter((row) => row.status !== "active").map((row) => row.id);
+  const activeRows = rows.filter((row) => row.status === "active");
 
   return {
     success: true as const,

@@ -1,7 +1,7 @@
-import Link from 'next/link';
-import CartCountBadge from '@/features/cart/components/CartCountBadge';
-import { CartClientManager } from '@/features/cart/components/CartClientManager';
-import { CartEmptyState } from '@/features/cart/components/CartStates';
+import Link from "next/link";
+import CartCountBadge from "@/features/cart/components/CartCountBadge";
+import { CartClientManager } from "@/features/cart/components/CartClientManager";
+import { CartEmptyState } from "@/features/cart/components/CartStates";
 
 export default function CartPage() {
   return (
@@ -33,9 +33,7 @@ export default function CartPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-6">
-        <CartClientManager
-          emptyState={<CartEmptyState />}
-        />
+        <CartClientManager emptyState={<CartEmptyState />} />
       </div>
     </main>
   );

@@ -1,4 +1,7 @@
-import { getBadgeToneClasses, type StockAvailabilityTone } from '@/features/inventory/availability.shared';
+import {
+  getBadgeToneClasses,
+  type StockAvailabilityTone,
+} from "@/features/inventory/availability.shared";
 
 interface StockAvailabilityBadgeProps {
   label: string;
@@ -8,8 +11,8 @@ interface StockAvailabilityBadgeProps {
 
 export default function StockAvailabilityBadge({
   label,
-  tone = 'zinc' as StockAvailabilityTone,
-  className = '',
+  tone = "zinc" as StockAvailabilityTone,
+  className = "",
 }: StockAvailabilityBadgeProps) {
   return (
     <span

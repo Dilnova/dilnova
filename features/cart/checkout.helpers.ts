@@ -1,4 +1,4 @@
-import type { CheckoutItemInput } from '@/features/cart/schema';
+import type { CheckoutItemInput } from "@/features/cart/schema";
 
 export function aggregateCheckoutItems(items: CheckoutItemInput[]): CheckoutItemInput[] {
   const byId = new Map<string, CheckoutItemInput>();

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function CookieConsent() {
   const [isVisible, setIsVisible] = useState(false);
@@ -10,7 +10,7 @@ export default function CookieConsent() {
 
   useEffect(() => {
     // Check if consent has already been given or declined
-    const match = document.cookie.match(new RegExp('(^| )dilnova_cookie_consent=([^;]+)'));
+    const match = document.cookie.match(new RegExp("(^| )dilnova_cookie_consent=([^;]+)"));
     if (!match) {
       // Delay slightly for smooth fade-in entrance
       const timer = setTimeout(() => setIsVisible(true), 1000);
@@ -18,46 +18,38 @@ export default function CookieConsent() {
     }
   }, []);
 
-  const saveConsent = (status: 'accepted' | 'declined') => {
-    const secure = process.env.NODE_ENV === 'production' ? '; secure' : '';
+  const saveConsent = (status: "accepted" | "declined") => {
+    const secure = process.env.NODE_ENV === "production" ? "; secure" : "";
     document.cookie = `dilnova_cookie_consent=${status}; path=/; max-age=31536000; samesite=lax${secure}`;
-    
+
     // Dispatch custom event to notify ConsentTracking component immediately
-    window.dispatchEvent(new Event('cookie-consent-changed'));
-    
+    window.dispatchEvent(new Event("cookie-consent-changed"));
+
     // Animate exit
     setIsVisible(false);
   };
 
   const handleAcceptAll = () => {
-    saveConsent('accepted');
+    saveConsent("accepted");
   };
 
   const handleDeclineAll = () => {
-    saveConsent('declined');
+    saveConsent("declined");
   };
 
   const handleSavePreferences = () => {
-    saveConsent(analyticsConsent ? 'accepted' : 'declined');
+    saveConsent(analyticsConsent ? "accepted" : "declined");
   };
 
   if (!isVisible) return null;
 
   return (
-    <div 
-      className="fixed bottom-4 right-4 left-4 md:left-auto md:max-w-md w-[calc(100%-2rem)] z-[999] bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl shadow-2xl p-5 md:p-6 flex flex-col gap-4 font-sans text-zinc-800 dark:text-zinc-200 animate-[slideUp_0.4s_ease-out]"
-    >
-
+    <div className="fixed bottom-4 right-4 left-4 md:left-auto md:max-w-md w-[calc(100%-2rem)] z-[999] bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl shadow-2xl p-5 md:p-6 flex flex-col gap-4 font-sans text-zinc-800 dark:text-zinc-200 animate-[slideUp_0.4s_ease-out]">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2">
           <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-lg">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -74,7 +66,12 @@ export default function CookieConsent() {
 
       {/* Description */}
       <div className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-        We use cookies to improve your experience, protect user sessions, and analyze site performance. Choose which cookies you allow us to use. Read our <Link href="/cookie" className="text-indigo-650 dark:text-indigo-400 hover:underline">Cookie Policy</Link> for details.
+        We use cookies to improve your experience, protect user sessions, and analyze site
+        performance. Choose which cookies you allow us to use. Read our{" "}
+        <Link href="/cookie" className="text-indigo-650 dark:text-indigo-400 hover:underline">
+          Cookie Policy
+        </Link>{" "}
+        for details.
       </div>
 
       {/* Preference settings drawer */}
@@ -87,7 +84,8 @@ export default function CookieConsent() {
                 Strictly Necessary
               </span>
               <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                Required for core website features like authentication (Clerk) and your shopping cart. Cannot be disabled.
+                Required for core website features like authentication (Clerk) and your shopping
+                cart. Cannot be disabled.
               </span>
             </div>
             <span className="shrink-0 text-[10px] font-bold tracking-wider font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-full uppercase">
@@ -102,21 +100,22 @@ export default function CookieConsent() {
                 Performance & Analytics
               </span>
               <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                Allows us to analyze page load speeds and traffic volumes (via Vercel Analytics and Speed Insights) to optimize site usability.
+                Allows us to analyze page load speeds and traffic volumes (via Vercel Analytics and
+                Speed Insights) to optimize site usability.
               </span>
             </div>
             <button
               type="button"
               onClick={() => setAnalyticsConsent(!analyticsConsent)}
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                analyticsConsent ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-800'
+                analyticsConsent ? "bg-indigo-600" : "bg-zinc-200 dark:bg-zinc-800"
               }`}
               aria-label="Toggle analytics cookies"
             >
               <span
                 aria-hidden="true"
                 className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  analyticsConsent ? 'translate-x-4' : 'translate-x-0'
+                  analyticsConsent ? "translate-x-4" : "translate-x-0"
                 }`}
               />
             </button>
@@ -131,7 +130,7 @@ export default function CookieConsent() {
           onClick={() => setShowPreferences(!showPreferences)}
           className="text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900/60 cursor-pointer"
         >
-          {showPreferences ? 'Hide Settings' : 'Manage Preferences'}
+          {showPreferences ? "Hide Settings" : "Manage Preferences"}
         </button>
 
         <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto">

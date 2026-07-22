@@ -1,6 +1,6 @@
-import type { BankTransferCheckoutInstructions } from '@/features/billing/bank-transfer';
+import type { BankTransferCheckoutInstructions } from "@/features/billing/bank-transfer";
 
-export const CHECKOUT_SUCCESS_STORAGE_KEY = 'dilnova_checkout_success';
+export const CHECKOUT_SUCCESS_STORAGE_KEY = "dilnova_checkout_success";
 
 export interface CheckoutSuccessSnapshot {
   orderId: string;
@@ -12,8 +12,8 @@ export interface CheckoutSuccessSnapshot {
 
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-export function saveCheckoutSuccessSnapshot(snapshot: Omit<CheckoutSuccessSnapshot, 'savedAt'>) {
-  if (typeof window === 'undefined') return;
+export function saveCheckoutSuccessSnapshot(snapshot: Omit<CheckoutSuccessSnapshot, "savedAt">) {
+  if (typeof window === "undefined") return;
 
   const payload: CheckoutSuccessSnapshot = {
     ...snapshot,
@@ -24,7 +24,7 @@ export function saveCheckoutSuccessSnapshot(snapshot: Omit<CheckoutSuccessSnapsh
 }
 
 export function loadCheckoutSuccessSnapshot(): CheckoutSuccessSnapshot | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
 
   const raw = sessionStorage.getItem(CHECKOUT_SUCCESS_STORAGE_KEY);
   if (!raw) return null;
@@ -44,6 +44,6 @@ export function loadCheckoutSuccessSnapshot(): CheckoutSuccessSnapshot | null {
 }
 
 export function clearCheckoutSuccessSnapshot() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   sessionStorage.removeItem(CHECKOUT_SUCCESS_STORAGE_KEY);
 }

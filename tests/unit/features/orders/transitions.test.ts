@@ -1,14 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { applySimulatedOrderStatusChange } from '@/features/orders/transitions';
-import * as stockModule from '@/features/orders/stock';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { applySimulatedOrderStatusChange } from "@/features/orders/transitions";
+import * as stockModule from "@/features/orders/stock";
 
 // Mock the stock depletion/restoration functions so we don't need a real DB for them either
-vi.mock('@/features/orders/stock', () => ({
+vi.mock("@/features/orders/stock", () => ({
   depleteOnlineOrderItemStock: vi.fn(),
   restoreOnlineOrderItemStock: vi.fn(),
 }));
 
-describe('Order Transitions', () => {
+describe("Order Transitions", () => {
   let mockTx: any;
   let mockSelect: any;
   let mockUpdate: any;
@@ -25,7 +25,7 @@ describe('Order Transitions', () => {
     // Mocking tx.update().set().where()
     mockUpdate = vi.fn().mockReturnThis();
     const mockSet = vi.fn().mockReturnThis();
-    const mockUpdateWhere = vi.fn().mockResolvedValue([{ id: 'order-123' }]);
+    const mockUpdateWhere = vi.fn().mockResolvedValue([{ id: "order-123" }]);
 
     mockTx = {
       select: mockSelect,
@@ -52,32 +52,32 @@ describe('Order Transitions', () => {
     });
   });
 
-  describe('applySimulatedOrderStatusChange()', () => {
-    it('depletes stock when transitioning from pending_payment to fulfilled', async () => {
+  describe("applySimulatedOrderStatusChange()", () => {
+    it("depletes stock when transitioning from pending_payment to fulfilled", async () => {
       // Setup mock order items to be returned by the DB
       const mockOrderItems = [
         {
-          productId: 'prod-1',
-          productName: 'Test Product 1',
-          vendorOrgId: 'vendor-1',
+          productId: "prod-1",
+          productName: "Test Product 1",
+          vendorOrgId: "vendor-1",
           quantity: 2,
-          productType: 'product',
+          productType: "product",
         },
       ];
       // Override the where() resolution for this specific test
       mockTx.select().from().innerJoin().where = vi.fn().mockResolvedValue(mockOrderItems);
 
       const order: any = {
-        id: 'order-123',
-        status: 'pending_payment',
+        id: "order-123",
+        status: "pending_payment",
         stockDepleted: false,
-        pickupBranchId: 'branch-1',
+        pickupBranchId: "branch-1",
       };
 
       const result = await applySimulatedOrderStatusChange(mockTx, {
         order,
-        newStatus: 'fulfilled',
-        userId: 'user-1',
+        newStatus: "fulfilled",
+        userId: "user-1",
       });
 
       expect(result.stockDepleted).toBe(true);
@@ -85,73 +85,73 @@ describe('Order Transitions', () => {
       expect(stockModule.depleteOnlineOrderItemStock).toHaveBeenCalledWith(
         mockTx,
         expect.objectContaining({
-          productId: 'prod-1',
+          productId: "prod-1",
           quantity: 2,
-          orderId: 'order-123',
-        })
+          orderId: "order-123",
+        }),
       );
-      
+
       // Verify payment verification fields were added to the update payload
       const setCallArgs = mockTx.update().set.mock.calls[0][0];
-      expect(setCallArgs.status).toBe('fulfilled');
+      expect(setCallArgs.status).toBe("fulfilled");
       expect(setCallArgs.stockDepleted).toBe(true);
       expect(setCallArgs.paymentVerifiedAt).toBeInstanceOf(Date);
-      expect(setCallArgs.paymentVerifiedBy).toBe('user-1');
+      expect(setCallArgs.paymentVerifiedBy).toBe("user-1");
     });
 
-    it('restores stock when transitioning from fulfilled to cancelled', async () => {
+    it("restores stock when transitioning from fulfilled to cancelled", async () => {
       const mockOrderItems = [
         {
-          productId: 'prod-2',
+          productId: "prod-2",
           quantity: 1,
-          vendorOrgId: 'vendor-1',
-          productType: 'product',
+          vendorOrgId: "vendor-1",
+          productType: "product",
         },
       ];
       mockTx.select().from().innerJoin().where = vi.fn().mockResolvedValue(mockOrderItems);
 
       const order: any = {
-        id: 'order-456',
-        status: 'fulfilled',
+        id: "order-456",
+        status: "fulfilled",
         stockDepleted: true, // currently depleted
-        pickupBranchId: 'branch-1',
+        pickupBranchId: "branch-1",
       };
 
       const result = await applySimulatedOrderStatusChange(mockTx, {
         order,
-        newStatus: 'cancelled',
-        userId: 'user-1',
+        newStatus: "cancelled",
+        userId: "user-1",
       });
 
       expect(result.stockDepleted).toBe(false);
       expect(stockModule.restoreOnlineOrderItemStock).toHaveBeenCalledTimes(1);
-      
+
       const setCallArgs = mockTx.update().set.mock.calls[0][0];
-      expect(setCallArgs.status).toBe('cancelled');
+      expect(setCallArgs.status).toBe("cancelled");
       expect(setCallArgs.stockDepleted).toBe(false);
       expect(setCallArgs.paymentSlipUrl).toBe(null);
     });
 
-    it('does not deplete stock if items are not of type product', async () => {
+    it("does not deplete stock if items are not of type product", async () => {
       const mockOrderItems = [
         {
-          productId: 'service-1',
+          productId: "service-1",
           quantity: 1,
-          productType: 'service', // Should be ignored
+          productType: "service", // Should be ignored
         },
       ];
       mockTx.select().from().innerJoin().where = vi.fn().mockResolvedValue(mockOrderItems);
 
       const order: any = {
-        id: 'order-789',
-        status: 'pending_payment',
+        id: "order-789",
+        status: "pending_payment",
         stockDepleted: false,
       };
 
       await applySimulatedOrderStatusChange(mockTx, {
         order,
-        newStatus: 'fulfilled',
-        userId: 'user-1',
+        newStatus: "fulfilled",
+        userId: "user-1",
       });
 
       expect(stockModule.depleteOnlineOrderItemStock).not.toHaveBeenCalled();

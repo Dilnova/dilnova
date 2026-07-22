@@ -1,9 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useTransition } from 'react';
-import { updateOrgCheckoutOptionsAction } from '@/features/organization/checkout-options.actions';
-import { type CheckoutOptionDefinition, isPaymentCompatibleWithFulfillment } from '@/features/organization/checkout-options.shared';
-import { toast } from 'sonner';
+import { useState, useTransition } from "react";
+import { updateOrgCheckoutOptionsAction } from "@/features/organization/checkout-options.actions";
+import {
+  type CheckoutOptionDefinition,
+  isPaymentCompatibleWithFulfillment,
+} from "@/features/organization/checkout-options.shared";
+import { toast } from "sonner";
 
 interface OrgCheckoutOptionsFormProps {
   orgId: string;
@@ -26,16 +29,16 @@ export default function OrgCheckoutOptionsForm({
   const [options, setOptions] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     for (const option of platformOptions) {
-      initial[option.id] = initialOptions[option.id] ?? (
-        option.id === 'store_pickup' || option.id === 'bank_transfer'
-      );
+      initial[option.id] =
+        initialOptions[option.id] ??
+        (option.id === "store_pickup" || option.id === "bank_transfer");
     }
     return initial;
   });
   const [isPending, startTransition] = useTransition();
 
-  const fulfillmentOptions = platformOptions.filter((o) => o.type === 'fulfillment');
-  const paymentOptions = platformOptions.filter((o) => o.type === 'payment');
+  const fulfillmentOptions = platformOptions.filter((o) => o.type === "fulfillment");
+  const paymentOptions = platformOptions.filter((o) => o.type === "payment");
 
   const toggleOption = (id: string) => {
     setOptions((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -48,12 +51,14 @@ export default function OrgCheckoutOptionsForm({
     const selectedPayments = paymentOptions.filter((option) => options[option.id] === true);
 
     if (selectedFulfillments.length === 0 || selectedPayments.length === 0) {
-      toast.error('Enable at least one fulfillment method and one payment method before saving.');
+      toast.error("Enable at least one fulfillment method and one payment method before saving.");
       return;
     }
 
     for (const f of selectedFulfillments) {
-      const hasCompatiblePayment = selectedPayments.some((p) => isPaymentCompatibleWithFulfillment(p, f));
+      const hasCompatiblePayment = selectedPayments.some((p) =>
+        isPaymentCompatibleWithFulfillment(p, f),
+      );
       if (!hasCompatiblePayment) {
         toast.error(`Fulfillment method "${f.label}" has no compatible payment methods selected.`);
         return;
@@ -61,7 +66,9 @@ export default function OrgCheckoutOptionsForm({
     }
 
     for (const p of selectedPayments) {
-      const hasCompatibleFulfillment = selectedFulfillments.some((f) => isPaymentCompatibleWithFulfillment(p, f));
+      const hasCompatibleFulfillment = selectedFulfillments.some((f) =>
+        isPaymentCompatibleWithFulfillment(p, f),
+      );
       if (!hasCompatibleFulfillment) {
         toast.error(`Payment method "${p.label}" has no compatible fulfillment methods selected.`);
         return;
@@ -69,12 +76,16 @@ export default function OrgCheckoutOptionsForm({
     }
 
     if (options.bank_transfer === true && !bankTransferConfigured) {
-      toast.error('Save bank name, account name, and account number in Public Page Setup before enabling bank transfer.');
+      toast.error(
+        "Save bank name, account name, and account number in Public Page Setup before enabling bank transfer.",
+      );
       return;
     }
 
     if (options.store_pickup === true && branchCount === 0 && !addressConfigured) {
-      toast.error('Store pickup requires a physical location. Please set your address in the Public Page Setup, or create a branch.');
+      toast.error(
+        "Store pickup requires a physical location. Please set your address in the Public Page Setup, or create a branch.",
+      );
       return;
     }
 
@@ -82,14 +93,14 @@ export default function OrgCheckoutOptionsForm({
       try {
         const result = await updateOrgCheckoutOptionsAction({
           organizationId: orgId,
-          checkoutOptions: options
+          checkoutOptions: options,
         });
         if (!result?.data?.success) {
-          throw new Error(result?.serverError || 'Failed to update checkout options.');
+          throw new Error(result?.serverError || "Failed to update checkout options.");
         }
-        toast.success('Checkout options updated successfully!');
+        toast.success("Checkout options updated successfully!");
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to update checkout options.');
+        toast.error(err instanceof Error ? err.message : "Failed to update checkout options.");
       }
     });
   };
@@ -97,7 +108,8 @@ export default function OrgCheckoutOptionsForm({
   if (platformOptions.length === 0) {
     return (
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        No checkout options are currently available on the platform. Contact your platform administrator.
+        No checkout options are currently available on the platform. Contact your platform
+        administrator.
       </p>
     );
   }
@@ -138,11 +150,14 @@ export default function OrgCheckoutOptionsForm({
                 enabled={options[option.id] === true}
                 onToggle={() => toggleOption(option.id)}
               />
-              {option.id === 'bank_transfer' && options[option.id] === true && !bankTransferConfigured && (
-                <p className="text-[11px] text-amber-600 dark:text-amber-400 px-1">
-                  Bank transfer requires bank name, account name, and account number in Public Page Setup above.
-                </p>
-              )}
+              {option.id === "bank_transfer" &&
+                options[option.id] === true &&
+                !bankTransferConfigured && (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 px-1">
+                    Bank transfer requires bank name, account name, and account number in Public
+                    Page Setup above.
+                  </p>
+                )}
             </div>
           ))}
         </div>
@@ -153,7 +168,7 @@ export default function OrgCheckoutOptionsForm({
         disabled={isPending}
         className="w-full sm:w-auto px-6 py-2.5 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl transition-all cursor-pointer"
       >
-        {isPending ? 'Saving...' : 'Save Checkout Options'}
+        {isPending ? "Saving..." : "Save Checkout Options"}
       </button>
     </form>
   );
@@ -173,7 +188,9 @@ function OptionToggle({
       <div className="min-w-0">
         <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{option.label}</p>
         {option.description && (
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">{option.description}</p>
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+            {option.description}
+          </p>
         )}
         {option.isBuiltIn && (
           <span className="inline-block mt-1 text-[9px] font-mono uppercase tracking-wider text-zinc-400">
@@ -185,14 +202,14 @@ function OptionToggle({
         type="button"
         onClick={onToggle}
         className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
-          enabled ? 'bg-purple-600' : 'bg-zinc-200 dark:bg-zinc-800'
+          enabled ? "bg-purple-600" : "bg-zinc-200 dark:bg-zinc-800"
         }`}
         aria-pressed={enabled}
         aria-label={`Toggle ${option.label}`}
       >
         <span
           className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-            enabled ? 'translate-x-4' : 'translate-x-0'
+            enabled ? "translate-x-4" : "translate-x-0"
           }`}
         />
       </button>

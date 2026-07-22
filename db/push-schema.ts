@@ -2,29 +2,27 @@
  * Push schema to database using drizzle-orm.
  * Run: npx tsx db/push-schema.ts
  */
-import path from 'path';
-process.env.HOME = path.resolve(process.cwd(), 'scratch');
-import * as dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
+import path from "path";
+process.env.HOME = path.resolve(process.cwd(), "scratch");
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { sql } from 'drizzle-orm';
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { sql } from "drizzle-orm";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  console.error('DATABASE_URL is not set');
+  console.error("DATABASE_URL is not set");
   process.exit(1);
 }
-
-
 
 const client = postgres(connectionString, { prepare: false, max: 1 });
 const db = drizzle(client);
 
 async function push() {
-  console.log('Creating IMS tables...');
-  
+  console.log("Creating IMS tables...");
+
   // Create suppliers table
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS suppliers (
@@ -39,7 +37,7 @@ async function push() {
     )
   `);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_suppliers_org_id ON suppliers (org_id)`);
-  console.log('✓ suppliers');
+  console.log("✓ suppliers");
 
   // Create inventory table
   await db.execute(sql`
@@ -54,10 +52,14 @@ async function push() {
       updated_at TIMESTAMP DEFAULT now() NOT NULL
     )
   `);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_inventory_product_id ON inventory (product_id)`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_inventory_supplier_id ON inventory (supplier_id)`);
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_inventory_product_id ON inventory (product_id)`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_inventory_supplier_id ON inventory (supplier_id)`,
+  );
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_inventory_sku ON inventory (sku)`);
-  console.log('✓ inventory');
+  console.log("✓ inventory");
 
   // Create inventory_movements table
   await db.execute(sql`
@@ -73,10 +75,16 @@ async function push() {
       created_at TIMESTAMP DEFAULT now() NOT NULL
     )
   `);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_inventory_movements_inventory_id ON inventory_movements (inventory_id)`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_inventory_movements_type ON inventory_movements (type)`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_inventory_movements_created_at ON inventory_movements (created_at)`);
-  console.log('✓ inventory_movements');
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_inventory_movements_inventory_id ON inventory_movements (inventory_id)`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_inventory_movements_type ON inventory_movements (type)`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_inventory_movements_created_at ON inventory_movements (created_at)`,
+  );
+  console.log("✓ inventory_movements");
 
   // Create simulated_orders table
   await db.execute(sql`
@@ -90,10 +98,16 @@ async function push() {
       updated_at TIMESTAMP DEFAULT now() NOT NULL
     )
   `);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_simulated_orders_status ON simulated_orders (status)`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_simulated_orders_created_at ON simulated_orders (created_at)`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_simulated_orders_email ON simulated_orders (customer_email)`);
-  console.log('✓ simulated_orders');
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_simulated_orders_status ON simulated_orders (status)`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_simulated_orders_created_at ON simulated_orders (created_at)`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_simulated_orders_email ON simulated_orders (customer_email)`,
+  );
+  console.log("✓ simulated_orders");
 
   // Create simulated_order_items table
   await db.execute(sql`
@@ -107,11 +121,15 @@ async function push() {
       unit_price INTEGER NOT NULL
     )
   `);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_simulated_order_items_order_id ON simulated_order_items (order_id)`);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_simulated_order_items_product_id ON simulated_order_items (product_id)`);
-  console.log('✓ simulated_order_items');
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_simulated_order_items_order_id ON simulated_order_items (order_id)`,
+  );
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_simulated_order_items_product_id ON simulated_order_items (product_id)`,
+  );
+  console.log("✓ simulated_order_items");
 
-  console.log('Altering existing categories & products tables for Enterprise Grade features...');
+  console.log("Altering existing categories & products tables for Enterprise Grade features...");
 
   // Drop deprecated registry tables if they exist
   await db.execute(sql`DROP TABLE IF EXISTS catalog_registry CASCADE`);
@@ -126,7 +144,7 @@ async function push() {
       code TEXT NOT NULL UNIQUE
     )
   `);
-  console.log('✓ tax_classes');
+  console.log("✓ tax_classes");
 
   // Create metadata_templates table
   await db.execute(sql`
@@ -136,7 +154,7 @@ async function push() {
       fields JSONB NOT NULL
     )
   `);
-  console.log('✓ metadata_templates');
+  console.log("✓ metadata_templates");
 
   // Alter existing categories table to support parent_id references and templates
   await db.execute(sql`
@@ -151,7 +169,7 @@ async function push() {
   `);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_categories_parent ON categories (parent_id)`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories (slug)`);
-  console.log('✓ categories altered');
+  console.log("✓ categories altered");
 
   // Alter existing products table to support sku, barcodes, attributes
   await db.execute(sql`
@@ -161,8 +179,10 @@ async function push() {
     ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active' NOT NULL,
     ADD COLUMN IF NOT EXISTS attributes JSONB DEFAULT '{}'::jsonb NOT NULL
   `);
-  await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_products_attributes ON products USING GIN (attributes)`);
-  console.log('✓ products altered');
+  await db.execute(
+    sql`CREATE INDEX IF NOT EXISTS idx_products_attributes ON products USING GIN (attributes)`,
+  );
+  console.log("✓ products altered");
 
   // Create service_configurations table linked to products
   await db.execute(sql`
@@ -174,7 +194,7 @@ async function push() {
       requires_resource_allocation BOOLEAN DEFAULT false NOT NULL
     )
   `);
-  console.log('✓ service_configurations');
+  console.log("✓ service_configurations");
 
   // Create inventory_balances table linked to products
   await db.execute(sql`
@@ -189,14 +209,14 @@ async function push() {
       CONSTRAINT unique_location_item UNIQUE (location_id, product_id)
     )
   `);
-  console.log('✓ inventory_balances');
+  console.log("✓ inventory_balances");
 
-  console.log('\n✅ All tables and schemas updated successfully!');
+  console.log("\n✅ All tables and schemas updated successfully!");
   await client.end();
   process.exit(0);
 }
 
 push().catch((err) => {
-  console.error('Migration failed:', err);
+  console.error("Migration failed:", err);
   process.exit(1);
 });

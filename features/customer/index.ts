@@ -1,1 +1,1 @@
-export * from '@/features/customer/email';
+export * from "@/features/customer/email";

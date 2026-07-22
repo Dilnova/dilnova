@@ -9,32 +9,35 @@
  * Optional env:
  *   SUPERADMIN_USER_IDS=user_abc,user_def
  */
-const dryRun = process.argv.includes('--dry-run');
+const dryRun = process.argv.includes("--dry-run");
 const secretKey = process.env.CLERK_SECRET_KEY;
 const allowlist = new Set(
-  (process.env.SUPERADMIN_USER_IDS ?? '')
-    .split(',')
+  (process.env.SUPERADMIN_USER_IDS ?? "")
+    .split(",")
     .map((entry) => entry.trim())
-    .filter(Boolean)
+    .filter(Boolean),
 );
 
 // SECURITY: Safely skip in CI using all three conditions.
-const isCiDummy = process.env.CLERK_SECRET_KEY === 'sk_test_ci_dummy' && process.env.NODE_ENV !== 'production' && process.env.VERCEL !== '1';
-if (!secretKey || secretKey.includes('placeholder') || isCiDummy) {
-  console.log('CLERK_SECRET_KEY is missing, placeholder, or CI environment. Skipping migration.');
+const isCiDummy =
+  process.env.CLERK_SECRET_KEY === "sk_test_ci_dummy" &&
+  process.env.NODE_ENV !== "production" &&
+  process.env.VERCEL !== "1";
+if (!secretKey || secretKey.includes("placeholder") || isCiDummy) {
+  console.log("CLERK_SECRET_KEY is missing, placeholder, or CI environment. Skipping migration.");
   process.exit(0);
 }
 
-const clerkApi = 'https://api.clerk.com/v1';
-const PLATFORM_ROLE = 'superadmin';
-const LEGACY_PUBLIC_ROLE = 'admin';
+const clerkApi = "https://api.clerk.com/v1";
+const PLATFORM_ROLE = "superadmin";
+const LEGACY_PUBLIC_ROLE = "admin";
 
 async function clerkFetch(path, options = {}) {
   const response = await fetch(`${clerkApi}${path}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${secretKey}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(options.headers || {}),
     },
   });
@@ -84,16 +87,16 @@ while (true) {
 
     const nextPublic = { ...publicMeta };
     if (nextPublic.role === LEGACY_PUBLIC_ROLE) {
-      nextPublic.role = 'vendor';
+      nextPublic.role = "vendor";
     }
 
     console.log(
-      `${dryRun ? '[dry-run] ' : ''}Grant superadmin to ${user.id} (${user.email_addresses?.[0]?.email_address ?? 'no-email'})`
+      `${dryRun ? "[dry-run] " : ""}Grant superadmin to ${user.id} (${user.email_addresses?.[0]?.email_address ?? "no-email"})`,
     );
 
     if (!dryRun) {
       await clerkFetch(`/users/${user.id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: JSON.stringify({
           private_metadata: nextPrivate,
           public_metadata: nextPublic,
@@ -111,4 +114,4 @@ while (true) {
   }
 }
 
-console.log(`\nDone. Migrated: ${migrated}, skipped: ${skipped}${dryRun ? ' (dry-run)' : ''}.`);
+console.log(`\nDone. Migrated: ${migrated}, skipped: ${skipped}${dryRun ? " (dry-run)" : ""}.`);

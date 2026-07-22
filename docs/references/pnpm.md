@@ -7,19 +7,19 @@
 
 ## Key Docs Links
 
-| Topic | URL |
-|---|---|
-| Motivation | https://pnpm.io/motivation |
-| Installation | https://pnpm.io/installation |
-| CLI Commands | https://pnpm.io/cli/add |
-| `pnpm install` | https://pnpm.io/cli/install |
-| `pnpm run` | https://pnpm.io/cli/run |
-| `pnpm exec` | https://pnpm.io/cli/exec |
-| `pnpm audit` | https://pnpm.io/cli/audit |
-| Workspaces | https://pnpm.io/workspaces |
-| `.npmrc` Configuration | https://pnpm.io/npmrc |
-| `pnpm-lock.yaml` | https://pnpm.io/git#lockfiles |
-| Filtering | https://pnpm.io/filtering |
+| Topic                  | URL                           |
+| ---------------------- | ----------------------------- |
+| Motivation             | https://pnpm.io/motivation    |
+| Installation           | https://pnpm.io/installation  |
+| CLI Commands           | https://pnpm.io/cli/add       |
+| `pnpm install`         | https://pnpm.io/cli/install   |
+| `pnpm run`             | https://pnpm.io/cli/run       |
+| `pnpm exec`            | https://pnpm.io/cli/exec      |
+| `pnpm audit`           | https://pnpm.io/cli/audit     |
+| Workspaces             | https://pnpm.io/workspaces    |
+| `.npmrc` Configuration | https://pnpm.io/npmrc         |
+| `pnpm-lock.yaml`       | https://pnpm.io/git#lockfiles |
+| Filtering              | https://pnpm.io/filtering     |
 
 ---
 
@@ -54,5 +54,5 @@ pnpm audit --audit-level=high    # Security audit
 ```yaml
 # pnpm-workspace.yaml
 packages:
-  - '.'
+  - "."
 ```

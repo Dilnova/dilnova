@@ -1,6 +1,6 @@
-import * as schema from '@/shared/db/schema';
-import { eq, and, gte, sql } from 'drizzle-orm';
-import type { db } from '@/shared/db/client';
+import * as schema from "@/shared/db/schema";
+import { eq, and, gte, sql } from "drizzle-orm";
+import type { db } from "@/shared/db/client";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -17,9 +17,9 @@ export async function reserveProductStock(
   tx: DbTransaction,
   productId: string,
   quantity: number,
-  options?: { branchId?: string | null; productName?: string }
+  options?: { branchId?: string | null; productName?: string },
 ): Promise<{ ok: true; reservation: StockReservation } | { ok: false; error: string }> {
-  const label = options?.productName ? `"${options.productName}"` : 'Product';
+  const label = options?.productName ? `"${options.productName}"` : "Product";
 
   const [centralInv] = await tx
     .select({
@@ -28,7 +28,7 @@ export async function reserveProductStock(
     })
     .from(schema.inventory)
     .where(eq(schema.inventory.productId, productId))
-    .for('update')
+    .for("update")
     .limit(1);
 
   if (!centralInv) {
@@ -56,10 +56,10 @@ export async function reserveProductStock(
       .where(
         and(
           eq(schema.branchInventory.branchId, options.branchId),
-          eq(schema.branchInventory.productId, productId)
-        )
+          eq(schema.branchInventory.productId, productId),
+        ),
       )
-      .for('update')
+      .for("update")
       .limit(1);
 
     if (!branchInv) {
@@ -86,7 +86,7 @@ export async function applyStockReservation(
   tx: DbTransaction,
   quantity: number,
   reservation: StockReservation,
-  options: { userId: string; reason: string }
+  options: { userId: string; reason: string },
 ): Promise<void> {
   const [centralRow] = await tx
     .update(schema.inventory)
@@ -97,15 +97,15 @@ export async function applyStockReservation(
     .where(
       and(
         eq(schema.inventory.id, reservation.centralInventoryId),
-        gte(schema.inventory.quantity, quantity)
-      )
+        gte(schema.inventory.quantity, quantity),
+      ),
     )
     .returning({
       quantity: schema.inventory.quantity,
     });
 
   if (!centralRow) {
-    throw new Error('Insufficient central stock during checkout.');
+    throw new Error("Insufficient central stock during checkout.");
   }
 
   const newCentralQty = centralRow.quantity;
@@ -113,7 +113,7 @@ export async function applyStockReservation(
 
   await tx.insert(schema.inventoryMovements).values({
     inventoryId: reservation.centralInventoryId,
-    type: 'sale_depletion',
+    type: "sale_depletion",
     quantityChanged: -quantity,
     previousQuantity: previousCentralQty,
     newQuantity: newCentralQty,
@@ -131,13 +131,13 @@ export async function applyStockReservation(
       .where(
         and(
           eq(schema.branchInventory.id, reservation.branchInventoryId),
-          gte(schema.branchInventory.quantity, quantity)
-        )
+          gte(schema.branchInventory.quantity, quantity),
+        ),
       )
       .returning({ quantity: schema.branchInventory.quantity });
 
     if (!branchRow) {
-      throw new Error('Insufficient branch stock during checkout.');
+      throw new Error("Insufficient branch stock during checkout.");
     }
   }
 }

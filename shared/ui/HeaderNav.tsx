@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
-import Link from 'next/link';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import Link from "next/link";
 
 interface LinkItem {
   href: string;
@@ -21,7 +21,7 @@ export default function HeaderNav({ links, mobileExtra }: HeaderNavProps) {
 
   // Close on Escape key
   const handleEscape = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') setIsOpen(false);
+    if (e.key === "Escape") setIsOpen(false);
   }, []);
 
   // Close when clicking outside of the mobile toggle and the menu panel
@@ -38,25 +38,25 @@ export default function HeaderNav({ links, mobileExtra }: HeaderNavProps) {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside, true);
-    document.addEventListener('touchstart', handleClickOutside, true);
+    document.addEventListener("mousedown", handleClickOutside, true);
+    document.addEventListener("touchstart", handleClickOutside, true);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside, true);
-      document.removeEventListener('touchstart', handleClickOutside, true);
+      document.removeEventListener("mousedown", handleClickOutside, true);
+      document.removeEventListener("touchstart", handleClickOutside, true);
     };
   }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener("keydown", handleEscape);
       // Prevent body scroll when menu is open on mobile
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
     };
   }, [isOpen, handleEscape]);
 
@@ -69,7 +69,8 @@ export default function HeaderNav({ links, mobileExtra }: HeaderNavProps) {
             key={link.href}
             href={link.href}
             className={`text-xs font-semibold transition-colors ${
-              link.colorClass || 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+              link.colorClass ||
+              "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
             }`}
           >
             {link.label}
@@ -85,12 +86,7 @@ export default function HeaderNav({ links, mobileExtra }: HeaderNavProps) {
         aria-label="Toggle navigation menu"
         aria-expanded={isOpen}
       >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           {isOpen ? (
             <path
               strokeLinecap="round"
@@ -129,7 +125,8 @@ export default function HeaderNav({ links, mobileExtra }: HeaderNavProps) {
                 href={link.href}
                 onClick={() => setIsOpen(false)}
                 className={`block truncate text-sm font-semibold transition-colors py-3 px-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900/60 ${
-                  link.colorClass || 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+                  link.colorClass ||
+                  "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
                 }`}
               >
                 {link.label}
@@ -138,9 +135,7 @@ export default function HeaderNav({ links, mobileExtra }: HeaderNavProps) {
             {mobileExtra && (
               <>
                 <div className="border-t border-zinc-200/60 dark:border-zinc-800 my-1" />
-                <div className="px-3 py-2">
-                  {mobileExtra}
-                </div>
+                <div className="px-3 py-2">{mobileExtra}</div>
               </>
             )}
           </div>

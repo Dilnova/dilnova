@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from "react";
 import {
   LANGUAGES,
   getCurrentLangFromCookie,
@@ -8,22 +8,25 @@ import {
   setLangPreferenceCookie,
   setGoogTransCookie,
   applyLanguage,
-} from './languageUtils';
+} from "./languageUtils";
 
 export default function LanguageSelector() {
-  const [currentLang, setCurrentLang] = useState('en');
+  const [currentLang, setCurrentLang] = useState("en");
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // 1. Define global init function immediately so it is always present
     window.googleTranslateElementInit = () => {
-      new window.google!.translate!.TranslateElement({
-        pageLanguage: 'en',
-        includedLanguages: 'en,si,ta',
-        layout: window.google!.translate!.TranslateElement.InlineLayout?.SIMPLE,
-        autoDisplay: false
-      }, 'google_translate_element');
+      new window.google!.translate!.TranslateElement(
+        {
+          pageLanguage: "en",
+          includedLanguages: "en,si,ta",
+          layout: window.google!.translate!.TranslateElement.InlineLayout?.SIMPLE,
+          autoDisplay: false,
+        },
+        "google_translate_element",
+      );
     };
 
     // 2. Check existing preference or cookie
@@ -36,7 +39,7 @@ export default function LanguageSelector() {
     }
 
     // If no preference cookie exists but we have googtrans, sync it
-    if (!pref && lang !== 'en') {
+    if (!pref && lang !== "en") {
       setLangPreferenceCookie(lang);
     }
 
@@ -45,11 +48,14 @@ export default function LanguageSelector() {
     });
 
     // 3. Inject Google Translate script dynamically if not already present and not a bot
-    const isBot = typeof navigator !== 'undefined' && /bot|googlebot|crawler|spider|robot|crawling/i.test(navigator.userAgent || '');
-    if (!isBot && !document.getElementById('google-translate-script')) {
-      const script = document.createElement('script');
-      script.id = 'google-translate-script';
-      script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+    const isBot =
+      typeof navigator !== "undefined" &&
+      /bot|googlebot|crawler|spider|robot|crawling/i.test(navigator.userAgent || "");
+    if (!isBot && !document.getElementById("google-translate-script")) {
+      const script = document.createElement("script");
+      script.id = "google-translate-script";
+      script.src =
+        "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
       script.async = true;
       document.body.appendChild(script);
     } else if (!isBot) {
@@ -58,7 +64,7 @@ export default function LanguageSelector() {
         try {
           window.googleTranslateElementInit?.();
         } catch (e) {
-          console.warn('Google Translate re-init deferred:', { error: e });
+          console.warn("Google Translate re-init deferred:", { error: e });
         }
       }
     }
@@ -69,11 +75,11 @@ export default function LanguageSelector() {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside, true);
-    document.addEventListener('touchstart', handleClickOutside, true);
+    document.addEventListener("mousedown", handleClickOutside, true);
+    document.addEventListener("touchstart", handleClickOutside, true);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside, true);
-      document.removeEventListener('touchstart', handleClickOutside, true);
+      document.removeEventListener("mousedown", handleClickOutside, true);
+      document.removeEventListener("touchstart", handleClickOutside, true);
     };
   }, []);
 
@@ -86,12 +92,15 @@ export default function LanguageSelector() {
     applyLanguage(langCode, true);
   };
 
-  const activeLang = LANGUAGES.find(l => l.code === currentLang) || LANGUAGES[0];
+  const activeLang = LANGUAGES.find((l) => l.code === currentLang) || LANGUAGES[0];
 
   return (
     <div className="relative font-sans" ref={dropdownRef}>
       {/* Off-screen container required by Google Translate script (hidden with opacity/pointer-events instead of display: none to avoid offsetParent initialization failures) */}
-      <div id="google_translate_element" className="absolute w-0 h-0 opacity-0 pointer-events-none overflow-hidden" />
+      <div
+        id="google_translate_element"
+        className="absolute w-0 h-0 opacity-0 pointer-events-none overflow-hidden"
+      />
 
       {/* Styled Dropdown Trigger Button */}
       <button
@@ -102,7 +111,7 @@ export default function LanguageSelector() {
         <span className="text-sm leading-none">{activeLang.flag}</span>
         <span>{activeLang.nativeName}</span>
         <svg
-          className={`w-3 h-3 text-zinc-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-3 h-3 text-zinc-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -123,22 +132,34 @@ export default function LanguageSelector() {
               onClick={() => handleLanguageChange(lang.code)}
               className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-left transition-colors cursor-pointer ${
                 currentLang === lang.code
-                  ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
-                  : 'text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900'
+                  ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                  : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
               }`}
             >
               <div className="flex items-center gap-2">
                 <span className="text-sm leading-none">{lang.flag}</span>
                 <span className="flex flex-col">
                   <span className="font-semibold">{lang.nativeName}</span>
-                  {lang.code !== 'en' && (
-                    <span className="text-[9px] text-zinc-400 dark:text-zinc-500 leading-none">{lang.name}</span>
+                  {lang.code !== "en" && (
+                    <span className="text-[9px] text-zinc-400 dark:text-zinc-500 leading-none">
+                      {lang.name}
+                    </span>
                   )}
                 </span>
               </div>
               {currentLang === lang.code && (
-                <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-4 h-4 text-purple-600 dark:text-purple-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2.5"
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               )}
             </button>

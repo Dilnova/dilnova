@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useTransition } from 'react';
-import Image from 'next/image';
-import { toast } from 'sonner';
-import { useConfirm } from '@/shared/ui/notifications';
-import { deleteProductAction } from '@/features/catalog/superadmin.actions';
-import { TabDataTableLayout, type ColumnDef } from '@/shared/ui/TabDataTableLayout';
-import { ProductsFilters } from './products/ProductsFilters';
-import { ProductEditModal } from './products/ProductEditModal';
+import { useState, useTransition } from "react";
+import Image from "next/image";
+import { toast } from "sonner";
+import { useConfirm } from "@/shared/ui/notifications";
+import { deleteProductAction } from "@/features/catalog/superadmin.actions";
+import { TabDataTableLayout, type ColumnDef } from "@/shared/ui/TabDataTableLayout";
+import { ProductsFilters } from "./products/ProductsFilters";
+import { ProductEditModal } from "./products/ProductEditModal";
 
 export interface Product {
   id: string;
@@ -21,7 +21,7 @@ export interface Product {
   views: number;
   categoryName: string | null;
   createdAt: Date;
-  media?: { url: string; type: 'image' | 'video' }[] | null;
+  media?: { url: string; type: "image" | "video" }[] | null;
 }
 
 export interface Category {
@@ -44,13 +44,18 @@ interface ProductsTabProps {
   maxMediaLimit: number;
 }
 
-export default function ProductsTab({ products, categories, organizations, maxMediaLimit }: ProductsTabProps) {
+export default function ProductsTab({
+  products,
+  categories,
+  organizations,
+  maxMediaLimit,
+}: ProductsTabProps) {
   const [isPending, startTransition] = useTransition();
   const { confirmAction } = useConfirm();
 
-  const [productSearch, setProductSearch] = useState('');
-  const [productTypeFilter, setProductTypeFilter] = useState<'all' | 'product' | 'service'>('all');
-  const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
+  const [productSearch, setProductSearch] = useState("");
+  const [productTypeFilter, setProductTypeFilter] = useState<"all" | "product" | "service">("all");
+  const [productCategoryFilter, setProductCategoryFilter] = useState<string>("all");
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -62,23 +67,24 @@ export default function ProductsTab({ products, categories, organizations, maxMe
 
   const handleDeleteProduct = async (prodId: string) => {
     const confirmed = await confirmAction({
-      title: 'Delete Product',
-      message: 'Are you sure you want to permanently delete this product/service? This action is irreversible.',
-      confirmText: 'Delete',
-      variant: 'danger'
+      title: "Delete Product",
+      message:
+        "Are you sure you want to permanently delete this product/service? This action is irreversible.",
+      confirmText: "Delete",
+      variant: "danger",
     });
     if (!confirmed) return;
 
     toast.promise(
       deleteProductAction({ id: prodId }).then((res) => {
-        if (!res?.data?.success) throw new Error(res?.serverError || 'Failed to delete product.');
+        if (!res?.data?.success) throw new Error(res?.serverError || "Failed to delete product.");
         return res.data;
       }),
       {
-        loading: 'Deleting product...',
-        success: 'Product deleted.',
-        error: (err) => err instanceof Error ? err.message : 'Failed to delete product.'
-      }
+        loading: "Deleting product...",
+        success: "Product deleted.",
+        error: (err) => (err instanceof Error ? err.message : "Failed to delete product."),
+      },
     );
   };
 
@@ -88,9 +94,9 @@ export default function ProductsTab({ products, categories, organizations, maxMe
       (p.description && p.description.toLowerCase().includes(productSearch.toLowerCase())) ||
       p.id.includes(productSearch);
 
-    const matchesType = productTypeFilter === 'all' || p.type === productTypeFilter;
+    const matchesType = productTypeFilter === "all" || p.type === productTypeFilter;
     const matchesCategory =
-      productCategoryFilter === 'all' || p.categoryId === productCategoryFilter;
+      productCategoryFilter === "all" || p.categoryId === productCategoryFilter;
 
     return matchesSearch && matchesType && matchesCategory;
   });
@@ -112,40 +118,44 @@ export default function ProductsTab({ products, categories, organizations, maxMe
 
   const columns: ColumnDef<Product>[] = [
     {
-      header: 'Item Details',
+      header: "Item Details",
       cell: (p) => (
         <>
           <div className="font-bold text-zinc-900 dark:text-zinc-100 leading-snug">{p.name}</div>
           <div className="text-[10px] text-zinc-400 font-mono mt-0.5 truncate max-w-[220px]">
-            Cat: {p.categoryName || 'Uncategorized'}
+            Cat: {p.categoryName || "Uncategorized"}
           </div>
         </>
       ),
     },
     {
-      header: 'Type',
+      header: "Type",
       cell: (p) => (
-        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-          p.type === 'service' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400'
-        }`}>
+        <span
+          className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+            p.type === "service"
+              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
+              : "bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400"
+          }`}
+        >
           {p.type}
         </span>
       ),
     },
     {
-      header: 'Price',
+      header: "Price",
       cell: (p) => <span className="font-mono font-bold">${(p.price / 100).toFixed(2)}</span>,
     },
     {
-      header: 'Views',
+      header: "Views",
       cell: (p) => <span className="font-mono text-zinc-600 dark:text-zinc-400">👀 {p.views}</span>,
     },
     {
-      header: 'Vendor Org',
+      header: "Vendor Org",
       cell: (p) => (
         <>
           <div className="font-mono text-[10px] text-zinc-600 dark:text-zinc-400 truncate max-w-[140px]">
-            {orgNameById.get(p.orgId) || 'Unknown Vendor'}
+            {orgNameById.get(p.orgId) || "Unknown Vendor"}
           </div>
           <div className="text-[10px] font-mono text-zinc-400 truncate max-w-[140px]">
             {p.orgId}
@@ -159,8 +169,8 @@ export default function ProductsTab({ products, categories, organizations, maxMe
       ),
     },
     {
-      header: 'Actions',
-      className: 'text-right',
+      header: "Actions",
+      className: "text-right",
       cell: (p) => (
         <div className="flex items-center justify-end gap-1.5">
           <button
@@ -187,20 +197,30 @@ export default function ProductsTab({ products, categories, organizations, maxMe
           {p.imageUrl ? (
             <Image src={p.imageUrl} alt={p.name} fill className="object-cover" sizes="56px" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-xl opacity-30">📷</div>
+            <div className="w-full h-full flex items-center justify-center text-xl opacity-30">
+              📷
+            </div>
           )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{p.name}</span>
-            <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold flex-shrink-0 ${
-              p.type === 'service' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400'
-            }`}>
+            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
+              {p.name}
+            </span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold flex-shrink-0 ${
+                p.type === "service"
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
+                  : "bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400"
+              }`}
+            >
               {p.type}
             </span>
           </div>
           <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-400 font-mono">
-            <span className="font-bold text-zinc-700 dark:text-zinc-300">${(p.price / 100).toFixed(2)}</span>
+            <span className="font-bold text-zinc-700 dark:text-zinc-300">
+              ${(p.price / 100).toFixed(2)}
+            </span>
             <span>·</span>
             <span>👀 {p.views}</span>
           </div>

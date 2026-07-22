@@ -1,6 +1,6 @@
-import tls from 'tls';
-import net from 'net';
-import { logger, withPerformanceTracking } from '@/shared/logging/logger';
+import tls from "tls";
+import net from "net";
+import { logger, withPerformanceTracking } from "@/shared/logging/logger";
 
 export interface SmtpEmailOptions {
   host: string;
@@ -27,7 +27,7 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
       if (socket) {
         socket.destroy();
       }
-      fail(new Error('SMTP transaction overall deadline exceeded (10 seconds).'));
+      fail(new Error("SMTP transaction overall deadline exceeded (10 seconds)."));
     }, 10000);
 
     const cleanup = () => {
@@ -46,9 +46,9 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
 
     const setupSocketTimeout = (sock: net.Socket | tls.TLSSocket) => {
       sock.setTimeout(10000);
-      sock.on('timeout', () => {
+      sock.on("timeout", () => {
         sock.destroy();
-        fail(new Error('SMTP socket inactivity timeout exceeded (10 seconds).'));
+        fail(new Error("SMTP socket inactivity timeout exceeded (10 seconds)."));
       });
     };
 
@@ -61,23 +61,23 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
     const parseSmtpResponse = (chunk: Buffer) => {
       const data = chunk.toString();
       responseLog.push(data);
-      const lines = data.split('\r\n').filter((line) => line.trim().length > 0);
-      const lastLine = lines[lines.length - 1] || '';
+      const lines = data.split("\r\n").filter((line) => line.trim().length > 0);
+      const lastLine = lines[lines.length - 1] || "";
       const code = parseInt(lastLine.substring(0, 3), 10);
       return { code, lastLine };
     };
 
     const processCommonSmtpState = (code: number): boolean => {
       if ((useTlsDirectly && step === 1 && code === 250) || (step === 1.6 && code === 250)) {
-        send('AUTH LOGIN');
+        send("AUTH LOGIN");
         step = 2;
         return true;
       } else if (step === 2 && code === 334) {
-        send(Buffer.from(options.user).toString('base64'));
+        send(Buffer.from(options.user).toString("base64"));
         step = 3;
         return true;
       } else if (step === 3 && code === 334) {
-        send(Buffer.from(options.pass).toString('base64'));
+        send(Buffer.from(options.pass).toString("base64"));
         step = 4;
         return true;
       } else if (step === 4 && code === 235) {
@@ -89,7 +89,7 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
         step = 6;
         return true;
       } else if (step === 6 && code === 250) {
-        send('DATA');
+        send("DATA");
         step = 7;
         return true;
       } else if (step === 7 && code === 354) {
@@ -97,7 +97,7 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
         step = 8;
         return true;
       } else if (step === 8 && code === 250) {
-        send('QUIT');
+        send("QUIT");
         step = 9;
         return true;
       } else if (step === 9) {
@@ -119,15 +119,15 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
       if (processCommonSmtpState(code)) return;
 
       if (step === 0 && code === 220) {
-        send('EHLO localhost');
+        send("EHLO localhost");
         step = 1;
       } else if (!useTlsDirectly) {
         if (step === 1 && code === 250) {
-          send('STARTTLS');
+          send("STARTTLS");
           step = 1.5;
         } else if (step === 1.5 && code === 220) {
-          socket.removeAllListeners('data');
-          socket.removeAllListeners('timeout');
+          socket.removeAllListeners("data");
+          socket.removeAllListeners("timeout");
           const secureSocket = tls.connect(
             {
               socket,
@@ -136,13 +136,13 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
             },
             () => {
               step = 1.6;
-              secureSocket.write('EHLO localhost\r\n');
-            }
+              secureSocket.write("EHLO localhost\r\n");
+            },
           );
 
           setupSocketTimeout(secureSocket);
-          secureSocket.on('data', handleSecureData);
-          secureSocket.on('error', (err) => fail(err));
+          secureSocket.on("data", handleSecureData);
+          secureSocket.on("error", (err) => fail(err));
           socket = secureSocket;
         }
       }
@@ -165,12 +165,14 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
         rejectUnauthorized: true,
       });
       setupSocketTimeout(socket);
-      socket.on('data', handleData);
-      socket.on('error', (err) => fail(err));
-      socket.on('end', () => {
+      socket.on("data", handleData);
+      socket.on("error", (err) => fail(err));
+      socket.on("end", () => {
         if (step < 9) {
           fail(
-            new Error(`SMTP connection closed prematurely at step ${step}. Log: ${responseLog.join('\n')}`)
+            new Error(
+              `SMTP connection closed prematurely at step ${step}. Log: ${responseLog.join("\n")}`,
+            ),
           );
         }
       });
@@ -180,12 +182,14 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
         port: options.port,
       });
       setupSocketTimeout(socket);
-      socket.on('data', handleData);
-      socket.on('error', (err) => fail(err));
-      socket.on('end', () => {
+      socket.on("data", handleData);
+      socket.on("error", (err) => fail(err));
+      socket.on("end", () => {
         if (step < 9) {
           fail(
-            new Error(`SMTP connection closed prematurely at step ${step}. Log: ${responseLog.join('\n')}`)
+            new Error(
+              `SMTP connection closed prematurely at step ${step}. Log: ${responseLog.join("\n")}`,
+            ),
           );
         }
       });
@@ -196,31 +200,27 @@ function sendRawSmtpEmailAttempt(options: SmtpEmailOptions): Promise<boolean> {
 /** Custom SMTP transaction client using Node net/tls modules, supporting STARTTLS. With socket timeouts and single retry. */
 export async function sendRawSmtpEmail(options: SmtpEmailOptions): Promise<boolean> {
   try {
-    return await withPerformanceTracking(
-      'SMTP Dispatch (Initial)',
-      'http.client.smtp',
-      () => sendRawSmtpEmailAttempt(options)
+    return await withPerformanceTracking("SMTP Dispatch (Initial)", "http.client.smtp", () =>
+      sendRawSmtpEmailAttempt(options),
     );
   } catch (error) {
-    logger.warn('First SMTP attempt failed, retrying once...', { error });
-    return await withPerformanceTracking(
-      'SMTP Dispatch (Retry)',
-      'http.client.smtp',
-      () => sendRawSmtpEmailAttempt(options)
+    logger.warn("First SMTP attempt failed, retrying once...", { error });
+    return await withPerformanceTracking("SMTP Dispatch (Retry)", "http.client.smtp", () =>
+      sendRawSmtpEmailAttempt(options),
     );
   }
 }
 
 /** Strip CR/LF and other header-breaking characters from SMTP header values. */
 export function sanitizeSmtpHeader(value: string): string {
-  return value.replace(/[\r\n]+/g, ' ').trim();
+  return value.replace(/[\r\n]+/g, " ").trim();
 }
 
 /** Validate a single RFC5322 mailbox for RCPT TO / envelope use. */
 export function sanitizeSmtpMailbox(value: string): string {
   const cleaned = sanitizeSmtpHeader(value);
   if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(cleaned)) {
-    throw new Error('Invalid email address.');
+    throw new Error("Invalid email address.");
   }
   return cleaned;
 }
@@ -235,19 +235,19 @@ function buildEmailPayload(options: SmtpEmailOptions): string {
     `From: "${fromName}" <${from}>`,
     `To: ${to}`,
     `Subject: ${subject}`,
-    'MIME-Version: 1.0',
+    "MIME-Version: 1.0",
     'Content-Type: text/html; charset="UTF-8"',
-    '',
+    "",
     options.html,
-    '.',
-  ].join('\r\n');
+    ".",
+  ].join("\r\n");
 }
 
 export function escapeHtml(str: string): string {
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }

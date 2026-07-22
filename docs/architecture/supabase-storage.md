@@ -2,11 +2,11 @@
 
 Dilnova uses a **hybrid** media setup:
 
-| Asset | Provider | Access |
-|-------|----------|--------|
-| Product images & videos | **Cloudinary** | Public CDN URLs |
-| Vendor banners, logos, favicons | **Cloudinary** | Public CDN URLs |
-| Bank payment slips | **Supabase Storage** | Private bucket + signed URLs |
+| Asset                           | Provider             | Access                       |
+| ------------------------------- | -------------------- | ---------------------------- |
+| Product images & videos         | **Cloudinary**       | Public CDN URLs              |
+| Vendor banners, logos, favicons | **Cloudinary**       | Public CDN URLs              |
+| Bank payment slips              | **Supabase Storage** | Private bucket + signed URLs |
 
 ## One-time Supabase setup
 

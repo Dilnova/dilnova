@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import type { CatalogCategoryRef } from '../types';
+import React from "react";
+import type { CatalogCategoryRef } from "../types";
 
 interface CatalogCategoryPillsProps {
   categories: CatalogCategoryRef[];
@@ -14,7 +14,7 @@ export default function CatalogCategoryPills({
   categories,
   currentCategory,
   onSelectCategory,
-  className = '',
+  className = "",
 }: CatalogCategoryPillsProps) {
   const activeCat = categories.find((c) => c.slug === currentCategory);
   const parentCat = activeCat?.parentId
@@ -22,9 +22,7 @@ export default function CatalogCategoryPills({
     : activeCat;
 
   const mainCategories = categories.filter((c) => !c.parentId);
-  const subCategories = parentCat
-    ? categories.filter((c) => c.parentId === parentCat.id)
-    : [];
+  const subCategories = parentCat ? categories.filter((c) => c.parentId === parentCat.id) : [];
 
   return (
     <div className={`space-y-2.5 ${className}`}>
@@ -36,8 +34,8 @@ export default function CatalogCategoryPills({
             onClick={() => onSelectCategory(null)}
             className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all cursor-pointer border select-none ${
               !currentCategory
-                ? 'bg-purple-600 text-white border-purple-600 shadow-xs dark:bg-purple-500 dark:border-purple-500 font-semibold scale-[1.02]'
-                : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-800 dark:hover:bg-zinc-800'
+                ? "bg-purple-600 text-white border-purple-600 shadow-xs dark:bg-purple-500 dark:border-purple-500 font-semibold scale-[1.02]"
+                : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-800 dark:hover:bg-zinc-800"
             }`}
           >
             All Categories
@@ -52,8 +50,8 @@ export default function CatalogCategoryPills({
                 onClick={() => onSelectCategory(cat.slug)}
                 className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all cursor-pointer border select-none ${
                   isSelected
-                    ? 'bg-purple-600 text-white border-purple-600 shadow-xs dark:bg-purple-500 dark:border-purple-500 font-semibold scale-[1.02]'
-                    : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-800 dark:hover:bg-zinc-800'
+                    ? "bg-purple-600 text-white border-purple-600 shadow-xs dark:bg-purple-500 dark:border-purple-500 font-semibold scale-[1.02]"
+                    : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-800 dark:hover:bg-zinc-800"
                 }`}
               >
                 {cat.name}
@@ -71,8 +69,8 @@ export default function CatalogCategoryPills({
             onClick={() => onSelectCategory(parentCat.slug)}
             className={`px-3 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap shrink-0 transition-all cursor-pointer border select-none ${
               currentCategory === parentCat.slug
-                ? 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/70 dark:text-purple-300 dark:border-purple-800 font-semibold'
-                : 'bg-zinc-100/90 text-zinc-600 border-zinc-200 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800 dark:hover:bg-zinc-850'
+                ? "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/70 dark:text-purple-300 dark:border-purple-800 font-semibold"
+                : "bg-zinc-100/90 text-zinc-600 border-zinc-200 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800 dark:hover:bg-zinc-850"
             }`}
           >
             All {parentCat.name}
@@ -87,8 +85,8 @@ export default function CatalogCategoryPills({
                 onClick={() => onSelectCategory(sub.slug)}
                 className={`px-3 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap shrink-0 transition-all cursor-pointer border select-none ${
                   isSubSelected
-                    ? 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/70 dark:text-purple-300 dark:border-purple-800 font-semibold'
-                    : 'bg-zinc-100/90 text-zinc-600 border-zinc-200 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800 dark:hover:bg-zinc-850'
+                    ? "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950/70 dark:text-purple-300 dark:border-purple-800 font-semibold"
+                    : "bg-zinc-100/90 text-zinc-600 border-zinc-200 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800 dark:hover:bg-zinc-850"
                 }`}
               >
                 {sub.name}

@@ -1,27 +1,27 @@
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { isVideoUrl } from '@/shared/media/media';
-import AddToCartButton from '@/features/cart/components/AddToCartButton';
-import type { StorefrontProps } from './custom/types';
+import React from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { isVideoUrl } from "@/shared/media/media";
+import AddToCartButton from "@/features/cart/components/AddToCartButton";
+import type { StorefrontProps } from "./custom/types";
 
 export interface BaseStorefrontProps extends StorefrontProps {
   className?: string;
   style?: React.CSSProperties;
-  
+
   /** Render the top hero banner. Receives org metadata. */
-  renderHero?: (org: StorefrontProps['org']) => React.ReactNode;
-  
+  renderHero?: (org: StorefrontProps["org"]) => React.ReactNode;
+
   /** Render the profile card. Receives org metadata. */
-  renderProfile?: (org: StorefrontProps['org']) => React.ReactNode;
-  
+  renderProfile?: (org: StorefrontProps["org"]) => React.ReactNode;
+
   /** Render custom sections (like categories showcase) before the products grid. */
   preProductsSlot?: React.ReactNode;
-  
+
   /** Custom wrapper classes for the products section. */
   productsSectionClassName?: string;
   productsGridClassName?: string;
-  
+
   /** Render a custom product card. If omitted, uses the default layout. */
   renderProductCard?: (product: any, formattedPrice: string) => React.ReactNode;
 }
@@ -36,14 +36,16 @@ export default function BaseStorefront({
   preProductsSlot,
   productsSectionClassName = "max-w-5xl mx-auto px-6 mt-12",
   productsGridClassName = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6",
-  renderProductCard
+  renderProductCard,
 }: BaseStorefrontProps) {
   const metadata = org.publicMetadata;
 
   return (
     <div className={className} style={style}>
       {/* 1. Hero Banner */}
-      {renderHero ? renderHero(org) : (
+      {renderHero ? (
+        renderHero(org)
+      ) : (
         <div className="relative h-60 md:h-80 w-full overflow-hidden border-b border-zinc-200 dark:border-zinc-800 bg-zinc-200 dark:bg-zinc-900">
           {metadata.bannerUrl ? (
             <Image
@@ -63,7 +65,9 @@ export default function BaseStorefront({
 
       {/* 2. Main Content Wrapper */}
       {/* If profile is rendered, we usually pull it up with negative margin. For custom renders, they handle their own wrappers. */}
-      {renderProfile ? renderProfile(org) : (
+      {renderProfile ? (
+        renderProfile(org)
+      ) : (
         <main className="max-w-5xl mx-auto px-6 relative -mt-16 md:-mt-24 z-10">
           <div className="flex justify-between items-center mb-6">
             <Link
@@ -92,7 +96,10 @@ export default function BaseStorefront({
                     {org.name}
                   </h1>
                   <p className="text-xs font-mono text-zinc-400 mt-0.5">
-                    Identifier: <code className="bg-zinc-50 dark:bg-zinc-900 px-1 py-0.5 rounded text-[10px]">@{org.slug}</code>
+                    Identifier:{" "}
+                    <code className="bg-zinc-50 dark:bg-zinc-900 px-1 py-0.5 rounded text-[10px]">
+                      @{org.slug}
+                    </code>
                   </p>
                 </div>
               </div>
@@ -114,7 +121,8 @@ export default function BaseStorefront({
                     Company Overview
                   </h2>
                   <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
-                    {metadata.description || 'This company has not published a detailed description yet.'}
+                    {metadata.description ||
+                      "This company has not published a detailed description yet."}
                   </p>
                 </div>
               </div>
@@ -128,13 +136,13 @@ export default function BaseStorefront({
                     <div>
                       <span className="text-zinc-400 block font-mono">Business Address</span>
                       <span className="font-medium text-zinc-800 dark:text-zinc-200 block mt-0.5">
-                        {metadata.address || 'Address not listed'}
+                        {metadata.address || "Address not listed"}
                       </span>
                     </div>
                     <div>
                       <span className="text-zinc-400 block font-mono">Contact Phone</span>
                       <span className="font-medium text-zinc-800 dark:text-zinc-200 block mt-0.5">
-                        {metadata.phone || 'Phone not listed'}
+                        {metadata.phone || "Phone not listed"}
                       </span>
                     </div>
                   </div>
@@ -159,9 +167,9 @@ export default function BaseStorefront({
           )}
           <div className={productsGridClassName}>
             {products.map((product) => {
-              const formattedPrice = (product.price / 100).toLocaleString('en-US', {
-                style: 'currency',
-                currency: 'USD',
+              const formattedPrice = (product.price / 100).toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
               });
 
               if (renderProductCard) {
@@ -199,11 +207,13 @@ export default function BaseStorefront({
                           📦
                         </div>
                       )}
-                      <span className={`absolute top-3 right-3 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow ${
-                        product.type === 'service'
-                          ? 'bg-teal-500 text-teal-950'
-                          : 'bg-indigo-500 text-indigo-50'
-                      }`}>
+                      <span
+                        className={`absolute top-3 right-3 text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow ${
+                          product.type === "service"
+                            ? "bg-teal-500 text-teal-950"
+                            : "bg-indigo-500 text-indigo-50"
+                        }`}
+                      >
                         {product.type}
                       </span>
                     </div>
@@ -218,7 +228,7 @@ export default function BaseStorefront({
                           {product.name}
                         </h3>
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 leading-relaxed mt-1">
-                          {product.description || 'No description.'}
+                          {product.description || "No description."}
                         </p>
                       </div>
                     </div>

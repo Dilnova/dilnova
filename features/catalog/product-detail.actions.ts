@@ -1,27 +1,23 @@
-'use server';
+"use server";
 
-import { auth, currentUser } from '@clerk/nextjs/server';
-import * as schema from '@/shared/db/schema';
-import { eq, and, sql, inArray } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { logger } from '@/shared/logging/logger';
+import { auth, currentUser } from "@clerk/nextjs/server";
+import * as schema from "@/shared/db/schema";
+import { eq, and, sql, inArray } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { logger } from "@/shared/logging/logger";
 import {
   toggleWishlistSchema,
   submitReviewSchema,
   submitQuestionSchema,
   submitAnswerSchema,
   incrementViewsSchema,
-} from '@/features/catalog/schema';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { hasCustomerPurchasedProduct } from '@/features/catalog/verified-buyer';
-import { isUserMemberOfOrganization } from '@/shared/auth/org-membership.server';
-import {
-  authenticatedAction,
-  vendorAction,
-  ActionError,
-} from '@/lib/safe-action';
-import { db } from '@/shared/db/client';
+} from "@/features/catalog/schema";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { hasCustomerPurchasedProduct } from "@/features/catalog/verified-buyer";
+import { isUserMemberOfOrganization } from "@/shared/auth/org-membership.server";
+import { authenticatedAction, vendorAction, ActionError } from "@/lib/safe-action";
+import { db } from "@/shared/db/client";
 
 /**
  * Toggles a product in/out of the user's wishlist.
@@ -42,8 +38,8 @@ export const toggleWishlistAction = authenticatedAction
         .where(
           and(
             eq(schema.wishlists.userId, userId),
-            eq(schema.wishlists.productId, parsedInput.productId)
-          )
+            eq(schema.wishlists.productId, parsedInput.productId),
+          ),
         )
         .limit(1);
 
@@ -54,12 +50,12 @@ export const toggleWishlistAction = authenticatedAction
           .where(
             and(
               eq(schema.wishlists.userId, userId),
-              eq(schema.wishlists.productId, parsedInput.productId)
-            )
+              eq(schema.wishlists.productId, parsedInput.productId),
+            ),
           );
 
         revalidatePath(`/products/${parsedInput.productId}`);
-        revalidatePath('/customer');
+        revalidatePath("/customer");
         return { success: true, isFavorited: false };
       } else {
         // Add it
@@ -69,7 +65,7 @@ export const toggleWishlistAction = authenticatedAction
         });
 
         revalidatePath(`/products/${parsedInput.productId}`);
-        revalidatePath('/customer');
+        revalidatePath("/customer");
         return { success: true, isFavorited: true };
       }
     });
@@ -89,7 +85,7 @@ export const submitReviewAction = authenticatedAction
 
       const user = await currentUser();
       if (!user) {
-        throw new ActionError('You must be signed in to submit a review.');
+        throw new ActionError("You must be signed in to submit a review.");
       }
 
       const [product] = await ctx.db
@@ -99,16 +95,17 @@ export const submitReviewAction = authenticatedAction
         .limit(1);
 
       if (!product) {
-        throw new ActionError('Product not found.');
+        throw new ActionError("Product not found.");
       }
 
       const isVendorMember = await isUserMemberOfOrganization(userId, product.orgId);
       if (isVendorMember) {
-        throw new ActionError('Vendor members cannot review their own products.');
+        throw new ActionError("Vendor members cannot review their own products.");
       }
 
-      const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Anonymous';
-      const userImageUrl = user.imageUrl || '';
+      const userName =
+        [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || "Anonymous";
+      const userImageUrl = user.imageUrl || "";
 
       // Check if user already reviewed this product
       const [existing] = await ctx.db
@@ -117,8 +114,8 @@ export const submitReviewAction = authenticatedAction
         .where(
           and(
             eq(schema.reviews.userId, userId),
-            eq(schema.reviews.productId, parsedInput.productId)
-          )
+            eq(schema.reviews.productId, parsedInput.productId),
+          ),
         )
         .limit(1);
 
@@ -138,7 +135,9 @@ export const submitReviewAction = authenticatedAction
         const purchased = await hasCustomerPurchasedProduct(parsedInput.productId, userId);
 
         if (!purchased) {
-          throw new ActionError('Only verified buyers who have ordered this item can submit a review.');
+          throw new ActionError(
+            "Only verified buyers who have ordered this item can submit a review.",
+          );
         }
 
         // Insert a new review
@@ -170,11 +169,12 @@ export const submitQuestionAction = authenticatedAction
 
       const user = await currentUser();
       if (!user) {
-        throw new ActionError('You must be signed in to ask a question.');
+        throw new ActionError("You must be signed in to ask a question.");
       }
 
-      const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || 'Anonymous';
-      const userImageUrl = user.imageUrl || '';
+      const userName =
+        [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || "Anonymous";
+      const userImageUrl = user.imageUrl || "";
 
       await ctx.db.insert(schema.questions).values({
         productId: parsedInput.productId,
@@ -202,7 +202,7 @@ export const submitAnswerAction = vendorAction
       await rateLimit(10, 60 * 1000); // Max 10 answers per minute per IP
 
       if (!orgId) {
-        throw new ActionError('Not authorized: You must be logged in with an active organization.');
+        throw new ActionError("Not authorized: You must be logged in with an active organization.");
       }
 
       // Resolve the question and verify the product belongs to the seller's active organization
@@ -217,11 +217,11 @@ export const submitAnswerAction = vendorAction
         .limit(1);
 
       if (!questionDetails) {
-        throw new ActionError('Question not found.');
+        throw new ActionError("Question not found.");
       }
 
       if (questionDetails.product.orgId !== orgId) {
-        throw new ActionError('Not authorized: This product does not belong to your organization.');
+        throw new ActionError("Not authorized: This product does not belong to your organization.");
       }
 
       // Update with answer details
@@ -265,7 +265,7 @@ export async function incrementProductViewsAction(productId: string) {
       return { success: true };
     } catch (error) {
       // Silently handle rate limit or other issues to prevent breaking client-side UX
-      logger.warn('Failed to increment product views', { productId, error });
+      logger.warn("Failed to increment product views", { productId, error });
       return { success: false };
     }
   });
@@ -285,14 +285,11 @@ export async function getUserWishlistIdsAction(productIds: string[]) {
         .select({ productId: schema.wishlists.productId })
         .from(schema.wishlists)
         .where(
-          and(
-            eq(schema.wishlists.userId, userId),
-            inArray(schema.wishlists.productId, productIds)
-          )
+          and(eq(schema.wishlists.userId, userId), inArray(schema.wishlists.productId, productIds)),
         );
-      return wishlists.map(w => w.productId);
+      return wishlists.map((w) => w.productId);
     } catch (error) {
-      logger.error('Error fetching user wishlist IDs', error);
+      logger.error("Error fetching user wishlist IDs", error);
       return [];
     }
   });
@@ -311,14 +308,10 @@ export async function getUserProductStateAction(productId: string) {
       }
 
       const [reviewRows, purchased] = await Promise.all([
-        db.select({ rating: schema.reviews.rating, comment: schema.reviews.comment })
+        db
+          .select({ rating: schema.reviews.rating, comment: schema.reviews.comment })
           .from(schema.reviews)
-          .where(
-            and(
-              eq(schema.reviews.userId, userId),
-              eq(schema.reviews.productId, productId)
-            )
-          )
+          .where(and(eq(schema.reviews.userId, userId), eq(schema.reviews.productId, productId)))
           .limit(1),
         hasCustomerPurchasedProduct(productId, userId),
       ]);
@@ -329,7 +322,7 @@ export async function getUserProductStateAction(productId: string) {
         existingReview: reviewRows[0] || null,
       };
     } catch (error) {
-      logger.error('Error fetching user product state', error);
+      logger.error("Error fetching user product state", error);
       return { userHasReviewed: false, isVerifiedBuyer: false, existingReview: null };
     }
   });

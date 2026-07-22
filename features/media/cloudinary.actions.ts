@@ -1,32 +1,32 @@
-'use server';
+"use server";
 
-import { z } from 'zod/v3';
-import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
+import { z } from "zod/v3";
+import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
 import {
   createCloudinaryUploadSignature,
   type CloudinaryResourceType,
-} from '@/shared/media/cloudinary-server';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { authenticatedAction, ActionError } from '@/lib/safe-action';
+} from "@/shared/media/cloudinary-server";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { authenticatedAction, ActionError } from "@/lib/safe-action";
 
 const cloudinaryUploadSignatureSchema = z.object({
-  uploadKind: z.enum(['catalog', 'vendor-profile', 'platform']),
-  resourceType: z.enum(['image', 'video']),
+  uploadKind: z.enum(["catalog", "vendor-profile", "platform"]),
+  resourceType: z.enum(["image", "video"]),
 });
 
-export type CloudinaryUploadKind = z.infer<typeof cloudinaryUploadSignatureSchema>['uploadKind'];
+export type CloudinaryUploadKind = z.infer<typeof cloudinaryUploadSignatureSchema>["uploadKind"];
 
 function resolveUploadFolder(uploadKind: CloudinaryUploadKind, orgId: string | null): string {
-  if (uploadKind === 'platform') {
-    return 'dilnova/platform';
+  if (uploadKind === "platform") {
+    return "dilnova/platform";
   }
 
   if (!orgId) {
-    throw new Error('Organization context is required for vendor uploads.');
+    throw new Error("Organization context is required for vendor uploads.");
   }
 
-  if (uploadKind === 'vendor-profile') {
+  if (uploadKind === "vendor-profile") {
     return `dilnova/vendors/${orgId}/profile`;
   }
 
@@ -42,19 +42,19 @@ export const createCloudinaryUploadSignatureAction = authenticatedAction
 
         const { userId, orgId, orgRole } = ctx;
 
-        if (parsedInput.uploadKind === 'platform') {
+        if (parsedInput.uploadKind === "platform") {
           await checkSuperAdmin();
         } else {
           if (!orgId) {
-            throw new ActionError('Switch to a vendor organization before uploading media.');
+            throw new ActionError("Switch to a vendor organization before uploading media.");
           }
 
-          if (parsedInput.uploadKind === 'vendor-profile' && orgRole !== 'org:admin') {
-            throw new ActionError('Only organization admins can update vendor profile media.');
+          if (parsedInput.uploadKind === "vendor-profile" && orgRole !== "org:admin") {
+            throw new ActionError("Only organization admins can update vendor profile media.");
           }
 
-          if (orgRole !== 'org:admin' && orgRole !== 'org:member') {
-            throw new ActionError('You are not authorized to upload media for this organization.');
+          if (orgRole !== "org:admin" && orgRole !== "org:member") {
+            throw new ActionError("You are not authorized to upload media for this organization.");
           }
         }
 
@@ -67,7 +67,9 @@ export const createCloudinaryUploadSignatureAction = authenticatedAction
         return signature;
       } catch (error) {
         if (error instanceof ActionError) throw error;
-        throw new ActionError(error instanceof Error ? error.message : 'Failed to prepare media upload.');
+        throw new ActionError(
+          error instanceof Error ? error.message : "Failed to prepare media upload.",
+        );
       }
     });
   });

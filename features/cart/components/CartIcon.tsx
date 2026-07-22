@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useCart } from '@/features/cart/context/cart-context';
+import Link from "next/link";
+import { useCart } from "@/features/cart/context/cart-context";
 
 export default function CartIcon() {
   const { cartCount } = useCart();

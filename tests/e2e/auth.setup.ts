@@ -1,51 +1,50 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { clerk, clerkSetup, setupClerkTestingToken } from '@clerk/testing/playwright';
-import { test as setup, expect } from '@playwright/test';
-import {
-  authStatePath,
-  getRoleTestEmail,
-  hasClerkApiKeys,
-} from './helpers/env';
-import { loadE2EEnv } from './helpers/load-env';
-import { PROTECTED_ROUTES, UNAUTHORIZED_PATH } from './helpers/routes';
-import { getOrgRoleForEmail, getPrimaryOrgIdForEmail } from './helpers/clerk-auth';
+import fs from "node:fs";
+import path from "node:path";
+import { clerk, clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { test as setup, expect } from "@playwright/test";
+import { authStatePath, getRoleTestEmail, hasClerkApiKeys } from "./helpers/env";
+import { loadE2EEnv } from "./helpers/load-env";
+import { PROTECTED_ROUTES, UNAUTHORIZED_PATH } from "./helpers/routes";
+import { getOrgRoleForEmail, getPrimaryOrgIdForEmail } from "./helpers/clerk-auth";
 
-setup.describe.configure({ mode: 'serial' });
+setup.describe.configure({ mode: "serial" });
 setup.setTimeout(120_000);
 
-type RoleKey = 'vendor-admin' | 'vendor-member' | 'customer' | 'superadmin';
+type RoleKey = "vendor-admin" | "vendor-member" | "customer" | "superadmin";
 
 interface RoleConfig {
   key: RoleKey;
-  emailEnv: 'vendorAdmin' | 'vendorMember' | 'customer' | 'superadmin';
+  emailEnv: "vendorAdmin" | "vendorMember" | "customer" | "superadmin";
   probePath: string;
   requiresOrg?: boolean;
-  expectedOrgRole?: 'org:admin' | 'org:member';
+  expectedOrgRole?: "org:admin" | "org:member";
 }
 
 const EMPTY_STORAGE = { cookies: [] as unknown[], origins: [] as unknown[] };
 
 const ROLES: RoleConfig[] = [
   {
-    key: 'vendor-admin',
-    emailEnv: 'vendorAdmin',
+    key: "vendor-admin",
+    emailEnv: "vendorAdmin",
     probePath: PROTECTED_ROUTES.vendor,
     requiresOrg: true,
-    expectedOrgRole: 'org:admin',
+    expectedOrgRole: "org:admin",
   },
   {
-    key: 'vendor-member',
-    emailEnv: 'vendorMember',
+    key: "vendor-member",
+    emailEnv: "vendorMember",
     probePath: PROTECTED_ROUTES.vendor,
     requiresOrg: true,
-    expectedOrgRole: 'org:member',
+    expectedOrgRole: "org:member",
   },
-  { key: 'customer', emailEnv: 'customer', probePath: PROTECTED_ROUTES.customer },
-  { key: 'superadmin', emailEnv: 'superadmin', probePath: PROTECTED_ROUTES.superadmin },
+  { key: "customer", emailEnv: "customer", probePath: PROTECTED_ROUTES.customer },
+  { key: "superadmin", emailEnv: "superadmin", probePath: PROTECTED_ROUTES.superadmin },
 ];
 
-async function activateOrganization(page: import('@playwright/test').Page, orgId: string): Promise<void> {
+async function activateOrganization(
+  page: import("@playwright/test").Page,
+  orgId: string,
+): Promise<void> {
   await page.evaluate(async (organizationId) => {
     await window.Clerk.setActive({ organization: organizationId });
   }, orgId);
@@ -53,24 +52,27 @@ async function activateOrganization(page: import('@playwright/test').Page, orgId
 
 setup.beforeAll(async () => {
   loadE2EEnv();
-  fs.mkdirSync(path.dirname(authStatePath('customer')), { recursive: true });
+  fs.mkdirSync(path.dirname(authStatePath("customer")), { recursive: true });
   for (const role of ROLES) {
     fs.writeFileSync(authStatePath(role.key), JSON.stringify(EMPTY_STORAGE));
   }
 });
 
-setup('prepare authenticated storage states', async ({ browser }) => {
+setup("prepare authenticated storage states", async ({ browser }) => {
   loadE2EEnv();
 
   if (!hasClerkApiKeys()) {
-    setup.skip(true, 'CLERK_SECRET_KEY / publishable key missing — authenticated RBAC suites will skip.');
+    setup.skip(
+      true,
+      "CLERK_SECRET_KEY / publishable key missing — authenticated RBAC suites will skip.",
+    );
     return;
   }
 
   try {
     await clerkSetup();
   } catch {
-    setup.skip(true, 'Clerk testing token unavailable — authenticated RBAC suites will skip.');
+    setup.skip(true, "Clerk testing token unavailable — authenticated RBAC suites will skip.");
     return;
   }
 
@@ -85,7 +87,7 @@ setup('prepare authenticated storage states', async ({ browser }) => {
 
     try {
       await setupClerkTestingToken({ page });
-      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      await page.goto("/", { waitUntil: "domcontentloaded" });
       await clerk.loaded({ page });
       await clerk.signIn({ page, emailAddress: email });
 
@@ -101,24 +103,24 @@ setup('prepare authenticated storage states', async ({ browser }) => {
 
         if (role.expectedOrgRole && orgRole !== role.expectedOrgRole) {
           throw new Error(
-            `E2E user for ${role.key} (${email}) has role ${orgRole ?? 'none'}, expected ${role.expectedOrgRole}.`,
+            `E2E user for ${role.key} (${email}) has role ${orgRole ?? "none"}, expected ${role.expectedOrgRole}.`,
           );
         }
 
         await activateOrganization(page, orgId);
       }
 
-      await page.goto(role.probePath, { waitUntil: 'domcontentloaded' });
+      await page.goto(role.probePath, { waitUntil: "domcontentloaded" });
 
-      const unauthorizedPattern = new RegExp(`${UNAUTHORIZED_PATH.replace('/', '\\/')}$`);
+      const unauthorizedPattern = new RegExp(`${UNAUTHORIZED_PATH.replace("/", "\\/")}$`);
       if (unauthorizedPattern.test(page.url())) {
         throw new Error(
           `Auth setup failed for ${role.key} (${email}) at ${role.probePath}. ` +
             (role.requiresOrg
-              ? 'Ensure the user has the correct org role and an active organization.'
-              : role.key === 'superadmin'
+              ? "Ensure the user has the correct org role and an active organization."
+              : role.key === "superadmin"
                 ? 'Set privateMetadata.platformRole = "superadmin" on this Clerk user (see scripts/migrate-superadmin-metadata.mjs).'
-                : 'Ensure this user can access the customer portal.'),
+                : "Ensure this user can access the customer portal."),
         );
       }
 

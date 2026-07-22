@@ -1,9 +1,9 @@
-import Link from 'next/link';
-import type { Metadata } from 'next';
-import { getSystemSetting } from '@/shared/platform/settings';
+import Link from "next/link";
+import type { Metadata } from "next";
+import { getSystemSetting } from "@/shared/platform/settings";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const systemName = await getSystemSetting('system_name', 'Dilnova');
+  const systemName = await getSystemSetting("system_name", "Dilnova");
   return {
     title: `Cookie Policy | ${systemName}`,
     description: `Cookie policy for the ${systemName} Multi-Vendor Commerce Marketplace. Learn about our strictly necessary and analytics cookies.`,
@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 86400;
 
 export default async function CookiePolicy() {
-  const systemName = await getSystemSetting('system_name', 'Dilnova');
+  const systemName = await getSystemSetting("system_name", "Dilnova");
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-sans py-12 px-4 sm:px-6 lg:px-8">
@@ -23,12 +23,7 @@ export default async function CookiePolicy() {
             href="/"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -53,7 +48,12 @@ export default async function CookiePolicy() {
             Cookie Policy
           </h1>
           <p className="text-xs text-zinc-450 dark:text-zinc-500 font-mono">
-            Last Updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            Last Updated:{" "}
+            {new Date().toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
           </p>
         </header>
 
@@ -64,8 +64,9 @@ export default async function CookiePolicy() {
               1. What Are Cookies?
             </h2>
             <p>
-              Cookies are small text files stored on your device when you visit a website. 
-              <strong> {systemName}</strong> uses cookies to securely manage user sessions, enable core shopping cart functionality, and optionally gather performance analytics.
+              Cookies are small text files stored on your device when you visit a website.
+              <strong> {systemName}</strong> uses cookies to securely manage user sessions, enable
+              core shopping cart functionality, and optionally gather performance analytics.
             </p>
           </section>
 
@@ -74,14 +75,22 @@ export default async function CookiePolicy() {
               2. Cookies and Tracking Consent
             </h2>
             <p>
-              We distinguish between essential and analytical cookies to provide you with full control over your privacy:
+              We distinguish between essential and analytical cookies to provide you with full
+              control over your privacy:
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <strong>Strictly Necessary:</strong> Required for secure session tokens, authentication state (managed securely by Clerk), and maintaining your persistent shopping cart. These cookies are essential for the platform to function and do not require prior consent. They cannot be turned off.
+                <strong>Strictly Necessary:</strong> Required for secure session tokens,
+                authentication state (managed securely by Clerk), and maintaining your persistent
+                shopping cart. These cookies are essential for the platform to function and do not
+                require prior consent. They cannot be turned off.
               </li>
               <li>
-                <strong>Performance &amp; Analytics:</strong> Provided by Vercel Analytics and Vercel Speed Insights to help us monitor site performance and optimize page load speeds. These scripts and their associated cookies are strictly disabled unless you explicitly click &quot;Accept All&quot; or toggle them to active in our cookie settings drawer.
+                <strong>Performance &amp; Analytics:</strong> Provided by Vercel Analytics and
+                Vercel Speed Insights to help us monitor site performance and optimize page load
+                speeds. These scripts and their associated cookies are strictly disabled unless you
+                explicitly click &quot;Accept All&quot; or toggle them to active in our cookie
+                settings drawer.
               </li>
             </ul>
           </section>
@@ -91,7 +100,9 @@ export default async function CookiePolicy() {
               3. Managing Your Preferences
             </h2>
             <p>
-              You can review or change your cookie preferences at any time by clearing your browser cookies for this site, which will prompt our Cookie Consent banner to reappear on your next visit.
+              You can review or change your cookie preferences at any time by clearing your browser
+              cookies for this site, which will prompt our Cookie Consent banner to reappear on your
+              next visit.
             </p>
           </section>
         </div>

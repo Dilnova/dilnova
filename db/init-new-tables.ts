@@ -1,15 +1,15 @@
-import postgres from 'postgres';
-import * as dotenv from 'dotenv';
+import postgres from "postgres";
+import * as dotenv from "dotenv";
 
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: ".env.local" });
 
 async function main() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error('DATABASE_URL is missing in .env.local');
+    throw new Error("DATABASE_URL is missing in .env.local");
   }
 
-  console.log('🌱 Connecting to database...');
+  console.log("🌱 Connecting to database...");
   const sql = postgres(connectionString);
 
   console.log('📋 Creating "pricing_plans" table...');
@@ -48,11 +48,11 @@ async function main() {
   await sql`CREATE INDEX IF NOT EXISTS idx_contact_submissions_email ON contact_submissions (email)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_contact_submissions_status ON contact_submissions (status)`;
 
-  console.log('🚀 Database tables initialized successfully!');
+  console.log("🚀 Database tables initialized successfully!");
   await sql.end();
 }
 
 main().catch((err) => {
-  console.error('❌ Failed to initialize database tables:', err);
+  console.error("❌ Failed to initialize database tables:", err);
   process.exit(1);
 });

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useRef, useEffect } from 'react';
-import { toast } from 'sonner';
-import { usePOSContext } from '../POSBillingProvider';
+import React, { useRef, useEffect } from "react";
+import { toast } from "sonner";
+import { usePOSContext } from "../POSBillingProvider";
 
 export default function POSProductGrid() {
   const {
@@ -21,48 +21,48 @@ export default function POSProductGrid() {
     isProductPurchasable,
     data,
   } = usePOSContext();
-  
+
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Global POS Keyboard Shortcuts for Search
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === '/' || e.key === 'F2') && document.activeElement !== searchInputRef.current) {
+      if ((e.key === "/" || e.key === "F2") && document.activeElement !== searchInputRef.current) {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
-      if (e.key === 'Escape' && document.activeElement === searchInputRef.current) {
-        setSearchQuery('');
+      if (e.key === "Escape" && document.activeElement === searchInputRef.current) {
+        setSearchQuery("");
       }
     };
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
   }, [setSearchQuery]);
 
   const filteredProductsLength = filteredProducts.length;
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
+    if (e.key === "Enter" && searchQuery.trim()) {
       e.preventDefault();
       const q = searchQuery.trim().toLowerCase();
 
       const exactMatch = data.inventoryItems.find(
         (i) =>
           isProductPurchasable(i) &&
-          ((i.sku && i.sku.toLowerCase() === q) || i.productId.toLowerCase() === q)
+          ((i.sku && i.sku.toLowerCase() === q) || i.productId.toLowerCase() === q),
       );
 
       if (exactMatch) {
         addToCart(exactMatch, true);
         toast.success(`Scanned: ${exactMatch.productName}`);
-        setSearchQuery('');
+        setSearchQuery("");
         return;
       }
 
       if (filteredProductsLength === 1) {
         addToCart(paginatedProducts[0], true);
         toast.success(`Added: ${paginatedProducts[0].productName}`);
-        setSearchQuery('');
+        setSearchQuery("");
         return;
       }
 
@@ -92,11 +92,16 @@ export default function POSProductGrid() {
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
         </svg>
         {searchQuery && (
           <button
-            onClick={() => setSearchQuery('')}
+            onClick={() => setSearchQuery("")}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
           >
             Clear
@@ -107,18 +112,20 @@ export default function POSProductGrid() {
       {/* Category Filter Pills */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
         {[
-          { id: 'all', label: 'All' },
-          { id: 'products', label: 'Products' },
-          { id: 'services', label: 'Services' },
-          { id: 'low_stock', label: 'Low Stock' },
+          { id: "all", label: "All" },
+          { id: "products", label: "Products" },
+          { id: "services", label: "Services" },
+          { id: "low_stock", label: "Low Stock" },
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setCategoryFilter(tab.id as 'all' | 'products' | 'services' | 'low_stock')}
+            onClick={() =>
+              setCategoryFilter(tab.id as "all" | "products" | "services" | "low_stock")
+            }
             className={`px-3 py-1 rounded-lg font-semibold text-xs whitespace-nowrap transition-all cursor-pointer ${
               categoryFilter === tab.id
-                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
-                : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
             }`}
           >
             {tab.label}
@@ -142,10 +149,10 @@ export default function POSProductGrid() {
               disabled={info.qty <= 0}
               className={`p-2.5 border rounded-xl text-left transition-all active:scale-[0.97] hover:border-zinc-400 group flex flex-col justify-between h-24 relative ${
                 info.qty <= 0
-                  ? 'opacity-40 cursor-not-allowed bg-zinc-50 dark:bg-zinc-950'
+                  ? "opacity-40 cursor-not-allowed bg-zinc-50 dark:bg-zinc-950"
                   : inCartItem
-                  ? 'bg-indigo-50/50 border-indigo-300 dark:bg-indigo-950/20 dark:border-indigo-800'
-                  : 'bg-white hover:bg-zinc-50 dark:bg-zinc-950 dark:border-zinc-800 cursor-pointer'
+                    ? "bg-indigo-50/50 border-indigo-300 dark:bg-indigo-950/20 dark:border-indigo-800"
+                    : "bg-white hover:bg-zinc-50 dark:bg-zinc-950 dark:border-zinc-800 cursor-pointer"
               }`}
             >
               {inCartItem && (
@@ -160,7 +167,7 @@ export default function POSProductGrid() {
 
               <div>
                 <span className="text-[10px] text-zinc-400 block font-mono truncate">
-                  {item.sku ? item.sku : 'No SKU'}
+                  {item.sku ? item.sku : "No SKU"}
                 </span>
 
                 <div className="flex justify-between items-center mt-1 pt-1 border-t border-zinc-100 dark:border-zinc-800">
@@ -168,15 +175,15 @@ export default function POSProductGrid() {
                     ${((item.productPrice ?? 0) / 100).toFixed(2)}
                   </span>
 
-                  {item.productType === 'service' ? (
+                  {item.productType === "service" ? (
                     <span className="text-[9px] font-bold text-indigo-500 uppercase">Service</span>
                   ) : (
                     <span
                       className={`text-[9px] font-semibold ${
-                        info.qty <= 5 ? 'text-rose-500 font-extrabold' : 'text-zinc-400'
+                        info.qty <= 5 ? "text-rose-500 font-extrabold" : "text-zinc-400"
                       }`}
                     >
-                      {info.qty <= 0 ? 'Out' : `${info.qty} left`}
+                      {info.qty <= 0 ? "Out" : `${info.qty} left`}
                     </span>
                   )}
                 </div>

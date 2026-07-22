@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useTransition, useEffect } from 'react';
-import { SignInButton, useAuth } from '@clerk/nextjs';
-import { useClerkAuthRedirectUrl } from '@/features/auth/hooks/use-clerk-auth-redirect-url';
-import { toggleWishlistAction } from '@/features/catalog/product-detail.actions';
+import { useState, useTransition, useEffect } from "react";
+import { SignInButton, useAuth } from "@clerk/nextjs";
+import { useClerkAuthRedirectUrl } from "@/features/auth/hooks/use-clerk-auth-redirect-url";
+import { toggleWishlistAction } from "@/features/catalog/product-detail.actions";
 
 interface WishlistButtonProps {
   productId: string;
@@ -17,7 +17,7 @@ export default function WishlistButton({
   productId,
   initialFavorited,
   isLoggedIn: propsIsLoggedIn,
-  className = '',
+  className = "",
   showLabel = false,
 }: WishlistButtonProps) {
   const { userId } = useAuth();
@@ -32,16 +32,16 @@ export default function WishlistButton({
 
   const buttonClassName = `group relative flex items-center justify-center gap-2 rounded-xl border transition-all duration-300 cursor-pointer ${
     isFavorited
-      ? 'bg-red-50/80 border-red-200 text-red-500 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400'
-      : 'bg-white border-zinc-200 text-zinc-400 hover:text-zinc-600 hover:border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-350 dark:hover:border-zinc-700'
+      ? "bg-red-50/80 border-red-200 text-red-500 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400"
+      : "bg-white border-zinc-200 text-zinc-400 hover:text-zinc-600 hover:border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-500 dark:hover:text-zinc-350 dark:hover:border-zinc-700"
   } ${
-    showLabel ? 'px-4 py-2.5 text-xs font-semibold' : 'p-2.5'
-  } ${isPending ? 'opacity-70 cursor-not-allowed' : ''} ${className}`;
+    showLabel ? "px-4 py-2.5 text-xs font-semibold" : "p-2.5"
+  } ${isPending ? "opacity-70 cursor-not-allowed" : ""} ${className}`;
 
   const heartIcon = (
     <svg
       className={`w-4 h-4 transition-transform duration-300 group-hover:scale-110 ${
-        isFavorited ? 'fill-current scale-105' : 'fill-transparent'
+        isFavorited ? "fill-current scale-105" : "fill-transparent"
       }`}
       stroke="currentColor"
       strokeWidth="2"
@@ -72,10 +72,10 @@ export default function WishlistButton({
         if (res?.data?.success) {
           setIsFavorited(res.data.isFavorited);
         } else {
-          throw new Error(res?.serverError || 'Failed to toggle wishlist');
+          throw new Error(res?.serverError || "Failed to toggle wishlist");
         }
       } catch (err) {
-        console.error('Failed to toggle wishlist:', err);
+        console.error("Failed to toggle wishlist:", err);
         // Rollback state on error
         setIsFavorited(previousState);
       }
@@ -106,12 +106,10 @@ export default function WishlistButton({
       onClick={handleToggle}
       disabled={isPending}
       className={buttonClassName}
-      title={isFavorited ? 'Remove from Wishlist' : 'Add to Wishlist'}
+      title={isFavorited ? "Remove from Wishlist" : "Add to Wishlist"}
     >
       {heartIcon}
-      {showLabel && (
-        <span>{isFavorited ? 'Saved in Wishlist' : 'Save to Wishlist'}</span>
-      )}
+      {showLabel && <span>{isFavorited ? "Saved in Wishlist" : "Save to Wishlist"}</span>}
     </button>
   );
 }

@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import { getCustomerDeliveryDetailsAction } from '@/features/cart/checkout.actions';
+import { useState, useEffect } from "react";
+import { getCustomerDeliveryDetailsAction } from "@/features/cart/checkout.actions";
 
 export function useShippingAddressState(isSignedIn: boolean) {
-  const [shippingAddress, setShippingAddress] = useState('');
-  const [shippingAddressLine2, setShippingAddressLine2] = useState('');
-  const [shippingCity, setShippingCity] = useState('');
-  const [shippingState, setShippingState] = useState('');
-  const [shippingPostalCode, setShippingPostalCode] = useState('');
-  const [shippingCountry, setShippingCountry] = useState('');
-  const [shippingPhone, setShippingPhone] = useState('');
-  const [shippingPhone2, setShippingPhone2] = useState('');
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingAddressLine2, setShippingAddressLine2] = useState("");
+  const [shippingCity, setShippingCity] = useState("");
+  const [shippingState, setShippingState] = useState("");
+  const [shippingPostalCode, setShippingPostalCode] = useState("");
+  const [shippingCountry, setShippingCountry] = useState("");
+  const [shippingPhone, setShippingPhone] = useState("");
+  const [shippingPhone2, setShippingPhone2] = useState("");
 
   useEffect(() => {
     async function loadSavedDeliveryDetails() {
@@ -34,14 +34,30 @@ export function useShippingAddressState(isSignedIn: boolean) {
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     switch (name) {
-      case 'shippingAddress': setShippingAddress(value); break;
-      case 'shippingAddressLine2': setShippingAddressLine2(value); break;
-      case 'shippingCity': setShippingCity(value); break;
-      case 'shippingState': setShippingState(value); break;
-      case 'shippingPostalCode': setShippingPostalCode(value); break;
-      case 'shippingCountry': setShippingCountry(value); break;
-      case 'shippingPhone': setShippingPhone(value); break;
-      case 'shippingPhone2': setShippingPhone2(value); break;
+      case "shippingAddress":
+        setShippingAddress(value);
+        break;
+      case "shippingAddressLine2":
+        setShippingAddressLine2(value);
+        break;
+      case "shippingCity":
+        setShippingCity(value);
+        break;
+      case "shippingState":
+        setShippingState(value);
+        break;
+      case "shippingPostalCode":
+        setShippingPostalCode(value);
+        break;
+      case "shippingCountry":
+        setShippingCountry(value);
+        break;
+      case "shippingPhone":
+        setShippingPhone(value);
+        break;
+      case "shippingPhone2":
+        setShippingPhone2(value);
+        break;
     }
   };
 

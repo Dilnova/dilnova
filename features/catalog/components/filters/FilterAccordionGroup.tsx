@@ -1,14 +1,14 @@
-import React from 'react';
-import CategoryFilter from './CategoryFilter';
-import ListingTypeFilter from './ListingTypeFilter';
-import PriceFilter from './PriceFilter';
-import AvailabilityFilter from './AvailabilityFilter';
-import VendorFilter from './VendorFilter';
+import React from "react";
+import CategoryFilter from "./CategoryFilter";
+import ListingTypeFilter from "./ListingTypeFilter";
+import PriceFilter from "./PriceFilter";
+import AvailabilityFilter from "./AvailabilityFilter";
+import VendorFilter from "./VendorFilter";
 import type {
   CatalogCategoryRef,
   CatalogVendorRef,
   CatalogStockFilter,
-} from '@/features/catalog/types';
+} from "@/features/catalog/types";
 
 export interface SharedFilterSectionProps {
   categories: CatalogCategoryRef[];
@@ -73,17 +73,10 @@ export default function FilterAccordionGroup({
       />
       <hr className="border-zinc-100 dark:border-zinc-900" />
 
-      <AvailabilityFilter
-        currentStock={currentStock}
-        updateParams={updateParams}
-      />
+      <AvailabilityFilter currentStock={currentStock} updateParams={updateParams} />
       <hr className="border-zinc-100 dark:border-zinc-900" />
 
-      <VendorFilter
-        vendors={vendors}
-        currentVendor={currentVendor}
-        updateParams={updateParams}
-      />
+      <VendorFilter vendors={vendors} currentVendor={currentVendor} updateParams={updateParams} />
     </div>
   );
 }

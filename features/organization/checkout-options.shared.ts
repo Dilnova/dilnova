@@ -1,9 +1,9 @@
-export const CHECKOUT_OPTIONS_CATALOG_KEY = 'checkout_options_catalog';
+export const CHECKOUT_OPTIONS_CATALOG_KEY = "checkout_options_catalog";
 
 /** Removed payment methods — filtered from catalog reads and org settings */
-export const DEPRECATED_CHECKOUT_OPTION_IDS = new Set(['pay_online']);
+export const DEPRECATED_CHECKOUT_OPTION_IDS = new Set(["pay_online"]);
 
-export type CheckoutOptionType = 'fulfillment' | 'payment';
+export type CheckoutOptionType = "fulfillment" | "payment";
 
 export interface CheckoutOptionDefinition {
   id: string;
@@ -24,48 +24,49 @@ export interface CheckoutOptionDefinition {
 
 export const BUILTIN_CHECKOUT_OPTIONS: CheckoutOptionDefinition[] = [
   {
-    id: 'standard_delivery',
-    label: 'Home Delivery',
-    description: 'Deliver to your address',
-    type: 'fulfillment',
+    id: "standard_delivery",
+    label: "Home Delivery",
+    description: "Deliver to your address",
+    type: "fulfillment",
     platformEnabled: true,
     isBuiltIn: true,
     zeroShipping: false,
   },
   {
-    id: 'store_pickup',
-    label: 'Store Pickup',
-    description: 'Collect your order from a store branch',
-    type: 'fulfillment',
+    id: "store_pickup",
+    label: "Store Pickup",
+    description: "Collect your order from a store branch",
+    type: "fulfillment",
     platformEnabled: true,
     isBuiltIn: true,
     zeroShipping: true,
     requiresBranch: true,
   },
   {
-    id: 'cash_on_delivery',
-    label: 'Cash on Delivery',
-    description: 'Pay with cash when your order arrives',
-    type: 'payment',
+    id: "cash_on_delivery",
+    label: "Cash on Delivery",
+    description: "Pay with cash when your order arrives",
+    type: "payment",
     platformEnabled: true,
     isBuiltIn: true,
     pendingPayment: true,
     requiresDelivery: true,
   },
   {
-    id: 'bank_transfer',
-    label: 'Bank Transfer',
-    description: 'Transfer payment to the vendor bank account. Order is confirmed after payment is verified.',
-    type: 'payment',
+    id: "bank_transfer",
+    label: "Bank Transfer",
+    description:
+      "Transfer payment to the vendor bank account. Order is confirmed after payment is verified.",
+    type: "payment",
     platformEnabled: true,
     isBuiltIn: true,
     pendingPayment: true,
   },
   {
-    id: 'pay_at_store',
-    label: 'Pay at Store',
-    description: 'Pay when picking up your order',
-    type: 'payment',
+    id: "pay_at_store",
+    label: "Pay at Store",
+    description: "Pay when picking up your order",
+    type: "payment",
     platformEnabled: true,
     isBuiltIn: true,
     pendingPayment: true,
@@ -89,12 +90,14 @@ function slugifyOptionId(label: string): string {
   return label
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
     .slice(0, 50);
 }
 
-export function parseCheckoutOptionsCatalog(raw: string | null | undefined): CheckoutOptionDefinition[] {
+export function parseCheckoutOptionsCatalog(
+  raw: string | null | undefined,
+): CheckoutOptionDefinition[] {
   if (!raw) return [...BUILTIN_CHECKOUT_OPTIONS];
 
   try {
@@ -112,12 +115,13 @@ export function parseCheckoutOptionsCatalog(raw: string | null | undefined): Che
     }
 
     for (const option of parsed) {
-      if (!option?.id || builtinById.has(option.id) || isDeprecatedCheckoutOptionId(option.id)) continue;
+      if (!option?.id || builtinById.has(option.id) || isDeprecatedCheckoutOptionId(option.id))
+        continue;
       merged.push({
         id: option.id,
         label: option.label || option.id,
         description: option.description,
-        type: option.type === 'payment' ? 'payment' : 'fulfillment',
+        type: option.type === "payment" ? "payment" : "fulfillment",
         platformEnabled: option.platformEnabled !== false,
         isBuiltIn: false,
         zeroShipping: option.zeroShipping === true,
@@ -136,7 +140,7 @@ export function parseCheckoutOptionsCatalog(raw: string | null | undefined): Che
 
 export function isOrgOptionEnabled(
   option: CheckoutOptionDefinition,
-  orgCheckoutOptions: Record<string, boolean> | undefined
+  orgCheckoutOptions: Record<string, boolean> | undefined,
 ): boolean {
   if (!option.platformEnabled) return false;
   if (orgCheckoutOptions && option.id in orgCheckoutOptions) {
@@ -146,39 +150,37 @@ export function isOrgOptionEnabled(
 }
 
 export function buildCheckoutOptionsCatalogPayload(
-  options: CheckoutOptionDefinition[]
+  options: CheckoutOptionDefinition[],
 ): CheckoutOptionDefinition[] {
   return options
     .filter((option) => !isDeprecatedCheckoutOptionId(option.id))
     .map((option) => ({
-    id: option.id,
-    label: option.label.trim(),
-    description: option.description?.trim(),
-    type: option.type,
-    platformEnabled: option.platformEnabled,
-    isBuiltIn: option.isBuiltIn === true,
-    zeroShipping: option.zeroShipping === true,
-    requiresBranch: option.requiresBranch === true,
-    pendingPayment: option.pendingPayment === true,
-    requiresDelivery: option.requiresDelivery === true,
-    requiresPickup: option.requiresPickup === true,
-  }));
+      id: option.id,
+      label: option.label.trim(),
+      description: option.description?.trim(),
+      type: option.type,
+      platformEnabled: option.platformEnabled,
+      isBuiltIn: option.isBuiltIn === true,
+      zeroShipping: option.zeroShipping === true,
+      requiresBranch: option.requiresBranch === true,
+      pendingPayment: option.pendingPayment === true,
+      requiresDelivery: option.requiresDelivery === true,
+      requiresPickup: option.requiresPickup === true,
+    }));
 }
 
 export function getCheckoutOptionLabel(
   catalog: CheckoutOptionDefinition[],
-  optionId: string
+  optionId: string,
 ): string {
   const option = catalog.find((o) => o.id === optionId);
   if (option) return option.label;
-  return optionId
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+  return optionId.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export function isPaymentCompatibleWithFulfillment(
-  payment: Pick<CheckoutOptionDefinition, 'requiresDelivery' | 'requiresPickup'>,
-  fulfillment: Pick<CheckoutOptionDefinition, 'requiresBranch'>
+  payment: Pick<CheckoutOptionDefinition, "requiresDelivery" | "requiresPickup">,
+  fulfillment: Pick<CheckoutOptionDefinition, "requiresBranch">,
 ): boolean {
   if (payment.requiresDelivery && fulfillment.requiresBranch) return false;
   if (payment.requiresPickup && !fulfillment.requiresBranch) return false;
@@ -192,7 +194,7 @@ export function describeOrderCheckout(
     pickupBranchId?: string | null;
     pickupBranchName?: string | null;
   },
-  catalog: CheckoutOptionDefinition[]
+  catalog: CheckoutOptionDefinition[],
 ): { fulfillment: string; payment: string; pickup?: string } {
   const fulfillment = getCheckoutOptionLabel(catalog, order.fulfillmentMethod);
   const payment = getCheckoutOptionLabel(catalog, order.paymentMethod);
@@ -205,17 +207,17 @@ export function describeOrderCheckout(
 }
 
 export function resolveInitialOrderStatus(
-  paymentOption: CheckoutOptionDefinition
-): 'pending' | 'pending_payment' {
-  return paymentOption.pendingPayment === true ? 'pending_payment' : 'pending';
+  paymentOption: CheckoutOptionDefinition,
+): "pending" | "pending_payment" {
+  return paymentOption.pendingPayment === true ? "pending_payment" : "pending";
 }
 
 export function createCustomCheckoutOption(
   label: string,
   type: CheckoutOptionType,
-  existingIds: string[]
+  existingIds: string[],
 ): CheckoutOptionDefinition {
-  const baseId = slugifyOptionId(label) || 'custom_option';
+  const baseId = slugifyOptionId(label) || "custom_option";
   let id = baseId;
   let counter = 1;
   while (existingIds.includes(id)) {

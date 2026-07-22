@@ -1,25 +1,33 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { setVendorOnlineStatus, peekVendorNotifications, ackVendorNotifications } from '@/shared/security/vendor-presence';
-import { getCachedUserRole, getSuperadminOrganizations, getCachedUserBelongsToOrg } from '@/shared/auth/clerk-cache';
-import { withErrorHandler } from '@/shared/api/api-handler';
+import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import {
+  setVendorOnlineStatus,
+  peekVendorNotifications,
+  ackVendorNotifications,
+} from "@/shared/security/vendor-presence";
+import {
+  getCachedUserRole,
+  getSuperadminOrganizations,
+  getCachedUserBelongsToOrg,
+} from "@/shared/auth/clerk-cache";
+import { withErrorHandler } from "@/shared/api/api-handler";
 
 export const POST = withErrorHandler(async (req: Request) => {
   const { userId, orgRole } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Verify if user is actually a vendor/admin
-  let isVendor = orgRole === 'org:admin' || orgRole === 'org:member';
-  
+  let isVendor = orgRole === "org:admin" || orgRole === "org:member";
+
   if (!isVendor) {
     const [role, superOrgs, belongsToOrg] = await Promise.all([
       getCachedUserRole(userId),
       getSuperadminOrganizations(),
-      getCachedUserBelongsToOrg(userId)
+      getCachedUserBelongsToOrg(userId),
     ]);
-    isVendor = role === 'vendor' || superOrgs.length > 0 || belongsToOrg;
+    isVendor = role === "vendor" || superOrgs.length > 0 || belongsToOrg;
   }
 
   if (!isVendor) {
@@ -28,7 +36,7 @@ export const POST = withErrorHandler(async (req: Request) => {
 
   const success = await setVendorOnlineStatus(userId);
   if (!success) {
-    return NextResponse.json({ error: 'Failed to update presence' }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update presence" }, { status: 500 });
   }
 
   // Optionally handle acknowledgments if the client passed them

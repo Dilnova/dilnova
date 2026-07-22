@@ -1,5 +1,5 @@
-import React from 'react';
-import type { CatalogVendorRef } from '@/features/catalog/types';
+import React from "react";
+import type { CatalogVendorRef } from "@/features/catalog/types";
 
 interface VendorFilterProps {
   vendors: CatalogVendorRef[];

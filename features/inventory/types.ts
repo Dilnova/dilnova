@@ -1,16 +1,16 @@
-import type * as schema from '@/shared/db/schema';
-import type { VendorBillingRegisterData } from '@/features/billing/types';
-import type { getCheckoutOptionsCatalog } from '@/features/organization/checkout-options';
+import type * as schema from "@/shared/db/schema";
+import type { VendorBillingRegisterData } from "@/features/billing/types";
+import type { getCheckoutOptionsCatalog } from "@/features/organization/checkout-options";
 
-export type { VendorBillingRegisterData } from '@/features/billing/types';
+export type { VendorBillingRegisterData } from "@/features/billing/types";
 
 export type VendorInventoryFullData = {
-  inventoryItems: VendorBillingRegisterData['inventoryItems'];
-  branches: VendorBillingRegisterData['branches'];
-  branchInventory: VendorBillingRegisterData['branchInventory'];
-  stockAvailabilityCatalog: VendorBillingRegisterData['stockAvailabilityCatalog'];
-  premiumStatus: VendorBillingRegisterData['premiumStatus'];
-  suppliers: Array<(typeof schema.suppliers.$inferSelect)>;
+  inventoryItems: VendorBillingRegisterData["inventoryItems"];
+  branches: VendorBillingRegisterData["branches"];
+  branchInventory: VendorBillingRegisterData["branchInventory"];
+  stockAvailabilityCatalog: VendorBillingRegisterData["stockAvailabilityCatalog"];
+  premiumStatus: VendorBillingRegisterData["premiumStatus"];
+  suppliers: Array<typeof schema.suppliers.$inferSelect>;
   movements: Array<{
     id: string;
     inventoryId: string;
@@ -50,8 +50,8 @@ export type VendorInventoryFullData = {
     type: string;
     orgId: string;
   }>;
-  branchMembers: Array<(typeof schema.branchMembers.$inferSelect)>;
-  billingReceipts: Array<(typeof schema.billingReceipts.$inferSelect)>;
+  branchMembers: Array<typeof schema.branchMembers.$inferSelect>;
+  billingReceipts: Array<typeof schema.billingReceipts.$inferSelect>;
   orgMembers: Array<{ userId: string; name: string; email: string }>;
   checkoutOptionsCatalog: Awaited<ReturnType<typeof getCheckoutOptionsCatalog>>;
 };

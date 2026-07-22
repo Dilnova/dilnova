@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import SuperadminFormCard from '../ui/SuperadminFormCard';
-import { useState, useTransition, useRef } from 'react';
-import Image from 'next/image';
-import { toast } from 'sonner';
-import { uploadToCloudinary } from '@/shared/media/cloudinary-upload';
-import { updateSystemSettingAction } from '@/features/superadmin/settings.actions';
-import CheckoutOptionsSettings from '../CheckoutOptionsSettings';
-import { PendingOverlay } from '@/shared/ui/PendingOverlay';
-import SafeProgressBar from '@/shared/ui/SafeProgressBar';
-import StockAvailabilitySettings from '@/features/inventory/components/StockAvailabilitySettings';
-import type { CheckoutOptionDefinition } from '@/features/organization/checkout-options.shared';
-import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
+import SuperadminFormCard from "../ui/SuperadminFormCard";
+import { useState, useTransition, useRef } from "react";
+import Image from "next/image";
+import { toast } from "sonner";
+import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
+import { updateSystemSettingAction } from "@/features/superadmin/settings.actions";
+import CheckoutOptionsSettings from "../CheckoutOptionsSettings";
+import { PendingOverlay } from "@/shared/ui/PendingOverlay";
+import SafeProgressBar from "@/shared/ui/SafeProgressBar";
+import StockAvailabilitySettings from "@/features/inventory/components/StockAvailabilitySettings";
+import type { CheckoutOptionDefinition } from "@/features/organization/checkout-options.shared";
+import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
 
 interface SettingsTabProps {
   systemName: string;
@@ -42,19 +42,21 @@ export default function SettingsTab({
 
   const [systemNameInput, setSystemNameInput] = useState(systemName);
   const [mediaLimitInput, setMediaLimitInput] = useState(mediaLimit);
-  const [hardwareCustomEnabledInput, setHardwareCustomEnabledInput] = useState(hardwareCustomEnabled);
+  const [hardwareCustomEnabledInput, setHardwareCustomEnabledInput] =
+    useState(hardwareCustomEnabled);
   const [nurseryCustomEnabledInput, setNurseryCustomEnabledInput] = useState(nurseryCustomEnabled);
   const [techCustomEnabledInput, setTechCustomEnabledInput] = useState(techCustomEnabled);
-  const [servicesCustomEnabledInput, setServicesCustomEnabledInput] = useState(servicesCustomEnabled);
+  const [servicesCustomEnabledInput, setServicesCustomEnabledInput] =
+    useState(servicesCustomEnabled);
 
   // Logo Upload State
-  const [logoInput, setLogoInput] = useState(logoUrl || '');
+  const [logoInput, setLogoInput] = useState(logoUrl || "");
   const [isLogoUploading, setIsLogoUploading] = useState(false);
   const [logoUploadProgress, setLogoUploadProgress] = useState<number | null>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   // Favicon Upload State
-  const [faviconInput, setFaviconInput] = useState(faviconUrl || '');
+  const [faviconInput, setFaviconInput] = useState(faviconUrl || "");
   const [isFaviconUploading, setIsFaviconUploading] = useState(false);
   const [faviconUploadProgress, setFaviconUploadProgress] = useState<number | null>(null);
   const faviconFileInputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +71,7 @@ export default function SettingsTab({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      triggerNotification(false, 'Logo file size exceeds 5MB limit.');
+      triggerNotification(false, "Logo file size exceeds 5MB limit.");
       return;
     }
 
@@ -78,7 +80,7 @@ export default function SettingsTab({
 
     try {
       const result = await uploadToCloudinary(file, {
-        uploadKind: 'platform',
+        uploadKind: "platform",
         onProgress: (progress) => {
           setLogoUploadProgress(progress.percent);
         },
@@ -86,17 +88,17 @@ export default function SettingsTab({
 
       if (result.success && result.publicUrl) {
         setLogoInput(result.publicUrl);
-        triggerNotification(true, 'Logo uploaded successfully.');
+        triggerNotification(true, "Logo uploaded successfully.");
       } else {
-        triggerNotification(false, result.error || 'Logo upload failed.');
+        triggerNotification(false, result.error || "Logo upload failed.");
       }
     } catch (err) {
-      console.error('Error', err);
-      triggerNotification(false, 'An error occurred during logo upload.');
+      console.error("Error", err);
+      triggerNotification(false, "An error occurred during logo upload.");
     } finally {
       setIsLogoUploading(false);
       setLogoUploadProgress(null);
-      if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+      if (logoFileInputRef.current) logoFileInputRef.current.value = "";
     }
   };
 
@@ -105,7 +107,7 @@ export default function SettingsTab({
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      triggerNotification(false, 'Favicon file size exceeds 2MB limit.');
+      triggerNotification(false, "Favicon file size exceeds 2MB limit.");
       return;
     }
 
@@ -114,7 +116,7 @@ export default function SettingsTab({
 
     try {
       const result = await uploadToCloudinary(file, {
-        uploadKind: 'platform',
+        uploadKind: "platform",
         onProgress: (progress) => {
           setFaviconUploadProgress(progress.percent);
         },
@@ -122,17 +124,17 @@ export default function SettingsTab({
 
       if (result.success && result.publicUrl) {
         setFaviconInput(result.publicUrl);
-        triggerNotification(true, 'Favicon uploaded successfully.');
+        triggerNotification(true, "Favicon uploaded successfully.");
       } else {
-        triggerNotification(false, result.error || 'Favicon upload failed.');
+        triggerNotification(false, result.error || "Favicon upload failed.");
       }
     } catch (err) {
-      console.error('Error', err);
-      triggerNotification(false, 'An error occurred during favicon upload.');
+      console.error("Error", err);
+      triggerNotification(false, "An error occurred during favicon upload.");
     } finally {
       setIsFaviconUploading(false);
       setFaviconUploadProgress(null);
-      if (faviconFileInputRef.current) faviconFileInputRef.current.value = '';
+      if (faviconFileInputRef.current) faviconFileInputRef.current.value = "";
     }
   };
 
@@ -141,20 +143,35 @@ export default function SettingsTab({
     startTransition(async () => {
       try {
         const results = await Promise.all([
-          updateSystemSettingAction({ key: 'system_name', value: systemNameInput }),
-          updateSystemSettingAction({ key: 'max_media_per_product', value: mediaLimitInput.toString() }),
-          updateSystemSettingAction({ key: 'logo_url', value: logoInput }),
-          updateSystemSettingAction({ key: 'favicon_url', value: faviconInput }),
-          updateSystemSettingAction({ key: 'custom_hardware_storefront_enabled', value: hardwareCustomEnabledInput ? 'true' : 'false' }),
-          updateSystemSettingAction({ key: 'custom_nursery_storefront_enabled', value: nurseryCustomEnabledInput ? 'true' : 'false' }),
-          updateSystemSettingAction({ key: 'custom_tech_storefront_enabled', value: techCustomEnabledInput ? 'true' : 'false' }),
-          updateSystemSettingAction({ key: 'custom_services_storefront_enabled', value: servicesCustomEnabledInput ? 'true' : 'false' }),
+          updateSystemSettingAction({ key: "system_name", value: systemNameInput }),
+          updateSystemSettingAction({
+            key: "max_media_per_product",
+            value: mediaLimitInput.toString(),
+          }),
+          updateSystemSettingAction({ key: "logo_url", value: logoInput }),
+          updateSystemSettingAction({ key: "favicon_url", value: faviconInput }),
+          updateSystemSettingAction({
+            key: "custom_hardware_storefront_enabled",
+            value: hardwareCustomEnabledInput ? "true" : "false",
+          }),
+          updateSystemSettingAction({
+            key: "custom_nursery_storefront_enabled",
+            value: nurseryCustomEnabledInput ? "true" : "false",
+          }),
+          updateSystemSettingAction({
+            key: "custom_tech_storefront_enabled",
+            value: techCustomEnabledInput ? "true" : "false",
+          }),
+          updateSystemSettingAction({
+            key: "custom_services_storefront_enabled",
+            value: servicesCustomEnabledInput ? "true" : "false",
+          }),
         ]);
         const firstError = results.find((r) => r?.serverError);
         if (firstError?.serverError) throw new Error(firstError.serverError);
-        triggerNotification(true, 'System settings updated successfully.');
+        triggerNotification(true, "System settings updated successfully.");
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Failed to update system settings.';
+        const msg = err instanceof Error ? err.message : "Failed to update system settings.";
         triggerNotification(false, msg);
       }
     });
@@ -165,8 +182,12 @@ export default function SettingsTab({
       <PendingOverlay isPending={isPending} />
 
       <div>
-        <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">System Settings</h2>
-        <p className="text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5">Configure system thresholds and branding</p>
+        <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">
+          System Settings
+        </h2>
+        <p className="text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5">
+          Configure system thresholds and branding
+        </p>
       </div>
 
       <form onSubmit={handleSaveSettings} className="space-y-4">
@@ -182,7 +203,8 @@ export default function SettingsTab({
             placeholder="e.g. Dilnova Hub"
           />
           <p className="text-[10px] text-zinc-400">
-            The global display name of the application, used in header titles, layouts, metadata, and automated emails.
+            The global display name of the application, used in header titles, layouts, metadata,
+            and automated emails.
           </p>
         </SuperadminFormCard>
 
@@ -198,9 +220,7 @@ export default function SettingsTab({
             onChange={(e) => setMediaLimitInput(parseInt(e.target.value, 10) || 1)}
             className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all"
           />
-          <p className="text-[10px] text-zinc-400">
-            Max images/videos per product listing (1–20).
-          </p>
+          <p className="text-[10px] text-zinc-400">Max images/videos per product listing (1–20).</p>
         </SuperadminFormCard>
 
         {/* Logo */}
@@ -212,7 +232,7 @@ export default function SettingsTab({
               </div>
               <button
                 type="button"
-                onClick={() => setLogoInput('')}
+                onClick={() => setLogoInput("")}
                 className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
               >
                 Remove
@@ -225,19 +245,38 @@ export default function SettingsTab({
               disabled={isLogoUploading}
               className="w-full py-5 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-all active:scale-[0.98] disabled:opacity-50"
             >
-              <svg className="w-7 h-7 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <svg
+                className="w-7 h-7 text-zinc-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
               <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
-                {isLogoUploading ? 'Uploading...' : 'Upload Logo'}
+                {isLogoUploading ? "Uploading..." : "Upload Logo"}
               </span>
               <span className="text-[9px] text-zinc-400 font-mono">PNG, JPG, WEBP (Max 5MB)</span>
             </button>
           )}
-          <input type="file" ref={logoFileInputRef} onChange={handleLogoUpload} accept="image/*" className="hidden" />
+          <input
+            type="file"
+            ref={logoFileInputRef}
+            onChange={handleLogoUpload}
+            accept="image/*"
+            className="hidden"
+          />
           {isLogoUploading && logoUploadProgress !== null && (
             <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <SafeProgressBar className="h-full bg-purple-600 rounded-full transition-all" percent={logoUploadProgress} />
+              <SafeProgressBar
+                className="h-full bg-purple-600 rounded-full transition-all"
+                percent={logoUploadProgress}
+              />
             </div>
           )}
         </SuperadminFormCard>
@@ -251,7 +290,7 @@ export default function SettingsTab({
               </div>
               <button
                 type="button"
-                onClick={() => setFaviconInput('')}
+                onClick={() => setFaviconInput("")}
                 className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
               >
                 Remove
@@ -266,25 +305,36 @@ export default function SettingsTab({
             >
               <span className="text-2xl">⭐</span>
               <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
-                {isFaviconUploading ? 'Uploading...' : 'Upload Favicon'}
+                {isFaviconUploading ? "Uploading..." : "Upload Favicon"}
               </span>
               <span className="text-[9px] text-zinc-400 font-mono">ICO, PNG (Max 2MB)</span>
             </button>
           )}
-          <input type="file" ref={faviconFileInputRef} onChange={handleFaviconUpload} accept="image/*" className="hidden" />
+          <input
+            type="file"
+            ref={faviconFileInputRef}
+            onChange={handleFaviconUpload}
+            accept="image/*"
+            className="hidden"
+          />
           {isFaviconUploading && faviconUploadProgress !== null && (
             <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <SafeProgressBar className="h-full bg-purple-600 rounded-full transition-all" percent={faviconUploadProgress} />
+              <SafeProgressBar
+                className="h-full bg-purple-600 rounded-full transition-all"
+                percent={faviconUploadProgress}
+              />
             </div>
           )}
         </SuperadminFormCard>
 
         {/* Custom Storefront Toggles */}
         <SuperadminFormCard title="Custom Storefront Layouts" icon="🎨" className="space-y-4">
-          
           <div className="flex items-center justify-between py-1">
             <div className="space-y-0.5">
-              <label htmlFor="toggle-hardware" className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+              <label
+                htmlFor="toggle-hardware"
+                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
+              >
                 Distar Hardware Storefront
               </label>
               <p className="text-[10px] text-zinc-400">
@@ -296,13 +346,13 @@ export default function SettingsTab({
               type="button"
               onClick={() => setHardwareCustomEnabledInput(!hardwareCustomEnabledInput)}
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
-                hardwareCustomEnabledInput ? 'bg-purple-600' : 'bg-zinc-200 dark:bg-zinc-800'
+                hardwareCustomEnabledInput ? "bg-purple-600" : "bg-zinc-200 dark:bg-zinc-800"
               }`}
               aria-pressed={hardwareCustomEnabledInput}
             >
               <span
                 className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  hardwareCustomEnabledInput ? 'translate-x-4' : 'translate-x-0'
+                  hardwareCustomEnabledInput ? "translate-x-4" : "translate-x-0"
                 }`}
               />
             </button>
@@ -310,7 +360,10 @@ export default function SettingsTab({
 
           <div className="flex items-center justify-between py-1 border-t border-zinc-100 dark:border-zinc-900 pt-3">
             <div className="space-y-0.5">
-              <label htmlFor="toggle-nursery" className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+              <label
+                htmlFor="toggle-nursery"
+                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
+              >
                 Distar Nursery Storefront
               </label>
               <p className="text-[10px] text-zinc-400">
@@ -322,13 +375,13 @@ export default function SettingsTab({
               type="button"
               onClick={() => setNurseryCustomEnabledInput(!nurseryCustomEnabledInput)}
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
-                nurseryCustomEnabledInput ? 'bg-purple-600' : 'bg-zinc-200 dark:bg-zinc-800'
+                nurseryCustomEnabledInput ? "bg-purple-600" : "bg-zinc-200 dark:bg-zinc-800"
               }`}
               aria-pressed={nurseryCustomEnabledInput}
             >
               <span
                 className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  nurseryCustomEnabledInput ? 'translate-x-4' : 'translate-x-0'
+                  nurseryCustomEnabledInput ? "translate-x-4" : "translate-x-0"
                 }`}
               />
             </button>
@@ -336,7 +389,10 @@ export default function SettingsTab({
 
           <div className="flex items-center justify-between py-1 border-t border-zinc-100 dark:border-zinc-900 pt-3">
             <div className="space-y-0.5">
-              <label htmlFor="toggle-tech" className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+              <label
+                htmlFor="toggle-tech"
+                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
+              >
                 Distar Tech Storefront
               </label>
               <p className="text-[10px] text-zinc-400">
@@ -348,13 +404,13 @@ export default function SettingsTab({
               type="button"
               onClick={() => setTechCustomEnabledInput(!techCustomEnabledInput)}
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
-                techCustomEnabledInput ? 'bg-purple-600' : 'bg-zinc-200 dark:bg-zinc-800'
+                techCustomEnabledInput ? "bg-purple-600" : "bg-zinc-200 dark:bg-zinc-800"
               }`}
               aria-pressed={techCustomEnabledInput}
             >
               <span
                 className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  techCustomEnabledInput ? 'translate-x-4' : 'translate-x-0'
+                  techCustomEnabledInput ? "translate-x-4" : "translate-x-0"
                 }`}
               />
             </button>
@@ -362,7 +418,10 @@ export default function SettingsTab({
 
           <div className="flex items-center justify-between py-1 border-t border-zinc-100 dark:border-zinc-900 pt-3">
             <div className="space-y-0.5">
-              <label htmlFor="toggle-services" className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+              <label
+                htmlFor="toggle-services"
+                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
+              >
                 Dilstar Services Storefront
               </label>
               <p className="text-[10px] text-zinc-400">
@@ -374,13 +433,13 @@ export default function SettingsTab({
               type="button"
               onClick={() => setServicesCustomEnabledInput(!servicesCustomEnabledInput)}
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
-                servicesCustomEnabledInput ? 'bg-purple-600' : 'bg-zinc-200 dark:bg-zinc-800'
+                servicesCustomEnabledInput ? "bg-purple-600" : "bg-zinc-200 dark:bg-zinc-800"
               }`}
               aria-pressed={servicesCustomEnabledInput}
             >
               <span
                 className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  servicesCustomEnabledInput ? 'translate-x-4' : 'translate-x-0'
+                  servicesCustomEnabledInput ? "translate-x-4" : "translate-x-0"
                 }`}
               />
             </button>
@@ -399,18 +458,14 @@ export default function SettingsTab({
               Saving...
             </>
           ) : (
-            'Save All Settings'
+            "Save All Settings"
           )}
         </button>
       </form>
 
-      <CheckoutOptionsSettings
-        initialCatalog={checkoutOptionsCatalog}
-      />
+      <CheckoutOptionsSettings initialCatalog={checkoutOptionsCatalog} />
 
-      <StockAvailabilitySettings
-        initialCatalog={stockAvailabilityCatalog}
-      />
+      <StockAvailabilitySettings initialCatalog={stockAvailabilityCatalog} />
     </div>
   );
 }

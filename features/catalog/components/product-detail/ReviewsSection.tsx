@@ -1,14 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useTransition, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import useSWR from 'swr';
-import { useAuth } from '@clerk/nextjs';
-import { submitReviewAction, getUserProductStateAction } from '@/features/catalog/product-detail.actions';
-import Image from 'next/image';
-import SignInPrompt from '@/shared/ui/SignInPrompt';
-import { toast } from 'sonner';
-import SafeProgressBar from '@/shared/ui/SafeProgressBar';
+import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import useSWR from "swr";
+import { useAuth } from "@clerk/nextjs";
+import {
+  submitReviewAction,
+  getUserProductStateAction,
+} from "@/features/catalog/product-detail.actions";
+import Image from "next/image";
+import SignInPrompt from "@/shared/ui/SignInPrompt";
+import { toast } from "sonner";
+import SafeProgressBar from "@/shared/ui/SafeProgressBar";
 
 interface Review {
   id: string;
@@ -43,9 +46,8 @@ export default function ReviewsSection({
   const { userId, orgId: userOrgId } = useAuth();
   const isLoggedIn = !!userId;
 
-  const { data: userState } = useSWR(
-    userId ? ['product-state', productId] : null,
-    () => getUserProductStateAction(productId)
+  const { data: userState } = useSWR(userId ? ["product-state", productId] : null, () =>
+    getUserProductStateAction(productId),
   );
 
   const existingReview = userState?.existingReview || null;
@@ -53,13 +55,13 @@ export default function ReviewsSection({
   const isVerifiedBuyer = userState?.isVerifiedBuyer || false;
   const [rating, setRating] = useState(existingReview?.rating ?? 0);
   const [hoveredRating, setHoveredRating] = useState(0);
-  const [comment, setComment] = useState(existingReview?.comment ?? '');
+  const [comment, setComment] = useState(existingReview?.comment ?? "");
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (existingReview) {
       setRating(existingReview.rating);
-      setComment(existingReview.comment ?? '');
+      setComment(existingReview.comment ?? "");
     }
   }, [existingReview]);
 
@@ -69,7 +71,7 @@ export default function ReviewsSection({
     e.preventDefault();
 
     if (rating === 0) {
-      toast.error('Please select a star rating.');
+      toast.error("Please select a star rating.");
       return;
     }
 
@@ -77,17 +79,17 @@ export default function ReviewsSection({
       try {
         const result = await submitReviewAction({ productId, rating, comment });
         if (!result?.data?.success) {
-          throw new Error(result?.serverError || 'Failed to submit review.');
+          throw new Error(result?.serverError || "Failed to submit review.");
         }
         toast.success(
           userHasReviewed
-            ? 'Your review has been updated.'
-            : 'Thank you! Your review has been submitted successfully.'
+            ? "Your review has been updated."
+            : "Thank you! Your review has been submitted successfully.",
         );
         router.refresh();
       } catch (err) {
-        console.error('Error submitting review:', err);
-        toast.error(err instanceof Error ? err.message : 'Something went wrong.');
+        console.error("Error submitting review:", err);
+        toast.error(err instanceof Error ? err.message : "Something went wrong.");
       }
     });
   };
@@ -112,7 +114,7 @@ export default function ReviewsSection({
         <div className="md:col-span-5 space-y-6">
           <div className="flex items-center gap-5">
             <div className="text-5xl font-black font-mono text-purple-700 dark:text-purple-400">
-              {averageRating || '0.0'}
+              {averageRating || "0.0"}
             </div>
             <div>
               <div className="flex items-center text-amber-400 mb-0.5">
@@ -121,8 +123,8 @@ export default function ReviewsSection({
                     key={star}
                     className={`w-5 h-5 ${
                       star <= Math.round(averageRating)
-                        ? 'fill-current'
-                        : 'fill-transparent stroke-current stroke-2'
+                        ? "fill-current"
+                        : "fill-transparent stroke-current stroke-2"
                     }`}
                     viewBox="0 0 24 24"
                   >
@@ -131,7 +133,7 @@ export default function ReviewsSection({
                 ))}
               </div>
               <span className="text-xs text-zinc-450 dark:text-zinc-500 font-mono">
-                based on {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
+                based on {totalReviews} {totalReviews === 1 ? "review" : "reviews"}
               </span>
             </div>
           </div>
@@ -142,7 +144,10 @@ export default function ReviewsSection({
               const count = distribution[stars - 1];
               const percentage = totalReviews ? Math.round((count / totalReviews) * 100) : 0;
               return (
-                <div key={stars} className="flex items-center gap-3 text-xs font-mono text-zinc-500">
+                <div
+                  key={stars}
+                  className="flex items-center gap-3 text-xs font-mono text-zinc-500"
+                >
                   <span className="w-12 text-right">{stars} star</span>
                   <div className="flex-1 h-2 bg-zinc-100 rounded-full dark:bg-zinc-900 overflow-hidden border border-zinc-200/20 dark:border-zinc-800/30">
                     <SafeProgressBar
@@ -200,10 +205,10 @@ export default function ReviewsSection({
                     )}
                   </div>
                   <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
-                    {new Date(review.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
+                    {new Date(review.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
                     })}
                   </span>
                 </div>
@@ -213,7 +218,9 @@ export default function ReviewsSection({
                     <svg
                       key={star}
                       className={`w-3.5 h-3.5 ${
-                        star <= review.rating ? 'fill-current' : 'fill-transparent stroke-current stroke-2'
+                        star <= review.rating
+                          ? "fill-current"
+                          : "fill-transparent stroke-current stroke-2"
                       }`}
                       viewBox="0 0 24 24"
                     >
@@ -237,13 +244,15 @@ export default function ReviewsSection({
       {isLoggedIn && !isVendorOwner && canSubmitReview && (
         <div className="border-t border-zinc-200 dark:border-zinc-800 pt-8 mt-8">
           <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 mb-4 font-mono">
-            {userHasReviewed ? 'Update Your Review' : 'Write a Review'}
+            {userHasReviewed ? "Update Your Review" : "Write a Review"}
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
             {/* Star selector */}
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 mr-2 font-mono">Your Rating:</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 mr-2 font-mono">
+                Your Rating:
+              </span>
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
@@ -256,8 +265,8 @@ export default function ReviewsSection({
                   <svg
                     className={`w-6 h-6 ${
                       star <= (hoveredRating || rating)
-                        ? 'fill-current'
-                        : 'fill-transparent stroke-current stroke-2'
+                        ? "fill-current"
+                        : "fill-transparent stroke-current stroke-2"
                     }`}
                     viewBox="0 0 24 24"
                   >
@@ -269,7 +278,10 @@ export default function ReviewsSection({
 
             {/* Comment input */}
             <div className="space-y-1.5">
-              <label htmlFor="comment" className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
+              <label
+                htmlFor="comment"
+                className="text-xs text-zinc-500 dark:text-zinc-400 font-mono"
+              >
                 Feedback Comment (optional)
               </label>
               <textarea
@@ -289,7 +301,7 @@ export default function ReviewsSection({
               disabled={isPending}
               className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl transition-all shadow-md shadow-purple-900/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              {isPending ? 'Submitting...' : userHasReviewed ? 'Update Review' : 'Submit Review'}
+              {isPending ? "Submitting..." : userHasReviewed ? "Update Review" : "Submit Review"}
             </button>
           </form>
         </div>
@@ -297,13 +309,15 @@ export default function ReviewsSection({
 
       {isLoggedIn && !isVendorOwner && !canSubmitReview && (
         <p className="text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-900 pt-4 font-mono">
-          Purchase this item before submitting a review. After your order is placed, you can share feedback here.
+          Purchase this item before submitting a review. After your order is placed, you can share
+          feedback here.
         </p>
       )}
 
       {isLoggedIn && isVendorOwner && (
         <p className="text-xs text-zinc-450 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-900 pt-4 font-mono italic">
-          ℹ️ You represent the vendor offering this product/service and are ineligible to submit customer reviews.
+          ℹ️ You represent the vendor offering this product/service and are ineligible to submit
+          customer reviews.
         </p>
       )}
 

@@ -1,11 +1,11 @@
-import type { VendorBillingRegisterData } from '@/features/billing/types';
-import { POSBillingProvider } from './POSBillingProvider';
-import POSFullscreenWrapper from './pos-parts/POSFullscreenWrapper';
-import POSHeader from './pos-parts/POSHeader';
-import POSProductGrid from './pos-parts/POSProductGrid';
-import POSTicketPanel from './pos-parts/POSTicketPanel';
-import POSMobileCheckout from './pos-parts/POSMobileCheckout';
-import POSReceiptModal from './pos-parts/POSReceiptModal';
+import type { VendorBillingRegisterData } from "@/features/billing/types";
+import { POSBillingProvider } from "./POSBillingProvider";
+import POSFullscreenWrapper from "./pos-parts/POSFullscreenWrapper";
+import POSHeader from "./pos-parts/POSHeader";
+import POSProductGrid from "./pos-parts/POSProductGrid";
+import POSTicketPanel from "./pos-parts/POSTicketPanel";
+import POSMobileCheckout from "./pos-parts/POSMobileCheckout";
+import POSReceiptModal from "./pos-parts/POSReceiptModal";
 
 interface Props {
   initialData: VendorBillingRegisterData;
@@ -16,7 +16,7 @@ interface Props {
 
 export default function POSBillingClient({
   initialData,
-  systemName = 'Dilnova',
+  systemName = "Dilnova",
   orgName,
   isAdmin = false,
 }: Props) {

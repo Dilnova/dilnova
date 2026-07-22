@@ -1,9 +1,9 @@
-import type { User } from '@clerk/nextjs/server';
+import type { User } from "@clerk/nextjs/server";
 
 /** Stored in Clerk user privateMetadata — server-only, not client-readable. */
-export const SUPERADMIN_PLATFORM_ROLE = 'superadmin';
+export const SUPERADMIN_PLATFORM_ROLE = "superadmin";
 
-export type SuperAdminGrantSource = 'dual_gate';
+export type SuperAdminGrantSource = "dual_gate";
 
 export interface SuperAdminGrant {
   granted: boolean;
@@ -18,9 +18,9 @@ export function getSuperAdminAllowlistFromEnv(): Set<string> {
 
   return new Set(
     raw
-      .split(',')
+      .split(",")
       .map((entry) => entry.trim())
-      .filter(Boolean)
+      .filter(Boolean),
   );
 }
 
@@ -34,7 +34,7 @@ export function readSuperAdminGrant(user: {
   const isAllowlisted = getSuperAdminAllowlistFromEnv().has(user.id);
 
   if (isPrivateSuper && isAllowlisted) {
-    return { granted: true, source: 'dual_gate' };
+    return { granted: true, source: "dual_gate" };
   }
 
   return { granted: false, source: null };

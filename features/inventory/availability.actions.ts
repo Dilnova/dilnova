@@ -1,18 +1,18 @@
-'use server';
+"use server";
 
-import * as schema from '@/shared/db/schema';
-import { eq } from 'drizzle-orm';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { revalidateVendorConsole } from '@/features/vendor/revalidate';
-import { logAuditAction } from '@/shared/audit/logger';
-import { runWithCorrelationId } from '@/shared/security/async-context';
-import { rateLimit } from '@/shared/security/rate-limit';
+import * as schema from "@/shared/db/schema";
+import { eq } from "drizzle-orm";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateVendorConsole } from "@/features/vendor/revalidate";
+import { logAuditAction } from "@/shared/audit/logger";
+import { runWithCorrelationId } from "@/shared/security/async-context";
+import { rateLimit } from "@/shared/security/rate-limit";
 import {
   STOCK_AVAILABILITY_CATALOG_KEY,
   buildStockAvailabilityCatalogPayload,
-} from '@/features/inventory/availability.shared';
-import { updateStockAvailabilityCatalogSchema } from '@/features/inventory/schema';
-import { superadminAction, ActionError } from '@/lib/safe-action';
+} from "@/features/inventory/availability.shared";
+import { updateStockAvailabilityCatalogSchema } from "@/features/inventory/schema";
+import { superadminAction, ActionError } from "@/lib/safe-action";
 
 // Inline schema wrapping the array field expected by the catalog update.
 const actionSchema = updateStockAvailabilityCatalogSchema;
@@ -46,15 +46,15 @@ export const updateStockAvailabilityCatalogAction = superadminAction
 
       await logAuditAction({
         userId: ctx.userId,
-        action: 'UPDATE_SYSTEM_SETTING',
-        targetType: 'system_setting',
+        action: "UPDATE_SYSTEM_SETTING",
+        targetType: "system_setting",
         targetId: STOCK_AVAILABILITY_CATALOG_KEY,
         metadata: { optionCount: payload.length },
       });
 
-      revalidateTag('system-settings', 'max');
-      revalidatePath('/superadmin');
-      revalidatePath('/products');
+      revalidateTag("system-settings", "max");
+      revalidatePath("/superadmin");
+      revalidatePath("/products");
       revalidateVendorConsole();
 
       return { success: true };

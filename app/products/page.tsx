@@ -1,30 +1,32 @@
-import { Suspense } from 'react';
-import { clerkClient, auth } from '@clerk/nextjs/server';
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { and, eq, inArray, sql } from 'drizzle-orm';
-import type { Metadata } from 'next';
-import { unstable_cache } from 'next/cache';
+import { Suspense } from "react";
+import { clerkClient, auth } from "@clerk/nextjs/server";
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { and, eq, inArray, sql } from "drizzle-orm";
+import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 
 const getCachedCategories = unstable_cache(
   async () => {
     return db.select().from(schema.categories);
   },
-  ['all-categories-list'],
-  { revalidate: 3600, tags: ['categories'] }
+  ["all-categories-list"],
+  { revalidate: 3600, tags: ["categories"] },
 );
-import { getSystemSetting } from '@/shared/platform/settings';
-import { getCachedOrganizations } from '@/shared/auth/clerk-cache';
-import { getStockAvailabilityCatalog } from '@/features/inventory/availability.server';
-import { resolveOnlineProductPurchaseState } from '@/features/inventory/availability.shared';
-import CatalogLayout, { type CatalogItemViewData } from '@/features/catalog/components/CatalogLayout';
+import { getSystemSetting } from "@/shared/platform/settings";
+import { getCachedOrganizations } from "@/shared/auth/clerk-cache";
+import { getStockAvailabilityCatalog } from "@/features/inventory/availability.server";
+import { resolveOnlineProductPurchaseState } from "@/features/inventory/availability.shared";
+import CatalogLayout, {
+  type CatalogItemViewData,
+} from "@/features/catalog/components/CatalogLayout";
 import {
   buildCatalogOrderBy,
   buildCatalogWhereClauses,
   parseCatalogQueryParams,
   resolveVendorOrgId,
-} from '@/features/catalog/queries';
-import { getUserWishlistIdsAction } from '@/features/catalog/product-detail.actions';
+} from "@/features/catalog/queries";
+import { getUserWishlistIdsAction } from "@/features/catalog/product-detail.actions";
 
 export const revalidate = 30; // Cache for 30s to prevent rapid re-fetches; vendor actions revalidate on-demand
 
@@ -45,11 +47,11 @@ interface PageProps {
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const params = await searchParams;
-  const currentSearch = params.search || '';
-  const currentCategorySlug = params.category || '';
-  const currentType = params.type || 'all';
+  const currentSearch = params.search || "";
+  const currentCategorySlug = params.category || "";
+  const currentType = params.type || "all";
 
-  const systemName = await getSystemSetting('system_name', 'Dilnova');
+  const systemName = await getSystemSetting("system_name", "Dilnova");
 
   let title = `Products & Services Catalog | ${systemName}`;
   let description = `Browse local multi-vendor products and services available on ${systemName} Commerce Hub.`;
@@ -72,8 +74,8 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   } else if (currentSearch) {
     title = `Search results for "${currentSearch}" | ${systemName}`;
     description = `View all multi-vendor products and services matching search term "${currentSearch}" on ${systemName}.`;
-  } else if (currentType !== 'all') {
-    const typeLabel = currentType === 'product' ? 'Products' : 'Services';
+  } else if (currentType !== "all") {
+    const typeLabel = currentType === "product" ? "Products" : "Services";
     title = `Browse ${typeLabel} | ${systemName}`;
     description = `Explore high-quality vendor ${typeLabel.toLowerCase()} listings on ${systemName} Commerce Hub.`;
   }
@@ -84,7 +86,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     openGraph: {
       title,
       description,
-      type: 'website',
+      type: "website",
     },
   };
 }
@@ -93,7 +95,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const { userId } = await auth();
   const catalogQuery = parseCatalogQueryParams(params);
-  const viewMode = (params.view === 'list' ? 'list' : 'grid') as 'grid' | 'list';
+  const viewMode = (params.view === "list" ? "list" : "grid") as "grid" | "list";
   const itemsPerPage = 12;
 
   const [categoriesList, stockAvailabilityCatalog, organizations] = await Promise.all([
@@ -155,14 +157,15 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
 
   const [allReviewsForPage, inventoryRows, wishlistedIds] = await Promise.all([
     productIds.length > 0
-      ? db.select({
-          productId: schema.reviews.productId,
-          count: sql<number>`cast(count(*) as int)`,
-          avgRating: sql<number>`avg(${schema.reviews.rating})`,
-        })
-        .from(schema.reviews)
-        .where(inArray(schema.reviews.productId, productIds))
-        .groupBy(schema.reviews.productId)
+      ? db
+          .select({
+            productId: schema.reviews.productId,
+            count: sql<number>`cast(count(*) as int)`,
+            avgRating: sql<number>`avg(${schema.reviews.rating})`,
+          })
+          .from(schema.reviews)
+          .where(inArray(schema.reviews.productId, productIds))
+          .groupBy(schema.reviews.productId)
       : Promise.resolve([]),
     productIds.length > 0
       ? db
@@ -174,19 +177,20 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
           .from(schema.inventory)
           .where(inArray(schema.inventory.productId, productIds))
       : Promise.resolve([]),
-    userId && productIds.length > 0
-      ? getUserWishlistIdsAction(productIds)
-      : Promise.resolve([]),
+    userId && productIds.length > 0 ? getUserWishlistIdsAction(productIds) : Promise.resolve([]),
   ]);
 
   const wishlistSet = new Set(wishlistedIds);
   const inventoryByProduct = new Map(
-    inventoryRows.map((row) => [row.productId, { stockAvailability: row.stockAvailability, quantity: row.quantity }])
+    inventoryRows.map((row) => [
+      row.productId,
+      { stockAvailability: row.stockAvailability, quantity: row.quantity },
+    ]),
   );
 
   const items: CatalogItemViewData[] = results.map(({ product, category }) => {
     const orgMatch = organizations.find((o) => o.id === product.orgId);
-    const vendorName = orgMatch ? orgMatch.name : 'Unknown Vendor';
+    const vendorName = orgMatch ? orgMatch.name : "Unknown Vendor";
     const vendorLogo = orgMatch ? orgMatch.imageUrl : null;
     const vendorSlug = orgMatch ? orgMatch.slug : null;
 
@@ -199,7 +203,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
     const { canPurchase, availabilityDef } = resolveOnlineProductPurchaseState(
       product.type,
       stockAvailabilityCatalog,
-      inventoryInfo
+      inventoryInfo,
     );
 
     return {

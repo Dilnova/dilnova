@@ -1,8 +1,11 @@
-import * as schema from '@/shared/db/schema';
-import { allocateVendorPaymentAmounts, isBankTransferPayment } from '@/features/billing/bank-transfer';
-import { buildBankTransferCheckoutInstructions } from '@/features/billing/bank-transfer.server';
-import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
-import BankTransferInstructions from '@/features/billing/components/BankTransferInstructions';
+import * as schema from "@/shared/db/schema";
+import {
+  allocateVendorPaymentAmounts,
+  isBankTransferPayment,
+} from "@/features/billing/bank-transfer";
+import { buildBankTransferCheckoutInstructions } from "@/features/billing/bank-transfer.server";
+import { getOrderDisplayTotals } from "@/features/billing/checkout-totals";
+import BankTransferInstructions from "@/features/billing/components/BankTransferInstructions";
 
 type OrderRecord = typeof schema.simulatedOrders.$inferSelect;
 
@@ -19,10 +22,7 @@ export default async function OrderBankTransferInstructions({
   order,
   items,
 }: OrderBankTransferInstructionsProps) {
-  if (
-    !isBankTransferPayment(order.paymentMethod) ||
-    order.status !== 'pending_payment'
-  ) {
+  if (!isBankTransferPayment(order.paymentMethod) || order.status !== "pending_payment") {
     return null;
   }
 

@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition } from "react";
 import {
   createBranchAction,
   updateBranchAction,
   deleteBranchAction,
   assignBranchMemberAction,
   removeBranchMemberAction,
-} from '@/features/inventory/vendor-branch.actions';
-import { toast } from 'sonner';
-import { useConfirm } from '@/shared/ui/notifications';
-import InventoryModal from '../InventoryModal';
+} from "@/features/inventory/vendor-branch.actions";
+import { toast } from "sonner";
+import { useConfirm } from "@/shared/ui/notifications";
+import InventoryModal from "../InventoryModal";
 
 interface VendorBranchesTabProps {
   data: any; // Will be properly typed during TS cleanup
@@ -30,14 +30,14 @@ export default function VendorBranchesTab({
   // --- Modals State ---
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<any>(null);
-  const [branchName, setBranchName] = useState('');
-  const [branchAddress, setBranchAddress] = useState('');
-  const [branchPhone, setBranchPhone] = useState('');
+  const [branchName, setBranchName] = useState("");
+  const [branchAddress, setBranchAddress] = useState("");
+  const [branchPhone, setBranchPhone] = useState("");
 
   const [isAssignMemberModalOpen, setIsAssignMemberModalOpen] = useState(false);
-  const [assignBranchId, setAssignBranchId] = useState('');
-  const [assignMemberId, setAssignMemberId] = useState('');
-  const [assignRole, setAssignRole] = useState<'cashier' | 'manager'>('cashier');
+  const [assignBranchId, setAssignBranchId] = useState("");
+  const [assignMemberId, setAssignMemberId] = useState("");
+  const [assignRole, setAssignRole] = useState<"cashier" | "manager">("cashier");
 
   // --- Helpers ---
   const getMemberName = (userId: string) => {
@@ -45,7 +45,7 @@ export default function VendorBranchesTab({
   };
 
   const getMemberEmail = (userId: string) => {
-    return data.orgMembers.find((m: any) => m.userId === userId)?.email || '';
+    return data.orgMembers.find((m: any) => m.userId === userId)?.email || "";
   };
 
   // --- Handlers ---
@@ -60,46 +60,47 @@ export default function VendorBranchesTab({
             address: branchAddress,
             phone: branchPhone,
           });
-          triggerNotification(true, 'Branch updated.');
+          triggerNotification(true, "Branch updated.");
         } else {
           await createBranchAction({
             name: branchName,
             address: branchAddress,
             phone: branchPhone,
           });
-          triggerNotification(true, 'Branch created.');
+          triggerNotification(true, "Branch created.");
         }
         setIsBranchModalOpen(false);
         refreshData();
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Action failed.');
+        triggerNotification(false, err instanceof Error ? err.message : "Action failed.");
       }
     });
   };
 
   const handleDeleteBranch = async (id: string) => {
     const confirmed = await confirmAction({
-      title: 'Delete Branch',
-      message: 'Are you sure you want to delete this branch? All branch stock records will be removed.',
-      confirmText: 'Delete',
-      variant: 'danger',
+      title: "Delete Branch",
+      message:
+        "Are you sure you want to delete this branch? All branch stock records will be removed.",
+      confirmText: "Delete",
+      variant: "danger",
     });
     if (!confirmed) return;
 
     toast.promise(
       deleteBranchAction(id).then(() => refreshData()),
       {
-        loading: 'Deleting branch...',
-        success: 'Branch deleted.',
-        error: (err) => (err instanceof Error ? err.message : 'Action failed.'),
-      }
+        loading: "Deleting branch...",
+        success: "Branch deleted.",
+        error: (err) => (err instanceof Error ? err.message : "Action failed."),
+      },
     );
   };
 
   const handleAssignMember = (e: React.FormEvent) => {
     e.preventDefault();
     if (!assignBranchId || !assignMemberId) {
-      triggerNotification(false, 'Branch and member are required.');
+      triggerNotification(false, "Branch and member are required.");
       return;
     }
     startTransition(async () => {
@@ -109,31 +110,31 @@ export default function VendorBranchesTab({
           memberUserId: assignMemberId,
           role: assignRole,
         });
-        triggerNotification(true, 'Member assigned to branch.');
+        triggerNotification(true, "Member assigned to branch.");
         setIsAssignMemberModalOpen(false);
         refreshData();
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : 'Failed to assign.');
+        triggerNotification(false, err instanceof Error ? err.message : "Failed to assign.");
       }
     });
   };
 
   const handleRemoveMember = async (id: string) => {
     const confirmed = await confirmAction({
-      title: 'Remove Assignment',
-      message: 'Remove this member assignment?',
-      confirmText: 'Remove',
-      variant: 'danger',
+      title: "Remove Assignment",
+      message: "Remove this member assignment?",
+      confirmText: "Remove",
+      variant: "danger",
     });
     if (!confirmed) return;
 
     toast.promise(
       removeBranchMemberAction(id).then(() => refreshData()),
       {
-        loading: 'Removing assignment...',
-        success: 'Assignment removed.',
-        error: (err) => (err instanceof Error ? err.message : 'Failed to remove.'),
-      }
+        loading: "Removing assignment...",
+        success: "Assignment removed.",
+        error: (err) => (err instanceof Error ? err.message : "Failed to remove."),
+      },
     );
   };
 
@@ -141,21 +142,25 @@ export default function VendorBranchesTab({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-50">Branch Stores & Warehouses</h3>
-          <p className="text-xs text-zinc-400">Allocate separate stock capacities and map cashiers/POS registers.</p>
+          <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-50">
+            Branch Stores & Warehouses
+          </h3>
+          <p className="text-xs text-zinc-400">
+            Allocate separate stock capacities and map cashiers/POS registers.
+          </p>
         </div>
         <button
           onClick={() => {
             setEditingBranch(null);
-            setBranchName('');
-            setBranchAddress('');
-            setBranchPhone('');
+            setBranchName("");
+            setBranchAddress("");
+            setBranchPhone("");
             setIsBranchModalOpen(true);
           }}
           disabled={!data.premiumStatus.multiBranchActive && data.branches.length >= 1}
           title={
             !data.premiumStatus.multiBranchActive && data.branches.length >= 1
-              ? 'Upgrade to Tier 2 for Multi-Branch'
+              ? "Upgrade to Tier 2 for Multi-Branch"
               : undefined
           }
           className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -172,7 +177,9 @@ export default function VendorBranchesTab({
           >
             <div className="flex justify-between items-start">
               <div>
-                <span className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">🏬 {b.name}</span>
+                <span className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">
+                  🏬 {b.name}
+                </span>
                 {b.isDefault && (
                   <span className="ml-2 px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase">
                     Default
@@ -184,8 +191,8 @@ export default function VendorBranchesTab({
                   onClick={() => {
                     setEditingBranch(b);
                     setBranchName(b.name);
-                    setBranchAddress(b.address || '');
-                    setBranchPhone(b.phone || '');
+                    setBranchAddress(b.address || "");
+                    setBranchPhone(b.phone || "");
                     setIsBranchModalOpen(true);
                   }}
                   className="text-xs text-zinc-400 hover:text-indigo-600"
@@ -215,8 +222,8 @@ export default function VendorBranchesTab({
                 <button
                   onClick={() => {
                     setAssignBranchId(b.id);
-                    setAssignMemberId('');
-                    setAssignRole('cashier');
+                    setAssignMemberId("");
+                    setAssignRole("cashier");
                     setIsAssignMemberModalOpen(true);
                   }}
                   className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold"
@@ -266,108 +273,130 @@ export default function VendorBranchesTab({
       {/* --- Add / Edit Branch Modal --- */}
       {isBranchModalOpen && (
         <InventoryModal isOpen={true} onClose={() => setIsBranchModalOpen(false)}>
-            <div className="p-5 border-b border-zinc-100 dark:border-zinc-800">
-              <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
-                {editingBranch ? 'Edit Branch Location' : 'Register New Branch'}
-              </h3>
+          <div className="p-5 border-b border-zinc-100 dark:border-zinc-800">
+            <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
+              {editingBranch ? "Edit Branch Location" : "Register New Branch"}
+            </h3>
+          </div>
+          <form onSubmit={handleSaveBranch} className="p-5 space-y-3.5">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="branchName"
+                className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400"
+              >
+                Branch Name
+              </label>
+              <input
+                id="branchName"
+                type="text"
+                value={branchName}
+                onChange={(e) => setBranchName(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
+                placeholder="e.g. Uptown POS Outlet"
+              />
             </div>
-            <form onSubmit={handleSaveBranch} className="p-5 space-y-3.5">
-              <div className="space-y-1.5">
-                <label htmlFor="branchName" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Branch Name</label>
-                <input
-                  id="branchName"
-                  type="text"
-                  value={branchName}
-                  onChange={(e) => setBranchName(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
-                  placeholder="e.g. Uptown POS Outlet"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label htmlFor="branchAddress" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Street Address</label>
-                <input
-                  id="branchAddress"
-                  type="text"
-                  value={branchAddress}
-                  onChange={(e) => setBranchAddress(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
-                  placeholder="Street name, City"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label htmlFor="branchPhone" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Store Phone Contact</label>
-                <input
-                  id="branchPhone"
-                  type="text"
-                  value={branchPhone}
-                  onChange={(e) => setBranchPhone(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
-                  placeholder="+123..."
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsBranchModalOpen(false)}
-                  className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md"
-                >
-                  Register
-                </button>
-              </div>
-            </form>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="branchAddress"
+                className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400"
+              >
+                Street Address
+              </label>
+              <input
+                id="branchAddress"
+                type="text"
+                value={branchAddress}
+                onChange={(e) => setBranchAddress(e.target.value)}
+                className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
+                placeholder="Street name, City"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label
+                htmlFor="branchPhone"
+                className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400"
+              >
+                Store Phone Contact
+              </label>
+              <input
+                id="branchPhone"
+                type="text"
+                value={branchPhone}
+                onChange={(e) => setBranchPhone(e.target.value)}
+                className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
+                placeholder="+123..."
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsBranchModalOpen(false)}
+                className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md"
+              >
+                Register
+              </button>
+            </div>
+          </form>
         </InventoryModal>
       )}
 
       {/* --- Assign Member Modal --- */}
       {isAssignMemberModalOpen && (
         <InventoryModal isOpen={true} onClose={() => setIsAssignMemberModalOpen(false)}>
-            <div className="p-5 border-b border-zinc-100 dark:border-zinc-800">
-              <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">Assign Member/Cashier</h3>
+          <div className="p-5 border-b border-zinc-100 dark:border-zinc-800">
+            <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
+              Assign Member/Cashier
+            </h3>
+          </div>
+          <form onSubmit={handleAssignMember} className="p-5 space-y-3.5">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="assignMemberId"
+                className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400"
+              >
+                Select Member
+              </label>
+              <select
+                id="assignMemberId"
+                value={assignMemberId}
+                onChange={(e) => setAssignMemberId(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
+              >
+                <option value="">-- Select Org Member --</option>
+                {data.orgMembers.map((m: any) => (
+                  <option key={m.userId} value={m.userId}>
+                    {m.name} {m.email ? `(${m.email})` : ""}
+                  </option>
+                ))}
+              </select>
             </div>
-            <form onSubmit={handleAssignMember} className="p-5 space-y-3.5">
-              <div className="space-y-1.5">
-                <label htmlFor="assignMemberId" className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">Select Member</label>
-                <select
-                  id="assignMemberId"
-                  value={assignMemberId}
-                  onChange={(e) => setAssignMemberId(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
-                >
-                  <option value="">-- Select Org Member --</option>
-                  {data.orgMembers.map((m: any) => (
-                    <option key={m.userId} value={m.userId}>
-                      {m.name} {m.email ? `(${m.email})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
 
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAssignMemberModalOpen(false)}
-                  className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md"
-                >
-                  Assign Duty
-                </button>
-              </div>
-            </form>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsAssignMemberModalOpen(false)}
+                className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md"
+              >
+                Assign Duty
+              </button>
+            </div>
+          </form>
         </InventoryModal>
       )}
     </div>

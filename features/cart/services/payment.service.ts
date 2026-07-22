@@ -1,6 +1,13 @@
-import { logger } from '@/shared/logging/logger';
-import { isBankTransferPayment, hasCompleteBankDetails, type BankTransferDetails } from '@/features/billing/bank-transfer';
-import { isPaymentCompatibleWithFulfillment, type CheckoutOptionDefinition } from '@/features/organization/checkout-options.shared';
+import { logger } from "@/shared/logging/logger";
+import {
+  isBankTransferPayment,
+  hasCompleteBankDetails,
+  type BankTransferDetails,
+} from "@/features/billing/bank-transfer";
+import {
+  isPaymentCompatibleWithFulfillment,
+  type CheckoutOptionDefinition,
+} from "@/features/organization/checkout-options.shared";
 
 export function validatePayment(opts: {
   payment: string;
@@ -21,21 +28,21 @@ export function validatePayment(opts: {
 
   if (isBankTransferPayment(payment)) {
     const vendorsMissingBankDetails = vendorOrgIds.filter(
-      (orgId) => !hasCompleteBankDetails(bankDetailsByOrg[orgId]?.bankDetails)
+      (orgId) => !hasCompleteBankDetails(bankDetailsByOrg[orgId]?.bankDetails),
     );
     if (vendorsMissingBankDetails.length > 0) {
       const vendorNames = vendorsMissingBankDetails.map(
-        (orgId) => bankDetailsByOrg[orgId]?.vendorName || 'A vendor'
+        (orgId) => bankDetailsByOrg[orgId]?.vendorName || "A vendor",
       );
-      logger.warn('Checkout business validation failed', {
-        reason: 'Missing bank details',
+      logger.warn("Checkout business validation failed", {
+        reason: "Missing bank details",
         vendors: vendorNames,
         cartItems: uniqueItemIds,
       });
       return {
         success: false,
         error: `Bank transfer is unavailable because bank details are not configured for: ${vendorNames.join(
-          ', '
+          ", ",
         )}. Please contact the store or choose another payment method.`,
       };
     }
@@ -43,10 +50,10 @@ export function validatePayment(opts: {
 
   if (!isPaymentCompatibleWithFulfillment(paymentOption, fulfillmentOption)) {
     const reason = paymentOption.requiresDelivery
-      ? 'delivery orders, not store pickup.'
-      : 'store pickup orders, not home delivery.';
-    logger.warn('Checkout business validation failed', {
-      reason: 'Incompatible payment and fulfillment',
+      ? "delivery orders, not store pickup."
+      : "store pickup orders, not home delivery.";
+    logger.warn("Checkout business validation failed", {
+      reason: "Incompatible payment and fulfillment",
       payment: paymentOption.id,
       fulfillment: fulfillmentOption.id,
       cartItems: uniqueItemIds,

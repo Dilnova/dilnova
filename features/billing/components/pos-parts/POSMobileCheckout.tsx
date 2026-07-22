@@ -1,16 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { usePOSContext } from '../POSBillingProvider';
-import POSTicketPanel from './POSTicketPanel';
+import React from "react";
+import { usePOSContext } from "../POSBillingProvider";
+import POSTicketPanel from "./POSTicketPanel";
 
 export default function POSMobileCheckout() {
-  const {
-    totalItemCount,
-    totalAmount,
-    isMobileCartOpen,
-    setIsMobileCartOpen,
-  } = usePOSContext();
+  const { totalItemCount, totalAmount, isMobileCartOpen, setIsMobileCartOpen } = usePOSContext();
 
   return (
     <>
@@ -18,7 +13,9 @@ export default function POSMobileCheckout() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-900 text-white p-3 border-t border-zinc-800 shadow-2xl flex items-center justify-between">
         <div>
           <p className="text-[11px] text-zinc-400 font-bold">{totalItemCount} items in ticket</p>
-          <p className="text-base font-black font-mono text-emerald-400">${totalAmount.toFixed(2)}</p>
+          <p className="text-base font-black font-mono text-emerald-400">
+            ${totalAmount.toFixed(2)}
+          </p>
         </div>
         <button
           onClick={() => setIsMobileCartOpen(true)}
@@ -34,7 +31,9 @@ export default function POSMobileCheckout() {
         <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-sm">
           <div className="bg-white dark:bg-zinc-900 rounded-t-3xl p-4 h-[85vh] max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border-t border-zinc-200 dark:border-zinc-800">
             <div className="flex justify-between items-center pb-2 border-b border-zinc-100 dark:border-zinc-800 flex-shrink-0">
-              <span className="font-extrabold text-xs uppercase tracking-wider text-zinc-500">Checkout Ticket</span>
+              <span className="font-extrabold text-xs uppercase tracking-wider text-zinc-500">
+                Checkout Ticket
+              </span>
               <button
                 onClick={() => setIsMobileCartOpen(false)}
                 className="w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 font-bold text-xs text-zinc-600 dark:text-zinc-300 flex items-center justify-center cursor-pointer"

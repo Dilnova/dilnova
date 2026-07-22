@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition } from "react";
 import {
   cancelVendorOrderAction,
   rejectPaymentSlipAction,
   verifyOrderPaymentAction,
-} from '@/features/orders/vendor.actions';
-import { formatOrderStatusLabel, matchesOrderStatusFilter } from '@/features/orders/status';
-import { describeOrderCheckout } from '@/features/organization/checkout-options.shared';
-import { getOrderDisplayTotals } from '@/features/billing/checkout-totals';
-import { VendorOrderPaymentPanel } from '@/features/orders/components/OrderPaymentPanels';
+} from "@/features/orders/vendor.actions";
+import { formatOrderStatusLabel, matchesOrderStatusFilter } from "@/features/orders/status";
+import { describeOrderCheckout } from "@/features/organization/checkout-options.shared";
+import { getOrderDisplayTotals } from "@/features/billing/checkout-totals";
+import { VendorOrderPaymentPanel } from "@/features/orders/components/OrderPaymentPanels";
 
 interface VendorSimulatedOrdersTabProps {
   data: any; // Will be properly typed during TS cleanup
@@ -25,11 +25,11 @@ export default function VendorSimulatedOrdersTab({
   const [isPending, startTransition] = useTransition();
 
   const [orderStatusFilter, setOrderStatusFilter] = useState<
-    'all' | 'pending' | 'pending_payment' | 'payment_submitted' | 'fulfilled' | 'cancelled'
-  >('all');
+    "all" | "pending" | "pending_payment" | "payment_submitted" | "fulfilled" | "cancelled"
+  >("all");
 
   const filteredOrders = data.simulatedOrders.filter((o: any) =>
-    matchesOrderStatusFilter(o.status, orderStatusFilter)
+    matchesOrderStatusFilter(o.status, orderStatusFilter),
   );
 
   const handleVerifyOrderPayment = (orderId: string) => {
@@ -37,13 +37,13 @@ export default function VendorSimulatedOrdersTab({
       try {
         const result = await verifyOrderPaymentAction({ orderId });
         if (result?.data?.success) {
-          triggerNotification(true, 'Order payment verified.');
+          triggerNotification(true, "Order payment verified.");
           refreshData();
         } else {
-          throw new Error(result?.serverError || 'Verification failed.');
+          throw new Error(result?.serverError || "Verification failed.");
         }
       } catch (error) {
-        triggerNotification(false, error instanceof Error ? error.message : 'Verification failed.');
+        triggerNotification(false, error instanceof Error ? error.message : "Verification failed.");
       }
     });
   };
@@ -53,13 +53,13 @@ export default function VendorSimulatedOrdersTab({
       try {
         const result = await rejectPaymentSlipAction({ orderId });
         if (result?.data?.success) {
-          triggerNotification(true, 'Payment slip rejected. Customer can upload again.');
+          triggerNotification(true, "Payment slip rejected. Customer can upload again.");
           refreshData();
         } else {
-          throw new Error(result?.serverError || 'Rejection failed.');
+          throw new Error(result?.serverError || "Rejection failed.");
         }
       } catch (error) {
-        triggerNotification(false, error instanceof Error ? error.message : 'Rejection failed.');
+        triggerNotification(false, error instanceof Error ? error.message : "Rejection failed.");
       }
     });
   };
@@ -69,13 +69,13 @@ export default function VendorSimulatedOrdersTab({
       try {
         const result = await cancelVendorOrderAction({ orderId });
         if (result?.data?.success) {
-          triggerNotification(true, 'Order cancelled.');
+          triggerNotification(true, "Order cancelled.");
           refreshData();
         } else {
-          throw new Error(result?.serverError || 'Cancellation failed.');
+          throw new Error(result?.serverError || "Cancellation failed.");
         }
       } catch (error) {
-        triggerNotification(false, error instanceof Error ? error.message : 'Cancellation failed.');
+        triggerNotification(false, error instanceof Error ? error.message : "Cancellation failed.");
       }
     });
   };
@@ -83,21 +83,34 @@ export default function VendorSimulatedOrdersTab({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-50">Customer Orders (Simulated)</h3>
+        <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-50">
+          Customer Orders (Simulated)
+        </h3>
         <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl flex-wrap">
-          {(['all', 'pending', 'pending_payment', 'payment_submitted', 'fulfilled', 'cancelled'] as const).map((f) => (
+          {(
+            [
+              "all",
+              "pending",
+              "pending_payment",
+              "payment_submitted",
+              "fulfilled",
+              "cancelled",
+            ] as const
+          ).map((f) => (
             <button
               key={f}
               onClick={() => setOrderStatusFilter(f)}
               className={`px-3 py-1 rounded-lg text-[10px] font-bold cursor-pointer ${
-                orderStatusFilter === f ? 'bg-white shadow-sm font-black dark:bg-zinc-800' : 'text-zinc-500'
+                orderStatusFilter === f
+                  ? "bg-white shadow-sm font-black dark:bg-zinc-800"
+                  : "text-zinc-500"
               }`}
             >
-              {f === 'pending_payment'
-                ? 'Awaiting Pay'
-                : f === 'payment_submitted'
-                ? 'Slip Review'
-                : f.toUpperCase()}
+              {f === "pending_payment"
+                ? "Awaiting Pay"
+                : f === "payment_submitted"
+                  ? "Slip Review"
+                  : f.toUpperCase()}
             </button>
           ))}
         </div>
@@ -115,7 +128,9 @@ export default function VendorSimulatedOrdersTab({
                 <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
                   {o.customerName} ({o.customerEmail})
                 </p>
-                <p className="text-[10px] text-zinc-400 mt-1">Order Date: {new Date(o.createdAt).toLocaleString()}</p>
+                <p className="text-[10px] text-zinc-400 mt-1">
+                  Order Date: {new Date(o.createdAt).toLocaleString()}
+                </p>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
                     {checkoutDetails.fulfillment}
@@ -144,15 +159,15 @@ export default function VendorSimulatedOrdersTab({
                   </span>
                   <p
                     className={`text-[10px] uppercase font-bold mt-1 ${
-                      o.status === 'fulfilled'
-                        ? 'text-emerald-600'
-                        : o.status === 'cancelled'
-                        ? 'text-rose-600'
-                        : o.status === 'payment_submitted'
-                        ? 'text-blue-600'
-                        : o.status === 'pending_payment'
-                        ? 'text-orange-600'
-                        : 'text-amber-600'
+                      o.status === "fulfilled"
+                        ? "text-emerald-600"
+                        : o.status === "cancelled"
+                          ? "text-rose-600"
+                          : o.status === "payment_submitted"
+                            ? "text-blue-600"
+                            : o.status === "pending_payment"
+                              ? "text-orange-600"
+                              : "text-amber-600"
                     }`}
                   >
                     {formatOrderStatusLabel(o.status)}

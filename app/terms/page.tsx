@@ -1,9 +1,9 @@
-import Link from 'next/link';
-import type { Metadata } from 'next';
-import { getSystemSetting } from '@/shared/platform/settings';
+import Link from "next/link";
+import type { Metadata } from "next";
+import { getSystemSetting } from "@/shared/platform/settings";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const systemName = await getSystemSetting('system_name', 'Dilnova');
+  const systemName = await getSystemSetting("system_name", "Dilnova");
   return {
     title: `Terms of Service | ${systemName}`,
     description: `Terms of service and user agreements for the ${systemName} Multi-Vendor Commerce Marketplace.`,
@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 86400;
 
 export default async function TermsOfService() {
-  const systemName = await getSystemSetting('system_name', 'Dilnova');
+  const systemName = await getSystemSetting("system_name", "Dilnova");
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-sans py-12 px-4 sm:px-6 lg:px-8">
@@ -23,12 +23,7 @@ export default async function TermsOfService() {
             href="/"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -57,7 +52,10 @@ export default async function TermsOfService() {
               1. Acceptance of Terms
             </h2>
             <p>
-              By accessing or using <strong>{systemName}</strong> (the &quot;Service&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), you agree to comply with and be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.
+              By accessing or using <strong>{systemName}</strong> (the &quot;Service&quot;,
+              &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), you agree to comply with and be
+              bound by these Terms of Service. If you do not agree to these terms, please do not use
+              the Service.
             </p>
           </section>
 
@@ -66,7 +64,11 @@ export default async function TermsOfService() {
               2. User Accounts & Eligibility
             </h2>
             <p>
-              To browse products, make purchases, or create a vendor store, you must authenticate through our authentication provider (Clerk). By registering an account, you represent and warrant that you are at least 18 years of age (or the age of legal majority in your jurisdiction). If you are under this age, you may not use the Service to conduct e-commerce transactions. You are responsible for:
+              To browse products, make purchases, or create a vendor store, you must authenticate
+              through our authentication provider (Clerk). By registering an account, you represent
+              and warrant that you are at least 18 years of age (or the age of legal majority in
+              your jurisdiction). If you are under this age, you may not use the Service to conduct
+              e-commerce transactions. You are responsible for:
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Maintaining the confidentiality of your credentials.</li>
@@ -80,17 +82,24 @@ export default async function TermsOfService() {
               3. Multi-Vendor Marketplace Rules
             </h2>
             <p>
-              {systemName} acts as a multi-tenant platform containing various independent vendor storefronts (e.g., botanical nurseries, tech stores, industrial hardware providers).
+              {systemName} acts as a multi-tenant platform containing various independent vendor
+              storefronts (e.g., botanical nurseries, tech stores, industrial hardware providers).
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <strong>Tenant Autonomy:</strong> Each vendor is solely responsible for their product listings, catalogs, descriptions, inventory accuracy, and localized delivery configurations.
+                <strong>Tenant Autonomy:</strong> Each vendor is solely responsible for their
+                product listings, catalogs, descriptions, inventory accuracy, and localized delivery
+                configurations.
               </li>
               <li>
-                <strong>Tenant Separation:</strong> Customer orders and customer ownership are separated per tenant. You may purchase items from multiple stores via our unified cart, but fulfillment is handled by individual merchants.
+                <strong>Tenant Separation:</strong> Customer orders and customer ownership are
+                separated per tenant. You may purchase items from multiple stores via our unified
+                cart, but fulfillment is handled by individual merchants.
               </li>
               <li>
-                <strong>Merchant Conduct:</strong> Vendors must register matching corporate credentials, maintain accurate pricing, and avoid listing prohibited items or misrepresenting services.
+                <strong>Merchant Conduct:</strong> Vendors must register matching corporate
+                credentials, maintain accurate pricing, and avoid listing prohibited items or
+                misrepresenting services.
               </li>
             </ul>
           </section>
@@ -100,11 +109,18 @@ export default async function TermsOfService() {
               4. Payment & Subscriptions
             </h2>
             <p>
-              Merchants can access advanced capabilities (such as listing items, priority placement, custom thematic styling) by subscribing to one of our commercial plans.
+              Merchants can access advanced capabilities (such as listing items, priority placement,
+              custom thematic styling) by subscribing to one of our commercial plans.
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>All pricing plans are detailed on our platform and billed in accordance with the billing cycle chosen.</li>
-              <li>Failure to maintain active payment status may result in suspension of storefront administration consoles.</li>
+              <li>
+                All pricing plans are detailed on our platform and billed in accordance with the
+                billing cycle chosen.
+              </li>
+              <li>
+                Failure to maintain active payment status may result in suspension of storefront
+                administration consoles.
+              </li>
             </ul>
           </section>
 
@@ -113,7 +129,10 @@ export default async function TermsOfService() {
               5. Intellectual Property
             </h2>
             <p>
-              All core layouts, software designs, databases, and trademarks belonging to {systemName} Marketplace are protected under international copyright and trademark laws. Individual merchant branding, uploaded product images, and descriptions remain the intellectual property of the respective merchant tenant.
+              All core layouts, software designs, databases, and trademarks belonging to{" "}
+              {systemName} Marketplace are protected under international copyright and trademark
+              laws. Individual merchant branding, uploaded product images, and descriptions remain
+              the intellectual property of the respective merchant tenant.
             </p>
           </section>
 
@@ -122,30 +141,35 @@ export default async function TermsOfService() {
               6. Limitation of Liability
             </h2>
             <p>
-              In no event shall the {systemName} Platform, its administrators, or its parent entity be liable for any indirect, incidental, special, consequential, or punitive damages arising from:
+              In no event shall the {systemName} Platform, its administrators, or its parent entity
+              be liable for any indirect, incidental, special, consequential, or punitive damages
+              arising from:
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Your use or inability to use the marketplace.</li>
-              <li>Conduct, transactions, or communications of any merchant tenant on the platform.</li>
+              <li>
+                Conduct, transactions, or communications of any merchant tenant on the platform.
+              </li>
               <li>Any unauthorized access to, or modification of, your account data.</li>
             </ul>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              7. Termination
-            </h2>
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">7. Termination</h2>
             <p>
-              We reserve the right to suspend or terminate your account or access to the Service at our sole discretion, without notice, for conduct that we believe violates these Terms of Service, is harmful to other users or merchants, or violates applicable local or federal laws.
+              We reserve the right to suspend or terminate your account or access to the Service at
+              our sole discretion, without notice, for conduct that we believe violates these Terms
+              of Service, is harmful to other users or merchants, or violates applicable local or
+              federal laws.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              8. Governing Law
-            </h2>
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">8. Governing Law</h2>
             <p>
-              These Terms of Service and any separate agreements whereby we provide you Services shall be governed by and construed in accordance with the applicable laws of our operating jurisdiction.
+              These Terms of Service and any separate agreements whereby we provide you Services
+              shall be governed by and construed in accordance with the applicable laws of our
+              operating jurisdiction.
             </p>
           </section>
 
@@ -154,7 +178,14 @@ export default async function TermsOfService() {
               9. Contact Information
             </h2>
             <p>
-              Questions about the Terms of Service should be sent to us at <a href="mailto:info@dilstar.pp.ua" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">info@dilstar.pp.ua</a>.
+              Questions about the Terms of Service should be sent to us at{" "}
+              <a
+                href="mailto:info@dilstar.pp.ua"
+                className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+              >
+                info@dilstar.pp.ua
+              </a>
+              .
             </p>
           </section>
         </div>

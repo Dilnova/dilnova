@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React from 'react';
-import type { StockAvailabilityDefinition } from '@/features/inventory/availability.shared';
-import { AddProductProvider } from './add-product/AddProductContext';
-import AddProductLayout from './add-product/AddProductLayout';
+import React from "react";
+import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
+import { AddProductProvider } from "./add-product/AddProductContext";
+import AddProductLayout from "./add-product/AddProductLayout";
 
 interface Category {
   id: string;
@@ -17,7 +17,7 @@ interface AddProductClientProps {
   maxMediaLimit: number;
   branches?: { id: string; name: string; isDefault: boolean }[];
   isMultiBranchActive?: boolean;
-  stockAllocationMode?: 'target_branch' | 'central_intake';
+  stockAllocationMode?: "target_branch" | "central_intake";
   stockAvailabilityOptions?: StockAvailabilityDefinition[];
 }
 
@@ -26,7 +26,7 @@ export default function AddProductClient({
   maxMediaLimit,
   branches = [],
   isMultiBranchActive = false,
-  stockAllocationMode = 'central_intake',
+  stockAllocationMode = "central_intake",
   stockAvailabilityOptions = [],
 }: AddProductClientProps) {
   return (

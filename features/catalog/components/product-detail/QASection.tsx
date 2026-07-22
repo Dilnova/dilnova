@@ -1,12 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@clerk/nextjs';
-import { submitQuestionAction, submitAnswerAction } from '@/features/catalog/product-detail.actions';
-import Image from 'next/image';
-import SignInPrompt from '@/shared/ui/SignInPrompt';
-import { toast } from 'sonner';
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
+import {
+  submitQuestionAction,
+  submitAnswerAction,
+} from "@/features/catalog/product-detail.actions";
+import Image from "next/image";
+import SignInPrompt from "@/shared/ui/SignInPrompt";
+import { toast } from "sonner";
 
 interface Question {
   id: string;
@@ -27,17 +30,13 @@ interface QASectionProps {
   productOrgId: string;
 }
 
-export default function QASection({
-  productId,
-  questions,
-  productOrgId,
-}: QASectionProps) {
+export default function QASection({ productId, questions, productOrgId }: QASectionProps) {
   const router = useRouter();
   const { userId, orgId: userOrgId } = useAuth();
   const isLoggedIn = !!userId;
-  const [questionContent, setQuestionContent] = useState('');
+  const [questionContent, setQuestionContent] = useState("");
   const [activeReplyId, setActiveReplyId] = useState<string | null>(null);
-  const [replyContent, setReplyContent] = useState('');
+  const [replyContent, setReplyContent] = useState("");
   const [isPending, startTransition] = useTransition();
   const [isReplyPending, startReplyTransition] = useTransition();
 
@@ -48,7 +47,7 @@ export default function QASection({
     e.preventDefault();
 
     if (!questionContent.trim()) {
-      toast.error('Question content cannot be empty.');
+      toast.error("Question content cannot be empty.");
       return;
     }
 
@@ -56,14 +55,14 @@ export default function QASection({
       try {
         const result = await submitQuestionAction({ productId, content: questionContent });
         if (!result?.data?.success) {
-          throw new Error(result?.serverError || 'Failed to post question.');
+          throw new Error(result?.serverError || "Failed to post question.");
         }
-        toast.success('Your question has been posted.');
-        setQuestionContent('');
+        toast.success("Your question has been posted.");
+        setQuestionContent("");
         router.refresh();
       } catch (err) {
-        console.error('Error posting question:', err);
-        toast.error(err instanceof Error ? err.message : 'Failed to post question.');
+        console.error("Error posting question:", err);
+        toast.error(err instanceof Error ? err.message : "Failed to post question.");
       }
     });
   };
@@ -71,7 +70,7 @@ export default function QASection({
   // Handle Answer Submission
   const handleAnswerQuestion = (questionId: string) => {
     if (!replyContent.trim()) {
-      toast.error('Answer content cannot be empty.');
+      toast.error("Answer content cannot be empty.");
       return;
     }
 
@@ -79,15 +78,15 @@ export default function QASection({
       try {
         const result = await submitAnswerAction({ questionId, answer: replyContent });
         if (!result?.data?.success) {
-          throw new Error(result?.serverError || 'Failed to post answer.');
+          throw new Error(result?.serverError || "Failed to post answer.");
         }
-        toast.success('Answer posted successfully.');
-        setReplyContent('');
+        toast.success("Answer posted successfully.");
+        setReplyContent("");
         setActiveReplyId(null);
         router.refresh();
       } catch (err) {
-        console.error('Error replying to question:', err);
-        toast.error(err instanceof Error ? err.message : 'Failed to save answer.');
+        console.error("Error replying to question:", err);
+        toast.error(err instanceof Error ? err.message : "Failed to save answer.");
       }
     });
   };
@@ -138,18 +137,16 @@ export default function QASection({
                         {q.userName.charAt(0)}
                       </div>
                     )}
-                    <span className="font-bold text-zinc-800 dark:text-zinc-255">
-                      {q.userName}
-                    </span>
+                    <span className="font-bold text-zinc-800 dark:text-zinc-255">{q.userName}</span>
                     <span className="bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded text-[9px] font-semibold dark:bg-zinc-800 dark:text-zinc-400 uppercase tracking-wider">
                       Question
                     </span>
                   </div>
                   <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
-                    {new Date(q.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
+                    {new Date(q.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
                     })}
                   </span>
                 </div>
@@ -167,10 +164,10 @@ export default function QASection({
                     </span>
                     <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
                       {q.answeredAt &&
-                        new Date(q.answeredAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
+                        new Date(q.answeredAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
                         })}
                     </span>
                   </div>
@@ -196,12 +193,12 @@ export default function QASection({
                             disabled={isReplyPending}
                             className="px-3 py-1.5 bg-purple-700 hover:bg-purple-800 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all disabled:opacity-50 cursor-pointer"
                           >
-                            {isReplyPending ? 'Submitting...' : 'Post Answer'}
+                            {isReplyPending ? "Submitting..." : "Post Answer"}
                           </button>
                           <button
                             onClick={() => {
                               setActiveReplyId(null);
-                              setReplyContent('');
+                              setReplyContent("");
                             }}
                             className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer"
                           >
@@ -213,7 +210,7 @@ export default function QASection({
                       <button
                         onClick={() => {
                           setActiveReplyId(q.id);
-                          setReplyContent('');
+                          setReplyContent("");
                         }}
                         className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all shadow-sm cursor-pointer"
                       >
@@ -256,7 +253,7 @@ export default function QASection({
               disabled={isPending}
               className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl transition-all shadow-md shadow-purple-900/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              {isPending ? 'Posting...' : 'Post Question'}
+              {isPending ? "Posting..." : "Post Question"}
             </button>
           </form>
         </div>
@@ -264,13 +261,12 @@ export default function QASection({
 
       {isLoggedIn && isVendorOwner && (
         <p className="text-xs text-zinc-450 dark:text-zinc-550 border-t border-zinc-100 dark:border-zinc-900 pt-4 font-mono italic">
-          ℹ️ You are viewing this page as the product seller. Use the inline buttons on user questions to respond.
+          ℹ️ You are viewing this page as the product seller. Use the inline buttons on user
+          questions to respond.
         </p>
       )}
 
-      {!isLoggedIn && (
-        <SignInPrompt message="🔒 Please sign in to submit a question." />
-      )}
+      {!isLoggedIn && <SignInPrompt message="🔒 Please sign in to submit a question." />}
     </div>
   );
 }

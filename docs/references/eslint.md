@@ -7,20 +7,21 @@
 
 ## Key Docs Links
 
-| Topic | URL |
-|---|---|
-| Getting Started | https://eslint.org/docs/latest/use/getting-started |
-| Configuration (Flat Config) | https://eslint.org/docs/latest/use/configure/ |
-| Rules Reference | https://eslint.org/docs/latest/rules/ |
-| CLI Reference | https://eslint.org/docs/latest/use/command-line-interface |
-| Plugins | https://eslint.org/docs/latest/use/configure/plugins |
-| Shareable Configs | https://eslint.org/docs/latest/extend/shareable-configs |
+| Topic                         | URL                                                          |
+| ----------------------------- | ------------------------------------------------------------ |
+| Getting Started               | https://eslint.org/docs/latest/use/getting-started           |
+| Configuration (Flat Config)   | https://eslint.org/docs/latest/use/configure/                |
+| Rules Reference               | https://eslint.org/docs/latest/rules/                        |
+| CLI Reference                 | https://eslint.org/docs/latest/use/command-line-interface    |
+| Plugins                       | https://eslint.org/docs/latest/use/configure/plugins         |
+| Shareable Configs             | https://eslint.org/docs/latest/extend/shareable-configs      |
 | Migration to v9 (Flat Config) | https://eslint.org/docs/latest/use/configure/migration-guide |
 
 ### Next.js ESLint Plugin
-| Topic | URL |
-|---|---|
-| eslint-config-next | https://nextjs.org/docs/app/api-reference/config/eslint |
+
+| Topic                 | URL                                                                     |
+| --------------------- | ----------------------------------------------------------------------- |
+| eslint-config-next    | https://nextjs.org/docs/app/api-reference/config/eslint                 |
 | Core Web Vitals rules | https://nextjs.org/docs/app/api-reference/config/eslint#core-web-vitals |
 
 ---

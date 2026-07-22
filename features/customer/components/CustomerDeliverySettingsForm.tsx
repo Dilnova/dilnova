@@ -1,11 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useTransition, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { updateCustomerDeliveryDetailsAction, type UpdateDeliverySettingsInput } from '../profile.actions';
-import { MapPin, Loader2, Save } from 'lucide-react';
-import DeliveryAddressFormFields from './DeliveryAddressFormFields';
-import { toast } from 'sonner';
+import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  updateCustomerDeliveryDetailsAction,
+  type UpdateDeliverySettingsInput,
+} from "../profile.actions";
+import { MapPin, Loader2, Save } from "lucide-react";
+import DeliveryAddressFormFields from "./DeliveryAddressFormFields";
+import { toast } from "sonner";
 
 interface CustomerDeliverySettingsFormProps {
   initialData: {
@@ -20,19 +23,21 @@ interface CustomerDeliverySettingsFormProps {
   } | null;
 }
 
-export default function CustomerDeliverySettingsForm({ initialData }: CustomerDeliverySettingsFormProps) {
+export default function CustomerDeliverySettingsForm({
+  initialData,
+}: CustomerDeliverySettingsFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const [formData, setFormData] = useState<UpdateDeliverySettingsInput>({
-    shippingAddress: initialData?.shippingAddress || '',
-    shippingAddressLine2: initialData?.shippingAddressLine2 || '',
-    shippingCity: initialData?.shippingCity || '',
-    shippingState: initialData?.shippingState || '',
-    shippingPostalCode: initialData?.shippingPostalCode || '',
-    shippingCountry: initialData?.shippingCountry || '',
-    shippingPhone: initialData?.shippingPhone || '',
-    shippingPhone2: initialData?.shippingPhone2 || '',
+    shippingAddress: initialData?.shippingAddress || "",
+    shippingAddressLine2: initialData?.shippingAddressLine2 || "",
+    shippingCity: initialData?.shippingCity || "",
+    shippingState: initialData?.shippingState || "",
+    shippingPostalCode: initialData?.shippingPostalCode || "",
+    shippingCountry: initialData?.shippingCountry || "",
+    shippingPhone: initialData?.shippingPhone || "",
+    shippingPhone2: initialData?.shippingPhone2 || "",
   });
 
   const isFormEmpty = !initialData?.shippingAddress && !initialData?.shippingPhone;
@@ -47,10 +52,14 @@ export default function CustomerDeliverySettingsForm({ initialData }: CustomerDe
     startTransition(async () => {
       const result = await updateCustomerDeliveryDetailsAction(formData);
       if (result?.data?.success) {
-        toast.success('Delivery preferences saved successfully!');
+        toast.success("Delivery preferences saved successfully!");
         router.refresh();
       } else {
-        toast.error(result?.serverError || result?.validationErrors?._errors?.[0] || 'Failed to save delivery details');
+        toast.error(
+          result?.serverError ||
+            result?.validationErrors?._errors?.[0] ||
+            "Failed to save delivery details",
+        );
       }
     });
   };
@@ -66,9 +75,9 @@ export default function CustomerDeliverySettingsForm({ initialData }: CustomerDe
               Delivery Preferences
             </h4>
             <p className="text-xs text-zinc-500 mt-1 leading-relaxed max-w-md">
-              {isFormEmpty 
-                ? 'Set up your default delivery details to speed up your checkout process.' 
-                : 'Manage the default address and contact numbers used for your home deliveries.'}
+              {isFormEmpty
+                ? "Set up your default delivery details to speed up your checkout process."
+                : "Manage the default address and contact numbers used for your home deliveries."}
             </p>
           </div>
         </div>
@@ -76,16 +85,15 @@ export default function CustomerDeliverySettingsForm({ initialData }: CustomerDe
 
       {/* Form Content */}
       <form onSubmit={handleSubmit} className="p-5 space-y-6">
-        
         <DeliveryAddressFormFields
           shippingAddress={formData.shippingAddress}
-          shippingAddressLine2={formData.shippingAddressLine2 || ''}
+          shippingAddressLine2={formData.shippingAddressLine2 || ""}
           shippingCity={formData.shippingCity}
           shippingState={formData.shippingState}
           shippingPostalCode={formData.shippingPostalCode}
-          shippingCountry={formData.shippingCountry || ''}
-          shippingPhone={formData.shippingPhone || ''}
-          shippingPhone2={formData.shippingPhone2 || ''}
+          shippingCountry={formData.shippingCountry || ""}
+          shippingPhone={formData.shippingPhone || ""}
+          shippingPhone2={formData.shippingPhone2 || ""}
           onChange={handleChange}
         />
 
@@ -101,7 +109,7 @@ export default function CustomerDeliverySettingsForm({ initialData }: CustomerDe
             ) : (
               <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />
             )}
-            {isPending ? 'Saving...' : 'Save Preferences'}
+            {isPending ? "Saving..." : "Save Preferences"}
           </button>
         </div>
       </form>

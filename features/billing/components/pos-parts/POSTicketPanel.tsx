@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { playAudioFeedback } from '../../utils/pos-audio';
-import { usePOSContext } from '../POSBillingProvider';
+import React from "react";
+import { playAudioFeedback } from "../../utils/pos-audio";
+import { usePOSContext } from "../POSBillingProvider";
 
 interface TicketPanelProps {
   isMobileSheet?: boolean;
@@ -47,7 +47,7 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
             </h3>
             {totalItemCount > 0 && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
-                {totalItemCount} {totalItemCount === 1 ? 'item' : 'items'}
+                {totalItemCount} {totalItemCount === 1 ? "item" : "items"}
               </span>
             )}
           </div>
@@ -57,7 +57,7 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
               onClick={() => {
                 setCart([]);
                 setDiscountPercent(0);
-                playAudioFeedback('error');
+                playAudioFeedback("error");
               }}
               className="text-[11px] font-semibold text-rose-500 hover:text-rose-600 transition-colors cursor-pointer"
             >
@@ -137,7 +137,9 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
         {/* Quick Discount Selector */}
         {cart.length > 0 && (
           <div className="flex items-center justify-between text-xs pb-1 border-b border-zinc-100 dark:border-zinc-800/60">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Discount:</span>
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+              Discount:
+            </span>
             <div className="flex gap-1">
               {[0, 5, 10, 15, 20].map((pct) => (
                 <button
@@ -146,11 +148,11 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
                   onClick={() => setDiscountPercent(pct)}
                   className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all cursor-pointer ${
                     discountPercent === pct
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 hover:bg-zinc-200'
+                      ? "bg-indigo-600 text-white"
+                      : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 hover:bg-zinc-200"
                   }`}
                 >
-                  {pct === 0 ? 'None' : `${pct}%`}
+                  {pct === 0 ? "None" : `${pct}%`}
                 </button>
               ))}
             </div>
@@ -191,27 +193,29 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
           />
 
           <div className="grid grid-cols-3 gap-1">
-            {(['cash', 'card', 'other'] as const).map((method) => (
+            {(["cash", "card", "other"] as const).map((method) => (
               <button
                 key={method}
                 type="button"
                 onClick={() => setPaymentMethod(method)}
                 className={`py-1 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer ${
                   paymentMethod === method
-                    ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm'
-                    : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm"
+                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                 }`}
               >
-                {method === 'cash' ? '💵 Cash' : method === 'card' ? '💳 Card' : '⭐ Other'}
+                {method === "cash" ? "💵 Cash" : method === "card" ? "💳 Card" : "⭐ Other"}
               </button>
             ))}
           </div>
 
           {/* Cash Tendered & Change Calculator */}
-          {paymentMethod === 'cash' && (
+          {paymentMethod === "cash" && (
             <div className="p-1.5 rounded-xl bg-amber-50/70 border border-amber-200/80 dark:bg-amber-950/20 dark:border-amber-900/40 space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-amber-900 dark:text-amber-300 text-[10px]">Tendered:</span>
+                <span className="font-bold text-amber-900 dark:text-amber-300 text-[10px]">
+                  Tendered:
+                </span>
                 <input
                   type="number"
                   step="0.01"
@@ -245,12 +249,14 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
 
               {cashTenderedVal > 0 && (
                 <div className="flex justify-between items-center text-xs pt-0.5 border-t border-amber-200/60 dark:border-amber-900/40">
-                  <span className="font-bold text-amber-950 dark:text-amber-200 text-[10px]">Change Due:</span>
+                  <span className="font-bold text-amber-950 dark:text-amber-200 text-[10px]">
+                    Change Due:
+                  </span>
                   <span
                     className={`font-mono font-black text-xs ${
                       cashTenderedVal >= totalAmount
-                        ? 'text-emerald-700 dark:text-emerald-400'
-                        : 'text-rose-600 dark:text-rose-400'
+                        ? "text-emerald-700 dark:text-emerald-400"
+                        : "text-rose-600 dark:text-rose-400"
                     }`}
                   >
                     ${changeDue.toFixed(2)}

@@ -1,7 +1,7 @@
 import {
   createCloudinaryUploadSignatureAction,
   type CloudinaryUploadKind,
-} from '@/features/media/cloudinary.actions';
+} from "@/features/media/cloudinary.actions";
 
 interface UploadProgressEvent {
   percent: number;
@@ -26,36 +26,39 @@ export interface CloudinaryUploadOptions {
  */
 export async function uploadToCloudinary(
   file: File,
-  options?: CloudinaryUploadOptions | ((progress: UploadProgressEvent) => void)
+  options?: CloudinaryUploadOptions | ((progress: UploadProgressEvent) => void),
 ): Promise<UploadResult> {
   const normalizedOptions: CloudinaryUploadOptions =
-    typeof options === 'function' ? { onProgress: options } : (options ?? {});
+    typeof options === "function" ? { onProgress: options } : (options ?? {});
 
-  const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
+  const resourceType = file.type.startsWith("video/") ? "video" : "image";
   const signatureResult = await createCloudinaryUploadSignatureAction({
-    uploadKind: normalizedOptions.uploadKind ?? 'catalog',
+    uploadKind: normalizedOptions.uploadKind ?? "catalog",
     resourceType,
   });
 
   if (!signatureResult?.data) {
     return {
       success: false,
-      error: signatureResult?.serverError || signatureResult?.validationErrors?._errors?.[0] || 'Failed to get upload signature',
+      error:
+        signatureResult?.serverError ||
+        signatureResult?.validationErrors?._errors?.[0] ||
+        "Failed to get upload signature",
     };
   }
 
   const { cloudName, apiKey, timestamp, signature, folder } = signatureResult.data;
 
   const formData = new FormData();
-  formData.append('file', file);
-  formData.append('api_key', apiKey);
-  formData.append('timestamp', String(timestamp));
-  formData.append('signature', signature);
-  formData.append('folder', folder);
+  formData.append("file", file);
+  formData.append("api_key", apiKey);
+  formData.append("timestamp", String(timestamp));
+  formData.append("signature", signature);
+  formData.append("folder", folder);
 
   return new Promise((resolve) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, true);
+    xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, true);
 
     const onProgress = normalizedOptions.onProgress;
     if (onProgress && xhr.upload) {
@@ -86,7 +89,7 @@ export async function uploadToCloudinary(
         } catch {
           resolve({
             success: false,
-            error: 'Failed to process server response.',
+            error: "Failed to process server response.",
           });
         }
       } else {
@@ -110,7 +113,7 @@ export async function uploadToCloudinary(
     xhr.onerror = () => {
       resolve({
         success: false,
-        error: 'Network error occurred during upload to Cloudinary.',
+        error: "Network error occurred during upload to Cloudinary.",
       });
     };
 

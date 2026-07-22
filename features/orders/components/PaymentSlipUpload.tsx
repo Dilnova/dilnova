@@ -1,9 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useTransition } from 'react';
-import Image from 'next/image';
-import { createPaymentSlipUploadPresignedUrlAction, submitPaymentSlipPathAction } from '@/features/orders/customer.actions';
-import { toast } from 'sonner';
+import { useState, useTransition } from "react";
+import Image from "next/image";
+import {
+  createPaymentSlipUploadPresignedUrlAction,
+  submitPaymentSlipPathAction,
+} from "@/features/orders/customer.actions";
+import { toast } from "sonner";
 
 interface PaymentSlipUploadProps {
   orderId: string;
@@ -14,7 +17,7 @@ interface PaymentSlipUploadProps {
 }
 
 function isAllowedPaymentSlipFile(file: File): boolean {
-  if (file.type.startsWith('image/')) {
+  if (file.type.startsWith("image/")) {
     return true;
   }
   return /\.(jpe?g|png|webp|gif)$/i.test(file.name);
@@ -27,7 +30,7 @@ export default function PaymentSlipUpload({
   disabled = false,
   compact = false,
 }: PaymentSlipUploadProps) {
-  const [slipPreviewUrl, setSlipPreviewUrl] = useState(existingSlipPreviewUrl || '');
+  const [slipPreviewUrl, setSlipPreviewUrl] = useState(existingSlipPreviewUrl || "");
   const [isPending, startTransition] = useTransition();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,14 +38,14 @@ export default function PaymentSlipUpload({
     if (!file) return;
 
     if (!isAllowedPaymentSlipFile(file)) {
-      toast.error('Please upload an image file (JPG, PNG, WebP, or GIF).');
-      event.target.value = '';
+      toast.error("Please upload an image file (JPG, PNG, WebP, or GIF).");
+      event.target.value = "";
       return;
     }
 
     if (file.size > 8 * 1024 * 1024) {
-      toast.error('Image must be 8 MB or smaller.');
-      event.target.value = '';
+      toast.error("Image must be 8 MB or smaller.");
+      event.target.value = "";
       return;
     }
 
@@ -57,7 +60,7 @@ export default function PaymentSlipUpload({
         });
 
         if (!presignResult?.data?.success) {
-          toast.error(presignResult?.serverError || 'Failed to initialize upload.');
+          toast.error(presignResult?.serverError || "Failed to initialize upload.");
           return;
         }
 
@@ -65,9 +68,9 @@ export default function PaymentSlipUpload({
 
         // 2. Upload file binary directly to Supabase storage
         const uploadResponse = await fetch(signedUrl, {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': file.type,
+            "Content-Type": file.type,
           },
           body: file,
           signal: AbortSignal.timeout(30000),
@@ -75,7 +78,7 @@ export default function PaymentSlipUpload({
 
         if (!uploadResponse.ok) {
           const errText = await uploadResponse.text();
-          throw new Error(errText || 'Failed to upload file to storage.');
+          throw new Error(errText || "Failed to upload file to storage.");
         }
 
         // 3. Confirm path and submit the change to the database
@@ -88,18 +91,18 @@ export default function PaymentSlipUpload({
           if (submitResult.data.previewUrl) {
             setSlipPreviewUrl(submitResult.data.previewUrl);
           }
-          toast.success('Payment slip submitted. The vendor will review your transfer shortly.');
+          toast.success("Payment slip submitted. The vendor will review your transfer shortly.");
         } else {
-          toast.error(submitResult?.serverError || 'Failed to save payment slip.');
+          toast.error(submitResult?.serverError || "Failed to save payment slip.");
         }
       } catch (error) {
         toast.error(
           error instanceof Error
             ? error.message
-            : 'Upload failed. Try a smaller image or refresh the page.'
+            : "Upload failed. Try a smaller image or refresh the page.",
         );
       } finally {
-        event.target.value = '';
+        event.target.value = "";
       }
     });
   };
@@ -107,15 +110,20 @@ export default function PaymentSlipUpload({
   return (
     <div
       className={`rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 ${
-        compact ? 'p-4 space-y-3' : 'p-5 space-y-4'
+        compact ? "p-4 space-y-3" : "p-5 space-y-4"
       }`}
     >
       <div>
-        <h3 className={`font-bold text-zinc-900 dark:text-zinc-100 ${compact ? 'text-xs' : 'text-sm'}`}>
+        <h3
+          className={`font-bold text-zinc-900 dark:text-zinc-100 ${compact ? "text-xs" : "text-sm"}`}
+        >
           Upload Bank Payment Slip
         </h3>
-        <p className={`text-zinc-500 dark:text-zinc-400 mt-1 ${compact ? 'text-[11px]' : 'text-xs'}`}>
-          After you transfer payment, upload a photo or screenshot of your bank slip so the vendor can verify it.
+        <p
+          className={`text-zinc-500 dark:text-zinc-400 mt-1 ${compact ? "text-[11px]" : "text-xs"}`}
+        >
+          After you transfer payment, upload a photo or screenshot of your bank slip so the vendor
+          can verify it.
         </p>
       </div>
 
@@ -153,7 +161,6 @@ export default function PaymentSlipUpload({
       {isPending && (
         <p className="text-[11px] font-mono text-zinc-500">Uploading and saving payment slip…</p>
       )}
-
     </div>
   );
 }

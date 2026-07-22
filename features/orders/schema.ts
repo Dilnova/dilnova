@@ -1,9 +1,9 @@
-import { z } from 'zod/v3';
-import { uuidField } from '@/shared/validation/primitives';
+import { z } from "zod/v3";
+import { uuidField } from "@/shared/validation/primitives";
 
 export const updateSimulatedOrderStatusSchema = z.object({
   orderId: uuidField,
-  status: z.enum(['pending', 'fulfilled', 'cancelled']),
+  status: z.enum(["pending", "fulfilled", "cancelled"]),
 });
 
 export const uploadPaymentSlipFormSchema = z.object({

@@ -1,23 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { checkSuperAdmin } from '@/shared/auth/superadmin-guard';
-import { rateLimit } from '@/shared/security/rate-limit';
-import { logAuditAction } from '@/shared/audit/logger';
-import { clerkClient } from '@clerk/nextjs/server';
-import { logger } from '@/shared/logging/logger';
-import { Client } from '@upstash/qstash';
+import { NextRequest, NextResponse } from "next/server";
+import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { logAuditAction } from "@/shared/audit/logger";
+import { clerkClient } from "@clerk/nextjs/server";
+import { logger } from "@/shared/logging/logger";
+import { Client } from "@upstash/qstash";
 
 const qstash = new Client({
-  token: process.env.QSTASH_TOKEN || '',
+  token: process.env.QSTASH_TOKEN || "",
 });
 
 export async function GET(req: NextRequest) {
   try {
     const adminUser = await checkSuperAdmin();
     await rateLimit(5, 60 * 1000, adminUser.id);
-    const targetUserId = req.nextUrl.searchParams.get('userId');
+    const targetUserId = req.nextUrl.searchParams.get("userId");
 
     if (!targetUserId) {
-      return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
+      return NextResponse.json({ error: "Missing userId parameter" }, { status: 400 });
     }
 
     const client = await clerkClient();
@@ -25,13 +25,17 @@ export async function GET(req: NextRequest) {
     const adminEmail = clerkAdminUser.emailAddresses[0]?.emailAddress;
 
     if (!adminEmail) {
-      return NextResponse.json({ error: 'Superadmin account lacks an email address.' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Superadmin account lacks an email address." },
+        { status: 400 },
+      );
     }
 
-    const appUrl = process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
-    
+    const appUrl =
+      process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
     // Publish to QStash for asynchronous processing
     const message = await qstash.publishJSON({
       url: `${appUrl}/api/webhooks/qstash/export`,
@@ -44,23 +48,25 @@ export async function GET(req: NextRequest) {
 
     await logAuditAction({
       userId: adminUser.id,
-      action: 'API_GDPR_EXPORT_QUEUED',
-      targetType: 'data_subject_request',
+      action: "API_GDPR_EXPORT_QUEUED",
+      targetType: "data_subject_request",
       targetId: targetUserId,
       metadata: { qstashMessageId: message.messageId },
       strict: true,
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Export job queued successfully. You will receive an email when it is ready.' 
-    }, { status: 202 });
-
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Export job queued successfully. You will receive an email when it is ready.",
+      },
+      { status: 202 },
+    );
   } catch (error) {
-    logger.error('GDPR Export Queue Error', error);
-    if (error instanceof Error && error.message.includes('Unauthorized')) {
+    logger.error("GDPR Export Queue Error", error);
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

@@ -1,10 +1,10 @@
-import { logger } from '@/shared/logging/logger';
-import { MetadataRoute } from 'next';
-import { db } from '@/shared/db/client';
-import { products, categories } from '@/shared/db/schema';
-import { DEFAULT_APP_URL } from '@/shared/platform/brand';
+import { logger } from "@/shared/logging/logger";
+import { MetadataRoute } from "next";
+import { db } from "@/shared/db/client";
+import { products, categories } from "@/shared/db/schema";
+import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
@@ -24,11 +24,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     productEntries = dbProducts.map((p) => ({
       url: `${baseUrl}/products/${p.id}`,
       lastModified: p.updatedAt || new Date(),
-      changeFrequency: 'daily' as const,
+      changeFrequency: "daily" as const,
       priority: 0.7,
     }));
   } catch (error) {
-    logger.error('Sitemap: Failed to load products for sitemap', error);
+    logger.error("Sitemap: Failed to load products for sitemap", error);
   }
 
   try {
@@ -43,30 +43,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     categoryEntries = dbCategories.map((c) => ({
       url: `${baseUrl}/products?category=${c.slug}`,
       lastModified: c.createdAt || new Date(),
-      changeFrequency: 'weekly' as const,
+      changeFrequency: "weekly" as const,
       priority: 0.8,
     }));
   } catch (error) {
-    logger.error('Sitemap: Failed to load categories for sitemap', error);
+    logger.error("Sitemap: Failed to load categories for sitemap", error);
   }
 
   return [
     {
       url: baseUrl,
       lastModified: new Date(),
-      changeFrequency: 'daily' as const,
+      changeFrequency: "daily" as const,
       priority: 1.0,
     },
     {
       url: `${baseUrl}/products`,
       lastModified: new Date(),
-      changeFrequency: 'daily' as const,
+      changeFrequency: "daily" as const,
       priority: 0.9,
     },
     {
       url: `${baseUrl}/contact`,
       lastModified: new Date(),
-      changeFrequency: 'monthly' as const,
+      changeFrequency: "monthly" as const,
       priority: 0.5,
     },
     ...categoryEntries,

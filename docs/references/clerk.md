@@ -7,22 +7,22 @@
 
 ## Key Docs Links
 
-| Topic | URL |
-|---|---|
-| Next.js Quickstart | https://clerk.com/docs/quickstarts/nextjs |
-| Middleware (`clerkMiddleware`) | https://clerk.com/docs/references/nextjs/clerk-middleware |
-| `auth()` Server Helper | https://clerk.com/docs/references/nextjs/auth |
-| `currentUser()` | https://clerk.com/docs/references/nextjs/current-user |
-| Organizations | https://clerk.com/docs/organizations/overview |
-| Organization Roles & Permissions | https://clerk.com/docs/organizations/roles-permissions |
-| User Metadata | https://clerk.com/docs/users/metadata |
-| `<SignIn />` Component | https://clerk.com/docs/components/authentication/sign-in |
-| `<UserButton />` Component | https://clerk.com/docs/components/user/user-button |
-| `<OrganizationSwitcher />` | https://clerk.com/docs/components/organization/organization-switcher |
-| Webhooks | https://clerk.com/docs/webhooks/overview |
-| Testing | https://clerk.com/docs/testing/overview |
-| Security Overview | https://clerk.com/docs/security/overview |
-| Backend API | https://clerk.com/docs/reference/backend-api |
+| Topic                            | URL                                                                  |
+| -------------------------------- | -------------------------------------------------------------------- |
+| Next.js Quickstart               | https://clerk.com/docs/quickstarts/nextjs                            |
+| Middleware (`clerkMiddleware`)   | https://clerk.com/docs/references/nextjs/clerk-middleware            |
+| `auth()` Server Helper           | https://clerk.com/docs/references/nextjs/auth                        |
+| `currentUser()`                  | https://clerk.com/docs/references/nextjs/current-user                |
+| Organizations                    | https://clerk.com/docs/organizations/overview                        |
+| Organization Roles & Permissions | https://clerk.com/docs/organizations/roles-permissions               |
+| User Metadata                    | https://clerk.com/docs/users/metadata                                |
+| `<SignIn />` Component           | https://clerk.com/docs/components/authentication/sign-in             |
+| `<UserButton />` Component       | https://clerk.com/docs/components/user/user-button                   |
+| `<OrganizationSwitcher />`       | https://clerk.com/docs/components/organization/organization-switcher |
+| Webhooks                         | https://clerk.com/docs/webhooks/overview                             |
+| Testing                          | https://clerk.com/docs/testing/overview                              |
+| Security Overview                | https://clerk.com/docs/security/overview                             |
+| Backend API                      | https://clerk.com/docs/reference/backend-api                         |
 
 ---
 
@@ -45,21 +45,21 @@
 
 ```ts
 // Server-side auth check
-import { auth } from '@clerk/nextjs/server';
+import { auth } from "@clerk/nextjs/server";
 
 export async function protectedAction() {
   const { userId, orgId, orgRole } = await auth();
-  if (!userId) throw new Error('Unauthorized');
-  if (orgRole !== 'org:admin') throw new Error('Forbidden');
+  if (!userId) throw new Error("Unauthorized");
+  if (orgRole !== "org:admin") throw new Error("Forbidden");
 }
 ```
 
 ```ts
 // Superadmin check
-import { currentUser } from '@clerk/nextjs/server';
+import { currentUser } from "@clerk/nextjs/server";
 
 const user = await currentUser();
-const isSuperadmin = user?.publicMetadata?.role === 'admin';
+const isSuperadmin = user?.publicMetadata?.role === "admin";
 ```
 
 ### Security Model & Caching
@@ -70,7 +70,7 @@ To reduce Clerk API rate limits and latency, role and organization checks are ca
 - **Superadmin Cache (`getCachedIsSuperAdmin`)**: 15 seconds TTL
 - **Organization Members Cache (`getCachedOrgMembers`)**: 60 seconds TTL (reduced from 300s to limit access windows)
 
-**Important**: Because of these cache windows, a revoked admin or removed organization member may retain access for up to 15 seconds (for global roles) or 60 seconds (for org roles). 
+**Important**: Because of these cache windows, a revoked admin or removed organization member may retain access for up to 15 seconds (for global roles) or 60 seconds (for org roles).
 
 **Best Practice**: For critical operations (e.g., financial transactions, billing changes, payouts), **bypass the cache** and make a fresh Clerk API call (e.g. `client.users.getUser(userId)`) to verify the user's role and membership in real-time.
 

@@ -3,7 +3,7 @@ name: WAF / Edge Security Verification
 on:
   schedule:
     # Run monthly on the 1st of every month at 00:00 UTC
-    - cron: '0 0 1 * *'
+    - cron: "0 0 1 * *"
   workflow_dispatch:
 
 permissions:

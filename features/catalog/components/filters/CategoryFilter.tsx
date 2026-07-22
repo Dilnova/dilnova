@@ -1,5 +1,5 @@
-import React from 'react';
-import type { CatalogCategoryRef } from '@/features/catalog/types';
+import React from "react";
+import type { CatalogCategoryRef } from "@/features/catalog/types";
 
 interface CategoryFilterProps {
   categories: CatalogCategoryRef[];
@@ -7,7 +7,11 @@ interface CategoryFilterProps {
   updateParams: (updates: Record<string, string | null>) => void;
 }
 
-export default function CategoryFilter({ categories, currentCategory, updateParams }: CategoryFilterProps) {
+export default function CategoryFilter({
+  categories,
+  currentCategory,
+  updateParams,
+}: CategoryFilterProps) {
   const activeCat = categories.find((c) => c.slug === currentCategory);
   const mainCategories = categories.filter((c) => !c.parentId);
 
@@ -34,8 +38,8 @@ export default function CategoryFilter({ categories, currentCategory, updatePara
           onClick={() => updateParams({ category: null })}
           className={`w-full text-left px-3 py-2 rounded-xl transition-colors cursor-pointer flex items-center justify-between ${
             !currentCategory
-              ? 'bg-purple-50 text-purple-700 font-bold dark:bg-purple-950/60 dark:text-purple-300'
-              : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900'
+              ? "bg-purple-50 text-purple-700 font-bold dark:bg-purple-950/60 dark:text-purple-300"
+              : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
           }`}
         >
           <span>All Categories</span>
@@ -52,10 +56,10 @@ export default function CategoryFilter({ categories, currentCategory, updatePara
                 onClick={() => updateParams({ category: cat.slug })}
                 className={`w-full text-left px-3 py-2 rounded-xl transition-colors cursor-pointer flex items-center justify-between ${
                   currentCategory === cat.slug
-                    ? 'bg-purple-50 text-purple-700 font-bold dark:bg-purple-950/60 dark:text-purple-300'
+                    ? "bg-purple-50 text-purple-700 font-bold dark:bg-purple-950/60 dark:text-purple-300"
                     : isSelected
-                    ? 'font-semibold text-zinc-900 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-900/60'
-                    : 'text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900'
+                      ? "font-semibold text-zinc-900 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-900/60"
+                      : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
                 }`}
               >
                 <span>{cat.name}</span>
@@ -71,8 +75,8 @@ export default function CategoryFilter({ categories, currentCategory, updatePara
                       onClick={() => updateParams({ category: sub.slug })}
                       className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer ${
                         currentCategory === sub.slug
-                          ? 'bg-purple-100 text-purple-800 font-bold dark:bg-purple-900/40 dark:text-purple-300'
-                          : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-900'
+                          ? "bg-purple-100 text-purple-800 font-bold dark:bg-purple-900/40 dark:text-purple-300"
+                          : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-900"
                       }`}
                     >
                       {sub.name}

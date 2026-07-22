@@ -1,4 +1,4 @@
-import { escapeHtml } from '@/shared/email/smtp-client';
+import { escapeHtml } from "@/shared/email/smtp-client";
 
 export interface VendorNewOrderEmailInput {
   systemName: string;
@@ -15,9 +15,9 @@ export interface VendorNewOrderEmailInput {
 }
 
 function formatPrice(cents: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'LKR',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "LKR",
   }).format(cents / 100);
 }
 
@@ -36,9 +36,9 @@ export function buildVendorNewOrderEmailHtml(input: VendorNewOrderEmailInput): s
             ${formatPrice(item.unitPrice * item.quantity)}
           </td>
         </tr>
-      `
+      `,
     )
-    .join('');
+    .join("");
 
   return `
     <!DOCTYPE html>

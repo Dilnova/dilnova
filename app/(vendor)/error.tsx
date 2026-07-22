@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { GlobalError } from '@/shared/ui/GlobalError';
+import { GlobalError } from "@/shared/ui/GlobalError";
 
 export default function Error({
   error,

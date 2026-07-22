@@ -12,17 +12,20 @@ export {
   type VendorOrgIntegritySupplierRef,
   type VendorOrgIssueGroup,
   type VendorOrgReassignScopes,
-} from '@/features/vendor-org/integrity';
+} from "@/features/vendor-org/integrity";
 
 export {
   reassignProductOrgSchema,
   reassignVendorOrgSchema,
   type ReassignProductOrgInput,
   type ReassignVendorOrgInput,
-} from '@/features/vendor-org/schema';
+} from "@/features/vendor-org/schema";
 
-export { reassignProductOrgAction, reassignVendorOrgAction } from '@/features/vendor-org/reassign.actions';
+export {
+  reassignProductOrgAction,
+  reassignVendorOrgAction,
+} from "@/features/vendor-org/reassign.actions";
 
-export { default as VendorOrgIssuesTab } from '@/features/vendor-org/components/VendorOrgIssuesTab';
+export { default as VendorOrgIssuesTab } from "@/features/vendor-org/components/VendorOrgIssuesTab";
 
-export * from '@/features/vendor-org/emails';
+export * from "@/features/vendor-org/emails";

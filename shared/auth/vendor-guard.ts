@@ -1,6 +1,6 @@
-import 'server-only';
-import { getCachedUserRole, getCachedIsSuperAdmin } from '@/shared/auth/clerk-cache';
-import { auth } from '@clerk/nextjs/server';
+import "server-only";
+import { getCachedUserRole, getCachedIsSuperAdmin } from "@/shared/auth/clerk-cache";
+import { auth } from "@clerk/nextjs/server";
 
 /**
  * Ensures the currently authenticated user has the 'vendor' global role, is a superadmin,
@@ -12,7 +12,7 @@ export async function requireVendorRole(userId?: string) {
   const uid = userId || authUserId;
 
   if (!uid) {
-    throw new Error('Not authorized: You must be signed in.');
+    throw new Error("Not authorized: You must be signed in.");
   }
 
   const [userRole, isSuperAdmin] = await Promise.all([
@@ -20,14 +20,14 @@ export async function requireVendorRole(userId?: string) {
     getCachedIsSuperAdmin(uid),
   ]);
 
-  if (userRole === 'customer') {
-    throw new Error('Not authorized: Customers cannot perform vendor actions.');
+  if (userRole === "customer") {
+    throw new Error("Not authorized: Customers cannot perform vendor actions.");
   }
 
-  const isGlobalVendor = userRole === 'vendor' || isSuperAdmin;
-  const isOrgVendor = orgId && (orgRole === 'org:admin' || orgRole === 'org:member');
+  const isGlobalVendor = userRole === "vendor" || isSuperAdmin;
+  const isOrgVendor = orgId && (orgRole === "org:admin" || orgRole === "org:member");
 
   if (!isGlobalVendor && !isOrgVendor) {
-    throw new Error('Not authorized: You do not have vendor permissions.');
+    throw new Error("Not authorized: You do not have vendor permissions.");
   }
 }

@@ -1,18 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   clearCheckoutSuccessSnapshot,
   loadCheckoutSuccessSnapshot,
-} from '@/features/cart/checkout-success-storage';
-import { type BankTransferCheckoutInstructions } from '@/features/billing/bank-transfer';
+} from "@/features/cart/checkout-success-storage";
+import { type BankTransferCheckoutInstructions } from "@/features/billing/bank-transfer";
 
 export function useCheckoutState() {
-  const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'processing' | 'success'>('idle');
-  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success'>('idle');
-  const [idempotencyKey, setIdempotencyKey] = useState<string>('');
+  const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "processing" | "success">("idle");
+  const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "success">("idle");
+  const [idempotencyKey, setIdempotencyKey] = useState<string>("");
 
-  const [confirmedOrderEmail, setConfirmedOrderEmail] = useState('');
-  const [confirmedOrderId, setConfirmedOrderId] = useState('');
-  const [bankTransferInstructions, setBankTransferInstructions] = useState<BankTransferCheckoutInstructions | null>(null);
+  const [confirmedOrderEmail, setConfirmedOrderEmail] = useState("");
+  const [confirmedOrderId, setConfirmedOrderId] = useState("");
+  const [bankTransferInstructions, setBankTransferInstructions] =
+    useState<BankTransferCheckoutInstructions | null>(null);
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(false);
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export function useCheckoutState() {
     setConfirmedOrderId(saved.orderId);
     setBankTransferInstructions(saved.bankTransferInstructions);
     setConfirmationEmailSent(saved.confirmationEmailSent);
-    setCheckoutStatus('success');
+    setCheckoutStatus("success");
 
     clearCheckoutSuccessSnapshot();
   }, []);

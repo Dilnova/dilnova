@@ -1,9 +1,9 @@
-import { db } from '@/shared/db/client';
-import * as schema from '@/shared/db/schema';
-import { eq, and } from 'drizzle-orm';
-import type { VendorProduct } from './types';
-import { unstable_cache } from 'next/cache';
-import { logger } from '@/shared/logging/logger';
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq, and } from "drizzle-orm";
+import type { VendorProduct } from "./types";
+import { unstable_cache } from "next/cache";
+import { logger } from "@/shared/logging/logger";
 
 /**
  * Fetch all products belonging to a specific vendor organization (cached).
@@ -11,7 +11,7 @@ import { logger } from '@/shared/logging/logger';
 export async function getVendorProducts(orgId: string): Promise<VendorProduct[]> {
   const fetchProducts = unstable_cache(
     async (id: string) => {
-      logger.info('Database Cache miss, querying database products for org', { orgId: id });
+      logger.info("Database Cache miss, querying database products for org", { orgId: id });
       const results = await db
         .select({
           id: schema.products.id,
@@ -25,7 +25,7 @@ export async function getVendorProducts(orgId: string): Promise<VendorProduct[]>
         })
         .from(schema.products)
         .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
-        .where(and(eq(schema.products.orgId, id), eq(schema.products.status, 'active')));
+        .where(and(eq(schema.products.orgId, id), eq(schema.products.status, "active")));
 
       return results;
     },

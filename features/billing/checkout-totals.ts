@@ -13,7 +13,7 @@ export interface CheckoutTotals {
 
 export function calculateCheckoutTotals(
   subtotalCents: number,
-  zeroShipping = false
+  zeroShipping = false,
 ): CheckoutTotals {
   const subtotalAmount = Math.max(0, subtotalCents);
   const taxAmount = Math.round(subtotalAmount * CHECKOUT_TAX_RATE);
@@ -37,9 +37,7 @@ export interface OrderAmountFields {
 /** Resolve display amounts for legacy orders (subtotal-only) and new breakdown rows. */
 export function getOrderDisplayTotals(order: OrderAmountFields): CheckoutTotals {
   const hasBreakdown =
-    order.subtotalAmount != null &&
-    order.taxAmount != null &&
-    order.shippingAmount != null;
+    order.subtotalAmount != null && order.taxAmount != null && order.shippingAmount != null;
 
   if (hasBreakdown) {
     return {

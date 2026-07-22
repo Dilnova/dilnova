@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { usePOSBilling } from '../hooks/use-pos-billing';
-import type { VendorBillingRegisterData } from '@/features/billing/types';
-import { toast } from 'sonner';
+import { createContext, useContext, ReactNode, useState, useEffect } from "react";
+import { usePOSBilling } from "../hooks/use-pos-billing";
+import type { VendorBillingRegisterData } from "@/features/billing/types";
+import { toast } from "sonner";
 
 type POSBillingContextType = ReturnType<typeof usePOSBilling> & {
   isFullscreen: boolean;
@@ -19,7 +19,7 @@ const POSBillingContext = createContext<POSBillingContextType | null>(null);
 
 export function POSBillingProvider({
   initialData,
-  systemName = 'Dilnova',
+  systemName = "Dilnova",
   orgName,
   isAdmin = false,
   children,
@@ -41,7 +41,7 @@ export function POSBillingProvider({
   const {
     data: { branches },
     setSelectedBranchId,
-    selectedBranchId
+    selectedBranchId,
   } = posState;
 
   useEffect(() => {
@@ -60,14 +60,14 @@ export function POSBillingProvider({
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {
-        toast.error('Fullscreen mode not supported on this device/browser.');
+        toast.error("Fullscreen mode not supported on this device/browser.");
       });
     } else {
       document.exitFullscreen().catch(() => {});
@@ -81,7 +81,7 @@ export function POSBillingProvider({
     isMobileCartOpen,
     setIsMobileCartOpen,
     systemName,
-    orgName: orgName || 'POS Register',
+    orgName: orgName || "POS Register",
     isAdmin,
   };
 
@@ -91,7 +91,7 @@ export function POSBillingProvider({
 export function usePOSContext() {
   const context = useContext(POSBillingContext);
   if (!context) {
-    throw new Error('usePOSContext must be used within a POSBillingProvider');
+    throw new Error("usePOSContext must be used within a POSBillingProvider");
   }
   return context;
 }
