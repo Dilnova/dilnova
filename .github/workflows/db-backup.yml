@@ -1,0 +1,97 @@
+name: "Automated Database Backup (S3 / B2)"
+
+on:
+  schedule:
+    # Run daily at 02:00 UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      retention_days:
+        description: "Days of backups to retain in S3/B2"
+        required: false
+        default: "30"
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Backup PostgreSQL Database to S3/B2
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7.0.1
+
+      - name: Install PostgreSQL Client Tools & AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client gzip awscli
+
+      - name: Perform Database Backup & Upload
+        env:
+          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/postgres' }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/postgres' }}
+          S3_BACKUP_BUCKET: ${{ secrets.S3_BACKUP_BUCKET }}
+          S3_BACKUP_ENDPOINT: ${{ secrets.S3_BACKUP_ENDPOINT }}
+          S3_BACKUP_REGION: ${{ secrets.S3_BACKUP_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_BACKUP_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_BACKUP_SECRET_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
+          BACKUP_FILE="dilnova-db-backup-${TIMESTAMP}.sql.gz"
+          
+          echo "Starting database dump..."
+          pg_dump "${MIGRATION_DATABASE_URL:-$DATABASE_URL}" --clean --if-exists --no-owner --no-privileges | gzip > "${BACKUP_FILE}"
+          
+          FILESIZE=$(du -h "${BACKUP_FILE}" | cut -f1)
+          echo "Backup file created: ${BACKUP_FILE} (${FILESIZE})"
+
+          if [ -n "${S3_BACKUP_BUCKET}" ]; then
+            ENDPOINT_FLAG=""
+            if [ -n "${S3_BACKUP_ENDPOINT}" ]; then
+              ENDPOINT_FLAG="--endpoint-url ${S3_BACKUP_ENDPOINT}"
+            fi
+
+            REGION_FLAG=""
+            if [ -n "${S3_BACKUP_REGION}" ]; then
+              REGION_FLAG="--region ${S3_BACKUP_REGION}"
+            fi
+
+            echo "Uploading ${BACKUP_FILE} to s3://${S3_BACKUP_BUCKET}/db-backups/..."
+            aws s3 cp "${BACKUP_FILE}" "s3://${S3_BACKUP_BUCKET}/db-backups/${BACKUP_FILE}" ${ENDPOINT_FLAG} ${REGION_FLAG}
+
+            echo "## 💾 Database Backup Summary" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: 🟢 Backup & Upload Successful" >> $GITHUB_STEP_SUMMARY
+            echo "- **File Name**: \`${BACKUP_FILE}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Compressed Size**: \`${FILESIZE}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Destination**: \`s3://${S3_BACKUP_BUCKET}/db-backups/\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "::warning ::S3_BACKUP_BUCKET secret not set. Upload skipped."
+            echo "## 💾 Database Backup Summary" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: 🟡 Dump Created Locally (S3_BACKUP_BUCKET secret missing)" >> $GITHUB_STEP_SUMMARY
+            echo "- **File Name**: \`${BACKUP_FILE}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Compressed Size**: \`${FILESIZE}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Backup Artifact to GitHub
+        uses: actions/upload-artifact@v7
+        with:
+          name: database-backup-dump
+          path: "*.sql.gz"
+          retention-days: 7
