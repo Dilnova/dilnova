@@ -26,6 +26,7 @@ jobs:
         run: pnpm run test:e2e --project=public --project=unauthenticated
         env:
           PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.target_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/postgres' }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}

@@ -54,6 +54,12 @@ export default defineConfig({
     : [["list"], ["html", { open: "never" }]],
   use: {
     baseURL,
+    extraHTTPHeaders: process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+      ? {
+          "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+          "x-vercel-set-bypass-cookie": "samesite-none",
+        }
+      : undefined,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     actionTimeout: 15_000,
