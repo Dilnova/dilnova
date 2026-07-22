@@ -33,10 +33,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7.0.1
 
-      - name: Install PostgreSQL Client Tools & AWS CLI
+      - name: Install PostgreSQL Client Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-client gzip awscli
+          sudo apt-get install -y postgresql-client
 
       - name: Perform Database Backup & Upload
         env:
