@@ -30,6 +30,7 @@
     "db:studio": "drizzle-kit studio",
     "db:verify": "node scripts/verify-migrations.mjs",
     "db:backup": "node scripts/backup-db.mjs",
+    "db:restore": "node scripts/restore-db.mjs",
     "pre-launch": "node scripts/pre-launch-check.mjs",
     "prepare": "node scripts/setup-git-hooks.mjs"
   },

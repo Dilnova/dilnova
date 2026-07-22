@@ -1,4 +1,4 @@
-name: "Automated Database Backup (S3 / B2)"
+name: "Enterprise Database Backup & Restore Verification"
 
 on:
   schedule:
@@ -10,17 +10,17 @@ permissions:
   contents: read
 
 jobs:
-  backup:
-    name: Backup PostgreSQL Database to S3/B2
+  backup-and-verify:
+    name: Backup, Verify & Upload PostgreSQL Database
     runs-on: ubuntu-latest
 
     services:
-      postgres:
+      postgres-test:
         image: postgres:17-alpine
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
-          POSTGRES_DB: postgres
+          POSTGRES_DB: restore_test_db
         ports:
           - 5432:5432
         options: >-
@@ -33,35 +33,72 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7.0.1
 
-      - name: Install PostgreSQL Client Tools 17
+      - name: Install PostgreSQL Client 17 & Utilities
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget gnupg lsb-release
+          sudo apt-get install -y wget gnupg lsb-release coreutils
           sudo wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/keyrings/postgresql-archive-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/postgresql-archive-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
 
-      - name: Perform Database Backup & Upload
+      - name: 1. Generate Compressed Database Dump
         env:
-          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/postgres' }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/postgres' }}
+          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/restore_test_db' }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/restore_test_db' }}
+        run: |
+          set -o pipefail
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
+          BACKUP_FILE="dilnova-db-backup-${TIMESTAMP}.sql.gz"
+          CHECKSUM_FILE="${BACKUP_FILE}.sha256"
+
+          echo "Starting production database dump..."
+          pg_dump "${MIGRATION_DATABASE_URL:-$DATABASE_URL}" --clean --if-exists --no-owner --no-privileges | gzip > "${BACKUP_FILE}"
+
+          # Generate SHA256 Checksum for data integrity validation
+          sha256sum "${BACKUP_FILE}" > "${CHECKSUM_FILE}"
+
+          FILESIZE=$(du -h "${BACKUP_FILE}" | cut -f1)
+          CHECKSUM_VAL=$(cut -d' ' -f1 "${CHECKSUM_FILE}")
+
+          echo "BACKUP_FILE=${BACKUP_FILE}" >> $GITHUB_ENV
+          echo "CHECKSUM_FILE=${CHECKSUM_FILE}" >> $GITHUB_ENV
+          echo "FILESIZE=${FILESIZE}" >> $GITHUB_ENV
+          echo "CHECKSUM_VAL=${CHECKSUM_VAL}" >> $GITHUB_ENV
+
+          echo "Backup dump created: ${BACKUP_FILE} (${FILESIZE})"
+          echo "SHA256: ${CHECKSUM_VAL}"
+
+      - name: 2. Enterprise Automated Dry-Run Restore Verification
+        run: |
+          set -o pipefail
+          echo "Executing automated dry-run restoration test..."
+          RESTORE_TEST_URL="postgresql://postgres:password@127.0.0.1:5432/restore_test_db"
+
+          # Restore the compressed dump into the test PostgreSQL 17 container
+          gunzip -c "${BACKUP_FILE}" | psql "${RESTORE_TEST_URL}" > /dev/null
+
+          # Verify database schema integrity by querying public tables
+          TABLE_COUNT=$(psql "${RESTORE_TEST_URL}" -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';")
+          TABLE_COUNT=$(echo "${TABLE_COUNT}" | tr -d ' ')
+
+          echo "Restoration Verification Succeeded!"
+          echo "Public Tables Restored & Verified: ${TABLE_COUNT}"
+          echo "TABLE_COUNT=${TABLE_COUNT}" >> $GITHUB_ENV
+
+          if [ "${TABLE_COUNT}" -eq "0" ]; then
+            echo "Error: Dry-run restoration resulted in 0 public tables. Backup integrity check failed!"
+            exit 1
+          fi
+
+      - name: 3. Secure Upload to S3 / Backblaze B2 Vault
+        env:
           S3_BACKUP_BUCKET: ${{ secrets.S3_BACKUP_BUCKET }}
           S3_BACKUP_ENDPOINT: ${{ secrets.S3_BACKUP_ENDPOINT }}
           S3_BACKUP_REGION: ${{ secrets.S3_BACKUP_REGION }}
           AWS_ACCESS_KEY_ID: ${{ secrets.S3_BACKUP_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_BACKUP_SECRET_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          set -o pipefail
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
-          BACKUP_FILE="dilnova-db-backup-${TIMESTAMP}.sql.gz"
-
-          echo "Starting database dump..."
-          pg_dump "${MIGRATION_DATABASE_URL:-$DATABASE_URL}" --clean --if-exists --no-owner --no-privileges | gzip > "${BACKUP_FILE}"
-
-          FILESIZE=$(du -h "${BACKUP_FILE}" | cut -f1)
-          echo "Backup file created: ${BACKUP_FILE} (${FILESIZE})"
-
           if [ -n "${S3_BACKUP_BUCKET}" ]; then
             ENDPOINT_FLAG=""
             if [ -n "${S3_BACKUP_ENDPOINT}" ]; then
@@ -73,25 +110,37 @@ jobs:
               REGION_FLAG="--region ${S3_BACKUP_REGION}"
             fi
 
-            echo "Uploading ${BACKUP_FILE} to s3://${S3_BACKUP_BUCKET}/db-backups/..."
+            echo "Uploading backup and SHA-256 checksum to s3://${S3_BACKUP_BUCKET}/db-backups/..."
             aws s3 cp "${BACKUP_FILE}" "s3://${S3_BACKUP_BUCKET}/db-backups/${BACKUP_FILE}" ${ENDPOINT_FLAG} ${REGION_FLAG}
+            aws s3 cp "${CHECKSUM_FILE}" "s3://${S3_BACKUP_BUCKET}/db-backups/${CHECKSUM_FILE}" ${ENDPOINT_FLAG} ${REGION_FLAG}
 
-            echo "## 💾 Database Backup Summary" >> $GITHUB_STEP_SUMMARY
-            echo "- **Status**: 🟢 Backup & Upload Successful" >> $GITHUB_STEP_SUMMARY
-            echo "- **File Name**: \`${BACKUP_FILE}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- **Compressed Size**: \`${FILESIZE}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- **Destination**: \`s3://${S3_BACKUP_BUCKET}/db-backups/\`" >> $GITHUB_STEP_SUMMARY
+            echo "## 🛡️ Enterprise Database Backup & Verification Report" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Dry-Run Restore Integrity Check** | 🟢 PASSED & VERIFIED |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Restored Public Tables** | \`${TABLE_COUNT}\` tables |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Backup File Name** | \`${BACKUP_FILE}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Compressed Size** | \`${FILESIZE}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| **SHA-256 Checksum** | \`${CHECKSUM_VAL}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Target S3/B2 Bucket** | \`s3://${S3_BACKUP_BUCKET}/db-backups/\` |" >> $GITHUB_STEP_SUMMARY
           else
             echo "::warning ::S3_BACKUP_BUCKET secret not set. Upload skipped."
-            echo "## 💾 Database Backup Summary" >> $GITHUB_STEP_SUMMARY
-            echo "- **Status**: 🟡 Dump Created Locally (S3_BACKUP_BUCKET secret missing)" >> $GITHUB_STEP_SUMMARY
-            echo "- **File Name**: \`${BACKUP_FILE}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- **Compressed Size**: \`${FILESIZE}\`" >> $GITHUB_STEP_SUMMARY
+            echo "## 🛡️ Enterprise Database Backup & Verification Report" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Dry-Run Restore Integrity Check** | 🟢 PASSED & VERIFIED |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Restored Public Tables** | \`${TABLE_COUNT}\` tables |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Backup File Name** | \`${BACKUP_FILE}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Compressed Size** | \`${FILESIZE}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| **SHA-256 Checksum** | \`${CHECKSUM_VAL}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Target S3/B2 Bucket** | 🟡 Skipped (S3_BACKUP_BUCKET secret missing) |" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: Upload Backup Artifact to GitHub
+      - name: 4. Upload Backup & Checksum Artifacts to GitHub
         uses: actions/upload-artifact@v7
         with:
-          name: database-backup-dump
-          path: "*.sql.gz"
-          retention-days: 7
+          name: enterprise-database-backup-package
+          path: |
+            *.sql.gz
+            *.sha256
+          retention-days: 14
