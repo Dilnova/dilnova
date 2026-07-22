@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/Dilnova/dilnova/compare/v1.1.0...v1.1.1) (2026-07-22)
+
+### Bug Fixes
+
+- **workflow:** update name of post-deploy smoke test for clarity ([9519bbb](https://github.com/Dilnova/dilnova/commit/9519bbb8e94f778dd0f52f1651e8d2ab9743e665))
+
 # [1.1.0](https://github.com/Dilnova/dilnova/compare/v1.0.4...v1.1.0) (2026-07-22)
 
 ### Features
