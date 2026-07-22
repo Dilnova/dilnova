@@ -1,0 +1,32 @@
+name: "Post-Deploy Smoke Test & Health Verification"
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Target URL to probe (defaults to production if empty)"
+        required: false
+        default: "https://www.dilstar.pp.ua"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    name: Validate Environment Health
+    if: github.event_name == 'workflow_dispatch' || (github.event.deployment_status.state == 'success' && github.event.deployment_status.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Execute Enterprise Health Probe
+        env:
+          TARGET_URL: ${{ github.event.inputs.target_url || github.event.deployment_status.target_url || vars.PRODUCTION_APP_URL || 'https://www.dilstar.pp.ua' }}
+          HEALTH_CHECK_SECRET: ${{ secrets.HEALTH_CHECK_SECRET }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET || secrets.VERCEL_PROTECTION_BYPASS }}
+        run: |
+          bash scripts/health-probe.sh
