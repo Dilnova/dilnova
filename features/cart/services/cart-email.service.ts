@@ -165,18 +165,26 @@ export async function sendCartSummaryEmailService(
     </html>
   `;
 
-  // Connect to Brevo SMTP host using configured details (direct SSL/TLS or STARTTLS)
-  await sendRawSmtpEmail({
-    host: smtpHost,
-    port: smtpPort,
-    user: smtpUser,
-    pass: smtpPassword,
-    to: validatedEmail,
-    from: emailFromAddress,
-    fromName: emailFromName,
-    subject: `Your Shopping Cart Summary | ${systemName}`,
-    html: emailHtml,
-  });
+  try {
+    // Connect to Brevo SMTP host using configured details (direct SSL/TLS or STARTTLS)
+    await sendRawSmtpEmail({
+      host: smtpHost,
+      port: smtpPort,
+      user: smtpUser,
+      pass: smtpPassword,
+      to: validatedEmail,
+      from: emailFromAddress,
+      fromName: emailFromName,
+      subject: `Your Shopping Cart Summary | ${systemName}`,
+      html: emailHtml,
+    });
 
-  return { success: true as const };
+    return { success: true };
+  } catch (error) {
+    logger.error("Failed to send cart summary email", error, { to: validatedEmail });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error sending email.",
+    };
+  }
 }
