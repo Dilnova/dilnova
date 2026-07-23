@@ -17,12 +17,14 @@ vi.mock("next/server", async (importOriginal) => {
   class MockNextResponse {
     status: number;
     body: string;
-    constructor(body: string, init?: { status?: number }) {
+    headers: Headers;
+    constructor(body: string, init?: { status?: number; headers?: HeadersInit }) {
       this.body = body;
       this.status = init?.status ?? 200;
+      this.headers = new Headers(init?.headers);
     }
     static next() {
-      return { headers: { set: () => {} } };
+      return { headers: new Headers() };
     }
   }
   return {
@@ -152,17 +154,27 @@ describe("Proxy Middleware CSRF Protection", () => {
 });
 
 describe("Proxy Middleware WAF Protection", () => {
-  it("blocks requests with python-requests User-Agent", async () => {
+  it("blocks requests with python-requests User-Agent and attaches security headers", async () => {
     const request = new NextRequest("http://localhost:3000/", {
       method: "GET",
       headers: {
         "user-agent": "python-requests/2.28.1",
       },
     });
-    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
-    expect(result).toBeInstanceOf(NextResponse);
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      status: number;
+      body: string;
+      headers: Headers;
+    };
     expect(result.status).toBe(403);
     expect(result.body).toContain("WAF Bot Protection");
+    expect(result.headers.get("X-Frame-Options")).toBe("DENY");
+    expect(result.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(result.headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
+    expect(result.headers.get("Permissions-Policy")).toContain("camera=()");
+    expect(result.headers.get("Content-Security-Policy")).toBe(
+      "default-src 'none'; frame-ancestors 'none';",
+    );
   });
 
   it("blocks requests with SQL injection payloads", async () => {

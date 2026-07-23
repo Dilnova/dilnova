@@ -55,15 +55,14 @@ async function checkEdgeRateLimit(request: NextRequest): Promise<NextResponse | 
     const { success, reset } = await limiter.limit(ip);
     if (!success) {
       const waitSeconds = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
-      return new NextResponse(
-        `Too Many Requests: Edge Rate Limit Exceeded. Retry in ${waitSeconds}s.`,
-        {
+      return applySecurityHeaders(
+        new NextResponse(`Too Many Requests: Edge Rate Limit Exceeded. Retry in ${waitSeconds}s.`, {
           status: 429,
           headers: {
             "Retry-After": String(waitSeconds),
             "Content-Type": "text/plain",
           },
-        },
+        }),
       );
     }
   } catch (error) {
@@ -86,6 +85,34 @@ function getSentryCspReportUri(): string | null {
     }
   } catch {}
   return null;
+}
+
+function applySecurityHeaders(response: NextResponse): NextResponse {
+  if (!response.headers) {
+    (response as unknown as { headers: Headers }).headers = new Headers();
+  }
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=(), autoplay=()",
+  );
+  response.headers.set("X-DNS-Prefetch-Control", "off");
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+
+  if (process.env.NODE_ENV === "production") {
+    response.headers.set(
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains; preload",
+    );
+  }
+
+  if (!response.headers.has("Content-Security-Policy")) {
+    response.headers.set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none';");
+  }
+
+  return response;
 }
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
@@ -175,7 +202,7 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     "sqlmap",
   ];
   if (BLOCKED_USER_AGENTS.some((bot) => userAgent.toLowerCase().includes(bot))) {
-    return new NextResponse("Forbidden: WAF Bot Protection", { status: 403 });
+    return applySecurityHeaders(new NextResponse("Forbidden: WAF Bot Protection", { status: 403 }));
   }
 
   const rawUrl = request.url;
@@ -208,7 +235,9 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     /win\.ini/i,
   ];
   if (matchesAnyPattern(TRAVERSAL_PATTERNS)) {
-    return new NextResponse("Forbidden: WAF Directory Traversal Protection", { status: 403 });
+    return applySecurityHeaders(
+      new NextResponse("Forbidden: WAF Directory Traversal Protection", { status: 403 }),
+    );
   }
 
   // SQL Injection protection
@@ -222,7 +251,9 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     /exec[\s\+]+(s|x)p_/i,
   ];
   if (matchesAnyPattern(SQLI_PATTERNS)) {
-    return new NextResponse("Forbidden: WAF SQLi Protection", { status: 403 });
+    return applySecurityHeaders(
+      new NextResponse("Forbidden: WAF SQLi Protection", { status: 403 }),
+    );
   }
 
   // XSS Protection
@@ -234,7 +265,7 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     /eval\(/i,
   ];
   if (matchesAnyPattern(XSS_PATTERNS)) {
-    return new NextResponse("Forbidden: WAF XSS Protection", { status: 403 });
+    return applySecurityHeaders(new NextResponse("Forbidden: WAF XSS Protection", { status: 403 }));
   }
 
   // Command Injection Protection
@@ -245,7 +276,9 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     /\$\([^\)]+\)/i,
   ];
   if (matchesAnyPattern(CMD_INJECTION_PATTERNS)) {
-    return new NextResponse("Forbidden: WAF Command Injection Protection", { status: 403 });
+    return applySecurityHeaders(
+      new NextResponse("Forbidden: WAF Command Injection Protection", { status: 403 }),
+    );
   }
 
   // 1.5. Edge Rate Limiting Protection (circuit breaker for volumetric traffic)
@@ -267,22 +300,28 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
       const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
 
       if (!origin || !host) {
-        return new NextResponse("CSRF Verification Failed: Missing Origin or Host header.", {
-          status: 403,
-        });
+        return applySecurityHeaders(
+          new NextResponse("CSRF Verification Failed: Missing Origin or Host header.", {
+            status: 403,
+          }),
+        );
       }
 
       try {
         const originUrl = new URL(origin);
         if (originUrl.host !== host) {
-          return new NextResponse("CSRF Verification Failed: Mismatched Origin and Host.", {
-            status: 403,
-          });
+          return applySecurityHeaders(
+            new NextResponse("CSRF Verification Failed: Mismatched Origin and Host.", {
+              status: 403,
+            }),
+          );
         }
       } catch {
-        return new NextResponse("CSRF Verification Failed: Invalid Origin header.", {
-          status: 403,
-        });
+        return applySecurityHeaders(
+          new NextResponse("CSRF Verification Failed: Invalid Origin header.", {
+            status: 403,
+          }),
+        );
       }
     }
   }
@@ -292,9 +331,10 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     return res;
   } catch (error) {
     logger.error("Clerk Middleware execution failed (API outage)", error);
-    return new NextResponse(
-      "Authentication Service is currently unavailable. Please try again later.",
-      { status: 503 },
+    return applySecurityHeaders(
+      new NextResponse("Authentication Service is currently unavailable. Please try again later.", {
+        status: 503,
+      }),
     );
   }
 }
