@@ -4,11 +4,7 @@ import { rateLimit } from "@/shared/security/rate-limit";
 import { logAuditAction } from "@/shared/audit/logger";
 import { clerkClient } from "@clerk/nextjs/server";
 import { logger } from "@/shared/logging/logger";
-import { Client } from "@upstash/qstash";
-
-const qstash = new Client({
-  token: process.env.QSTASH_TOKEN || "",
-});
+import { getQStashClient } from "@/shared/security/qstash-client";
 
 export async function GET(req: NextRequest) {
   try {
@@ -36,6 +32,7 @@ export async function GET(req: NextRequest) {
         ? `https://${process.env.VERCEL_URL}`
         : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+    const qstash = getQStashClient();
     // Publish to QStash for asynchronous processing
     const message = await qstash.publishJSON({
       url: `${appUrl}/api/webhooks/qstash/export`,

@@ -6,7 +6,7 @@ import { handleApiError } from "@/shared/errors/error-handler";
 import { invalidateClerkUserCache, invalidateClerkOrgCache } from "@/shared/auth/clerk-cache";
 import { Redis } from "@upstash/redis";
 import { readUpstashEnv } from "@/shared/security/upstash-health";
-import { Client as QStashClient } from "@upstash/qstash";
+import { getQStashClient } from "@/shared/security/qstash-client";
 
 const processedWebhooksMemory = new Set<string>();
 
@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
       const userId = data.id;
       if (userId) {
         invalidateClerkUserCache(userId);
-        const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN || "" });
+        const qstash = getQStashClient();
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         await qstash.publishJSON({
           url: `${appUrl}/api/webhooks/qstash/erase`,
@@ -262,7 +262,7 @@ export async function POST(req: NextRequest) {
       const orgId = data.id;
       if (orgId) {
         invalidateClerkOrgCache(orgId);
-        const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN || "" });
+        const qstash = getQStashClient();
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         await qstash.publishJSON({
           url: `${appUrl}/api/webhooks/qstash/erase-org`,

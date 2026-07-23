@@ -10,7 +10,7 @@ import { createSupabaseAdminClient } from "@/shared/storage/admin-client";
 import { GDPR_EXPORTS_BUCKET } from "@/shared/storage/config";
 import { escapeHtml } from "@/shared/email/smtp-client";
 import { sendSystemHtmlEmail } from "@/shared/email/delivery";
-import { Client as QStashClient } from "@upstash/qstash";
+import { getQStashClient } from "@/shared/security/qstash-client";
 import { logAuditAction } from "@/shared/audit/logger";
 
 export const maxDuration = 300;
@@ -19,14 +19,6 @@ const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "",
   token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
 });
-
-let qstash: QStashClient;
-const getQStashClient = () => {
-  if (!qstash) {
-    qstash = new QStashClient({ token: process.env.QSTASH_TOKEN || "" });
-  }
-  return qstash;
-};
 
 async function handler(req: NextRequest) {
   const messageId = req.headers.get("upstash-message-id");

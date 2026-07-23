@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
 import { logger } from "@/shared/logging/logger";
-import { Client as QStashClient } from "@upstash/qstash";
-
-const qstash = new QStashClient({
-  token: process.env.QSTASH_TOKEN || "",
-});
+import { getQStashClient } from "@/shared/security/qstash-client";
 
 export async function DELETE(req: NextRequest) {
   try {
@@ -21,6 +17,7 @@ export async function DELETE(req: NextRequest) {
         ? `https://${process.env.VERCEL_URL}`
         : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+    const qstash = getQStashClient();
     // Publish background job to QStash
     await qstash.publishJSON({
       url: `${appUrl}/api/webhooks/qstash/erase`,
