@@ -58,7 +58,12 @@ async function main() {
   if (clerkSecretKey) {
     try {
       console.log("Connecting to Clerk to fetch real organization IDs...");
-      let allOrgs: any[] = [];
+      interface ClerkOrgItem {
+        id: string;
+        name: string;
+        slug: string;
+      }
+      let allOrgs: ClerkOrgItem[] = [];
       let offset = 0;
       const limit = 100;
 
@@ -85,19 +90,20 @@ async function main() {
       const orgList = { data: allOrgs };
 
       const distarOrgFallback = orgList.data.find(
-        (o: any) =>
+        (o: ClerkOrgItem) =>
           o.name.toLowerCase() === "distar" || o.slug === "distar" || o.slug.startsWith("distar-"),
       );
 
       const hardwareOrg =
-        orgList.data.find((o: any) => o.slug === "distar-hardware") || distarOrgFallback;
+        orgList.data.find((o: ClerkOrgItem) => o.slug === "distar-hardware") || distarOrgFallback;
       const nurseryOrg =
-        orgList.data.find((o: any) => o.slug === "distar-nursery") || distarOrgFallback;
-      const techOrg = orgList.data.find((o: any) => o.slug === "distar-tech") || distarOrgFallback;
+        orgList.data.find((o: ClerkOrgItem) => o.slug === "distar-nursery") || distarOrgFallback;
+      const techOrg =
+        orgList.data.find((o: ClerkOrgItem) => o.slug === "distar-tech") || distarOrgFallback;
       const servicesOrg =
-        orgList.data.find((o: any) => o.slug === "dilstar-services") ||
+        orgList.data.find((o: ClerkOrgItem) => o.slug === "dilstar-services") ||
         orgList.data.find(
-          (o: any) =>
+          (o: ClerkOrgItem) =>
             o.slug.startsWith("dilstar-services-") || o.name.toLowerCase() === "dilstar services",
         ) ||
         distarOrgFallback;

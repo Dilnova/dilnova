@@ -36,7 +36,7 @@ async function seedCargills() {
       const orgList = { data: orgData.data || [] };
 
       const realOrg = orgList.data.find(
-        (o: any) =>
+        (o: { id: string; slug: string; name: string }) =>
           o.id === "cargills-1779360325802766552" ||
           o.slug === "cargills-1779360325802766552" ||
           o.name.toLowerCase().includes("cargills") ||
@@ -89,7 +89,7 @@ async function seedCargills() {
   }
 
   // Food & Grocery subcategories
-  const foodParent = await getOrCreateCategory("food-grocery", "Food & Grocery");
+  await getOrCreateCategory("food-grocery", "Food & Grocery");
   const catDairy = await getOrCreateCategory("grocery-dairy", "Dairy & Eggs", "food-grocery");
   const catProduce = await getOrCreateCategory("grocery-produce", "Fresh Produce", "food-grocery");
   const catBakery = await getOrCreateCategory("grocery-bakery", "Bakery & Bread", "food-grocery");
@@ -99,11 +99,11 @@ async function seedCargills() {
   const catSnacks = await getOrCreateCategory("grocery-snacks", "Snacks & Sweets", "food-grocery");
 
   // Cosmetics & Personal Care
-  const fashionParent = await getOrCreateCategory("fashion-beauty", "Fashion & Beauty");
+  await getOrCreateCategory("fashion-beauty", "Fashion & Beauty");
   const catBeauty = await getOrCreateCategory("beauty-health", "Beauty & Health", "fashion-beauty");
 
   // Household & Cleaning (under Home & Garden)
-  const homeParent = await getOrCreateCategory("home-garden", "Home & Garden");
+  await getOrCreateCategory("home-garden", "Home & Garden");
   const catHousehold = await getOrCreateCategory(
     "home-household",
     "Household & Cleaning",

@@ -1,13 +1,4 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  integer,
-  uuid,
-  index,
-  boolean,
-  customType,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, uuid, index, boolean } from "drizzle-orm/pg-core";
 import { products } from "./catalog";
 import { encryptedText } from "./custom-types";
 

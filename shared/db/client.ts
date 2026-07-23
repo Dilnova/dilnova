@@ -61,7 +61,7 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
         return (query: string, params?: Parameters<PostgresClient["unsafe"]>[1]) => {
           const start = performance.now();
 
-          let span: any;
+          let span: ReturnType<NonNullable<typeof Sentry.startInactiveSpan>> | undefined;
           if (
             process.env.NODE_ENV === "production" &&
             (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)
@@ -81,7 +81,7 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
 
           const result = (orig as PostgresClient["unsafe"]).call(target, query, params);
 
-          const finish = (error?: any) => {
+          const finish = (error?: unknown) => {
             const duration = performance.now() - start;
             if (duration > 500) {
               logger.warn(`[Slow Query ${duration.toFixed(2)}ms]`, { query, params });
