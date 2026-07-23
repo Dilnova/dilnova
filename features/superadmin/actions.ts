@@ -20,8 +20,8 @@ import { hashPii } from "@/shared/security/encryption";
 
 export async function createPricingPlanAction(planData: unknown) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000, undefined, { failClosed: true });
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsed = createPricingPlanSchema.safeParse(planData);
     if (!parsed.success) {
@@ -64,8 +64,8 @@ export async function createPricingPlanAction(planData: unknown) {
 
 export async function updatePricingPlanAction(id: string, updates: unknown) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000, undefined, { failClosed: true });
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsed = updatePricingPlanSchema.safeParse({ id, updates });
     if (!parsed.success) {
@@ -112,8 +112,8 @@ export async function updatePricingPlanAction(id: string, updates: unknown) {
 
 export async function deletePricingPlanAction(id: string) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsedId = uuidField.safeParse(id);
     if (!parsedId.success) {
@@ -143,8 +143,8 @@ export async function updateContactStatusAction(
   status: "pending" | "connected" | "no_longer",
 ) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const adminUser = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, adminUser.id, { failClosed: true });
 
     const parsedId = uuidField.safeParse(id);
     if (!parsedId.success) {
@@ -222,8 +222,8 @@ export async function updateContactStatusAction(
 
 export async function getCustomerDsarDataAction(email: string) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const normalizedEmailInput = email.trim().toLowerCase();
     if (!normalizedEmailInput) {
@@ -291,8 +291,8 @@ export async function getCustomerDsarDataAction(email: string) {
 
 export async function anonymizeCustomerDataAction(email: string) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const normalizedEmailInput = email.trim().toLowerCase();
     if (!normalizedEmailInput) {

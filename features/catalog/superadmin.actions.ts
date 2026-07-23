@@ -22,7 +22,7 @@ export const createCategoryAction = superadminAction
   .schema(createCategorySchema)
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
-      await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
+      await rateLimit(20, 60 * 1000, ctx.userId, { failClosed: true }); // Max 20 superadmin operations per minute per user
 
       const [category] = await db
         .insert(schema.categories)
@@ -53,7 +53,7 @@ export const updateCategoryAction = superadminAction
   .schema(updateCategorySchema)
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
-      await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
+      await rateLimit(20, 60 * 1000, ctx.userId, { failClosed: true }); // Max 20 superadmin operations per minute per user
 
       if (parsedInput.parentId === parsedInput.id) {
         throw new ActionError("A category cannot refer to itself as its parent.");
@@ -90,7 +90,7 @@ export const deleteCategoryAction = superadminAction
   .schema(deleteCategorySchema)
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
-      await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
+      await rateLimit(20, 60 * 1000, ctx.userId, { failClosed: true }); // Max 20 superadmin operations per minute per user
 
       // Check if any products are currently associated with this category
       const associatedProducts = await db
@@ -126,7 +126,7 @@ export const updateProductAction = superadminAction
   .schema(updateProductSchema)
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
-      await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
+      await rateLimit(20, 60 * 1000, ctx.userId, { failClosed: true }); // Max 20 superadmin operations per minute per user
 
       // Fetch existing product to resolve its orgId for folder validation
       const existing = await db
@@ -209,7 +209,7 @@ export const deleteProductAction = superadminAction
   .schema(deleteProductSchema)
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
-      await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
+      await rateLimit(20, 60 * 1000, ctx.userId, { failClosed: true }); // Max 20 superadmin operations per minute per user
 
       const [deleted] = await db
         .delete(schema.products)

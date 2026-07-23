@@ -223,7 +223,7 @@ export const simulatedCheckoutAction = authenticatedAction
       const email = sessionEmail;
       name = user.fullName || user.firstName || name;
 
-      await rateLimit(5, 60 * 1000, undefined, { failClosed: true });
+      await rateLimit(5, 60 * 1000, ctx.userId, { failClosed: true });
 
       const validationResult = await validateAndPrepareCartItems(
         aggregatedItems,

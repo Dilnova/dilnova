@@ -3,6 +3,7 @@ import * as schema from "@/shared/db/schema";
 import { eq, desc, inArray, asc } from "drizzle-orm";
 import { buildVendorOrgIntegrityReport } from "@/features/vendor-org";
 import { rateLimit } from "@/shared/security/rate-limit";
+import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
 import { logger } from "@/shared/logging/logger";
 
 export async function getPricingPlansOrderedByCreatedAtAsc(limit = 200, offset = 0) {
@@ -210,8 +211,9 @@ export async function getVendorOrgIntegrityReport(
   limit = 1000,
   offset = 0,
 ) {
+  const user = await checkSuperAdmin();
   // Rate limit the query since it can be heavy
-  await rateLimit(10, 60 * 1000);
+  await rateLimit(10, 60 * 1000, user.id, { failClosed: true });
 
   // Run integrity queries sequentially in pairs to avoid exhausting the
   // 5-connection pool. Each query has a safety limit to cap row count.

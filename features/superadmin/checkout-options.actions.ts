@@ -19,7 +19,7 @@ export const updateCheckoutOptionsCatalogAction = superadminAction
   .schema(updateCheckoutOptionsCatalogSchema)
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
-      await rateLimit(20, 60 * 1000);
+      await rateLimit(20, 60 * 1000, ctx.userId, { failClosed: true });
 
       const payload = buildCheckoutOptionsCatalogPayload(parsedInput.options);
       const value = JSON.stringify(payload);

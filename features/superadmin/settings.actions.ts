@@ -22,7 +22,7 @@ export const updateSystemSettingAction = superadminAction
   .schema(updateSystemSettingSchema)
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
-      await rateLimit(20, 60 * 1000); // Max 20 superadmin operations per minute per IP
+      await rateLimit(20, 60 * 1000, ctx.userId, { failClosed: true }); // Max 20 superadmin operations per minute per user
 
       if (parsedInput.key === CHECKOUT_OPTIONS_CATALOG_KEY) {
         try {
