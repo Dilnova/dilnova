@@ -3,7 +3,7 @@
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
 import { eq, or, inArray } from "drizzle-orm";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
 import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
 import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
@@ -271,8 +271,12 @@ export async function getCustomerDsarDataAction(email: string) {
       strict: true,
     });
 
-    const sanitizedOrders = matchingOrders.map(({ customerEmailHash, ...rest }) => rest);
-    const sanitizedSubmissions = matchingSubmissions.map(({ emailHash, ...rest }) => rest);
+    const sanitizedOrders = matchingOrders.map(
+      ({ customerEmailHash: _customerEmailHash, ...rest }) => rest,
+    );
+    const sanitizedSubmissions = matchingSubmissions.map(
+      ({ emailHash: _emailHash, ...rest }) => rest,
+    );
 
     return {
       success: true,
@@ -331,7 +335,9 @@ export async function anonymizeCustomerDataAction(email: string) {
     let paymentSlipsDeleted = 0;
 
     // Lazy load supabase admin if needed
-    let supabase: any = null;
+    let supabase: ReturnType<
+      typeof import("@/shared/storage/admin-client").createSupabaseAdminClient
+    > | null = null;
     const { createSupabaseAdminClient, isSupabaseStorageConfigured } =
       await import("@/shared/storage/admin-client");
     const { PAYMENT_SLIPS_BUCKET } = await import("@/shared/storage/config");

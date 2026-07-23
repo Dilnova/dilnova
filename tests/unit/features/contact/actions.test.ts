@@ -19,7 +19,8 @@ const mockSendRawSmtpEmail = vi.fn(() => Promise.resolve());
 vi.mock("@/shared/email/smtp-client", () => ({
   escapeHtml: (str: string) => str,
   sanitizeSmtpHeader: (str: string) => str,
-  sendRawSmtpEmail: (args: any) => mockSendRawSmtpEmail(args),
+  sendRawSmtpEmail: (args: unknown) =>
+    mockSendRawSmtpEmail(args as Parameters<typeof mockSendRawSmtpEmail>[0]),
 }));
 
 // Mock rate-limit

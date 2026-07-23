@@ -2,10 +2,7 @@
 
 import { z } from "zod/v3";
 import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
-import {
-  createCloudinaryUploadSignature,
-  type CloudinaryResourceType,
-} from "@/shared/media/cloudinary-server";
+import { createCloudinaryUploadSignature } from "@/shared/media/cloudinary-server";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { runWithCorrelationId } from "@/shared/security/async-context";
 import { authenticatedAction, ActionError } from "@/lib/safe-action";
@@ -40,7 +37,7 @@ export const createCloudinaryUploadSignatureAction = authenticatedAction
       try {
         await rateLimit(30, 60 * 1000);
 
-        const { userId, orgId, orgRole } = ctx;
+        const { orgId, orgRole } = ctx;
 
         if (parsedInput.uploadKind === "platform") {
           await checkSuperAdmin();

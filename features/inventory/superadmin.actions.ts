@@ -2,7 +2,7 @@
 
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import {
   createSupplierSchema,

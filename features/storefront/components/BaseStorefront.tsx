@@ -23,7 +23,10 @@ export interface BaseStorefrontProps extends StorefrontProps {
   productsGridClassName?: string;
 
   /** Render a custom product card. If omitted, uses the default layout. */
-  renderProductCard?: (product: any, formattedPrice: string) => React.ReactNode;
+  renderProductCard?: (
+    product: StorefrontProps["products"][number],
+    formattedPrice: string,
+  ) => React.ReactNode;
 }
 
 export default function BaseStorefront({

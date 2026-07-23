@@ -25,7 +25,7 @@ import {
   isPaymentSlipStoragePath,
 } from "@/shared/storage/payment-slip";
 import { PAYMENT_SLIP_MAX_BYTES } from "@/shared/storage/config";
-import { authenticatedAction, ActionError } from "@/lib/safe-action";
+import { authenticatedAction } from "@/lib/safe-action";
 import { z } from "zod/v3";
 
 // ── Internal helper ───────────────────────────────────────────────────────────

@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 import { authStateExists } from "../helpers/env";
-import { PROTECTED_ROUTES } from "../helpers/routes";
 
 test.beforeEach(() => {
   test.skip(

@@ -171,7 +171,7 @@ export async function allocateBranchStockAction(data: {
   binLocation?: string;
 }) {
   return runWithCorrelationId(async () => {
-    const { userId, orgId, premiumStatus } = await verifyVendorAccess();
+    const { orgId, premiumStatus } = await verifyVendorAccess();
     if (!premiumStatus.multiBranchActive) {
       throw new Error("Multi-branch stock tracking is not unlocked.");
     }
@@ -277,7 +277,7 @@ export async function assignBranchMemberAction(data: {
   role: "cashier" | "manager";
 }) {
   return runWithCorrelationId(async () => {
-    const { userId, orgId, premiumStatus } = await verifyVendorAccess();
+    const { orgId, premiumStatus } = await verifyVendorAccess();
     if (!premiumStatus.multiBranchActive) {
       throw new Error("Multi-branch features are not unlocked.");
     }
@@ -347,7 +347,7 @@ export async function assignBranchMemberAction(data: {
 
 export async function removeBranchMemberAction(id: string) {
   return runWithCorrelationId(async () => {
-    const { userId, orgId, premiumStatus } = await verifyVendorAccess();
+    const { orgId, premiumStatus } = await verifyVendorAccess();
     if (!premiumStatus.multiBranchActive) {
       throw new Error("Multi-branch features are not unlocked.");
     }

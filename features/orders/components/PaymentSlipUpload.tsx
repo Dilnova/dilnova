@@ -25,7 +25,7 @@ function isAllowedPaymentSlipFile(file: File): boolean {
 
 export default function PaymentSlipUpload({
   orderId,
-  customerEmail,
+  customerEmail: _customerEmail,
   existingSlipPreviewUrl,
   disabled = false,
   compact = false,

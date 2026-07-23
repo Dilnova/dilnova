@@ -72,7 +72,7 @@ vi.mock("@/shared/logging/logger", () => ({
 
 // Mock Async Context, Rate Limit, Audit logging
 vi.mock("@/shared/security/async-context", () => ({
-  runWithCorrelationId: (fn: any) => fn(),
+  runWithCorrelationId: <T>(fn: () => T) => fn(),
 }));
 
 vi.mock("@/shared/security/rate-limit", () => ({

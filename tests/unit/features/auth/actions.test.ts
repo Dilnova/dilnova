@@ -39,7 +39,9 @@ describe("toggleUserRoleAction", () => {
   });
 
   it("should throw an unauthorized error when no user is signed in", async () => {
-    vi.mocked(auth).mockResolvedValue({ userId: null } as any);
+    vi.mocked(auth).mockResolvedValue({ userId: null } as unknown as Awaited<
+      ReturnType<typeof auth>
+    >);
 
     await expect(toggleUserRoleAction("vendor")).rejects.toThrow(
       "Not authorized: You must be logged in to toggle your role.",
@@ -48,12 +50,14 @@ describe("toggleUserRoleAction", () => {
 
   it("should toggle from customer to vendor and update public metadata", async () => {
     const mockUpdateUserMetadata = vi.fn();
-    vi.mocked(auth).mockResolvedValue({ userId: "user_123" } as any);
+    vi.mocked(auth).mockResolvedValue({ userId: "user_123" } as unknown as Awaited<
+      ReturnType<typeof auth>
+    >);
     vi.mocked(clerkClient).mockResolvedValue({
       users: {
         updateUserMetadata: mockUpdateUserMetadata,
       },
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof clerkClient>>);
 
     const result = await toggleUserRoleAction("customer");
 
@@ -67,12 +71,14 @@ describe("toggleUserRoleAction", () => {
 
   it("should toggle from vendor to customer and update public metadata", async () => {
     const mockUpdateUserMetadata = vi.fn();
-    vi.mocked(auth).mockResolvedValue({ userId: "user_456" } as any);
+    vi.mocked(auth).mockResolvedValue({ userId: "user_456" } as unknown as Awaited<
+      ReturnType<typeof auth>
+    >);
     vi.mocked(clerkClient).mockResolvedValue({
       users: {
         updateUserMetadata: mockUpdateUserMetadata,
       },
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof clerkClient>>);
 
     const result = await toggleUserRoleAction("vendor");
 

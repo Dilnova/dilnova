@@ -9,7 +9,7 @@ test.beforeAll(async () => {
 });
 
 test.describe("Unauthenticated server-action hardening", () => {
-  test.beforeEach(({ page }, testInfo) => {
+  test.beforeEach(({}, testInfo) => {
     skipUnlessUnauthenticatedSecurityEnv(testInfo);
   });
 

@@ -9,9 +9,9 @@ vi.mock("@/features/orders/stock", () => ({
 }));
 
 describe("Order Transitions", () => {
-  let mockTx: any;
-  let mockSelect: any;
-  let mockUpdate: any;
+  let mockTx: Record<string, unknown>;
+  let mockSelect: ReturnType<typeof vi.fn>;
+  let mockUpdate: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -67,18 +67,21 @@ describe("Order Transitions", () => {
       // Override the where() resolution for this specific test
       mockTx.select().from().innerJoin().where = vi.fn().mockResolvedValue(mockOrderItems);
 
-      const order: any = {
+      const order: Record<string, unknown> = {
         id: "order-123",
         status: "pending_payment",
         stockDepleted: false,
         pickupBranchId: "branch-1",
       };
 
-      const result = await applySimulatedOrderStatusChange(mockTx, {
-        order,
-        newStatus: "fulfilled",
-        userId: "user-1",
-      });
+      const result = await applySimulatedOrderStatusChange(
+        mockTx as unknown as Parameters<typeof applySimulatedOrderStatusChange>[0],
+        {
+          order: order as unknown as Parameters<typeof applySimulatedOrderStatusChange>[1]["order"],
+          newStatus: "fulfilled",
+          userId: "user-1",
+        },
+      );
 
       expect(result.stockDepleted).toBe(true);
       expect(stockModule.depleteOnlineOrderItemStock).toHaveBeenCalledTimes(1);
@@ -92,7 +95,7 @@ describe("Order Transitions", () => {
       );
 
       // Verify payment verification fields were added to the update payload
-      const setCallArgs = mockTx.update().set.mock.calls[0][0];
+      const setCallArgs = (mockTx.update as ReturnType<typeof vi.fn>)().set.mock.calls[0][0];
       expect(setCallArgs.status).toBe("fulfilled");
       expect(setCallArgs.stockDepleted).toBe(true);
       expect(setCallArgs.paymentVerifiedAt).toBeInstanceOf(Date);
@@ -108,25 +111,30 @@ describe("Order Transitions", () => {
           productType: "product",
         },
       ];
-      mockTx.select().from().innerJoin().where = vi.fn().mockResolvedValue(mockOrderItems);
+      (mockTx.select as ReturnType<typeof vi.fn>)().from().innerJoin().where = vi
+        .fn()
+        .mockResolvedValue(mockOrderItems);
 
-      const order: any = {
+      const order: Record<string, unknown> = {
         id: "order-456",
         status: "fulfilled",
         stockDepleted: true, // currently depleted
         pickupBranchId: "branch-1",
       };
 
-      const result = await applySimulatedOrderStatusChange(mockTx, {
-        order,
-        newStatus: "cancelled",
-        userId: "user-1",
-      });
+      const result = await applySimulatedOrderStatusChange(
+        mockTx as unknown as Parameters<typeof applySimulatedOrderStatusChange>[0],
+        {
+          order: order as unknown as Parameters<typeof applySimulatedOrderStatusChange>[1]["order"],
+          newStatus: "cancelled",
+          userId: "user-1",
+        },
+      );
 
       expect(result.stockDepleted).toBe(false);
       expect(stockModule.restoreOnlineOrderItemStock).toHaveBeenCalledTimes(1);
 
-      const setCallArgs = mockTx.update().set.mock.calls[0][0];
+      const setCallArgs = (mockTx.update as ReturnType<typeof vi.fn>)().set.mock.calls[0][0];
       expect(setCallArgs.status).toBe("cancelled");
       expect(setCallArgs.stockDepleted).toBe(false);
       expect(setCallArgs.paymentSlipUrl).toBe(null);
@@ -140,19 +148,24 @@ describe("Order Transitions", () => {
           productType: "service", // Should be ignored
         },
       ];
-      mockTx.select().from().innerJoin().where = vi.fn().mockResolvedValue(mockOrderItems);
+      (mockTx.select as ReturnType<typeof vi.fn>)().from().innerJoin().where = vi
+        .fn()
+        .mockResolvedValue(mockOrderItems);
 
-      const order: any = {
+      const order: Record<string, unknown> = {
         id: "order-789",
         status: "pending_payment",
         stockDepleted: false,
       };
 
-      await applySimulatedOrderStatusChange(mockTx, {
-        order,
-        newStatus: "fulfilled",
-        userId: "user-1",
-      });
+      await applySimulatedOrderStatusChange(
+        mockTx as unknown as Parameters<typeof applySimulatedOrderStatusChange>[0],
+        {
+          order: order as unknown as Parameters<typeof applySimulatedOrderStatusChange>[1]["order"],
+          newStatus: "fulfilled",
+          userId: "user-1",
+        },
+      );
 
       expect(stockModule.depleteOnlineOrderItemStock).not.toHaveBeenCalled();
     });

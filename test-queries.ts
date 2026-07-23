@@ -1,4 +1,3 @@
-import { db } from "./shared/db/client";
 import {
   getCategoriesOrderedByCreatedAtDesc,
   getContactSubmissionsOrderedByCreatedAtDesc,

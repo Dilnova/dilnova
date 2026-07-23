@@ -50,7 +50,7 @@ export default function ProductsTab({
   organizations,
   maxMediaLimit,
 }: ProductsTabProps) {
-  const [isPending, startTransition] = useTransition();
+  const [isPending] = useTransition();
   const { confirmAction } = useConfirm();
 
   const [productSearch, setProductSearch] = useState("");

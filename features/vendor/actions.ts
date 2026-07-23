@@ -72,7 +72,8 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
 
     // Security check: Only admins can modify stock allocation mode
     if (orgRole !== "org:admin") {
-      publicProfileUpdates.stockAllocationMode = existingPublic.stockAllocationMode as any;
+      publicProfileUpdates.stockAllocationMode =
+        existingPublic.stockAllocationMode as typeof publicProfileUpdates.stockAllocationMode;
     }
 
     const publicMetadata = {
