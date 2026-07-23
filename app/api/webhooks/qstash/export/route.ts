@@ -127,7 +127,7 @@ async function handler(req: NextRequest) {
     // 3-6. Fetch Carts, Branch Members, Audit Logs, Reviews, Questions, Wishlists concurrently
     let cart = null;
     let branchMemberships: (typeof schema.branchMembers.$inferSelect)[] = [];
-    let logs: (typeof schema.auditLogs.$inferSelect)[] = [];
+    let logs: Array<Omit<typeof schema.auditLogs.$inferSelect, "ipAddress" | "userAgent">> = [];
     let reviews: (typeof schema.reviews.$inferSelect)[] = [];
     let questions: (typeof schema.questions.$inferSelect)[] = [];
     let wishlists: (typeof schema.wishlists.$inferSelect)[] = [];
@@ -138,7 +138,18 @@ async function handler(req: NextRequest) {
         .select()
         .from(schema.branchMembers)
         .where(eq(schema.branchMembers.memberUserId, targetUserId)),
-      db.select().from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId)),
+      db
+        .select({
+          id: schema.auditLogs.id,
+          userId: schema.auditLogs.userId,
+          action: schema.auditLogs.action,
+          targetType: schema.auditLogs.targetType,
+          targetId: schema.auditLogs.targetId,
+          metadata: schema.auditLogs.metadata,
+          createdAt: schema.auditLogs.createdAt,
+        })
+        .from(schema.auditLogs)
+        .where(eq(schema.auditLogs.userId, targetUserId)),
     ];
 
     queries.push(db.select().from(schema.reviews).where(eq(schema.reviews.userId, targetUserId)));
@@ -170,8 +181,6 @@ async function handler(req: NextRequest) {
       ? logs.map((l) => ({
           ...l,
           userId: "gdpr_redacted",
-          ipAddress: null,
-          userAgent: null,
         }))
       : logs;
 
