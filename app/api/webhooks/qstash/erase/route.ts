@@ -8,8 +8,14 @@ import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { Redis } from "@upstash/redis";
 import { logAuditAction } from "@/shared/audit/logger";
 import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
+import { z } from "zod/v3";
 
 export const maxDuration = 300;
+
+const erasePayloadSchema = z.object({
+  targetUserId: z.string().min(1).max(128),
+  adminUserId: z.string().min(1).max(128),
+});
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "",
@@ -43,11 +49,16 @@ async function handler(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { targetUserId, adminUserId } = body;
+    const parsed = erasePayloadSchema.safeParse(body);
 
-    if (!targetUserId || !adminUserId) {
+    if (!parsed.success) {
+      logger.warn("GDPR user erasure webhook received invalid payload", {
+        error: parsed.error.issues[0]?.message,
+      });
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
+
+    const { targetUserId, adminUserId } = parsed.data;
 
     const client = await clerkClient();
     let clerkProfileDeleted = false;
