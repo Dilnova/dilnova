@@ -52,3 +52,18 @@ Detects changes to the Vercel Web Application Firewall (WAF) or firewall rules t
 ```
 
 **Monitor Threshold:** Trigger when results > 0. Route directly to #alerts-critical in Slack.
+
+## 5. Failed Authentication & Brute Force (>5 failures in 5m)
+
+Detects credential stuffing or brute-force login attempts against user accounts.
+
+```kusto
+['vercel']
+| where message startswith "Audit log created"
+| where action == "AUTH_FAILED" or action == "ACCOUNT_LOCKED"
+| extend userId = tostring(metadata.userId)
+| summarize FailCount = count() by userId, bin(_time, 5m)
+| where FailCount > 5
+```
+
+**Monitor Threshold:** Trigger when results > 0. Route directly to #alerts-security in Slack.
