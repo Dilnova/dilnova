@@ -66,11 +66,12 @@ async function handler(req: NextRequest) {
 
     const { targetUserId, adminUserId, adminEmail } = parsed.data;
 
-    // 1. simulatedOrders
+    // 1. simulatedOrders (capped to 10,000 orders to prevent memory exhaustion)
     const orders = await db
       .select()
       .from(schema.simulatedOrders)
-      .where(eq(schema.simulatedOrders.customerUserId, targetUserId));
+      .where(eq(schema.simulatedOrders.customerUserId, targetUserId))
+      .limit(10_000);
 
     type OrderItem = typeof schema.simulatedOrderItems.$inferSelect;
     type PopulatedOrder = typeof schema.simulatedOrders.$inferSelect & { items: OrderItem[] };
