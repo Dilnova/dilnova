@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     logger.error("GDPR Export Queue Error", error);
     if (error instanceof Error && error.message.includes("Unauthorized")) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
