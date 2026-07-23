@@ -65,7 +65,7 @@ export async function isVendorOnline(userId: string): Promise<boolean> {
  * Push a notification payload to the vendor's secure Redis queue.
  * They will expire in 5 minutes if not popped (prevents memory leaks).
  */
-export async function queueVendorNotification(userId: string, payload: any): Promise<boolean> {
+export async function queueVendorNotification(userId: string, payload: unknown): Promise<boolean> {
   const redis = getRedisClient();
   if (!redis) return false;
 
@@ -91,7 +91,7 @@ export async function queueVendorNotification(userId: string, payload: any): Pro
  * Peeks at all pending notifications from the vendor's secure Redis queue.
  * Does not remove them (non-destructive).
  */
-export async function peekVendorNotifications(userId: string): Promise<any[]> {
+export async function peekVendorNotifications(userId: string): Promise<unknown[]> {
   const redis = getRedisClient();
   if (!redis) return [];
 
@@ -135,7 +135,7 @@ export async function ackVendorNotifications(userId: string, ackIds: string[]): 
           // lrem matches the exact original stored string payload
           pipeline.lrem(key, 1, item);
         }
-      } catch (err) {
+      } catch (_err) {
         // Skip invalid JSON
       }
     }

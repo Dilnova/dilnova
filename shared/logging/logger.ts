@@ -49,25 +49,25 @@ function redactSensitiveString(text: string): string {
   return text.replace(emailRegex, "[REDACTED_EMAIL]");
 }
 
-export function redactSensitiveData(obj: any, seen = new WeakSet()): any {
+export function redactSensitiveData<T>(obj: T, seen = new WeakSet()): T {
   if (obj === null || obj === undefined) {
     return obj;
   }
 
   if (typeof obj !== "object") {
     if (typeof obj === "string") {
-      return redactSensitiveString(obj);
+      return redactSensitiveString(obj) as T;
     }
     return obj;
   }
 
-  if (seen.has(obj)) {
-    return "[Circular]";
+  if (seen.has(obj as object)) {
+    return "[Circular]" as T;
   }
-  seen.add(obj);
+  seen.add(obj as object);
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => redactSensitiveData(item, seen));
+    return obj.map((item) => redactSensitiveData(item, seen)) as T;
   }
 
   if (obj instanceof Error) {
@@ -75,27 +75,25 @@ export function redactSensitiveData(obj: any, seen = new WeakSet()): any {
       name: obj.name,
       message: redactSensitiveString(obj.message),
       stack: obj.stack ? redactSensitiveString(obj.stack) : undefined,
-    };
+    } as T;
   }
 
   // Pre-compiled regex for performance (avoids Array.from() inside the loop)
   const sensitiveKeysRegex =
     /email|phone|address|password|secret|token|key|bankaccountname|bankaccountnumber|bankbranchcode|bankname|shippingaddress|shippingphone|customeremail|customername|authorization|cookie/i;
 
-  const redacted: Record<string, any> = {};
+  const redacted: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
     const isSensitive = sensitiveKeysRegex.test(k);
 
     if (isSensitive) {
       redacted[k] = "[REDACTED]";
-    } else if (typeof v === "object" && v !== null) {
-      redacted[k] = redactSensitiveData(v, seen);
     } else {
-      redacted[k] = v;
+      redacted[k] = redactSensitiveData(v, seen);
     }
   }
 
-  return redacted;
+  return redacted as T;
 }
 
 function sanitizeLogString(val: string | undefined | null): string {
@@ -114,7 +112,7 @@ export const logger = {
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
 
-    const baseContext: Record<string, any> = {
+    const baseContext: Record<string, unknown> = {
       userId: getUserId(),
       path: getRequestPath(),
       method: getRequestMethod(),
@@ -150,7 +148,7 @@ export const logger = {
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
 
-    const baseContext: Record<string, any> = {
+    const baseContext: Record<string, unknown> = {
       userId: getUserId(),
       path: getRequestPath(),
       method: getRequestMethod(),
@@ -186,7 +184,7 @@ export const logger = {
     const safeMessage = sanitizeLogString(message);
     const safeRequestId = sanitizeLogString(requestId);
 
-    const baseContext: Record<string, any> = {
+    const baseContext: Record<string, unknown> = {
       userId: getUserId(),
       path: getRequestPath(),
       method: getRequestMethod(),

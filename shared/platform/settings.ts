@@ -49,7 +49,7 @@ export async function getSystemSetting(key: string, defaultValue: string): Promi
   try {
     const cachedVal = await getCachedSettingValue(key);
     return cachedVal !== null ? cachedVal : defaultValue;
-  } catch (error) {
+  } catch (_error) {
     // Graceful recovery: Try Redis fallback if DB fails
     try {
       const redis = getSettingsRedisClient();

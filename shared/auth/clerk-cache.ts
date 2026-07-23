@@ -145,7 +145,7 @@ const getCachedSuperadminOrganizationsInternal = unstable_cache(
  * to bypass slow network API requests.
  */
 export async function getCachedOrganizations(
-  client?: ClerkOrganizationsClient,
+  _client?: ClerkOrganizationsClient,
 ): Promise<CachedOrg[]> {
   try {
     return await getCachedOrganizationsInternal();
@@ -159,7 +159,7 @@ export async function getCachedOrganizations(
  * Retrieves the raw list of Clerk organizations using Next.js unstable_cache for superadmins.
  */
 export async function getSuperadminOrganizations(
-  client?: ClerkOrganizationsClient,
+  _client?: ClerkOrganizationsClient,
 ): Promise<CachedSuperadminOrg[]> {
   try {
     return await getCachedSuperadminOrganizationsInternal();

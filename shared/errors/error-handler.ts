@@ -12,7 +12,7 @@ export interface ApiErrorResponse {
   message: string;
   code?: string;
   status?: number;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export function handleApiError(
@@ -24,7 +24,7 @@ export function handleApiError(
 
   // 2. Return a safe, sanitized response to prevent leaking raw system/DB details
   if (typeof error === "object" && error !== null) {
-    const obj = error as Record<string, any>;
+    const obj = error as Record<string, unknown>;
     return {
       message: defaultMessage,
       code: typeof obj.code === "string" ? obj.code : undefined,
