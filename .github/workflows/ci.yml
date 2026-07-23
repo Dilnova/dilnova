@@ -234,7 +234,8 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Gitleaks
+        uses: extractions/setup-gitleaks@v1
+
       - name: Gitleaks Secrets Scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gitleaks detect --source . --redact
