@@ -234,8 +234,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Gitleaks
-        uses: extractions/setup-gitleaks@v1
-
-      - name: Gitleaks Secrets Scan
-        run: gitleaks detect --source . --redact
+      - name: Install and Run Gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks detect --source . --redact
