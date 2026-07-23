@@ -32,11 +32,14 @@ interface VendorOrgIssuesTabProps {
 type ReassignScopes = VendorOrgReassignScopes;
 
 function getActionErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  if (typeof error === "string" && error.trim()) {
-    return error;
+  const msg = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  if (
+    msg &&
+    !msg.toLowerCase().includes("database") &&
+    !msg.toLowerCase().includes("constraint") &&
+    !msg.includes("pkey")
+  ) {
+    return msg;
   }
   return fallback;
 }

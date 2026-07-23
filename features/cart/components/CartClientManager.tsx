@@ -203,7 +203,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       }
     } catch (err: unknown) {
       setEmailStatus("idle");
-      const errMsg = err instanceof Error ? err.message : "An unexpected error occurred.";
+      const errMsg =
+        err instanceof Error && err.message ? err.message : "An unexpected error occurred.";
       toast.error(errMsg);
     }
   };
@@ -348,7 +349,9 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       }
     } catch (err) {
       setCheckoutStatus("idle");
-      toast.error(err instanceof Error ? err.message : "An unexpected error occurred.");
+      toast.error(
+        err instanceof Error && err.message ? err.message : "An unexpected error occurred.",
+      );
     }
   };
 

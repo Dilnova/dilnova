@@ -259,7 +259,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
         await refreshData();
       } catch (err) {
         playAudioFeedback("error");
-        toast.error(err instanceof Error ? err.message : "POS checkout failed.");
+        toast.error(err instanceof Error && err.message ? err.message : "POS checkout failed.");
       }
     });
   };

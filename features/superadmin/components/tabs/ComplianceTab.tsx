@@ -58,7 +58,8 @@ export default function ComplianceTab() {
         triggerNotification(false, "Failed to retrieve data.");
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to retrieve DSAR data.";
+      const msg =
+        err instanceof Error && err.message ? err.message : "Failed to retrieve DSAR data.";
       triggerNotification(false, msg);
     } finally {
       setIsSearchingCompliance(false);
@@ -82,7 +83,7 @@ export default function ComplianceTab() {
       setComplianceApiData(data);
       triggerNotification(true, "API data retrieved successfully.");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "API request failed.";
+      const msg = err instanceof Error && err.message ? err.message : "API request failed.";
       triggerNotification(false, msg);
     } finally {
       setIsSearchingApi(false);
@@ -139,7 +140,8 @@ export default function ComplianceTab() {
           `Successfully anonymized ${result.count.ordersAnonymized} orders, deleted ${result.count.submissionsDeleted} contact submissions, and wiped Clerk profile (${result.count.clerkProfileDeleted ? "Yes" : "No"}).`,
         );
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Anonymization process failed.";
+        const msg =
+          err instanceof Error && err.message ? err.message : "Anonymization process failed.";
         triggerNotification(false, msg);
       }
     });
@@ -169,7 +171,8 @@ export default function ComplianceTab() {
       setSearchedUserId("");
       triggerNotification(true, `API Erasure successful: ${JSON.stringify(data.deleted)}`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "API Anonymization process failed.";
+      const msg =
+        err instanceof Error && err.message ? err.message : "API Anonymization process failed.";
       triggerNotification(false, msg);
     } finally {
       setIsApiErasing(false);
