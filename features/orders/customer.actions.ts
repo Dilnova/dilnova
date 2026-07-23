@@ -24,7 +24,8 @@ import {
   verifyPaymentSlipMagicBytes,
   isPaymentSlipStoragePath,
 } from "@/shared/storage/payment-slip";
-import { PAYMENT_SLIP_MAX_BYTES } from "@/shared/storage/config";
+import { PAYMENT_SLIP_MAX_BYTES, PAYMENT_SLIP_ALLOWED_MIME_TYPES } from "@/shared/storage/config";
+import { uuidField } from "@/shared/validation/primitives";
 import { authenticatedAction } from "@/lib/safe-action";
 import { z } from "zod/v3";
 
@@ -85,10 +86,16 @@ async function validateCustomerAndOrder(
 export const createPaymentSlipUploadPresignedUrlAction = authenticatedAction
   .schema(
     z.object({
-      orderId: z.string(),
-      fileName: z.string(),
-      fileSize: z.number(),
-      fileType: z.string(),
+      orderId: uuidField,
+      fileName: z.string().max(255, "File name too long.").trim(),
+      fileSize: z
+        .number()
+        .int()
+        .min(1, "File cannot be empty.")
+        .max(PAYMENT_SLIP_MAX_BYTES, "Image must be 8 MB or smaller."),
+      fileType: z.enum(PAYMENT_SLIP_ALLOWED_MIME_TYPES, {
+        message: "Please upload an image file (JPG, PNG, WebP, or GIF).",
+      }),
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
@@ -160,8 +167,8 @@ export const createPaymentSlipUploadPresignedUrlAction = authenticatedAction
 export const submitPaymentSlipPathAction = authenticatedAction
   .schema(
     z.object({
-      orderId: z.string(),
-      storagePath: z.string(),
+      orderId: uuidField,
+      storagePath: z.string().max(500, "Storage path too long.").trim(),
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
