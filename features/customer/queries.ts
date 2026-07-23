@@ -2,6 +2,7 @@ import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
 import { buildCustomerOrderAccessWhere } from "@/features/orders/customer-ownership";
 import { eq, inArray, desc, and } from "drizzle-orm";
+import { logger } from "@/shared/logging/logger";
 
 export async function getOrderById(id: string) {
   try {
@@ -13,7 +14,7 @@ export async function getOrderById(id: string) {
 
     return order ?? null;
   } catch (error) {
-    console.error(`[DB Error] Failed to fetch order ${id}:`, error);
+    logger.error("Failed to fetch order by ID", error, { orderId: id });
     return null;
   }
 }
@@ -51,7 +52,7 @@ export async function getCustomerOrders(userId: string | null) {
       .where(buildCustomerOrderAccessWhere(userId))
       .orderBy(desc(schema.simulatedOrders.createdAt));
   } catch (error) {
-    console.error(`[DB Error] Failed to fetch orders for customer ${userId}:`, error);
+    logger.error("Failed to fetch orders for customer", error, { customerUserId: userId });
     return [];
   }
 }

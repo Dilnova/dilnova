@@ -3,6 +3,7 @@ import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { NextFetchEvent } from "next/server";
+import { logger } from "@/shared/logging/logger";
 
 function getSentryCspReportUri(): string | null {
   const dsn = process.env.SENTRY_DSN;
@@ -216,7 +217,7 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     const res = await clerkHandler(request, event);
     return res;
   } catch (error) {
-    console.error("Clerk Middleware execution failed (API outage):", error);
+    logger.error("Clerk Middleware execution failed (API outage)", error);
     return new NextResponse(
       "Authentication Service is currently unavailable. Please try again later.",
       { status: 503 },

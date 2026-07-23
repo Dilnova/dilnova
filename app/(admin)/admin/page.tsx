@@ -13,6 +13,8 @@ import {
 import Image from "next/image";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
 
+import { logger } from "@/shared/logging/logger";
+
 export default async function AdminPage() {
   const { orgId } = await auth();
   const user = await currentUser();
@@ -31,7 +33,7 @@ export default async function AdminPage() {
         limit: 100,
       })
       .catch((err) => {
-        console.error("CLERK ERROR", err);
+        logger.error("Failed to fetch Clerk organization memberships", err, { orgId });
         return { data: [] };
       }),
     getCheckoutOptionsCatalog(),

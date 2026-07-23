@@ -3,6 +3,7 @@ import * as schema from "@/shared/db/schema";
 import { eq, desc, inArray, asc } from "drizzle-orm";
 import { buildVendorOrgIntegrityReport } from "@/features/vendor-org";
 import { rateLimit } from "@/shared/security/rate-limit";
+import { logger } from "@/shared/logging/logger";
 
 export async function getPricingPlansOrderedByCreatedAtAsc(limit = 200, offset = 0) {
   return db
@@ -186,7 +187,7 @@ export async function getSimulatedOrdersWithItems() {
       paymentSlipPreviewUrl: null as string | null,
     }));
   } catch (error) {
-    console.error("[DB Error] Failed to fetch simulated orders for superadmin:", error);
+    logger.error("Failed to fetch simulated orders for superadmin dashboard", error);
     return [];
   }
 }

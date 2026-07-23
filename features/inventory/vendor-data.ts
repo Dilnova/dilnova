@@ -12,6 +12,7 @@ import { getCheckoutOptionsCatalog } from "@/features/organization/checkout-opti
 import type { VendorBillingRegisterData } from "@/features/billing/types";
 import type { VendorInventoryFullData } from "@/features/inventory/types";
 import { attachPaymentSlipPreviews } from "@/features/orders/payment-slip-preview";
+import { logger } from "@/shared/logging/logger";
 
 export async function verifyVendorAccess(options?: { allowMember?: boolean }) {
   const { userId, orgId, orgRole } = await auth();
@@ -232,7 +233,7 @@ export async function loadVendorInventoryData(
           );
         }
       } catch (error) {
-        console.error("[DB Error] Failed to fetch simulated orders for vendor dashboard:", error);
+        logger.error("Failed to fetch simulated orders for vendor dashboard", error, { orgId });
         // simulatedOrders remains empty array []
       }
     }
