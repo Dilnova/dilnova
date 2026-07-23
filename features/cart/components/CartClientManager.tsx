@@ -161,7 +161,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       const allBranches = checkoutOptions.pickupBranches.flatMap((pb) => pb.branches);
       if (allBranches.length === 1) {
         setPickupBranchId(allBranches[0].id);
-      } else if (!allBranches.some((b: any) => b.id === pickupBranchId)) {
+      } else if (!allBranches.some((b: { id: string }) => b.id === pickupBranchId)) {
         setPickupBranchId("");
       }
     }

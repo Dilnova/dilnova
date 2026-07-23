@@ -78,10 +78,10 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
                   {item.product.productName}
                 </span>
                 <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-mono">
-                  <span>${(item.product.productPrice / 100).toFixed(2)} ea</span>
+                  <span>${((item.product.productPrice ?? 0) / 100).toFixed(2)} ea</span>
                   <span>•</span>
                   <span className="font-bold text-zinc-700 dark:text-zinc-300">
-                    ${((item.quantity * item.product.productPrice) / 100).toFixed(2)}
+                    ${((item.quantity * (item.product.productPrice ?? 0)) / 100).toFixed(2)}
                   </span>
                 </div>
               </div>
