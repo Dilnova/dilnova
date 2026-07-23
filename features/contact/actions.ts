@@ -139,7 +139,7 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
           <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
             <div style="background-color: #6b21a8; padding: 24px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 1px;">
-                ${systemNameHub.toUpperCase()}
+                ${escapeHtml(systemNameHub.toUpperCase())}
               </h1>
               <p style="margin: 4px 0 0 0; color: #e9d5ff; font-size: 12px;">New Contact Submission</p>
             </div>
@@ -162,7 +162,7 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
               <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 14px; color: #334155; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(message)}</div>
             </div>
             <div style="background-color: #f4f4f5; padding: 16px; text-align: center; border-top: 1px solid #e4e4e7; font-size: 11px; color: #a1a1aa;">
-              ${systemNameHub} &copy; 2026. All rights reserved.
+              ${escapeHtml(systemNameHub)} &copy; 2026. All rights reserved.
             </div>
           </div>
         </body>
