@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 // Mock clerkMiddleware
 vi.mock("@clerk/nextjs/server", () => ({
   clerkMiddleware: vi.fn((handler) => {
-    return (req: any, event: any) => {
+    return (req: unknown, event: unknown) => {
       const mockAuth = {};
       return handler(mockAuth, req, event);
     };
@@ -33,6 +33,10 @@ vi.mock("next/server", async (importOriginal) => {
 
 import proxy from "@/proxy";
 
+const mockEvent = {} as unknown as import("next/server").NextFetchEvent;
+
+type MockResponse = { status: number; body: string };
+
 describe("Proxy Middleware CSRF Protection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -42,7 +46,7 @@ describe("Proxy Middleware CSRF Protection", () => {
     const request = new NextRequest("http://localhost:3000/api/health", {
       method: "GET",
     });
-    const result = await proxy(request, {} as any);
+    const result = await proxy(request, mockEvent);
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 
@@ -50,7 +54,7 @@ describe("Proxy Middleware CSRF Protection", () => {
     const request = new NextRequest("http://localhost:3000/api/some-custom-post", {
       method: "POST",
     });
-    const result = (await proxy(request, {} as any)) as any;
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("Missing Origin or Host header");
@@ -60,7 +64,7 @@ describe("Proxy Middleware CSRF Protection", () => {
     const request = new NextRequest("http://localhost:3000/api/webhooks/clerk", {
       method: "POST",
     });
-    const result = await proxy(request, {} as any);
+    const result = await proxy(request, mockEvent);
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 
@@ -68,7 +72,7 @@ describe("Proxy Middleware CSRF Protection", () => {
     const request = new NextRequest("http://localhost:3000/api/csp-report", {
       method: "POST",
     });
-    const result = await proxy(request, {} as any);
+    const result = await proxy(request, mockEvent);
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 
@@ -79,7 +83,7 @@ describe("Proxy Middleware CSRF Protection", () => {
         "next-action": "action-id",
       },
     });
-    const result = (await proxy(request, {} as any)) as any;
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("Missing Origin or Host header");
@@ -94,7 +98,7 @@ describe("Proxy Middleware CSRF Protection", () => {
         host: "localhost:3000",
       },
     });
-    const result = (await proxy(request, {} as any)) as any;
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("Mismatched Origin and Host");
@@ -109,7 +113,7 @@ describe("Proxy Middleware CSRF Protection", () => {
         host: "localhost:3000",
       },
     });
-    const result = await proxy(request, {} as any);
+    const result = await proxy(request, mockEvent);
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 
@@ -123,7 +127,7 @@ describe("Proxy Middleware CSRF Protection", () => {
         "x-forwarded-host": "dilstar.pp.ua",
       },
     });
-    const result = await proxy(request, {} as any);
+    const result = await proxy(request, mockEvent);
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 });
@@ -136,7 +140,7 @@ describe("Proxy Middleware WAF Protection", () => {
         "user-agent": "python-requests/2.28.1",
       },
     });
-    const result = (await proxy(request, {} as any)) as any;
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("WAF Bot Protection");
@@ -149,7 +153,7 @@ describe("Proxy Middleware WAF Protection", () => {
         method: "GET",
       },
     );
-    const result = (await proxy(request, {} as any)) as any;
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("WAF SQLi Protection");
@@ -159,7 +163,7 @@ describe("Proxy Middleware WAF Protection", () => {
     const request = new NextRequest("http://localhost:3000/?search=%27+UNION+SELECT+null+--", {
       method: "GET",
     });
-    const result = (await proxy(request, {} as any)) as any;
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("WAF SQLi Protection");
@@ -169,7 +173,7 @@ describe("Proxy Middleware WAF Protection", () => {
     const request = new NextRequest("http://localhost:3000/?q=exec+xp_cmdshell", {
       method: "GET",
     });
-    const result = (await proxy(request, {} as any)) as any;
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("WAF SQLi Protection");
@@ -179,7 +183,7 @@ describe("Proxy Middleware WAF Protection", () => {
     const request = new NextRequest("http://localhost:3000/?file=../../../../etc/passwd", {
       method: "GET",
     });
-    const result = (await proxy(request, {} as any)) as any;
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("WAF Directory Traversal Protection");
@@ -192,7 +196,7 @@ describe("Proxy Middleware WAF Protection", () => {
         method: "GET",
       },
     );
-    const result = (await proxy(request, {} as any)) as any;
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("WAF Directory Traversal Protection");
@@ -202,7 +206,7 @@ describe("Proxy Middleware WAF Protection", () => {
     const request = new NextRequest("http://localhost:3000/?q=%3Cscript%3Ealert(1)%3C/script%3E", {
       method: "GET",
     });
-    const result = (await proxy(request, {} as any)) as any;
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("WAF XSS Protection");
@@ -212,7 +216,7 @@ describe("Proxy Middleware WAF Protection", () => {
     const request = new NextRequest("http://localhost:3000/?cmd=%3B+cat+/var/log/syslog", {
       method: "GET",
     });
-    const result = (await proxy(request, {} as any)) as any;
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
     expect(result).toBeInstanceOf(NextResponse);
     expect(result.status).toBe(403);
     expect(result.body).toContain("WAF Command Injection Protection");
@@ -228,7 +232,7 @@ describe("Proxy Middleware WAF Protection", () => {
     );
 
     const start = performance.now();
-    const result = await proxy(request, {} as any);
+    const result = await proxy(request, mockEvent);
     const duration = performance.now() - start;
 
     expect(duration).toBeLessThan(100);

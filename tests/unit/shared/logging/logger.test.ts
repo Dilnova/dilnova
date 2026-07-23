@@ -36,13 +36,13 @@ describe("Log Redaction Filters", () => {
   });
 
   it("should handle circular references without infinite loops", () => {
-    const circular: any = {
+    const circular: Record<string, unknown> = {
       name: "Circular Object",
       email: "sensitive@dilnova.com",
     };
     circular.self = circular;
 
-    const redacted = redactSensitiveData(circular);
+    const redacted = redactSensitiveData(circular) as Record<string, unknown>;
     expect(redacted.email).toBe("[REDACTED]");
     expect(redacted.self).toBe("[Circular]");
   });

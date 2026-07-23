@@ -27,9 +27,9 @@ vi.mock("@/shared/logging/logger", () => ({
     info: vi.fn(),
     error: vi.fn(),
   },
-  redactSensitiveData: (val: any) => {
+  redactSensitiveData: (val: unknown) => {
     if (val && typeof val === "object") {
-      const copy = { ...val };
+      const copy = { ...(val as Record<string, unknown>) };
       if ("email" in copy) copy.email = "[REDACTED]";
       return copy;
     }
@@ -45,7 +45,9 @@ describe("logAuditAction", () => {
 
   it("persists redacted metadata to the database and logs redacted metadata to stdout", async () => {
     const mockValues = vi.fn().mockResolvedValue(undefined);
-    vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
+    vi.mocked(db.insert).mockReturnValue({ values: mockValues } as unknown as ReturnType<
+      typeof db.insert
+    >);
 
     const sensitiveMetadata = {
       email: "sensitive-user@example.com",
@@ -96,7 +98,9 @@ describe("logAuditAction", () => {
   it("handles database insertion error by logging redacted metadata via logger.error", async () => {
     const dbError = new Error("Database connection failed");
     const mockValues = vi.fn().mockRejectedValue(dbError);
-    vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
+    vi.mocked(db.insert).mockReturnValue({ values: mockValues } as unknown as ReturnType<
+      typeof db.insert
+    >);
 
     const sensitiveMetadata = {
       email: "sensitive-user@example.com",
@@ -132,7 +136,9 @@ describe("logAuditAction", () => {
 
   it("extracts IP address and user-agent from headers and stores them", async () => {
     const mockValues = vi.fn().mockResolvedValue(undefined);
-    vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
+    vi.mocked(db.insert).mockReturnValue({ values: mockValues } as unknown as ReturnType<
+      typeof db.insert
+    >);
 
     mockHeaders.set("x-forwarded-for", "203.0.113.195, 70.41.3.18");
     mockHeaders.set("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)");
@@ -155,7 +161,9 @@ describe("logAuditAction", () => {
   it("throws an error on database insertion failure when strict is true", async () => {
     const dbError = new Error("Database connection failed");
     const mockValues = vi.fn().mockRejectedValue(dbError);
-    vi.mocked(db.insert).mockReturnValue({ values: mockValues } as any);
+    vi.mocked(db.insert).mockReturnValue({ values: mockValues } as unknown as ReturnType<
+      typeof db.insert
+    >);
 
     await expect(
       logAuditAction({
