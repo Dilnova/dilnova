@@ -9,6 +9,7 @@ import { getSystemSetting } from "@/shared/platform/settings";
 import { escapeHtml, sanitizeSmtpHeader, sendRawSmtpEmail } from "@/shared/email/smtp-client";
 import { logger } from "@/shared/logging/logger";
 import { withActionHandler } from "@/shared/errors/action-handler";
+import { ActionError } from "@/lib/safe-action";
 
 const contactFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -33,7 +34,7 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
     if (turnstileSecret) {
       const turnstileToken = formData.get("cf-turnstile-response") as string;
       if (!turnstileToken) {
-        throw new Error("Please complete the CAPTCHA.");
+        throw new ActionError("Please complete the CAPTCHA.");
       }
 
       let verifyData;
@@ -57,18 +58,16 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
         verifyData = await verifyResponse.json();
       } catch (error) {
         logger.error("Failed to verify Turnstile CAPTCHA due to network error", error);
-        if (process.env.NODE_ENV === "production") {
-          throw new Error("CAPTCHA verification service is unavailable. Please try again later.");
-        } else {
-          throw new Error("CAPTCHA verification service is unavailable. Please try again later.");
-        }
+        throw new ActionError(
+          "CAPTCHA verification service is unavailable. Please try again later.",
+        );
       }
 
       if (!verifyData?.success) {
         logger.warn("Turnstile CAPTCHA verification failed", {
           errorCodes: verifyData?.["error-codes"],
         });
-        throw new Error("CAPTCHA verification failed. Please try again.");
+        throw new ActionError("CAPTCHA verification failed. Please try again.");
       }
     }
 
