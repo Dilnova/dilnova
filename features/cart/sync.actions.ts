@@ -14,7 +14,7 @@ export const loadCustomerCartAction = authenticatedAction
   .action(
     async ({ ctx }): Promise<{ success: boolean; items?: SyncedCartItem[]; error?: string }> => {
       try {
-        await rateLimit(30, 60 * 1000);
+        await rateLimit(15, 60 * 1000, ctx.userId, { failClosed: true });
 
         const [row] = await db
           .select()
@@ -49,7 +49,7 @@ export const saveCustomerCartAction = authenticatedAction
   )
   .action(async ({ parsedInput, ctx }): Promise<{ success: boolean; error?: string }> => {
     try {
-      await rateLimit(30, 60 * 1000);
+      await rateLimit(15, 60 * 1000, ctx.userId, { failClosed: true });
 
       await db
         .insert(schema.customerCarts)

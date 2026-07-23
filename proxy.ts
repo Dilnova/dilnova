@@ -4,6 +4,74 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { NextFetchEvent } from "next/server";
 import { logger } from "@/shared/logging/logger";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+import { readUpstashEnv } from "@/shared/security/upstash-health";
+
+const edgeLimiterCache = new Map<string, Ratelimit>();
+
+function getEdgeRateLimiter(
+  limit: number,
+  windowSeconds: number,
+  prefix: string,
+): Ratelimit | null {
+  const { url, token } = readUpstashEnv();
+  if (!url || !token) return null;
+
+  const key = `${prefix}:${limit}:${windowSeconds}s`;
+  if (edgeLimiterCache.has(key)) {
+    return edgeLimiterCache.get(key)!;
+  }
+
+  try {
+    const redis = new Redis({ url, token });
+    const client = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(limit, `${windowSeconds} s`),
+      analytics: true,
+      prefix: `@upstash/edge-ratelimit:${prefix}`,
+    });
+    edgeLimiterCache.set(key, client);
+    return client;
+  } catch {
+    return null;
+  }
+}
+
+async function checkEdgeRateLimit(request: NextRequest): Promise<NextResponse | null> {
+  const ip =
+    request.headers.get("x-real-ip")?.trim() ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "127.0.0.1";
+
+  const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method);
+  const limit = isMutating ? 60 : 120;
+  const prefix = isMutating ? "mutate" : "read";
+
+  const limiter = getEdgeRateLimiter(limit, 60, prefix);
+  if (!limiter) return null;
+
+  try {
+    const { success, reset } = await limiter.limit(ip);
+    if (!success) {
+      const waitSeconds = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+      return new NextResponse(
+        `Too Many Requests: Edge Rate Limit Exceeded. Retry in ${waitSeconds}s.`,
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(waitSeconds),
+            "Content-Type": "text/plain",
+          },
+        },
+      );
+    }
+  } catch (error) {
+    logger.error("Edge rate limiter error", error);
+  }
+
+  return null;
+}
 
 function getSentryCspReportUri(): string | null {
   const dsn = process.env.SENTRY_DSN;
@@ -178,6 +246,12 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
   ];
   if (matchesAnyPattern(CMD_INJECTION_PATTERNS)) {
     return new NextResponse("Forbidden: WAF Command Injection Protection", { status: 403 });
+  }
+
+  // 1.5. Edge Rate Limiting Protection (circuit breaker for volumetric traffic)
+  const edgeRateLimitResponse = await checkEdgeRateLimit(request);
+  if (edgeRateLimitResponse) {
+    return edgeRateLimitResponse;
   }
 
   // 2. CSRF protection:

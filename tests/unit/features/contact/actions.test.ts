@@ -151,4 +151,27 @@ describe("submitContactFormAction", () => {
 
     vi.unstubAllGlobals();
   });
+
+  it("rejects submission in production environment when TURNSTILE_SECRET_KEY is missing", async () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    delete process.env.TURNSTILE_SECRET_KEY;
+
+    const formData = new FormData();
+    formData.append("name", "John Doe");
+    formData.append("email", "john@example.com");
+    formData.append("category", "info");
+    formData.append("subject", "Test Subject");
+    formData.append("message", "Test contact message content of minimum length.");
+
+    const result = await submitContactFormAction(null, formData);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "CAPTCHA verification service is unconfigured. Please try again later.",
+    );
+    expect(mockInsert).not.toHaveBeenCalled();
+
+    process.env.NODE_ENV = originalEnv;
+  });
 });

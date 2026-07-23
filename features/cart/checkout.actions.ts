@@ -82,7 +82,7 @@ export const sendCartSummaryEmailAction = authenticatedAction
       zeroShipping: z.boolean().optional().default(false),
     }),
   )
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     try {
       const parsedCartInput = sendCartEmailSchema.safeParse({
         emailAddress: parsedInput.emailAddress,
@@ -114,7 +114,7 @@ export const sendCartSummaryEmailAction = authenticatedAction
         };
       }
 
-      await rateLimit(3, 60 * 1000, undefined, { failClosed: true });
+      await rateLimit(3, 60 * 1000, ctx.userId, { failClosed: true });
 
       return await sendCartSummaryEmailService(
         validatedItems,
@@ -134,9 +134,9 @@ export const syncCartPricesAction = authenticatedAction
       productIds: syncCartSchema,
     }),
   )
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     try {
-      await rateLimit(3, 60 * 1000, undefined, { failClosed: true });
+      await rateLimit(15, 60 * 1000, ctx.userId, { failClosed: true });
 
       const uniqueIds = [...new Set(parsedInput.productIds)];
       if (uniqueIds.length === 0) {

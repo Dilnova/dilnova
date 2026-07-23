@@ -239,3 +239,13 @@ describe("Proxy Middleware WAF Protection", () => {
     expect(result).not.toBeInstanceOf(NextResponse);
   });
 });
+
+describe("Proxy Middleware Edge Rate Limiting Protection", () => {
+  it("allows normal requests gracefully when Upstash is not configured", async () => {
+    const request = new NextRequest("http://localhost:3000/api/some-endpoint", {
+      method: "GET",
+    });
+    const result = await proxy(request, mockEvent);
+    expect(result).not.toBeInstanceOf(NextResponse);
+  });
+});

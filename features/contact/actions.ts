@@ -31,6 +31,12 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
 
     // Cloudflare Turnstile CAPTCHA Verification
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+    if (!turnstileSecret && process.env.NODE_ENV === "production") {
+      logger.error("TURNSTILE_SECRET_KEY environment variable is missing in production.");
+      throw new ActionError(
+        "CAPTCHA verification service is unconfigured. Please try again later.",
+      );
+    }
     if (turnstileSecret) {
       const turnstileToken = formData.get("cf-turnstile-response") as string;
       if (!turnstileToken) {
