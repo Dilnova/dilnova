@@ -13,7 +13,7 @@ const qstash = new Client({
 export async function GET(req: NextRequest) {
   try {
     const adminUser = await checkSuperAdmin();
-    await rateLimit(5, 60 * 1000, adminUser.id);
+    await rateLimit(5, 60 * 1000, adminUser.id, { failClosed: true });
     const targetUserId = req.nextUrl.searchParams.get("userId");
 
     if (!targetUserId) {

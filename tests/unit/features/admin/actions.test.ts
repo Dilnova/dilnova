@@ -53,7 +53,7 @@ describe("updateOrganizationMemberRole", () => {
     const res = await updateOrganizationMemberRole("org_123", "user_target", "org:member");
 
     expect(res).toEqual({ success: true });
-    expect(rateLimit).toHaveBeenCalledWith(10, 60 * 1000);
+    expect(rateLimit).toHaveBeenCalledWith(10, 60 * 1000, undefined, { failClosed: true });
     expect(mockUpdateOrganizationMembership).toHaveBeenCalledWith({
       organizationId: "org_123",
       userId: "user_target",

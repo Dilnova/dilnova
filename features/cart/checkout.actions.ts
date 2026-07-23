@@ -119,7 +119,7 @@ export const sendCartSummaryEmailAction = authenticatedAction
         };
       }
 
-      await rateLimit(3, 60 * 1000);
+      await rateLimit(3, 60 * 1000, undefined, { failClosed: true });
 
       return await sendCartSummaryEmailService(
         validatedItems,
@@ -141,7 +141,7 @@ export const syncCartPricesAction = authenticatedAction
   )
   .action(async ({ parsedInput }) => {
     try {
-      await rateLimit(3, 60 * 1000);
+      await rateLimit(3, 60 * 1000, undefined, { failClosed: true });
 
       const uniqueIds = [...new Set(parsedInput.productIds)];
       if (uniqueIds.length === 0) {
@@ -228,7 +228,7 @@ export const simulatedCheckoutAction = authenticatedAction
       const email = sessionEmail;
       name = user.fullName || user.firstName || name;
 
-      await rateLimit(5, 60 * 1000);
+      await rateLimit(5, 60 * 1000, undefined, { failClosed: true });
 
       const validationResult = await validateAndPrepareCartItems(
         aggregatedItems,

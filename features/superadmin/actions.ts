@@ -20,7 +20,7 @@ import { hashPii } from "@/shared/security/encryption";
 
 export async function createPricingPlanAction(planData: unknown) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
+    await rateLimit(20, 60 * 1000, undefined, { failClosed: true });
     const user = await checkSuperAdmin();
 
     const parsed = createPricingPlanSchema.safeParse(planData);
@@ -64,7 +64,7 @@ export async function createPricingPlanAction(planData: unknown) {
 
 export async function updatePricingPlanAction(id: string, updates: unknown) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
+    await rateLimit(20, 60 * 1000, undefined, { failClosed: true });
     const user = await checkSuperAdmin();
 
     const parsed = updatePricingPlanSchema.safeParse({ id, updates });

@@ -17,7 +17,7 @@ export async function updateOrganizationMemberRole(
   newRole: string,
 ) {
   return runWithCorrelationId(async () => {
-    await rateLimit(10, 60 * 1000);
+    await rateLimit(10, 60 * 1000, undefined, { failClosed: true });
 
     // ── Schema Validation ──
     const parsed = updateMemberRoleSchema.safeParse({ organizationId, userId, newRole });

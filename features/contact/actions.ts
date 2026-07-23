@@ -93,7 +93,7 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
     const sanitizedSubject = sanitizeSmtpHeader(subject);
 
     // Rate Limiting: Max 2 messages per minute per IP
-    await rateLimit(2, 60 * 1000);
+    await rateLimit(2, 60 * 1000, undefined, { failClosed: true });
 
     // Save submission to database (saving sanitized strings)
     await db.insert(schema.contactSubmissions).values({

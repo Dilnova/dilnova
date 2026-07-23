@@ -21,7 +21,7 @@ export const processBillingCheckoutAction = vendorAction
   .schema(processBillingCheckoutSchema)
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
-      await rateLimit(30, 60 * 1000);
+      await rateLimit(30, 60 * 1000, undefined, { failClosed: true });
 
       const { userId, orgId, orgRole } = ctx;
       if (!orgId) {
