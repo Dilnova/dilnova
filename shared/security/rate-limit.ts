@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { logger } from "@/shared/logging/logger";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { readUpstashEnv } from "@/shared/security/upstash-health";
+import { readUpstashEnv, isValidUpstashRestUrl } from "@/shared/security/upstash-health";
 
 // In-memory fallback map for development/testing when Upstash env vars are not configured
 const memoryTracker = new Map<string, number[]>();
@@ -23,7 +23,7 @@ function isProductionEnvironment(): boolean {
 function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
   const { url, token } = readUpstashEnv();
 
-  if (!url || !token) {
+  if (!url || !token || !isValidUpstashRestUrl(url)) {
     if (process.env.NODE_ENV === "production" && !hasLoggedUpstashWarning) {
       hasLoggedUpstashWarning = true;
       logger.error(

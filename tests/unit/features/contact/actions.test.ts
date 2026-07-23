@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 
 // Mock server-only
 vi.mock("server-only", () => ({}));
@@ -36,11 +36,18 @@ vi.mock("@/shared/platform/settings", () => ({
 import { submitContactFormAction } from "@/features/contact/actions";
 
 describe("submitContactFormAction", () => {
+  const originalEnv = process.env.NODE_ENV;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.NODE_ENV = "test";
     process.env.SMTP_USER = "smtp-user";
     process.env.SMTP_PASSWORD = "smtp-password";
     delete process.env.TURNSTILE_SECRET_KEY;
+  });
+
+  afterAll(() => {
+    process.env.NODE_ENV = originalEnv;
   });
 
   it("submits successfully when correct parameters are sent", async () => {
