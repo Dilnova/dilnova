@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
+import { rateLimit } from "@/shared/security/rate-limit";
 import { logger } from "@/shared/logging/logger";
 import { getQStashClient } from "@/shared/security/qstash-client";
 
 export async function DELETE(req: NextRequest) {
   try {
     const adminUser = await checkSuperAdmin();
+    await rateLimit(5, 60 * 1000, adminUser.id, { failClosed: true });
     const targetUserId = req.nextUrl.searchParams.get("userId");
 
     if (!targetUserId) {
