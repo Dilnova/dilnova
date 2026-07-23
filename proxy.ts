@@ -6,7 +6,7 @@ import type { NextFetchEvent } from "next/server";
 import { logger } from "@/shared/logging/logger";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { readUpstashEnv } from "@/shared/security/upstash-health";
+import { readUpstashEnv, isValidUpstashRestUrl } from "@/shared/security/upstash-health";
 
 const edgeLimiterCache = new Map<string, Ratelimit>();
 
@@ -16,7 +16,7 @@ function getEdgeRateLimiter(
   prefix: string,
 ): Ratelimit | null {
   const { url, token } = readUpstashEnv();
-  if (!url || !token) return null;
+  if (!url || !token || !isValidUpstashRestUrl(url)) return null;
 
   const key = `${prefix}:${limit}:${windowSeconds}s`;
   if (edgeLimiterCache.has(key)) {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
 
 // Mock clerkMiddleware
@@ -28,6 +28,25 @@ vi.mock("next/server", async (importOriginal) => {
   return {
     ...original,
     NextResponse: MockNextResponse,
+  };
+});
+
+const mockLimit = vi.fn().mockResolvedValue({ success: true, reset: Date.now() + 60000 });
+
+// Mock Upstash Redis and Ratelimit
+vi.mock("@upstash/redis", () => ({
+  Redis: class {
+    constructor() {}
+  },
+}));
+
+vi.mock("@upstash/ratelimit", () => {
+  class Ratelimit {
+    limit = mockLimit;
+    static slidingWindow = vi.fn().mockReturnValue({});
+  }
+  return {
+    Ratelimit,
   };
 });
 
@@ -241,7 +260,50 @@ describe("Proxy Middleware WAF Protection", () => {
 });
 
 describe("Proxy Middleware Edge Rate Limiting Protection", () => {
+  const originalUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const originalToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  beforeEach(() => {
+    mockLimit.mockResolvedValue({ success: true, reset: Date.now() + 60000 });
+  });
+
+  afterAll(() => {
+    if (originalUrl) process.env.UPSTASH_REDIS_REST_URL = originalUrl;
+    else delete process.env.UPSTASH_REDIS_REST_URL;
+    if (originalToken) process.env.UPSTASH_REDIS_REST_TOKEN = originalToken;
+    else delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  });
+
   it("allows normal requests gracefully when Upstash is not configured", async () => {
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+
+    const request = new NextRequest("http://localhost:3000/api/some-endpoint", {
+      method: "GET",
+    });
+    const result = await proxy(request, mockEvent);
+    expect(result).not.toBeInstanceOf(NextResponse);
+  });
+
+  it("blocks requests with 429 status when Upstash rate limit is exceeded", async () => {
+    process.env.UPSTASH_REDIS_REST_URL = "https://demo.upstash.io";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "mock-token";
+    mockLimit.mockResolvedValue({ success: false, reset: Date.now() + 30000 });
+
+    const request = new NextRequest("http://localhost:3000/api/some-endpoint", {
+      method: "GET",
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(429);
+    expect(result.body).toContain("Edge Rate Limit Exceeded");
+  });
+
+  it("fails open gracefully when Upstash rate limit call throws an error", async () => {
+    process.env.UPSTASH_REDIS_REST_URL = "https://demo.upstash.io";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "mock-token";
+    mockLimit.mockRejectedValue(new Error("Connection error"));
+
     const request = new NextRequest("http://localhost:3000/api/some-endpoint", {
       method: "GET",
     });
