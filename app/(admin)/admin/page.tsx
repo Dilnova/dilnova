@@ -14,7 +14,7 @@ import Image from "next/image";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
 
 export default async function AdminPage() {
-  const { orgId, orgRole } = await auth();
+  const { orgId } = await auth();
   const user = await currentUser();
 
   if (!orgId) {
@@ -70,10 +70,6 @@ export default async function AdminPage() {
   });
   const completionPercent = Math.round((fieldsCompleted / fieldsChecked) * 100);
   const bankTransferConfigured = hasBankTransferConfiguredForOrg(org);
-  const checkoutOptions = metadata.checkout_options || {};
-  const hasSavedCheckoutOptions = Object.values(checkoutOptions).some(
-    (enabled) => enabled === true,
-  );
 
   return (
     <main className="p-4 sm:p-8 max-w-4xl mx-auto font-sans">

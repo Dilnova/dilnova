@@ -22,7 +22,7 @@ describe("updateOrganizationMemberRole", () => {
   });
 
   it("calls rateLimit and updates membership role successfully", async () => {
-    const mockAuth = auth as any;
+    const mockAuth = auth as unknown as ReturnType<typeof vi.fn>;
     mockAuth.mockResolvedValue({
       orgId: "org_123",
       orgRole: "org:admin",
@@ -42,7 +42,7 @@ describe("updateOrganizationMemberRole", () => {
       ],
     });
     const mockUpdateOrganizationMembership = vi.fn().mockResolvedValue({});
-    const mockClerkClient = clerkClient as any;
+    const mockClerkClient = clerkClient as unknown as ReturnType<typeof vi.fn>;
     mockClerkClient.mockResolvedValue({
       organizations: {
         getOrganizationMembershipList: mockGetOrganizationMembershipList,

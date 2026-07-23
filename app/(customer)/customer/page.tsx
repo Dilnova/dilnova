@@ -85,7 +85,11 @@ export default async function CustomerPage({ searchParams }: PageProps) {
       {activeTab === "saved" && (
         <CustomerWishlistTab
           wishlistItems={dashboardData.wishlistItems}
-          organizations={dashboardData.organizations as any[]}
+          organizations={
+            dashboardData.organizations as unknown as Parameters<
+              typeof CustomerWishlistTab
+            >[0]["organizations"]
+          }
         />
       )}
 

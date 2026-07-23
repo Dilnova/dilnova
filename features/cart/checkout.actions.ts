@@ -10,12 +10,7 @@ import { calculateCheckoutTotals } from "@/features/billing/checkout-totals";
 import { isBankTransferPayment } from "@/features/billing/bank-transfer";
 import { getBankTransferDetailsForOrgs } from "@/features/billing/bank-transfer.server";
 import { logger } from "@/shared/logging/logger";
-import {
-  checkoutSchema,
-  sendCartEmailSchema,
-  type CartLineInput,
-  type CheckoutItemInput,
-} from "@/features/cart/schema";
+import { checkoutSchema, sendCartEmailSchema } from "@/features/cart/schema";
 import {
   aggregateCheckoutItems,
   type CheckoutTransactionResult,
@@ -37,7 +32,7 @@ import {
 } from "./services/checkout-options.service";
 import { syncCartPricesService } from "./services/cart-sync.service";
 
-import { authenticatedAction, ActionError } from "@/lib/safe-action";
+import { authenticatedAction } from "@/lib/safe-action";
 
 const syncCartSchema = z.array(z.string().uuid()).max(50);
 
@@ -87,7 +82,7 @@ export const sendCartSummaryEmailAction = authenticatedAction
       zeroShipping: z.boolean().optional().default(false),
     }),
   )
-  .action(async ({ parsedInput, ctx }) => {
+  .action(async ({ parsedInput }) => {
     try {
       const parsedCartInput = sendCartEmailSchema.safeParse({
         emailAddress: parsedInput.emailAddress,

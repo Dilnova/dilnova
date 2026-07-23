@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const { orgId, orgRole } = await auth();
+  await auth();
 
   // Parallelize initial database and API fetches
   const clientPromise = clerkClient();

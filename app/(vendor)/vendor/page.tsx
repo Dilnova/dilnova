@@ -1,4 +1,4 @@
-import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
@@ -113,14 +113,6 @@ export default async function VendorPage({ searchParams }: PageProps) {
   );
   const pickupReady = !pickupEnabled || activeBranches > 0;
   const bankTransferReady = !bankTransferEnabled || bankTransferConfigured;
-  const phase6ConfigReady =
-    Boolean(org.slug) &&
-    totalItems > 0 &&
-    profileFieldsComplete &&
-    hasFulfillmentOption &&
-    hasPaymentOption &&
-    pickupReady &&
-    bankTransferReady;
 
   let lowStockCount = 0;
   let outOfStockCount = 0;
