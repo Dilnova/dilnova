@@ -59,7 +59,7 @@ export async function sendSystemHtmlEmail(
     });
     return { success: true };
   } catch (error) {
-    logger.error("Failed to send system email", error, { to, subject });
+    logger.error("Failed to send system email", error, { emailTo: "[REDACTED]", subject });
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error sending email.",

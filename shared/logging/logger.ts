@@ -80,7 +80,7 @@ export function redactSensitiveData<T>(obj: T, seen = new WeakSet()): T {
 
   // Pre-compiled regex for performance (avoids Array.from() inside the loop)
   const sensitiveKeysRegex =
-    /email|phone|address|password|secret|token|key|bankaccountname|bankaccountnumber|bankbranchcode|bankname|shippingaddress|shippingphone|customeremail|customername|authorization|cookie/i;
+    /email|phone|address|password|secret|token|key|bankaccountname|bankaccountnumber|bankbranchcode|bankname|shippingaddress|shippingphone|customeremail|customername|authorization|cookie|^to$|^from$|recipient|sender|paymentslip|slipurl|nationalid|taxid|iban|ssn|dob|dateofbirth/i;
 
   const redacted: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {

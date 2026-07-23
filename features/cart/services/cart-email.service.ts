@@ -181,7 +181,7 @@ export async function sendCartSummaryEmailService(
 
     return { success: true };
   } catch (error) {
-    logger.error("Failed to send cart summary email", error, { to: validatedEmail });
+    logger.error("Failed to send cart summary email", error, { emailTo: "[REDACTED]" });
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error sending email.",
