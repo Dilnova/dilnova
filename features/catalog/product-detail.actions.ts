@@ -277,6 +277,7 @@ export async function incrementProductViewsAction(productId: string) {
  */
 export async function getUserWishlistIdsAction(productIds: string[]) {
   if (!productIds || productIds.length === 0) return [];
+  const safeProductIds = productIds.slice(0, 200);
   return runWithCorrelationId(async () => {
     try {
       const { userId } = await auth();
@@ -285,7 +286,10 @@ export async function getUserWishlistIdsAction(productIds: string[]) {
         .select({ productId: schema.wishlists.productId })
         .from(schema.wishlists)
         .where(
-          and(eq(schema.wishlists.userId, userId), inArray(schema.wishlists.productId, productIds)),
+          and(
+            eq(schema.wishlists.userId, userId),
+            inArray(schema.wishlists.productId, safeProductIds),
+          ),
         );
       return wishlists.map((w) => w.productId);
     } catch (error) {
