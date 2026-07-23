@@ -13,7 +13,15 @@ import { sendSystemHtmlEmail } from "@/shared/email/delivery";
 import { getQStashClient } from "@/shared/security/qstash-client";
 import { logAuditAction } from "@/shared/audit/logger";
 
+import { z } from "zod/v3";
+
 export const maxDuration = 300;
+
+const exportPayloadSchema = z.object({
+  targetUserId: z.string().min(1).max(128),
+  adminUserId: z.string().min(1).max(128),
+  adminEmail: z.string().email(),
+});
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "",
@@ -47,11 +55,16 @@ async function handler(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { targetUserId, adminUserId, adminEmail } = body;
+    const parsed = exportPayloadSchema.safeParse(body);
 
-    if (!targetUserId || !adminUserId || !adminEmail) {
+    if (!parsed.success) {
+      logger.warn("GDPR export webhook received invalid payload", {
+        error: parsed.error.issues[0]?.message,
+      });
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
+
+    const { targetUserId, adminUserId, adminEmail } = parsed.data;
 
     // 1. simulatedOrders
     const orders = await db
