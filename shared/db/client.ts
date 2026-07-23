@@ -149,7 +149,12 @@ export const db = drizzle(withSlowQueryLogger(client), {
     process.env.NODE_ENV === "development"
       ? {
           logQuery(query: string, params: unknown[]) {
-            logger.info(`[DB Query]`, { query, params });
+            logger.info(`[DB Query]`, {
+              query,
+              params: params.map((p) =>
+                typeof p === "string" && p.includes("@") ? "[REDACTED_EMAIL]" : p,
+              ),
+            });
           },
         }
       : undefined,
