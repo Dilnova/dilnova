@@ -222,11 +222,21 @@ async function handler(req: NextRequest) {
     `;
 
     const systemName = process.env.NEXT_PUBLIC_APP_NAME || "Platform";
-    await sendSystemHtmlEmail(
+    const emailResult = await sendSystemHtmlEmail(
       adminEmail,
       `[${systemName}] GDPR Export Ready: ${targetUserId}`,
       emailHtml,
     );
+
+    if (!emailResult.success) {
+      logger.error("GDPR export notification email failed — admin not notified", {
+        adminEmail,
+        targetUserId,
+        error: emailResult.error,
+        tags: { alert: "gdpr_notification_failure" },
+      });
+      throw new Error(`Failed to send GDPR notification email: ${emailResult.error}`);
+    }
 
     logger.info(`GDPR export completed successfully for ${targetUserId}`);
 
