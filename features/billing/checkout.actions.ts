@@ -21,9 +21,8 @@ export const processBillingCheckoutAction = vendorAction
   .schema(processBillingCheckoutSchema)
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
-      await rateLimit(30, 60 * 1000, undefined, { failClosed: true });
-
       const { userId, orgId, orgRole } = ctx;
+      await rateLimit(30, 60 * 1000, userId, { failClosed: true });
       if (!orgId) {
         throw new ActionError("Not authorized: You must be signed in with an active organization.");
       }
