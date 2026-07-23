@@ -135,7 +135,7 @@ export async function ackVendorNotifications(userId: string, ackIds: string[]): 
           // lrem matches the exact original stored string payload
           pipeline.lrem(key, 1, item);
         }
-      } catch (_err) {
+      } catch {
         // Skip invalid JSON
       }
     }
