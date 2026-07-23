@@ -81,7 +81,7 @@ export const submitReviewAction = authenticatedAction
     const { userId } = ctx;
 
     return runWithCorrelationId(async () => {
-      await rateLimit(5, 60 * 1000); // Max 5 reviews per minute per IP
+      await rateLimit(5, 60 * 1000, userId, { failClosed: true }); // Max 5 reviews per minute per user
 
       const user = await currentUser();
       if (!user) {
@@ -165,7 +165,7 @@ export const submitQuestionAction = authenticatedAction
     const { userId } = ctx;
 
     return runWithCorrelationId(async () => {
-      await rateLimit(5, 60 * 1000); // Max 5 questions per minute per IP
+      await rateLimit(5, 60 * 1000, userId, { failClosed: true }); // Max 5 questions per minute per user
 
       const user = await currentUser();
       if (!user) {
@@ -199,7 +199,7 @@ export const submitAnswerAction = vendorAction
     const { userId, orgId } = ctx;
 
     return runWithCorrelationId(async () => {
-      await rateLimit(10, 60 * 1000); // Max 10 answers per minute per IP
+      await rateLimit(10, 60 * 1000, userId, { failClosed: true }); // Max 10 answers per minute per user
 
       if (!orgId) {
         throw new ActionError("Not authorized: You must be logged in with an active organization.");
