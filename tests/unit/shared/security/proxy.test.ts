@@ -253,6 +253,42 @@ describe("Proxy Middleware WAF Protection", () => {
     expect(result.body).toContain("WAF Command Injection Protection");
   });
 
+  it("handles malformed percent sequences alongside valid payloads without throwing", async () => {
+    const request = new NextRequest("http://localhost:3000/?q=%E0%A0%20UNION%20SELECT%20null", {
+      method: "GET",
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF SQLi Protection");
+  });
+
+  it("blocks requests with SQL inline comments obfuscation", async () => {
+    const request = new NextRequest(
+      "http://localhost:3000/?search=1%27/*foo*/UNION/*bar*/SELECT/*baz*/1",
+      {
+        method: "GET",
+      },
+    );
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF SQLi Protection");
+  });
+
+  it("blocks requests with triple-encoded Directory Traversal payloads", async () => {
+    const request = new NextRequest(
+      "http://localhost:3000/?file=%25252e%25252e%25252fetc%25252fpasswd",
+      {
+        method: "GET",
+      },
+    );
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(403);
+    expect(result.body).toContain("WAF Directory Traversal Protection");
+  });
+
   it("handles adversarial ReDoS inputs in linear time without catastrophic backtracking", async () => {
     const adversarialQuery = "exec" + " ".repeat(20000) + "+".repeat(20000);
     const request = new NextRequest(
