@@ -1,8 +1,8 @@
 import { z } from "zod/v3";
-import { phoneField, postalCodeField } from "@/shared/validation/primitives";
+import { uuidField, phoneField, postalCodeField } from "@/shared/validation/primitives";
 
 export const cartLineSchema = z.object({
-  id: z.string(),
+  id: uuidField,
   name: z.string(),
   price: z.number(),
   imageUrl: z.string().nullable(),
@@ -18,7 +18,7 @@ export const sendCartEmailSchema = z.object({
 });
 
 export const checkoutItemSchema = z.object({
-  id: z.string(),
+  id: uuidField,
   name: z.string(),
   price: z.number(),
   quantity: z.number().int().min(1, "Quantity must be at least 1"),
@@ -48,7 +48,7 @@ export const checkoutSchema = z.object({
 });
 
 export const syncedCartItemSchema = z.object({
-  id: z.string(),
+  id: uuidField,
   name: z.string(),
   price: z.number().int().nonnegative(),
   imageUrl: z.string().nullable(),

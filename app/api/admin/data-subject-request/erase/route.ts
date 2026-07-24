@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
+import { rateLimit } from "@/shared/security/rate-limit";
 import { logger } from "@/shared/logging/logger";
-import { Client as QStashClient } from "@upstash/qstash";
-
-const qstash = new QStashClient({
-  token: process.env.QSTASH_TOKEN || "",
-});
+import { getQStashClient } from "@/shared/security/qstash-client";
 
 export async function DELETE(req: NextRequest) {
   try {
     const adminUser = await checkSuperAdmin();
+    await rateLimit(5, 60 * 1000, adminUser.id, { failClosed: true });
     const targetUserId = req.nextUrl.searchParams.get("userId");
 
     if (!targetUserId) {
@@ -21,6 +19,7 @@ export async function DELETE(req: NextRequest) {
         ? `https://${process.env.VERCEL_URL}`
         : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+    const qstash = getQStashClient();
     // Publish background job to QStash
     await qstash.publishJSON({
       url: `${appUrl}/api/webhooks/qstash/erase`,
@@ -40,7 +39,7 @@ export async function DELETE(req: NextRequest) {
   } catch (error) {
     logger.error("GDPR Erasure Queueing Error", error);
     if (error instanceof Error && error.message.includes("Unauthorized")) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

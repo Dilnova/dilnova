@@ -190,7 +190,7 @@ export function decryptString(encryptedText: string): string {
   } catch (error) {
     if (isProduction()) {
       if (!hasLoggedDecryptionError) {
-        console.error(
+        logger.error(
           "Decryption failed. The PII_ENCRYPTION_KEY may have changed or the data is corrupted. Suppressing further identical logs.",
           error,
         );

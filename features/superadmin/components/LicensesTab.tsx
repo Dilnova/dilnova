@@ -13,6 +13,7 @@ interface Organization {
   name: string;
   slug: string | null;
   imageUrl: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   publicMetadata: Record<string, any>;
 }
 

@@ -91,7 +91,7 @@ async function main() {
         SET branch_id = ${keeper.id}
         WHERE branch_id = ${dupId}
       `);
-      const receiptCount = (receiptResult as any).count ?? 0;
+      const receiptCount = (receiptResult as unknown as { count?: number }).count ?? 0;
       if (receiptCount > 0) {
         console.log(
           `   ↳ Reassigned ${receiptCount} billing receipt(s) from ${dupId} → ${keeper.id}`,
@@ -107,7 +107,7 @@ async function main() {
         SET pickup_branch_id = ${keeper.id}
         WHERE pickup_branch_id = ${dupId}
       `);
-      const orderCount = (orderResult as any).count ?? 0;
+      const orderCount = (orderResult as unknown as { count?: number }).count ?? 0;
       if (orderCount > 0) {
         console.log(`   ↳ Reassigned ${orderCount} order(s) from ${dupId} → ${keeper.id}`);
         totalReassigned += Number(orderCount);

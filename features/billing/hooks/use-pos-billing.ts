@@ -19,13 +19,22 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
   const ITEMS_PER_PAGE = 24;
 
   // Cart State
-  const [cart, setCart] = useState<{ product: any; quantity: number }[]>([]);
+  const [cart, setCart] = useState<
+    { product: (typeof data.inventoryItems)[number]; quantity: number }[]
+  >([]);
   const [customerName, setCustomerName] = useState("");
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "other">("cash");
   const [cashTendered, setCashTendered] = useState<string>("");
   const [discountPercent, setDiscountPercent] = useState<number>(0);
-  const [receiptToPrint, setReceiptToPrint] = useState<any>(null);
+  const [receiptToPrint, setReceiptToPrint] = useState<{
+    id: string;
+    branchName: string;
+    date: string;
+    items: { name: string; qty: number; price: number }[];
+    discountPercent: number;
+    [key: string]: any;
+  } | null>(null);
 
   // Branch Selector
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
@@ -36,7 +45,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
     try {
       const fresh = await getVendorBillingRegisterData();
       setData(fresh);
-    } catch (err) {
+    } catch (_err) {
       toast.error("Failed to refresh data.");
     }
   };
@@ -110,7 +119,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
     return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredProducts, currentPage]);
 
-  const addToCart = (product: any, playSound = true) => {
+  const addToCart = (product: (typeof data.inventoryItems)[number], playSound = true) => {
     if (!isProductPurchasable(product)) {
       toast.error("This item is not available for sale.");
       playAudioFeedback("error");
@@ -164,7 +173,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
   };
 
   const subtotalAmount = cart.reduce(
-    (sum, item) => sum + item.quantity * (item.product.productPrice / 100),
+    (sum, item) => sum + item.quantity * ((item.product.productPrice ?? 0) / 100),
     0,
   );
   const discountAmount = (subtotalAmount * discountPercent) / 100;
@@ -193,7 +202,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
       try {
         const payload = cart.map((item) => {
           const effectivePriceCents = Math.round(
-            (item.product.productPrice * (100 - discountPercent)) / 100,
+            ((item.product.productPrice ?? 0) * (100 - discountPercent)) / 100,
           );
           return {
             productId: item.product.productId,
@@ -228,7 +237,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
           items: cart.map((i) => ({
             name: i.product.productName,
             qty: i.quantity,
-            price: (i.product.productPrice * (100 - discountPercent)) / 10000,
+            price: ((i.product.productPrice ?? 0) * (100 - discountPercent)) / 10000,
           })),
           subtotal: subtotalAmount,
           discountPercent,
@@ -238,7 +247,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
           cashTendered: paymentMethod === "cash" ? cashTenderedVal : null,
           changeDue: paymentMethod === "cash" ? changeDue : null,
           customerName,
-          date: new Date(),
+          date: new Date().toISOString(),
         });
 
         setCart([]);
@@ -250,7 +259,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
         await refreshData();
       } catch (err) {
         playAudioFeedback("error");
-        toast.error(err instanceof Error ? err.message : "POS checkout failed.");
+        toast.error(err instanceof Error && err.message ? err.message : "POS checkout failed.");
       }
     });
   };

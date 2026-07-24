@@ -3,6 +3,78 @@ import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import type { NextFetchEvent } from "next/server";
+import { logger } from "@/shared/logging/logger";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+import {
+  readUpstashEnv,
+  isValidUpstashRestUrl,
+  isValidUpstashRestToken,
+} from "@/shared/security/upstash-health";
+
+const edgeLimiterCache = new Map<string, Ratelimit>();
+
+function getEdgeRateLimiter(
+  limit: number,
+  windowSeconds: number,
+  prefix: string,
+): Ratelimit | null {
+  const { url, token } = readUpstashEnv();
+  if (!url || !token || !isValidUpstashRestUrl(url) || !isValidUpstashRestToken(token)) return null;
+
+  const key = `${prefix}:${limit}:${windowSeconds}s`;
+  if (edgeLimiterCache.has(key)) {
+    return edgeLimiterCache.get(key)!;
+  }
+
+  try {
+    const redis = new Redis({ url, token });
+    const client = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(limit, `${windowSeconds} s`),
+      analytics: true,
+      prefix: `@upstash/edge-ratelimit:${prefix}`,
+    });
+    edgeLimiterCache.set(key, client);
+    return client;
+  } catch {
+    return null;
+  }
+}
+
+async function checkEdgeRateLimit(request: NextRequest): Promise<NextResponse | null> {
+  const ip =
+    request.headers.get("x-real-ip")?.trim() ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "127.0.0.1";
+
+  const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method);
+  const limit = isMutating ? 60 : 120;
+  const prefix = isMutating ? "mutate" : "read";
+
+  const limiter = getEdgeRateLimiter(limit, 60, prefix);
+  if (!limiter) return null;
+
+  try {
+    const { success, reset } = await limiter.limit(ip);
+    if (!success) {
+      const waitSeconds = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+      return applySecurityHeaders(
+        new NextResponse(`Too Many Requests: Edge Rate Limit Exceeded. Retry in ${waitSeconds}s.`, {
+          status: 429,
+          headers: {
+            "Retry-After": String(waitSeconds),
+            "Content-Type": "text/plain",
+          },
+        }),
+      );
+    }
+  } catch (error) {
+    logger.error("Edge rate limiter error", error);
+  }
+
+  return null;
+}
 
 function getSentryCspReportUri(): string | null {
   const dsn = process.env.SENTRY_DSN;
@@ -17,6 +89,34 @@ function getSentryCspReportUri(): string | null {
     }
   } catch {}
   return null;
+}
+
+function applySecurityHeaders(response: NextResponse): NextResponse {
+  if (!response.headers) {
+    (response as unknown as { headers: Headers }).headers = new Headers();
+  }
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=(), autoplay=()",
+  );
+  response.headers.set("X-DNS-Prefetch-Control", "off");
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+
+  if (process.env.NODE_ENV === "production") {
+    response.headers.set(
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains; preload",
+    );
+  }
+
+  if (!response.headers.has("Content-Security-Policy")) {
+    response.headers.set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none';");
+  }
+
+  return response;
 }
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
@@ -106,7 +206,7 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     "sqlmap",
   ];
   if (BLOCKED_USER_AGENTS.some((bot) => userAgent.toLowerCase().includes(bot))) {
-    return new NextResponse("Forbidden: WAF Bot Protection", { status: 403 });
+    return applySecurityHeaders(new NextResponse("Forbidden: WAF Bot Protection", { status: 403 }));
   }
 
   const rawUrl = request.url;
@@ -139,7 +239,9 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     /win\.ini/i,
   ];
   if (matchesAnyPattern(TRAVERSAL_PATTERNS)) {
-    return new NextResponse("Forbidden: WAF Directory Traversal Protection", { status: 403 });
+    return applySecurityHeaders(
+      new NextResponse("Forbidden: WAF Directory Traversal Protection", { status: 403 }),
+    );
   }
 
   // SQL Injection protection
@@ -153,7 +255,9 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     /exec[\s\+]+(s|x)p_/i,
   ];
   if (matchesAnyPattern(SQLI_PATTERNS)) {
-    return new NextResponse("Forbidden: WAF SQLi Protection", { status: 403 });
+    return applySecurityHeaders(
+      new NextResponse("Forbidden: WAF SQLi Protection", { status: 403 }),
+    );
   }
 
   // XSS Protection
@@ -165,7 +269,7 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     /eval\(/i,
   ];
   if (matchesAnyPattern(XSS_PATTERNS)) {
-    return new NextResponse("Forbidden: WAF XSS Protection", { status: 403 });
+    return applySecurityHeaders(new NextResponse("Forbidden: WAF XSS Protection", { status: 403 }));
   }
 
   // Command Injection Protection
@@ -176,7 +280,15 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     /\$\([^\)]+\)/i,
   ];
   if (matchesAnyPattern(CMD_INJECTION_PATTERNS)) {
-    return new NextResponse("Forbidden: WAF Command Injection Protection", { status: 403 });
+    return applySecurityHeaders(
+      new NextResponse("Forbidden: WAF Command Injection Protection", { status: 403 }),
+    );
+  }
+
+  // 1.5. Edge Rate Limiting Protection (circuit breaker for volumetric traffic)
+  const edgeRateLimitResponse = await checkEdgeRateLimit(request);
+  if (edgeRateLimitResponse) {
+    return edgeRateLimitResponse;
   }
 
   // 2. CSRF protection:
@@ -192,22 +304,28 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
       const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
 
       if (!origin || !host) {
-        return new NextResponse("CSRF Verification Failed: Missing Origin or Host header.", {
-          status: 403,
-        });
+        return applySecurityHeaders(
+          new NextResponse("CSRF Verification Failed: Missing Origin or Host header.", {
+            status: 403,
+          }),
+        );
       }
 
       try {
         const originUrl = new URL(origin);
         if (originUrl.host !== host) {
-          return new NextResponse("CSRF Verification Failed: Mismatched Origin and Host.", {
-            status: 403,
-          });
+          return applySecurityHeaders(
+            new NextResponse("CSRF Verification Failed: Mismatched Origin and Host.", {
+              status: 403,
+            }),
+          );
         }
       } catch {
-        return new NextResponse("CSRF Verification Failed: Invalid Origin header.", {
-          status: 403,
-        });
+        return applySecurityHeaders(
+          new NextResponse("CSRF Verification Failed: Invalid Origin header.", {
+            status: 403,
+          }),
+        );
       }
     }
   }
@@ -216,10 +334,11 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     const res = await clerkHandler(request, event);
     return res;
   } catch (error) {
-    console.error("Clerk Middleware execution failed (API outage):", error);
-    return new NextResponse(
-      "Authentication Service is currently unavailable. Please try again later.",
-      { status: 503 },
+    logger.error("Clerk Middleware execution failed (API outage)", error);
+    return applySecurityHeaders(
+      new NextResponse("Authentication Service is currently unavailable. Please try again later.", {
+        status: 503,
+      }),
     );
   }
 }

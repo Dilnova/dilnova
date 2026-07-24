@@ -136,7 +136,7 @@ export async function dispatchVendorOrderNotifications(orderId: string): Promise
 
           logger.info("Sent email notification to offline vendor", {
             orderId,
-            email: target.email,
+            emailTo: "[REDACTED]",
           });
         }
       }

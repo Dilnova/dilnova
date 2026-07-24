@@ -2,8 +2,8 @@ import "server-only";
 
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { eq, desc, sql, inArray } from "drizzle-orm";
+import { auth } from "@clerk/nextjs/server";
 import { getCachedOrgMembers } from "@/shared/auth/clerk-cache";
 import { getPremiumStatus } from "@/features/inventory/premium-license";
 import { getStockAvailabilityCatalog } from "@/features/inventory/availability.server";
@@ -12,6 +12,7 @@ import { getCheckoutOptionsCatalog } from "@/features/organization/checkout-opti
 import type { VendorBillingRegisterData } from "@/features/billing/types";
 import type { VendorInventoryFullData } from "@/features/inventory/types";
 import { attachPaymentSlipPreviews } from "@/features/orders/payment-slip-preview";
+import { logger } from "@/shared/logging/logger";
 
 export async function verifyVendorAccess(options?: { allowMember?: boolean }) {
   const { userId, orgId, orgRole } = await auth();
@@ -81,6 +82,7 @@ export async function loadVendorInventoryData(
     const productIds = vendorProducts.map((p) => p.id);
 
     // 2. Fetch Central Inventory (with auto-initialization of missing records)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let inventoryItems: any[] = [];
     if (productIds.length > 0) {
       // Find which products already have an inventory tracking record
@@ -158,6 +160,7 @@ export async function loadVendorInventoryData(
     }
 
     // 4. Fetch Inventory Movements (full IMS workspace only)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let movements: any[] = [];
     if (scope === "full" && inventoryItems.length > 0) {
       const inventoryIds = inventoryItems.map((i) => i.id);
@@ -184,6 +187,7 @@ export async function loadVendorInventoryData(
     }
 
     // 5. Fetch Simulated Orders (full IMS workspace only)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let simulatedOrders: any[] = [];
     if (scope === "full" && productIds.length > 0) {
       try {
@@ -229,14 +233,17 @@ export async function loadVendorInventoryData(
           );
         }
       } catch (error) {
-        console.error("[DB Error] Failed to fetch simulated orders for vendor dashboard:", error);
+        logger.error("Failed to fetch simulated orders for vendor dashboard", error, { orgId });
         // simulatedOrders remains empty array []
       }
     }
 
     // 6. Fetch Branches (Premium Multi-Branch, or single default fallback if billing is active)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let branches: any[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let branchInventoryList: any[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let branchMembersList: any[] = [];
     if (premiumStatus.multiBranchActive || premiumStatus.billingActive) {
       const branchesLimit = options?.branchesLimit ?? 100;
@@ -368,6 +375,7 @@ export async function loadVendorInventoryData(
     }
 
     // 7. Fetch Billing Receipts (Premium POS Register)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let billingReceipts: any[] = [];
     if (premiumStatus.billingActive) {
       billingReceipts = await db
@@ -382,7 +390,7 @@ export async function loadVendorInventoryData(
     let orgMembers: { userId: string; name: string; email: string }[] = [];
     try {
       orgMembers = await getCachedOrgMembers(orgId);
-    } catch (err) {
+    } catch {
       // Graceful degradation
     }
 

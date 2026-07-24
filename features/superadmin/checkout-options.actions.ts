@@ -4,14 +4,13 @@ import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { superadminAction, ActionError } from "@/lib/safe-action";
+import { superadminAction } from "@/lib/safe-action";
 import { logAuditAction } from "@/shared/audit/logger";
 import { runWithCorrelationId } from "@/shared/security/async-context";
 import { rateLimit } from "@/shared/security/rate-limit";
 import {
   CHECKOUT_OPTIONS_CATALOG_KEY,
   buildCheckoutOptionsCatalogPayload,
-  type CheckoutOptionDefinition,
 } from "@/features/organization/checkout-options.shared";
 import { updateCheckoutOptionsCatalogSchema } from "@/features/superadmin/schema";
 import { syncSettingToRedis } from "@/shared/platform/settings";
@@ -20,7 +19,7 @@ export const updateCheckoutOptionsCatalogAction = superadminAction
   .schema(updateCheckoutOptionsCatalogSchema)
   .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
-      await rateLimit(20, 60 * 1000);
+      await rateLimit(20, 60 * 1000, ctx.userId, { failClosed: true });
 
       const payload = buildCheckoutOptionsCatalogPayload(parsedInput.options);
       const value = JSON.stringify(payload);

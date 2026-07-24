@@ -13,8 +13,10 @@ import {
 import Image from "next/image";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
 
+import { logger } from "@/shared/logging/logger";
+
 export default async function AdminPage() {
-  const { orgId, orgRole } = await auth();
+  const { orgId } = await auth();
   const user = await currentUser();
 
   if (!orgId) {
@@ -31,7 +33,7 @@ export default async function AdminPage() {
         limit: 100,
       })
       .catch((err) => {
-        console.error("CLERK ERROR", err);
+        logger.error("Failed to fetch Clerk organization memberships", err, { orgId });
         return { data: [] };
       }),
     getCheckoutOptionsCatalog(),
@@ -70,10 +72,6 @@ export default async function AdminPage() {
   });
   const completionPercent = Math.round((fieldsCompleted / fieldsChecked) * 100);
   const bankTransferConfigured = hasBankTransferConfiguredForOrg(org);
-  const checkoutOptions = metadata.checkout_options || {};
-  const hasSavedCheckoutOptions = Object.values(checkoutOptions).some(
-    (enabled) => enabled === true,
-  );
 
   return (
     <main className="p-4 sm:p-8 max-w-4xl mx-auto font-sans">

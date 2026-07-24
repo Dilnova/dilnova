@@ -10,7 +10,6 @@ import { getBankTransferDetailsForOrgs } from "@/features/billing/bank-transfer.
 import { getCachedOrganizations } from "@/shared/auth/clerk-cache";
 import {
   buildVendorCartSummaries,
-  filterCartLinesByVendorOrg,
   resolveCheckoutVendorOrgId,
 } from "@/features/cart/vendor-checkout";
 

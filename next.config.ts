@@ -151,7 +151,9 @@ const nextConfig: NextConfig = {
 
     // ACCEPTED RISK: 'unsafe-inline' in style-src is restored to maintain compatibility with
     // third-party libraries (Clerk, etc.) which heavily rely on inline styles for layout.
-    const fallbackCsp = `default-src 'self'; script-src 'self' 'unsafe-inline' ${excludeEval ? "" : "'unsafe-eval' "}${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.googleusercontent.com https://avatars.githubusercontent.com https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:;${isProd ? " upgrade-insecure-requests;" : ""}`;
+    // FAIL-CLOSED POLICY: 'unsafe-inline' is removed from script-src in static fallback CSP.
+    // Dynamic script execution requires request-level crypto nonces set by proxy.ts.
+    const fallbackCsp = `default-src 'self'; script-src 'self' ${excludeEval ? "" : "'unsafe-eval' "}${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.googleusercontent.com https://avatars.githubusercontent.com https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:;${isProd ? " upgrade-insecure-requests;" : ""}`;
 
     const headersList = [
       {
@@ -172,7 +174,8 @@ const nextConfig: NextConfig = {
       },
       {
         key: "Permissions-Policy",
-        value: "camera=(), microphone=(), geolocation=()",
+        value:
+          "camera=(), microphone=(), geolocation=(), payment=(), usb=(), display-capture=(), autoplay=()",
       },
       {
         key: "X-DNS-Prefetch-Control",

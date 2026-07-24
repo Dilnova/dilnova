@@ -1,8 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { reserveProductStock, applyStockReservation } from "@/features/inventory/reservation";
 
+interface MockTx {
+  select: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  insert: ReturnType<typeof vi.fn>;
+}
+
 describe("Inventory Reservation", () => {
-  let mockTx: any;
+  let mockTx: MockTx;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -14,11 +20,12 @@ describe("Inventory Reservation", () => {
     const mockSelect = vi.fn().mockReturnValue({ from: mockFrom });
 
     const mockReturning = vi.fn().mockResolvedValue([]);
-    const mockUpdateWhere = vi.fn().mockReturnValue({ returning: mockReturning });
-    const mockSet = vi.fn().mockReturnValue({ where: mockUpdateWhere });
+    const mockWhereUpdate = vi.fn().mockReturnValue({ returning: mockReturning });
+    const mockSet = vi.fn().mockReturnValue({ where: mockWhereUpdate });
     const mockUpdate = vi.fn().mockReturnValue({ set: mockSet });
 
-    const mockInsert = vi.fn().mockReturnValue({ values: vi.fn().mockResolvedValue({}) });
+    const mockValues = vi.fn().mockResolvedValue(undefined);
+    const mockInsert = vi.fn().mockReturnValue({ values: mockValues });
 
     mockTx = {
       select: mockSelect,
@@ -30,9 +37,15 @@ describe("Inventory Reservation", () => {
   describe("reserveProductStock()", () => {
     it("returns error if central inventory record does not exist", async () => {
       // Setup mock to return empty array (no inventory)
-      mockTx.select().from().where().for().limit = vi.fn().mockResolvedValue([]);
+      (mockTx.select().from().where().for().limit as ReturnType<typeof vi.fn>).mockResolvedValue(
+        [],
+      );
 
-      const result = await reserveProductStock(mockTx, "prod-1", 5);
+      const result = await reserveProductStock(
+        mockTx as unknown as Parameters<typeof reserveProductStock>[0],
+        "prod-1",
+        5,
+      );
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
@@ -42,11 +55,15 @@ describe("Inventory Reservation", () => {
 
     it("returns error if central inventory quantity is insufficient", async () => {
       // Setup mock to return central inventory with only 2 units
-      mockTx.select().from().where().for().limit = vi
-        .fn()
-        .mockResolvedValue([{ id: "inv-1", quantity: 2 }]);
+      (mockTx.select().from().where().for().limit as ReturnType<typeof vi.fn>).mockResolvedValue([
+        { id: "inv-1", quantity: 2 },
+      ]);
 
-      const result = await reserveProductStock(mockTx, "prod-1", 5);
+      const result = await reserveProductStock(
+        mockTx as unknown as Parameters<typeof reserveProductStock>[0],
+        "prod-1",
+        5,
+      );
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
@@ -56,11 +73,15 @@ describe("Inventory Reservation", () => {
 
     it("returns success reservation if central inventory is sufficient", async () => {
       // Setup mock to return central inventory with 10 units
-      mockTx.select().from().where().for().limit = vi
-        .fn()
-        .mockResolvedValue([{ id: "inv-1", quantity: 10 }]);
+      (mockTx.select().from().where().for().limit as ReturnType<typeof vi.fn>).mockResolvedValue([
+        { id: "inv-1", quantity: 10 },
+      ]);
 
-      const result = await reserveProductStock(mockTx, "prod-1", 5);
+      const result = await reserveProductStock(
+        mockTx as unknown as Parameters<typeof reserveProductStock>[0],
+        "prod-1",
+        5,
+      );
 
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -73,11 +94,11 @@ describe("Inventory Reservation", () => {
   describe("applyStockReservation()", () => {
     it("throws error if central stock update fails", async () => {
       // Simulate zero rows returned from the returning() clause (meaning where condition failed)
-      mockTx.update().set().where().returning = vi.fn().mockResolvedValue([]);
+      (mockTx.update().set().where().returning as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
       await expect(
         applyStockReservation(
-          mockTx,
+          mockTx as unknown as Parameters<typeof applyStockReservation>[0],
           5,
           { centralInventoryId: "inv-1" },
           { userId: "u1", reason: "sale" },
@@ -87,12 +108,12 @@ describe("Inventory Reservation", () => {
 
     it("successfully updates central stock and inserts movement log", async () => {
       // Simulate successful update returning the new quantity
-      mockTx.update().set().where().returning = vi.fn().mockResolvedValue([
+      (mockTx.update().set().where().returning as ReturnType<typeof vi.fn>).mockResolvedValue([
         { quantity: 5 }, // started with 10, depleted 5, new qty is 5
       ]);
 
       await applyStockReservation(
-        mockTx,
+        mockTx as unknown as Parameters<typeof applyStockReservation>[0],
         5,
         { centralInventoryId: "inv-1" },
         { userId: "u1", reason: "sale" },

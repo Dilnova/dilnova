@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { clerkClient, auth } from "@clerk/nextjs/server";
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 

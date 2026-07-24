@@ -2,7 +2,7 @@
 
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import {
   createSupplierSchema,
@@ -40,8 +40,8 @@ export async function createSupplierAction(data: {
   address?: string;
 }) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsed = createSupplierSchema.safeParse(data);
     if (!parsed.success) {
@@ -88,8 +88,8 @@ export async function updateSupplierAction(data: {
   address?: string;
 }) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsed = updateSupplierSchema.safeParse(data);
     if (!parsed.success) {
@@ -122,8 +122,8 @@ export async function updateSupplierAction(data: {
 
 export async function deleteSupplierAction(id: string) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsed = deleteSupplierSchema.safeParse({ id });
     if (!parsed.success) {
@@ -153,8 +153,8 @@ export async function adjustInventoryAction(data: {
   reason?: string;
 }) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsed = adjustInventorySchema.safeParse(data);
     if (!parsed.success) {
@@ -232,8 +232,8 @@ export async function updateInventoryDetailsAction(data: {
   stockAvailability?: string;
 }) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsed = updateInventoryDetailsSchema.safeParse(data);
     if (!parsed.success) {
@@ -285,8 +285,8 @@ export async function createInventoryForProductAction(data: {
   supplierId?: string | null;
 }) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     if (!data.productId) throw new Error("Product ID is required.");
 
@@ -351,8 +351,8 @@ export async function updateSimulatedOrderStatusAction(
   newStatus: "pending" | "fulfilled" | "cancelled",
 ) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsed = updateSimulatedOrderStatusSchema.safeParse({ orderId, status: newStatus });
     if (!parsed.success) {

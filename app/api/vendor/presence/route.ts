@@ -47,8 +47,13 @@ export const POST = withErrorHandler(async (req: Request) => {
     // Ignore empty body
   }
 
-  if (reqBody && reqBody.ackIds && Array.isArray(reqBody.ackIds)) {
-    await ackVendorNotifications(userId, reqBody.ackIds);
+  if (reqBody?.ackIds && Array.isArray(reqBody.ackIds) && reqBody.ackIds.length > 0) {
+    const safeAckIds = reqBody.ackIds
+      .filter((id: unknown): id is string => typeof id === "string")
+      .slice(0, 50);
+    if (safeAckIds.length > 0) {
+      await ackVendorNotifications(userId, safeAckIds);
+    }
   }
 
   // Securely peek any pending notifications for this specific user

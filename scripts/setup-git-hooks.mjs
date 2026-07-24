@@ -39,7 +39,7 @@ try {
       : path.resolve(path.dirname(gitDir), gitRefPath);
     hooksDir = path.join(resolvedGitDir, "hooks");
   }
-} catch (e) {
+} catch {
   // Fall back to standard gitDir/hooks if resolution fails
 }
 

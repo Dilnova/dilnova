@@ -6,8 +6,14 @@ import { logger } from "@/shared/logging/logger";
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { Redis } from "@upstash/redis";
 import { logAuditAction } from "@/shared/audit/logger";
+import { z } from "zod/v3";
 
 export const maxDuration = 300;
+
+const eraseOrgPayloadSchema = z.object({
+  targetOrgId: z.string().min(1).max(128),
+  adminUserId: z.string().min(1).max(128),
+});
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "",
@@ -39,11 +45,16 @@ async function handler(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { targetOrgId, adminUserId } = body;
+    const parsed = eraseOrgPayloadSchema.safeParse(body);
 
-    if (!targetOrgId || !adminUserId) {
+    if (!parsed.success) {
+      logger.warn("GDPR org erasure webhook received invalid payload", {
+        error: parsed.error.issues[0]?.message,
+      });
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
+
+    const { targetOrgId, adminUserId } = parsed.data;
 
     let branchesDeleted = 0;
     let productsDeleted = 0;

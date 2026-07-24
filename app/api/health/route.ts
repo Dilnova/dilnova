@@ -60,12 +60,7 @@ export const GET = withErrorHandler(async (request: Request) => {
           status: "missing_env",
           hint: "Upstash probe skipped or unavailable.",
         },
-        error:
-          process.env.NODE_ENV === "production"
-            ? "Internal database connection failed."
-            : error instanceof Error
-              ? error.message
-              : "Unknown error",
+        error: "Internal database connection failed.",
       };
 
       return Response.json(body, { status: 500 });

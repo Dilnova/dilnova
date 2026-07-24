@@ -9,6 +9,7 @@ import { getSystemSetting } from "@/shared/platform/settings";
 import { escapeHtml, sanitizeSmtpHeader, sendRawSmtpEmail } from "@/shared/email/smtp-client";
 import { logger } from "@/shared/logging/logger";
 import { withActionHandler } from "@/shared/errors/action-handler";
+import { ActionError } from "@/lib/safe-action";
 
 const contactFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -30,10 +31,16 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
 
     // Cloudflare Turnstile CAPTCHA Verification
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+    if (!turnstileSecret && process.env.NODE_ENV === "production") {
+      logger.error("TURNSTILE_SECRET_KEY environment variable is missing in production.");
+      throw new ActionError(
+        "CAPTCHA verification service is unconfigured. Please try again later.",
+      );
+    }
     if (turnstileSecret) {
       const turnstileToken = formData.get("cf-turnstile-response") as string;
       if (!turnstileToken) {
-        throw new Error("Please complete the CAPTCHA.");
+        throw new ActionError("Please complete the CAPTCHA.");
       }
 
       let verifyData;
@@ -57,18 +64,16 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
         verifyData = await verifyResponse.json();
       } catch (error) {
         logger.error("Failed to verify Turnstile CAPTCHA due to network error", error);
-        if (process.env.NODE_ENV === "production") {
-          throw new Error("CAPTCHA verification service is unavailable. Please try again later.");
-        } else {
-          throw new Error("CAPTCHA verification service is unavailable. Please try again later.");
-        }
+        throw new ActionError(
+          "CAPTCHA verification service is unavailable. Please try again later.",
+        );
       }
 
       if (!verifyData?.success) {
         logger.warn("Turnstile CAPTCHA verification failed", {
           errorCodes: verifyData?.["error-codes"],
         });
-        throw new Error("CAPTCHA verification failed. Please try again.");
+        throw new ActionError("CAPTCHA verification failed. Please try again.");
       }
     }
 
@@ -93,7 +98,7 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
     const sanitizedSubject = sanitizeSmtpHeader(subject);
 
     // Rate Limiting: Max 2 messages per minute per IP
-    await rateLimit(2, 60 * 1000);
+    await rateLimit(2, 60 * 1000, undefined, { failClosed: true });
 
     // Save submission to database (saving sanitized strings)
     await db.insert(schema.contactSubmissions).values({
@@ -139,7 +144,7 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
           <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
             <div style="background-color: #6b21a8; padding: 24px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 1px;">
-                ${systemNameHub.toUpperCase()}
+                ${escapeHtml(systemNameHub.toUpperCase())}
               </h1>
               <p style="margin: 4px 0 0 0; color: #e9d5ff; font-size: 12px;">New Contact Submission</p>
             </div>
@@ -162,7 +167,7 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
               <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 14px; color: #334155; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(message)}</div>
             </div>
             <div style="background-color: #f4f4f5; padding: 16px; text-align: center; border-top: 1px solid #e4e4e7; font-size: 11px; color: #a1a1aa;">
-              ${systemNameHub} &copy; 2026. All rights reserved.
+              ${escapeHtml(systemNameHub)} &copy; 2026. All rights reserved.
             </div>
           </div>
         </body>

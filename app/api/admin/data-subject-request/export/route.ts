@@ -4,16 +4,12 @@ import { rateLimit } from "@/shared/security/rate-limit";
 import { logAuditAction } from "@/shared/audit/logger";
 import { clerkClient } from "@clerk/nextjs/server";
 import { logger } from "@/shared/logging/logger";
-import { Client } from "@upstash/qstash";
-
-const qstash = new Client({
-  token: process.env.QSTASH_TOKEN || "",
-});
+import { getQStashClient } from "@/shared/security/qstash-client";
 
 export async function GET(req: NextRequest) {
   try {
     const adminUser = await checkSuperAdmin();
-    await rateLimit(5, 60 * 1000, adminUser.id);
+    await rateLimit(5, 60 * 1000, adminUser.id, { failClosed: true });
     const targetUserId = req.nextUrl.searchParams.get("userId");
 
     if (!targetUserId) {
@@ -36,6 +32,7 @@ export async function GET(req: NextRequest) {
         ? `https://${process.env.VERCEL_URL}`
         : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+    const qstash = getQStashClient();
     // Publish to QStash for asynchronous processing
     const message = await qstash.publishJSON({
       url: `${appUrl}/api/webhooks/qstash/export`,
@@ -65,7 +62,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     logger.error("GDPR Export Queue Error", error);
     if (error instanceof Error && error.message.includes("Unauthorized")) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

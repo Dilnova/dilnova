@@ -25,10 +25,10 @@ export default function ComplianceTab() {
   const [searchedUserId, setSearchedUserId] = useState("");
 
   const [complianceData, setComplianceData] = useState<{
-    orders: any[];
-    contactSubmissions: any[];
+    orders: Record<string, any>[];
+    contactSubmissions: Record<string, any>[];
   } | null>(null);
-  const [complianceApiData, setComplianceApiData] = useState<any>(null);
+  const [complianceApiData, setComplianceApiData] = useState<Record<string, any> | null>(null);
 
   const triggerNotification = (success: boolean, text: string) => {
     if (success) toast.success(text);
@@ -58,7 +58,8 @@ export default function ComplianceTab() {
         triggerNotification(false, "Failed to retrieve data.");
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to retrieve DSAR data.";
+      const msg =
+        err instanceof Error && err.message ? err.message : "Failed to retrieve DSAR data.";
       triggerNotification(false, msg);
     } finally {
       setIsSearchingCompliance(false);
@@ -82,7 +83,7 @@ export default function ComplianceTab() {
       setComplianceApiData(data);
       triggerNotification(true, "API data retrieved successfully.");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "API request failed.";
+      const msg = err instanceof Error && err.message ? err.message : "API request failed.";
       triggerNotification(false, msg);
     } finally {
       setIsSearchingApi(false);
@@ -139,7 +140,8 @@ export default function ComplianceTab() {
           `Successfully anonymized ${result.count.ordersAnonymized} orders, deleted ${result.count.submissionsDeleted} contact submissions, and wiped Clerk profile (${result.count.clerkProfileDeleted ? "Yes" : "No"}).`,
         );
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Anonymization process failed.";
+        const msg =
+          err instanceof Error && err.message ? err.message : "Anonymization process failed.";
         triggerNotification(false, msg);
       }
     });
@@ -169,7 +171,8 @@ export default function ComplianceTab() {
       setSearchedUserId("");
       triggerNotification(true, `API Erasure successful: ${JSON.stringify(data.deleted)}`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "API Anonymization process failed.";
+      const msg =
+        err instanceof Error && err.message ? err.message : "API Anonymization process failed.";
       triggerNotification(false, msg);
     } finally {
       setIsApiErasing(false);
@@ -342,7 +345,7 @@ export default function ComplianceTab() {
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {complianceData.orders.map((order: any) => (
+                    {complianceData.orders.map((order: Record<string, any>) => (
                       <div
                         key={order.id}
                         className="p-3 bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-lg text-[11px] flex justify-between items-center"
@@ -375,7 +378,7 @@ export default function ComplianceTab() {
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {complianceData.contactSubmissions.map((sub: any) => (
+                    {complianceData.contactSubmissions.map((sub: Record<string, any>) => (
                       <div
                         key={sub.id}
                         className="p-3 bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-lg text-[11px]"

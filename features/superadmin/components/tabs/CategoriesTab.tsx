@@ -117,7 +117,7 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
         }
         setIsCategoryModalOpen(false);
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Failed to save category.";
+        const msg = err instanceof Error && err.message ? err.message : "Failed to save category.";
         triggerNotification(false, msg);
       }
     });

@@ -252,8 +252,8 @@ export const getVendorPendingPaymentOrderIds = orgAdminAction
   .schema(
     z.object({
       orgId: z.string(),
-      limit: z.number().int().optional().default(100),
-      offset: z.number().int().optional().default(0),
+      limit: z.number().int().min(1).max(200).optional().default(50),
+      offset: z.number().int().min(0).max(100_000).optional().default(0),
     }),
   )
   .action(async ({ parsedInput, ctx }) => {

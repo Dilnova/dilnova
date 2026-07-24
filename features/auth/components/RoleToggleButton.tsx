@@ -17,7 +17,7 @@ export default function RoleToggleButton({ currentRole }: RoleToggleButtonProps)
         await toggleUserRoleAction(currentRole);
         toast.success(`Role updated to ${currentRole === "vendor" ? "Customer" : "Vendor"}`);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Failed to toggle role");
+        toast.error(err instanceof Error && err.message ? err.message : "Failed to toggle role.");
       }
     });
   };

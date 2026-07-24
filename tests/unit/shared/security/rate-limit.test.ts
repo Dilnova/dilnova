@@ -49,7 +49,7 @@ describe("rateLimit Utility", () => {
   it("should allow requests below the limit (in-memory)", async () => {
     vi.mocked(headers).mockResolvedValue({
       get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.1" : null),
-    } as any);
+    } as unknown as Headers);
 
     await expect(rateLimit(2, 1000)).resolves.not.toThrow();
     await expect(rateLimit(2, 1000)).resolves.not.toThrow();
@@ -58,7 +58,7 @@ describe("rateLimit Utility", () => {
   it("should throw an error when rate limit is exceeded (in-memory)", async () => {
     vi.mocked(headers).mockResolvedValue({
       get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.2" : null),
-    } as any);
+    } as unknown as Headers);
 
     await expect(rateLimit(2, 1000)).resolves.not.toThrow();
     await expect(rateLimit(2, 1000)).resolves.not.toThrow();
@@ -68,7 +68,7 @@ describe("rateLimit Utility", () => {
   it("should recover after the window expires (in-memory)", async () => {
     vi.mocked(headers).mockResolvedValue({
       get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.3" : null),
-    } as any);
+    } as unknown as Headers);
 
     await expect(rateLimit(1, 100)).resolves.not.toThrow();
     await expect(rateLimit(1, 100)).rejects.toThrow("Rate limit exceeded");
@@ -88,7 +88,7 @@ describe("rateLimit Utility", () => {
 
     vi.mocked(headers).mockResolvedValue({
       get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.4" : null),
-    } as any);
+    } as unknown as Headers);
 
     await expect(rateLimit(5, 5000)).resolves.not.toThrow();
     expect(mockLimit).toHaveBeenCalled();
@@ -101,7 +101,7 @@ describe("rateLimit Utility", () => {
 
     vi.mocked(headers).mockResolvedValue({
       get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.5" : null),
-    } as any);
+    } as unknown as Headers);
 
     await expect(rateLimit(5, 5000)).rejects.toThrow("Rate limit exceeded");
   });
@@ -113,7 +113,7 @@ describe("rateLimit Utility", () => {
 
     vi.mocked(headers).mockResolvedValue({
       get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.6" : null),
-    } as any);
+    } as unknown as Headers);
 
     // First two pass in memory since limit is 2
     await expect(rateLimit(2, 1000)).resolves.not.toThrow();
@@ -129,7 +129,7 @@ describe("rateLimit Utility", () => {
 
     vi.mocked(headers).mockResolvedValue({
       get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.7" : null),
-    } as any);
+    } as unknown as Headers);
 
     await expect(rateLimit(5, 5000)).resolves.not.toThrow();
   });
@@ -142,8 +142,35 @@ describe("rateLimit Utility", () => {
 
     vi.mocked(headers).mockResolvedValue({
       get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.8" : null),
-    } as any);
+    } as unknown as Headers);
 
     await expect(rateLimit(5, 5000)).resolves.not.toThrow();
+  });
+
+  it("should throw (fail-closed) in production when failClosed option is true and Upstash is not configured", async () => {
+    process.env.NODE_ENV = "production";
+
+    vi.mocked(headers).mockResolvedValue({
+      get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.9" : null),
+    } as unknown as Headers);
+
+    await expect(rateLimit(5, 5000, undefined, { failClosed: true })).rejects.toThrow(
+      "Rate limiting is temporarily unavailable",
+    );
+  });
+
+  it("should throw (fail-closed) in production when failClosed option is true and Upstash query throws", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.UPSTASH_REDIS_REST_URL = "https://mock.upstash.io";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "mock-token";
+    mockLimit.mockRejectedValue(new Error("Connection timed out"));
+
+    vi.mocked(headers).mockResolvedValue({
+      get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.10" : null),
+    } as unknown as Headers);
+
+    await expect(rateLimit(5, 5000, undefined, { failClosed: true })).rejects.toThrow(
+      "Rate limiting is temporarily unavailable",
+    );
   });
 });

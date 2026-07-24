@@ -44,7 +44,7 @@ const fetchOrgCheckoutOptions = async (orgId: string) => {
         options = meta.checkout_options as Record<string, boolean>;
       }
 
-      const vendorMeta = (meta.vendor_metadata || {}) as any;
+      const vendorMeta = (meta.vendor_metadata || {}) as Record<string, unknown>;
 
       const address = meta.address || vendorMeta.address;
       const phone = meta.phone || vendorMeta.phone;

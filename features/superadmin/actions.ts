@@ -3,7 +3,7 @@
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
 import { eq, or, inArray } from "drizzle-orm";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { clerkClient } from "@clerk/nextjs/server";
 import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
 import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
@@ -20,8 +20,8 @@ import { hashPii } from "@/shared/security/encryption";
 
 export async function createPricingPlanAction(planData: unknown) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsed = createPricingPlanSchema.safeParse(planData);
     if (!parsed.success) {
@@ -64,8 +64,8 @@ export async function createPricingPlanAction(planData: unknown) {
 
 export async function updatePricingPlanAction(id: string, updates: unknown) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsed = updatePricingPlanSchema.safeParse({ id, updates });
     if (!parsed.success) {
@@ -112,8 +112,8 @@ export async function updatePricingPlanAction(id: string, updates: unknown) {
 
 export async function deletePricingPlanAction(id: string) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const parsedId = uuidField.safeParse(id);
     if (!parsedId.success) {
@@ -143,8 +143,8 @@ export async function updateContactStatusAction(
   status: "pending" | "connected" | "no_longer",
 ) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const adminUser = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, adminUser.id, { failClosed: true });
 
     const parsedId = uuidField.safeParse(id);
     if (!parsedId.success) {
@@ -222,8 +222,8 @@ export async function updateContactStatusAction(
 
 export async function getCustomerDsarDataAction(email: string) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const normalizedEmailInput = email.trim().toLowerCase();
     if (!normalizedEmailInput) {
@@ -271,8 +271,12 @@ export async function getCustomerDsarDataAction(email: string) {
       strict: true,
     });
 
-    const sanitizedOrders = matchingOrders.map(({ customerEmailHash, ...rest }) => rest);
-    const sanitizedSubmissions = matchingSubmissions.map(({ emailHash, ...rest }) => rest);
+    const sanitizedOrders = matchingOrders.map(
+      ({ customerEmailHash: _customerEmailHash, ...rest }) => rest,
+    );
+    const sanitizedSubmissions = matchingSubmissions.map(
+      ({ emailHash: _emailHash, ...rest }) => rest,
+    );
 
     return {
       success: true,
@@ -287,8 +291,8 @@ export async function getCustomerDsarDataAction(email: string) {
 
 export async function anonymizeCustomerDataAction(email: string) {
   return runWithCorrelationId(async () => {
-    await rateLimit(20, 60 * 1000);
     const user = await checkSuperAdmin();
+    await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
     const normalizedEmailInput = email.trim().toLowerCase();
     if (!normalizedEmailInput) {
@@ -331,7 +335,9 @@ export async function anonymizeCustomerDataAction(email: string) {
     let paymentSlipsDeleted = 0;
 
     // Lazy load supabase admin if needed
-    let supabase: any = null;
+    let supabase: ReturnType<
+      typeof import("@/shared/storage/admin-client").createSupabaseAdminClient
+    > | null = null;
     const { createSupabaseAdminClient, isSupabaseStorageConfigured } =
       await import("@/shared/storage/admin-client");
     const { PAYMENT_SLIPS_BUCKET } = await import("@/shared/storage/config");

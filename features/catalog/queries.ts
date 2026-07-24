@@ -108,7 +108,8 @@ export async function getProductReviews(
   page: number = 1,
   limitAmount: number = 50,
 ): Promise<PaginatedResponse<typeof schema.reviews.$inferSelect>> {
-  const limit = limitAmount > 0 ? limitAmount : 50;
+  const MAX_REVIEWS_PER_PAGE = 100;
+  const limit = Math.min(Math.max(limitAmount > 0 ? limitAmount : 50, 1), MAX_REVIEWS_PER_PAGE);
   const offset = (page - 1) * limit;
 
   const items = await db
@@ -166,12 +167,14 @@ export async function getProductReviewStats(productId: string) {
   return { totalReviews, averageRating, distribution };
 }
 
-export async function getProductQuestions(productId: string) {
+export async function getProductQuestions(productId: string, limitAmount = 50) {
+  const limit = Math.min(Math.max(limitAmount > 0 ? limitAmount : 50, 1), 200);
   return db
     .select()
     .from(schema.questions)
     .where(eq(schema.questions.productId, productId))
-    .orderBy(desc(schema.questions.createdAt));
+    .orderBy(desc(schema.questions.createdAt))
+    .limit(limit);
 }
 
 export async function getWishlistEntryForUser(userId: string, productId: string) {

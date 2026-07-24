@@ -1,5 +1,6 @@
 import { auth, clerkClient, type User } from "@clerk/nextjs/server";
 import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
+import { logger } from "@/shared/logging/logger";
 
 /**
  * Validates that the current user is authenticated and holds platform superadmin access.
@@ -39,10 +40,7 @@ export async function getCurrentSuperAdminUser(): Promise<User | null> {
   } catch (error) {
     // Clerk API timeout / network error — return null so the layout
     // redirects to /unauthorized instead of triggering the error boundary.
-    console.error(
-      "[getCurrentSuperAdminUser] Clerk API error, treating as unauthenticated:",
-      error,
-    );
+    logger.error("[getCurrentSuperAdminUser] Clerk API error, treating as unauthenticated", error);
     return null;
   }
 }

@@ -52,3 +52,47 @@ Detects changes to the Vercel Web Application Firewall (WAF) or firewall rules t
 ```
 
 **Monitor Threshold:** Trigger when results > 0. Route directly to #alerts-critical in Slack.
+
+## 5. Failed Authentication & Brute Force (>5 failures in 5m)
+
+Detects credential stuffing or brute-force login attempts against user accounts.
+
+```kusto
+['vercel']
+| where message startswith "Audit log created"
+| where action == "AUTH_FAILED" or action == "ACCOUNT_LOCKED"
+| extend userId = tostring(metadata.userId)
+| summarize FailCount = count() by userId, bin(_time, 5m)
+| where FailCount > 5
+```
+
+**Monitor Threshold:** Trigger when results > 0. Route directly to #alerts-security in Slack.
+
+## 6. Customer Order Volume Spike (>10 orders in 10m)
+
+Detects a single customer placing an unusually high volume of orders in a short window (fraud or compromised customer account).
+
+```kusto
+['vercel']
+| where message startswith "Audit log created"
+| where action == "ORDER_PLACED"
+| extend customerId = tostring(metadata.userId)
+| summarize OrderCount = count() by customerId, bin(_time, 10m)
+| where OrderCount > 10
+```
+
+**Monitor Threshold:** Trigger when results > 0. Route to #alerts-fraud in Slack.
+
+## 7. Checkout & Payment Error Spike / Carding Detection (>20 errors in 5m)
+
+Detects spikes in checkout or payment failures which may indicate automated carding attempts validating stolen payment methods.
+
+```kusto
+['vercel']
+| where level == "error"
+| where message contains "Checkout" or message contains "payment"
+| summarize ErrorCount = count() by bin(_time, 5m)
+| where ErrorCount > 20
+```
+
+**Monitor Threshold:** Trigger when results > 0. Route directly to #alerts-security in Slack.

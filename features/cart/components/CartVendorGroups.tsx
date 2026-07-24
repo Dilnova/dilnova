@@ -4,6 +4,28 @@ import Image from "next/image";
 import Link from "next/link";
 import { isVideoUrl } from "@/shared/media/media";
 
+export interface CartItemType {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  imageUrl?: string | null;
+  imageUrls?: string[];
+  stockQuantity?: number;
+  stockStatus?: string;
+  orgId: string;
+  [key: string]: any;
+}
+
+export interface VendorCartGroup {
+  orgId: string;
+  orgName?: string;
+  vendorName?: string;
+  orgSlug?: string;
+  items: CartItemType[];
+  [key: string]: any;
+}
+
 interface CartVendorGroupsProps {
   vendorCartGroups: any[];
   showVendorCheckoutSelection: boolean;

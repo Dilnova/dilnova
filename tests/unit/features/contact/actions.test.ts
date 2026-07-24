@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 
 // Mock server-only
 vi.mock("server-only", () => ({}));
@@ -19,7 +19,8 @@ const mockSendRawSmtpEmail = vi.fn(() => Promise.resolve());
 vi.mock("@/shared/email/smtp-client", () => ({
   escapeHtml: (str: string) => str,
   sanitizeSmtpHeader: (str: string) => str,
-  sendRawSmtpEmail: (args: any) => mockSendRawSmtpEmail(args),
+  sendRawSmtpEmail: (args: unknown) =>
+    mockSendRawSmtpEmail(args as Parameters<typeof mockSendRawSmtpEmail>[0]),
 }));
 
 // Mock rate-limit
@@ -35,11 +36,18 @@ vi.mock("@/shared/platform/settings", () => ({
 import { submitContactFormAction } from "@/features/contact/actions";
 
 describe("submitContactFormAction", () => {
+  const originalEnv = process.env.NODE_ENV;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.NODE_ENV = "test";
     process.env.SMTP_USER = "smtp-user";
     process.env.SMTP_PASSWORD = "smtp-password";
     delete process.env.TURNSTILE_SECRET_KEY;
+  });
+
+  afterAll(() => {
+    process.env.NODE_ENV = originalEnv;
   });
 
   it("submits successfully when correct parameters are sent", async () => {
@@ -149,5 +157,28 @@ describe("submitContactFormAction", () => {
     expect(mockFetch).toHaveBeenCalled();
 
     vi.unstubAllGlobals();
+  });
+
+  it("rejects submission in production environment when TURNSTILE_SECRET_KEY is missing", async () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    delete process.env.TURNSTILE_SECRET_KEY;
+
+    const formData = new FormData();
+    formData.append("name", "John Doe");
+    formData.append("email", "john@example.com");
+    formData.append("category", "info");
+    formData.append("subject", "Test Subject");
+    formData.append("message", "Test contact message content of minimum length.");
+
+    const result = await submitContactFormAction(null, formData);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe(
+      "CAPTCHA verification service is unconfigured. Please try again later.",
+    );
+    expect(mockInsert).not.toHaveBeenCalled();
+
+    process.env.NODE_ENV = originalEnv;
   });
 });

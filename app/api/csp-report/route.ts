@@ -6,31 +6,40 @@ import { z } from "zod";
 const MAX_PAYLOAD_SIZE = 10 * 1024; // 10KB
 
 const reportUriSchema = z.object({
-  "csp-report": z
-    .object({
-      "document-uri": z.string().optional(),
-      "blocked-uri": z.string().optional(),
-      "violated-directive": z.string().optional(),
-      "effective-directive": z.string().optional(),
-      "original-policy": z.string().optional(),
-      "line-number": z.number().or(z.string()).optional(),
-      "column-number": z.number().or(z.string()).optional(),
-      "source-file": z.string().optional(),
-      "status-code": z.number().or(z.string()).optional(),
-      referrer: z.string().optional(),
-    })
-    .passthrough(),
+  "csp-report": z.object({
+    "document-uri": z.string().optional(),
+    "blocked-uri": z.string().optional(),
+    "violated-directive": z.string().optional(),
+    "effective-directive": z.string().optional(),
+    "original-policy": z.string().optional(),
+    "line-number": z.number().or(z.string()).optional(),
+    "column-number": z.number().or(z.string()).optional(),
+    "source-file": z.string().optional(),
+    "status-code": z.number().or(z.string()).optional(),
+    referrer: z.string().optional(),
+  }),
 });
 
 const reportToSchema = z.array(
-  z
-    .object({
-      type: z.string().optional(),
-      url: z.string().optional(),
-      body: z.record(z.string(), z.unknown()).optional(),
-      user_agent: z.string().optional(),
-    })
-    .passthrough(),
+  z.object({
+    type: z.string().optional(),
+    url: z.string().optional(),
+    body: z
+      .object({
+        blockedURL: z.string().optional(),
+        disposition: z.string().optional(),
+        documentURL: z.string().optional(),
+        effectiveDirective: z.string().optional(),
+        originalPolicy: z.string().optional(),
+        referrer: z.string().optional(),
+        sample: z.string().optional(),
+        statusCode: z.number().or(z.string()).optional(),
+        lineNumber: z.number().or(z.string()).optional(),
+        columnNumber: z.number().or(z.string()).optional(),
+      })
+      .optional(),
+    user_agent: z.string().optional(),
+  }),
 );
 
 export async function POST(req: NextRequest) {

@@ -72,7 +72,10 @@ export default function VendorBranchesTab({
         setIsBranchModalOpen(false);
         refreshData();
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : "Action failed.");
+        triggerNotification(
+          false,
+          err instanceof Error && err.message ? err.message : "Action failed.",
+        );
       }
     });
   };
@@ -92,7 +95,7 @@ export default function VendorBranchesTab({
       {
         loading: "Deleting branch...",
         success: "Branch deleted.",
-        error: (err) => (err instanceof Error ? err.message : "Action failed."),
+        error: (err) => (err instanceof Error && err.message ? err.message : "Action failed."),
       },
     );
   };
@@ -114,7 +117,10 @@ export default function VendorBranchesTab({
         setIsAssignMemberModalOpen(false);
         refreshData();
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : "Failed to assign.");
+        triggerNotification(
+          false,
+          err instanceof Error && err.message ? err.message : "Failed to assign.",
+        );
       }
     });
   };

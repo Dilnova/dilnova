@@ -6,7 +6,7 @@ import { handleApiError } from "@/shared/errors/error-handler";
 import { invalidateClerkUserCache, invalidateClerkOrgCache } from "@/shared/auth/clerk-cache";
 import { Redis } from "@upstash/redis";
 import { readUpstashEnv } from "@/shared/security/upstash-health";
-import { Client as QStashClient } from "@upstash/qstash";
+import { getQStashClient } from "@/shared/security/qstash-client";
 
 const processedWebhooksMemory = new Set<string>();
 
@@ -214,6 +214,8 @@ export async function POST(req: NextRequest) {
       "organizationMembership.deleted",
       "organization.updated",
       "organization.deleted",
+      "user.failed_attempt",
+      "session.locked",
     ]);
     const eventType =
       typeof eventTypeRaw === "string" && allowedEventTypes.has(eventTypeRaw)
@@ -231,7 +233,7 @@ export async function POST(req: NextRequest) {
       const userId = data.id;
       if (userId) {
         invalidateClerkUserCache(userId);
-        const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN || "" });
+        const qstash = getQStashClient();
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         await qstash.publishJSON({
           url: `${appUrl}/api/webhooks/qstash/erase`,
@@ -262,7 +264,7 @@ export async function POST(req: NextRequest) {
       const orgId = data.id;
       if (orgId) {
         invalidateClerkOrgCache(orgId);
-        const qstash = new QStashClient({ token: process.env.QSTASH_TOKEN || "" });
+        const qstash = getQStashClient();
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         await qstash.publishJSON({
           url: `${appUrl}/api/webhooks/qstash/erase-org`,
@@ -270,12 +272,38 @@ export async function POST(req: NextRequest) {
         });
         logger.info(`Dispatched background erasure for deleted organization ${orgId}`);
       }
+    } else if (eventType === "user.failed_attempt") {
+      const userId = data.id || data.user_id || "unknown";
+      const { logAuditAction } = await import("@/shared/audit/logger");
+      await logAuditAction({
+        userId: userId !== "unknown" ? userId : "system",
+        action: "AUTH_FAILED",
+        targetType: "membership",
+        targetId: userId,
+        metadata: {
+          reason: data.last_sign_in_attempt?.error?.code || data.error?.code || "failed_attempt",
+        },
+        strict: false,
+      });
+      logger.warn("Clerk authentication failed attempt", { userId });
+    } else if (eventType === "session.locked") {
+      const userId = data.user_id || data.id || "unknown";
+      const { logAuditAction } = await import("@/shared/audit/logger");
+      await logAuditAction({
+        userId: userId !== "unknown" ? userId : "system",
+        action: "ACCOUNT_LOCKED",
+        targetType: "membership",
+        targetId: userId,
+        metadata: { reason: "session_locked" },
+        strict: false,
+      });
+      logger.warn("Clerk account session locked", { userId });
     }
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     const apiError = handleApiError(error, "Failed to process Clerk webhook event payload");
     logger.error(apiError.message, error, { tags: { alert: "webhook_failure", source: "clerk" } });
-    return NextResponse.json({ error: apiError.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to process webhook." }, { status: 500 });
   }
 }

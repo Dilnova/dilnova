@@ -10,23 +10,23 @@ import { createSupabaseAdminClient } from "@/shared/storage/admin-client";
 import { GDPR_EXPORTS_BUCKET } from "@/shared/storage/config";
 import { escapeHtml } from "@/shared/email/smtp-client";
 import { sendSystemHtmlEmail } from "@/shared/email/delivery";
-import { Client as QStashClient } from "@upstash/qstash";
+import { getQStashClient } from "@/shared/security/qstash-client";
 import { logAuditAction } from "@/shared/audit/logger";
 
+import { z } from "zod/v3";
+
 export const maxDuration = 300;
+
+const exportPayloadSchema = z.object({
+  targetUserId: z.string().min(1).max(128),
+  adminUserId: z.string().min(1).max(128),
+  adminEmail: z.string().email(),
+});
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || "",
   token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
 });
-
-let qstash: QStashClient;
-const getQStashClient = () => {
-  if (!qstash) {
-    qstash = new QStashClient({ token: process.env.QSTASH_TOKEN || "" });
-  }
-  return qstash;
-};
 
 async function handler(req: NextRequest) {
   const messageId = req.headers.get("upstash-message-id");
@@ -55,17 +55,23 @@ async function handler(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { targetUserId, adminUserId, adminEmail } = body;
+    const parsed = exportPayloadSchema.safeParse(body);
 
-    if (!targetUserId || !adminUserId || !adminEmail) {
+    if (!parsed.success) {
+      logger.warn("GDPR export webhook received invalid payload", {
+        error: parsed.error.issues[0]?.message,
+      });
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
-    // 1. simulatedOrders
+    const { targetUserId, adminUserId, adminEmail } = parsed.data;
+
+    // 1. simulatedOrders (capped to 10,000 orders to prevent memory exhaustion)
     const orders = await db
       .select()
       .from(schema.simulatedOrders)
-      .where(eq(schema.simulatedOrders.customerUserId, targetUserId));
+      .where(eq(schema.simulatedOrders.customerUserId, targetUserId))
+      .limit(10_000);
 
     type OrderItem = typeof schema.simulatedOrderItems.$inferSelect;
     type PopulatedOrder = typeof schema.simulatedOrders.$inferSelect & { items: OrderItem[] };
@@ -122,7 +128,7 @@ async function handler(req: NextRequest) {
     // 3-6. Fetch Carts, Branch Members, Audit Logs, Reviews, Questions, Wishlists concurrently
     let cart = null;
     let branchMemberships: (typeof schema.branchMembers.$inferSelect)[] = [];
-    let logs: (typeof schema.auditLogs.$inferSelect)[] = [];
+    let logs: Array<Omit<typeof schema.auditLogs.$inferSelect, "ipAddress" | "userAgent">> = [];
     let reviews: (typeof schema.reviews.$inferSelect)[] = [];
     let questions: (typeof schema.questions.$inferSelect)[] = [];
     let wishlists: (typeof schema.wishlists.$inferSelect)[] = [];
@@ -133,7 +139,18 @@ async function handler(req: NextRequest) {
         .select()
         .from(schema.branchMembers)
         .where(eq(schema.branchMembers.memberUserId, targetUserId)),
-      db.select().from(schema.auditLogs).where(eq(schema.auditLogs.userId, targetUserId)),
+      db
+        .select({
+          id: schema.auditLogs.id,
+          userId: schema.auditLogs.userId,
+          action: schema.auditLogs.action,
+          targetType: schema.auditLogs.targetType,
+          targetId: schema.auditLogs.targetId,
+          metadata: schema.auditLogs.metadata,
+          createdAt: schema.auditLogs.createdAt,
+        })
+        .from(schema.auditLogs)
+        .where(eq(schema.auditLogs.userId, targetUserId)),
     ];
 
     queries.push(db.select().from(schema.reviews).where(eq(schema.reviews.userId, targetUserId)));
@@ -165,8 +182,6 @@ async function handler(req: NextRequest) {
       ? logs.map((l) => ({
           ...l,
           userId: "gdpr_redacted",
-          ipAddress: null,
-          userAgent: null,
         }))
       : logs;
 
@@ -230,11 +245,21 @@ async function handler(req: NextRequest) {
     `;
 
     const systemName = process.env.NEXT_PUBLIC_APP_NAME || "Platform";
-    await sendSystemHtmlEmail(
+    const emailResult = await sendSystemHtmlEmail(
       adminEmail,
       `[${systemName}] GDPR Export Ready: ${targetUserId}`,
       emailHtml,
     );
+
+    if (!emailResult.success) {
+      logger.error("GDPR export notification email failed — admin not notified", {
+        adminEmail,
+        targetUserId,
+        error: emailResult.error,
+        tags: { alert: "gdpr_notification_failure" },
+      });
+      throw new Error(`Failed to send GDPR notification email: ${emailResult.error}`);
+    }
 
     logger.info(`GDPR export completed successfully for ${targetUserId}`);
 

@@ -6,6 +6,7 @@ import {
   createPaymentSlipUploadPresignedUrlAction,
   submitPaymentSlipPathAction,
 } from "@/features/orders/customer.actions";
+import { PAYMENT_SLIP_ALLOWED_MIME_TYPES, type PaymentSlipMimeType } from "@/shared/storage/config";
 import { toast } from "sonner";
 
 interface PaymentSlipUploadProps {
@@ -16,8 +17,8 @@ interface PaymentSlipUploadProps {
   compact?: boolean;
 }
 
-function isAllowedPaymentSlipFile(file: File): boolean {
-  if (file.type.startsWith("image/")) {
+function isAllowedPaymentSlipFile(file: File): file is File & { type: PaymentSlipMimeType } {
+  if ((PAYMENT_SLIP_ALLOWED_MIME_TYPES as readonly string[]).includes(file.type)) {
     return true;
   }
   return /\.(jpe?g|png|webp|gif)$/i.test(file.name);
@@ -25,7 +26,7 @@ function isAllowedPaymentSlipFile(file: File): boolean {
 
 export default function PaymentSlipUpload({
   orderId,
-  customerEmail,
+  customerEmail: _customerEmail,
   existingSlipPreviewUrl,
   disabled = false,
   compact = false,
@@ -56,7 +57,7 @@ export default function PaymentSlipUpload({
           orderId,
           fileName: file.name,
           fileSize: file.size,
-          fileType: file.type,
+          fileType: file.type as PaymentSlipMimeType,
         });
 
         if (!presignResult?.data?.success) {

@@ -1,4 +1,4 @@
-import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
@@ -13,6 +13,7 @@ import { getVendorProductsForOrg } from "@/features/catalog/queries";
 import { getBranchCountForOrg, getCachedOrganization } from "@/features/vendor/queries";
 import { hasBankTransferConfiguredForOrg } from "@/features/billing/bank-transfer-metadata";
 import type { VendorInventoryFullData } from "@/features/inventory/types";
+import { logger } from "@/shared/logging/logger";
 
 const IMS_WORKSPACE_TABS = ["stock", "suppliers", "orders", "movements", "branches"] as const;
 type ImsWorkspaceTab = (typeof IMS_WORKSPACE_TABS)[number];
@@ -50,9 +51,8 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
   // Fetch current organization details (cached to avoid Clerk API rate limits)
   const org = await getCachedOrganization(orgId).catch((err) => {
-    throw new Error(
-      `Failed to load organization details from Clerk API: ${err.message || "Rate limit or timeout"}. Please try refreshing the page.`,
-    );
+    logger.error("Failed to load org details from Clerk", err, { orgId });
+    throw new Error("Unable to load organization details. Please try refreshing the page.");
   });
 
   const resolvedParams = await searchParams;
@@ -113,14 +113,6 @@ export default async function VendorPage({ searchParams }: PageProps) {
   );
   const pickupReady = !pickupEnabled || activeBranches > 0;
   const bankTransferReady = !bankTransferEnabled || bankTransferConfigured;
-  const phase6ConfigReady =
-    Boolean(org.slug) &&
-    totalItems > 0 &&
-    profileFieldsComplete &&
-    hasFulfillmentOption &&
-    hasPaymentOption &&
-    pickupReady &&
-    bankTransferReady;
 
   let lowStockCount = 0;
   let outOfStockCount = 0;

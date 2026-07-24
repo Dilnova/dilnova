@@ -20,7 +20,7 @@ describe("guestCartStorage", () => {
         key === GUEST_CART_STORAGE_KEY
           ? JSON.stringify([
               {
-                id: "a",
+                id: "123e4567-e89b-12d3-a456-426614174000",
                 name: "A",
                 price: 100,
                 imageUrl: null,
@@ -29,7 +29,7 @@ describe("guestCartStorage", () => {
                 type: "product",
               },
               {
-                id: "b",
+                id: "123e4567-e89b-12d3-a456-426614174001",
                 name: "B",
                 price: 200,
                 imageUrl: null,

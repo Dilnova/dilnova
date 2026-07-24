@@ -31,11 +31,11 @@ export const updateCustomerDeliveryDetailsAction = authenticatedAction
     const { userId } = ctx;
 
     try {
-      await rateLimit(5, 60000);
-    } catch (error: any) {
+      await rateLimit(5, 60000, undefined, { failClosed: true });
+    } catch (error: unknown) {
       logger.warn("Rate limit exceeded during delivery details update", {
         userId,
-        error: error?.message,
+        error: error instanceof Error ? error.message : String(error),
       });
       throw new ActionError("Too many requests. Please try again later.");
     }

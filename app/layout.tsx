@@ -167,7 +167,7 @@ export default async function RootLayout({
                   ],
                 },
                 { isJSON: true },
-              ),
+              ).replace(/<\/script>/gi, "<\\/script>"),
             }}
           />
           <ClerkProvider>

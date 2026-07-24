@@ -26,8 +26,8 @@ async function backfill() {
     for (const stmt of statements) {
       try {
         await migrationSql.unsafe(stmt);
-      } catch (err: any) {
-        if (!err.message.includes("already exists")) {
+      } catch (err: unknown) {
+        if (err instanceof Error && !err.message.includes("already exists")) {
           throw err;
         }
       }

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { logger } from "@/shared/logging/logger";
 import {
   signCloudinaryUploadParams,
   type CloudinaryResourceType,
@@ -98,9 +99,12 @@ export async function deleteCloudinaryAsset(
       },
     );
     if (!res.ok) {
-      console.error(`Failed to delete Cloudinary asset ${public_id}:`, await res.text());
+      logger.warn("Cloudinary asset deletion returned non-OK status", {
+        publicId: public_id,
+        status: res.status,
+      });
     }
   } catch (err) {
-    console.error(`Error deleting Cloudinary asset ${public_id}:`, err);
+    logger.error("Error deleting Cloudinary asset", err, { publicId: public_id });
   }
 }

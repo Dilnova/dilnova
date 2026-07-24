@@ -1,20 +1,20 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/shared/logging/logger";
 
-type RouteHandler = (req: Request, ...args: any[]) => Promise<Response> | Response;
+type RouteHandler = (req: Request, ...args: unknown[]) => Promise<Response> | Response;
 
 /**
  * Standardizes API error handling for Next.js Route Handlers.
  * Wraps route execution in a try/catch, logging errors and returning a standard 500 JSON payload.
  */
 export function withErrorHandler(handler: RouteHandler): RouteHandler {
-  return async (req: Request, ...args: any[]) => {
+  return async (req: Request, ...args: unknown[]) => {
     try {
       return await handler(req, ...args);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Unknown error";
       const safeUrl = req.url.replace(/[\r\n]/g, "");
-      console.error("[API Error]", req.method, safeUrl, error);
-      return NextResponse.json({ error: "Internal Server Error", message }, { status: 500 });
+      logger.error("[API Error]", error, { method: req.method, url: safeUrl });
+      return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
   };
 }

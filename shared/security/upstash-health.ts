@@ -34,13 +34,37 @@ export function readUpstashEnv(): { url?: string; token?: string } {
 export function isValidUpstashRestUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
+
+    if (
+      hostname === "dummy.upstash.io" ||
+      hostname === "placeholder.upstash.io" ||
+      hostname === "your-upstash-url.upstash.io" ||
+      hostname.startsWith("dummy") ||
+      hostname.startsWith("placeholder") ||
+      hostname.startsWith("your-upstash")
+    ) {
+      return false;
+    }
+
     return (
       parsed.protocol === "https:" &&
-      (parsed.hostname === "upstash.io" || parsed.hostname.endsWith(".upstash.io"))
+      (hostname === "upstash.io" || hostname.endsWith(".upstash.io"))
     );
   } catch {
     return false;
   }
+}
+
+export function isValidUpstashRestToken(token: string): boolean {
+  if (!token) return false;
+  const trimmed = token.trim().toLowerCase();
+  return (
+    trimmed !== "dummy-token" &&
+    trimmed !== "placeholder" &&
+    trimmed !== "your_upstash_token" &&
+    trimmed !== "your-upstash-token"
+  );
 }
 
 export async function probeUpstashRateLimit(): Promise<UpstashRateLimitProbe> {
@@ -61,7 +85,7 @@ export async function probeUpstashRateLimit(): Promise<UpstashRateLimitProbe> {
     };
   }
 
-  if (!isValidUpstashRestUrl(url)) {
+  if (!isValidUpstashRestUrl(url) || !isValidUpstashRestToken(token)) {
     return {
       configured: true,
       urlPresent,
@@ -70,8 +94,9 @@ export async function probeUpstashRateLimit(): Promise<UpstashRateLimitProbe> {
       pingOk: false,
       limitOk: false,
       status: "invalid_url",
-      hint: "Use the REST URL from Upstash (https://....upstash.io), not the rediss:// connection string.",
-      error: "UPSTASH_REDIS_REST_URL must be an https://....upstash.io REST endpoint.",
+      hint: "Use valid REST credentials from Upstash (https://....upstash.io), not placeholder values.",
+      error:
+        "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be valid Upstash REST endpoints and credentials.",
     };
   }
 

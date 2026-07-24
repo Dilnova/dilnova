@@ -2,11 +2,7 @@ import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
 import { inArray } from "drizzle-orm";
 import { resolveEffectiveStockAvailability } from "@/features/inventory/availability.server";
-import {
-  reserveProductStock,
-  applyStockReservation,
-  type StockReservation,
-} from "@/features/inventory/reservation";
+import { reserveProductStock, type StockReservation } from "@/features/inventory/reservation";
 import { applyOnlineOrderItemStock } from "@/features/orders/stock";
 import { hashPii } from "@/shared/security/encryption";
 import { logger } from "@/shared/logging/logger";

@@ -147,6 +147,7 @@ const getCachedSuperadminOrganizationsInternal = unstable_cache(
 export async function getCachedOrganizations(
   client?: ClerkOrganizationsClient,
 ): Promise<CachedOrg[]> {
+  void client;
   try {
     return await getCachedOrganizationsInternal();
   } catch (err) {
@@ -161,6 +162,7 @@ export async function getCachedOrganizations(
 export async function getSuperadminOrganizations(
   client?: ClerkOrganizationsClient,
 ): Promise<CachedSuperadminOrg[]> {
+  void client;
   try {
     return await getCachedSuperadminOrganizationsInternal();
   } catch (err) {

@@ -92,7 +92,10 @@ export default function VendorStockTab({
         setIsAdjustModalOpen(false);
         refreshData();
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : "Adjustment failed.");
+        triggerNotification(
+          false,
+          err instanceof Error && err.message ? err.message : "Adjustment failed.",
+        );
       }
     });
   };
@@ -117,7 +120,10 @@ export default function VendorStockTab({
         setIsInitModalOpen(false);
         refreshData();
       } catch (err) {
-        triggerNotification(false, err instanceof Error ? err.message : "Failed to init tracking.");
+        triggerNotification(
+          false,
+          err instanceof Error && err.message ? err.message : "Failed to init tracking.",
+        );
       }
     });
   };
