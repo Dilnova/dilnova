@@ -222,10 +222,8 @@ Clerk manages session cookies automatically with: `secure`, `httpOnly`, `SameSit
 
 #### 3.4 Account enumeration — Advisory
 
-**Finding:** Clerk sign-in/sign-up pages (Clerk-hosted UI components) may reveal whether an email exists depending on the Clerk dashboard's "Block account enumeration" setting.
-
 **Severity: Medium**  
-**Fix:** In Clerk Dashboard → Security → "Block account enumeration" — enable this setting. Also ensure error messages are generic (e.g., "Invalid credentials" regardless of whether the email exists or the password is wrong).
+**Fix:** In Clerk Dashboard → Security → "User enumeration protection" — select **Strict user enumeration protection**. This alters authentication flow logic so error messages and UI flows do not reveal account existence even for targeted single-user lookups.
 
 ---
 
