@@ -8,7 +8,6 @@ import { runWithCorrelationId } from "@/shared/security/async-context";
 import HeaderAuthButtons from "@/shared/ui/HeaderAuthButtons";
 import SmartHeader from "@/components/layout/SmartHeader";
 import SmartFooter from "@/components/layout/SmartFooter";
-import serialize from "serialize-javascript";
 import "./globals.css";
 
 import { CartProvider } from "@/features/cart/context/cart-context";
@@ -141,33 +140,30 @@ export default async function RootLayout({
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
-              __html: serialize(
-                {
-                  "@context": "https://schema.org",
-                  "@graph": [
-                    {
-                      "@type": "WebSite",
-                      "@id": `${baseUrl}/#website`,
-                      url: baseUrl,
-                      name: systemName,
-                      publisher: {
-                        "@id": `${baseUrl}/#organization`,
-                      },
-                    },
-                    {
-                      "@type": "Organization",
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@graph": [
+                  {
+                    "@type": "WebSite",
+                    "@id": `${baseUrl}/#website`,
+                    url: baseUrl,
+                    name: systemName,
+                    publisher: {
                       "@id": `${baseUrl}/#organization`,
-                      name: systemName,
-                      url: baseUrl,
-                      logo: {
-                        "@type": "ImageObject",
-                        url: logoUrl || `${baseUrl}/apple-touch-icon.png`,
-                      },
                     },
-                  ],
-                },
-                { isJSON: true },
-              ).replace(/<\/script>/gi, "<\\/script>"),
+                  },
+                  {
+                    "@type": "Organization",
+                    "@id": `${baseUrl}/#organization`,
+                    name: systemName,
+                    url: baseUrl,
+                    logo: {
+                      "@type": "ImageObject",
+                      url: logoUrl || `${baseUrl}/apple-touch-icon.png`,
+                    },
+                  },
+                ],
+              }).replace(/</g, "\\u003c"),
             }}
           />
           <ClerkProvider>
