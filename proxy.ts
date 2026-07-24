@@ -210,33 +210,52 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
   }
 
   const rawUrl = request.url;
-  let decodedUrl = rawUrl;
-  try {
-    decodedUrl = decodeURIComponent(rawUrl.replace(/\+/g, " "));
-  } catch {
-    decodedUrl = rawUrl.replace(/%20/g, " ").replace(/\+/g, " ");
-  }
+  const rawPathname = request.nextUrl.pathname;
 
-  let doubleDecodedUrl = decodedUrl;
-  try {
-    doubleDecodedUrl = decodeURIComponent(decodedUrl);
-  } catch {}
+  // 1.1 Iterative URL decoding (up to 3 passes) to unwrap nested/double/triple percent-encodings
+  const urlVariants: string[] = [rawUrl, rawPathname];
+
+  const decodePass = (str: string): string => {
+    return str
+      .replace(/(?:%[0-9a-fA-F]{2})+/g, (match) => {
+        try {
+          return decodeURIComponent(match);
+        } catch {
+          return match;
+        }
+      })
+      .replace(/\+/g, " ");
+  };
+
+  let currentUrl = rawUrl;
+  let currentPath = rawPathname;
+
+  for (let i = 0; i < 3; i++) {
+    const nextUrl = decodePass(currentUrl);
+    const nextPath = decodePass(currentPath);
+    if (nextUrl === currentUrl && nextPath === currentPath) break;
+    currentUrl = nextUrl;
+    currentPath = nextPath;
+  }
+  // Keep raw inputs and fully-decoded fixed points
+  urlVariants.push(currentUrl, currentPath);
+
+  // 1.2 Strip null bytes (\0, %00) and collect all normalized variants
+  const sanitizedVariants = urlVariants.flatMap((variant) => {
+    const stripped = variant.replace(/\0/g, "").replace(/%00/gi, "");
+    return variant === stripped ? [variant] : [variant, stripped];
+  });
 
   const matchesAnyPattern = (patterns: RegExp[]) =>
-    patterns.some(
-      (pattern) =>
-        pattern.test(rawUrl) || pattern.test(decodedUrl) || pattern.test(doubleDecodedUrl),
-    );
+    patterns.some((pattern) => sanitizedVariants.some((variant) => pattern.test(variant)));
 
   // Directory Traversal protection
   const TRAVERSAL_PATTERNS = [
     /\.\.[\/\\]/,
-    /%2e%2e[%2f%5c]/i,
-    /%252e%252e/i,
-    /\/etc\/passwd/i,
-    /\/etc\/shadow/i,
+    /\/etc\/(?:passwd|shadow|hosts|group)/i,
     /c:\\windows/i,
     /win\.ini/i,
+    /boot\.ini/i,
   ];
   if (matchesAnyPattern(TRAVERSAL_PATTERNS)) {
     return applySecurityHeaders(
@@ -244,15 +263,16 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     );
   }
 
-  // SQL Injection protection
+  // SQL Injection protection (linear non-backtracking separators & bounded spans)
+  const SEP = `(?:[\\s+]|\\/\\*[^*]*\\*\\/)+`;
   const SQLI_PATTERNS = [
-    /union[\s\+]+select/i,
-    /select[\s\+]+.*[\s\+]+from/i,
-    /insert[\s\+]+into/i,
-    /update[\s\+]+.*[\s\+]+set/i,
-    /delete[\s\+]+from/i,
-    /drop[\s\+]+table/i,
-    /exec[\s\+]+(s|x)p_/i,
+    new RegExp(`union${SEP}select`, "i"),
+    new RegExp(`select\\b(?:(?!;).){0,200}?${SEP}from`, "i"),
+    new RegExp(`insert${SEP}into`, "i"),
+    new RegExp(`update\\b(?:(?!;).){0,200}?${SEP}set`, "i"),
+    new RegExp(`delete${SEP}from`, "i"),
+    new RegExp(`drop${SEP}table`, "i"),
+    new RegExp(`exec${SEP}(?:s|x)p_`, "i"),
   ];
   if (matchesAnyPattern(SQLI_PATTERNS)) {
     return applySecurityHeaders(
@@ -262,11 +282,11 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
 
   // XSS Protection
   const XSS_PATTERNS = [
-    /<script[\s\+>]/i,
+    /<script[\s\/>]/i,
     /javascript:/i,
     /onload[\s\+]*=/i,
     /onerror[\s\+]*=/i,
-    /eval\(/i,
+    /eval\s*\(/i,
   ];
   if (matchesAnyPattern(XSS_PATTERNS)) {
     return applySecurityHeaders(new NextResponse("Forbidden: WAF XSS Protection", { status: 403 }));
