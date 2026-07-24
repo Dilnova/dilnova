@@ -233,16 +233,17 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
   for (let i = 0; i < 3; i++) {
     const nextUrl = decodePass(currentUrl);
     const nextPath = decodePass(currentPath);
-    urlVariants.push(nextUrl, nextPath);
     if (nextUrl === currentUrl && nextPath === currentPath) break;
     currentUrl = nextUrl;
     currentPath = nextPath;
   }
+  // Keep raw inputs and fully-decoded fixed points
+  urlVariants.push(currentUrl, currentPath);
 
   // 1.2 Strip null bytes (\0, %00) and collect all normalized variants
   const sanitizedVariants = urlVariants.flatMap((variant) => {
     const stripped = variant.replace(/\0/g, "").replace(/%00/gi, "");
-    return [variant, stripped];
+    return variant === stripped ? [variant] : [variant, stripped];
   });
 
   const matchesAnyPattern = (patterns: RegExp[]) =>
@@ -251,8 +252,6 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
   // Directory Traversal protection
   const TRAVERSAL_PATTERNS = [
     /\.\.[\/\\]/,
-    /%2e%2e[%2f%5c]/i,
-    /%252e%252e/i,
     /\/etc\/(?:passwd|shadow|hosts|group)/i,
     /c:\\windows/i,
     /win\.ini/i,
@@ -264,15 +263,16 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     );
   }
 
-  // SQL Injection protection (handles spaces, +, and SQL comments like /*...*/)
+  // SQL Injection protection (linear non-backtracking separators & bounded spans)
+  const SEP = `(?:[\\s+]|\\/\\*[^*]*\\*\\/)+`;
   const SQLI_PATTERNS = [
-    /union(?:\s+|\/\*[\s\S]*?\*\/|\+)+select/i,
-    /select(?:\s+|\/\*[\s\S]*?\*\/|\+)+[\s\S]+?(?:\s+|\/\*[\s\S]*?\*\/|\+)from/i,
-    /insert(?:\s+|\/\*[\s\S]*?\*\/|\+)+into/i,
-    /update(?:\s+|\/\*[\s\S]*?\*\/|\+)+[\s\S]+?(?:\s+|\/\*[\s\S]*?\*\/|\+)set/i,
-    /delete(?:\s+|\/\*[\s\S]*?\*\/|\+)+from/i,
-    /drop(?:\s+|\/\*[\s\S]*?\*\/|\+)+table/i,
-    /exec(?:\s+|\/\*[\s\S]*?\*\/|\+)+(?:s|x)p_/i,
+    new RegExp(`union${SEP}select`, "i"),
+    new RegExp(`select\\b(?:(?!;).){0,200}?${SEP}from`, "i"),
+    new RegExp(`insert${SEP}into`, "i"),
+    new RegExp(`update\\b(?:(?!;).){0,200}?${SEP}set`, "i"),
+    new RegExp(`delete${SEP}from`, "i"),
+    new RegExp(`drop${SEP}table`, "i"),
+    new RegExp(`exec${SEP}(?:s|x)p_`, "i"),
   ];
   if (matchesAnyPattern(SQLI_PATTERNS)) {
     return applySecurityHeaders(
