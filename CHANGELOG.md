@@ -1,3 +1,13 @@
+# [1.2.0](https://github.com/Dilnova/dilnova/compare/v1.1.1...v1.2.0) (2026-07-24)
+
+### Bug Fixes
+
+- **logging:** replace console.error with structured logger for improved error handling ([5ab8e7b](https://github.com/Dilnova/dilnova/commit/5ab8e7b110adf2a2b70490c8dbacf886b6b19a21))
+
+### Features
+
+- enhance rate limiting with fail-closed option ([a53153e](https://github.com/Dilnova/dilnova/commit/a53153e1f4604708fdb1fc308240ba3d5e2c6ecd))
+
 ## [1.1.1](https://github.com/Dilnova/dilnova/compare/v1.1.0...v1.1.1) (2026-07-22)
 
 ### Bug Fixes
