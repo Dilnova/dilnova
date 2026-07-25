@@ -104,24 +104,29 @@ Unlike paid tiers that bill overages, **the Hobby tier hard-pauses the project w
 
 ---
 
-## 4. Optimization Strategy for Free Tier Longevity
+## 4. Optimization Strategy for Free Tier Longevity (Completed)
 
-To operate safely within Free Tier parameters during development and staging:
+The following codebase optimizations have been implemented and verified:
 
-1. **Reduce WAF Edge CPU Overhead:**
-   - Maintain the in-memory rate-limiter cache (`edgeLimiterCache` in `proxy.ts`) to avoid redundant Upstash HTTP round-trips for repeated requests.
-   - Use early-return path exclusions for health checks (`/api/health`) and static assets.
+1. **Edge CPU & Header Optimization (`proxy.ts`):**
+   - Injected `Vary: Accept-Encoding` to prevent Cloudflare edge cache fragmentation across compression schemes.
+   - Expanded bot UA blocklist in `proxy.ts` to block AI crawlers (`GPTBot`, `CCBot`, `ClaudeBot`, `Bytespider`, `anthropic-ai`, `Google-Extended`, `PerplexBot`, `Amazonbot`) with immediate 403 Forbidden responses.
 
-2. **Optimize Image Transformations:**
-   - Set `unoptimized: true` on secondary/thumb images or serve pre-optimized WebP assets via Cloudinary CDN directly.
+2. **ISR Revalidation Tuning:**
+   Adjusted revalidation intervals to minimize serverless function executions on the free tier (1M/month limit):
+   - `app/products/page.tsx`: Extended from `30s` → `120s` (2 minutes).
+   - `app/products/[id]/page.tsx`: Extended from `60s` → `300s` (5 minutes).
+   - `app/vendors/page.tsx`: Extended from `30s` → `300s` (5 minutes).
+   - `app/vendors/[slug]/page.tsx`: Extended from `30s` → `300s` (5 minutes).
+   - Vendor updates trigger on-demand revalidation (`revalidateTag`/`revalidatePath`), ensuring instant data freshness without aggressive polling.
 
-3. **Prevent ISR Regeneration Abuse:**
-   - Use `dynamicParams = false` in `generateStaticParams` for catalog pages so invalid product URLs return `404` without triggering serverless page generation.
-   - Set conservative ISR revalidation intervals (`revalidate: 3600`) for non-critical catalog routes.
+3. **Bot Crawler Protection (`app/robots.ts`):**
+   - Configured disallow rules targeting AI scrapers (`GPTBot`, `CCBot`, `ClaudeBot`, `Bytespider`, `anthropic-ai`, `Google-Extended`, `PerplexBot`, `Amazonbot`, `FacebookBot`).
+   - Disallowed sensitive routes (`/vendor/`, `/customer/`, `/pos/`, `/checkout/`, `/account/`, `/admin/`, `/superadmin/`, `/api/`, `/cart/`).
 
-4. **Bot & Crawler Traffic Reduction:**
-   - Maintain strict `robots.txt` disallowing aggressive AI crawlers and bad bots from triggering edge executions.
-   - Integrate Cloudflare Turnstile on public client-side forms (`/sign-in`, `/sign-up`, checkout) to block bot submissions before they trigger server actions.
+4. **Cloudflare Cache Compatibility (`next.config.ts`):**
+   - Configured `Vary: Accept-Encoding` in Next.js security headers.
+   - Configured `Browser Cache TTL = Respect Existing Headers` in Cloudflare so Next.js caching directives control edge behavior.
 
 ---
 
@@ -134,3 +139,11 @@ Upgrade to Vercel Pro ($20/seat/month) immediately if any of the following condi
 3. **Invocation Warning:** Function invocations exceed 750,000 / month.
 4. **Monitoring Requirement:** Enterprise compliance requiring automated log drains to third-party SIEM/Sentry systems.
 5. **WAF Scale:** Needing >3 custom IP block rules at the CDN edge.
+
+---
+
+## 6. Implementation & Build Verification
+
+- **TypeScript Compilation:** `pnpm exec tsc --noEmit` → ✅ 0 errors
+- **Linter Check:** `pnpm lint` → ✅ 0 errors
+- **Live Terminal Verification:** Audited against `https://www.dilstar.pp.ua` (`sqlmap` blocked with 403, HSTS header confirmed, `/api/health` 200 batch confirmed).
