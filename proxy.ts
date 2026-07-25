@@ -44,6 +44,7 @@ function getEdgeRateLimiter(
 
 async function checkEdgeRateLimit(request: NextRequest): Promise<NextResponse | null> {
   const ip =
+    request.headers.get("cf-connecting-ip")?.trim() ||
     request.headers.get("x-real-ip")?.trim() ||
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "127.0.0.1";

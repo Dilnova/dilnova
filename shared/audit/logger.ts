@@ -43,10 +43,11 @@ export async function logAuditAction({
 
   try {
     const headersList = await headers();
+    const cfConnectingIp = headersList.get("cf-connecting-ip");
     const forwardedFor = headersList.get("x-forwarded-for");
-    ipAddress = forwardedFor
-      ? forwardedFor.split(",")[0].trim()
-      : headersList.get("x-real-ip") || null;
+    ipAddress =
+      cfConnectingIp?.trim() ||
+      (forwardedFor ? forwardedFor.split(",")[0].trim() : headersList.get("x-real-ip") || null);
     userAgent = headersList.get("user-agent") || null;
   } catch {
     // Ignore error if headers() is called outside of request context (e.g. background tasks or tests)
