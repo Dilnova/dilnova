@@ -108,10 +108,11 @@ Cloudflare edge rate limiting is managed via `monitoring/cloudflare-waf.tf`:
 
 ## 7. Action Log & Audit History
 
-| Date       | Category | Action Item                                                           | Status       |
-| :--------- | :------- | :-------------------------------------------------------------------- | :----------- |
-| 2026-07-24 | Audit    | Full Cloudflare API & Zone Security Audit                             | ✅ Completed |
-| 2026-07-24 | WAF      | Enabled "Protect Authentication" WAF rule for `/sign-in` & `/sign-up` | ✅ Completed |
-| 2026-07-25 | Account  | Verified 2FA enforcement via Google Account 2-Step Verification       | ✅ Completed |
-| 2026-07-25 | Codebase | Verified `proxy.ts` CSP & `cf-connecting-ip` header handling          | ✅ Verified  |
-| 2026-07-25 | Docs     | Created `docs/CLOUDFLARE_POSTURE.md` security baseline document       | ✅ Completed |
+| Date       | Category | Action Item                                                                      | Status       |
+| :--------- | :------- | :------------------------------------------------------------------------------- | :----------- |
+| 2026-07-24 | Audit    | Full Cloudflare API & Zone Security Audit                                        | ✅ Completed |
+| 2026-07-24 | WAF      | Enabled "Protect Authentication" WAF rule for `/sign-in` & `/sign-up`            | ✅ Completed |
+| 2026-07-25 | Account  | Verified 2FA enforcement via Google Account 2-Step Verification                  | ✅ Completed |
+| 2026-07-25 | Codebase | Verified `proxy.ts` CSP & `cf-connecting-ip` header handling                     | ✅ Verified  |
+| 2026-07-25 | Docs     | Created `docs/CLOUDFLARE_POSTURE.md` security baseline document                  | ✅ Completed |
+| 2026-07-25 | Strategy | Documented Vercel vs Cloudflare proxy strategy (`docs/VERCEL_PROXY_STRATEGY.md`) | ✅ Completed |
