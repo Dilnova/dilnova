@@ -113,6 +113,8 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
     );
   }
 
+  response.headers.set("Vary", "Accept-Encoding");
+
   if (!response.headers.has("Content-Security-Policy")) {
     response.headers.set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none';");
   }
@@ -205,6 +207,14 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     "masscan",
     "nikto",
     "sqlmap",
+    "gptbot",
+    "ccbot",
+    "claudebot",
+    "bytespider",
+    "anthropic-ai",
+    "google-extended",
+    "perplexbot",
+    "amazonbot",
   ];
   if (BLOCKED_USER_AGENTS.some((bot) => userAgent.toLowerCase().includes(bot))) {
     return applySecurityHeaders(new NextResponse("Forbidden: WAF Bot Protection", { status: 403 }));

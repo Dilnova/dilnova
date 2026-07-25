@@ -28,7 +28,7 @@ import {
 } from "@/features/catalog/queries";
 import { getUserWishlistIdsAction } from "@/features/catalog/product-detail.actions";
 
-export const revalidate = 30; // Cache for 30s to prevent rapid re-fetches; vendor actions revalidate on-demand
+export const revalidate = 120; // Cache for 2m (ISR) to reduce free-tier edge function invocations; vendor actions revalidate on-demand
 
 interface PageProps {
   searchParams: Promise<{

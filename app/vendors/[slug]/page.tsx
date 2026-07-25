@@ -14,7 +14,7 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export const revalidate = 30; // Cache and regenerate page in background at most every 30 seconds (ISR)
+export const revalidate = 300; // Cache and regenerate page in background at most every 5 minutes (ISR)
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
