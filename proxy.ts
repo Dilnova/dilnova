@@ -130,6 +130,10 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   requestHeaders.set("x-request-id", requestId);
   requestHeaders.set("x-nonce", nonce);
 
+  const country =
+    req.headers.get("cf-ipcountry")?.trim() || req.headers.get("x-country")?.trim() || "XX";
+  requestHeaders.set("x-country", country);
+
   // Define CSP first to attach to both request and response
   const clerkDomains = [
     "https://img.clerk.com",
@@ -180,6 +184,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
       });
 
   response.headers.set("x-request-id", requestId);
+  response.headers.set("x-country", country);
   response.headers.set("Content-Security-Policy", cspHeader);
   if (reportToHeader) {
     response.headers.set("Report-To", reportToHeader);

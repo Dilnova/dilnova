@@ -31,7 +31,7 @@ export async function getVendorProducts(orgId: string): Promise<VendorProduct[]>
     },
     [`vendor-products-${orgId}`],
     {
-      revalidate: 30,
+      revalidate: 300, // 5 minutes: aligned with vendor storefront ISR page revalidation
       tags: [`vendor-products-${orgId}`],
     },
   );
