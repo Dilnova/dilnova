@@ -210,12 +210,64 @@ export default async function ProductDetailPage({ params }: PageProps) {
       : {}),
   };
 
+  const breadcrumbItems = [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: baseUrl,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "Products",
+      item: `${baseUrl}/products`,
+    },
+  ];
+
+  if (category) {
+    if (parentCategory) {
+      breadcrumbItems.push({
+        "@type": "ListItem",
+        position: 3,
+        name: parentCategory.name,
+        item: `${baseUrl}/products?category=${parentCategory.slug}`,
+      });
+      breadcrumbItems.push({
+        "@type": "ListItem",
+        position: 4,
+        name: category.name,
+        item: `${baseUrl}/products?category=${category.slug}`,
+      });
+    } else {
+      breadcrumbItems.push({
+        "@type": "ListItem",
+        position: 3,
+        name: category.name,
+        item: `${baseUrl}/products?category=${category.slug}`,
+      });
+    }
+  }
+
+  breadcrumbItems.push({
+    "@type": "ListItem",
+    position: breadcrumbItems.length + 1,
+    name: product.name,
+    item: `${baseUrl}/products/${product.id}`,
+  });
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems,
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans pb-24">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
+          __html: JSON.stringify([productJsonLd, breadcrumbJsonLd]).replace(/</g, "\\u003c"),
         }}
       />
       {/* Client-side View Counter Trigger */}
