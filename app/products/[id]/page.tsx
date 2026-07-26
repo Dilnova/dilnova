@@ -15,7 +15,7 @@ import { getSystemSetting } from "@/shared/platform/settings";
 import { getStockAvailabilityCatalog } from "@/features/inventory/availability.server";
 import { resolveOnlineProductPurchaseState } from "@/features/inventory/availability.shared";
 import StockAvailabilityBadge from "@/features/inventory/components/StockAvailabilityBadge";
-import { DEFAULT_SUPPORT_EMAIL } from "@/shared/platform/brand";
+import { DEFAULT_APP_URL, DEFAULT_SUPPORT_EMAIL } from "@/shared/platform/brand";
 import { getVerifiedReviewerIdsForProduct } from "@/features/catalog/verified-buyer";
 import {
   getCategoryById,
@@ -65,14 +65,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         : product.description
       : `Get ${product.name} for ${formattedPrice} from our multi-vendor catalog on ${systemName}.`;
 
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+
     return {
       title,
       description,
+      alternates: {
+        canonical: `/products/${product.id}`,
+      },
       openGraph: {
         title,
         description,
         type: "website",
+        url: `${baseUrl}/products/${product.id}`,
         images: product.imageUrl ? [{ url: product.imageUrl }] : [],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: product.imageUrl ? [product.imageUrl] : [],
       },
     };
   } catch {
@@ -162,8 +174,50 @@ export default async function ProductDetailPage({ params }: PageProps) {
           ]
         : [];
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+
+  const productJsonLd = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    name: product.name,
+    image: mediaPayload.map((m) => m.url),
+    description: product.description || undefined,
+    sku: product.id,
+    brand: {
+      "@type": "Brand",
+      name: vendorName,
+    },
+    offers: {
+      "@type": "Offer",
+      url: `${baseUrl}/products/${product.id}`,
+      priceCurrency: "USD",
+      price: (product.price / 100).toFixed(2),
+      itemCondition: "https://schema.org/NewCondition",
+      availability: canPurchase ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      seller: {
+        "@type": "Organization",
+        name: vendorName,
+      },
+    },
+    ...(totalReviews > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: averageRating,
+            reviewCount: totalReviews,
+          },
+        }
+      : {}),
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans pb-24">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       {/* Client-side View Counter Trigger */}
       <ProductViewTracker productId={id} />
       {/* Top Breadcrumb Nav */}

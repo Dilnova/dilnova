@@ -28,6 +28,8 @@ import {
 } from "@/features/catalog/queries";
 import { getUserWishlistIdsAction } from "@/features/catalog/product-detail.actions";
 
+import { DEFAULT_APP_URL } from "@/shared/platform/brand";
+
 export const revalidate = 120; // Cache for 2m (ISR) to reduce free-tier edge function invocations; vendor actions revalidate on-demand
 
 interface PageProps {
@@ -52,6 +54,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const currentType = params.type || "all";
 
   const systemName = await getSystemSetting("system_name", "Dilnova");
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
 
   let title = `Products & Services Catalog | ${systemName}`;
   let description = `Browse local multi-vendor products and services available on ${systemName} Commerce Hub.`;
@@ -80,13 +83,27 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     description = `Explore high-quality vendor ${typeLabel.toLowerCase()} listings on ${systemName} Commerce Hub.`;
   }
 
+  const canonicalPath = currentCategorySlug
+    ? `/products?category=${currentCategorySlug}`
+    : "/products";
+
   return {
     title,
     description,
+    alternates: {
+      canonical: canonicalPath,
+    },
     openGraph: {
       title,
       description,
+      url: `${baseUrl}${canonicalPath}`,
+      siteName: systemName,
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
     },
   };
 }

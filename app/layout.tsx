@@ -152,6 +152,14 @@ export default async function RootLayout({
                     publisher: {
                       "@id": `${baseUrl}/#organization`,
                     },
+                    potentialAction: {
+                      "@type": "SearchAction",
+                      target: {
+                        "@type": "EntryPoint",
+                        urlTemplate: `${baseUrl}/products?search={search_term_string}`,
+                      },
+                      "query-input": "required name=search_term_string",
+                    },
                   },
                   {
                     "@type": "Organization",
