@@ -15,11 +15,33 @@ import VendorCarousel from "@/components/home/VendorCarousel";
 import FeaturedSeriesList from "@/components/home/FeaturedSeries";
 import PricingCards from "@/components/home/PricingCards";
 
+import { DEFAULT_APP_URL } from "@/shared/platform/brand";
+
 export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemSetting("system_name", "Dilnova");
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+  const title = `${systemName} | Enterprise Multi-Vendor Commerce Hub`;
+  const description = `Explore ${systemName} Commerce Hub. Discover curated vendor storefronts, industrial hardware, botanical supplies, tech products, and services.`;
+
   return {
-    title: `${systemName} | Enterprise Commerce Hub`,
-    description: `Welcome to the ${systemName} Commerce Hub. Explore our industrial, botanical, consulting, and technological vendor storefronts.`,
+    title,
+    description,
+    alternates: {
+      canonical: "/",
+    },
+    openGraph: {
+      title,
+      description,
+      url: baseUrl,
+      siteName: systemName,
+      locale: "en_US",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 
