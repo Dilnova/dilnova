@@ -4,11 +4,11 @@ import { ClerkProvider, Show, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import ConsentTracking from "@/shared/ui/ConsentTracking";
 import CookieConsent from "@/shared/ui/CookieConsent";
+import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 import { runWithCorrelationId } from "@/shared/security/async-context";
 import HeaderAuthButtons from "@/shared/ui/HeaderAuthButtons";
 import SmartHeader from "@/components/layout/SmartHeader";
 import SmartFooter from "@/components/layout/SmartFooter";
-import serialize from "serialize-javascript";
 import "./globals.css";
 
 import { CartProvider } from "@/features/cart/context/cart-context";
@@ -37,7 +37,7 @@ const interFont = Inter({
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSystemSetting("system_favicon", "");
   const systemName = await getSystemSetting("system_name", "Dilnova Commerce Hub");
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dilstar.pp.ua";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
   return {
     title: {
       template: `%s | ${systemName}`,
@@ -106,7 +106,7 @@ export default async function RootLayout({
   return runWithCorrelationId(async () => {
     const logoUrl = await getSystemSetting("system_logo", "");
     const systemName = await getSystemSetting("system_name", "Dilnova");
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dilstar.pp.ua";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
 
     // Enterprise-grade dynamic Beta Lock check
     const isBetaLocked = (await getSystemSetting("enable_beta_lock", "false")) === "true";
@@ -141,33 +141,30 @@ export default async function RootLayout({
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
-              __html: serialize(
-                {
-                  "@context": "https://schema.org",
-                  "@graph": [
-                    {
-                      "@type": "WebSite",
-                      "@id": `${baseUrl}/#website`,
-                      url: baseUrl,
-                      name: systemName,
-                      publisher: {
-                        "@id": `${baseUrl}/#organization`,
-                      },
-                    },
-                    {
-                      "@type": "Organization",
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@graph": [
+                  {
+                    "@type": "WebSite",
+                    "@id": `${baseUrl}/#website`,
+                    url: baseUrl,
+                    name: systemName,
+                    publisher: {
                       "@id": `${baseUrl}/#organization`,
-                      name: systemName,
-                      url: baseUrl,
-                      logo: {
-                        "@type": "ImageObject",
-                        url: logoUrl || `${baseUrl}/apple-touch-icon.png`,
-                      },
                     },
-                  ],
-                },
-                { isJSON: true },
-              ).replace(/<\/script>/gi, "<\\/script>"),
+                  },
+                  {
+                    "@type": "Organization",
+                    "@id": `${baseUrl}/#organization`,
+                    name: systemName,
+                    url: baseUrl,
+                    logo: {
+                      "@type": "ImageObject",
+                      url: logoUrl || `${baseUrl}/apple-touch-icon.png`,
+                    },
+                  },
+                ],
+              }).replace(/</g, "\\u003c"),
             }}
           />
           <ClerkProvider>

@@ -31,18 +31,28 @@ node scripts/pre-launch-check.mjs
 
 ### Monitoring & Log Aggregation
 
-- Public uptime: `GET https://www.dilstar.pp.ua/api/health` → `{"status":"ok"}`
-- Detailed probe: `Authorization: Bearer $HEALTH_CHECK_SECRET`
-- Error Tracking: Configure `SENTRY_DSN` in Vercel for server and client error alerts.
-- Log Aggregation (Log Drain): A Vercel Log Drain exports structured application JSON logs to **Axiom**, which is contracted for a **90-day retention policy** to support compliance and forensic auditing. This configuration is maintained via IaC (`monitoring/vercel-log-drain.tf`).
+- **Public Uptime Endpoint**: `GET https://www.dilstar.pp.ua/api/health` → `{"status":"ok"}`
+- **Detailed Probe Authorization**: `Authorization: Bearer $HEALTH_CHECK_SECRET`
+- **Error Tracking**: Configure `SENTRY_DSN` in Vercel for server and client error alerts.
+- **Log Aggregation (Log Drain)**: A Vercel Log Drain exports structured application JSON logs to **Axiom**, which is contracted for a **90-day retention policy** to support compliance and forensic auditing. This configuration is maintained via IaC (`monitoring/vercel-log-drain.tf`).
 
-  #### Log Drain Status & Verification:
-  - **Provider**: Axiom
-  - **Retention Period**: 90 Days (Verified via Axiom Datastore Config)
-  - **Status**: Active and draining production lambda/edge logs successfully.
-  - **Verified Date**: 2026-06-23
-  - **Verified By**: Security & DevOps Lead
-  - **Alerting Integration**: Real-time error threshold alerts are decoupled from the log drain and managed directly via Sentry IaC (`monitoring/sentry-alerts.tf`).
+#### UptimeRobot 24/7 Availability Monitor:
+
+- **Provider**: UptimeRobot
+- **Target Endpoint**: `https://www.dilstar.pp.ua/api/health`
+- **Monitor Type**: HTTP/S Monitor
+- **Check Frequency**: 5 Minutes (300s)
+- **Status**: Active & Verified (Cloudflare-whitelisted verified bot probe)
+- **Alerting Channels**: Multi-region SMS & Email alerts on non-200 HTTP status code or downtime.
+
+#### Log Drain Status & Verification:
+
+- **Provider**: Axiom
+- **Retention Period**: 90 Days (Verified via Axiom Datastore Config)
+- **Status**: Active and draining production lambda/edge logs successfully.
+- **Verified Date**: 2026-06-23
+- **Verified By**: Security & DevOps Lead
+- **Alerting Integration**: Real-time error threshold alerts are decoupled from the log drain and managed directly via Sentry IaC (`monitoring/sentry-alerts.tf`).
 
 ---
 

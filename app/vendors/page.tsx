@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { getCachedOrganizations } from "@/shared/auth/clerk-cache";
 import { getSystemSetting } from "@/shared/platform/settings";
 
-export const revalidate = 30; // ISR: cache and regenerate in background
+export const revalidate = 300; // ISR: cache and regenerate in background every 5 minutes
 
 export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemSetting("system_name", "Dilnova");

@@ -74,6 +74,18 @@ To reduce Clerk API rate limits and latency, role and organization checks are ca
 
 **Best Practice**: For critical operations (e.g., financial transactions, billing changes, payouts), **bypass the cache** and make a fresh Clerk API call (e.g. `client.users.getUser(userId)`) to verify the user's role and membership in real-time.
 
+### Account Enumeration Protection (Dashboard Setting)
+
+- **Finding (M1)**: The `<SignIn />` and `<SignUp />` prebuilt components (`app/sign-in/[[...sign-in]]/page.tsx` and `app/sign-up/[[...sign-up]]/AgeGatedSignUp.tsx`) rely on Clerk's tenant security configuration to prevent account enumeration.
+- **Protection Modes**:
+  1. **Bulk user enumeration protection** (Default/Basic): Uses IP rate limiting to prevent high-volume automated harvesting of accounts. However, targeted individual lookups remain possible.
+  2. **Strict user enumeration protection** (Recommended): Alters sign-in and sign-up application logic to ensure no response or error message reveals whether a single email or phone number is registered.
+- **Recommended Action**:
+  1. Log into the [Clerk Dashboard](https://dashboard.clerk.com).
+  2. Select your environment (Development / Production).
+  3. Navigate to **Security** > **User Enumeration Protection** (or **Attack Protection**).
+  4. Select **Strict user enumeration protection**.
+
 ---
 
 ## Environment Variables

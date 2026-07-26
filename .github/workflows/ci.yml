@@ -17,7 +17,7 @@ jobs:
         uses: ./.github/actions/setup-env
 
       - name: Audit Dependencies
-        run: pnpm audit --audit-level=moderate
+        run: pnpm audit --audit-level=low
 
   lint:
     runs-on: ubuntu-latest

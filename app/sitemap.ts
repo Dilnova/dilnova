@@ -4,7 +4,7 @@ import { db } from "@/shared/db/client";
 import { products, categories } from "@/shared/db/schema";
 import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // Regenerate sitemap at most once per hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;

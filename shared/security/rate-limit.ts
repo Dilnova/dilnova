@@ -93,9 +93,10 @@ export async function rateLimit(
   options?: RateLimitOptions,
 ): Promise<void> {
   const reqHeaders = await headers();
-  // Get IP address prioritizing x-real-ip (injected securely by Vercel/Cloudflare at edge)
+  // Get IP address prioritizing cf-connecting-ip and x-real-ip (injected securely by Cloudflare/Vercel at edge)
   // to prevent client header spoofing via custom X-Forwarded-For inputs.
   const ip =
+    reqHeaders.get("cf-connecting-ip")?.trim() ||
     reqHeaders.get("x-real-ip")?.trim() ||
     reqHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "127.0.0.1";

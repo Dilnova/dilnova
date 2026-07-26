@@ -35,7 +35,8 @@ echo "🚀 Initiating Enterprise Health Probe against: $HEALTH_ENDPOINT"
 CURL_ARGS=(
   "-sL"
   "--location-trusted"
-  "-A" "DilnovaHealthProbe/1.0 (Enterprise Automation)"
+  "-A" "Mozilla/5.0 (compatible; DilnovaHealthProbe/1.0; +https://www.dilstar.pp.ua)"
+  "-H" "Accept: application/json"
   "-w" "\n%{http_code}"
   "-m" "15"
 )
