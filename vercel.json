@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/fx-rates",
-      "schedule": "0 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
