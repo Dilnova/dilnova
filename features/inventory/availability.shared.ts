@@ -40,6 +40,15 @@ export const BUILTIN_STOCK_AVAILABILITY: StockAvailabilityDefinition[] = [
     allowsPurchase: true,
     badgeTone: "amber",
   },
+  {
+    id: "coming_soon",
+    label: "Coming Soon (Price & Stock TBA)",
+    description: "Price and stock count to be announced. Join waitlist.",
+    platformEnabled: true,
+    isBuiltIn: true,
+    allowsPurchase: false,
+    badgeTone: "blue",
+  },
 ];
 
 export const DEFAULT_STOCK_AVAILABILITY_ID = "in_stock";

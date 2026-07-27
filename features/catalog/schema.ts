@@ -89,7 +89,7 @@ export const addProductSchema = z.object({
     .max(1000, "Description cannot exceed 1000 characters.")
     .trim()
     .default(""),
-  priceInDollars: z.number().positive("Price must be a positive number."),
+  priceInDollars: z.number().min(0, "Price cannot be negative."),
   imageUrl: optionalCloudinaryUrlSchema,
   media: z.array(productMediaItemSchema).default([]),
   categoryId: z.string().uuid("Invalid category ID.").or(z.literal("")).default(""),
@@ -101,6 +101,10 @@ export const addProductSchema = z.object({
     .default(0),
   branchId: z.string().uuid("Invalid branch ID.").or(z.literal("")).optional().default(""),
   stockAvailability: z.string().min(1).max(50).optional().default("in_stock"),
+  // Pre-order fields
+  preorderType: z.enum(["full_upfront", "deposit", "pay_later"]).optional().default("full_upfront"),
+  preorderDepositAmount: z.number().min(0).optional().nullable().default(null),
+  preorderMaxQuantity: z.number().int().positive().optional().nullable().default(null),
 });
 
 export const vendorDeleteProductSchema = z.object({
