@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import React from "react";
-import { ClerkProvider, Show, UserButton } from "@clerk/nextjs";
+import { ClerkProvider } from "@clerk/nextjs";
 import Link from "next/link";
 import ConsentTracking from "@/shared/ui/ConsentTracking";
 import CookieConsent from "@/shared/ui/CookieConsent";
 import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 import { runWithCorrelationId } from "@/shared/security/async-context";
-import HeaderAuthButtons from "@/shared/ui/HeaderAuthButtons";
 import SmartHeader from "@/components/layout/SmartHeader";
 import SmartFooter from "@/components/layout/SmartFooter";
 import "./globals.css";
@@ -26,7 +25,7 @@ import { ConfirmProvider } from "@/shared/ui/notifications";
 import { GlobalNotificationListener } from "@/shared/ui/notifications/GlobalNotificationListener";
 import { Inter } from "next/font/google";
 
-import { DynamicHeaderNav, DynamicOrganizationSwitcher } from "@/shared/ui/DynamicHeader";
+import { DynamicHeaderNav, DynamicHeaderAuth } from "@/shared/ui/DynamicHeader";
 import { auth } from "@clerk/nextjs/server";
 import { getClientSessionContextAction } from "@/shared/auth/session.actions";
 
@@ -196,13 +195,13 @@ export default async function RootLayout({
                     aria-hidden="true"
                   />
 
-                  <div className="flex items-center gap-2 sm:gap-3 md:gap-5 min-w-0 flex-1">
+                  <div className="flex items-center gap-3 sm:gap-4 md:gap-6 shrink-0">
                     <Link
                       href="/"
-                      className="font-extrabold text-sm tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center shrink min-w-[5rem]"
+                      className="font-extrabold text-sm sm:text-base tracking-wider text-zinc-900 dark:text-zinc-50 hover:opacity-90 flex items-center shrink-0"
                     >
                       {logoUrl ? (
-                        <div className="relative h-8 w-20 sm:h-9 sm:w-32 max-w-full rounded-lg bg-white px-2 py-1 shadow-sm ring-1 ring-zinc-200/80 dark:ring-zinc-700/60">
+                        <div className="relative h-8 w-20 sm:h-9 sm:w-32 max-w-full rounded-lg bg-white px-2 py-1 shadow-sm ring-1 ring-zinc-200/80 dark:ring-zinc-700/60 shrink-0">
                           <Image
                             src={logoUrl}
                             alt={`${systemName} Logo`}
@@ -213,11 +212,12 @@ export default async function RootLayout({
                           />
                         </div>
                       ) : (
-                        systemName.toUpperCase()
+                        <span className="shrink-0 whitespace-nowrap">
+                          {systemName.toUpperCase()}
+                        </span>
                       )}
                     </Link>
-                    {/* Removed overflow-hidden to prevent clipping the mobile hamburger menu */}
-                    <div className="flex-1 flex items-center min-w-0">
+                    <div className="flex items-center shrink-0">
                       <DynamicHeaderNav
                         initialAuth={initialAuth}
                         initialSessionContext={initialSessionContext}
@@ -226,26 +226,20 @@ export default async function RootLayout({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0 ml-2">
-                    <div className="hidden lg:block">
+                  <div className="flex items-center gap-2 sm:gap-3.5 md:gap-5 shrink-0 min-w-0 ml-auto">
+                    <div className="hidden lg:block shrink-0">
                       <LanguageSelector />
                     </div>
 
                     {/* Shopping Cart Icon (Link to page) */}
-                    <CartIcon />
+                    <div className="shrink-0">
+                      <CartIcon />
+                    </div>
 
-                    <Show when="signed-out">
-                      <HeaderAuthButtons />
-                    </Show>
-
-                    <Show when="signed-in">
-                      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4">
-                        <DynamicOrganizationSwitcher
-                          initialSessionContext={initialSessionContext}
-                        />
-                        <UserButton />
-                      </div>
-                    </Show>
+                    <DynamicHeaderAuth
+                      initialAuth={initialAuth}
+                      initialSessionContext={initialSessionContext}
+                    />
                   </div>
                 </SmartHeader>
                 {children}

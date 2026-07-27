@@ -30,7 +30,7 @@ export default function SmartHeader({ children }: { children: React.ReactNode })
 
   return (
     <header
-      className={`sticky top-0 z-50 flex justify-between items-center px-3 sm:px-4 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md min-h-[3.5rem] sm:min-h-[4rem] max-w-full transition-transform duration-300 ease-in-out ${
+      className={`sticky top-0 z-50 flex justify-between items-center px-3 sm:px-5 md:px-6 border-b border-zinc-200/60 dark:border-zinc-900 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md min-h-[3.5rem] sm:min-h-[4rem] w-full max-w-full transition-transform duration-300 ease-in-out ${
         isVisible ? "translate-y-0" : "-translate-y-full"
       }`}
     >

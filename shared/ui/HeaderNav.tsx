@@ -82,23 +82,28 @@ export default function HeaderNav({ links, mobileExtra }: HeaderNavProps) {
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden flex items-center justify-center min-w-[44px] min-h-[44px] rounded-lg text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-purple-600/50 flex-shrink-0"
+        className="lg:hidden flex items-center justify-center min-w-[44px] min-h-[44px] sm:min-w-[48px] sm:min-h-[48px] p-2.5 rounded-xl text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50 bg-zinc-100/80 dark:bg-zinc-900/80 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80 focus:outline-none focus:ring-2 focus:ring-purple-600/50 shrink-0 flex-shrink-0 transition-colors"
         aria-label="Toggle navigation menu"
         aria-expanded={isOpen}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className="w-6 h-6 sm:w-7 sm:h-7"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           {isOpen ? (
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
+              strokeWidth={2.5}
               d="M6 18L18 6M6 6l12 12"
             />
           ) : (
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
+              strokeWidth={2.5}
               d="M4 6h16M4 12h16M4 18h16"
             />
           )}
