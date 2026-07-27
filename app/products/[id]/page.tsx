@@ -36,11 +36,7 @@ interface PageProps {
   }>;
 }
 
-export const revalidate = 300; // Cache for 5m (ISR) to optimize free-tier quota; vendor updates trigger on-demand revalidation
-
-export async function generateStaticParams() {
-  return []; // Return empty array to rely entirely on runtime ISR
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
