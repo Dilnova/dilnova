@@ -1,3 +1,10 @@
+## [1.2.5](https://github.com/Dilnova/dilnova/compare/v1.2.4...v1.2.5) (2026-07-27)
+
+### Bug Fixes
+
+- **catalog:** merge dev-branch with force-dynamic fix into main ([eca0b2b](https://github.com/Dilnova/dilnova/commit/eca0b2b19da80a3c74880add797b6648abae143d))
+- set force-dynamic on product detail page to eliminate DYNAMIC_SERVER_USAGE ([848706c](https://github.com/Dilnova/dilnova/commit/848706cb2de43253ed02db82915c2fe5756c0330))
+
 ## [1.2.4](https://github.com/Dilnova/dilnova/compare/v1.2.3...v1.2.4) (2026-07-27)
 
 ## [1.2.3](https://github.com/Dilnova/dilnova/compare/v1.2.2...v1.2.3) (2026-07-26)
