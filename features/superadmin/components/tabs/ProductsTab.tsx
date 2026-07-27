@@ -14,6 +14,7 @@ export interface Product {
   name: string;
   type: string;
   price: number;
+  currency?: string | null;
   description: string | null;
   imageUrl: string | null;
   orgId: string;

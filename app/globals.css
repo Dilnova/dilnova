@@ -204,6 +204,60 @@ iframe.skiptranslate,
   padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 
+/* Organization Switcher mobile truncation */
+.cl-organizationSwitcherTrigger {
+  max-width: 120px;
+  min-width: 0;
+}
+@media (min-width: 640px) {
+  .cl-organizationSwitcherTrigger {
+    max-width: 180px;
+  }
+}
+@media (min-width: 768px) {
+  .cl-organizationSwitcherTrigger {
+    max-width: 240px;
+  }
+}
+
+.cl-organizationPreviewTextContainer {
+  max-width: 70px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (min-width: 640px) {
+  .cl-organizationPreviewTextContainer {
+    max-width: 135px;
+  }
+}
+@media (min-width: 768px) {
+  .cl-organizationPreviewTextContainer {
+    max-width: 180px;
+  }
+}
+
+.cl-organizationPreviewMainIdentifier,
+.cl-organizationPreviewSecondaryIdentifier {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* UserButton avatar container stability */
+.cl-userButtonBox,
+.cl-userButtonTrigger,
+.cl-userButtonAvatarBox,
+.cl-userButtonAvatarImage {
+  min-width: 32px;
+  min-height: 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
 /* Hide scrollbar but allow scrolling */
 .scrollbar-hide {
   -ms-overflow-style: none;

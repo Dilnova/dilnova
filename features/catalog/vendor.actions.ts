@@ -15,6 +15,7 @@ import { getPremiumStatus, DEFAULT_MAX_LISTING_COUNT } from "@/features/inventor
 import { validateStockAvailabilityId } from "@/features/inventory/availability.server";
 import { isAllowedCloudinaryDeliveryUrl } from "@/shared/media/cloudinary-url";
 import { deleteCloudinaryAsset } from "@/shared/media/cloudinary-server";
+import { getOrgCurrencySettings } from "@/shared/currency/exchange-rates.service";
 import { z } from "zod/v3";
 import { vendorAction, orgAdminAction, ActionError } from "@/lib/safe-action";
 
@@ -104,6 +105,8 @@ export const addProductAction = vendorAction
         resolvedStockAvailability = availability.id;
       }
 
+      const orgCurrency = await getOrgCurrencySettings(orgId);
+
       // Secure Insert within a database transaction
       const newProduct = await db.transaction(async (tx) => {
         const [prod] = await tx
@@ -113,10 +116,20 @@ export const addProductAction = vendorAction
             type: parsedInput.type,
             description: parsedInput.description,
             price: priceInCents,
+            currency: orgCurrency.baseCurrency || "USD",
             imageUrl: parsedInput.imageUrl || null,
             media: mediaPayload,
-            orgId: orgId, // Tied securely to user's current session orgId
+            orgId: orgId,
             categoryId: parsedInput.categoryId || null,
+            // Pre-order fields
+            isPreorder: resolvedStockAvailability === "pre_order",
+            preorderType: parsedInput.preorderType ?? "full_upfront",
+            preorderDepositAmount:
+              parsedInput.preorderDepositAmount !== null &&
+              parsedInput.preorderDepositAmount !== undefined
+                ? Math.round(parsedInput.preorderDepositAmount * 100)
+                : null,
+            preorderMaxQuantity: parsedInput.preorderMaxQuantity ?? null,
           })
           .returning();
 
@@ -126,7 +139,15 @@ export const addProductAction = vendorAction
 
         // Initialize inventory entry if product type is 'product'
         if (prod.type === "product") {
-          const initialQty = parsedInput.quantity ?? 0;
+          // ── Server-side quantity guard ─────────────────────────────────────
+          // These statuses must ALWAYS start with 0 quantity regardless of
+          // what the client sends. This prevents UI bypass / API abuse.
+          const ZERO_QUANTITY_STATUSES = ["out_of_stock", "coming_soon", "pre_order"];
+          const rawQty = parsedInput.quantity ?? 0;
+          const initialQty = ZERO_QUANTITY_STATUSES.includes(resolvedStockAvailability)
+            ? 0
+            : rawQty;
+          // ── End quantity guard ─────────────────────────────────────────────
 
           const [inv] = await tx
             .insert(schema.inventory)

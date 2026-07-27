@@ -31,6 +31,8 @@ export const inventory = pgTable(
     binLocation: text("bin_location"),
     supplierId: uuid("supplier_id").references(() => suppliers.id, { onDelete: "set null" }),
     stockAvailability: text("stock_availability").default("in_stock").notNull(),
+    preorderedQuantity: integer("preordered_quantity").default(0).notNull(),
+    incomingQuantity: integer("incoming_quantity").default(0).notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => [

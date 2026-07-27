@@ -18,6 +18,8 @@ import { getSystemSetting } from "@/shared/platform/settings";
 import { getStockAvailabilityCatalog } from "@/features/inventory/availability.server";
 import { resolveOnlineProductPurchaseState } from "@/features/inventory/availability.shared";
 import StockAvailabilityBadge from "@/features/inventory/components/StockAvailabilityBadge";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 import { DEFAULT_APP_URL, DEFAULT_SUPPORT_EMAIL } from "@/shared/platform/brand";
 import { getVerifiedReviewerIdsForProduct } from "@/features/catalog/verified-buyer";
 import {
@@ -384,9 +386,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-black font-mono text-purple-700 dark:text-purple-400">
-                  {formattedPrice}
+                  <ProductPriceDisplay
+                    priceInSubunits={product.price}
+                    baseCurrency={product.currency || DEFAULT_CURRENCY}
+                  />
                 </span>
-                <span className="text-xs text-zinc-400 font-mono">USD</span>
               </div>
 
               <hr className="border-zinc-200 dark:border-zinc-800" />

@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { isVideoUrl } from "@/shared/media/media";
 import WishlistRemoveButton from "@/features/customer/components/WishlistRemoveButton";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 interface WishlistItem {
   product: any;
@@ -64,10 +66,6 @@ export default function CustomerWishlistTab({
           {wishlistItems.map(({ product, category }) => {
             const orgMatch = organizations.find((o) => o.id === product.orgId);
             const vendorName = orgMatch ? orgMatch.name : "Unknown Vendor";
-            const formattedPrice = (product.price / 100).toLocaleString("en-US", {
-              style: "currency",
-              currency: "USD",
-            });
 
             return (
               <div
@@ -131,7 +129,10 @@ export default function CustomerWishlistTab({
 
                   <div className="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-zinc-100 dark:border-zinc-900">
                     <span className="text-sm font-black text-zinc-900 dark:text-zinc-200 font-mono">
-                      {formattedPrice}
+                      <ProductPriceDisplay
+                        priceInSubunits={product.price}
+                        baseCurrency={product.currency || DEFAULT_CURRENCY}
+                      />
                     </span>
                     <Link
                       href={`/products/${product.id}`}

@@ -3,6 +3,8 @@ import Image from "next/image";
 import type { StorefrontProps } from "./types";
 import { isVideoUrl } from "@/shared/media/media";
 import AddToCartButton from "@/features/cart/components/AddToCartButton";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -152,11 +154,6 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => {
-                const formattedPrice = (product.price / 100).toLocaleString("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                });
-
                 return (
                   <div
                     key={product.id}
@@ -225,7 +222,12 @@ export default function DistarHardwareStorefront({ org, products }: StorefrontPr
 
                     {/* Price & CTA */}
                     <div className="px-5 pb-5 flex items-center justify-between border-t border-zinc-800/60 pt-4">
-                      <span className="text-lg font-black text-white">{formattedPrice}</span>
+                      <span className="text-lg font-black text-white">
+                        <ProductPriceDisplay
+                          priceInSubunits={product.price}
+                          baseCurrency={product.currency || DEFAULT_CURRENCY}
+                        />
+                      </span>
                       <div className="flex items-center gap-2">
                         <AddToCartButton
                           product={{

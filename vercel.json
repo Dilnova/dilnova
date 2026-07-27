@@ -1,3 +1,9 @@
 {
-  "regions": ["hnd1"]
+  "regions": ["hnd1"],
+  "crons": [
+    {
+      "path": "/api/cron/fx-rates",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }

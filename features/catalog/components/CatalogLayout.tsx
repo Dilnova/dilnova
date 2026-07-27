@@ -6,6 +6,8 @@ import CatalogFilters, { CatalogDesktopSidebar } from "./CatalogFilters";
 import WishlistButton from "./product-detail/WishlistButton";
 import AddToCartButton from "@/features/cart/components/AddToCartButton";
 import StockAvailabilityBadge from "@/features/inventory/components/StockAvailabilityBadge";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 import type { StockAvailabilityTone } from "@/features/inventory/availability.shared";
 import { buildCatalogSearchParams } from "../queries";
 import type { CatalogCategoryRef, CatalogVendorRef, CatalogQueryParams } from "../types";
@@ -18,6 +20,7 @@ export interface CatalogItemViewData {
     name: string;
     description: string | null;
     price: number;
+    currency?: string | null;
     type: string;
     status: string;
     imageUrl: string | null;
@@ -244,7 +247,10 @@ export default function CatalogLayout({
                           <div className="flex items-center justify-between gap-2 mb-3">
                             <div className="flex flex-col">
                               <span className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
-                                {formattedPrice}
+                                <ProductPriceDisplay
+                                  priceInSubunits={product.price}
+                                  baseCurrency={product.currency || DEFAULT_CURRENCY}
+                                />
                               </span>
                               <div className="flex items-center gap-1 text-[9px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5">
                                 <svg
@@ -468,7 +474,10 @@ export default function CatalogLayout({
 
                             <div className="flex items-center justify-between sm:justify-end gap-4">
                               <span className="text-base font-extrabold text-zinc-900 dark:text-zinc-50">
-                                {formattedPrice}
+                                <ProductPriceDisplay
+                                  priceInSubunits={product.price}
+                                  baseCurrency={product.currency || DEFAULT_CURRENCY}
+                                />
                               </span>
                               <AddToCartButton
                                 product={{

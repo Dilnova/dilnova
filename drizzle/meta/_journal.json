@@ -127,6 +127,20 @@
       "when": 1784524608126,
       "tag": "0017_odd_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1785140988303,
+      "tag": "0018_dry_venus",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1785147876791,
+      "tag": "0019_lovely_ozymandias",
+      "breakpoints": true
     }
   ]
 }

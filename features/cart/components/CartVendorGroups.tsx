@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { isVideoUrl } from "@/shared/media/media";
+import { useCurrency } from "@/shared/currency/context/currency-context";
 
 export interface CartItemType {
   id: string;
@@ -51,11 +52,9 @@ export function CartVendorGroups({
   updateQuantity,
   removeFromCart,
 }: CartVendorGroupsProps) {
-  const formatPrice = (cents: number) => {
-    return (cents / 100).toLocaleString("en-US", {
-      style: "currency",
-      currency: "USD",
-    });
+  const { format } = useCurrency();
+  const formatPrice = (cents: number, currency = "USD") => {
+    return format(cents, currency);
   };
 
   return (
