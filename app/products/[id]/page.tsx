@@ -1,8 +1,11 @@
-import { createClerkClient } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { getCachedOrganizations, type CachedOrg } from "@/shared/auth/clerk-cache";
+import {
+  getCachedOrganizations,
+  getCachedOrganizationById,
+  type CachedOrg,
+} from "@/shared/auth/clerk-cache";
 import type { Metadata } from "next";
 import ProductGalleryPlayer from "@/features/catalog/components/product-detail/ProductGalleryPlayer";
 import WishlistButton from "@/features/catalog/components/product-detail/WishlistButton";
@@ -134,22 +137,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
   }
 
   // 2. Fetch Seller Organization from Clerk (Optimized with cached lookup + fallback)
-  const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
   let orgDetails: CachedOrg | null = null;
 
-  const cachedOrgs = await getCachedOrganizations(client);
+  const cachedOrgs = await getCachedOrganizations();
   orgDetails = cachedOrgs.find((o) => o.id === product.orgId) || null;
 
-  // Fallback: If not in cached list, query Clerk API directly
+  // Fallback: If not in cached list, query Clerk API inside cached helper
   if (!orgDetails) {
-    const org = await client.organizations.getOrganization({ organizationId: product.orgId });
-    orgDetails = {
-      id: org.id,
-      name: org.name,
-      slug: org.slug,
-      imageUrl: org.imageUrl,
-      publicMetadata: (org.publicMetadata as CachedOrg["publicMetadata"]) || {},
-    };
+    orgDetails = await getCachedOrganizationById(product.orgId);
   }
 
   const vendorName = orgDetails ? orgDetails.name : "Unknown Vendor";

@@ -157,6 +157,72 @@ export async function getCachedOrganizations(
 }
 
 /**
+ * Retrieves a single Clerk organization by ID using Next.js unstable_cache.
+ */
+export const getCachedOrganizationById = cache((orgId: string) =>
+  unstable_cache(
+    async (): Promise<CachedOrg | null> => {
+      try {
+        logger.info(`Fetching organization ${orgId} from Clerk API in unstable_cache`);
+        const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const org = await client.organizations.getOrganization({ organizationId: orgId });
+        if (!org) return null;
+        return {
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+          imageUrl: org.imageUrl,
+          publicMetadata: sanitizeVendorPublicMetadata(
+            (org.publicMetadata as Record<string, unknown> | undefined) ?? {},
+          ),
+        };
+      } catch (err) {
+        logger.error(`Failed to fetch organization ${orgId} from Clerk API`, err);
+        return null;
+      }
+    },
+    ["clerk-organization-by-id", orgId],
+    {
+      tags: ["clerk-organizations", `clerk-org-${orgId}`],
+      revalidate: 300,
+    },
+  )(),
+);
+
+/**
+ * Retrieves a single Clerk organization by Slug using Next.js unstable_cache.
+ */
+export const getCachedOrganizationBySlug = cache((slug: string) =>
+  unstable_cache(
+    async (): Promise<CachedOrg | null> => {
+      try {
+        logger.info(`Fetching organization slug ${slug} from Clerk API in unstable_cache`);
+        const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const org = await client.organizations.getOrganization({ slug });
+        if (!org) return null;
+        return {
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+          imageUrl: org.imageUrl,
+          publicMetadata: sanitizeVendorPublicMetadata(
+            (org.publicMetadata as Record<string, unknown> | undefined) ?? {},
+          ),
+        };
+      } catch (err) {
+        logger.error(`Failed to fetch organization slug ${slug} from Clerk API`, err);
+        return null;
+      }
+    },
+    ["clerk-organization-by-slug", slug],
+    {
+      tags: ["clerk-organizations", `clerk-org-slug-${slug}`],
+      revalidate: 300,
+    },
+  )(),
+);
+
+/**
  * Retrieves the raw list of Clerk organizations using Next.js unstable_cache for superadmins.
  */
 export async function getSuperadminOrganizations(
