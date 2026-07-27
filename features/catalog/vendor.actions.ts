@@ -15,6 +15,7 @@ import { getPremiumStatus, DEFAULT_MAX_LISTING_COUNT } from "@/features/inventor
 import { validateStockAvailabilityId } from "@/features/inventory/availability.server";
 import { isAllowedCloudinaryDeliveryUrl } from "@/shared/media/cloudinary-url";
 import { deleteCloudinaryAsset } from "@/shared/media/cloudinary-server";
+import { getOrgCurrencySettings } from "@/shared/currency/exchange-rates.service";
 import { z } from "zod/v3";
 import { vendorAction, orgAdminAction, ActionError } from "@/lib/safe-action";
 
@@ -104,6 +105,8 @@ export const addProductAction = vendorAction
         resolvedStockAvailability = availability.id;
       }
 
+      const orgCurrency = await getOrgCurrencySettings(orgId);
+
       // Secure Insert within a database transaction
       const newProduct = await db.transaction(async (tx) => {
         const [prod] = await tx
@@ -113,6 +116,7 @@ export const addProductAction = vendorAction
             type: parsedInput.type,
             description: parsedInput.description,
             price: priceInCents,
+            currency: orgCurrency.baseCurrency || "USD",
             imageUrl: parsedInput.imageUrl || null,
             media: mediaPayload,
             orgId: orgId, // Tied securely to user's current session orgId

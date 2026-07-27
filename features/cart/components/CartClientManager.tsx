@@ -23,6 +23,7 @@ import {
   toggleProductInSelection,
 } from "@/features/cart/vendor-checkout";
 import { toast } from "sonner";
+import { useCurrency } from "@/shared/currency/context/currency-context";
 
 import { CartLoadingState } from "./CartStates";
 import { CheckoutSuccessState } from "./CheckoutSuccessState";
@@ -209,11 +210,9 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     }
   };
 
+  const { format } = useCurrency();
   const formatPrice = (cents: number) => {
-    return (cents / 100).toLocaleString("en-US", {
-      style: "currency",
-      currency: "USD",
-    });
+    return format(cents, "USD");
   };
 
   const handleCheckout = async (optionsLoadingArg: boolean) => {

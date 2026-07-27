@@ -66,6 +66,7 @@ export const products = pgTable(
     type: text("type").default("product").notNull(),
     description: text("description"),
     price: integer("price").notNull(),
+    currency: text("currency").default("LKR").notNull(),
     imageUrl: text("image_url"),
     orgId: text("org_id").notNull(),
     categoryId: uuid("category_id").references(() => categories.id),

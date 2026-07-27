@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
 import { updateProductAction } from "@/features/catalog/superadmin.actions";
 import { AccessibleModal } from "@/shared/ui/AccessibleModal";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 import type { Product, Category } from "../ProductsTab";
 
 interface ProductEditModalProps {
@@ -197,7 +198,7 @@ export function ProductEditModal({
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
-              Price (USD)
+              Price ({product.currency || DEFAULT_CURRENCY})
             </label>
             <input
               required

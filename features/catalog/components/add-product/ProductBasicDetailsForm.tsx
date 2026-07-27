@@ -3,8 +3,14 @@
 import React from "react";
 import { useAddProduct } from "./AddProductContext";
 import CategorySelector from "@/shared/ui/CategorySelector";
+import { useCurrency } from "@/shared/currency/context/currency-context";
+import { SUPPORTED_CURRENCIES } from "@/shared/currency/config";
 
 export default function ProductBasicDetailsForm() {
+  const { selectedCurrency } = useCurrency();
+  const activeCurrencyInfo =
+    SUPPORTED_CURRENCIES.find((c) => c.code === selectedCurrency) || SUPPORTED_CURRENCIES[0];
+
   const {
     type,
     setType,
@@ -90,11 +96,11 @@ export default function ProductBasicDetailsForm() {
       >
         <div className="space-y-1.5">
           <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
-            Price (USD) <span className="text-rose-500">*</span>
+            Price ({selectedCurrency}) <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-sm font-medium">
-              $
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-xs font-mono font-bold">
+              {activeCurrencyInfo.symbol}
             </span>
             <input
               type="number"

@@ -10,6 +10,7 @@ export interface VendorProduct {
   type: string;
   description: string | null;
   price: number;
+  currency?: string | null;
   imageUrl: string | null;
   categoryName: string | null;
   categorySlug: string | null;

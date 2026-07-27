@@ -3,6 +3,8 @@ import Image from "next/image";
 import type { StorefrontProps } from "./types";
 import { isVideoUrl } from "@/shared/media/media";
 import AddToCartButton from "@/features/cart/components/AddToCartButton";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -144,11 +146,6 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => {
-                const formattedPrice = (product.price / 100).toLocaleString("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                });
-
                 return (
                   <div
                     key={product.id}
@@ -209,7 +206,10 @@ export default function DistarTechStorefront({ org, products }: StorefrontProps)
 
                     <div className="px-5 pb-5 flex items-center justify-between border-t border-zinc-900 pt-4">
                       <span className="text-sm font-mono font-extrabold text-cyan-400">
-                        {formattedPrice}
+                        <ProductPriceDisplay
+                          priceInSubunits={product.price}
+                          baseCurrency={product.currency || DEFAULT_CURRENCY}
+                        />
                       </span>
                       <div className="flex items-center gap-2">
                         <AddToCartButton

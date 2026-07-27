@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, jsonb, index, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, jsonb, index, boolean, real } from "drizzle-orm/pg-core";
 import { encryptedText } from "./custom-types";
 
 export const systemSettings = pgTable("system_settings", {
@@ -69,4 +69,27 @@ export const processedWebhooks = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => [index("idx_processed_webhooks_created_at").on(t.createdAt)],
+);
+
+export const orgSettings = pgTable("org_settings", {
+  orgId: text("org_id").primaryKey(),
+  baseCurrency: text("base_currency").default("LKR").notNull(),
+  fxMarkupPercent: real("fx_markup_percent").default(0).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const exchangeRates = pgTable(
+  "exchange_rates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    fromCurrency: text("from_currency").notNull(),
+    toCurrency: text("to_currency").notNull(),
+    rate: real("rate").notNull(),
+    provider: text("provider").default("ecb").notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => [
+    index("idx_exchange_rates_pair").on(t.fromCurrency, t.toCurrency),
+    index("idx_exchange_rates_updated_at").on(t.updatedAt),
+  ],
 );

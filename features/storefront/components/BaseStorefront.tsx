@@ -3,6 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { isVideoUrl } from "@/shared/media/media";
 import AddToCartButton from "@/features/cart/components/AddToCartButton";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 import type { StorefrontProps } from "./custom/types";
 
 export interface BaseStorefrontProps extends StorefrontProps {
@@ -237,7 +239,12 @@ export default function BaseStorefront({
                     </div>
                   </Link>
                   <div className="p-4 border-t border-zinc-100 dark:border-zinc-900/60 flex items-center justify-between gap-2">
-                    <span className="text-sm font-extrabold">{formattedPrice}</span>
+                    <span className="text-sm font-extrabold">
+                      <ProductPriceDisplay
+                        priceInSubunits={product.price}
+                        baseCurrency={product.currency || DEFAULT_CURRENCY}
+                      />
+                    </span>
                     <AddToCartButton
                       product={{
                         id: product.id,
