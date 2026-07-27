@@ -1,3 +1,17 @@
+# [1.3.0](https://github.com/Dilnova/dilnova/compare/v1.2.5...v1.3.0) (2026-07-27)
+
+### Bug Fixes
+
+- **cron:** update fx-rates schedule to run daily at midnight ([ff0d59e](https://github.com/Dilnova/dilnova/commit/ff0d59e0dc8ad676b22e4d4ecc326d4527f93faf))
+
+### Features
+
+- add NotifyMeButton component for product waitlist subscriptions ([fec7cac](https://github.com/Dilnova/dilnova/commit/fec7cac85cc349c823b931f241a57777611799e9))
+- add preorder functionality and waitlist feature ([3d1ec39](https://github.com/Dilnova/dilnova/commit/3d1ec39a7ec96f73b492c7c872c1fa380decb9f5))
+- **auth:** integrate server-side authentication and session context in RootLayout ([f72a9fc](https://github.com/Dilnova/dilnova/commit/f72a9fcda6a85e78abcdd46565ab87fbe76819d1))
+- **currency:** implement multi-currency support with exchange rates and currency selection ([7baa04d](https://github.com/Dilnova/dilnova/commit/7baa04dc3cc809c0c3271f4ebb618daebaca81fc))
+- **ui:** enhance organization switcher and user button styles for better responsiveness ([aeaec31](https://github.com/Dilnova/dilnova/commit/aeaec311994865c4e13039261a0b68d3247e45c5))
+
 ## [1.2.5](https://github.com/Dilnova/dilnova/compare/v1.2.4...v1.2.5) (2026-07-27)
 
 ### Bug Fixes
