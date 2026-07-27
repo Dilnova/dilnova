@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { clerkClient, auth } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
 import { eq, inArray, sql } from "drizzle-orm";
@@ -30,7 +30,7 @@ import { getUserWishlistIdsAction } from "@/features/catalog/product-detail.acti
 
 import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 
-export const revalidate = 120; // Cache for 2m (ISR) to reduce free-tier edge function invocations; vendor actions revalidate on-demand
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   searchParams: Promise<{
@@ -51,54 +51,41 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const params = await searchParams;
   const currentSearch = params.search || "";
   const currentCategorySlug = params.category || "";
-  const currentType = params.type || "all";
+  const currentType = params.type || "";
 
   const systemName = await getSystemSetting("system_name", "Dilnova");
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
 
   let title = `Products & Services Catalog | ${systemName}`;
-  let description = `Browse local multi-vendor products and services available on ${systemName} Commerce Hub.`;
+  let description = `Explore available physical products, digital items, and professional services across independent vendors on ${systemName}.`;
 
-  if (currentCategorySlug) {
-    try {
-      const [selectedCategory] = await db
-        .select({ name: schema.categories.name })
-        .from(schema.categories)
-        .where(eq(schema.categories.slug, currentCategorySlug))
-        .limit(1);
-
-      if (selectedCategory) {
-        title = `${selectedCategory.name} - Products & Services | ${systemName}`;
-        description = `Explore the best ${selectedCategory.name.toLowerCase()} catalog, matching products, and services offered by our vendors on ${systemName}.`;
-      }
-    } catch {
-      // ignore
-    }
-  } else if (currentSearch) {
-    title = `Search results for "${currentSearch}" | ${systemName}`;
-    description = `View all multi-vendor products and services matching search term "${currentSearch}" on ${systemName}.`;
-  } else if (currentType !== "all") {
-    const typeLabel = currentType === "product" ? "Products" : "Services";
-    title = `Browse ${typeLabel} | ${systemName}`;
-    description = `Explore high-quality vendor ${typeLabel.toLowerCase()} listings on ${systemName} Commerce Hub.`;
+  if (currentSearch) {
+    title = `"${currentSearch}" Search Results | ${systemName}`;
+    description = `Browse multi-vendor products matching "${currentSearch}" on ${systemName}.`;
+  } else if (currentCategorySlug) {
+    const formattedCategory = currentCategorySlug
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+    title = `${formattedCategory} Products | ${systemName}`;
+    description = `Shop ${formattedCategory} items from verified seller organizations on ${systemName}.`;
+  } else if (currentType && currentType !== "all") {
+    const formattedType = currentType.charAt(0).toUpperCase() + currentType.slice(1);
+    title = `${formattedType} Listings | ${systemName}`;
+    description = `Browse ${formattedType} catalog offerings on ${systemName}.`;
   }
-
-  const canonicalPath = currentCategorySlug
-    ? `/products?category=${currentCategorySlug}`
-    : "/products";
 
   return {
     title,
     description,
     alternates: {
-      canonical: canonicalPath,
+      canonical: "/products",
     },
     openGraph: {
       title,
       description,
-      url: `${baseUrl}${canonicalPath}`,
-      siteName: systemName,
       type: "website",
+      url: `${baseUrl}/products`,
     },
     twitter: {
       card: "summary_large_image",
@@ -118,7 +105,7 @@ export default async function ProductsCatalogPage({ searchParams }: PageProps) {
   const [categoriesList, stockAvailabilityCatalog, organizations] = await Promise.all([
     getCachedCategories(),
     getStockAvailabilityCatalog(),
-    clerkClient().then((client) => getCachedOrganizations(client)),
+    getCachedOrganizations(),
   ]);
 
   const vendorOrgId = resolveVendorOrgId(catalogQuery.vendorSlug, organizations);

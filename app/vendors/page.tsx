@@ -1,4 +1,3 @@
-import { clerkClient } from "@clerk/nextjs/server";
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
@@ -16,8 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function VendorsDirectoryPage() {
-  const client = await clerkClient();
-  const vendors = await getCachedOrganizations(client);
+  const vendors = await getCachedOrganizations();
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans pb-24">

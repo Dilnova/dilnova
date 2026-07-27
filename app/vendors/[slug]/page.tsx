@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { clerkClient } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
 import { customStorefronts } from "@/features/storefront/components/custom/registry";
 import DefaultStorefront from "@/features/storefront/components/DefaultStorefront";
 import { getVendorProducts } from "@/features/storefront/get-vendor-products";
 import { enrichVendorProductsWithPurchaseFlags } from "@/features/storefront/purchase";
 import type { VendorOrg } from "@/features/storefront/components/custom/types";
-import { getCachedOrganizations } from "@/shared/auth/clerk-cache";
+import { getCachedOrganizations, getCachedOrganizationBySlug } from "@/shared/auth/clerk-cache";
 import { sanitizeVendorPublicMetadata } from "@/shared/media/sanitize-vendor-public-metadata";
 import { getSystemSetting } from "@/shared/platform/settings";
 
@@ -18,7 +17,6 @@ export const revalidate = 300; // Cache and regenerate page in background at mos
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const client = await clerkClient();
   const systemName = await getSystemSetting("system_name", "Dilnova");
 
   const isDistarSubVendor = [
@@ -30,7 +28,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   let clerkOrg = null;
   try {
-    const orgs = await getCachedOrganizations(client);
+    const orgs = await getCachedOrganizations();
     if (isDistarSubVendor) {
       clerkOrg = orgs.find(
         (o) =>
@@ -43,20 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
 
     if (!clerkOrg) {
-      try {
-        const o = await client.organizations.getOrganization({ slug });
-        if (o) {
-          clerkOrg = {
-            id: o.id,
-            name: o.name,
-            slug: o.slug,
-            imageUrl: o.imageUrl,
-            publicMetadata: o.publicMetadata,
-          };
-        }
-      } catch {
-        // ignore
-      }
+      clerkOrg = await getCachedOrganizationBySlug(slug);
     }
   } catch {
     // ignore
@@ -117,7 +102,6 @@ export async function generateStaticParams() {
  */
 export default async function VendorProfilePage({ params }: PageProps) {
   const { slug } = await params;
-  const client = await clerkClient();
 
   const isDistarSubVendor = [
     "distar-hardware",
@@ -129,7 +113,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
   // 1. Fetch/resolve organization from Clerk using cache
   let clerkOrg = null;
   try {
-    const orgs = await getCachedOrganizations(client);
+    const orgs = await getCachedOrganizations();
     if (isDistarSubVendor) {
       clerkOrg = orgs.find(
         (o) =>
@@ -143,20 +127,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
 
     // Direct lookup fallback if not found in the cached list (for new orgs)
     if (!clerkOrg) {
-      try {
-        const o = await client.organizations.getOrganization({ slug });
-        if (o) {
-          clerkOrg = {
-            id: o.id,
-            name: o.name,
-            slug: o.slug,
-            imageUrl: o.imageUrl,
-            publicMetadata: o.publicMetadata,
-          };
-        }
-      } catch {
-        // ignore
-      }
+      clerkOrg = await getCachedOrganizationBySlug(slug);
     }
   } catch (e) {
     console.error(`[Vendor Page] Failed to resolve org for slug: ${slug}`, e);
