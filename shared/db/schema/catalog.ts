@@ -76,6 +76,11 @@ export const products = pgTable(
     barcodes: jsonb("barcodes").$type<string[]>().default([]).notNull(),
     status: text("status").default("active").notNull(),
     attributes: jsonb("attributes").$type<Record<string, unknown>>().default({}).notNull(),
+    isPreorder: boolean("is_preorder").default(false).notNull(),
+    preorderType: text("preorder_type").default("full_upfront").notNull(),
+    preorderDepositAmount: integer("preorder_deposit_amount"),
+    preorderReleaseDate: timestamp("preorder_release_date"),
+    preorderMaxQuantity: integer("preorder_max_quantity"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -152,3 +157,23 @@ export const serviceConfigurations = pgTable("service_configurations", {
   bufferMinutes: integer("buffer_minutes").default(0).notNull(),
   requiresResourceAllocation: boolean("requires_resource_allocation").default(false).notNull(),
 });
+
+export const productWaitlists = pgTable(
+  "product_waitlists",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    email: encryptedText("email").notNull(),
+    emailHash: text("email_hash"),
+    userId: text("user_id"),
+    notifiedAt: timestamp("notified_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => [
+    unique("product_waitlist_product_email_unique").on(t.productId, t.emailHash),
+    index("idx_product_waitlists_product_id").on(t.productId),
+    index("idx_product_waitlists_email_hash").on(t.emailHash),
+  ],
+);

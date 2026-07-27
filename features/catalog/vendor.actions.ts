@@ -119,8 +119,17 @@ export const addProductAction = vendorAction
             currency: orgCurrency.baseCurrency || "USD",
             imageUrl: parsedInput.imageUrl || null,
             media: mediaPayload,
-            orgId: orgId, // Tied securely to user's current session orgId
+            orgId: orgId,
             categoryId: parsedInput.categoryId || null,
+            // Pre-order fields
+            isPreorder: resolvedStockAvailability === "pre_order",
+            preorderType: parsedInput.preorderType ?? "full_upfront",
+            preorderDepositAmount:
+              parsedInput.preorderDepositAmount !== null &&
+              parsedInput.preorderDepositAmount !== undefined
+                ? Math.round(parsedInput.preorderDepositAmount * 100)
+                : null,
+            preorderMaxQuantity: parsedInput.preorderMaxQuantity ?? null,
           })
           .returning();
 
@@ -130,7 +139,15 @@ export const addProductAction = vendorAction
 
         // Initialize inventory entry if product type is 'product'
         if (prod.type === "product") {
-          const initialQty = parsedInput.quantity ?? 0;
+          // ── Server-side quantity guard ─────────────────────────────────────
+          // These statuses must ALWAYS start with 0 quantity regardless of
+          // what the client sends. This prevents UI bypass / API abuse.
+          const ZERO_QUANTITY_STATUSES = ["out_of_stock", "coming_soon", "pre_order"];
+          const rawQty = parsedInput.quantity ?? 0;
+          const initialQty = ZERO_QUANTITY_STATUSES.includes(resolvedStockAvailability)
+            ? 0
+            : rawQty;
+          // ── End quantity guard ─────────────────────────────────────────────
 
           const [inv] = await tx
             .insert(schema.inventory)
