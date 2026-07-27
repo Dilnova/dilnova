@@ -7,21 +7,57 @@ import HeaderNav from "@/shared/ui/HeaderNav";
 import { OrganizationSwitcher } from "@clerk/nextjs";
 import React from "react";
 
-export function useSessionContext() {
+export type SessionContextData = {
+  isSuperAdmin: boolean;
+  canCreateOrg: boolean;
+  billingActive: boolean;
+} | null;
+
+export type InitialAuthData = {
+  userId: string | null;
+  orgId: string | null;
+  orgRole: string | null;
+} | null;
+
+export function useSessionContext(initialData?: SessionContextData) {
   const { isLoaded, isSignedIn } = useAuth();
 
   const { data, isLoading } = useSWR(
     isLoaded && isSignedIn ? "client-session-context" : null,
     () => getClientSessionContextAction(),
-    { revalidateOnFocus: false, dedupingInterval: 60000 },
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+      fallbackData: initialData ?? undefined,
+    },
   );
 
-  return { data, isLoading: !isLoaded || (isSignedIn && isLoading) };
+  return {
+    data: data ?? initialData ?? null,
+    isLoading: (!isLoaded && !initialData) || (isSignedIn && isLoading && !data && !initialData),
+  };
 }
 
-export function DynamicHeaderNav({ mobileExtra }: { mobileExtra: React.ReactNode }) {
-  const { orgId, orgRole, userId } = useAuth();
-  const { data } = useSessionContext();
+export function DynamicHeaderNav({
+  mobileExtra,
+  initialAuth,
+  initialSessionContext,
+}: {
+  mobileExtra: React.ReactNode;
+  initialAuth?: InitialAuthData;
+  initialSessionContext?: SessionContextData;
+}) {
+  const clientAuth = useAuth();
+
+  const userId = clientAuth.isLoaded
+    ? clientAuth.userId
+    : (initialAuth?.userId ?? clientAuth.userId);
+  const orgId = clientAuth.isLoaded ? clientAuth.orgId : (initialAuth?.orgId ?? clientAuth.orgId);
+  const orgRole = clientAuth.isLoaded
+    ? clientAuth.orgRole
+    : (initialAuth?.orgRole ?? clientAuth.orgRole);
+
+  const { data } = useSessionContext(initialSessionContext);
 
   const links: { href: string; label: string; colorClass?: string }[] = [
     { href: "/vendors", label: "Vendors" },
@@ -86,8 +122,12 @@ export function DynamicHeaderNav({ mobileExtra }: { mobileExtra: React.ReactNode
   return <HeaderNav links={links} mobileExtra={mobileExtra} />;
 }
 
-export function DynamicOrganizationSwitcher() {
-  const { data } = useSessionContext();
+export function DynamicOrganizationSwitcher({
+  initialSessionContext,
+}: {
+  initialSessionContext?: SessionContextData;
+}) {
+  const { data } = useSessionContext(initialSessionContext);
   const canCreateOrg = data?.canCreateOrg ?? false;
 
   return (

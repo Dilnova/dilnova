@@ -27,6 +27,8 @@ import { GlobalNotificationListener } from "@/shared/ui/notifications/GlobalNoti
 import { Inter } from "next/font/google";
 
 import { DynamicHeaderNav, DynamicOrganizationSwitcher } from "@/shared/ui/DynamicHeader";
+import { auth } from "@clerk/nextjs/server";
+import { getClientSessionContextAction } from "@/shared/auth/session.actions";
 
 const interFont = Inter({
   subsets: ["latin"],
@@ -107,6 +109,15 @@ export default async function RootLayout({
     const logoUrl = await getSystemSetting("system_logo", "");
     const systemName = await getSystemSetting("system_name", "Dilnova");
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+
+    // Fetch initial auth & session context server-side to prevent dynamic header pop-in delay
+    const { userId, orgId, orgRole } = await auth();
+    const initialAuth = {
+      userId: userId ?? null,
+      orgId: orgId ?? null,
+      orgRole: orgRole ?? null,
+    };
+    const initialSessionContext = userId ? await getClientSessionContextAction() : null;
 
     // Enterprise-grade dynamic Beta Lock check
     const isBetaLocked = (await getSystemSetting("enable_beta_lock", "false")) === "true";
@@ -207,7 +218,11 @@ export default async function RootLayout({
                     </Link>
                     {/* Removed overflow-hidden to prevent clipping the mobile hamburger menu */}
                     <div className="flex-1 flex items-center min-w-0">
-                      <DynamicHeaderNav mobileExtra={<LanguageSelector />} />
+                      <DynamicHeaderNav
+                        initialAuth={initialAuth}
+                        initialSessionContext={initialSessionContext}
+                        mobileExtra={<LanguageSelector />}
+                      />
                     </div>
                   </div>
 
@@ -225,7 +240,9 @@ export default async function RootLayout({
 
                     <Show when="signed-in">
                       <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4">
-                        <DynamicOrganizationSwitcher />
+                        <DynamicOrganizationSwitcher
+                          initialSessionContext={initialSessionContext}
+                        />
                         <UserButton />
                       </div>
                     </Show>
