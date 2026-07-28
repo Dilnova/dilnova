@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { addProductAction } from "@/features/catalog/vendor.actions";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
+import { logger } from "@/shared/logging/logger";
 import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
 
 interface Category {
@@ -189,7 +190,7 @@ export function AddProductProvider({
           toast.error(result.error || "Upload failed");
         }
       } catch (err) {
-        console.error("Error", err);
+        logger.error("Media upload error in AddProductContext", err);
         toast.error("Upload error. Please try again.");
       } finally {
         setIsUploading(false);

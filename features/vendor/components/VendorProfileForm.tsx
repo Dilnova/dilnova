@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef } from "react";
 import { updateVendorMetadata } from "@/features/vendor/actions";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
+import { logger } from "@/shared/logging/logger";
 import { toast } from "sonner";
 import Image from "next/image";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
@@ -84,7 +85,7 @@ export default function VendorProfileForm({
         toast.error(result.error || "Banner upload failed.");
       }
     } catch (err) {
-      console.error("Error", err);
+      logger.error("Banner upload error in VendorProfileForm", err);
       toast.error("An error occurred during banner upload.");
     } finally {
       setIsBannerUploading(false);

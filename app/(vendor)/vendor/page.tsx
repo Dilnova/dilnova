@@ -31,7 +31,10 @@ interface PageProps {
 
 export default async function VendorPage({ searchParams }: PageProps) {
   const { orgId, orgRole, userId } = await auth();
-  const user = await currentUser().catch(() => null);
+  const user = await currentUser().catch((err) => {
+    logger.warn("Failed to fetch currentUser in VendorPage", { error: err });
+    return null;
+  });
 
   if (!userId) {
     redirect("/unauthorized");

@@ -5,6 +5,7 @@ import { useState, useTransition, useRef } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
+import { logger } from "@/shared/logging/logger";
 import { updateSystemSettingAction } from "@/features/superadmin/settings.actions";
 import CheckoutOptionsSettings from "../CheckoutOptionsSettings";
 import { PendingOverlay } from "@/shared/ui/PendingOverlay";
@@ -93,7 +94,7 @@ export default function SettingsTab({
         triggerNotification(false, result.error || "Logo upload failed.");
       }
     } catch (err) {
-      console.error("Error", err);
+      logger.error("Logo upload error", err);
       triggerNotification(false, "An error occurred during logo upload.");
     } finally {
       setIsLogoUploading(false);
@@ -129,7 +130,7 @@ export default function SettingsTab({
         triggerNotification(false, result.error || "Favicon upload failed.");
       }
     } catch (err) {
-      console.error("Error", err);
+      logger.error("Favicon upload error", err);
       triggerNotification(false, "An error occurred during favicon upload.");
     } finally {
       setIsFaviconUploading(false);

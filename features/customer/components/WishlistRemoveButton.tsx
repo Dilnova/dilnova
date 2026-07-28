@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toggleWishlistAction } from "@/features/catalog/product-detail.actions";
+import { logger } from "@/shared/logging/logger";
 
 interface WishlistRemoveButtonProps {
   productId: string;
@@ -18,7 +19,7 @@ export default function WishlistRemoveButton({ productId }: WishlistRemoveButton
         await toggleWishlistAction({ productId });
         router.refresh();
       } catch (err) {
-        console.error("Failed to remove wishlist item", err);
+        logger.error("Failed to remove wishlist item", err);
       }
     });
   };

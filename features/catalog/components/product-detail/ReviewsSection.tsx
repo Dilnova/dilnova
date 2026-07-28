@@ -12,6 +12,7 @@ import Image from "next/image";
 import SignInPrompt from "@/shared/ui/SignInPrompt";
 import { toast } from "sonner";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
+import { logger } from "@/shared/logging/logger";
 
 interface Review {
   id: string;
@@ -88,7 +89,7 @@ export default function ReviewsSection({
         );
         router.refresh();
       } catch (err) {
-        console.error("Error submitting review:", err);
+        logger.error("Error submitting review", err);
         toast.error(err instanceof Error ? err.message : "Something went wrong.");
       }
     });
