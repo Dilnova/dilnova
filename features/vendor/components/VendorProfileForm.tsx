@@ -3,7 +3,11 @@
 import { useState, useTransition, useRef } from "react";
 import { updateVendorMetadata } from "@/features/vendor/actions";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
+<<<<<<< HEAD
 import * as Sentry from "@sentry/nextjs";
+=======
+import { logger } from "@/shared/logging/logger";
+>>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
 import { toast } from "sonner";
 import Image from "next/image";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
@@ -85,7 +89,11 @@ export default function VendorProfileForm({
         toast.error(result.error || "Banner upload failed.");
       }
     } catch (err) {
+<<<<<<< HEAD
       Sentry.captureException(err);
+=======
+      logger.error("Banner upload error in VendorProfileForm", err);
+>>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
       toast.error("An error occurred during banner upload.");
     } finally {
       setIsBannerUploading(false);

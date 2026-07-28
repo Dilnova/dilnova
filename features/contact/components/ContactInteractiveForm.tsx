@@ -6,7 +6,11 @@ import { toast } from "sonner";
 import { Spinner } from "@/shared/ui/loading";
 import { useUser } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
+<<<<<<< HEAD
 import * as Sentry from "@sentry/nextjs";
+=======
+import { logger } from "@/shared/logging/logger";
+>>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
 
 type CategoryType = "collaboration" | "registration" | "info";
 
@@ -54,7 +58,11 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
             });
           }
         } catch (err) {
+<<<<<<< HEAD
           Sentry.captureException(err);
+=======
+          logger.error("Failed to render Turnstile widget", err);
+>>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
         }
       } else if (checkCount > 50) {
         // Stop polling after 5 seconds

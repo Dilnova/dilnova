@@ -5,7 +5,11 @@ import { useState, useTransition, useRef } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
+<<<<<<< HEAD
 import * as Sentry from "@sentry/nextjs";
+=======
+import { logger } from "@/shared/logging/logger";
+>>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
 import { updateSystemSettingAction } from "@/features/superadmin/settings.actions";
 import CheckoutOptionsSettings from "../CheckoutOptionsSettings";
 import { PendingOverlay } from "@/shared/ui/PendingOverlay";
@@ -94,7 +98,11 @@ export default function SettingsTab({
         triggerNotification(false, result.error || "Logo upload failed.");
       }
     } catch (err) {
+<<<<<<< HEAD
       Sentry.captureException(err);
+=======
+      logger.error("Logo upload error", err);
+>>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
       triggerNotification(false, "An error occurred during logo upload.");
     } finally {
       setIsLogoUploading(false);
@@ -130,7 +138,11 @@ export default function SettingsTab({
         triggerNotification(false, result.error || "Favicon upload failed.");
       }
     } catch (err) {
+<<<<<<< HEAD
       Sentry.captureException(err);
+=======
+      logger.error("Favicon upload error", err);
+>>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
       triggerNotification(false, "An error occurred during favicon upload.");
     } finally {
       setIsFaviconUploading(false);

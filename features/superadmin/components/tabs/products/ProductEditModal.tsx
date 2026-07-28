@@ -4,7 +4,11 @@ import React, { useState, useTransition, useRef, useEffect } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
+<<<<<<< HEAD
 import * as Sentry from "@sentry/nextjs";
+=======
+import { logger } from "@/shared/logging/logger";
+>>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
 import { updateProductAction } from "@/features/catalog/superadmin.actions";
 import { AccessibleModal } from "@/shared/ui/AccessibleModal";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
@@ -95,7 +99,11 @@ export function ProductEditModal({
         triggerNotification(false, result.error || "Upload failed");
       }
     } catch (err) {
+<<<<<<< HEAD
       Sentry.captureException(err);
+=======
+      logger.error("Media upload error in ProductEditModal", err);
+>>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
       triggerNotification(false, "An error occurred during media upload.");
     } finally {
       setIsUploading(false);

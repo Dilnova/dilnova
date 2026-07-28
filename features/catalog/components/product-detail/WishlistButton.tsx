@@ -4,7 +4,11 @@ import { useState, useTransition, useEffect } from "react";
 import { SignInButton, useAuth } from "@clerk/nextjs";
 import { useClerkAuthRedirectUrl } from "@/features/auth/hooks/use-clerk-auth-redirect-url";
 import { toggleWishlistAction } from "@/features/catalog/product-detail.actions";
+<<<<<<< HEAD
 import * as Sentry from "@sentry/nextjs";
+=======
+import { logger } from "@/shared/logging/logger";
+>>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
 
 interface WishlistButtonProps {
   productId: string;
@@ -76,7 +80,11 @@ export default function WishlistButton({
           throw new Error(res?.serverError || "Failed to toggle wishlist");
         }
       } catch (err) {
+<<<<<<< HEAD
         Sentry.captureException(err);
+=======
+        logger.error("Failed to toggle wishlist", err);
+>>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
         // Rollback state on error
         setIsFavorited(previousState);
       }
