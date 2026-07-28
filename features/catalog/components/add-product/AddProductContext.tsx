@@ -114,7 +114,7 @@ export function AddProductProvider({
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [quantity, setQuantity] = useState("1");
+  const [quantity, setQuantity] = useState("3");
   const [stockAvailability, setStockAvailability] = useState(
     stockAvailabilityOptions.find((o) => o.id === "in_stock")?.id ||
       stockAvailabilityOptions[0]?.id ||
@@ -127,15 +127,18 @@ export function AddProductProvider({
   const [preorderMaxQuantity, setPreorderMaxQuantity] = useState("");
   const [selectedBranchId, setSelectedBranchId] = useState("");
 
-  // Reset price & quantity when a locking status is selected
+  // Reset price & quantity when availability status changes
   useEffect(() => {
     if (stockAvailability === "coming_soon") {
       setPrice("");
       setQuantity("0");
     } else if (stockAvailability === "out_of_stock" || stockAvailability === "pre_order") {
       setQuantity("0");
-    } else if (stockAvailability === "in_stock") {
-      setQuantity((prev) => (prev === "0" || prev === "" ? "1" : prev));
+    } else if (stockAvailability === "in_stock" || stockAvailability === "limited_stock") {
+      setQuantity((prev) => {
+        const num = parseInt(prev, 10);
+        return isNaN(num) || num < 1 ? "1" : prev;
+      });
     }
   }, [stockAvailability]);
 
@@ -242,9 +245,12 @@ export function AddProductProvider({
         toast.error("Please enter a valid non-negative quantity.");
         return;
       }
-      if (stockAvailability === "in_stock" && quantityNum <= 0) {
+      if (
+        (stockAvailability === "in_stock" || stockAvailability === "limited_stock") &&
+        quantityNum < 1
+      ) {
         toast.error(
-          "Initial Quantity must be at least 1 unit when status is 'In Stock'. For 0 stock, select 'Out of Stock'.",
+          "Initial Quantity must be at least 1 unit when status is 'In Stock' or 'Limited Stock'. For 0 stock, select 'Out of Stock'.",
         );
         return;
       }

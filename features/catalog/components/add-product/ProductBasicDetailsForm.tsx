@@ -181,7 +181,11 @@ export default function ProductBasicDetailsForm() {
               </label>
               <input
                 type="number"
-                min={stockAvailability === "in_stock" ? "1" : "0"}
+                min={
+                  stockAvailability === "in_stock" || stockAvailability === "limited_stock"
+                    ? "1"
+                    : "0"
+                }
                 step="1"
                 inputMode="numeric"
                 value={
@@ -192,7 +196,11 @@ export default function ProductBasicDetailsForm() {
                     : quantity
                 }
                 onChange={(e) => setQuantity(e.target.value)}
-                placeholder={stockAvailability === "in_stock" ? "1" : "0"}
+                placeholder={
+                  stockAvailability === "in_stock" || stockAvailability === "limited_stock"
+                    ? "1"
+                    : "0"
+                }
                 disabled={
                   stockAvailability === "coming_soon" ||
                   stockAvailability === "out_of_stock" ||
@@ -207,9 +215,13 @@ export default function ProductBasicDetailsForm() {
                 }`}
               />
               {stockAvailability === "in_stock" && (
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Items set to In Stock require at least 1 initial unit. Select Out of Stock for 0
-                  quantity.
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  In Stock requires at least 1 unit in stock. Select Out of Stock for 0 quantity.
+                </p>
+              )}
+              {stockAvailability === "limited_stock" && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                  Limited Stock requires at least 1 unit in stock.
                 </p>
               )}
               {stockAvailability === "out_of_stock" && (
