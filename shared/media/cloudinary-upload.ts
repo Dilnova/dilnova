@@ -2,7 +2,7 @@ import {
   createCloudinaryUploadSignatureAction,
   type CloudinaryUploadKind,
 } from "@/features/media/cloudinary.actions";
-import { logger } from "@/shared/logging/logger";
+import * as Sentry from "@sentry/nextjs";
 
 interface UploadProgressEvent {
   percent: number;
@@ -102,9 +102,11 @@ export async function uploadToCloudinary(
           if (xhr.status === 403 && errorMessage.includes("missing permissions")) {
             errorMessage = `Cloudinary upload forbidden: API key lacks write permissions (actions=["create"]). Ensure your CLOUDINARY_API_KEY in environment variables has 'create' / upload permissions enabled in Cloudinary Access Keys.`;
           }
-          logger.error("Cloudinary upload failed", new Error(errorMessage), {
-            status: xhr.status,
-            uploadKind: normalizedOptions.uploadKind ?? "catalog",
+          Sentry.captureException(new Error(errorMessage), {
+            extra: {
+              status: xhr.status,
+              uploadKind: normalizedOptions.uploadKind ?? "catalog",
+            },
           });
           resolve({
             success: false,
@@ -112,8 +114,8 @@ export async function uploadToCloudinary(
           });
         } catch {
           const errStr = `Upload failed with status ${xhr.status}`;
-          logger.error("Cloudinary upload error response parse failed", new Error(errStr), {
-            status: xhr.status,
+          Sentry.captureException(new Error(errStr), {
+            extra: { status: xhr.status },
           });
           resolve({
             success: false,
@@ -125,8 +127,8 @@ export async function uploadToCloudinary(
 
     xhr.onerror = () => {
       const netErrStr = "Network error occurred during upload to Cloudinary.";
-      logger.error("Cloudinary upload network error", new Error(netErrStr), {
-        uploadKind: normalizedOptions.uploadKind ?? "catalog",
+      Sentry.captureException(new Error(netErrStr), {
+        extra: { uploadKind: normalizedOptions.uploadKind ?? "catalog" },
       });
       resolve({
         success: false,

@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { addProductAction } from "@/features/catalog/vendor.actions";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
+import * as Sentry from "@sentry/nextjs";
 import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
 
 interface Category {
@@ -189,7 +190,7 @@ export function AddProductProvider({
           toast.error(result.error || "Upload failed");
         }
       } catch (err) {
-        console.error("Error", err);
+        Sentry.captureException(err);
         toast.error("Upload error. Please try again.");
       } finally {
         setIsUploading(false);
