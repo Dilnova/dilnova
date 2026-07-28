@@ -10,11 +10,7 @@ import {
 import Image from "next/image";
 import SignInPrompt from "@/shared/ui/SignInPrompt";
 import { toast } from "sonner";
-<<<<<<< HEAD
 import * as Sentry from "@sentry/nextjs";
-=======
-import { logger } from "@/shared/logging/logger";
->>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
 
 interface Question {
   id: string;
@@ -66,11 +62,7 @@ export default function QASection({ productId, questions, productOrgId }: QASect
         setQuestionContent("");
         router.refresh();
       } catch (err) {
-<<<<<<< HEAD
         Sentry.captureException(err);
-=======
-        logger.error("Error posting question", err);
->>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
         toast.error(err instanceof Error ? err.message : "Failed to post question.");
       }
     });
@@ -94,11 +86,7 @@ export default function QASection({ productId, questions, productOrgId }: QASect
         setActiveReplyId(null);
         router.refresh();
       } catch (err) {
-<<<<<<< HEAD
         Sentry.captureException(err);
-=======
-        logger.error("Error replying to question", err);
->>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
         toast.error(err instanceof Error ? err.message : "Failed to save answer.");
       }
     });

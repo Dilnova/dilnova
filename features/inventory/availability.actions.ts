@@ -12,7 +12,7 @@ import {
   buildStockAvailabilityCatalogPayload,
 } from "@/features/inventory/availability.shared";
 import { updateStockAvailabilityCatalogSchema } from "@/features/inventory/schema";
-import { superadminAction, ActionError } from "@/lib/safe-action";
+import { superadminAction } from "@/lib/safe-action";
 
 // Inline schema wrapping the array field expected by the catalog update.
 const actionSchema = updateStockAvailabilityCatalogSchema;

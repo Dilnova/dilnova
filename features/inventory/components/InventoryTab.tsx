@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { type CheckoutOptionDefinition } from "@/features/organization/checkout-options.shared";
 
 import SuperadminStockTab from "./superadmin-tabs/SuperadminStockTab";
@@ -42,16 +42,8 @@ export default function InventoryTab({
   simulatedOrders,
   productsWithoutInventory,
   checkoutOptionsCatalog,
-  organizations,
 }: InventoryTabProps) {
   const [subTab, setSubTab] = useState<InventorySubTab>("stock");
-  const [now, setNow] = useState<number>(0);
-
-  useEffect(() => {
-    requestAnimationFrame(() => {
-      setNow(Date.now());
-    });
-  }, []);
 
   // ── Stats ──
   const totalItems = inventoryItems.length;

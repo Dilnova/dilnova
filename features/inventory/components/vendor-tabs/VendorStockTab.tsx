@@ -5,7 +5,6 @@ import {
   vendorAdjustInventoryAction,
   vendorInitInventoryAction,
 } from "@/features/inventory/vendor-stock.actions";
-import { toast } from "sonner";
 import InventoryModal from "../InventoryModal";
 
 interface VendorStockTabProps {

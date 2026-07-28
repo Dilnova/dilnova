@@ -6,7 +6,6 @@ import { toast } from "sonner";
 
 export default function NotifyMeButton({
   productId,
-  productName,
   initialUserEmail,
 }: {
   productId: string;

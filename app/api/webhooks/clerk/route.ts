@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
         if (isDuplicate) {
           return NextResponse.json({ success: true, message: "Already processed" });
         }
-      } catch (dbError: unknown) {
+      } catch {
         if (process.env.NODE_ENV === "production") {
           return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
         }

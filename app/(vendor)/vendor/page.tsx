@@ -11,7 +11,6 @@ import { RestrictedAccessBlock } from "@/shared/components/RestrictedAccessBlock
 import { getVendorInventoryData } from "@/features/inventory/vendor-data.actions";
 import { getVendorProductsForOrg } from "@/features/catalog/queries";
 import { getBranchCountForOrg, getCachedOrganization } from "@/features/vendor/queries";
-import { hasBankTransferConfiguredForOrg } from "@/features/billing/bank-transfer-metadata";
 import type { VendorInventoryFullData } from "@/features/inventory/types";
 import { logger } from "@/shared/logging/logger";
 
@@ -96,7 +95,6 @@ export default async function VendorPage({ searchParams }: PageProps) {
     checkout_options?: Record<string, boolean>;
     ims_max_listing_count?: number;
   };
-  const checkoutOptions = orgMetadata.checkout_options || {};
   // Resolve org-specific listing limit (falls back to 10 if not set by superadmin)
   const maxListingCount =
     typeof orgMetadata.ims_max_listing_count === "number" &&
@@ -104,18 +102,6 @@ export default async function VendorPage({ searchParams }: PageProps) {
     orgMetadata.ims_max_listing_count >= 1
       ? orgMetadata.ims_max_listing_count
       : 10;
-  const bankTransferConfigured = hasBankTransferConfiguredForOrg(org);
-  const pickupEnabled = checkoutOptions.store_pickup === true;
-  const bankTransferEnabled = checkoutOptions.bank_transfer === true;
-  const codEnabled = checkoutOptions.cash_on_delivery === true;
-  const deliveryEnabled = checkoutOptions.standard_delivery === true;
-  const hasFulfillmentOption = pickupEnabled || deliveryEnabled;
-  const hasPaymentOption = bankTransferEnabled || codEnabled;
-  const profileFieldsComplete = ["description", "address", "phone", "bannerUrl"].every((field) =>
-    Boolean(orgMetadata[field as keyof typeof orgMetadata]),
-  );
-  const pickupReady = !pickupEnabled || activeBranches > 0;
-  const bankTransferReady = !bankTransferEnabled || bankTransferConfigured;
 
   let lowStockCount = 0;
   let outOfStockCount = 0;

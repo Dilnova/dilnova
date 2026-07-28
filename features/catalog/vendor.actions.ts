@@ -6,7 +6,6 @@ import { eq, and, sql } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 import { revalidateVendorConsole } from "@/features/vendor/revalidate";
 import { getSystemSetting } from "@/shared/platform/settings";
-import { logger } from "@/shared/logging/logger";
 import { addProductSchema, vendorDeleteProductSchema } from "@/features/catalog/schema";
 import { logAuditAction } from "@/shared/audit/logger";
 import { runWithCorrelationId } from "@/shared/security/async-context";

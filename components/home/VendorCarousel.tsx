@@ -5,7 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Store } from "lucide-react";
 
-export default function VendorCarousel({ vendors }: { vendors: any[] }) {
+export default function VendorCarousel({
+  vendors,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  vendors: any[];
+}) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: "left" | "right") => {

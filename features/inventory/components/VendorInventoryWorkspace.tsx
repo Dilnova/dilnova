@@ -21,7 +21,7 @@ interface Props {
 }
 
 export default function VendorInventoryWorkspace({ initialData, initialAdvancedTab }: Props) {
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [data, setData] = useState(initialData);
   const { confirmAction } = useConfirm();
 
@@ -36,7 +36,7 @@ export default function VendorInventoryWorkspace({ initialData, initialAdvancedT
       try {
         const fresh = await getVendorInventoryData();
         setData(fresh);
-      } catch (err) {
+      } catch {
         triggerNotification(false, "Failed to refresh data.");
       }
     });

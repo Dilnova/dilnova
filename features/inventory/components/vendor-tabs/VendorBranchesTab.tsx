@@ -9,13 +9,14 @@ import {
   removeBranchMemberAction,
 } from "@/features/inventory/vendor-branch.actions";
 import { toast } from "sonner";
-import { useConfirm } from "@/shared/ui/notifications";
 import InventoryModal from "../InventoryModal";
 
 interface VendorBranchesTabProps {
-  data: any; // Will be properly typed during TS cleanup
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any;
   refreshData: () => void;
   triggerNotification: (success: boolean, text: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   confirmAction: (opts: any) => Promise<boolean>;
 }
 

@@ -271,12 +271,16 @@ export async function getCustomerDsarDataAction(email: string) {
       strict: true,
     });
 
-    const sanitizedOrders = matchingOrders.map(
-      ({ customerEmailHash: _customerEmailHash, ...rest }) => rest,
-    );
-    const sanitizedSubmissions = matchingSubmissions.map(
-      ({ emailHash: _emailHash, ...rest }) => rest,
-    );
+    const sanitizedOrders = matchingOrders.map((o) => {
+      const copy = { ...o };
+      delete (copy as Record<string, unknown>).customerEmailHash;
+      return copy;
+    });
+    const sanitizedSubmissions = matchingSubmissions.map((s) => {
+      const copy = { ...s };
+      delete (copy as Record<string, unknown>).emailHash;
+      return copy;
+    });
 
     return {
       success: true,

@@ -12,11 +12,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { addProductAction } from "@/features/catalog/vendor.actions";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
-<<<<<<< HEAD
 import * as Sentry from "@sentry/nextjs";
-=======
-import { logger } from "@/shared/logging/logger";
->>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
 import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
 
 interface Category {
@@ -194,11 +190,7 @@ export function AddProductProvider({
           toast.error(result.error || "Upload failed");
         }
       } catch (err) {
-<<<<<<< HEAD
         Sentry.captureException(err);
-=======
-        logger.error("Media upload error in AddProductContext", err);
->>>>>>> 03275f0c05322a4383da3e33eb513d23e005b7e6
         toast.error("Upload error. Please try again.");
       } finally {
         setIsUploading(false);

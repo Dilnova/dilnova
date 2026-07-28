@@ -121,7 +121,7 @@ async function handler(req: NextRequest) {
             sql`lower(trim(${schema.contactSubmissions.email})) = ${email.trim().toLowerCase()}`,
           );
       }
-    } catch (e) {
+    } catch {
       // User might be deleted from clerk already or error
     }
 
@@ -133,7 +133,7 @@ async function handler(req: NextRequest) {
     let questions: (typeof schema.questions.$inferSelect)[] = [];
     let wishlists: (typeof schema.wishlists.$inferSelect)[] = [];
 
-    const queries: any[] = [
+    const queries: unknown[] = [
       db.select().from(schema.customerCarts).where(eq(schema.customerCarts.userId, targetUserId)),
       db
         .select()
@@ -165,17 +165,28 @@ async function handler(req: NextRequest) {
     const results = await Promise.all(queries);
 
     let idx = 0;
-    if (results[idx] && results[idx].length > 0) cart = results[idx][0];
+    if (results[idx] && (results[idx] as unknown[]).length > 0)
+      cart = (results[idx] as unknown[])[0];
     idx++;
-    branchMemberships = results[idx++];
-    logs = results[idx++];
+    branchMemberships = results[idx++] as (typeof schema.branchMembers.$inferSelect)[];
+    logs = results[idx++] as Array<
+      Omit<typeof schema.auditLogs.$inferSelect, "ipAddress" | "userAgent">
+    >;
 
-    reviews = results[idx++];
-    questions = results[idx++];
-    wishlists = results[idx++];
+    reviews = results[idx++] as (typeof schema.reviews.$inferSelect)[];
+    questions = results[idx++] as (typeof schema.questions.$inferSelect)[];
+    wishlists = results[idx++] as (typeof schema.wishlists.$inferSelect)[];
 
-    const sanitizedOrders = populatedOrders.map(({ customerEmailHash, ...rest }) => rest);
-    const sanitizedSubmissions = contactSubmissions.map(({ emailHash, ...rest }) => rest);
+    const sanitizedOrders = populatedOrders.map((o) => {
+      const copy = { ...o };
+      delete (copy as Record<string, unknown>).customerEmailHash;
+      return copy;
+    });
+    const sanitizedSubmissions = contactSubmissions.map((s) => {
+      const copy = { ...s };
+      delete (copy as Record<string, unknown>).emailHash;
+      return copy;
+    });
 
     const hasRedactionEvent = logs.some((l) => l.action === "GDPR_REDACTION");
     const sanitizedLogs = hasRedactionEvent
