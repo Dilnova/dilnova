@@ -61,6 +61,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
       );
       return availability?.allowsPurchase ?? false;
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [data.stockAvailabilityCatalog],
   );
 

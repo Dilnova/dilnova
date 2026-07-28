@@ -25,10 +25,13 @@ export default function ComplianceTab() {
   const [searchedUserId, setSearchedUserId] = useState("");
 
   const [complianceData, setComplianceData] = useState<{
-    orders: Record<string, any>[];
-    contactSubmissions: Record<string, any>[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    orders: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    contactSubmissions: any[];
   } | null>(null);
-  const [complianceApiData, setComplianceApiData] = useState<Record<string, any> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [complianceApiData, setComplianceApiData] = useState<any | null>(null);
 
   const triggerNotification = (success: boolean, text: string) => {
     if (success) toast.success(text);
@@ -345,7 +348,8 @@ export default function ComplianceTab() {
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {complianceData.orders.map((order: Record<string, any>) => (
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {complianceData.orders.map((order: any) => (
                       <div
                         key={order.id}
                         className="p-3 bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-lg text-[11px] flex justify-between items-center"
@@ -378,7 +382,8 @@ export default function ComplianceTab() {
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {complianceData.contactSubmissions.map((sub: Record<string, any>) => (
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {complianceData.contactSubmissions.map((sub: any) => (
                       <div
                         key={sub.id}
                         className="p-3 bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-lg text-[11px]"

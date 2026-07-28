@@ -5,9 +5,15 @@ import WishlistRemoveButton from "@/features/customer/components/WishlistRemoveB
 import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 
+import type { InferSelectModel } from "drizzle-orm";
+import type * as schema from "@/shared/db/schema";
+
+type ProductRow = InferSelectModel<typeof schema.products>;
+type CategoryRow = InferSelectModel<typeof schema.categories>;
+
 interface WishlistItem {
-  product: any;
-  category: any;
+  product: ProductRow;
+  category?: CategoryRow | null;
 }
 
 interface Organization {

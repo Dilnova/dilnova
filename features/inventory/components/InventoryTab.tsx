@@ -28,7 +28,7 @@ interface InventoryTabProps {
     name: string;
     slug: string | null;
     imageUrl: string;
-    publicMetadata: Record<string, any>;
+    publicMetadata: Record<string, unknown>;
   }[];
 }
 

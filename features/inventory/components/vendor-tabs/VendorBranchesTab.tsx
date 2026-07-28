@@ -11,14 +11,19 @@ import {
 import { toast } from "sonner";
 import InventoryModal from "../InventoryModal";
 
+import type { VendorInventoryFullData } from "@/features/inventory/types";
+
 interface VendorBranchesTabProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any;
+  data: VendorInventoryFullData;
   refreshData: () => void;
   triggerNotification: (success: boolean, text: string) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   confirmAction: (opts: any) => Promise<boolean>;
 }
+
+type BranchItem = VendorInventoryFullData["branches"][number];
+type BranchMemberItem = VendorInventoryFullData["branchMembers"][number];
+type OrgMemberItem = VendorInventoryFullData["orgMembers"][number];
 
 export default function VendorBranchesTab({
   data,
@@ -30,7 +35,7 @@ export default function VendorBranchesTab({
 
   // --- Modals State ---
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
-  const [editingBranch, setEditingBranch] = useState<any>(null);
+  const [editingBranch, setEditingBranch] = useState<BranchItem | null>(null);
   const [branchName, setBranchName] = useState("");
   const [branchAddress, setBranchAddress] = useState("");
   const [branchPhone, setBranchPhone] = useState("");
@@ -42,11 +47,11 @@ export default function VendorBranchesTab({
 
   // --- Helpers ---
   const getMemberName = (userId: string) => {
-    return data.orgMembers.find((m: any) => m.userId === userId)?.name || userId;
+    return data.orgMembers.find((m: OrgMemberItem) => m.userId === userId)?.name || userId;
   };
 
   const getMemberEmail = (userId: string) => {
-    return data.orgMembers.find((m: any) => m.userId === userId)?.email || "";
+    return data.orgMembers.find((m: OrgMemberItem) => m.userId === userId)?.email || "";
   };
 
   // --- Handlers ---
@@ -177,7 +182,7 @@ export default function VendorBranchesTab({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {data.branches.map((b: any) => (
+        {data.branches.map((b: BranchItem) => (
           <div
             key={b.id}
             className="bg-white border border-zinc-200 rounded-2xl p-4 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-3"
@@ -240,8 +245,8 @@ export default function VendorBranchesTab({
               </div>
               <div className="space-y-1.5">
                 {data.branchMembers
-                  .filter((bm: any) => bm.branchId === b.id)
-                  .map((bm: any) => (
+                  .filter((bm: BranchMemberItem) => bm.branchId === b.id)
+                  .map((bm: BranchMemberItem) => (
                     <div
                       key={bm.id}
                       className="flex justify-between items-center text-xs bg-zinc-50 dark:bg-zinc-900/50 p-2 rounded-lg"
@@ -266,7 +271,8 @@ export default function VendorBranchesTab({
                       </div>
                     </div>
                   ))}
-                {data.branchMembers.filter((bm: any) => bm.branchId === b.id).length === 0 && (
+                {data.branchMembers.filter((bm: BranchMemberItem) => bm.branchId === b.id)
+                  .length === 0 && (
                   <p className="text-[10px] text-zinc-400">
                     No members assigned yet. Single-owner defaults active.
                   </p>
@@ -379,7 +385,7 @@ export default function VendorBranchesTab({
                 className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
               >
                 <option value="">-- Select Org Member --</option>
-                {data.orgMembers.map((m: any) => (
+                {data.orgMembers.map((m: OrgMemberItem) => (
                   <option key={m.userId} value={m.userId}>
                     {m.name} {m.email ? `(${m.email})` : ""}
                   </option>
