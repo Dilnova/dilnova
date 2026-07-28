@@ -114,7 +114,7 @@ export function AddProductProvider({
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [quantity, setQuantity] = useState("0");
+  const [quantity, setQuantity] = useState("1");
   const [stockAvailability, setStockAvailability] = useState(
     stockAvailabilityOptions.find((o) => o.id === "in_stock")?.id ||
       stockAvailabilityOptions[0]?.id ||
@@ -134,6 +134,8 @@ export function AddProductProvider({
       setQuantity("0");
     } else if (stockAvailability === "out_of_stock" || stockAvailability === "pre_order") {
       setQuantity("0");
+    } else if (stockAvailability === "in_stock") {
+      setQuantity((prev) => (prev === "0" || prev === "" ? "1" : prev));
     }
   }, [stockAvailability]);
 
@@ -238,6 +240,12 @@ export function AddProductProvider({
       quantityNum = parseInt(quantity, 10);
       if (isNaN(quantityNum) || quantityNum < 0) {
         toast.error("Please enter a valid non-negative quantity.");
+        return;
+      }
+      if (stockAvailability === "in_stock" && quantityNum <= 0) {
+        toast.error(
+          "Initial Quantity must be at least 1 unit when status is 'In Stock'. For 0 stock, select 'Out of Stock'.",
+        );
         return;
       }
     }
