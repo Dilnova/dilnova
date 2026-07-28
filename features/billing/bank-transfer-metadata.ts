@@ -32,21 +32,37 @@ export function stripBankFieldsFromPublic(
 }
 
 export function buildBankPrivateMetadataFromVendorData(
-  data: Pick<
-    VendorMetadataInput,
-    | "bankName"
-    | "bankAccountName"
-    | "bankAccountNumber"
-    | "bankBranchCode"
-    | "bankTransferInstructions"
+  data: Partial<
+    Pick<
+      VendorMetadataInput,
+      | "bankName"
+      | "bankAccountName"
+      | "bankAccountNumber"
+      | "bankBranchCode"
+      | "bankTransferInstructions"
+    >
   >,
+  existingPrivate: Record<string, unknown> = {},
 ): Record<BankMetadataKey, string> {
   return {
-    bankName: data.bankName ?? "",
-    bankAccountName: data.bankAccountName ?? "",
-    bankAccountNumber: data.bankAccountNumber ?? "",
-    bankBranchCode: data.bankBranchCode ?? "",
-    bankTransferInstructions: data.bankTransferInstructions ?? "",
+    bankName:
+      data.bankName !== undefined ? data.bankName : ((existingPrivate.bankName as string) ?? ""),
+    bankAccountName:
+      data.bankAccountName !== undefined
+        ? data.bankAccountName
+        : ((existingPrivate.bankAccountName as string) ?? ""),
+    bankAccountNumber:
+      data.bankAccountNumber !== undefined
+        ? data.bankAccountNumber
+        : ((existingPrivate.bankAccountNumber as string) ?? ""),
+    bankBranchCode:
+      data.bankBranchCode !== undefined
+        ? data.bankBranchCode
+        : ((existingPrivate.bankBranchCode as string) ?? ""),
+    bankTransferInstructions:
+      data.bankTransferInstructions !== undefined
+        ? data.bankTransferInstructions
+        : ((existingPrivate.bankTransferInstructions as string) ?? ""),
   };
 }
 

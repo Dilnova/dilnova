@@ -86,7 +86,7 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
     if (orgRole === "org:admin") {
       privateMetadata = {
         ...existingPrivate,
-        ...buildBankPrivateMetadataFromVendorData(parsed.data.data),
+        ...buildBankPrivateMetadataFromVendorData(parsed.data.data, existingPrivate),
       };
     }
 
@@ -130,6 +130,34 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
       logger.error("Error fetching org slug for path revalidation:", err);
     }
 
+    return { success: true };
+  });
+}
+
+export async function completeOrgOnboarding(organizationId: string) {
+  return runWithCorrelationId(async () => {
+    const { orgId, orgRole, userId } = await auth();
+
+    if (!userId || !orgId || orgId !== organizationId) {
+      throw new Error("Not authorized: You do not belong to this organization.");
+    }
+    if (orgRole !== "org:admin") {
+      throw new Error("Not authorized: Only org admins can complete onboarding.");
+    }
+
+    const client = await clerkClient();
+    const org = await client.organizations.getOrganization({ organizationId });
+    const existingPublic = (org.publicMetadata || {}) as Record<string, unknown>;
+
+    await client.organizations.updateOrganization(organizationId, {
+      publicMetadata: {
+        ...existingPublic,
+        onboardingCompleted: true,
+      },
+    });
+
+    revalidateVendorConsole();
+    revalidatePath("/admin");
     return { success: true };
   });
 }

@@ -12,6 +12,7 @@ import { getVendorInventoryData } from "@/features/inventory/vendor-data.actions
 import { getVendorProductsForOrg } from "@/features/catalog/queries";
 import { getBranchCountForOrg, getCachedOrganization } from "@/features/vendor/queries";
 import type { VendorInventoryFullData } from "@/features/inventory/types";
+import { getOrgOnboardingStatus, OrgOnboardingController } from "@/features/organization";
 import { logger } from "@/shared/logging/logger";
 
 const IMS_WORKSPACE_TABS = ["stock", "suppliers", "orders", "movements", "branches"] as const;
@@ -116,8 +117,16 @@ export default async function VendorPage({ searchParams }: PageProps) {
     });
   }
 
+  const onboardingStatus = await getOrgOnboardingStatus(
+    orgId,
+    (org.publicMetadata || {}) as Record<string, unknown>,
+  );
+
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full flex-1">
+      {/* Centralized Organization Onboarding Controller */}
+      <OrgOnboardingController status={onboardingStatus} orgName={org.name} />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-start gap-3 sm:gap-4 min-w-0">
