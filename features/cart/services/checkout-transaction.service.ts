@@ -39,6 +39,13 @@ export async function executeCheckoutTransaction(opts: {
   normalizedShippingPhone2: string | null;
   serverSubtotal: number;
   uniqueItemIds: string[];
+  presentmentCurrency?: string;
+  vendorBaseCurrency?: string;
+  exchangeRate?: number;
+  baseSubtotalAmount?: number;
+  baseTaxAmount?: number;
+  baseShippingAmount?: number;
+  baseTotalAmount?: number;
 }) {
   return await db.transaction(async (tx) => {
     const stockErrors: string[] = [];
@@ -127,17 +134,17 @@ export async function executeCheckoutTransaction(opts: {
         customerEmail: opts.email,
         customerEmailHash: hashPii(opts.email),
         customerUserId: opts.userId,
-        presentmentCurrency: (opts as any).presentmentCurrency || "USD",
-        vendorBaseCurrency: (opts as any).vendorBaseCurrency || "USD",
-        exchangeRate: (opts as any).exchangeRate || 1.0,
+        presentmentCurrency: opts.presentmentCurrency || "USD",
+        vendorBaseCurrency: opts.vendorBaseCurrency || "USD",
+        exchangeRate: opts.exchangeRate || 1.0,
         subtotalAmount: opts.checkoutTotals.subtotalAmount,
         taxAmount: opts.checkoutTotals.taxAmount,
         shippingAmount: opts.checkoutTotals.shippingAmount,
         totalAmount: opts.checkoutTotals.grandTotal,
-        baseSubtotalAmount: (opts as any).baseSubtotalAmount || opts.checkoutTotals.subtotalAmount,
-        baseTaxAmount: (opts as any).baseTaxAmount || opts.checkoutTotals.taxAmount,
-        baseShippingAmount: (opts as any).baseShippingAmount || opts.checkoutTotals.shippingAmount,
-        baseTotalAmount: (opts as any).baseTotalAmount || opts.checkoutTotals.grandTotal,
+        baseSubtotalAmount: opts.baseSubtotalAmount || opts.checkoutTotals.subtotalAmount,
+        baseTaxAmount: opts.baseTaxAmount || opts.checkoutTotals.taxAmount,
+        baseShippingAmount: opts.baseShippingAmount || opts.checkoutTotals.shippingAmount,
+        baseTotalAmount: opts.baseTotalAmount || opts.checkoutTotals.grandTotal,
         status: opts.orderStatus,
         fulfillmentMethod: opts.fulfillment,
         paymentMethod: opts.payment,
@@ -179,11 +186,11 @@ export async function executeCheckoutTransaction(opts: {
           productId: item.id,
           productName: item.name,
           vendorOrgId: item.vendorOrgId,
-          vendorBaseCurrency: (item as any).vendorBaseCurrency || "USD",
+          vendorBaseCurrency: item.vendorBaseCurrency || "USD",
           quantity: item.quantity,
           unitPrice: item.price,
-          unitPriceBase: (item as any).unitPriceBase || item.price,
-          exchangeRateSnapshot: (item as any).exchangeRateSnapshot || 1.0,
+          unitPriceBase: item.unitPriceBase || item.price,
+          exchangeRateSnapshot: item.exchangeRateSnapshot || 1.0,
         })),
       );
     }

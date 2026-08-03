@@ -9,12 +9,17 @@ import {
 import { toast } from "sonner";
 import InventoryModal from "../InventoryModal";
 
+import type { VendorInventoryFullData } from "@/features/inventory/types";
+
 interface VendorSuppliersTabProps {
-  data: any; // Will be properly typed during TS cleanup
+  data: VendorInventoryFullData;
   refreshData: () => void;
   triggerNotification: (success: boolean, text: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   confirmAction: (opts: any) => Promise<boolean>;
 }
+
+type SupplierItem = VendorInventoryFullData["suppliers"][number];
 
 export default function VendorSuppliersTab({
   data,
@@ -26,7 +31,7 @@ export default function VendorSuppliersTab({
 
   // --- Supplier Modal State ---
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<any>(null);
+  const [editingSupplier, setEditingSupplier] = useState<SupplierItem | null>(null);
   const [supplierName, setSupplierName] = useState("");
   const [supplierContact, setSupplierContact] = useState("");
   const [supplierEmail, setSupplierEmail] = useState("");
@@ -105,7 +110,7 @@ export default function VendorSuppliersTab({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {data.suppliers.map((s: any) => (
+        {data.suppliers.map((s: SupplierItem) => (
           <div
             key={s.id}
             className="bg-white border border-zinc-200 rounded-2xl p-4 dark:bg-zinc-950 dark:border-zinc-800 shadow-sm space-y-2.5"

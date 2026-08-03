@@ -1,4 +1,5 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getClerkUserEmail } from "@/features/customer/email";
 import { getCustomerDashboardData } from "@/features/customer/services/customer-dashboard.service";
@@ -17,7 +18,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
   const user = await currentUser();
 
   if (!user || !userId) {
-    return null;
+    redirect("/sign-in?redirect_url=/customer");
   }
 
   const userEmail = getClerkUserEmail(user) || "No email";
@@ -95,7 +96,8 @@ export default async function CustomerPage({ searchParams }: PageProps) {
 
       {activeTab === "orders" && (
         <CustomerOrdersTab
-          orders={dashboardData.orders}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          orders={dashboardData.orders as any}
           itemsByOrderId={dashboardData.itemsByOrderId}
           pickupBranchNameById={dashboardData.pickupBranchNameById}
           checkoutOptionsCatalog={dashboardData.checkoutOptionsCatalog}

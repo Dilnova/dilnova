@@ -11,8 +11,8 @@ import { RestrictedAccessBlock } from "@/shared/components/RestrictedAccessBlock
 import { getVendorInventoryData } from "@/features/inventory/vendor-data.actions";
 import { getVendorProductsForOrg } from "@/features/catalog/queries";
 import { getBranchCountForOrg, getCachedOrganization } from "@/features/vendor/queries";
-import { hasBankTransferConfiguredForOrg } from "@/features/billing/bank-transfer-metadata";
 import type { VendorInventoryFullData } from "@/features/inventory/types";
+import { getOrgOnboardingStatus, OrgOnboardingController } from "@/features/organization";
 import { logger } from "@/shared/logging/logger";
 
 const IMS_WORKSPACE_TABS = ["stock", "suppliers", "orders", "movements", "branches"] as const;
@@ -31,7 +31,10 @@ interface PageProps {
 
 export default async function VendorPage({ searchParams }: PageProps) {
   const { orgId, orgRole, userId } = await auth();
-  const user = await currentUser().catch(() => null);
+  const user = await currentUser().catch((err) => {
+    logger.warn("Failed to fetch currentUser in VendorPage", { error: err });
+    return null;
+  });
 
   if (!userId) {
     redirect("/unauthorized");
@@ -93,7 +96,6 @@ export default async function VendorPage({ searchParams }: PageProps) {
     checkout_options?: Record<string, boolean>;
     ims_max_listing_count?: number;
   };
-  const checkoutOptions = orgMetadata.checkout_options || {};
   // Resolve org-specific listing limit (falls back to 10 if not set by superadmin)
   const maxListingCount =
     typeof orgMetadata.ims_max_listing_count === "number" &&
@@ -101,18 +103,6 @@ export default async function VendorPage({ searchParams }: PageProps) {
     orgMetadata.ims_max_listing_count >= 1
       ? orgMetadata.ims_max_listing_count
       : 10;
-  const bankTransferConfigured = hasBankTransferConfiguredForOrg(org);
-  const pickupEnabled = checkoutOptions.store_pickup === true;
-  const bankTransferEnabled = checkoutOptions.bank_transfer === true;
-  const codEnabled = checkoutOptions.cash_on_delivery === true;
-  const deliveryEnabled = checkoutOptions.standard_delivery === true;
-  const hasFulfillmentOption = pickupEnabled || deliveryEnabled;
-  const hasPaymentOption = bankTransferEnabled || codEnabled;
-  const profileFieldsComplete = ["description", "address", "phone", "bannerUrl"].every((field) =>
-    Boolean(orgMetadata[field as keyof typeof orgMetadata]),
-  );
-  const pickupReady = !pickupEnabled || activeBranches > 0;
-  const bankTransferReady = !bankTransferEnabled || bankTransferConfigured;
 
   let lowStockCount = 0;
   let outOfStockCount = 0;
@@ -127,8 +117,16 @@ export default async function VendorPage({ searchParams }: PageProps) {
     });
   }
 
+  const onboardingStatus = await getOrgOnboardingStatus(
+    orgId,
+    (org.publicMetadata || {}) as Record<string, unknown>,
+  );
+
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full flex-1">
+      {/* Centralized Organization Onboarding Controller */}
+      <OrgOnboardingController status={onboardingStatus} orgName={org.name} />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-start gap-3 sm:gap-4 min-w-0">

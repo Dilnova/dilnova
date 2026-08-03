@@ -10,7 +10,11 @@ import {
   applyLanguage,
 } from "./languageUtils";
 
-export default function LanguageSelector() {
+interface LanguageSelectorProps {
+  align?: "left" | "right";
+}
+
+export default function LanguageSelector({ align = "right" }: LanguageSelectorProps) {
   const [currentLang, setCurrentLang] = useState("en");
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -122,7 +126,11 @@ export default function LanguageSelector() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-44 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-lg shadow-xl py-1.5 z-[9999] transition-all animate-in fade-in slide-in-from-top-2 duration-150">
+        <div
+          className={`absolute ${
+            align === "left" ? "left-0" : "right-0"
+          } mt-2 w-44 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-lg shadow-xl py-1.5 z-[9999] transition-all animate-in fade-in slide-in-from-top-2 duration-150`}
+        >
           <div className="px-3 py-1 text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
             Language / භාෂාව / மொழி
           </div>

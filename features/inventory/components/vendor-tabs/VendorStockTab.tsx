@@ -5,11 +5,12 @@ import {
   vendorAdjustInventoryAction,
   vendorInitInventoryAction,
 } from "@/features/inventory/vendor-stock.actions";
-import { toast } from "sonner";
 import InventoryModal from "../InventoryModal";
 
+import type { VendorInventoryFullData } from "@/features/inventory/types";
+
 interface VendorStockTabProps {
-  data: any; // We'll replace this with proper typing later during the TS cleanup
+  data: VendorInventoryFullData;
   selectedBranchId: string;
   refreshData: () => void;
   triggerNotification: (success: boolean, text: string) => void;
@@ -20,6 +21,10 @@ interface VendorStockTabProps {
     isBranch: boolean;
   };
 }
+
+type StockItem = VendorInventoryFullData["inventoryItems"][number];
+type UninitProduct = VendorInventoryFullData["productsWithoutInventory"][number];
+type SupplierItem = VendorInventoryFullData["suppliers"][number];
 
 export default function VendorStockTab({
   data,
@@ -36,7 +41,7 @@ export default function VendorStockTab({
 
   // --- Modals State ---
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
-  const [adjustingItem, setAdjustingItem] = useState<any>(null);
+  const [adjustingItem, setAdjustingItem] = useState<StockItem | null>(null);
   const [adjustType, setAdjustType] = useState<"restock" | "manual_adjustment" | "damage_loss">(
     "restock",
   );
@@ -48,11 +53,10 @@ export default function VendorStockTab({
   const [initSku, setInitSku] = useState("");
   const [initQty, setInitQty] = useState("0");
   const [initThreshold, setInitThreshold] = useState("5");
-  const [initBin, setInitBin] = useState("");
   const [initSupplierId, setInitSupplierId] = useState("");
 
   // --- Filters ---
-  const filteredStock = data.inventoryItems.filter((item: any) => {
+  const filteredStock = data.inventoryItems.filter((item: StockItem) => {
     if (item.productType === "service") return false; // Exclude services from stock levels
     const info = getProductStockInfo(item.productId);
     const matchesSearch =
@@ -81,8 +85,9 @@ export default function VendorStockTab({
 
     startTransition(async () => {
       try {
+        if (!adjustingItem) return;
         await vendorAdjustInventoryAction({
-          inventoryId: adjustingItem.id,
+          inventoryId: adjustingItem.id || "",
           quantityChange: finalChange,
           type: adjustType,
           reason: adjustReason,
@@ -113,7 +118,6 @@ export default function VendorStockTab({
           sku: initSku || undefined,
           quantity: parseInt(initQty, 10) || 0,
           lowStockThreshold: parseInt(initThreshold, 10) || 5,
-          binLocation: initBin || undefined,
           supplierId: initSupplierId || undefined,
         });
         triggerNotification(true, "Tracking initialized.");
@@ -178,7 +182,7 @@ export default function VendorStockTab({
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
-            {filteredStock.map((item: any) => {
+            {filteredStock.map((item: StockItem) => {
               const info = getProductStockInfo(item.productId);
               return (
                 <tr key={item.id} className="hover:bg-zinc-50/30">
@@ -320,7 +324,7 @@ export default function VendorStockTab({
                 className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900"
               >
                 <option value="">Select a product...</option>
-                {data.productsWithoutInventory.map((p: any) => (
+                {data.productsWithoutInventory.map((p: UninitProduct) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>
@@ -329,32 +333,13 @@ export default function VendorStockTab({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label
-                  htmlFor="initSku"
-                  className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1"
-                >
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
                   SKU
                 </label>
                 <input
-                  id="initSku"
                   type="text"
                   value={initSku}
                   onChange={(e) => setInitSku(e.target.value)}
-                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="initBin"
-                  className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1"
-                >
-                  Bin / Aisle
-                </label>
-                <input
-                  id="initBin"
-                  type="text"
-                  value={initBin}
-                  onChange={(e) => setInitBin(e.target.value)}
                   className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900"
                 />
               </div>
@@ -408,7 +393,7 @@ export default function VendorStockTab({
                 className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900"
               >
                 <option value="">None</option>
-                {data.suppliers.map((s: any) => (
+                {data.suppliers.map((s: SupplierItem) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>

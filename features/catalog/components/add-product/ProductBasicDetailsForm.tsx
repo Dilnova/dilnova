@@ -181,7 +181,11 @@ export default function ProductBasicDetailsForm() {
               </label>
               <input
                 type="number"
-                min="0"
+                min={
+                  stockAvailability === "in_stock" || stockAvailability === "limited_stock"
+                    ? "1"
+                    : "0"
+                }
                 step="1"
                 inputMode="numeric"
                 value={
@@ -192,7 +196,11 @@ export default function ProductBasicDetailsForm() {
                     : quantity
                 }
                 onChange={(e) => setQuantity(e.target.value)}
-                placeholder="0"
+                placeholder={
+                  stockAvailability === "in_stock" || stockAvailability === "limited_stock"
+                    ? "1"
+                    : "0"
+                }
                 disabled={
                   stockAvailability === "coming_soon" ||
                   stockAvailability === "out_of_stock" ||
@@ -206,6 +214,16 @@ export default function ProductBasicDetailsForm() {
                     : "bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400"
                 }`}
               />
+              {stockAvailability === "in_stock" && (
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  In Stock requires at least 1 unit in stock. Select Out of Stock for 0 quantity.
+                </p>
+              )}
+              {stockAvailability === "limited_stock" && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                  Limited Stock requires at least 1 unit in stock.
+                </p>
+              )}
               {stockAvailability === "out_of_stock" && (
                 <p className="text-[11px] text-rose-500">
                   Out-of-stock items start with 0 units. Update quantity later when stock arrives.

@@ -12,6 +12,7 @@ import Image from "next/image";
 import SignInPrompt from "@/shared/ui/SignInPrompt";
 import { toast } from "sonner";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
+import * as Sentry from "@sentry/nextjs";
 
 interface Review {
   id: string;
@@ -88,7 +89,7 @@ export default function ReviewsSection({
         );
         router.refresh();
       } catch (err) {
-        console.error("Error submitting review:", err);
+        Sentry.captureException(err);
         toast.error(err instanceof Error ? err.message : "Something went wrong.");
       }
     });

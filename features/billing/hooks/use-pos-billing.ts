@@ -33,7 +33,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
     date: string;
     items: { name: string; qty: number; price: number }[];
     discountPercent: number;
-    [key: string]: any;
+    [key: string]: unknown;
   } | null>(null);
 
   // Branch Selector
@@ -45,7 +45,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
     try {
       const fresh = await getVendorBillingRegisterData();
       setData(fresh);
-    } catch (_err) {
+    } catch {
       toast.error("Failed to refresh data.");
     }
   };
@@ -61,7 +61,8 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
       );
       return availability?.allowsPurchase ?? false;
     },
-    [availabilityCatalog],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.stockAvailabilityCatalog],
   );
 
   const getProductStockInfo = useCallback(

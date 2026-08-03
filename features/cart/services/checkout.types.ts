@@ -9,6 +9,9 @@ export interface VerifiedCheckoutItem {
   quantity: number;
   vendorOrgId: string;
   type: string;
+  vendorBaseCurrency?: string;
+  unitPriceBase?: number;
+  exchangeRateSnapshot?: number;
 }
 
 export interface BranchRow {
