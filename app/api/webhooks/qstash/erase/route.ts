@@ -76,8 +76,9 @@ async function handler(req: NextRequest) {
         e !== null &&
         (("status" in e && e.status === 404) ||
           ("errors" in e &&
-            Array.isArray((e as any).errors) &&
-            (e as any).errors[0]?.code === "resource_not_found"));
+            Array.isArray((e as { errors?: Array<{ code?: string }> }).errors) &&
+            (e as { errors?: Array<{ code?: string }> }).errors?.[0]?.code ===
+              "resource_not_found"));
 
       if (isNotFound) {
         logger.info(`Clerk user ${targetUserId} already deleted or not found.`);

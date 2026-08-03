@@ -150,11 +150,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const vendorSlug = orgDetails ? orgDetails.slug : null;
   const vendorMetadata = orgDetails?.publicMetadata || {};
 
-  const formattedPrice = (product.price / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
-
   const mediaPayload =
     Array.isArray(product.media) && product.media.length > 0
       ? (product.media as { url: string; type: "image" | "video" }[])

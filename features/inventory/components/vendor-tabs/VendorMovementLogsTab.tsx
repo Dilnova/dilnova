@@ -2,15 +2,19 @@
 
 import { useState } from "react";
 
+import type { VendorInventoryFullData } from "@/features/inventory/types";
+
 interface VendorMovementLogsTabProps {
-  data: any; // Will be properly typed during TS cleanup
+  data: VendorInventoryFullData;
 }
+
+type MovementItem = VendorInventoryFullData["movements"][number];
 
 export default function VendorMovementLogsTab({ data }: VendorMovementLogsTabProps) {
   const [movementTypeFilter, setMovementTypeFilter] = useState<string>("all");
 
   const filteredMovements = data.movements.filter(
-    (m: any) => movementTypeFilter === "all" || m.type === movementTypeFilter,
+    (m: MovementItem) => movementTypeFilter === "all" || m.type === movementTypeFilter,
   );
 
   const movementTypeLabels: Record<string, string> = {
@@ -53,7 +57,7 @@ export default function VendorMovementLogsTab({ data }: VendorMovementLogsTabPro
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
-            {filteredMovements.map((m: any) => (
+            {filteredMovements.map((m: MovementItem) => (
               <tr key={m.id} className="hover:bg-zinc-50/20">
                 <td className="p-3 text-zinc-500 font-mono">
                   {new Date(m.createdAt).toLocaleDateString()}

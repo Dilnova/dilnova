@@ -140,10 +140,6 @@ export default function CatalogLayout({
                       canPurchase,
                       availabilityBadge,
                     } = item;
-                    const formattedPrice = (product.price / 100).toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    });
 
                     return (
                       <div
@@ -343,10 +339,6 @@ export default function CatalogLayout({
                       canPurchase,
                       availabilityBadge,
                     } = item;
-                    const formattedPrice = (product.price / 100).toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    });
 
                     return (
                       <div

@@ -14,8 +14,10 @@ export interface CartItemType {
   imageUrls?: string[];
   stockQuantity?: number;
   stockStatus?: string;
-  orgId: string;
-  [key: string]: any;
+  orgId?: string;
+  type?: string;
+  vendorName?: string;
+  [key: string]: unknown;
 }
 
 export interface VendorCartGroup {
@@ -24,10 +26,11 @@ export interface VendorCartGroup {
   vendorName?: string;
   orgSlug?: string;
   items: CartItemType[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface CartVendorGroupsProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vendorCartGroups: any[];
   showVendorCheckoutSelection: boolean;
   showProductCheckoutSelection: boolean;
@@ -75,82 +78,59 @@ export function CartVendorGroups({
         {vendorCartGroups.map((group) => {
           const isSelectedForCheckout =
             !showVendorCheckoutSelection || selectedCheckoutVendorOrgId === group.orgId;
-          const groupProductIds = group.items.map((item: any) => item.id);
-          const groupSelectedCount = group.items.filter((item: any) =>
-            selectedCheckoutProductIdSet.has(item.id),
-          ).length;
+          const groupProductIds = group.items.map((item: CartItemType) => item.id);
           const allGroupProductsSelected =
             group.items.length > 0 &&
-            group.items.every((item: any) => selectedCheckoutProductIdSet.has(item.id));
+            group.items.every((item: CartItemType) => selectedCheckoutProductIdSet.has(item.id));
           const showProductTicks =
             showProductCheckoutSelection && (isSelectedForCheckout || !showVendorCheckoutSelection);
 
           return (
             <section
               key={group.orgId}
-              className={`bg-white border rounded-2xl p-6 dark:bg-zinc-950 shadow-sm transition-all ${
-                showVendorCheckoutSelection
-                  ? isSelectedForCheckout
-                    ? "border-purple-500/50 bg-purple-500/[0.03] ring-1 ring-purple-500/20"
-                    : "border-zinc-200/80 dark:border-zinc-900 opacity-75"
-                  : "border-zinc-200/80 dark:border-zinc-900"
-              }`}
+              className={`rounded-2xl border transition-colors ${
+                isSelectedForCheckout
+                  ? "bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800"
+                  : "bg-zinc-50/50 dark:bg-zinc-950/40 border-zinc-200/60 dark:border-zinc-900"
+              } p-4 sm:p-6`}
             >
-              <div className="flex items-start justify-between gap-4 pb-5 mb-5 border-b border-zinc-100 dark:border-zinc-900">
-                {showVendorCheckoutSelection ? (
-                  <label className="flex items-start gap-3 cursor-pointer flex-1 min-w-0">
+              {/* Vendor Header bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-zinc-100 dark:border-zinc-900">
+                <div className="flex items-center gap-3">
+                  {showVendorCheckoutSelection && (
                     <input
                       type="radio"
-                      name="checkout-vendor"
-                      value={group.orgId}
+                      name="vendor-checkout-selection"
                       checked={selectedCheckoutVendorOrgId === group.orgId}
                       onChange={() => onSelectCheckoutVendor(group.orgId, groupProductIds)}
-                      className="mt-1"
+                      className="accent-emerald-600 h-4 w-4"
                     />
-                    <span className="min-w-0">
-                      <span className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1">
-                        Checkout vendor
-                      </span>
-                      <span className="block text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
-                        {group.vendorName}
-                      </span>
-                      <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
-                        {group.itemCount} {group.itemCount === 1 ? "item" : "items"} ·{" "}
-                        {formatPrice(group.subtotalCents)}
-                      </span>
-                      {isSelectedForCheckout && (
-                        <span className="inline-flex mt-2 text-[10px] font-mono font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-full">
-                          Selected for checkout
-                        </span>
+                  )}
+                  <div>
+                    <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                      {group.orgName || group.vendorName || "Store"}
+                      {group.orgSlug && (
+                        <Link
+                          href={`/vendors/${group.orgSlug}`}
+                          className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 hover:underline"
+                        >
+                          Visit store →
+                        </Link>
                       )}
-                    </span>
-                  </label>
-                ) : (
-                  <div className="min-w-0 flex-1">
-                    <span className="block text-[10px] font-mono uppercase tracking-wider text-zinc-400 mb-1">
-                      Vendor
-                    </span>
-                    <h2 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
-                      {group.vendorName}
                     </h2>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
-                      {group.itemCount} {group.itemCount === 1 ? "item" : "items"} ·{" "}
-                      {formatPrice(group.subtotalCents)}
+                    <p className="text-[11px] text-zinc-500">
+                      {group.items.length} {group.items.length === 1 ? "item" : "items"} in group
                     </p>
                   </div>
-                )}
-                {showProductTicks && (
-                  <label className="flex items-center gap-2 shrink-0 cursor-pointer">
+                </div>
+
+                {showProductTicks && group.items.length > 1 && (
+                  <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={allGroupProductsSelected}
-                      ref={(el) => {
-                        if (el) {
-                          el.indeterminate = groupSelectedCount > 0 && !allGroupProductsSelected;
-                        }
-                      }}
-                      onChange={() =>
-                        onToggleAllProductsInGroup(groupProductIds, !allGroupProductsSelected)
+                      onChange={(e) =>
+                        onToggleAllProductsInGroup(groupProductIds, e.target.checked)
                       }
                       className="rounded border-zinc-300 dark:border-zinc-700"
                     />
@@ -162,7 +142,7 @@ export function CartVendorGroups({
               </div>
 
               <div className="divide-y divide-zinc-100 dark:divide-zinc-900 space-y-6">
-                {group.items.map((item: any) => {
+                {group.items.map((item: CartItemType) => {
                   const isProductSelected = selectedCheckoutProductIdSet.has(item.id);
 
                   return (
@@ -217,7 +197,7 @@ export function CartVendorGroups({
                                 : "bg-indigo-500/10 text-indigo-650 dark:text-indigo-400"
                             }`}
                           >
-                            {item.type}
+                            {item.type || "product"}
                           </span>
 
                           <Link

@@ -33,7 +33,6 @@ export default function ActiveFilterChips({
   currentMinPrice,
   currentMaxPrice,
   currentStock,
-  currentSort: _currentSort,
   onRemoveFilter,
   onClearAll,
 }: ActiveFilterChipsProps) {

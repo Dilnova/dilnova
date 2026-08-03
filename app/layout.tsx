@@ -228,8 +228,8 @@ export default async function RootLayout({
                           initialSessionContext={initialSessionContext}
                           mobileExtra={
                             <div className="flex items-center gap-2">
-                              <LanguageSelector />
-                              <CurrencySelector />
+                              <LanguageSelector align="left" />
+                              <CurrencySelector align="left" />
                             </div>
                           }
                         />

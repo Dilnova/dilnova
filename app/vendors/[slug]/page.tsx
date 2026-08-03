@@ -8,6 +8,7 @@ import type { VendorOrg } from "@/features/storefront/components/custom/types";
 import { getCachedOrganizations, getCachedOrganizationBySlug } from "@/shared/auth/clerk-cache";
 import { sanitizeVendorPublicMetadata } from "@/shared/media/sanitize-vendor-public-metadata";
 import { getSystemSetting } from "@/shared/platform/settings";
+import { logger } from "@/shared/logging/logger";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -43,8 +44,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!clerkOrg) {
       clerkOrg = await getCachedOrganizationBySlug(slug);
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    logger.warn(`Metadata org resolution failed for slug: ${slug}`, { error: err });
   }
 
   if (!clerkOrg) {
@@ -130,7 +131,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
       clerkOrg = await getCachedOrganizationBySlug(slug);
     }
   } catch (e) {
-    console.error(`[Vendor Page] Failed to resolve org for slug: ${slug}`, e);
+    logger.error(`[Vendor Page] Failed to resolve org for slug: ${slug}`, e);
   }
 
   if (!clerkOrg) {
@@ -151,7 +152,7 @@ export default async function VendorProfilePage({ params }: PageProps) {
         },
       };
     } else {
-      console.error(`[Vendor Page] No organization found for slug: "${slug}"`);
+      logger.warn(`[Vendor Page] No organization found for slug: "${slug}"`);
       return notFound();
     }
   }
