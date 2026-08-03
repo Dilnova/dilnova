@@ -6,7 +6,6 @@ import { useCatalogFilters } from "@/features/catalog/hooks/use-catalog-filters"
 import {
   CATALOG_SORT_LABELS,
   CATALOG_SORT_VALUES,
-  CATALOG_STOCK_FILTER_VALUES,
   type CatalogSort,
   type CatalogStockFilter,
   type CatalogCategoryRef,
@@ -30,13 +29,6 @@ interface CatalogFiltersProps {
   totalCount?: number;
   viewMode?: "grid" | "list";
 }
-
-const PRICE_PRESETS = [
-  { label: "Under $25", min: "", max: "25" },
-  { label: "$25 - $50", min: "25", max: "50" },
-  { label: "$50 - $100", min: "50", max: "100" },
-  { label: "$100+", min: "100", max: "" },
-];
 
 export default function CatalogFilters({
   categories,

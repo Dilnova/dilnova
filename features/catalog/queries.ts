@@ -1,6 +1,6 @@
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, type SQL } from "drizzle-orm";
 import type { PaginatedResponse } from "@/shared/pagination/types";
 
 export async function getUserAssignedBranchNames(userId: string, orgId: string) {
@@ -342,7 +342,7 @@ export function buildCatalogWhereClauses(params: {
   stock: CatalogStockFilter;
   categories: CatalogCategoryRef[];
 }) {
-  const whereClauses: any[] = [];
+  const whereClauses: SQL[] = [];
 
   if (params.search) {
     const sanitizedSearch = params.search.replace(/[\\%_]/g, "\\$&");

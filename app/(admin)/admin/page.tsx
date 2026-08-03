@@ -12,6 +12,7 @@ import {
 } from "@/features/billing/bank-transfer-metadata";
 import Image from "next/image";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
+import { getOrgOnboardingStatus, OrgOnboardingController } from "@/features/organization";
 
 import { logger } from "@/shared/logging/logger";
 
@@ -72,10 +73,17 @@ export default async function AdminPage() {
   });
   const completionPercent = Math.round((fieldsCompleted / fieldsChecked) * 100);
   const bankTransferConfigured = hasBankTransferConfiguredForOrg(org);
+  const onboardingStatus = await getOrgOnboardingStatus(
+    orgId,
+    (org.publicMetadata || {}) as Record<string, unknown>,
+  );
 
   return (
     <main className="p-4 sm:p-8 max-w-4xl mx-auto font-sans">
       <div className="w-full">
+        {/* Centralized Organization Onboarding Alert & Wizard Modal */}
+        <OrgOnboardingController status={onboardingStatus} orgName={org.name} />
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>

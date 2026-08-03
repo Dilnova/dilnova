@@ -7,6 +7,7 @@ export default function POSReceiptModal() {
   const { receiptToPrint, setReceiptToPrint, systemName } = usePOSContext();
 
   if (!receiptToPrint) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const receipt = receiptToPrint as unknown as Record<string, any>;
 
   return (

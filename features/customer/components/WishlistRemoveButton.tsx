@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toggleWishlistAction } from "@/features/catalog/product-detail.actions";
+import * as Sentry from "@sentry/nextjs";
 
 interface WishlistRemoveButtonProps {
   productId: string;
@@ -18,7 +19,7 @@ export default function WishlistRemoveButton({ productId }: WishlistRemoveButton
         await toggleWishlistAction({ productId });
         router.refresh();
       } catch (err) {
-        console.error("Failed to remove wishlist item", err);
+        Sentry.captureException(err);
       }
     });
   };

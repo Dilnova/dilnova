@@ -1,3 +1,15 @@
+# [1.4.0](https://github.com/Dilnova/dilnova/compare/v1.3.0...v1.4.0) (2026-08-03)
+
+### Features
+
+- enforce minimum quantity of 1 for in-stock items and update related validations ([8d8b8ff](https://github.com/Dilnova/dilnova/commit/8d8b8ff411de0fc4019576429c4fd92c56245b27))
+- enhance stock availability logic to include 'limited_stock' status and update related validations ([7ba2f64](https://github.com/Dilnova/dilnova/commit/7ba2f64039c7e6a5b5851dfddfb2c41d8f8b4492))
+- Implement organization onboarding components and logic ([dc92a94](https://github.com/Dilnova/dilnova/commit/dc92a9454b68d2edd49c78f451a936a57dea5e91))
+- implement redirect to sign-in for unauthenticated users in CustomerPage ([5130007](https://github.com/Dilnova/dilnova/commit/5130007151d2b049ae224abac00e31cda464ebdf))
+- **logging:** enhance error handling and logging for Cloudinary uploads ([9855fee](https://github.com/Dilnova/dilnova/commit/9855fee719cfb6c912ecee16fd4b8917f70ba43b))
+- **logging:** improve error handling and logging across various components ([03275f0](https://github.com/Dilnova/dilnova/commit/03275f0c05322a4383da3e33eb513d23e005b7e6))
+- **logging:** integrate Sentry for error tracking across various components ([13ece83](https://github.com/Dilnova/dilnova/commit/13ece837daaad9f027b05842b59d292c102477ac))
+
 # [1.3.0](https://github.com/Dilnova/dilnova/compare/v1.2.5...v1.3.0) (2026-07-27)
 
 ### Bug Fixes

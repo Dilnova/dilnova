@@ -11,11 +11,16 @@ import { describeOrderCheckout } from "@/features/organization/checkout-options.
 import { getOrderDisplayTotals } from "@/features/billing/checkout-totals";
 import { VendorOrderPaymentPanel } from "@/features/orders/components/OrderPaymentPanels";
 
+import type { VendorInventoryFullData } from "@/features/inventory/types";
+
 interface VendorSimulatedOrdersTabProps {
-  data: any; // Will be properly typed during TS cleanup
+  data: VendorInventoryFullData;
   refreshData: () => void;
   triggerNotification: (success: boolean, text: string) => void;
 }
+
+type OrderItem = VendorInventoryFullData["simulatedOrders"][number];
+type OrderLineItem = OrderItem["items"][number];
 
 export default function VendorSimulatedOrdersTab({
   data,
@@ -28,7 +33,7 @@ export default function VendorSimulatedOrdersTab({
     "all" | "pending" | "pending_payment" | "payment_submitted" | "fulfilled" | "cancelled"
   >("all");
 
-  const filteredOrders = data.simulatedOrders.filter((o: any) =>
+  const filteredOrders = data.simulatedOrders.filter((o: OrderItem) =>
     matchesOrderStatusFilter(o.status, orderStatusFilter),
   );
 
@@ -117,7 +122,7 @@ export default function VendorSimulatedOrdersTab({
       </div>
 
       <div className="space-y-3">
-        {filteredOrders.map((o: any) => {
+        {filteredOrders.map((o: OrderItem) => {
           const checkoutDetails = describeOrderCheckout(o, data.checkoutOptionsCatalog);
           return (
             <div
@@ -145,7 +150,7 @@ export default function VendorSimulatedOrdersTab({
                   )}
                 </div>
                 <div className="mt-2 pl-2 border-l-2 border-zinc-200 space-y-1">
-                  {o.items.map((item: any) => (
+                  {o.items.map((item: OrderLineItem) => (
                     <p key={item.id} className="text-xs text-zinc-600 dark:text-zinc-400">
                       • {item.productName} (x{item.quantity}) — ${(item.unitPrice / 100).toFixed(2)}
                     </p>

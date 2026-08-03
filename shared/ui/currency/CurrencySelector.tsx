@@ -4,7 +4,11 @@ import { useState, useRef, useEffect } from "react";
 import { useCurrency } from "@/shared/currency/context/currency-context";
 import { SUPPORTED_CURRENCIES } from "@/shared/currency/config";
 
-export default function CurrencySelector() {
+interface CurrencySelectorProps {
+  align?: "left" | "right";
+}
+
+export default function CurrencySelector({ align = "right" }: CurrencySelectorProps) {
   const { selectedCurrency, setSelectedCurrency } = useCurrency();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -48,7 +52,11 @@ export default function CurrencySelector() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-lg shadow-xl py-1.5 z-[9999] transition-all animate-in fade-in slide-in-from-top-2 duration-150 max-h-72 overflow-y-auto">
+        <div
+          className={`absolute ${
+            align === "left" ? "left-0" : "right-0"
+          } mt-2 w-48 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-zinc-200/60 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-lg shadow-xl py-1.5 z-[9999] transition-all animate-in fade-in slide-in-from-top-2 duration-150 max-h-72 overflow-y-auto`}
+        >
           <div className="px-3 py-1 text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
             Currency / මුදල් වර්ගය
           </div>

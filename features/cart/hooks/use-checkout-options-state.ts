@@ -11,7 +11,10 @@ import type { CartItem } from "@/features/cart/types";
 export function useCheckoutOptionsState(
   isSignedIn: boolean,
   cartItems: CartItem[],
-  syncCartPrices: (items: any[], removedIds: string[]) => void,
+  syncCartPrices: (
+    items: Array<{ id: string; name: string; price: number }>,
+    removedIds: string[],
+  ) => void,
 ) {
   const [fulfillmentMethod, setFulfillmentMethod] = useState("store_pickup");
   const [paymentMethod, setPaymentMethod] = useState(BANK_TRANSFER_PAYMENT_ID);
