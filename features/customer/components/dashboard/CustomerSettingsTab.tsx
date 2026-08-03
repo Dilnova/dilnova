@@ -9,6 +9,7 @@ interface CustomerSettingsTabProps {
   orgRole: string | null | undefined;
   userRole: string | null | undefined;
   isSuperAdmin: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deliveryDetails: any;
 }
 

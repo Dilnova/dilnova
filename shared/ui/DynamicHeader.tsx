@@ -40,7 +40,6 @@ export function useSessionContext(initialData?: SessionContextData) {
 
 export function DynamicHeaderNav({
   mobileExtra,
-  initialAuth: _initialAuth,
   initialSessionContext,
 }: {
   mobileExtra: React.ReactNode;

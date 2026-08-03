@@ -79,10 +79,10 @@ body {
 
 /* Hide Google Translate Banner and Branding */
 iframe.skiptranslate,
-.skiptranslate,
 .goog-te-banner-frame,
 #goog-gt-tt,
-.goog-te-balloon-frame {
+.goog-te-balloon-frame,
+.goog-te-spinner-pos {
   display: none !important;
   visibility: hidden !important;
 }

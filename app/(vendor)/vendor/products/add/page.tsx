@@ -14,6 +14,7 @@ import {
   getUserAssignedBranchNames,
 } from "@/features/catalog/queries";
 import { RestrictedAccessBlock } from "@/shared/components/RestrictedAccessBlock";
+import { getOrgOnboardingStatus, OrgOnboardingController } from "@/features/organization";
 
 export default async function AddProductPage() {
   // 1. Authenticate & Obtain Organization Context & Role
@@ -68,8 +69,30 @@ export default async function AddProductPage() {
     );
   }
 
+  const onboardingStatus = await getOrgOnboardingStatus(
+    orgId,
+    (org.publicMetadata || {}) as Record<string, unknown>,
+  );
+
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
+      {/* Centralized Onboarding Controller for Org Admin */}
+      {orgRole === "org:admin" && (
+        <OrgOnboardingController status={onboardingStatus} orgName={org.name} />
+      )}
+
+      {/* Onboarding Notice for Org Members */}
+      {orgRole !== "org:admin" && !onboardingStatus.isCompleted && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/40 p-4 text-xs text-amber-900 dark:text-amber-200">
+          ⚡{" "}
+          <strong>
+            Organization Profile Incomplete ({onboardingStatus.completionPercent}% complete):
+          </strong>{" "}
+          Ask an Organization Admin to complete store setup details (Description, Address, Phone,
+          Banner, Base Currency) in the Org Admin Console.
+        </div>
+      )}
+
       {/* Header — compact on mobile */}
       <div className="flex items-center justify-between gap-2 mb-4 sm:mb-6">
         <div className="min-w-0">

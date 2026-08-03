@@ -6,10 +6,17 @@ import { CustomerPaymentSlipSection } from "@/features/orders/components/OrderPa
 import { isBankTransferPayment } from "@/features/billing/bank-transfer";
 import OrderBankTransferInstructions from "@/features/customer/components/OrderBankTransferInstructions";
 
+import type { InferSelectModel } from "drizzle-orm";
+import type * as schema from "@/shared/db/schema";
+
+type OrderRow = InferSelectModel<typeof schema.simulatedOrders>;
+type OrderItemRow = InferSelectModel<typeof schema.simulatedOrderItems>;
+
 interface CustomerOrdersTabProps {
-  orders: any[];
-  itemsByOrderId: Record<string, any[]>;
+  orders: OrderRow[];
+  itemsByOrderId: Record<string, OrderItemRow[]>;
   pickupBranchNameById: Map<string, string>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   checkoutOptionsCatalog: any;
 }
 
@@ -73,7 +80,10 @@ export default function CustomerOrdersTab({
               minute: "2-digit",
             });
             const items = itemsByOrderId[order.id] || [];
-            const itemCount = items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+            const itemCount = items.reduce(
+              (sum: number, item: OrderItemRow) => sum + item.quantity,
+              0,
+            );
 
             let statusColor =
               "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400";
@@ -149,7 +159,7 @@ export default function CustomerOrdersTab({
                       Line Items
                     </h4>
                     <div className="divide-y divide-zinc-100 dark:divide-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 overflow-hidden">
-                      {items.map((item: any) => {
+                      {items.map((item: OrderItemRow) => {
                         const formattedUnitPrice = (item.unitPrice / 100).toLocaleString("en-US", {
                           style: "currency",
                           currency: "USD",
@@ -229,7 +239,8 @@ export default function CustomerOrdersTab({
                             paymentMethod: order.paymentMethod,
                             status: order.status,
                             paymentSlipUrl: order.paymentSlipUrl,
-                            paymentSlipPreviewUrl: order.paymentSlipPreviewUrl,
+                            paymentSlipPreviewUrl: (order as Record<string, unknown>)
+                              .paymentSlipPreviewUrl as string | undefined,
                             customerEmail: order.customerEmail,
                           }}
                         />

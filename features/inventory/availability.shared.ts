@@ -16,16 +16,25 @@ export const BUILTIN_STOCK_AVAILABILITY: StockAvailabilityDefinition[] = [
   {
     id: "in_stock",
     label: "In Stock",
-    description: "Available for immediate purchase",
+    description: "Available for immediate purchase (3+ items)",
     platformEnabled: true,
     isBuiltIn: true,
     allowsPurchase: true,
     badgeTone: "emerald",
   },
   {
+    id: "limited_stock",
+    label: "Limited Stock",
+    description: "Low stock remaining (1–2 items)",
+    platformEnabled: true,
+    isBuiltIn: true,
+    allowsPurchase: true,
+    badgeTone: "amber",
+  },
+  {
     id: "out_of_stock",
     label: "Out of Stock",
-    description: "Currently unavailable for purchase",
+    description: "Currently unavailable for purchase (0 items)",
     platformEnabled: true,
     isBuiltIn: true,
     allowsPurchase: false,
@@ -161,8 +170,11 @@ export function resolveStockAvailabilityDefinition(
 
 /**
  * Resolves the badge/status customers should see.
- * When a product is marked "In Stock" but quantity hits 0, the badge auto-switches to Out of Stock.
- * Manual statuses like Pre-Order or vendor-set Out of Stock are kept as-is.
+ * Rules:
+ * - Quantity > 2 (3+ items): "In Stock"
+ * - Quantity 1 or 2 items: "Limited Stock"
+ * - Quantity 0 items: "Out of Stock"
+ * Manual statuses like Pre-Order or Coming Soon are preserved as-is.
  */
 export function resolveEffectiveStockAvailability(
   catalog: StockAvailabilityDefinition[],
@@ -172,8 +184,22 @@ export function resolveEffectiveStockAvailability(
   const stored = resolveStockAvailabilityDefinition(catalog, storedAvailabilityId);
   if (!stored) return null;
 
-  if (quantity !== null && quantity !== undefined && quantity <= 0 && stored.id === "in_stock") {
-    return resolveStockAvailabilityDefinition(catalog, "out_of_stock") || stored;
+  if (
+    quantity !== null &&
+    quantity !== undefined &&
+    (stored.id === "in_stock" || stored.id === "limited_stock")
+  ) {
+    if (quantity <= 0) {
+      return resolveStockAvailabilityDefinition(catalog, "out_of_stock") || stored;
+    }
+    // If vendor explicitly chose limited_stock and quantity >= 1, preserve limited_stock
+    if (stored.id === "limited_stock" && quantity >= 1) {
+      return stored;
+    }
+    // Auto-badge 1 or 2 units as limited_stock for in_stock items
+    if (quantity >= 1 && quantity <= 2) {
+      return resolveStockAvailabilityDefinition(catalog, "limited_stock") || stored;
+    }
   }
 
   return stored;

@@ -40,7 +40,7 @@ export const POST = withErrorHandler(async (req: Request) => {
   }
 
   // Optionally handle acknowledgments if the client passed them
-  let reqBody: any = null;
+  let reqBody: { ackIds?: string[] } | null = null;
   try {
     reqBody = await req.json();
   } catch {

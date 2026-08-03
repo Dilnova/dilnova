@@ -6,7 +6,6 @@ import { eq, and, sql } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
 import { revalidateVendorConsole } from "@/features/vendor/revalidate";
 import { getSystemSetting } from "@/shared/platform/settings";
-import { logger } from "@/shared/logging/logger";
 import { addProductSchema, vendorDeleteProductSchema } from "@/features/catalog/schema";
 import { logAuditAction } from "@/shared/audit/logger";
 import { runWithCorrelationId } from "@/shared/security/async-context";
@@ -147,6 +146,16 @@ export const addProductAction = vendorAction
           const initialQty = ZERO_QUANTITY_STATUSES.includes(resolvedStockAvailability)
             ? 0
             : rawQty;
+
+          if (
+            (resolvedStockAvailability === "in_stock" ||
+              resolvedStockAvailability === "limited_stock") &&
+            initialQty < 1
+          ) {
+            throw new ActionError(
+              "Initial Quantity must be at least 1 unit when Stock Availability is set to 'In Stock' or 'Limited Stock'. Select 'Out of Stock' for items with 0 stock.",
+            );
+          }
           // ── End quantity guard ─────────────────────────────────────────────
 
           const [inv] = await tx

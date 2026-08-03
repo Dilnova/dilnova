@@ -10,6 +10,7 @@ import {
 import Image from "next/image";
 import SignInPrompt from "@/shared/ui/SignInPrompt";
 import { toast } from "sonner";
+import * as Sentry from "@sentry/nextjs";
 
 interface Question {
   id: string;
@@ -61,7 +62,7 @@ export default function QASection({ productId, questions, productOrgId }: QASect
         setQuestionContent("");
         router.refresh();
       } catch (err) {
-        console.error("Error posting question:", err);
+        Sentry.captureException(err);
         toast.error(err instanceof Error ? err.message : "Failed to post question.");
       }
     });
@@ -85,7 +86,7 @@ export default function QASection({ productId, questions, productOrgId }: QASect
         setActiveReplyId(null);
         router.refresh();
       } catch (err) {
-        console.error("Error replying to question:", err);
+        Sentry.captureException(err);
         toast.error(err instanceof Error ? err.message : "Failed to save answer.");
       }
     });
