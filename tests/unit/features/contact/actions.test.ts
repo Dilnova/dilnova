@@ -36,18 +36,19 @@ vi.mock("@/shared/platform/settings", () => ({
 import { submitContactFormAction } from "@/features/contact/actions";
 
 describe("submitContactFormAction", () => {
-  const originalEnv = process.env.NODE_ENV;
+  const originalEnv = { ...process.env };
 
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NODE_ENV = "test";
     process.env.SMTP_USER = "smtp-user";
     process.env.SMTP_PASSWORD = "smtp-password";
+    process.env.EMAIL_FROM_ADDRESS = "info@dilstar.pp.ua";
     delete process.env.TURNSTILE_SECRET_KEY;
   });
 
   afterAll(() => {
-    process.env.NODE_ENV = originalEnv;
+    process.env = originalEnv;
   });
 
   it("submits successfully when correct parameters are sent", async () => {
