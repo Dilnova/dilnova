@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { isVideoUrl } from "@/shared/media/media";
 import { useCurrency } from "@/shared/currency/context/currency-context";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 export interface CartItemType {
   id: string;
@@ -56,8 +57,8 @@ export function CartVendorGroups({
   removeFromCart,
 }: CartVendorGroupsProps) {
   const { format } = useCurrency();
-  const formatPrice = (cents: number, currency = "USD") => {
-    return format(cents, currency);
+  const formatPrice = (cents: number, currency?: string) => {
+    return format(cents, currency || DEFAULT_CURRENCY);
   };
 
   return (
@@ -232,10 +233,14 @@ export function CartVendorGroups({
 
                         <div className="text-right flex flex-col justify-center min-w-[90px]">
                           <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono block">
-                            {formatPrice(item.price)} each
+                            {formatPrice(item.price, (item.currency as string) || DEFAULT_CURRENCY)}{" "}
+                            each
                           </span>
                           <span className="text-sm font-extrabold font-mono text-zinc-955 dark:text-zinc-50 mt-0.5">
-                            {formatPrice(item.price * item.quantity)}
+                            {formatPrice(
+                              item.price * item.quantity,
+                              (item.currency as string) || DEFAULT_CURRENCY,
+                            )}
                           </span>
                         </div>
 

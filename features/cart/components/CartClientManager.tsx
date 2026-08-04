@@ -24,6 +24,7 @@ import {
 } from "@/features/cart/vendor-checkout";
 import { toast } from "sonner";
 import { useCurrency } from "@/shared/currency/context/currency-context";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 import { CartLoadingState } from "./CartStates";
 import { CheckoutSuccessState } from "./CheckoutSuccessState";
@@ -211,8 +212,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   };
 
   const { format } = useCurrency();
-  const formatPrice = (cents: number) => {
-    return format(cents, "USD");
+  const formatPrice = (cents: number, currency?: string) => {
+    return format(cents, currency || DEFAULT_CURRENCY);
   };
 
   const handleCheckout = async (optionsLoadingArg: boolean) => {
