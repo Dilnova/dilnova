@@ -14,9 +14,12 @@ import { ActionError } from "@/lib/safe-action";
 const contactFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Invalid email address format."),
-  category: z.enum(["collaboration", "registration", "info"], {
-    message: "Please select a valid inquiry category.",
-  }),
+  category: z.enum(
+    ["orders", "billing", "vendor", "technical", "collaboration", "registration", "info"],
+    {
+      message: "Please select a valid inquiry category.",
+    },
+  ),
   subject: z.string().min(3, "Subject must be at least 3 characters."),
   message: z.string().min(10, "Message must be at least 10 characters."),
 });
@@ -126,12 +129,16 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
       throw new Error("SMTP configuration is incomplete on the server.");
     }
 
-    const categoryLabel =
-      category === "collaboration"
-        ? "Collaboration / Partnership"
-        : category === "registration"
-          ? "Organization / Vendor Registration"
-          : "General Inquiry / Learn More";
+    const categoryLabels: Record<string, string> = {
+      orders: "Orders & Delivery Support",
+      billing: "Billing & Refund Inquiry",
+      vendor: "Vendor & Store Partnership",
+      technical: "Technical Support & Bug Report",
+      collaboration: "Collaboration & Enterprise",
+      registration: "Organization / Vendor Registration",
+      info: "General Inquiry / Information",
+    };
+    const categoryLabel = categoryLabels[category] || "General Support Inquiry";
 
     const emailHtml = `
       <!DOCTYPE html>

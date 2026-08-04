@@ -75,6 +75,21 @@ describe("submitContactFormAction", () => {
     );
   });
 
+  it("accepts new support categories like orders and billing", async () => {
+    const formData = new FormData();
+    formData.append("name", "Jane Smith");
+    formData.append("email", "jane@example.com");
+    formData.append("category", "orders");
+    formData.append("subject", "Order Shipment Help");
+    formData.append("message", "Need help tracking my package delivery status.");
+
+    const result = await submitContactFormAction(null, formData);
+
+    expect(result.success).toBe(true);
+    expect(result.error).toBeNull();
+    expect(mockInsert).toHaveBeenCalled();
+  });
+
   it("silently blocks spam submissions when honeypot field is filled", async () => {
     const formData = new FormData();
     formData.append("name", "Bot Name");

@@ -8,7 +8,8 @@ import { useUser } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 
-type CategoryType = "collaboration" | "registration" | "info";
+type CategoryType =
+  "orders" | "billing" | "vendor" | "technical" | "collaboration" | "registration" | "info";
 
 interface ContactInteractiveFormProps {
   systemName: string;
@@ -75,6 +76,18 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
   }, []);
 
   const getSampleMessage = (category: CategoryType) => {
+    if (category === "orders") {
+      return `Hi ${systemName} support,\n\nI need assistance regarding my recent order. Please help me track the package or resolve a delivery issue.\n\nOrder ID: [Optional]\n\nThank you!`;
+    }
+    if (category === "billing") {
+      return `Hi ${systemName} support,\n\nI have a question regarding a recent charge, payment receipt, or refund status on my account.\n\nThanks!`;
+    }
+    if (category === "vendor") {
+      return `Hi ${systemName} support,\n\nI am a vendor managing my storefront catalog and would like assistance with catalog listings, payouts, or store settings.\n\nBest regards!`;
+    }
+    if (category === "technical") {
+      return `Hi ${systemName} support,\n\nI experienced a technical issue or bug while navigating the platform. Here are the steps to reproduce the issue:\n\nThank you!`;
+    }
     if (category === "collaboration") {
       return `Hi ${systemName} team,\n\nWe are interested in exploring a strategic technology integration or partnership with ${systemName}. Please connect us with a representative to discuss potential collaboration.\n\nThanks!`;
     }
@@ -84,7 +97,14 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
     return `Hi ${systemName} team,\n\nI have a few questions regarding platform capabilities, pricing options, and system features. Could you please provide more details?\n\nThank you!`;
   };
 
-  const [formData, setFormData] = useState(() => {
+  const [formData, setFormData] = useState<{
+    name: string;
+    email: string;
+    category: CategoryType;
+    subject: string;
+    message: string;
+    middleName: string;
+  }>(() => {
     let category: CategoryType = "info";
     let subject = "";
     let message = "";
@@ -123,6 +143,30 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
       }));
     }
   }, [isLoaded, isSignedIn, user]);
+
+  useEffect(() => {
+    if (plan) {
+      const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
+      const category: CategoryType = plan === "enterprise" ? "collaboration" : "registration";
+      const subject = `Inquiry for ${planName} Plan Registration`;
+      let message = "";
+      if (plan === "starter") {
+        message = `Hi ${systemName} team,\n\nI would like to register my storefront on the Starter Plan ($0/month). Please guide me on the next steps to set up my catalog.\n\nThanks!`;
+      } else if (plan === "growth") {
+        message = `Hi ${systemName} team,\n\nI am interested in registering my storefront on the Growth Plan ($5/yearly) to upload unlimited listings. Please let me know how to get started.\n\nThanks!`;
+      } else if (plan === "enterprise") {
+        message = `Hi ${systemName} team,\n\nWe are looking to set up multiple storefront profiles with custom branding and priority support configurations. Please connect us with a representative to discuss the custom Enterprise Plan setup.\n\nThanks!`;
+      } else {
+        message = `Hi ${systemName} team,\n\nI am interested in registering a new storefront on the marketplace. Please provide more details on how to get started.\n\nThanks!`;
+      }
+      setFormData((prev) => ({
+        ...prev,
+        category,
+        subject,
+        message,
+      }));
+    }
+  }, [plan, systemName]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -296,6 +340,34 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
       {/* Form: Right Column */}
       <div className="lg:col-span-7">
         <div className="border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl p-8 rounded-3xl shadow-xl transition-all duration-300">
+          {plan && (
+            <div className="mb-6 p-4 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/80 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
+                  ✓
+                </div>
+                <div>
+                  <span className="text-[11px] uppercase tracking-wider font-bold text-indigo-600 dark:text-indigo-400">
+                    Selected Package Tier
+                  </span>
+                  <h4 className="text-base font-extrabold text-zinc-900 dark:text-zinc-50">
+                    {plan.charAt(0).toUpperCase() + plan.slice(1)} Plan{" "}
+                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      {plan === "starter"
+                        ? "($0/month)"
+                        : plan === "growth"
+                          ? "($5/yearly)"
+                          : "(Custom Setup)"}
+                    </span>
+                  </h4>
+                </div>
+              </div>
+              <span className="hidden sm:inline-block text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                Pre-filled in Form ↓
+              </span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -367,6 +439,10 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                 onChange={(e) => selectCategory(e.target.value as CategoryType)}
                 className="w-full h-11 px-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-purple-500/40 dark:focus:ring-purple-500/30 transition-all duration-200 cursor-pointer text-zinc-900 dark:text-zinc-100"
               >
+                <option value="orders">Orders &amp; Delivery Support</option>
+                <option value="billing">Billing &amp; Refund Inquiry</option>
+                <option value="vendor">Vendor &amp; Store Partnership</option>
+                <option value="technical">Technical Support &amp; Bug Report</option>
                 <option value="collaboration">Collaborate with Us</option>
                 <option value="registration">Register Organization / Store</option>
                 <option value="info">General Inquiry / Learn More</option>
