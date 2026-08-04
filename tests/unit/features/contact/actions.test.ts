@@ -64,7 +64,15 @@ describe("submitContactFormAction", () => {
     expect(result.error).toBeNull();
     expect(mockInsert).toHaveBeenCalled();
     expect(mockInsertValues).toHaveBeenCalled();
-    expect(mockSendRawSmtpEmail).toHaveBeenCalled();
+    expect(mockSendRawSmtpEmail).toHaveBeenCalledTimes(2);
+    expect(mockSendRawSmtpEmail).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ to: "info@dilstar.pp.ua" }),
+    );
+    expect(mockSendRawSmtpEmail).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ to: "john@example.com" }),
+    );
   });
 
   it("silently blocks spam submissions when honeypot field is filled", async () => {

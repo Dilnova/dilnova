@@ -174,17 +174,72 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
       </html>
     `;
 
-    // Send email to the system email address
-    await sendRawSmtpEmail({
-      host: smtpHost,
-      port: smtpPort,
-      user: smtpUser,
-      pass: smtpPassword,
-      to: emailFromAddress,
-      from: emailFromAddress,
-      fromName: emailFromName,
-      subject: `[Contact Form - ${categoryLabel}] ${sanitizedSubject}`,
-      html: emailHtml,
-    });
+    const userConfirmationHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Thank you for contacting ${escapeHtml(systemName)}</title>
+        </head>
+        <body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #fafafa; color: #18181b;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+            <div style="background-color: #6b21a8; padding: 24px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 800; letter-spacing: 1px;">
+                ${escapeHtml(systemNameHub.toUpperCase())}
+              </h1>
+              <p style="margin: 4px 0 0 0; color: #e9d5ff; font-size: 12px;">Message Received</p>
+            </div>
+            <div style="padding: 24px;">
+              <h2 style="font-size: 16px; color: #18181b; margin-top: 0; border-bottom: 1px solid #e4e4e7; padding-bottom: 8px;">Thank You for Reaching Out</h2>
+              <p style="font-size: 14px; color: #52525b; line-height: 1.5; margin-bottom: 16px;">
+                Hello ${escapeHtml(sanitizedName)},<br/><br/>
+                We have received your message regarding <strong>${escapeHtml(sanitizedSubject)}</strong>. Our team is reviewing your inquiry and will get back to you as soon as possible.
+              </p>
+              <h3 style="font-size: 14px; color: #18181b; margin-top: 20px; margin-bottom: 8px;">Submission Summary</h3>
+              <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 16px;">
+                <tr>
+                  <td style="padding: 6px 0; color: #71717a; width: 120px; font-weight: bold;">Category:</td>
+                  <td style="padding: 6px 0; color: #6b21a8; font-weight: bold;">${categoryLabel}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #71717a; font-weight: bold;">Subject:</td>
+                  <td style="padding: 6px 0; color: #18181b;">${escapeHtml(sanitizedSubject)}</td>
+                </tr>
+              </table>
+              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 14px; color: #334155; white-space: pre-wrap; line-height: 1.6;">${escapeHtml(message)}</div>
+            </div>
+            <div style="background-color: #f4f4f5; padding: 16px; text-align: center; border-top: 1px solid #e4e4e7; font-size: 11px; color: #a1a1aa;">
+              ${escapeHtml(systemNameHub)} &copy; 2026. All rights reserved.
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    // Send email to system admin & confirmation email to user submitter
+    await Promise.all([
+      sendRawSmtpEmail({
+        host: smtpHost,
+        port: smtpPort,
+        user: smtpUser,
+        pass: smtpPassword,
+        to: emailFromAddress,
+        from: emailFromAddress,
+        fromName: emailFromName,
+        subject: `[Contact Form - ${categoryLabel}] ${sanitizedSubject}`,
+        html: emailHtml,
+      }),
+      sendRawSmtpEmail({
+        host: smtpHost,
+        port: smtpPort,
+        user: smtpUser,
+        pass: smtpPassword,
+        to: sanitizedEmail,
+        from: emailFromAddress,
+        fromName: emailFromName,
+        subject: `Thank you for contacting ${systemName} - We received your message`,
+        html: userConfirmationHtml,
+      }),
+    ]);
   });
 }
