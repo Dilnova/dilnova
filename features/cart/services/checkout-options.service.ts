@@ -12,6 +12,7 @@ import {
   buildVendorCartSummaries,
   resolveCheckoutVendorOrgId,
 } from "@/features/cart/vendor-checkout";
+import { buildCartTaxBreakdown } from "@/features/billing/tax-engine";
 
 export async function fetchBranchesForOrgs(orgIds: string[]) {
   const branchRows =
@@ -60,6 +61,10 @@ export async function getCheckoutOptionsService(
       vendorCount: 0,
       vendorBankTransferByOrg: {},
       vendorCartSummary: [],
+      estimatedTaxCents: 0,
+      taxLabel: "Estimated Tax",
+      taxLinesByClass: [],
+      productTaxMap: {},
     };
   }
 
@@ -106,6 +111,10 @@ export async function getCheckoutOptionsService(
         ]),
       ),
       vendorCartSummary,
+      estimatedTaxCents: 0,
+      taxLabel: "Estimated Tax",
+      taxLinesByClass: [],
+      productTaxMap: {},
     };
   }
 
@@ -120,6 +129,31 @@ export async function getCheckoutOptionsService(
     ? await getBankTransferDetailsForOrgs(uniqueOrgIds)
     : {};
   const vendorCartSummary = buildVendorCartSummaries(cartLines, productById, vendorNamesByOrg);
+
+  const taxBreakdown = await buildCartTaxBreakdown(
+    cartLines.map((line) => {
+      const prod = productById.get(line.id);
+      return {
+        productId: line.id,
+        unitPriceCents: prod ? prod.price : Math.round(line.price * 100),
+        quantity: line.quantity,
+        vendorOrgId: prod?.orgId,
+      };
+    }),
+  );
+
+  const estimatedTaxCents = taxBreakdown.totalTaxCents;
+  const taxLinesByClass = taxBreakdown.taxLinesByClass;
+  const productTaxMap = taxBreakdown.productTaxMap;
+
+  const taxLabel =
+    taxLinesByClass.length > 1
+      ? "Estimated Tax (Combined)"
+      : taxBreakdown.primaryTaxClass
+        ? taxBreakdown.primaryTaxClass.ratePercent > 0
+          ? `Estimated Tax (${taxBreakdown.primaryTaxClass.code} — ${taxBreakdown.primaryTaxClass.ratePercent}%)`
+          : "Estimated Tax (0%)"
+        : "Estimated Tax";
 
   return {
     success: true as const,
@@ -151,5 +185,9 @@ export async function getCheckoutOptionsService(
       ]),
     ),
     vendorCartSummary,
+    estimatedTaxCents,
+    taxLabel,
+    taxLinesByClass,
+    productTaxMap,
   };
 }

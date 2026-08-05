@@ -76,6 +76,9 @@ export const simulatedOrderItems = pgTable(
     unitPrice: integer("unit_price").notNull(),
     unitPriceBase: integer("unit_price_base").default(0).notNull(),
     exchangeRateSnapshot: real("exchange_rate_snapshot").default(1.0).notNull(),
+    taxAmount: integer("tax_amount").default(0).notNull(),
+    taxRatePercent: real("tax_rate_percent").default(0).notNull(),
+    taxClassCode: text("tax_class_code"),
   },
   (t) => [
     index("idx_simulated_order_items_order_id").on(t.orderId),

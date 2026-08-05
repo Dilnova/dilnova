@@ -105,14 +105,21 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   } = useCheckoutOptionsState(Boolean(isSignedIn), cartItems, syncCartPrices);
 
   const selectedCheckoutProductIdSet = new Set(selectedCheckoutProductIds);
-  const selectedVendorSummary =
-    checkoutOptions.vendorCartSummary.find(
-      (vendor) => vendor.orgId === selectedCheckoutVendorOrgId,
-    ) || checkoutOptions.vendorCartSummary[0];
+  // Only resolve a vendor summary when user has explicitly chosen one; avoid
+  // falling back to vendorCartSummary[0] which would show the banner on load.
+  const selectedVendorSummary = selectedCheckoutVendorOrgId
+    ? (checkoutOptions.vendorCartSummary.find(
+        (vendor) => vendor.orgId === selectedCheckoutVendorOrgId,
+      ) ?? null)
+    : null;
   const checkoutCartItems = resolveCheckoutCartItems(
     cartItems,
     selectedCheckoutProductIds,
-    vendorCount > 1 ? selectedVendorSummary?.productIds : null,
+    vendorCount > 1
+      ? selectedCheckoutVendorOrgId
+        ? (selectedVendorSummary?.productIds ?? [])
+        : []
+      : null,
   );
   const checkoutSubtotal = checkoutCartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -366,11 +373,14 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     router.push("/products");
   };
 
+  const estimatedTaxFromOptions = checkoutOptions.estimatedTaxCents ?? 0;
   const checkoutTotals = calculateCheckoutTotals(
     checkoutSubtotal,
     selectedFulfillment?.zeroShipping ?? false,
+    estimatedTaxFromOptions,
   );
   const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = checkoutTotals;
+  const taxLabel = checkoutOptions.taxLabel ?? "Estimated Tax";
   const bankTransferSelected =
     isBankTransferPayment(paymentMethod) &&
     selectedCheckoutVendorOrgId.length > 0 &&
@@ -453,6 +463,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   const rightCol = (
     <CartCheckoutSidebar
       priceSyncNotice={priceSyncNotice}
+      taxLabel={taxLabel}
+      taxLinesByClass={checkoutOptions.taxLinesByClass}
       isSignedIn={Boolean(isSignedIn)}
       checkoutItemCount={checkoutItemCount}
       cartCount={cartCount}

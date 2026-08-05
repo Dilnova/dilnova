@@ -51,11 +51,9 @@ export async function sendCartSummaryEmailService(
     };
   });
   const syncedSubtotal = pricedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const {
-    taxAmount: estimatedTax,
-    shippingAmount: shippingFee,
-    grandTotal,
-  } = calculateCheckoutTotals(syncedSubtotal, zeroShipping);
+  const { shippingAmount: shippingFee } = calculateCheckoutTotals(syncedSubtotal, zeroShipping, 0);
+  // Tax is resolved server-side at checkout via buildCartTaxBreakdown().
+  // Cart emails are a pre-checkout summary — tax is not yet determined.
 
   const formatPrice = (cents: number) => {
     return (cents / 100).toLocaleString("en-US", {
@@ -134,16 +132,16 @@ export async function sendCartSummaryEmailService(
                   <td style="padding: 4px 0; text-align: right; font-family: monospace;">${formatPrice(syncedSubtotal)}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 4px 0;">Estimated Tax (8%)</td>
-                  <td style="padding: 4px 0; text-align: right; font-family: monospace;">${formatPrice(estimatedTax)}</td>
+                  <td style="padding: 4px 0; color: #94a3b8;">Tax <em>(resolved at checkout)</em></td>
+                  <td style="padding: 4px 0; text-align: right; font-family: monospace; color: #94a3b8;">—</td>
                 </tr>
                 <tr>
                   <td style="padding: 4px 0;">Shipping</td>
                   <td style="padding: 4px 0; text-align: right; font-family: monospace;">${shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}</td>
                 </tr>
                 <tr style="font-weight: bold; color: #0f172a; font-size: 15px; border-top: 1px dashed #cbd5e1;">
-                  <td style="padding: 12px 0 0 0;">Total</td>
-                  <td style="padding: 12px 0 0 0; text-align: right; font-family: monospace; font-size: 16px;">${formatPrice(grandTotal)}</td>
+                  <td style="padding: 12px 0 0 0;">Subtotal (excl. tax)</td>
+                  <td style="padding: 12px 0 0 0; text-align: right; font-family: monospace; font-size: 16px;">${formatPrice(syncedSubtotal + shippingFee)}</td>
                 </tr>
               </table>
             </div>

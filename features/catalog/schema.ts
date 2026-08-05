@@ -66,6 +66,7 @@ export const updateProductSchema = z.object({
     name: z.string().min(1, "Product name cannot be empty.").max(200).trim().optional(),
     price: z.number().int().min(0, "Price cannot be negative.").optional(),
     categoryId: z.string().uuid().nullable().optional(),
+    taxClassId: z.string().uuid().nullable().optional(),
     description: z.string().max(5000).nullable().optional(),
     type: z.enum(["product", "service"]).optional(),
     imageUrl: optionalCloudinaryUrlSchema.optional(),
@@ -93,6 +94,7 @@ export const addProductSchema = z.object({
   imageUrl: optionalCloudinaryUrlSchema,
   media: z.array(productMediaItemSchema).default([]),
   categoryId: z.string().uuid("Invalid category ID.").or(z.literal("")).default(""),
+  taxClassId: z.string().uuid("Invalid tax class ID.").or(z.literal("")).optional().default(""),
   quantity: z
     .number()
     .int("Quantity must be a whole number.")

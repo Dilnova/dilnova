@@ -172,6 +172,10 @@ export const updateProductAction = superadminAction
         setClause.categoryId = parsedInput.updates.categoryId;
       }
 
+      if (parsedInput.updates.taxClassId !== undefined) {
+        setClause.taxClassId = parsedInput.updates.taxClassId;
+      }
+
       if (parsedInput.updates.description !== undefined) {
         setClause.description = parsedInput.updates.description;
       }

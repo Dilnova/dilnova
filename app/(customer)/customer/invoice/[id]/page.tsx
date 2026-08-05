@@ -61,6 +61,18 @@ export default async function InvoicePage({ params }: PageProps) {
     grandTotal,
   } = orderTotals;
 
+  const positiveTaxItems = items.filter((i) => (i.taxRatePercent ?? 0) > 0);
+  const uniqueRates = [...new Set(positiveTaxItems.map((i) => i.taxRatePercent))];
+
+  const taxLabel =
+    uniqueRates.length === 1 && positiveTaxItems[0]
+      ? `Tax (${positiveTaxItems[0].taxClassCode ?? "VAT_STD"} — ${positiveTaxItems[0].taxRatePercent}%):`
+      : uniqueRates.length > 1
+        ? "Tax (Combined):"
+        : tax > 0
+          ? "Tax:"
+          : "Tax (0%):";
+
   const vendorSubtotals = items.reduce<Record<string, number>>((acc, item) => {
     acc[item.vendorOrgId] = (acc[item.vendorOrgId] || 0) + item.unitPrice * item.quantity;
     return acc;
@@ -271,7 +283,7 @@ export default async function InvoicePage({ params }: PageProps) {
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Estimated Tax (8%):</span>
+              <span>{taxLabel}</span>
               <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
                 {formatPrice(tax)}
               </span>

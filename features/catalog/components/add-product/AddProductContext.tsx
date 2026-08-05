@@ -33,9 +33,17 @@ interface MediaItem {
   type: "image" | "video";
 }
 
+interface TaxClass {
+  id: string;
+  name: string;
+  code: string;
+  ratePercent: number;
+}
+
 interface AddProductContextType {
   // Config
   categories: Category[];
+  taxClasses: TaxClass[];
   maxMediaLimit: number;
   branches: Branch[];
   isMultiBranchActive: boolean;
@@ -53,6 +61,8 @@ interface AddProductContextType {
   setPrice: (v: string) => void;
   categoryId: string;
   setCategoryId: (v: string) => void;
+  taxClassId: string;
+  setTaxClassId: (v: string) => void;
   quantity: string;
   setQuantity: (v: string) => void;
   stockAvailability: string;
@@ -94,6 +104,7 @@ export function useAddProduct() {
 export function AddProductProvider({
   children,
   categories,
+  taxClasses = [],
   maxMediaLimit,
   branches = [],
   isMultiBranchActive = false,
@@ -102,6 +113,7 @@ export function AddProductProvider({
 }: {
   children: React.ReactNode;
   categories: Category[];
+  taxClasses?: TaxClass[];
   maxMediaLimit: number;
   branches?: Branch[];
   isMultiBranchActive?: boolean;
@@ -114,6 +126,7 @@ export function AddProductProvider({
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [taxClassId, setTaxClassId] = useState("");
   const [quantity, setQuantity] = useState("3");
   const [stockAvailability, setStockAvailability] = useState(
     stockAvailabilityOptions.find((o) => o.id === "in_stock")?.id ||
@@ -325,6 +338,7 @@ export function AddProductProvider({
           imageUrl: primaryThumbnail,
           media: media,
           categoryId,
+          taxClassId: taxClassId || undefined,
           quantity: type === "product" ? quantityNum : undefined,
           branchId:
             type === "product" && isMultiBranchActive && stockAllocationMode === "target_branch"
@@ -346,6 +360,7 @@ export function AddProductProvider({
           setDescription("");
           setPrice("");
           setCategoryId("");
+          setTaxClassId("");
           setMedia([]);
           setQuantity("0");
           setPreorderType("full_upfront");
@@ -354,7 +369,11 @@ export function AddProductProvider({
 
           window.scrollTo({ top: 0, behavior: "smooth" });
         } else {
-          toast.error(result?.serverError || "Failed to add item.");
+          const errMsg =
+            result?.data && typeof (result.data as any).error === "string"
+              ? (result.data as any).error
+              : undefined;
+          toast.error(errMsg || result?.serverError || "Failed to add item.");
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to add item.");
@@ -366,6 +385,7 @@ export function AddProductProvider({
     <AddProductContext.Provider
       value={{
         categories,
+        taxClasses,
         maxMediaLimit,
         branches,
         isMultiBranchActive,
@@ -381,6 +401,8 @@ export function AddProductProvider({
         setPrice,
         categoryId,
         setCategoryId,
+        taxClassId,
+        setTaxClassId,
         quantity,
         setQuantity,
         stockAvailability,

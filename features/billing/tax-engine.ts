@@ -1,0 +1,226 @@
+import { db } from "@/shared/db/client";
+import * as schema from "@/shared/db/schema";
+import { eq, or } from "drizzle-orm";
+
+// ── Types ─────────────────────────────────────────────────────
+
+export interface ResolvedTaxClass {
+  id: string;
+  code: string;
+  name: string;
+  ratePercent: number; // e.g. 8.0 → 8%
+}
+
+export interface LineTaxResult {
+  lineSubtotalCents: number;
+  taxAmountCents: number;
+  taxRatePercent: number;
+  taxClassCode: string;
+  taxClassName: string;
+}
+
+export interface TaxLineByClass {
+  code: string;
+  name: string;
+  ratePercent: number;
+  taxAmountCents: number;
+  subtotalCents: number;
+}
+
+export interface CartTaxBreakdown {
+  lines: Array<{ productId: string } & LineTaxResult>;
+  totalTaxCents: number;
+  /** Dominant tax class for display (used on invoice label) */
+  primaryTaxClass: Pick<ResolvedTaxClass, "code" | "name" | "ratePercent"> | null;
+  taxLinesByClass: TaxLineByClass[];
+  productTaxMap: Record<string, Pick<ResolvedTaxClass, "code" | "name" | "ratePercent">>;
+}
+
+export type DbOrTransaction = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+// ── Constants ─────────────────────────────────────────────────
+
+/** Used when no tax class can be resolved — safe: charges 0% rather than wrong rate */
+export const ZERO_TAX_CLASS: ResolvedTaxClass = {
+  id: "zero-fallback",
+  code: "ZERO",
+  name: "No Tax",
+  ratePercent: 0,
+};
+
+// ── Resolution ────────────────────────────────────────────────
+
+/**
+ * Resolve the effective tax class for a product.
+ * Priority: product.taxClassId → category.taxClassId → org default → STANDARD code → ZERO
+ */
+export async function resolveTaxClassForProduct(
+  productId: string,
+  orgId?: string,
+  txOrDb: DbOrTransaction = db,
+): Promise<ResolvedTaxClass> {
+  // Fetch product (taxClassId, orgId) and category (taxClassId) in one query
+  const [row] = await txOrDb
+    .select({
+      productTaxClassId: schema.products.taxClassId,
+      productOrgId: schema.products.orgId,
+      categoryTaxClassId: schema.categories.taxClassId,
+    })
+    .from(schema.products)
+    .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
+    .where(eq(schema.products.id, productId))
+    .limit(1);
+
+  // Level 1: Product Direct Tax Override
+  if (row?.productTaxClassId) {
+    const [tc] = await txOrDb
+      .select({
+        id: schema.taxClasses.id,
+        code: schema.taxClasses.code,
+        name: schema.taxClasses.name,
+        ratePercent: schema.taxClasses.ratePercent,
+      })
+      .from(schema.taxClasses)
+      .where(eq(schema.taxClasses.id, row.productTaxClassId))
+      .limit(1);
+    if (tc) return tc;
+  }
+
+  // Level 2: Category Tax Override
+  if (row?.categoryTaxClassId) {
+    const [tc] = await txOrDb
+      .select({
+        id: schema.taxClasses.id,
+        code: schema.taxClasses.code,
+        name: schema.taxClasses.name,
+        ratePercent: schema.taxClasses.ratePercent,
+      })
+      .from(schema.taxClasses)
+      .where(eq(schema.taxClasses.id, row.categoryTaxClassId))
+      .limit(1);
+    if (tc) return tc;
+  }
+
+  // Level 3: Org Default Tax
+  const effectiveOrgId = orgId || row?.productOrgId;
+  if (effectiveOrgId) {
+    const [orgRow] = await txOrDb
+      .select({ defaultTaxClassId: schema.orgSettings.defaultTaxClassId })
+      .from(schema.orgSettings)
+      .where(eq(schema.orgSettings.orgId, effectiveOrgId))
+      .limit(1);
+
+    if (orgRow?.defaultTaxClassId) {
+      const [tc] = await txOrDb
+        .select({
+          id: schema.taxClasses.id,
+          code: schema.taxClasses.code,
+          name: schema.taxClasses.name,
+          ratePercent: schema.taxClasses.ratePercent,
+        })
+        .from(schema.taxClasses)
+        .where(eq(schema.taxClasses.id, orgRow.defaultTaxClassId))
+        .limit(1);
+      if (tc) return tc;
+    }
+  }
+
+  // Level 4: Standard Platform Tax (VAT_STD / STANDARD rate)
+  const [stdTc] = await txOrDb
+    .select({
+      id: schema.taxClasses.id,
+      code: schema.taxClasses.code,
+      name: schema.taxClasses.name,
+      ratePercent: schema.taxClasses.ratePercent,
+    })
+    .from(schema.taxClasses)
+    .where(or(eq(schema.taxClasses.code, "VAT_STD"), eq(schema.taxClasses.code, "STANDARD")))
+    .limit(1);
+
+  if (stdTc) return stdTc;
+
+  // Level 5: Default Fallback (0% Tax)
+  return ZERO_TAX_CLASS;
+}
+
+// ── Per-line calc ─────────────────────────────────────────────
+
+export function calculateLineTax(
+  unitPriceCents: number,
+  quantity: number,
+  taxClass: ResolvedTaxClass,
+): LineTaxResult {
+  const lineSubtotalCents = Math.max(0, unitPriceCents * quantity);
+  const taxAmountCents = Math.round(lineSubtotalCents * (taxClass.ratePercent / 100));
+  return {
+    lineSubtotalCents,
+    taxAmountCents,
+    taxRatePercent: taxClass.ratePercent,
+    taxClassCode: taxClass.code,
+    taxClassName: taxClass.name,
+  };
+}
+
+// ── Cart-level breakdown ──────────────────────────────────────
+
+/**
+ * Resolves tax for each item in a cart and returns a full breakdown.
+ */
+export async function buildCartTaxBreakdown(
+  items: Array<{
+    productId: string;
+    unitPriceCents: number;
+    quantity: number;
+    vendorOrgId?: string;
+  }>,
+  defaultOrgId: string = "",
+  txOrDb: DbOrTransaction = db,
+): Promise<CartTaxBreakdown> {
+  const lines: CartTaxBreakdown["lines"] = [];
+  let totalTaxCents = 0;
+  const classFrequency = new Map<
+    string,
+    { tc: ResolvedTaxClass; subtotal: number; taxCents: number }
+  >();
+  const productTaxMap: Record<string, Pick<ResolvedTaxClass, "code" | "name" | "ratePercent">> = {};
+
+  for (const item of items) {
+    const tc = await resolveTaxClassForProduct(
+      item.productId,
+      item.vendorOrgId || defaultOrgId,
+      txOrDb,
+    );
+    const line = calculateLineTax(item.unitPriceCents, item.quantity, tc);
+    lines.push({ productId: item.productId, ...line });
+    totalTaxCents += line.taxAmountCents;
+    productTaxMap[item.productId] = { code: tc.code, name: tc.name, ratePercent: tc.ratePercent };
+
+    const existing = classFrequency.get(tc.code);
+    classFrequency.set(tc.code, {
+      tc,
+      subtotal: (existing?.subtotal ?? 0) + line.lineSubtotalCents,
+      taxCents: (existing?.taxCents ?? 0) + line.taxAmountCents,
+    });
+  }
+
+  // Primary = class with highest subtotal contribution
+  let primaryTaxClass: CartTaxBreakdown["primaryTaxClass"] = null;
+  let maxSubtotal = -1;
+  const taxLinesByClass: TaxLineByClass[] = [];
+
+  for (const { tc, subtotal, taxCents } of classFrequency.values()) {
+    taxLinesByClass.push({
+      code: tc.code,
+      name: tc.name,
+      ratePercent: tc.ratePercent,
+      taxAmountCents: taxCents,
+      subtotalCents: subtotal,
+    });
+    if (subtotal > maxSubtotal) {
+      maxSubtotal = subtotal;
+      primaryTaxClass = { code: tc.code, name: tc.name, ratePercent: tc.ratePercent };
+    }
+  }
+
+  return { lines, totalTaxCents, primaryTaxClass, taxLinesByClass, productTaxMap };
+}

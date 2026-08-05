@@ -47,12 +47,26 @@ export function useCheckoutOptionsState(
       productIds: string[];
       itemCount: number;
     }[];
+    estimatedTaxCents?: number;
+    taxLabel?: string;
+    taxLinesByClass?: Array<{
+      code: string;
+      name: string;
+      ratePercent: number;
+      taxAmountCents: number;
+      subtotalCents: number;
+    }>;
+    productTaxMap?: Record<string, { code: string; name: string; ratePercent: number }>;
   }>({
     fulfillment: [],
     payment: [],
     pickupBranches: [],
     vendorBankTransferByOrg: {},
     vendorCartSummary: [],
+    estimatedTaxCents: 0,
+    taxLabel: "Estimated Tax",
+    taxLinesByClass: [],
+    productTaxMap: {},
   });
 
   const [vendorCount, setVendorCount] = useState(0);
@@ -63,6 +77,7 @@ export function useCheckoutOptionsState(
 
   const cartItemIds = cartItems.map((item) => item.id).join(",");
   const cartLinesKey = cartItems.map((item) => `${item.id}:${item.quantity}`).join(",");
+  const selectedProductIdsKey = selectedCheckoutProductIds.slice().sort().join(",");
   const prevCartItemIdsRef = useRef<string[]>([]);
   const prevCheckoutVendorOrgIdRef = useRef("");
 
@@ -127,11 +142,16 @@ export function useCheckoutOptionsState(
 
   const swrKey =
     isSignedIn && cartItems.length > 0
-      ? ["checkoutOptions", cartLinesKey, selectedCheckoutVendorOrgId]
+      ? ["checkoutOptions", cartLinesKey, selectedCheckoutVendorOrgId, selectedProductIdsKey]
       : null;
 
   const swrFetcher = async () => {
-    const lines = cartItems.map((item) => ({
+    const itemsToFetch =
+      selectedCheckoutProductIds.length > 0
+        ? cartItems.filter((item) => selectedCheckoutProductIds.includes(item.id))
+        : cartItems;
+
+    const lines = itemsToFetch.map((item) => ({
       id: item.id,
       quantity: item.quantity,
       price: item.price,
@@ -167,6 +187,10 @@ export function useCheckoutOptionsState(
           pickupBranches: [],
           vendorBankTransferByOrg: {},
           vendorCartSummary: [],
+          estimatedTaxCents: 0,
+          taxLabel: "Estimated Tax",
+          taxLinesByClass: [],
+          productTaxMap: {},
         });
         setVendorCount(0);
         setSelectedCheckoutVendorOrgId("");
@@ -186,6 +210,10 @@ export function useCheckoutOptionsState(
         pickupBranches: checkoutOptionsData.pickupBranches,
         vendorBankTransferByOrg: checkoutOptionsData.vendorBankTransferByOrg,
         vendorCartSummary: checkoutOptionsData.vendorCartSummary,
+        estimatedTaxCents: checkoutOptionsData.estimatedTaxCents,
+        taxLabel: checkoutOptionsData.taxLabel,
+        taxLinesByClass: checkoutOptionsData.taxLinesByClass,
+        productTaxMap: checkoutOptionsData.productTaxMap,
       });
 
       setVendorCount(checkoutOptionsData.vendorCount ?? 0);

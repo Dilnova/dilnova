@@ -70,6 +70,7 @@ export const products = pgTable(
     imageUrl: text("image_url"),
     orgId: text("org_id").notNull(),
     categoryId: uuid("category_id").references(() => categories.id),
+    taxClassId: uuid("tax_class_id").references(() => taxClasses.id, { onDelete: "set null" }),
     views: integer("views").default(0).notNull(),
     media: jsonb("media").$type<{ url: string; type: "image" | "video" }[]>().default([]).notNull(),
     sku: text("sku"),

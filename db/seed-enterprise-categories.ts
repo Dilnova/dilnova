@@ -23,9 +23,9 @@ async function seed() {
   // 1. Seed Tax Classes
   console.log("Seeding Tax Classes...");
   const taxValues = [
-    { name: "Standard Rate (15%)", ratePercent: 15.0, code: "VAT_STD" },
-    { name: "Reduced Rate (5%)", ratePercent: 5.0, code: "VAT_RED" },
-    { name: "Zero Rated (0%)", ratePercent: 0.0, code: "VAT_ZERO" },
+    { name: "Sri Lanka Standard VAT (18%)", ratePercent: 18.0, code: "VAT_STD" },
+    { name: "Social Security Levy - SSCL (2.5%)", ratePercent: 2.5, code: "SSCL" },
+    { name: "Exempt / Zero Rated (0%)", ratePercent: 0.0, code: "VAT_ZERO" },
   ];
 
   const insertedTaxes = [];

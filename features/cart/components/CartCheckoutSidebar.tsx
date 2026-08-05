@@ -22,8 +22,18 @@ export interface SidebarPaymentOption {
   pendingPayment?: boolean;
 }
 
+export interface CartTaxLineByClass {
+  code: string;
+  name: string;
+  ratePercent: number;
+  taxAmountCents: number;
+  subtotalCents: number;
+}
+
 interface CartCheckoutSidebarProps {
   priceSyncNotice: string | null;
+  taxLabel?: string;
+  taxLinesByClass?: CartTaxLineByClass[];
   isSignedIn: boolean;
   checkoutItemCount: number;
   cartCount: number;
@@ -80,13 +90,15 @@ interface CartCheckoutSidebarProps {
 
 export function CartCheckoutSidebar({
   priceSyncNotice,
+  taxLabel = "Estimated Tax",
+  taxLinesByClass = [],
   isSignedIn,
   checkoutItemCount,
   cartCount,
   vendorCount,
   selectedVendorSummary,
   checkoutSubtotal,
-  cartTotal,
+  cartTotal: _cartTotal,
   estimatedTax,
   shippingFee,
   grandTotal,
@@ -127,6 +139,7 @@ export function CartCheckoutSidebar({
   emailStatus,
 }: CartCheckoutSidebarProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const displaySubtotal = checkoutSubtotal;
 
   return (
     <>
@@ -142,17 +155,16 @@ export function CartCheckoutSidebar({
         )}
 
         <div className="space-y-3 text-xs font-mono">
-          {isSignedIn && checkoutItemCount > 0 && checkoutItemCount < cartCount && (
-            <p className="text-[10px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
-              Checkout totals for {checkoutItemCount} ticked{" "}
-              {checkoutItemCount === 1 ? "item" : "items"}
-              {vendorCount > 1 && selectedVendorSummary
-                ? ` from ${selectedVendorSummary.vendorName}`
-                : ""}
-              . Unticked items stay in your cart.
-            </p>
-          )}
-          {vendorCount > 1 && selectedVendorSummary && checkoutItemCount === cartCount && (
+          {isSignedIn &&
+            checkoutItemCount > 0 &&
+            checkoutItemCount < cartCount &&
+            vendorCount <= 1 && (
+              <p className="text-[10px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
+                Checkout totals for {checkoutItemCount} {checkoutItemCount === 1 ? "item" : "items"}{" "}
+                selected. Unticked items stay in your cart.
+              </p>
+            )}
+          {vendorCount > 1 && selectedVendorSummary && (
             <p className="text-[10px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
               Checkout totals for {selectedVendorSummary.vendorName} ({checkoutItemCount}{" "}
               {checkoutItemCount === 1 ? "item" : "items"}). Other vendors stay in your cart.
@@ -162,35 +174,79 @@ export function CartCheckoutSidebar({
           <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
             <span>Subtotal</span>
             <span className="font-bold text-zinc-900 dark:text-zinc-200">
-              {formatPrice(vendorCount > 1 ? checkoutSubtotal : cartTotal)}
+              {formatPrice(displaySubtotal)}
             </span>
           </div>
 
-          <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
-            <span>Estimated Tax (8%)</span>
-            <span className="font-bold text-zinc-900 dark:text-zinc-200">
-              {formatPrice(estimatedTax)}
-            </span>
-          </div>
+          {optionsLoading ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-zinc-400 dark:text-zinc-600 animate-pulse">
+                <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-28"></div>
+                <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-16"></div>
+              </div>
+              <div className="flex items-center justify-between text-zinc-400 dark:text-zinc-600 animate-pulse">
+                <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-20"></div>
+                <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-16"></div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {taxLinesByClass && taxLinesByClass.length > 1 ? (
+                <div className="space-y-1.5 py-1 border-y border-zinc-100 dark:border-zinc-900/60">
+                  <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">
+                    Tax Breakdown
+                  </span>
+                  {taxLinesByClass.map((tl) => (
+                    <div
+                      key={tl.code}
+                      className="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 pl-2"
+                    >
+                      <span>
+                        • {tl.name} ({tl.ratePercent}%)
+                      </span>
+                      <span className="font-bold text-zinc-800 dark:text-zinc-300">
+                        {formatPrice(tl.taxAmountCents)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between pt-1 text-zinc-700 dark:text-zinc-300 font-bold border-t border-dashed border-zinc-200 dark:border-zinc-800">
+                    <span>Total Estimated Tax</span>
+                    <span>{formatPrice(estimatedTax)}</span>
+                  </div>
+                </div>
+              ) : requiresVendorSelection ? (
+                <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] italic">
+                  <span>{taxLabel}</span>
+                  <span className="font-mono text-zinc-400">Select a vendor</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
+                  <span>{taxLabel}</span>
+                  <span className="font-bold text-zinc-900 dark:text-zinc-200">
+                    {formatPrice(estimatedTax)}
+                  </span>
+                </div>
+              )}
 
-          <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
-            <span>Shipping</span>
-            <span className="font-bold text-zinc-900 dark:text-zinc-200">
-              {shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}
-            </span>
-          </div>
+              <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
+                <span>Shipping</span>
+                <span className="font-bold text-zinc-900 dark:text-zinc-200">
+                  {shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}
+                </span>
+              </div>
 
-          {shippingFee > 0 && (
-            <p className="text-[10px] text-purple-600 dark:text-purple-400 block text-right mt-1">
-              Add {formatPrice(5000 - (vendorCount > 1 ? checkoutSubtotal : cartTotal))} more for
-              free shipping!
-            </p>
+              {shippingFee > 0 && (
+                <p className="text-[10px] text-purple-600 dark:text-purple-400 block text-right mt-1">
+                  Add {formatPrice(5000 - displaySubtotal)} more for free shipping!
+                </p>
+              )}
+
+              <div className="border-t border-zinc-100 dark:border-zinc-900 pt-4 flex items-center justify-between text-zinc-900 dark:text-zinc-100 font-sans font-bold">
+                <span>Total</span>
+                <span className="text-lg font-black font-mono">{formatPrice(grandTotal)}</span>
+              </div>
+            </>
           )}
-
-          <div className="border-t border-zinc-100 dark:border-zinc-900 pt-4 flex items-center justify-between text-zinc-900 dark:text-zinc-100 font-sans font-bold">
-            <span>Total</span>
-            <span className="text-lg font-black font-mono">{formatPrice(grandTotal)}</span>
-          </div>
         </div>
 
         {/* Sign-in required or signed-in checkout details */}

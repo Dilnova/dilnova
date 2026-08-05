@@ -7,6 +7,7 @@ import { getNormalizedClerkUserEmail } from "@/features/customer/email";
 import { resolveInitialOrderStatus } from "@/features/organization/checkout-options.shared";
 import { resolveCheckoutOptionsForOrgs } from "@/features/organization/checkout-options";
 import { calculateCheckoutTotals } from "@/features/billing/checkout-totals";
+import { buildCartTaxBreakdown } from "@/features/billing/tax-engine";
 import { isBankTransferPayment } from "@/features/billing/bank-transfer";
 import { getBankTransferDetailsForOrgs } from "@/features/billing/bank-transfer.server";
 import { logger } from "@/shared/logging/logger";
@@ -302,14 +303,29 @@ export const simulatedCheckoutAction = authenticatedAction
         return { success: false as const, error: addressValidation.error! };
       }
 
+      const taxBreakdown = await buildCartTaxBreakdown(
+        verifiedItems.map((i) => ({
+          productId: i.id,
+          unitPriceCents: i.price,
+          quantity: i.quantity,
+          vendorOrgId: i.vendorOrgId,
+        })),
+        vendorOrgIds[0] || "",
+      );
+
       const checkoutTotals = calculateCheckoutTotals(
         serverSubtotal,
         fulfillmentOption.zeroShipping === true,
+        taxBreakdown.totalTaxCents,
       );
-      if (checkoutTotals.grandTotal !== clientGrandTotal) {
+      const clientExpectedPreTaxTotal = serverSubtotal + checkoutTotals.shippingAmount;
+      if (
+        clientGrandTotal !== clientExpectedPreTaxTotal &&
+        clientGrandTotal !== checkoutTotals.grandTotal
+      ) {
         return {
           success: false,
-          error: `Checkout total mismatch. Expected ${checkoutTotals.grandTotal}, received ${clientGrandTotal}. Please refresh your cart and try again.`,
+          error: `Checkout total mismatch. Expected ${clientExpectedPreTaxTotal}, received ${clientGrandTotal}. Please refresh your cart and try again.`,
         };
       }
 
@@ -347,6 +363,7 @@ export const simulatedCheckoutAction = authenticatedAction
             email,
             userId: ctx.userId,
             checkoutTotals,
+            taxBreakdown,
             fulfillment,
             payment,
             fulfillmentOption,

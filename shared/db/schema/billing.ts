@@ -8,6 +8,7 @@ import {
   uniqueIndex,
   boolean,
   unique,
+  real,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { products } from "./catalog";
@@ -84,6 +85,8 @@ export const billingReceipts = pgTable(
       .references(() => branches.id, { onDelete: "cascade" }),
     orgId: text("org_id").notNull(),
     cashierUserId: text("cashier_user_id").notNull(),
+    subtotalAmount: integer("subtotal_amount").default(0).notNull(),
+    taxAmount: integer("tax_amount").default(0).notNull(),
     totalAmount: integer("total_amount").notNull(),
     paymentMethod: text("payment_method").default("cash").notNull(),
     customerName: encryptedText("customer_name"),
@@ -111,6 +114,9 @@ export const billingReceiptItems = pgTable(
     productName: text("product_name").notNull(),
     quantity: integer("quantity").notNull(),
     unitPrice: integer("unit_price").notNull(),
+    taxAmount: integer("tax_amount").default(0).notNull(),
+    taxRatePercent: real("tax_rate_percent").default(0).notNull(),
+    taxClassCode: text("tax_class_code"),
   },
   (t) => [
     index("idx_billing_receipt_items_receipt_id").on(t.receiptId),

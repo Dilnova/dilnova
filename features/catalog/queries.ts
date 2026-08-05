@@ -44,6 +44,17 @@ export async function getAllCategories() {
     .from(schema.categories);
 }
 
+export async function getAllTaxClasses() {
+  return db
+    .select({
+      id: schema.taxClasses.id,
+      name: schema.taxClasses.name,
+      code: schema.taxClasses.code,
+      ratePercent: schema.taxClasses.ratePercent,
+    })
+    .from(schema.taxClasses);
+}
+
 export async function getBranchesForOrg(orgId: string) {
   return db
     .select({

@@ -64,6 +64,25 @@ export function clearGuestCartStorage(): void {
   globalThis.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
 }
 
+export function getUserCartStorageKey(userId: string): string {
+  return `dilnova_user_cart_${userId}`;
+}
+
+export function readUserCartCache(userId: string): SyncedCartItem[] {
+  if (typeof globalThis.localStorage === "undefined" || !userId) return [];
+  return parseGuestCartItems(globalThis.localStorage.getItem(getUserCartStorageKey(userId)));
+}
+
+export function writeUserCartCache(userId: string, items: SyncedCartItem[]): void {
+  if (typeof globalThis.localStorage === "undefined" || !userId) return;
+  globalThis.localStorage.setItem(getUserCartStorageKey(userId), JSON.stringify(items));
+}
+
+export function clearUserCartCache(userId: string): void {
+  if (typeof globalThis.localStorage === "undefined" || !userId) return;
+  globalThis.localStorage.removeItem(getUserCartStorageKey(userId));
+}
+
 export function getGuestCartLineCount(): number {
   return readGuestCartFromStorage().reduce((sum, item) => sum + item.quantity, 0);
 }

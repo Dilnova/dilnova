@@ -25,8 +25,11 @@ export function handleApiError(
   // 2. Return a safe, sanitized response to prevent leaking raw system/DB details
   if (typeof error === "object" && error !== null) {
     const obj = error as Record<string, unknown>;
+    const rawMessage = typeof obj.message === "string" ? obj.message : "";
+    const isUserFacing = rawMessage.startsWith("Rate limit exceeded");
+
     return {
-      message: defaultMessage,
+      message: isUserFacing ? rawMessage : defaultMessage,
       code: typeof obj.code === "string" ? obj.code : undefined,
       status: typeof obj.status === "number" ? obj.status : undefined,
     };

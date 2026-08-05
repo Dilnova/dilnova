@@ -9,6 +9,8 @@ import {
   clearGuestCartStorage,
   readGuestCartFromStorage,
   writeGuestCartToStorage,
+  readUserCartCache,
+  writeUserCartCache,
 } from "@/features/cart/guest-storage";
 import {
   applyCatalogSync,
@@ -62,6 +64,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     cartItemsRef.current = cartItems;
   }, [cartItems]);
 
+  // Flush pending server save on page refresh/unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+        if (userId && cartItemsRef.current) {
+          void saveCustomerCartAction({ items: cartItemsRef.current });
+        }
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [userId]);
+
   // Load the correct cart whenever Clerk account changes (guest ↔ user, or user A ↔ user B).
   useEffect(() => {
     if (!isLoaded) return;
@@ -84,13 +103,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Signed-in: never reuse in-memory items from a previous account.
-    setCartItems([]);
-
+    // Signed-in: Pre-seed instantly from local user cache so refresh doesn't show empty cart
+    const userCachedItems = userId ? readUserCartCache(userId) : [];
     const guestItemsForMerge = wasGuest ? readGuestCartFromStorage() : [];
     if (wasGuest) {
       clearGuestCartStorage();
     }
+
+    const initialMerged = mergeCartItems(guestItemsForMerge, userCachedItems);
+    setCartItems(initialMerged);
 
     void (async () => {
       const previousLineCount = countCartLines(guestItemsForMerge);
@@ -98,14 +119,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const result = await loadCustomerCartAction({});
       if (hydrateRequestRef.current !== requestId) return;
 
-      if (!result?.data?.success) {
-        setCartItems(guestItemsForMerge);
-        setIsCartReady(true);
-        setServerSynced(true);
-        return;
-      }
-
-      let merged = mergeCartItems(guestItemsForMerge, result?.data?.items || []);
+      const serverItems = result?.data?.success ? result.data.items || [] : [];
+      let merged = mergeCartItems(initialMerged, serverItems);
 
       const syncResult = await syncCartPricesAction({ productIds: merged.map((item) => item.id) });
       if (hydrateRequestRef.current !== requestId) return;
@@ -120,26 +135,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       isHydratingRef.current = true;
       setCartItems(merged);
+      if (userId) {
+        writeUserCartCache(userId, merged);
+      }
       setCartMergeNotice(buildCartMergeNotice(previousLineCount, nextLineCount, removedCount));
       setServerSynced(true);
       setIsCartReady(true);
 
-      if (
-        merged.length > 0 &&
-        (guestItemsForMerge.length > 0 ||
-          removedCount > 0 ||
-          (syncResult?.data?.success && syncResult.data.items.length > 0))
-      ) {
+      if (merged.length > 0) {
         await saveCustomerCartAction({ items: merged });
       }
     })();
-  }, [accountKey, isLoaded]);
+  }, [accountKey, isLoaded, userId]);
 
-  // Guest carts only: persist to localStorage. Signed-in carts persist to PostgreSQL only.
+  // Persist to local storage immediately whenever cartItems change (guest or signed-in user)
   useEffect(() => {
-    if (!isCartReady || accountKey !== "guest") return;
-    writeGuestCartToStorage(cartItems);
-  }, [cartItems, isCartReady, accountKey]);
+    if (!isCartReady) return;
+    if (accountKey === "guest") {
+      writeGuestCartToStorage(cartItems);
+    } else if (userId) {
+      writeUserCartCache(userId, cartItems);
+    }
+  }, [cartItems, isCartReady, accountKey, userId]);
 
   const persistServerCart = useCallback(
     (items: SyncedCartItem[]) => {
@@ -156,7 +173,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       saveTimerRef.current = window.setTimeout(() => {
         void saveCustomerCartAction({ items });
-      }, 600);
+      }, 300);
     },
     [accountKey, serverSynced],
   );
