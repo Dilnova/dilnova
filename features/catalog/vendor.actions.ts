@@ -120,6 +120,7 @@ export const addProductAction = vendorAction
             media: mediaPayload,
             orgId: orgId,
             categoryId: parsedInput.categoryId || null,
+            taxClassId: parsedInput.taxClassId || null,
             // Pre-order fields
             isPreorder: resolvedStockAvailability === "pre_order",
             preorderType: parsedInput.preorderType ?? "full_upfront",

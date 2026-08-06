@@ -12,8 +12,16 @@ interface Category {
   parentId: string | null;
 }
 
+interface TaxClass {
+  id: string;
+  name: string;
+  code: string;
+  ratePercent: number;
+}
+
 interface AddProductClientProps {
   categories: Category[];
+  taxClasses?: TaxClass[];
   maxMediaLimit: number;
   branches?: { id: string; name: string; isDefault: boolean }[];
   isMultiBranchActive?: boolean;
@@ -23,6 +31,7 @@ interface AddProductClientProps {
 
 export default function AddProductClient({
   categories,
+  taxClasses = [],
   maxMediaLimit,
   branches = [],
   isMultiBranchActive = false,
@@ -32,6 +41,7 @@ export default function AddProductClient({
   return (
     <AddProductProvider
       categories={categories}
+      taxClasses={taxClasses}
       maxMediaLimit={maxMediaLimit}
       branches={branches}
       isMultiBranchActive={isMultiBranchActive}

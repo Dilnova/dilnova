@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { isVideoUrl } from "@/shared/media/media";
 import { useCurrency } from "@/shared/currency/context/currency-context";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 export interface CartItemType {
   id: string;
@@ -36,6 +37,10 @@ interface CartVendorGroupsProps {
   showProductCheckoutSelection: boolean;
   selectedCheckoutVendorOrgId: string;
   selectedCheckoutProductIdSet: Set<string>;
+  productTaxMap?: Record<
+    string,
+    { code: string; name: string; ratePercent: number; taxAmountCents?: number }
+  >;
   onSelectCheckoutVendor: (orgId: string, productIds: string[]) => void;
   onToggleProductCheckout: (productId: string) => void;
   onToggleAllProductsInGroup: (productIds: string[], checked: boolean) => void;
@@ -49,6 +54,7 @@ export function CartVendorGroups({
   showProductCheckoutSelection,
   selectedCheckoutVendorOrgId,
   selectedCheckoutProductIdSet,
+  productTaxMap = {},
   onSelectCheckoutVendor,
   onToggleProductCheckout,
   onToggleAllProductsInGroup,
@@ -56,8 +62,8 @@ export function CartVendorGroups({
   removeFromCart,
 }: CartVendorGroupsProps) {
   const { format } = useCurrency();
-  const formatPrice = (cents: number, currency = "USD") => {
-    return format(cents, currency);
+  const formatPrice = (cents: number, currency?: string) => {
+    return format(cents, currency || DEFAULT_CURRENCY);
   };
 
   return (
@@ -190,15 +196,24 @@ export function CartVendorGroups({
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <span
-                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase tracking-wider mb-1.5 ${
-                              item.type === "service"
-                                ? "bg-teal-500/10 text-teal-650 dark:text-teal-400"
-                                : "bg-indigo-500/10 text-indigo-650 dark:text-indigo-400"
-                            }`}
-                          >
-                            {item.type || "product"}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                            <span
+                              className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono font-bold uppercase tracking-wider ${
+                                item.type === "service"
+                                  ? "bg-teal-500/10 text-teal-650 dark:text-teal-400"
+                                  : "bg-indigo-500/10 text-indigo-650 dark:text-indigo-400"
+                              }`}
+                            >
+                              {item.type || "product"}
+                            </span>
+
+                            {productTaxMap?.[item.id] && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                                🏷️ Tax: {productTaxMap[item.id].name} (
+                                {productTaxMap[item.id].ratePercent}%)
+                              </span>
+                            )}
+                          </div>
 
                           <Link
                             href={`/products/${item.id}`}
@@ -230,13 +245,26 @@ export function CartVendorGroups({
                           </button>
                         </div>
 
-                        <div className="text-right flex flex-col justify-center min-w-[90px]">
+                        <div className="text-right flex flex-col justify-center min-w-[100px]">
                           <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono block">
-                            {formatPrice(item.price)} each
+                            {formatPrice(item.price, (item.currency as string) || DEFAULT_CURRENCY)}{" "}
+                            each
                           </span>
                           <span className="text-sm font-extrabold font-mono text-zinc-955 dark:text-zinc-50 mt-0.5">
-                            {formatPrice(item.price * item.quantity)}
+                            {formatPrice(
+                              item.price * item.quantity,
+                              (item.currency as string) || DEFAULT_CURRENCY,
+                            )}
                           </span>
+                          {productTaxMap?.[item.id] && (
+                            <span className="text-[11px] font-semibold font-mono text-purple-700 dark:text-purple-300 mt-1 block whitespace-nowrap">
+                              Tax:{" "}
+                              {formatPrice(
+                                productTaxMap[item.id].taxAmountCents ?? 0,
+                                (item.currency as string) || DEFAULT_CURRENCY,
+                              )}
+                            </span>
+                          )}
                         </div>
 
                         <button

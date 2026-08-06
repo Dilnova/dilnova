@@ -5,6 +5,8 @@ import { formatOrderStatusLabel } from "@/features/orders/status";
 import { CustomerPaymentSlipSection } from "@/features/orders/components/OrderPaymentPanels";
 import { isBankTransferPayment } from "@/features/billing/bank-transfer";
 import OrderBankTransferInstructions from "@/features/customer/components/OrderBankTransferInstructions";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 import type { InferSelectModel } from "drizzle-orm";
 import type * as schema from "@/shared/db/schema";
@@ -29,23 +31,23 @@ export default function CustomerOrdersTab({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-          Order & Transaction History
-        </h3>
-        <p className="text-xs text-zinc-500 font-medium">
-          View details and print invoices from your past storefront transactions.
+        <h2 className="text-base font-extrabold text-zinc-900 dark:text-zinc-100 font-mono flex items-center gap-2">
+          <span>📋</span> Order & Transaction History
+        </h2>
+        <p className="text-xs text-zinc-500 mt-0.5">
+          View past purchases, payment verification status, and bank transfer details.
         </p>
       </div>
 
       {orders.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-white dark:bg-zinc-950 p-8 shadow-sm max-w-md mx-auto">
-          <span className="text-5xl">📋</span>
-          <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mt-4">
-            No Transactions Yet
+        <div className="bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-10 text-center">
+          <span className="text-4xl block mb-3">🛍️</span>
+          <h3 className="text-base font-bold text-zinc-800 dark:text-zinc-200 font-mono">
+            No Orders Yet
           </h3>
-          <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto leading-relaxed">
-            When you purchase products or settle checkout invoices at vendor registers, your billing
-            history will display here.
+          <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1">
+            When you purchase items from vendors, your order details, invoices, and status will
+            appear here.
           </p>
           <Link
             href="/products"
@@ -66,12 +68,9 @@ export default function CustomerOrdersTab({
               },
               checkoutOptionsCatalog,
             );
-            const formattedOrderTotal = (
-              getOrderDisplayTotals(order).grandTotal / 100
-            ).toLocaleString("en-US", {
-              style: "currency",
-              currency: "USD",
-            });
+            const orderCurrency =
+              order.presentmentCurrency || order.vendorBaseCurrency || DEFAULT_CURRENCY;
+            const grandTotal = getOrderDisplayTotals(order).grandTotal;
             const orderDate = new Date(order.createdAt).toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
@@ -120,7 +119,9 @@ export default function CustomerOrdersTab({
                           {formatOrderStatusLabel(order.status)}
                         </span>
                       </div>
-                      <p className="text-[10px] text-zinc-405 font-medium">{orderDate}</p>
+                      <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium">
+                        {orderDate}
+                      </p>
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         <span className="text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
                           {checkoutDetails.fulfillment}
@@ -143,7 +144,10 @@ export default function CustomerOrdersTab({
                         {itemCount} {itemCount === 1 ? "item" : "items"}
                       </p>
                       <p className="text-sm font-black text-zinc-900 dark:text-zinc-50 font-mono mt-0.5">
-                        {formattedOrderTotal}
+                        <ProductPriceDisplay
+                          priceInSubunits={grandTotal}
+                          baseCurrency={orderCurrency}
+                        />
                       </p>
                     </div>
                     <div className="text-zinc-400 group-open:rotate-180 transition-transform duration-200 pr-1 text-[10px] font-bold">
@@ -158,19 +162,8 @@ export default function CustomerOrdersTab({
                     <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 font-mono">
                       Line Items
                     </h4>
-                    <div className="divide-y divide-zinc-100 dark:divide-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 overflow-hidden">
+                    <div className="divide-y divide-zinc-100 dark:divide-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-955 overflow-hidden">
                       {items.map((item: OrderItemRow) => {
-                        const formattedUnitPrice = (item.unitPrice / 100).toLocaleString("en-US", {
-                          style: "currency",
-                          currency: "USD",
-                        });
-                        const formattedItemTotal = (
-                          (item.unitPrice * item.quantity) /
-                          100
-                        ).toLocaleString("en-US", {
-                          style: "currency",
-                          currency: "USD",
-                        });
                         return (
                           <div
                             key={item.id}
@@ -183,12 +176,19 @@ export default function CustomerOrdersTab({
                               >
                                 {item.productName}
                               </Link>
-                              <p className="text-[10px] text-zinc-400 font-mono">
-                                Qty: {item.quantity} × {formattedUnitPrice}
+                              <p className="text-[10px] text-zinc-400 font-mono flex items-center gap-1">
+                                <span>Qty: {item.quantity} ×</span>
+                                <ProductPriceDisplay
+                                  priceInSubunits={item.unitPrice}
+                                  baseCurrency={orderCurrency}
+                                />
                               </p>
                             </div>
                             <div className="font-mono font-bold text-zinc-900 dark:text-zinc-100 text-right flex-shrink-0">
-                              {formattedItemTotal}
+                              <ProductPriceDisplay
+                                priceInSubunits={item.unitPrice * item.quantity}
+                                baseCurrency={orderCurrency}
+                              />
                             </div>
                           </div>
                         );

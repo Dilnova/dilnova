@@ -7,6 +7,7 @@ import {
   type CachedOrg,
 } from "@/shared/auth/clerk-cache";
 import type { Metadata } from "next";
+import { resolveTaxClassForProduct } from "@/features/billing/tax-engine";
 import ProductGalleryPlayer from "@/features/catalog/components/product-detail/ProductGalleryPlayer";
 import WishlistButton from "@/features/catalog/components/product-detail/WishlistButton";
 import ReviewsSection from "@/features/catalog/components/product-detail/ReviewsSection";
@@ -107,9 +108,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const { product, category } = result;
 
-  const [stockAvailabilityCatalog, inventoryRecord] = await Promise.all([
+  const [stockAvailabilityCatalog, inventoryRecord, taxClass] = await Promise.all([
     getStockAvailabilityCatalog(),
     product.type === "product" ? getInventoryForProduct(id) : Promise.resolve(null),
+    resolveTaxClassForProduct(id, product.orgId),
   ]);
 
   const { canPurchase, availabilityDef } = resolveOnlineProductPurchaseState(
@@ -379,13 +381,18 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 )}
               </div>
 
-              <div className="flex items-baseline gap-2">
+              <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-2xl font-black font-mono text-purple-700 dark:text-purple-400">
                   <ProductPriceDisplay
                     priceInSubunits={product.price}
                     baseCurrency={product.currency || DEFAULT_CURRENCY}
                   />
                 </span>
+                {taxClass && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 font-mono">
+                    🏷️ Tax: {taxClass.name}
+                  </span>
+                )}
               </div>
 
               <hr className="border-zinc-200 dark:border-zinc-800" />

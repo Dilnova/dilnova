@@ -65,6 +65,7 @@ export type VendorCartGroupItem = {
   price: number;
   quantity: number;
   vendorName: string;
+  orgId?: string;
 };
 
 export type VendorCartGroupView<T extends VendorCartGroupItem = VendorCartGroupItem> = {
@@ -75,37 +76,28 @@ export type VendorCartGroupView<T extends VendorCartGroupItem = VendorCartGroupI
   items: T[];
 };
 
-/** Build display groups from the full cart. Checkout ticks must not filter this list. */
 export function groupCartItemsByVendor<T extends VendorCartGroupItem>(
   cartItems: T[],
   vendorSummaries: VendorCartSummaryEntry[],
 ): VendorCartGroupView<T>[] {
-  if (vendorSummaries.length > 0) {
-    return vendorSummaries
-      .map((summary) => {
-        const items = cartItems.filter((item) => summary.productIds.includes(item.id));
-        return {
-          orgId: summary.orgId,
-          vendorName: summary.vendorName,
-          subtotalCents: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-          itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
-          items,
-        };
-      })
-      .filter((group) => group.items.length > 0);
-  }
+  const vendorNameByOrgId = new Map(vendorSummaries.map((s) => [s.orgId, s.vendorName]));
+  const groupsByOrg = new Map<string, VendorCartGroupView<T>>();
 
-  const byVendorName = new Map<string, VendorCartGroupView<T>>();
   for (const item of cartItems) {
-    const existing = byVendorName.get(item.vendorName);
+    const itemOrgId = item.orgId || "";
+    const key = itemOrgId || item.vendorName || "default";
+    const vendorName =
+      (itemOrgId ? vendorNameByOrgId.get(itemOrgId) : undefined) || item.vendorName || "Vendor";
+
+    const existing = groupsByOrg.get(key);
     if (existing) {
       existing.items.push(item);
       existing.subtotalCents += item.price * item.quantity;
       existing.itemCount += item.quantity;
     } else {
-      byVendorName.set(item.vendorName, {
-        orgId: item.vendorName,
-        vendorName: item.vendorName,
+      groupsByOrg.set(key, {
+        orgId: itemOrgId || key,
+        vendorName,
         subtotalCents: item.price * item.quantity,
         itemCount: item.quantity,
         items: [item],
@@ -113,7 +105,7 @@ export function groupCartItemsByVendor<T extends VendorCartGroupItem>(
     }
   }
 
-  return [...byVendorName.values()];
+  return [...groupsByOrg.values()];
 }
 
 /** Keep checkout ticks in sync when cart lines are added/removed — never re-tick user unticks. */

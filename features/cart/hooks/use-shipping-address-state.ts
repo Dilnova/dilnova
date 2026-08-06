@@ -31,7 +31,7 @@ export function useShippingAddressState(isSignedIn: boolean) {
     loadSavedDeliveryDetails();
   }, [isSignedIn]);
 
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     switch (name) {
       case "shippingAddress":

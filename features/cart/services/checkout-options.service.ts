@@ -12,6 +12,7 @@ import {
   buildVendorCartSummaries,
   resolveCheckoutVendorOrgId,
 } from "@/features/cart/vendor-checkout";
+import { buildCartTaxBreakdown } from "@/features/billing/tax-engine";
 
 export async function fetchBranchesForOrgs(orgIds: string[]) {
   const branchRows =
@@ -60,6 +61,10 @@ export async function getCheckoutOptionsService(
       vendorCount: 0,
       vendorBankTransferByOrg: {},
       vendorCartSummary: [],
+      estimatedTaxCents: 0,
+      taxLabel: "Estimated Tax",
+      taxLinesByClass: [],
+      productTaxMap: {},
     };
   }
 
@@ -106,6 +111,10 @@ export async function getCheckoutOptionsService(
         ]),
       ),
       vendorCartSummary,
+      estimatedTaxCents: 0,
+      taxLabel: "Estimated Tax",
+      taxLinesByClass: [],
+      productTaxMap: {},
     };
   }
 
@@ -120,6 +129,38 @@ export async function getCheckoutOptionsService(
     ? await getBankTransferDetailsForOrgs(uniqueOrgIds)
     : {};
   const vendorCartSummary = buildVendorCartSummaries(cartLines, productById, vendorNamesByOrg);
+
+  const taxBreakdown = await buildCartTaxBreakdown(
+    cartLines.map((line) => {
+      const prod = productById.get(line.id);
+      return {
+        productId: line.id,
+        unitPriceCents: prod ? prod.price : Math.round(line.price * 100),
+        quantity: line.quantity,
+        vendorOrgId: prod?.orgId,
+      };
+    }),
+  );
+
+  const estimatedTaxCents = taxBreakdown.totalTaxCents;
+  const taxLinesByClass = taxBreakdown.taxLinesByClass;
+  const productTaxMap = taxBreakdown.productTaxMap;
+
+  const primaryTax = taxBreakdown.primaryTaxClass;
+  let taxLabel = "Estimated Tax";
+  if (taxLinesByClass.length > 1) {
+    taxLabel = "Estimated Tax (Combined)";
+  } else if (primaryTax) {
+    if (primaryTax.ratePercent > 0) {
+      const nameHasPercent = primaryTax.name.includes("%");
+      const labelSuffix = nameHasPercent
+        ? primaryTax.name
+        : `${primaryTax.name} — ${primaryTax.ratePercent}%`;
+      taxLabel = `Estimated Tax (${labelSuffix})`;
+    } else {
+      taxLabel = "Estimated Tax (0%)";
+    }
+  }
 
   return {
     success: true as const,
@@ -151,5 +192,9 @@ export async function getCheckoutOptionsService(
       ]),
     ),
     vendorCartSummary,
+    estimatedTaxCents,
+    taxLabel,
+    taxLinesByClass,
+    productTaxMap,
   };
 }

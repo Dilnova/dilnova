@@ -2,9 +2,14 @@ import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import Link from "next/link";
 import VendorProfileForm from "@/features/vendor/components/VendorProfileForm";
 import OrgCheckoutOptionsForm from "@/features/organization/components/OrgCheckoutOptionsForm";
+import OrgTaxSettingsForm from "@/features/organization/components/OrgTaxSettingsForm";
 import RoleSelector from "@/features/admin/components/RoleSelector";
 import { getCheckoutOptionsCatalog } from "@/features/organization/checkout-options";
 import { getBranchCountForOrg } from "@/features/admin/queries";
+import { getTaxClassesForOrg } from "@/features/catalog/queries";
+import { db } from "@/shared/db/client";
+import { orgSettings } from "@/shared/db/schema";
+import { eq } from "drizzle-orm";
 import {
   bankDetailsToProfileFormFields,
   hasBankTransferConfiguredForOrg,
@@ -26,7 +31,14 @@ export default async function AdminPage() {
 
   // Fetch current organization details and membership directories in parallel (reduce latency)
   const client = await clerkClient();
-  const [org, membershipsResponse, checkoutOptionsCatalog, branchCountRow] = await Promise.all([
+  const [
+    org,
+    membershipsResponse,
+    checkoutOptionsCatalog,
+    branchCountRow,
+    taxClasses,
+    currentOrgSettings,
+  ] = await Promise.all([
     client.organizations.getOrganization({ organizationId: orgId }),
     client.organizations
       .getOrganizationMembershipList({
@@ -39,6 +51,13 @@ export default async function AdminPage() {
       }),
     getCheckoutOptionsCatalog(),
     getBranchCountForOrg(orgId),
+    getTaxClassesForOrg(orgId, { filterAllowed: false }),
+    db
+      .select()
+      .from(orgSettings)
+      .where(eq(orgSettings.orgId, orgId))
+      .limit(1)
+      .then((res) => res[0] ?? null),
   ]);
 
   const publicMetadata = (org.publicMetadata || {}) as {
@@ -82,7 +101,11 @@ export default async function AdminPage() {
     <main className="p-4 sm:p-8 max-w-4xl mx-auto font-sans">
       <div className="w-full">
         {/* Centralized Organization Onboarding Alert & Wizard Modal */}
-        <OrgOnboardingController status={onboardingStatus} orgName={org.name} />
+        <OrgOnboardingController
+          status={onboardingStatus}
+          orgName={org.name}
+          taxClasses={taxClasses}
+        />
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -211,6 +234,25 @@ export default async function AdminPage() {
             branchCount={branchCountRow}
             bankTransferConfigured={bankTransferConfigured}
             addressConfigured={Boolean(metadata.address?.trim())}
+          />
+        </div>
+
+        {/* Store Tax Settings */}
+        <div className="space-y-6 mb-8 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-5 bg-zinc-50/10 dark:bg-zinc-900/5">
+          <div>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 font-sans">
+              Store Default Tax Configuration (Level 3)
+            </h3>
+            <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+              Configure your store-wide default tax class. Products without direct product or
+              category tax overrides will automatically use this rate.
+            </p>
+          </div>
+          <OrgTaxSettingsForm
+            orgId={orgId}
+            currentDefaultTaxClassId={currentOrgSettings?.defaultTaxClassId || null}
+            currentAllowedTaxClassIds={currentOrgSettings?.allowedTaxClassIds ?? undefined}
+            taxClasses={taxClasses}
           />
         </div>
 

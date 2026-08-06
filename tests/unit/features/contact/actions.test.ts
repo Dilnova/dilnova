@@ -36,18 +36,19 @@ vi.mock("@/shared/platform/settings", () => ({
 import { submitContactFormAction } from "@/features/contact/actions";
 
 describe("submitContactFormAction", () => {
-  const originalEnv = process.env.NODE_ENV;
+  const originalEnv = { ...process.env };
 
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NODE_ENV = "test";
     process.env.SMTP_USER = "smtp-user";
     process.env.SMTP_PASSWORD = "smtp-password";
+    process.env.EMAIL_FROM_ADDRESS = "info@dilstar.pp.ua";
     delete process.env.TURNSTILE_SECRET_KEY;
   });
 
   afterAll(() => {
-    process.env.NODE_ENV = originalEnv;
+    process.env = originalEnv;
   });
 
   it("submits successfully when correct parameters are sent", async () => {
@@ -64,7 +65,30 @@ describe("submitContactFormAction", () => {
     expect(result.error).toBeNull();
     expect(mockInsert).toHaveBeenCalled();
     expect(mockInsertValues).toHaveBeenCalled();
-    expect(mockSendRawSmtpEmail).toHaveBeenCalled();
+    expect(mockSendRawSmtpEmail).toHaveBeenCalledTimes(2);
+    expect(mockSendRawSmtpEmail).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ to: "info@dilstar.pp.ua" }),
+    );
+    expect(mockSendRawSmtpEmail).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ to: "john@example.com" }),
+    );
+  });
+
+  it("accepts new support categories like orders and billing", async () => {
+    const formData = new FormData();
+    formData.append("name", "Jane Smith");
+    formData.append("email", "jane@example.com");
+    formData.append("category", "orders");
+    formData.append("subject", "Order Shipment Help");
+    formData.append("message", "Need help tracking my package delivery status.");
+
+    const result = await submitContactFormAction(null, formData);
+
+    expect(result.success).toBe(true);
+    expect(result.error).toBeNull();
+    expect(mockInsert).toHaveBeenCalled();
   });
 
   it("silently blocks spam submissions when honeypot field is filled", async () => {

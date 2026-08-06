@@ -8,6 +8,7 @@ import { getStockAvailabilityCatalog } from "@/features/inventory/availability.s
 import { getEnabledStockAvailabilityOptions } from "@/features/inventory/availability.shared";
 import {
   getAllCategories,
+  getTaxClassesForOrg,
   getAssignedBranchIdsForUser,
   getBranchesForOrg,
   getDefaultBranchName,
@@ -47,6 +48,7 @@ export default async function AddProductPage() {
   }
 
   const categories = await getAllCategories();
+  const taxClasses = await getTaxClassesForOrg(orgId);
 
   let branches = await getBranchesForOrg(orgId);
 
@@ -128,6 +130,7 @@ export default async function AddProductPage() {
       {/* Client Form Component */}
       <AddProductClient
         categories={categories}
+        taxClasses={taxClasses}
         maxMediaLimit={maxMediaLimit}
         branches={branches}
         isMultiBranchActive={premiumStatus.multiBranchActive}

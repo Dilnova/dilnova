@@ -301,6 +301,12 @@ export default async function RootLayout({
                               Support
                             </span>
                             <Link
+                              href="/support"
+                              className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors font-medium text-indigo-600 dark:text-indigo-400"
+                            >
+                              Help Center &amp; FAQs
+                            </Link>
+                            <Link
                               href="/contact"
                               className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
                             >

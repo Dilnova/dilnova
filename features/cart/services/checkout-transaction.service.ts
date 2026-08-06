@@ -10,6 +10,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
 import type { CheckoutOptionDefinition } from "@/features/organization/checkout-options.shared";
 import type { VerifiedCheckoutItem, DbTransaction } from "./checkout.types";
+import type { CartTaxBreakdown } from "@/features/billing/tax-engine";
 
 export async function executeCheckoutTransaction(opts: {
   verifiedItems: VerifiedCheckoutItem[];
@@ -25,6 +26,7 @@ export async function executeCheckoutTransaction(opts: {
     shippingAmount: number;
     grandTotal: number;
   };
+  taxBreakdown?: CartTaxBreakdown;
   fulfillment: string;
   payment: string;
   fulfillmentOption: CheckoutOptionDefinition;
@@ -181,17 +183,23 @@ export async function executeCheckoutTransaction(opts: {
     // Insert Order Items
     if (opts.verifiedItems.length > 0) {
       await tx.insert(schema.simulatedOrderItems).values(
-        opts.verifiedItems.map((item) => ({
-          orderId: order.id,
-          productId: item.id,
-          productName: item.name,
-          vendorOrgId: item.vendorOrgId,
-          vendorBaseCurrency: item.vendorBaseCurrency || "USD",
-          quantity: item.quantity,
-          unitPrice: item.price,
-          unitPriceBase: item.unitPriceBase || item.price,
-          exchangeRateSnapshot: item.exchangeRateSnapshot || 1.0,
-        })),
+        opts.verifiedItems.map((item) => {
+          const lineTax = opts.taxBreakdown?.lines.find((l) => l.productId === item.id);
+          return {
+            orderId: order.id,
+            productId: item.id,
+            productName: item.name,
+            vendorOrgId: item.vendorOrgId,
+            vendorBaseCurrency: item.vendorBaseCurrency || "USD",
+            quantity: item.quantity,
+            unitPrice: item.price,
+            unitPriceBase: item.unitPriceBase || item.price,
+            exchangeRateSnapshot: item.exchangeRateSnapshot || 1.0,
+            taxAmount: lineTax?.taxAmountCents ?? 0,
+            taxRatePercent: lineTax?.taxRatePercent ?? 0,
+            taxClassCode: lineTax?.taxClassCode ?? null,
+          };
+        }),
       );
     }
 
