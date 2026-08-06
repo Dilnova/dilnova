@@ -7,6 +7,34 @@ import * as Sentry from "@sentry/nextjs";
 import { toast } from "sonner";
 import Image from "next/image";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
+import DeliveryAddressFormFields from "@/features/customer/components/DeliveryAddressFormFields";
+
+function parseInitialBusinessAddress(rawAddress: string) {
+  if (!rawAddress)
+    return { street: "", line2: "", city: "", state: "", postalCode: "", country: "Sri Lanka" };
+  const parts = rawAddress
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length >= 4) {
+    return {
+      street: parts[0] || "",
+      line2: parts.length > 4 ? parts[1] : "",
+      city: parts[parts.length - 4] || parts[1] || "",
+      state: parts[parts.length - 3] || parts[2] || "",
+      postalCode: parts[parts.length - 2] || "",
+      country: parts[parts.length - 1] || "Sri Lanka",
+    };
+  }
+  return {
+    street: rawAddress,
+    line2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "Sri Lanka",
+  };
+}
 
 interface VendorProfileFormProps {
   orgId: string;
@@ -30,9 +58,19 @@ export default function VendorProfileForm({
   initialMetadata,
   isAdmin = false,
 }: VendorProfileFormProps) {
+  const initialAddrData = parseInitialBusinessAddress(initialMetadata.address || "");
+
   const [description, setDescription] = useState(initialMetadata.description || "");
-  const [address, setAddress] = useState(initialMetadata.address || "");
   const [phone, setPhone] = useState(initialMetadata.phone || "");
+
+  // Structured Address State for Enterprise DeliveryAddressFormFields
+  const [shippingAddress, setShippingAddress] = useState(initialAddrData.street);
+  const [shippingAddressLine2, setShippingAddressLine2] = useState(initialAddrData.line2);
+  const [shippingCity, setShippingCity] = useState(initialAddrData.city);
+  const [shippingState, setShippingState] = useState(initialAddrData.state);
+  const [shippingPostalCode, setShippingPostalCode] = useState(initialAddrData.postalCode);
+  const [shippingCountry, setShippingCountry] = useState(initialAddrData.country);
+
   const [bannerUrl, setBannerUrl] = useState(initialMetadata.bannerUrl || "");
   const [stockAllocationMode, setStockAllocationMode] = useState<
     "target_branch" | "central_intake"
@@ -52,6 +90,17 @@ export default function VendorProfileForm({
   const [bannerUploadProgress, setBannerUploadProgress] = useState<number | null>(null);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const bannerCameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAddressFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    if (name === "shippingAddress") setShippingAddress(value);
+    if (name === "shippingAddressLine2") setShippingAddressLine2(value);
+    if (name === "shippingCity") setShippingCity(value);
+    if (name === "shippingState") setShippingState(value);
+    if (name === "shippingPostalCode") setShippingPostalCode(value);
+    if (name === "shippingCountry") setShippingCountry(value);
+    if (name === "shippingPhone") setPhone(value);
+  };
 
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -98,11 +147,22 @@ export default function VendorProfileForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const formattedAddress = [
+      shippingAddress,
+      shippingAddressLine2,
+      shippingCity,
+      shippingState,
+      shippingPostalCode,
+      shippingCountry,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
     startTransition(async () => {
       try {
         const result = await updateVendorMetadata(orgId, {
           description,
-          address,
+          address: formattedAddress,
           phone,
           bannerUrl,
           stockAllocationMode,
@@ -266,32 +326,21 @@ export default function VendorProfileForm({
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
-            Contact Phone Number
-          </label>
-          <input
-            type="text"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+1 (555) 123-4567"
-            className="w-full min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 sm:focus:ring-1 focus:ring-purple-500 font-mono transition-shadow"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
-            Business Address
-          </label>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="123 Enterprise Rd, Suite B"
-            className="w-full min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-2 border border-zinc-200 rounded-lg text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 sm:focus:ring-1 focus:ring-purple-500 transition-shadow"
-          />
-        </div>
+      <div className="space-y-4 pt-4 border-t border-zinc-100 dark:border-zinc-900">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+          Official Store Location & Contact Information
+        </h4>
+        <DeliveryAddressFormFields
+          shippingAddress={shippingAddress}
+          shippingAddressLine2={shippingAddressLine2}
+          shippingCity={shippingCity}
+          shippingState={shippingState}
+          shippingPostalCode={shippingPostalCode}
+          shippingCountry={shippingCountry}
+          shippingPhone={phone}
+          shippingPhone2=""
+          onChange={handleAddressFormChange}
+        />
       </div>
 
       {isAdmin && (
