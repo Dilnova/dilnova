@@ -14,6 +14,7 @@ import StoreCard from "@/components/home/StoreCard";
 import VendorCarousel from "@/components/home/VendorCarousel";
 import FeaturedSeriesList from "@/components/home/FeaturedSeries";
 import PricingCards from "@/components/home/PricingCards";
+import ProcedureFlowchart from "@/components/home/ProcedureFlowchart";
 
 import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 
@@ -301,14 +302,14 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16 md:text-center max-w-2xl md:mx-auto">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 mb-4">
-              Platform Capabilities
+              Everything You Need
             </span>
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
-              Why build on {systemName}?
+              Why Choose {systemName}?
             </h2>
             <p className="text-base text-zinc-500 dark:text-zinc-400">
-              Our infrastructure provides out-of-the-box isolation, role-based controls, and
-              high-performance checkout.
+              Our platform provides private store spaces, easy team permissions, and a fast, smooth
+              checkout experience.
             </p>
           </div>
 
@@ -319,11 +320,11 @@ export default async function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">
-                  Multi-Tenant Isolation
+                  Private & Secure Store Space
                 </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Isolate stores at the tenant level. Each vendor operates their catalog, layout,
-                  and settings in dedicated workspaces, ensuring secure and autonomous management.
+                  Every store gets its own private, secure space. You can manage your products,
+                  designs, and store settings independently without affecting anyone else.
                 </p>
               </div>
             </div>
@@ -334,11 +335,11 @@ export default async function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">
-                  Role-Based Access Control
+                  Easy Team Permissions
                 </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Enterprise-grade authorization models. Roles like Customer, Merchant, and Admin
-                  cleanly separate consumer shopping experiences from dashboard configuration.
+                  Easily set permissions for your team members, staff, and store admins so everyone
+                  has the exact access they need to manage orders and products.
                 </p>
               </div>
             </div>
@@ -349,11 +350,11 @@ export default async function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">
-                  Unified Multi-Vendor Cart
+                  All-in-One Shopping Cart
                 </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Add products from completely different vendors—like plants from Nursery and tech
-                  parts from Tech Store—to a single persistent cart and checkout seamlessly.
+                  Customers can add items from different sellers—like plants from Nursery and tech
+                  parts from Tech Store—to a single cart and checkout seamlessly.
                 </p>
               </div>
             </div>
@@ -364,11 +365,11 @@ export default async function Home() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 mb-2">
-                  High Performance & SEO
+                  Super Fast & Search Engine Ready
                 </h3>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Built with Next.js App Router for server-side rendering, semantic schema
-                  validation, structured SEO, and blazingly fast global edge distribution.
+                  Designed to load blazingly fast on smartphones and laptops while helping your
+                  store rank higher on Google search results automatically.
                 </p>
               </div>
             </div>
@@ -390,6 +391,9 @@ export default async function Home() {
             marketplace.
           </p>
         </div>
+
+        {/* Visual Procedure Flowchart */}
+        <ProcedureFlowchart />
 
         <PricingCards plans={plans} />
       </section>
