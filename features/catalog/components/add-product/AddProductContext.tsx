@@ -368,11 +368,8 @@ export function AddProductProvider({
           setPreorderMaxQuantity("");
 
           window.scrollTo({ top: 0, behavior: "smooth" });
-        } else {
-          const errMsg =
-            result?.data && typeof (result.data as any).error === "string"
-              ? (result.data as any).error
-              : undefined;
+          const dataObj = result?.data as Record<string, unknown> | undefined;
+          const errMsg = dataObj && typeof dataObj.error === "string" ? dataObj.error : undefined;
           toast.error(errMsg || result?.serverError || "Failed to add item.");
         }
       } catch (err) {

@@ -98,7 +98,6 @@ export function CartCheckoutSidebar({
   vendorCount,
   selectedVendorSummary,
   checkoutSubtotal,
-  cartTotal: _cartTotal,
   estimatedTax,
   shippingFee,
   grandTotal,
