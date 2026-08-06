@@ -42,7 +42,7 @@ export default function CustomerDeliverySettingsForm({
 
   const isFormEmpty = !initialData?.shippingAddress && !initialData?.shippingPhone;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 

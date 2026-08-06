@@ -73,7 +73,7 @@ interface CartCheckoutSidebarProps {
   shippingCountry: string;
   shippingPhone: string;
   shippingPhone2: string;
-  handleAddressChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleAddressChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   compatiblePayments: SidebarPaymentOption[];
   paymentMethod: string;
   setPaymentMethod: (id: string) => void;
