@@ -146,14 +146,21 @@ export async function getCheckoutOptionsService(
   const taxLinesByClass = taxBreakdown.taxLinesByClass;
   const productTaxMap = taxBreakdown.productTaxMap;
 
-  const taxLabel =
-    taxLinesByClass.length > 1
-      ? "Estimated Tax (Combined)"
-      : taxBreakdown.primaryTaxClass
-        ? taxBreakdown.primaryTaxClass.ratePercent > 0
-          ? `Estimated Tax (${taxBreakdown.primaryTaxClass.code} — ${taxBreakdown.primaryTaxClass.ratePercent}%)`
-          : "Estimated Tax (0%)"
-        : "Estimated Tax";
+  const primaryTax = taxBreakdown.primaryTaxClass;
+  let taxLabel = "Estimated Tax";
+  if (taxLinesByClass.length > 1) {
+    taxLabel = "Estimated Tax (Combined)";
+  } else if (primaryTax) {
+    if (primaryTax.ratePercent > 0) {
+      const nameHasPercent = primaryTax.name.includes("%");
+      const labelSuffix = nameHasPercent
+        ? primaryTax.name
+        : `${primaryTax.name} — ${primaryTax.ratePercent}%`;
+      taxLabel = `Estimated Tax (${labelSuffix})`;
+    } else {
+      taxLabel = "Estimated Tax (0%)";
+    }
+  }
 
   return {
     success: true as const,

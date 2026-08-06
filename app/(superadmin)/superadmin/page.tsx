@@ -15,6 +15,7 @@ import {
   getSimulatedOrdersWithItems,
   getVendorOrgIntegrityReport,
 } from "@/features/superadmin/queries";
+import { getAllTaxClasses } from "@/features/catalog/queries";
 
 import SuperAdminNavigation from "@/features/superadmin/components/SuperAdminNavigation";
 import OverviewTab from "@/features/superadmin/components/tabs/OverviewTab";
@@ -67,8 +68,11 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
       break;
     }
     case "categories": {
-      const categories = await getCategoriesOrderedByCreatedAtDesc();
-      content = <CategoriesTab categories={categories} />;
+      const [categories, taxClasses] = await Promise.all([
+        getCategoriesOrderedByCreatedAtDesc(),
+        getAllTaxClasses(),
+      ]);
+      content = <CategoriesTab categories={categories} taxClasses={taxClasses} />;
       break;
     }
     case "products": {
@@ -156,6 +160,7 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
         servicesCustomSetting,
         checkoutOptionsCatalog,
         stockAvailabilityCatalog,
+        allTaxClasses,
       ] = await Promise.all([
         getSystemSetting("max_media_limit", "5"),
         getSystemSetting("system_logo", ""),
@@ -167,6 +172,7 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
         getSystemSetting("custom_storefront_dilstar-services", "true"),
         getCheckoutOptionsCatalog(),
         getStockAvailabilityCatalog(),
+        getAllTaxClasses(),
       ]);
 
       content = (
@@ -181,6 +187,7 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
           servicesCustomEnabled={servicesCustomSetting === "true"}
           checkoutOptionsCatalog={checkoutOptionsCatalog}
           stockAvailabilityCatalog={stockAvailabilityCatalog}
+          taxClasses={allTaxClasses}
         />
       );
       break;

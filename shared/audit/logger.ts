@@ -18,6 +18,7 @@ export interface AuditLogParams {
     | "inventory"
     | "simulated_order"
     | "branch"
+    | "tax_class"
     | "billing_receipt"
     | "data_subject_request";
   targetId: string;

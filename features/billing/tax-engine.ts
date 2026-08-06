@@ -1,6 +1,6 @@
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { eq, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -33,7 +33,10 @@ export interface CartTaxBreakdown {
   /** Dominant tax class for display (used on invoice label) */
   primaryTaxClass: Pick<ResolvedTaxClass, "code" | "name" | "ratePercent"> | null;
   taxLinesByClass: TaxLineByClass[];
-  productTaxMap: Record<string, Pick<ResolvedTaxClass, "code" | "name" | "ratePercent">>;
+  productTaxMap: Record<
+    string,
+    Pick<ResolvedTaxClass, "code" | "name" | "ratePercent"> & { taxAmountCents: number }
+  >;
 }
 
 export type DbOrTransaction = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -125,21 +128,7 @@ export async function resolveTaxClassForProduct(
     }
   }
 
-  // Level 4: Standard Platform Tax (VAT_STD / STANDARD rate)
-  const [stdTc] = await txOrDb
-    .select({
-      id: schema.taxClasses.id,
-      code: schema.taxClasses.code,
-      name: schema.taxClasses.name,
-      ratePercent: schema.taxClasses.ratePercent,
-    })
-    .from(schema.taxClasses)
-    .where(or(eq(schema.taxClasses.code, "VAT_STD"), eq(schema.taxClasses.code, "STANDARD")))
-    .limit(1);
-
-  if (stdTc) return stdTc;
-
-  // Level 5: Default Fallback (0% Tax)
+  // Level 4: Default Fallback (0% Tax)
   return ZERO_TAX_CLASS;
 }
 
@@ -182,7 +171,7 @@ export async function buildCartTaxBreakdown(
     string,
     { tc: ResolvedTaxClass; subtotal: number; taxCents: number }
   >();
-  const productTaxMap: Record<string, Pick<ResolvedTaxClass, "code" | "name" | "ratePercent">> = {};
+  const productTaxMap: CartTaxBreakdown["productTaxMap"] = {};
 
   for (const item of items) {
     const tc = await resolveTaxClassForProduct(
@@ -193,7 +182,12 @@ export async function buildCartTaxBreakdown(
     const line = calculateLineTax(item.unitPriceCents, item.quantity, tc);
     lines.push({ productId: item.productId, ...line });
     totalTaxCents += line.taxAmountCents;
-    productTaxMap[item.productId] = { code: tc.code, name: tc.name, ratePercent: tc.ratePercent };
+    productTaxMap[item.productId] = {
+      code: tc.code,
+      name: tc.name,
+      ratePercent: tc.ratePercent,
+      taxAmountCents: line.taxAmountCents,
+    };
 
     const existing = classFrequency.get(tc.code);
     classFrequency.set(tc.code, {

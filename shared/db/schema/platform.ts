@@ -79,6 +79,7 @@ export const orgSettings = pgTable("org_settings", {
   defaultTaxClassId: uuid("default_tax_class_id").references(() => taxClasses.id, {
     onDelete: "set null",
   }),
+  allowedTaxClassIds: jsonb("allowed_tax_class_ids").$type<string[]>().default([]),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 

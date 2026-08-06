@@ -1,0 +1,1 @@
+ALTER TABLE "org_settings" ADD COLUMN "allowed_tax_class_ids" jsonb DEFAULT '[]'::jsonb;

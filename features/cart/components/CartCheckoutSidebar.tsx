@@ -199,12 +199,15 @@ export function CartCheckoutSidebar({
                   {taxLinesByClass.map((tl) => (
                     <div
                       key={tl.code}
-                      className="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 pl-2"
+                      className="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 pl-2 gap-2"
                     >
-                      <span>
+                      <span
+                        className="truncate min-w-0 flex-1"
+                        title={`${tl.name} (${tl.ratePercent}%)`}
+                      >
                         • {tl.name} ({tl.ratePercent}%)
                       </span>
-                      <span className="font-bold text-zinc-800 dark:text-zinc-300">
+                      <span className="font-bold text-zinc-800 dark:text-zinc-300 shrink-0">
                         {formatPrice(tl.taxAmountCents)}
                       </span>
                     </div>
@@ -215,14 +218,18 @@ export function CartCheckoutSidebar({
                   </div>
                 </div>
               ) : requiresVendorSelection ? (
-                <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] italic">
-                  <span>{taxLabel}</span>
-                  <span className="font-mono text-zinc-400">Select a vendor</span>
+                <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] italic gap-2">
+                  <span className="truncate min-w-0 flex-1" title={taxLabel}>
+                    {taxLabel}
+                  </span>
+                  <span className="font-mono text-zinc-400 shrink-0">Select a vendor</span>
                 </div>
               ) : (
-                <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
-                  <span>{taxLabel}</span>
-                  <span className="font-bold text-zinc-900 dark:text-zinc-200">
+                <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 gap-2">
+                  <span className="truncate min-w-0 flex-1" title={taxLabel}>
+                    {taxLabel}
+                  </span>
+                  <span className="font-bold text-zinc-900 dark:text-zinc-200 shrink-0">
                     {formatPrice(estimatedTax)}
                   </span>
                 </div>

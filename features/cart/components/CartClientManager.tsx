@@ -452,6 +452,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       showProductCheckoutSelection={showProductCheckoutSelection}
       selectedCheckoutVendorOrgId={selectedCheckoutVendorOrgId}
       selectedCheckoutProductIdSet={selectedCheckoutProductIdSet}
+      productTaxMap={checkoutOptions.productTaxMap}
       onSelectCheckoutVendor={handleSelectCheckoutVendor}
       onToggleProductCheckout={toggleProductCheckout}
       onToggleAllProductsInGroup={toggleAllProductsInGroup}

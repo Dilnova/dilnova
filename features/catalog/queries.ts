@@ -1,6 +1,6 @@
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { eq, desc, and, sql, type SQL } from "drizzle-orm";
+import { eq, desc, and, sql, isNull, type SQL } from "drizzle-orm";
 import type { PaginatedResponse } from "@/shared/pagination/types";
 
 export async function getUserAssignedBranchNames(userId: string, orgId: string) {
@@ -51,8 +51,48 @@ export async function getAllTaxClasses() {
       name: schema.taxClasses.name,
       code: schema.taxClasses.code,
       ratePercent: schema.taxClasses.ratePercent,
+      orgId: schema.taxClasses.orgId,
     })
-    .from(schema.taxClasses);
+    .from(schema.taxClasses)
+    .where(isNull(schema.taxClasses.orgId));
+}
+
+export async function getTaxClassesForOrg(orgId?: string, options?: { filterAllowed?: boolean }) {
+  if (!orgId) {
+    return getAllTaxClasses();
+  }
+
+  // Fetch both Global Tax Classes (orgId IS NULL) and Org-specific Custom Tax Classes (orgId = orgId)
+  const availableTaxClasses = await db
+    .select({
+      id: schema.taxClasses.id,
+      name: schema.taxClasses.name,
+      code: schema.taxClasses.code,
+      ratePercent: schema.taxClasses.ratePercent,
+      orgId: schema.taxClasses.orgId,
+    })
+    .from(schema.taxClasses)
+    .where(or(isNull(schema.taxClasses.orgId), eq(schema.taxClasses.orgId, orgId)));
+
+  const filterAllowed = options?.filterAllowed ?? true;
+
+  if (filterAllowed) {
+    const [settings] = await db
+      .select({
+        allowedTaxClassIds: schema.orgSettings.allowedTaxClassIds,
+      })
+      .from(schema.orgSettings)
+      .where(eq(schema.orgSettings.orgId, orgId))
+      .limit(1);
+
+    const allowedIds = settings?.allowedTaxClassIds;
+    if (Array.isArray(allowedIds)) {
+      const allowedSet = new Set(allowedIds);
+      return availableTaxClasses.filter((tc) => allowedSet.has(tc.id));
+    }
+  }
+
+  return availableTaxClasses;
 }
 
 export async function getBranchesForOrg(orgId: string) {

@@ -2,19 +2,23 @@
 
 import { useState } from "react";
 import OrgOnboardingBanner from "@/features/organization/components/OrgOnboardingBanner";
-import OrgOnboardingWizardModal from "@/features/organization/components/OrgOnboardingWizardModal";
+import OrgOnboardingWizardModal, {
+  type TaxClassOption,
+} from "@/features/organization/components/OrgOnboardingWizardModal";
 import type { OrgOnboardingStatus } from "@/features/organization/onboarding";
 
 interface OrgOnboardingControllerProps {
   status: OrgOnboardingStatus;
   orgName?: string;
   autoOpenOnIncomplete?: boolean;
+  taxClasses?: TaxClassOption[];
 }
 
 export default function OrgOnboardingController({
   status,
   orgName,
   autoOpenOnIncomplete = true,
+  taxClasses = [],
 }: OrgOnboardingControllerProps) {
   const [isWizardOpen, setIsWizardOpen] = useState<boolean>(
     autoOpenOnIncomplete && !status.isCompleted,
@@ -37,6 +41,7 @@ export default function OrgOnboardingController({
         orgName={orgName}
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
+        taxClasses={taxClasses}
       />
     </>
   );

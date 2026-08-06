@@ -8,7 +8,7 @@ import { getStockAvailabilityCatalog } from "@/features/inventory/availability.s
 import { getEnabledStockAvailabilityOptions } from "@/features/inventory/availability.shared";
 import {
   getAllCategories,
-  getAllTaxClasses,
+  getTaxClassesForOrg,
   getAssignedBranchIdsForUser,
   getBranchesForOrg,
   getDefaultBranchName,
@@ -48,7 +48,7 @@ export default async function AddProductPage() {
   }
 
   const categories = await getAllCategories();
-  const taxClasses = await getAllTaxClasses();
+  const taxClasses = await getTaxClassesForOrg(orgId);
 
   let branches = await getBranchesForOrg(orgId);
 

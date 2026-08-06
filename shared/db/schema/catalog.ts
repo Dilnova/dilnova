@@ -17,7 +17,8 @@ export const taxClasses = pgTable("tax_classes", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   ratePercent: real("rate_percent").notNull(),
-  code: text("code").unique().notNull(),
+  code: text("code").notNull(),
+  orgId: text("org_id"),
 });
 
 export const metadataTemplates = pgTable("metadata_templates", {

@@ -11,6 +11,7 @@ import CheckoutOptionsSettings from "../CheckoutOptionsSettings";
 import { PendingOverlay } from "@/shared/ui/PendingOverlay";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
 import StockAvailabilitySettings from "@/features/inventory/components/StockAvailabilitySettings";
+import TaxClassesManager, { type TaxClassItem } from "./TaxClassesManager";
 import type { CheckoutOptionDefinition } from "@/features/organization/checkout-options.shared";
 import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
 
@@ -25,6 +26,7 @@ interface SettingsTabProps {
   servicesCustomEnabled: boolean;
   checkoutOptionsCatalog: CheckoutOptionDefinition[];
   stockAvailabilityCatalog: StockAvailabilityDefinition[];
+  taxClasses?: TaxClassItem[];
 }
 
 export default function SettingsTab({
@@ -38,6 +40,7 @@ export default function SettingsTab({
   servicesCustomEnabled,
   checkoutOptionsCatalog,
   stockAvailabilityCatalog,
+  taxClasses = [],
 }: SettingsTabProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -467,6 +470,8 @@ export default function SettingsTab({
       <CheckoutOptionsSettings initialCatalog={checkoutOptionsCatalog} />
 
       <StockAvailabilitySettings initialCatalog={stockAvailabilityCatalog} />
+
+      {taxClasses && <TaxClassesManager taxClasses={taxClasses} />}
     </div>
   );
 }
