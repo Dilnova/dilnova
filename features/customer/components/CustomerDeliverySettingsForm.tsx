@@ -46,6 +46,32 @@ export default function CustomerDeliverySettingsForm({
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const extractValidationError = (
+    validationErrors?: Record<string, { _errors?: string[] } | string[] | undefined>,
+  ): string | null => {
+    if (!validationErrors) return null;
+    if (Array.isArray(validationErrors._errors) && validationErrors._errors.length > 0) {
+      return validationErrors._errors[0];
+    }
+    for (const fieldName of Object.keys(validationErrors)) {
+      const fieldObj = validationErrors[fieldName];
+      if (
+        fieldObj &&
+        typeof fieldObj === "object" &&
+        "_errors" in fieldObj &&
+        Array.isArray(fieldObj._errors) &&
+        fieldObj._errors.length > 0
+      ) {
+        const cleanFieldName = fieldName
+          .replace(/^shipping/, "")
+          .replace(/([A-Z])/g, " $1")
+          .trim();
+        return `${cleanFieldName}: ${fieldObj._errors[0]}`;
+      }
+    }
+    return null;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -55,11 +81,11 @@ export default function CustomerDeliverySettingsForm({
         toast.success("Delivery preferences saved successfully!");
         router.refresh();
       } else {
-        toast.error(
+        const errorMessage =
           result?.serverError ||
-            result?.validationErrors?._errors?.[0] ||
-            "Failed to save delivery details",
-        );
+          extractValidationError(result?.validationErrors) ||
+          "Please check your address fields and try again.";
+        toast.error(errorMessage);
       }
     });
   };

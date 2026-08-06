@@ -1,7 +1,8 @@
 "use client";
 
 import { MapPin, Phone, Building, Map, Hash, Globe, Navigation, Loader2 } from "lucide-react";
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useEffect } from "react";
+
 export interface LiveCountry {
   code: string;
   name: string;
@@ -126,7 +127,6 @@ export default function DeliveryAddressFormFields({
   };
 
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    const newCountryName = e.target.value;
     onChange(e);
     // Reset state & city when country changes
     triggerSyntheticChange("shippingState", "");
@@ -139,88 +139,81 @@ export default function DeliveryAddressFormFields({
     triggerSyntheticChange("shippingCity", "");
   };
 
-  // Worldwide HTML5 GPS Location + OpenStreetMap Nominatim Reverse Geocoding
+  // Worldwide Location Detection (GPS Lat/Lon + Server Proxy + IP Fallback)
+  const applyDetectedAddressData = (data: {
+    country?: string;
+    state?: string;
+    city?: string;
+    streetAddress?: string;
+    postcode?: string;
+  }) => {
+    if (data.country) triggerSyntheticChange("shippingCountry", data.country);
+    if (data.state) triggerSyntheticChange("shippingState", data.state);
+    if (data.city) triggerSyntheticChange("shippingCity", data.city);
+    if (data.streetAddress) triggerSyntheticChange("shippingAddress", data.streetAddress);
+    if (data.postcode) triggerSyntheticChange("shippingPostalCode", data.postcode);
+
+    setLocationStatus(
+      `Location set to ${data.city ? data.city + ", " : ""}${data.country || "Detected Region"}!`,
+    );
+    setTimeout(() => setLocationStatus(null), 4000);
+  };
+
+  const handleIpFallback = async () => {
+    try {
+      setLocationStatus("Detecting location via network...");
+      const res = await fetch("/api/locations?type=ip-location");
+      const json = await res.json();
+      if (json?.success && json?.data) {
+        applyDetectedAddressData(json.data);
+        return;
+      }
+    } catch (err) {
+      console.warn("IP location fallback failed", err);
+    }
+    setLocationStatus("Location permission denied. Please select address below.");
+    setTimeout(() => setLocationStatus(null), 4000);
+  };
+
   const handleDetectLocation = () => {
+    setIsLocating(true);
+    setLocationStatus("Detecting location...");
+
     if (!navigator.geolocation) {
-      setLocationStatus("Geolocation is not supported by your browser.");
+      handleIpFallback().finally(() => setIsLocating(false));
       return;
     }
-
-    setIsLocating(true);
-    setLocationStatus("Detecting location worldwide...");
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-            { headers: { "Accept-Language": "en" } },
+            `/api/locations?type=reverse-geocode&lat=${latitude}&lon=${longitude}`,
           );
+          const json = await res.json();
 
-          if (!res.ok) throw new Error("Reverse geocoding failed");
-          const data = await res.json();
-          const addr = data.address || {};
-
-          // Extract global location properties
-          const detectedCountry = addr.country || "United States";
-          const detectedState =
-            addr.state || addr.state_district || addr.region || addr.province || "";
-          const detectedCity =
-            addr.city ||
-            addr.town ||
-            addr.suburb ||
-            addr.village ||
-            addr.municipality ||
-            addr.county ||
-            "";
-          const road = addr.road || addr.pedestrian || addr.suburb || "";
-          const houseNo = addr.house_number || addr.building || "";
-          const postcode = addr.postcode || "";
-
-          // Set Country
-          triggerSyntheticChange("shippingCountry", detectedCountry);
-
-          // Set State
-          if (detectedState) {
-            triggerSyntheticChange("shippingState", detectedState);
+          if (json?.success && json?.data) {
+            applyDetectedAddressData(json.data);
+          } else {
+            await handleIpFallback();
           }
-
-          // Set City
-          if (detectedCity) {
-            triggerSyntheticChange("shippingCity", detectedCity);
-          }
-
-          const streetAddress = [houseNo, road].filter(Boolean).join(", ");
-          if (streetAddress) {
-            triggerSyntheticChange("shippingAddress", streetAddress);
-          }
-          if (postcode) {
-            triggerSyntheticChange("shippingPostalCode", postcode);
-          }
-
-          setLocationStatus(
-            `Location set to ${detectedCity ? detectedCity + ", " : ""}${detectedCountry}!`,
-          );
-          setTimeout(() => setLocationStatus(null), 4000);
         } catch (error) {
-          console.error("Failed global reverse lookup", error);
-          setLocationStatus("Could not auto-detect address details. Please select below.");
+          console.error("GPS Reverse Geocode Error", error);
+          await handleIpFallback();
         } finally {
           setIsLocating(false);
         }
       },
-      (error) => {
-        setIsLocating(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          setLocationStatus(
-            "Location permission denied. Please select your country & state below.",
-          );
-        } else {
-          setLocationStatus("Position unavailable. Please select your country & state below.");
+      async () => {
+        // If GPS permission denied or times out, try IP fallback
+        try {
+          await handleIpFallback();
+        } finally {
+          setIsLocating(false);
         }
       },
-      { timeout: 10000 },
+      { timeout: 8000, enableHighAccuracy: true },
     );
   };
 
@@ -477,9 +470,21 @@ export default function DeliveryAddressFormFields({
               <input
                 id="shippingPhone"
                 type="tel"
+                inputMode="tel"
                 name="shippingPhone"
                 value={shippingPhone || ""}
-                onChange={onChange}
+                onChange={(e) => {
+                  const sanitized = e.target.value.replace(/[^0-9+\-()\s]/g, "");
+                  if (sanitized !== e.target.value) {
+                    const synthEvent = {
+                      ...e,
+                      target: { ...e.target, name: e.target.name, value: sanitized },
+                    } as React.ChangeEvent<HTMLInputElement>;
+                    onChange(synthEvent);
+                  } else {
+                    onChange(e);
+                  }
+                }}
                 placeholder="e.g. +1 555-0198 or 077 123 4567"
                 className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
               />
@@ -499,9 +504,21 @@ export default function DeliveryAddressFormFields({
               <input
                 id="shippingPhone2"
                 type="tel"
+                inputMode="tel"
                 name="shippingPhone2"
                 value={shippingPhone2 || ""}
-                onChange={onChange}
+                onChange={(e) => {
+                  const sanitized = e.target.value.replace(/[^0-9+\-()\s]/g, "");
+                  if (sanitized !== e.target.value) {
+                    const synthEvent = {
+                      ...e,
+                      target: { ...e.target, name: e.target.name, value: sanitized },
+                    } as React.ChangeEvent<HTMLInputElement>;
+                    onChange(synthEvent);
+                  } else {
+                    onChange(e);
+                  }
+                }}
                 placeholder="Alternative mobile number"
                 className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
               />
