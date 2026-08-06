@@ -32,6 +32,14 @@ interface ParsedState {
 }
 
 /**
+ * Helper to sanitize user-provided values before logging to prevent format string injection and log injection.
+ */
+function sanitizeLogValue(val: string | null): string {
+  if (!val) return "";
+  return val.replace(/[\r\n\t]/g, " ").slice(0, 100);
+}
+
+/**
  * 100% Pure Live Server API Route Handler
  *
  * Handles Countries, States, Cities, and Reverse Geocoding via Server Proxy.
@@ -92,7 +100,11 @@ export async function GET(request: Request) {
         });
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] Reverse geocode failed", err);
+      console.error("[ServerLocationProxy] Reverse geocode failed", {
+        lat: sanitizeLogValue(lat),
+        lon: sanitizeLogValue(lon),
+        error: err,
+      });
     }
 
     return NextResponse.json(
@@ -107,7 +119,7 @@ export async function GET(request: Request) {
       const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0] || "";
       const url =
         clientIp && clientIp !== "127.0.0.1" && clientIp !== "::1"
-          ? `http://ip-api.com/json/${clientIp}?fields=status,country,regionName,city,zip`
+          ? `http://ip-api.com/json/${encodeURIComponent(clientIp)}?fields=status,country,regionName,city,zip`
           : `http://ip-api.com/json/?fields=status,country,regionName,city,zip`;
 
       const res = await fetch(url, { next: { revalidate: 3600 } });
@@ -127,7 +139,7 @@ export async function GET(request: Request) {
         }
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] IP location failed", err);
+      console.error("[ServerLocationProxy] IP location failed", { error: err });
     }
 
     return NextResponse.json({ success: false, error: "IP location failed" }, { status: 500 });
@@ -163,7 +175,7 @@ export async function GET(request: Request) {
         }
       }
     } catch (err) {
-      console.warn("[ServerLocationProxy] Primary REST Countries fetch failed", err);
+      console.warn("[ServerLocationProxy] Primary REST Countries fetch failed", { error: err });
     }
 
     try {
@@ -190,7 +202,7 @@ export async function GET(request: Request) {
         }
       }
     } catch (err2) {
-      console.error("[ServerLocationProxy] Secondary countries fetch failed", err2);
+      console.error("[ServerLocationProxy] Secondary countries fetch failed", { error: err2 });
     }
 
     return NextResponse.json({ success: false, data: [] });
@@ -221,7 +233,10 @@ export async function GET(request: Request) {
         }
       }
     } catch (err) {
-      console.error(`[ServerLocationProxy] Live states fetch failed for ${country}`, err);
+      console.error("[ServerLocationProxy] Live states fetch failed", {
+        country: sanitizeLogValue(country),
+        error: err,
+      });
     }
 
     return NextResponse.json({ success: true, data: [] });
@@ -248,7 +263,11 @@ export async function GET(request: Request) {
         }
       }
     } catch (err) {
-      console.error(`[ServerLocationProxy] Live cities fetch failed for ${state}, ${country}`, err);
+      console.error("[ServerLocationProxy] Live cities fetch failed", {
+        state: sanitizeLogValue(state),
+        country: sanitizeLogValue(country),
+        error: err,
+      });
     }
 
     return NextResponse.json({ success: false, data: [] });
