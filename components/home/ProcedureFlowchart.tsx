@@ -8,7 +8,6 @@ import {
   MailCheck,
   KeyRound,
   ArrowRight,
-  ChevronDown,
   CheckCircle,
 } from "lucide-react";
 
@@ -25,86 +24,86 @@ interface StepItem {
 const storefrontSteps: StepItem[] = [
   {
     number: "01",
-    title: "1. Choose Your Plan",
-    subtitle: "Starter or Growth Plan",
+    title: "1. Select Your Plan",
+    subtitle: "Starter or Growth Tier",
     description:
-      "Select the best plan for your online store with clear pricing and zero hidden fees.",
+      "Review tier features and select the plan that best fits your storefront scale and vendor requirements.",
     icon: Store,
-    badge: "Plan Choice",
-    highlights: ["Clear transparent pricing", "No hidden setup fees"],
+    badge: "Plan Selection",
+    highlights: ["Transparent pricing tiers", "No hidden setup fees"],
   },
   {
     number: "02",
-    title: "2. Fill Simple Form",
+    title: "2. Complete Mandatory Form",
     subtitle: "Mandatory Business Details",
     description:
-      "Fill out the onboarding form with your required company info and submit your store inquiry.",
+      "Fill out the onboarding form with your mandatory company information, contact details, and submit your inquiry.",
     icon: FileText,
-    badge: "Business Info",
-    highlights: ["Required business details", "Quick form submission"],
+    badge: "Mandatory Form",
+    highlights: ["Required business profile", "Instant form submission"],
   },
   {
     number: "03",
-    title: "3. Email & Review",
-    subtitle: "Verification & Support",
+    title: "3. Email Verification Chain",
+    subtitle: "Verification & Onboarding",
     description:
-      "Correspond directly via email with our support team to verify details and confirm your setup.",
+      "Receive email confirmation and correspond through our verification chain to review specs and approve your account.",
     icon: MailCheck,
-    badge: "Email Confirmation",
-    highlights: ["Direct email communication", "Friendly team review"],
+    badge: "Email Verification",
+    highlights: ["Direct email communication", "Fast team review"],
   },
   {
     number: "04",
-    title: "4. Get App Access",
-    subtitle: "Start Adding Products",
+    title: "4. Access Application",
+    subtitle: "Instant Console Access",
     description:
-      "Receive your login credentials and gain immediate access to manage your store and products.",
+      "Once approved, receive your tenant workspace credentials and log into your Dilnova app console to launch your store.",
     icon: KeyRound,
     badge: "Full App Access",
-    highlights: ["Easy dashboard login", "Ready to sell online"],
+    highlights: ["Tenant workspace login", "Ready for catalog & POS"],
   },
 ];
 
 const enterpriseSteps: StepItem[] = [
   {
     number: "01",
-    title: "1. Select Enterprise",
-    subtitle: "Custom Marketplace Plan",
+    title: "1. Select Enterprise Tier",
+    subtitle: "Marketplace Hub Plan",
     description:
-      "Pick our Enterprise plan for large multi-seller marketplaces, custom features, and dedicated support.",
+      "Choose the Enterprise tier for custom multi-vendor architecture, sub-vendor limits, and dedicated support.",
     icon: Building2,
     badge: "Enterprise Choice",
-    highlights: ["Custom tailored setup", "Dedicated support manager"],
+    highlights: ["Custom SLA & scope", "Multi-vendor governance"],
   },
   {
     number: "02",
-    title: "2. Submit Requirements",
-    subtitle: "Business & Domain Info",
+    title: "2. Submit Enterprise Form",
+    subtitle: "Mandatory Specs & Profile",
     description:
-      "Provide your business profile, custom website address preferences, and submit your enterprise inquiry.",
+      "Provide complete enterprise details, domain requirements, technical contact information, and submit your inquiry.",
     icon: FileText,
-    badge: "Requirement Form",
-    highlights: ["Custom web domain options", "Complete business profile"],
+    badge: "Detailed Form",
+    highlights: ["Custom domain specs", "Enterprise requirement profile"],
   },
   {
     number: "03",
-    title: "3. Email Review Chain",
-    subtitle: "Account Verification",
+    title: "3. Email & Contract Chain",
+    subtitle: "Security & Verification",
     description:
-      "Exchange emails with our team to review requirements, set up your agreement, and confirm details.",
+      "Engage in email correspondence with our solution architects to finalize integration guidelines and verify organization identity.",
     icon: MailCheck,
-    badge: "Team Consultation",
-    highlights: ["Dedicated specialist review", "Simple agreement confirmation"],
+    badge: "Verification Chain",
+    highlights: ["Architect consultation", "Compliance & SLA signoff"],
   },
   {
     number: "04",
-    title: "4. Platform Access",
-    subtitle: "Full Admin Dashboard",
+    title: "4. Application Provisioned",
+    subtitle: "Superadmin & Org Access",
     description:
-      "Get your admin login details to manage your complete marketplace, staff accounts, and custom web domain.",
+      "Gain full superadmin and organization access to your isolated database, RBAC roles, and custom domain environment.",
     icon: KeyRound,
     badge: "Platform Access",
-    highlights: ["Full admin dashboard", "Instant account activation"],
+    highlights: ["Superadmin role access", "Automated DB & auth provisioning"],
   },
 ];
 
@@ -117,14 +116,14 @@ export default function ProcedureFlowchart() {
       {/* Top Banner & Interactive Mode Selector */}
       <div className="flex flex-col items-center justify-center gap-4 mb-10 text-center">
         {/* Horizontal Chain Summary Badge */}
-        <div className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-emerald-500/10 border border-indigo-500/20 text-xs font-bold text-zinc-700 dark:text-zinc-300 shadow-sm">
-          <span>Choose Plan</span>
-          <ArrowRight className="w-3.5 h-3.5 text-indigo-500" />
-          <span>Fill Form</span>
-          <ArrowRight className="w-3.5 h-3.5 text-purple-500" />
-          <span>Email & Review</span>
-          <ArrowRight className="w-3.5 h-3.5 text-emerald-500" />
-          <span className="text-emerald-600 dark:text-emerald-400">Get App Access</span>
+        <div className="inline-flex flex-wrap items-center justify-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-emerald-500/10 border border-indigo-500/20 text-xs font-bold text-zinc-700 dark:text-zinc-300 shadow-sm">
+          <span>Select Plan</span>
+          <ArrowRight className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+          <span>Fill Mandatory Form</span>
+          <ArrowRight className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+          <span>Email Verification Chain</span>
+          <ArrowRight className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+          <span className="text-emerald-600 dark:text-emerald-400">Access Application</span>
         </div>
 
         {/* Tab Selector */}
@@ -157,7 +156,7 @@ export default function ProcedureFlowchart() {
         </div>
       </div>
 
-      {/* Desktop Horizontal Left-to-Right Chain Diagram */}
+      {/* Desktop Horizontal Left-to-Right Chain Diagram (lg and above) */}
       <div className="hidden lg:block relative py-4">
         {/* Continuous Left-to-Right Flow Line Connector */}
         <div className="absolute top-[4.25rem] left-[10%] right-[10%] h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 rounded-full z-0 pointer-events-none opacity-80" />
@@ -230,42 +229,40 @@ export default function ProcedureFlowchart() {
         </div>
       </div>
 
-      {/* Mobile / Tablet Vertical Left-to-Right Chained Timeline */}
+      {/* Mobile & Tablet Left-to-Right Scrollable Horizontal Flex Chain (below lg) */}
       <div className="block lg:hidden relative">
-        <div className="space-y-6 relative before:absolute before:inset-0 before:left-7 before:w-1 before:bg-gradient-to-b before:from-indigo-500 via-purple-500 to-emerald-500">
+        <div className="flex overflow-x-auto touch-pan-x snap-x snap-mandatory gap-4 py-4 px-2 pb-6 scrollbar-hide">
           {steps.map((step, idx) => {
             const Icon = step.icon;
             const isLast = idx === steps.length - 1;
 
             return (
-              <div key={step.number} className="relative flex items-start gap-4 pl-2">
-                {/* Icon Circle */}
-                <div className="relative z-10 shrink-0 w-12 h-12 rounded-2xl bg-white dark:bg-zinc-900 border-2 border-indigo-500/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-md">
-                  <Icon className="w-6 h-6" />
-                </div>
-
-                {/* Content Card */}
-                <div className="flex-1 p-5 rounded-2xl bg-white/90 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 shadow-sm backdrop-blur-md">
-                  <div className="flex items-center justify-between gap-2 mb-2">
+              <div
+                key={step.number}
+                className="flex-none w-[285px] sm:w-[320px] snap-start flex flex-col relative"
+              >
+                {/* Card Container */}
+                <div className="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-md flex flex-col justify-between h-full relative overflow-hidden">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-bold">
+                      <Icon className="w-5 h-5" />
+                    </div>
                     <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                      Step {step.number}
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-                      {step.badge}
+                      STEP {step.number}
                     </span>
                   </div>
 
-                  <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-50">
+                  <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-50 mb-1">
                     {step.title}
                   </h4>
                   <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-2">
                     {step.subtitle}
                   </p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed mb-3">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed mb-4">
                     {step.description}
                   </p>
 
-                  <div className="space-y-1.5 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                  <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 space-y-1.5">
                     {step.highlights.map((h, i) => (
                       <div
                         key={i}
@@ -276,14 +273,14 @@ export default function ProcedureFlowchart() {
                       </div>
                     ))}
                   </div>
-                </div>
 
-                {/* Vertical down arrow between items */}
-                {!isLast && (
-                  <div className="absolute -bottom-4 left-6 translate-x-0 text-indigo-500 z-20 pointer-events-none">
-                    <ChevronDown className="w-4 h-4" />
-                  </div>
-                )}
+                  {/* Horizontal Left-to-Right arrow on mobile cards */}
+                  {!isLast && (
+                    <div className="absolute top-4 right-3 text-indigo-500">
+                      <ArrowRight className="w-4 h-4 animate-pulse" />
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}

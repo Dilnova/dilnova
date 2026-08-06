@@ -7,7 +7,7 @@ import ScrollRedirector from "@/shared/ui/ScrollRedirector";
 import { getCachedOrganizations } from "@/shared/auth/clerk-cache";
 import { getSystemSetting } from "@/shared/platform/settings";
 import { getPricingPlansOrderedByCreatedAtAsc } from "@/features/superadmin/queries";
-import { getFeaturedSeries } from "@/features/marketing/queries";
+import { getTrendingProducts } from "@/features/marketing/queries";
 
 import Hero3D from "@/components/home/Hero3D";
 import StoreCard from "@/components/home/StoreCard";
@@ -49,10 +49,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Home() {
   await auth();
 
-  // Parallelize initial database and API fetches
   const clientPromise = clerkClient();
   const plansPromise = getPricingPlansOrderedByCreatedAtAsc();
-  const seriesPromise = getFeaturedSeries();
+  const productsPromise = getTrendingProducts(8);
   const settingsPromise = Promise.all([
     getSystemSetting("system_name", "Dilnova"),
     getSystemSetting("custom_storefront_distar-hardware", "true"),
@@ -61,10 +60,10 @@ export default async function Home() {
     getSystemSetting("custom_storefront_dilstar-services", "true"),
   ]);
 
-  const [client, dbPlans, featuredSeries, settingsResult] = await Promise.all([
+  const [client, dbPlans, trendingProducts, settingsResult] = await Promise.all([
     clientPromise,
     plansPromise,
-    seriesPromise,
+    productsPromise,
     settingsPromise,
   ]);
 
@@ -180,13 +179,13 @@ export default async function Home() {
         {/* Trust Row */}
         <div className="absolute bottom-0 left-0 w-full bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800">
           <div className="max-w-7xl mx-auto px-6 py-3 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            <span>{activeCount} First-Party Storefronts</span>
+            <span>{activeCount} Specialized Stores</span>
             <span className="hidden sm:inline">•</span>
-            <span>{otherVendors.length} Marketplace Vendors</span>
+            <span>{otherVendors.length} Marketplace Sellers</span>
             <span className="hidden sm:inline">•</span>
-            <span>{plans.length} Flexible Pricing Plans</span>
+            <span>{plans.length} Flexible Plans</span>
             <span className="hidden sm:inline">•</span>
-            <span>Enterprise SLAs Available</span>
+            <span>Dedicated Support Included</span>
           </div>
         </div>
       </section>
@@ -198,14 +197,14 @@ export default async function Home() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
               <div className="max-w-2xl">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 mb-4">
-                  First-Party Network
+                  Featured Stores
                 </span>
                 <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
-                  Our Core Stores
+                  Explore Our Core Stores
                 </h2>
                 <p className="text-base text-zinc-500 dark:text-zinc-400">
-                  Shop directly from our curated, highly-specialized first-party stores running on
-                  the {systemName} infrastructure.
+                  Shop directly from our curated, specialized online stores running on the{" "}
+                  {systemName} platform.
                 </p>
               </div>
             </div>
@@ -258,13 +257,13 @@ export default async function Home() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
             <div className="max-w-2xl">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 mb-4">
-                Third-Party Marketplace
+                Independent Marketplace
               </span>
               <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
-                Featured Vendors
+                Featured Marketplace Sellers
               </h2>
               <p className="text-base text-zinc-500 dark:text-zinc-400">
-                Discover independent brands and trusted sellers operating natively on our platform.
+                Discover trusted independent sellers and brands operating on our platform.
               </p>
             </div>
             {otherVendors.length > 0 && (
@@ -285,15 +284,18 @@ export default async function Home() {
       <section className="py-20 md:py-28 w-full border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16 text-center max-w-2xl mx-auto">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 mb-4">
+              Top Picks
+            </span>
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
-              Trending Collections
+              Trending & Best Selling Products
             </h2>
             <p className="text-base text-zinc-500 dark:text-zinc-400">
-              Curated equipment and components from across our global storefronts.
+              Explore top-rated products and best sellers from across our specialized stores.
             </p>
           </div>
 
-          <FeaturedSeriesList seriesList={featuredSeries} />
+          <FeaturedSeriesList products={trendingProducts} />
         </div>
       </section>
 
@@ -381,14 +383,14 @@ export default async function Home() {
       <section className="py-16 sm:py-20 md:py-28 w-full border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/10">
         <div className="mb-12 sm:mb-16 text-center max-w-2xl mx-auto px-4 sm:px-6">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-widest bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 mb-3 sm:mb-4">
-            Transparent Pricing
+            Transparent Pricing & Simple Onboarding
           </span>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-3 sm:mb-4 text-zinc-900 dark:text-zinc-50">
-            Scale with {systemName}
+            Scale Your Business with {systemName}
           </h2>
           <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            Choose the right tier to launch your storefront or build a complete enterprise
-            marketplace.
+            Follow our simple 4-step procedure below, then choose the plan that best fits your
+            business goals.
           </p>
         </div>
 
@@ -407,24 +409,24 @@ export default async function Home() {
 
           <div className="relative z-10 space-y-6">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight">
-              Ready to transform your commerce operations?
+              Ready to Launch Your Online Store?
             </h2>
             <p className="text-base md:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              Join industry leaders standardizing on the {systemName} hub. Create your vendor
-              storefront or integrate your custom platform today.
+              Start growing your business with {systemName}. Create your store profile or contact
+              our team to get started today.
             </p>
             <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/contact"
                 className="inline-flex h-12 items-center justify-center rounded-xl bg-white text-zinc-950 px-8 text-sm font-bold transition-all duration-200 shadow-md hover:bg-zinc-100 hover:scale-105 active:scale-95"
               >
-                Contact Sales
+                Get Started
               </Link>
               <Link
                 href="/vendors"
                 className="inline-flex h-12 items-center justify-center rounded-xl bg-zinc-800/50 backdrop-blur-md text-white border border-zinc-700 px-8 text-sm font-bold transition-all duration-200 hover:bg-zinc-700/50 hover:border-zinc-600 active:scale-95"
               >
-                Explore Vendors
+                Explore Stores
               </Link>
             </div>
           </div>
