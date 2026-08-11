@@ -16,14 +16,23 @@ export interface Category {
   name: string;
   slug: string;
   parentId: string | null;
+  taxClassId?: string | null;
   createdAt: Date;
+}
+
+export interface TaxClassOption {
+  id: string;
+  name: string;
+  code: string;
+  ratePercent: number;
 }
 
 interface CategoriesTabProps {
   categories: Category[];
+  taxClasses?: TaxClassOption[];
 }
 
-export default function CategoriesTab({ categories }: CategoriesTabProps) {
+export default function CategoriesTab({ categories, taxClasses = [] }: CategoriesTabProps) {
   const [isPending, startTransition] = useTransition();
   const { confirmAction } = useConfirm();
 
@@ -31,6 +40,7 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
   const [categoryName, setCategoryName] = useState("");
   const [categorySlug, setCategorySlug] = useState("");
   const [categoryParentId, setCategoryParentId] = useState("");
+  const [categoryTaxClassId, setCategoryTaxClassId] = useState("");
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
@@ -78,6 +88,7 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
     setCategoryName("");
     setCategorySlug("");
     setCategoryParentId("");
+    setCategoryTaxClassId("");
     setIsCategoryModalOpen(true);
   };
 
@@ -86,6 +97,7 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
     setCategoryName(cat.name);
     setCategorySlug(cat.slug);
     setCategoryParentId(cat.parentId || "");
+    setCategoryTaxClassId(cat.taxClassId || "");
     setIsCategoryModalOpen(true);
   };
 
@@ -99,6 +111,7 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
             name: categoryName,
             slug: categorySlug,
             parentId: categoryParentId || null,
+            taxClassId: categoryTaxClassId || null,
           });
           if (!result?.data?.success) {
             throw new Error(result?.serverError || "Failed to update category.");
@@ -109,6 +122,7 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
             name: categoryName,
             slug: categorySlug,
             parentId: categoryParentId || null,
+            taxClassId: categoryTaxClassId || null,
           });
           if (!result?.data?.success) {
             throw new Error(result?.serverError || "Failed to create category.");
@@ -303,6 +317,29 @@ export default function CategoriesTab({ categories }: CategoriesTabProps) {
             Used to build hierarchical catalog navigation (e.g. Electronics / Laptops)
           </p>
         </div>
+
+        {taxClasses.length > 0 && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">
+              Category Tax Class (Level 2 Override)
+            </label>
+            <select
+              value={categoryTaxClassId}
+              onChange={(e) => setCategoryTaxClassId(e.target.value)}
+              className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40 font-semibold"
+            >
+              <option value="">No Category Override (Inherit Org Default or 18% VAT)</option>
+              {taxClasses.map((tc) => (
+                <option key={tc.id} value={tc.id}>
+                  {tc.name} ({tc.ratePercent}%)
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-zinc-400">
+              Products in this category with no direct override will inherit this tax rate.
+            </p>
+          </div>
+        )}
 
         <div className="pt-2">
           <button

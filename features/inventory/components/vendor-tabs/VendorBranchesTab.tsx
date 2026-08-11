@@ -10,8 +10,36 @@ import {
 } from "@/features/inventory/vendor-branch.actions";
 import { toast } from "sonner";
 import InventoryModal from "../InventoryModal";
+import DeliveryAddressFormFields from "@/features/customer/components/DeliveryAddressFormFields";
 
 import type { VendorInventoryFullData } from "@/features/inventory/types";
+
+function parseInitialBranchAddress(rawAddress: string) {
+  if (!rawAddress)
+    return { street: "", line2: "", city: "", state: "", postalCode: "", country: "Sri Lanka" };
+  const parts = rawAddress
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length >= 4) {
+    return {
+      street: parts[0] || "",
+      line2: parts.length > 4 ? parts[1] : "",
+      city: parts[parts.length - 4] || parts[1] || "",
+      state: parts[parts.length - 3] || parts[2] || "",
+      postalCode: parts[parts.length - 2] || "",
+      country: parts[parts.length - 1] || "Sri Lanka",
+    };
+  }
+  return {
+    street: rawAddress,
+    line2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "Sri Lanka",
+  };
+}
 
 interface VendorBranchesTabProps {
   data: VendorInventoryFullData;
@@ -37,8 +65,28 @@ export default function VendorBranchesTab({
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<BranchItem | null>(null);
   const [branchName, setBranchName] = useState("");
-  const [branchAddress, setBranchAddress] = useState("");
   const [branchPhone, setBranchPhone] = useState("");
+
+  // Structured Address State for Branch Location
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingAddressLine2, setShippingAddressLine2] = useState("");
+  const [shippingCity, setShippingCity] = useState("");
+  const [shippingState, setShippingState] = useState("");
+  const [shippingPostalCode, setShippingPostalCode] = useState("");
+  const [shippingCountry, setShippingCountry] = useState("Sri Lanka");
+
+  const handleBranchAddressChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    if (name === "shippingAddress") setShippingAddress(value);
+    if (name === "shippingAddressLine2") setShippingAddressLine2(value);
+    if (name === "shippingCity") setShippingCity(value);
+    if (name === "shippingState") setShippingState(value);
+    if (name === "shippingPostalCode") setShippingPostalCode(value);
+    if (name === "shippingCountry") setShippingCountry(value);
+    if (name === "shippingPhone") setBranchPhone(value);
+  };
 
   const [isAssignMemberModalOpen, setIsAssignMemberModalOpen] = useState(false);
   const [assignBranchId, setAssignBranchId] = useState("");
@@ -57,20 +105,32 @@ export default function VendorBranchesTab({
   // --- Handlers ---
   const handleSaveBranch = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const formattedAddress = [
+      shippingAddress,
+      shippingAddressLine2,
+      shippingCity,
+      shippingState,
+      shippingPostalCode,
+      shippingCountry,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
     startTransition(async () => {
       try {
         if (editingBranch) {
           await updateBranchAction({
             id: editingBranch.id,
             name: branchName,
-            address: branchAddress,
+            address: formattedAddress,
             phone: branchPhone,
           });
           triggerNotification(true, "Branch updated.");
         } else {
           await createBranchAction({
             name: branchName,
-            address: branchAddress,
+            address: formattedAddress,
             phone: branchPhone,
           });
           triggerNotification(true, "Branch created.");
@@ -165,7 +225,12 @@ export default function VendorBranchesTab({
           onClick={() => {
             setEditingBranch(null);
             setBranchName("");
-            setBranchAddress("");
+            setShippingAddress("");
+            setShippingAddressLine2("");
+            setShippingCity("");
+            setShippingState("");
+            setShippingPostalCode("");
+            setShippingCountry("Sri Lanka");
             setBranchPhone("");
             setIsBranchModalOpen(true);
           }}
@@ -203,7 +268,13 @@ export default function VendorBranchesTab({
                   onClick={() => {
                     setEditingBranch(b);
                     setBranchName(b.name);
-                    setBranchAddress(b.address || "");
+                    const parsed = parseInitialBranchAddress(b.address || "");
+                    setShippingAddress(parsed.street);
+                    setShippingAddressLine2(parsed.line2);
+                    setShippingCity(parsed.city);
+                    setShippingState(parsed.state);
+                    setShippingPostalCode(parsed.postalCode);
+                    setShippingCountry(parsed.country);
                     setBranchPhone(b.phone || "");
                     setIsBranchModalOpen(true);
                   }}
@@ -285,19 +356,35 @@ export default function VendorBranchesTab({
 
       {/* --- Add / Edit Branch Modal --- */}
       {isBranchModalOpen && (
-        <InventoryModal isOpen={true} onClose={() => setIsBranchModalOpen(false)}>
-          <div className="p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
-              {editingBranch ? "Edit Branch Location" : "Register New Branch"}
-            </h3>
+        <InventoryModal
+          isOpen={true}
+          onClose={() => setIsBranchModalOpen(false)}
+          className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 w-[95vw] sm:w-full sm:max-w-xl md:max-w-2xl max-h-[90vh] flex flex-col my-auto overflow-hidden text-left"
+        >
+          <div className="p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
+            <div>
+              <h3 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">
+                {editingBranch ? "Edit Branch Location" : "Register New Branch"}
+              </h3>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Set up branch outlet name, contacts, and live location details.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsBranchModalOpen(false)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
+            >
+              ✕
+            </button>
           </div>
-          <form onSubmit={handleSaveBranch} className="p-5 space-y-3.5">
+          <form onSubmit={handleSaveBranch} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
             <div className="space-y-1.5">
               <label
                 htmlFor="branchName"
-                className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400"
+                className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300"
               >
-                Branch Name
+                Branch Name <span className="text-red-500">*</span>
               </label>
               <input
                 id="branchName"
@@ -305,56 +392,40 @@ export default function VendorBranchesTab({
                 value={branchName}
                 onChange={(e) => setBranchName(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
-                placeholder="e.g. Uptown POS Outlet"
+                className="w-full h-11 px-3.5 border border-zinc-200 rounded-xl text-sm bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
+                placeholder="e.g. Uptown POS Outlet / Central Warehouse"
               />
             </div>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="branchAddress"
-                className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400"
-              >
-                Street Address
+            <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Branch Location & Store Contact Information
               </label>
-              <input
-                id="branchAddress"
-                type="text"
-                value={branchAddress}
-                onChange={(e) => setBranchAddress(e.target.value)}
-                className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
-                placeholder="Street name, City"
+              <DeliveryAddressFormFields
+                shippingAddress={shippingAddress}
+                shippingAddressLine2={shippingAddressLine2}
+                shippingCity={shippingCity}
+                shippingState={shippingState}
+                shippingPostalCode={shippingPostalCode}
+                shippingCountry={shippingCountry}
+                shippingPhone={branchPhone}
+                shippingPhone2=""
+                onChange={handleBranchAddressChange}
               />
             </div>
-            <div className="space-y-1.5">
-              <label
-                htmlFor="branchPhone"
-                className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400"
-              >
-                Store Phone Contact
-              </label>
-              <input
-                id="branchPhone"
-                type="text"
-                value={branchPhone}
-                onChange={(e) => setBranchPhone(e.target.value)}
-                className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
-                placeholder="+123..."
-              />
-            </div>
-            <div className="flex gap-2">
+            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-end gap-2.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsBranchModalOpen(false)}
-                className="flex-1 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl cursor-pointer"
+                className="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isPending}
-                className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl cursor-pointer shadow-md"
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-md disabled:opacity-50"
               >
-                Register
+                {isPending ? "Saving..." : editingBranch ? "Update Branch" : "Register Branch"}
               </button>
             </div>
           </form>

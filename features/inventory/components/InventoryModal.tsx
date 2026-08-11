@@ -23,6 +23,10 @@ export default function InventoryModal({
   useEffect(() => {
     if (!isOpen) return;
 
+    // Lock background page scrolling while modal is open
+    const originalOverflow = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = "hidden";
+
     // Store the currently focused element before trapping focus
     previousFocusRef.current = document.activeElement as HTMLElement | null;
 
@@ -63,6 +67,7 @@ export default function InventoryModal({
     }, 10);
 
     return () => {
+      document.body.style.overflow = originalOverflow;
       document.removeEventListener("keydown", handleKeyDown);
       // Restore focus to the element that was focused before the modal opened
       if (previousFocusRef.current) {
@@ -75,7 +80,7 @@ export default function InventoryModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${backdropClassName}`}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto ${backdropClassName}`}
       onClick={onClose}
       role="presentation"
     >

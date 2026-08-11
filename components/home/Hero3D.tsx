@@ -113,8 +113,8 @@ export default function Hero3D() {
         <div className="space-y-8 z-20">
           <div className="space-y-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 uppercase tracking-wider">
-              <Zap className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" /> Multi-Tenant
-              Architecture
+              <Zap className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" /> All-In-One Commerce
+              Platform
             </span>
             {/* High-contrast solid typography with one gradient accent word, dropping full gradient text */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] text-zinc-900 dark:text-white">
@@ -124,8 +124,8 @@ export default function Hero3D() {
               </span>
             </h1>
             <p className="text-base md:text-lg text-zinc-600 dark:text-zinc-400 max-w-lg leading-relaxed">
-              Explore the premier B2B and retail commerce platform. Discover curated first-party
-              storefronts or join thousands of marketplace vendors scaling on our infrastructure.
+              Explore our modern online marketplace platform. Discover curated stores or easily
+              launch your own online store to grow your business.
             </p>
           </div>
 
@@ -134,24 +134,24 @@ export default function Hero3D() {
               href="/vendors"
               className="inline-flex items-center justify-center h-12 px-8 rounded-xl bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 font-semibold transition-all duration-200 active:scale-[0.98]"
             >
-              Explore Marketplace
+              Explore Stores
             </Link>
             <Link
               href="/contact"
               className="inline-flex items-center justify-center h-12 px-8 rounded-xl bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white font-semibold border border-zinc-200 dark:border-zinc-700 transition-all duration-200 hover:border-zinc-300 dark:hover:border-zinc-600 active:scale-[0.98]"
             >
-              Register Your Store
+              Start Your Store
             </Link>
           </div>
 
           <div className="pt-4 flex items-center gap-6 text-sm text-zinc-600 dark:text-zinc-500">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
-              <span>Enterprise Grade</span>
+              <span>Secure & Reliable</span>
             </div>
             <div className="flex items-center gap-2">
               <Package className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
-              <span>Unified Cart</span>
+              <span>Easy All-in-One Cart</span>
             </div>
           </div>
         </div>

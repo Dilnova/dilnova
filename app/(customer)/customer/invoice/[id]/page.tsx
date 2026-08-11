@@ -61,6 +61,20 @@ export default async function InvoicePage({ params }: PageProps) {
     grandTotal,
   } = orderTotals;
 
+  const positiveTaxItems = items.filter((i) => (i.taxRatePercent ?? 0) > 0);
+  const uniqueRates = [...new Set(positiveTaxItems.map((i) => i.taxRatePercent))];
+
+  const taxLabel =
+    uniqueRates.length === 1 && positiveTaxItems[0]
+      ? `Tax (${positiveTaxItems[0].taxClassCode ?? "VAT_STD"} — ${positiveTaxItems[0].taxRatePercent}%):`
+      : uniqueRates.length > 1
+        ? "Tax (Combined):"
+        : tax > 0
+          ? "Tax:"
+          : "Tax (0%):";
+
+  const uniqueVendorOrgIds = [...new Set(items.map((i) => i.vendorOrgId))];
+
   const vendorSubtotals = items.reduce<Record<string, number>>((acc, item) => {
     acc[item.vendorOrgId] = (acc[item.vendorOrgId] || 0) + item.unitPrice * item.quantity;
     return acc;
@@ -169,14 +183,12 @@ export default async function InvoicePage({ params }: PageProps) {
           )}
           <div className="sm:text-right">
             <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
-              Issued By:
+              Vendor Organization ID{uniqueVendorOrgIds.length > 1 ? "s" : ""}:
             </h3>
-            <p className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
-              Dilnova Registry Service
+            <p className="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100 print:text-black break-all">
+              {uniqueVendorOrgIds.join(", ")}
             </p>
-            <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Automated Simulated Register checkout
-            </p>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-1">Dilnova Registry Service</p>
           </div>
         </div>
 
@@ -217,27 +229,48 @@ export default async function InvoicePage({ params }: PageProps) {
                 <th className="py-3 px-1">Product Description</th>
                 <th className="py-3 px-1 text-center">Qty</th>
                 <th className="py-3 px-1 text-right">Unit Price</th>
+                <th className="py-3 px-1 text-right">Tax (Rate)</th>
                 <th className="py-3 px-1 text-right">Total Price</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-              {items.map((item) => (
-                <tr key={item.id} className="text-zinc-800 dark:text-zinc-200 print:text-black">
-                  <td className="py-4 px-1">
-                    <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black block">
-                      {item.productName}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
-                      Vendor ID: {item.vendorOrgId.slice(0, 8)}
-                    </span>
-                  </td>
-                  <td className="py-4 px-1 text-center font-mono">{item.quantity}</td>
-                  <td className="py-4 px-1 text-right font-mono">{formatPrice(item.unitPrice)}</td>
-                  <td className="py-4 px-1 text-right font-mono font-bold">
-                    {formatPrice(item.unitPrice * item.quantity)}
-                  </td>
-                </tr>
-              ))}
+              {items.map((item) => {
+                const lineSubtotal = item.unitPrice * item.quantity;
+                const itemTax = item.taxAmount ?? 0;
+                const lineTotal = lineSubtotal + itemTax;
+                const taxRate = item.taxRatePercent ?? 0;
+
+                return (
+                  <tr key={item.id} className="text-zinc-800 dark:text-zinc-200 print:text-black">
+                    <td className="py-4 px-1">
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black block">
+                        {item.productName}
+                      </span>
+                    </td>
+                    <td className="py-4 px-1 text-center font-mono">{item.quantity}</td>
+                    <td className="py-4 px-1 text-right font-mono">
+                      {formatPrice(item.unitPrice)}
+                    </td>
+                    <td className="py-4 px-1 text-right font-mono">
+                      {taxRate > 0 ? (
+                        <div>
+                          <span className="font-bold text-purple-700 dark:text-purple-400 print:text-black block">
+                            +{formatPrice(itemTax)}
+                          </span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-sans">
+                            ({taxRate}%)
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-zinc-400 dark:text-zinc-500">0%</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-1 text-right font-mono font-bold">
+                      {formatPrice(lineTotal)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -271,7 +304,7 @@ export default async function InvoicePage({ params }: PageProps) {
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Estimated Tax (8%):</span>
+              <span>{taxLabel}</span>
               <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
                 {formatPrice(tax)}
               </span>

@@ -1,6 +1,7 @@
 /** Shared checkout pricing rules (cart UI, server validation, invoices). */
 
-export const CHECKOUT_TAX_RATE = 0.08;
+/** @deprecated Use buildCartTaxBreakdown() from tax-engine.ts for new tax resolution. */
+export const CHECKOUT_TAX_RATE = 0.0;
 export const CHECKOUT_FREE_SHIPPING_THRESHOLD_CENTS = 5000; // $50.00
 export const CHECKOUT_STANDARD_SHIPPING_CENTS = 500; // $5.00
 
@@ -14,14 +15,16 @@ export interface CheckoutTotals {
 export function calculateCheckoutTotals(
   subtotalCents: number,
   zeroShipping = false,
+  taxAmountCents = 0,
 ): CheckoutTotals {
   const subtotalAmount = Math.max(0, subtotalCents);
-  const taxAmount = Math.round(subtotalAmount * CHECKOUT_TAX_RATE);
-  const shippingAmount = zeroShipping
-    ? 0
-    : subtotalAmount > CHECKOUT_FREE_SHIPPING_THRESHOLD_CENTS
+  const taxAmount = Math.max(0, taxAmountCents);
+  const shippingAmount =
+    zeroShipping || subtotalAmount === 0
       ? 0
-      : CHECKOUT_STANDARD_SHIPPING_CENTS;
+      : subtotalAmount > CHECKOUT_FREE_SHIPPING_THRESHOLD_CENTS
+        ? 0
+        : CHECKOUT_STANDARD_SHIPPING_CENTS;
   const grandTotal = subtotalAmount + taxAmount + shippingAmount;
 
   return { subtotalAmount, taxAmount, shippingAmount, grandTotal };
@@ -48,12 +51,13 @@ export function getOrderDisplayTotals(order: OrderAmountFields): CheckoutTotals 
     };
   }
 
-  const subtotalAmount = order.totalAmount;
-  const taxAmount = Math.round(subtotalAmount * CHECKOUT_TAX_RATE);
+  const subtotalAmount = order.subtotalAmount ?? order.totalAmount;
+  const taxAmount = order.taxAmount ?? 0;
+  const shippingAmount = order.shippingAmount ?? 0;
   return {
     subtotalAmount,
     taxAmount,
-    shippingAmount: 0,
-    grandTotal: subtotalAmount + taxAmount,
+    shippingAmount,
+    grandTotal: order.totalAmount,
   };
 }

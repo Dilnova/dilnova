@@ -107,7 +107,7 @@ export default function CustomerWishlistTab({
                 )}
 
                 <div className="p-4 flex-1 flex flex-col justify-between min-w-0">
-                  <div>
+                  <div className="pr-7">
                     <div className="flex items-center justify-between gap-1.5 mb-1">
                       <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider truncate">
                         {category?.name || "Catalog"}
@@ -124,7 +124,7 @@ export default function CustomerWishlistTab({
                     </div>
                     <Link
                       href={`/products/${product.id}`}
-                      className="block text-sm font-bold text-zinc-900 dark:text-zinc-55 hover:text-purple-705 dark:hover:text-purple-400 transition-colors truncate"
+                      className="block text-sm font-bold text-zinc-900 dark:text-zinc-100 hover:text-purple-600 dark:hover:text-purple-400 transition-colors truncate"
                     >
                       {product.name}
                     </Link>

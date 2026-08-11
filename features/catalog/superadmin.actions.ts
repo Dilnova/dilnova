@@ -8,6 +8,9 @@ import {
   createCategorySchema,
   updateCategorySchema,
   deleteCategorySchema,
+  createTaxClassSchema,
+  updateTaxClassSchema,
+  deleteTaxClassSchema,
   updateProductSchema,
   deleteProductSchema,
 } from "@/features/catalog/schema";
@@ -30,6 +33,7 @@ export const createCategoryAction = superadminAction
           name: parsedInput.name,
           slug: parsedInput.slug.toLowerCase(),
           parentId: parsedInput.parentId || null,
+          taxClassId: parsedInput.taxClassId || null,
         })
         .returning();
 
@@ -39,7 +43,12 @@ export const createCategoryAction = superadminAction
           action: "CREATE_CATEGORY",
           targetType: "category",
           targetId: category.id,
-          metadata: { name: category.name, slug: category.slug, parentId: category.parentId },
+          metadata: {
+            name: category.name,
+            slug: category.slug,
+            parentId: category.parentId,
+            taxClassId: category.taxClassId,
+          },
         });
       }
 
@@ -65,6 +74,7 @@ export const updateCategoryAction = superadminAction
           name: parsedInput.name,
           slug: parsedInput.slug.toLowerCase(),
           parentId: parsedInput.parentId || null,
+          taxClassId: parsedInput.taxClassId || null,
         })
         .where(eq(schema.categories.id, parsedInput.id));
 
@@ -172,6 +182,10 @@ export const updateProductAction = superadminAction
         setClause.categoryId = parsedInput.updates.categoryId;
       }
 
+      if (parsedInput.updates.taxClassId !== undefined) {
+        setClause.taxClassId = parsedInput.updates.taxClassId;
+      }
+
       if (parsedInput.updates.description !== undefined) {
         setClause.description = parsedInput.updates.description;
       }
@@ -234,6 +248,106 @@ export const deleteProductAction = superadminAction
 
       revalidatePath("/superadmin");
       revalidatePath("/products");
+      return { success: true };
+    });
+  });
+
+export const createTaxClassAction = superadminAction
+  .schema(createTaxClassSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(20, 60 * 1000, ctx.userId, { failClosed: true });
+
+      const [existing] = await db
+        .select()
+        .from(schema.taxClasses)
+        .where(eq(schema.taxClasses.code, parsedInput.code))
+        .limit(1);
+
+      if (existing) {
+        throw new ActionError(`A tax class with code '${parsedInput.code}' already exists.`);
+      }
+
+      const [created] = await db
+        .insert(schema.taxClasses)
+        .values({
+          name: parsedInput.name,
+          code: parsedInput.code,
+          ratePercent: parsedInput.ratePercent,
+        })
+        .returning();
+
+      if (created) {
+        await logAuditAction({
+          userId: ctx.userId,
+          action: "CREATE_TAX_CLASS",
+          targetType: "tax_class",
+          targetId: created.id,
+          metadata: { name: created.name, code: created.code, ratePercent: created.ratePercent },
+        });
+      }
+
+      revalidatePath("/superadmin");
+      revalidatePath("/admin");
+      revalidatePath("/products");
+      revalidatePath("/cart");
+      return { success: true };
+    });
+  });
+
+export const deleteTaxClassAction = superadminAction
+  .schema(deleteTaxClassSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(20, 60 * 1000, ctx.userId, { failClosed: true });
+
+      await db.delete(schema.taxClasses).where(eq(schema.taxClasses.id, parsedInput.id));
+
+      await logAuditAction({
+        userId: ctx.userId,
+        action: "DELETE_TAX_CLASS",
+        targetType: "tax_class",
+        targetId: parsedInput.id,
+      });
+
+      revalidatePath("/superadmin");
+      revalidatePath("/admin");
+      revalidatePath("/products");
+      revalidatePath("/cart");
+      return { success: true };
+    });
+  });
+
+export const updateTaxClassAction = superadminAction
+  .schema(updateTaxClassSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(20, 60 * 1000, ctx.userId, { failClosed: true });
+
+      const [updated] = await db
+        .update(schema.taxClasses)
+        .set({
+          name: parsedInput.name,
+          code: parsedInput.code,
+          ratePercent: parsedInput.ratePercent,
+        })
+        .where(eq(schema.taxClasses.id, parsedInput.id))
+        .returning();
+
+      if (updated) {
+        await logAuditAction({
+          userId: ctx.userId,
+          action: "UPDATE_TAX_CLASS",
+          targetType: "tax_class",
+          targetId: updated.id,
+          metadata: { name: updated.name, code: updated.code, ratePercent: updated.ratePercent },
+        });
+      }
+
+      revalidatePath("/superadmin");
+      revalidatePath("/admin");
+      revalidatePath("/products");
+      revalidatePath("/cart");
       return { success: true };
     });
   });

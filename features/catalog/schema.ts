@@ -50,6 +50,7 @@ export const createCategorySchema = z.object({
     .trim()
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase alphanumeric with hyphens only."),
   parentId: z.string().uuid("Invalid parent category ID.").nullable().optional(),
+  taxClassId: z.string().uuid("Invalid tax class ID.").nullable().optional(),
 });
 
 export const updateCategorySchema = createCategorySchema.extend({
@@ -60,12 +61,52 @@ export const deleteCategorySchema = z.object({
   id: uuidField,
 });
 
+export const createTaxClassSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Tax class name is required.")
+    .max(100, "Name cannot exceed 100 characters.")
+    .trim(),
+  code: z
+    .string()
+    .min(1, "Tax class code is required.")
+    .max(50)
+    .trim()
+    .toUpperCase()
+    .regex(
+      /^[A-Z0-9_]+$/,
+      "Code must be uppercase letters, numbers, or underscores (e.g. CUSTOM_12).",
+    ),
+  ratePercent: z
+    .number()
+    .min(0, "Rate percentage cannot be negative.")
+    .max(100, "Rate percentage cannot exceed 100%."),
+});
+
+export const deleteTaxClassSchema = z.object({
+  id: uuidField,
+});
+
+export const updateTaxClassSchema = z.object({
+  id: uuidField,
+  name: z.string().min(1, "Tax class name is required.").max(100).trim(),
+  code: z
+    .string()
+    .min(1, "Tax class code is required.")
+    .max(50)
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z0-9_]+$/, "Code must be uppercase letters, numbers, or underscores."),
+  ratePercent: z.number().min(0).max(100),
+});
+
 export const updateProductSchema = z.object({
   id: uuidField,
   updates: z.object({
     name: z.string().min(1, "Product name cannot be empty.").max(200).trim().optional(),
     price: z.number().int().min(0, "Price cannot be negative.").optional(),
     categoryId: z.string().uuid().nullable().optional(),
+    taxClassId: z.string().uuid().nullable().optional(),
     description: z.string().max(5000).nullable().optional(),
     type: z.enum(["product", "service"]).optional(),
     imageUrl: optionalCloudinaryUrlSchema.optional(),
@@ -93,6 +134,7 @@ export const addProductSchema = z.object({
   imageUrl: optionalCloudinaryUrlSchema,
   media: z.array(productMediaItemSchema).default([]),
   categoryId: z.string().uuid("Invalid category ID.").or(z.literal("")).default(""),
+  taxClassId: z.string().uuid("Invalid tax class ID.").or(z.literal("")).optional().default(""),
   quantity: z
     .number()
     .int("Quantity must be a whole number.")

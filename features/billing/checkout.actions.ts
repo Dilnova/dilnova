@@ -14,6 +14,7 @@ import { logAuditAction } from "@/shared/audit/logger";
 import { runWithCorrelationId } from "@/shared/security/async-context";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { vendorAction, ActionError } from "@/lib/safe-action";
+import { resolveTaxClassForProduct, calculateLineTax } from "@/features/billing/tax-engine";
 
 // ── POS BILLING CHECKOUT (Premium POS Register) ──────────────
 
@@ -82,7 +83,8 @@ export const processBillingCheckoutAction = vendorAction
       );
 
       return await ctx.db.transaction(async (tx) => {
-        let totalAmount = 0;
+        let subtotalAmount = 0;
+        let totalTaxAmount = 0;
         const availabilityCatalog = await getStockAvailabilityCatalog();
 
         // 1. Create Receipt
@@ -92,6 +94,8 @@ export const processBillingCheckoutAction = vendorAction
             branchId: parsedInput.branchId,
             orgId,
             cashierUserId: userId,
+            subtotalAmount: 0,
+            taxAmount: 0,
             totalAmount: 0, // update later
             paymentMethod: parsedInput.paymentMethod,
             customerName: parsedInput.customerName || null,
@@ -124,7 +128,11 @@ export const processBillingCheckoutAction = vendorAction
             );
           }
 
-          totalAmount += prod.price * item.quantity;
+          const tc = await resolveTaxClassForProduct(item.productId, orgId, tx);
+          const lineTax = calculateLineTax(prod.price, item.quantity, tc);
+
+          subtotalAmount += lineTax.lineSubtotalCents;
+          totalTaxAmount += lineTax.taxAmountCents;
 
           if (prod.type === "product") {
             const [invMeta] = await tx
@@ -175,13 +183,18 @@ export const processBillingCheckoutAction = vendorAction
             productName: prod.name,
             quantity: item.quantity,
             unitPrice: prod.price,
+            taxAmount: lineTax.taxAmountCents,
+            taxRatePercent: lineTax.taxRatePercent,
+            taxClassCode: lineTax.taxClassCode,
           });
         }
 
-        // Update total on receipt
+        const grandTotal = subtotalAmount + totalTaxAmount;
+
+        // Update totals on receipt
         await tx
           .update(schema.billingReceipts)
-          .set({ totalAmount })
+          .set({ subtotalAmount, taxAmount: totalTaxAmount, totalAmount: grandTotal })
           .where(eq(schema.billingReceipts.id, receipt.id));
 
         await logAuditAction({
@@ -191,13 +204,13 @@ export const processBillingCheckoutAction = vendorAction
           targetId: receipt.id,
           metadata: {
             branchId: parsedInput.branchId,
-            totalAmount,
+            totalAmount: grandTotal,
             paymentMethod: parsedInput.paymentMethod,
           },
         });
 
         revalidateVendorConsole();
-        return { success: true as const, receiptId: receipt.id, totalAmount };
+        return { success: true as const, receiptId: receipt.id, totalAmount: grandTotal };
       });
     });
   });

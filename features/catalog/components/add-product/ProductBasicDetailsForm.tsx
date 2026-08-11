@@ -21,6 +21,9 @@ export default function ProductBasicDetailsForm() {
     categories,
     categoryId,
     setCategoryId,
+    taxClasses,
+    taxClassId,
+    setTaxClassId,
     stockAvailabilityOptions,
     stockAvailability,
     setStockAvailability,
@@ -144,6 +147,26 @@ export default function ProductBasicDetailsForm() {
             onChange={setCategoryId}
           />
         </div>
+
+        {taxClasses && taxClasses.length > 0 && (
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+              Tax Class Override
+            </label>
+            <select
+              value={taxClassId}
+              onChange={(e) => setTaxClassId(e.target.value)}
+              className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 rounded-xl text-base sm:text-sm bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 transition-all font-semibold"
+            >
+              <option value="">No Override (Inherit Category/Org or 0%)</option>
+              {taxClasses.map((tc) => (
+                <option key={tc.id} value={tc.id}>
+                  {tc.name} ({tc.ratePercent}%)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {type === "product" && (
           <>

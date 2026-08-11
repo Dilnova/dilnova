@@ -88,18 +88,34 @@ export function validateShippingAddress(opts: {
   } = opts;
 
   if (!fulfillmentOption.requiresBranch) {
-    if (
-      !normalizedShippingAddress ||
-      normalizedShippingAddress.length < 5 ||
-      !normalizedShippingCity ||
-      !normalizedShippingState ||
-      !normalizedShippingPostalCode ||
-      !normalizedShippingCountry
-    ) {
+    if (!normalizedShippingAddress || normalizedShippingAddress.trim().length < 5) {
       return {
         success: false,
-        error:
-          "Please enter a complete delivery address for home delivery orders (Street, City, State, Postal Code, and Country are required).",
+        error: "Please enter a valid street address (minimum 5 characters).",
+      };
+    }
+    if (!normalizedShippingState || !normalizedShippingState.trim()) {
+      return {
+        success: false,
+        error: "Please select or enter your District / State.",
+      };
+    }
+    if (!normalizedShippingCity || !normalizedShippingCity.trim()) {
+      return {
+        success: false,
+        error: "Please select or enter your City / Town.",
+      };
+    }
+    if (!normalizedShippingPostalCode || !normalizedShippingPostalCode.trim()) {
+      return {
+        success: false,
+        error: "Please enter your Postal / ZIP Code.",
+      };
+    }
+    if (!normalizedShippingCountry || !normalizedShippingCountry.trim()) {
+      return {
+        success: false,
+        error: "Please select your Country.",
       };
     }
   } else if (normalizedShippingAddress || normalizedShippingPhone) {

@@ -18,13 +18,18 @@ export function AccessibleModal({
   backdropClassName = "flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm",
 }: AccessibleModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         e.preventDefault();
       }
 
@@ -53,20 +58,23 @@ export function AccessibleModal({
 
     document.addEventListener("keydown", handleKeyDown);
 
-    // Auto-focus the modal container so Escape works immediately without tabbing
-    setTimeout(() => {
+    // Auto-focus modal container once on open
+    const timer = setTimeout(() => {
       modalRef.current?.focus();
     }, 10);
 
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
     <div
       className={`fixed inset-0 z-50 ${backdropClassName}`}
-      onClick={onClose}
+      onClick={() => onCloseRef.current()}
       role="presentation"
     >
       <div

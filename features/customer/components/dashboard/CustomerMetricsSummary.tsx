@@ -1,3 +1,8 @@
+"use client";
+
+import { useCurrency } from "@/shared/currency/context/currency-context";
+import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
+
 interface CustomerMetricsSummaryProps {
   wishlistCount: number;
   ordersCount: number;
@@ -9,10 +14,11 @@ export default function CustomerMetricsSummary({
   ordersCount,
   totalSpent,
 }: CustomerMetricsSummaryProps) {
-  const formattedTotalSpent = (totalSpent / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
+  const { format, isLoading } = useCurrency();
+
+  const formattedTotalSpent = isLoading
+    ? formatMoney(totalSpent, DEFAULT_CURRENCY)
+    : format(totalSpent, DEFAULT_CURRENCY);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

@@ -28,6 +28,42 @@ const formatPrice = (priceInCents: number) => {
 };
 
 /**
+ * Fetches top trending/best-selling active products across all categories & vendors in a single list.
+ */
+export async function getTrendingProducts(limitCount = 8): Promise<Product[]> {
+  try {
+    const activeProducts = await db
+      .select()
+      .from(products)
+      .where(eq(products.status, "active"))
+      .orderBy(desc(products.createdAt))
+      .limit(limitCount);
+
+    if (activeProducts.length === 0) {
+      return [];
+    }
+
+    const organizations = await getCachedOrganizations();
+    const orgMap = new Map(organizations.map((org) => [org.id, org]));
+
+    return activeProducts.map((p) => {
+      const org = orgMap.get(p.orgId);
+      return {
+        id: p.id,
+        name: p.name,
+        price: formatPrice(p.price),
+        imageUrl: p.imageUrl || "",
+        vendorName: org?.name || "Unknown Vendor",
+        vendorSlug: org?.slug || p.orgId,
+      };
+    });
+  } catch (error) {
+    logger.error("Failed to fetch trending products", error);
+    return [];
+  }
+}
+
+/**
  * Fetches featured product series from the database.
  * We use active categories as "Series" and pull recent products for each.
  */

@@ -1,5 +1,6 @@
 import { pgTable, text, timestamp, uuid, jsonb, index, boolean, real } from "drizzle-orm/pg-core";
 import { encryptedText } from "./custom-types";
+import { taxClasses } from "./catalog";
 
 export const systemSettings = pgTable("system_settings", {
   key: text("key").primaryKey(),
@@ -75,6 +76,10 @@ export const orgSettings = pgTable("org_settings", {
   orgId: text("org_id").primaryKey(),
   baseCurrency: text("base_currency").default("LKR").notNull(),
   fxMarkupPercent: real("fx_markup_percent").default(0).notNull(),
+  defaultTaxClassId: uuid("default_tax_class_id").references(() => taxClasses.id, {
+    onDelete: "set null",
+  }),
+  allowedTaxClassIds: jsonb("allowed_tax_class_ids").$type<string[]>().default([]),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
