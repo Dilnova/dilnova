@@ -313,10 +313,53 @@ export const simulatedCheckoutAction = authenticatedAction
         vendorOrgIds[0] || "",
       );
 
+      let serverShippingCents = 0;
+      if (!fulfillmentOption.zeroShipping && normalizedShippingCity) {
+        try {
+          const { computeMultiVendorRates } = await import("@/shared/shipping/rate-engine");
+          const itemsByVendor = new Map<
+            string,
+            Array<{ id: string; quantity: number; weightGrams?: number }>
+          >();
+          for (const item of verifiedItems) {
+            const list = itemsByVendor.get(item.vendorOrgId) ?? [];
+            list.push({ id: item.id, quantity: item.quantity, weightGrams: 500 });
+            itemsByVendor.set(item.vendorOrgId, list);
+          }
+          const vendorBranchMap = new Map<
+            string,
+            { id: string; name: string; address: string | null; phone: string | null }
+          >();
+          for (const [orgId, branchList] of branchesByOrg.entries()) {
+            const mainBranch = branchList[0];
+            if (mainBranch) vendorBranchMap.set(orgId, mainBranch);
+          }
+          const rateResult = await computeMultiVendorRates({
+            itemsByVendor,
+            destination: {
+              name,
+              street: normalizedShippingAddress || "Delivery Address",
+              city: normalizedShippingCity,
+              state: normalizedShippingState || "",
+              postalCode: normalizedShippingPostalCode || "",
+              country: normalizedShippingCountry || "LK",
+            },
+            vendorBranchMap,
+          });
+          serverShippingCents = rateResult.totalShippingCents;
+        } catch (err) {
+          console.warn(
+            "[simulatedCheckoutAction] Dynamic shipping rate calculation failed, fallback:",
+            err,
+          );
+        }
+      }
+
       const checkoutTotals = calculateCheckoutTotals(
         serverSubtotal,
         fulfillmentOption.zeroShipping === true,
         taxBreakdown.totalTaxCents,
+        serverShippingCents > 0 ? serverShippingCents : null,
       );
       const clientExpectedPreTaxTotal = serverSubtotal + checkoutTotals.shippingAmount;
       if (
@@ -414,6 +457,19 @@ export const simulatedCheckoutAction = authenticatedAction
         name,
         email,
         userId: ctx.userId,
+        selectedRateId: parsedInput.selectedRateId,
+        vendorOrgId: vendorOrgIds[0],
+        shippingAddress: normalizedShippingAddress
+          ? {
+              street: normalizedShippingAddress,
+              city: normalizedShippingCity || "",
+              state: normalizedShippingState || "",
+              postalCode: normalizedShippingPostalCode || "",
+              country: normalizedShippingCountry || "LK",
+              phone: normalizedShippingPhone || undefined,
+            }
+          : null,
+        items: verifiedItems.map((i) => ({ id: i.id, quantity: i.quantity })),
       });
 
       return successResult;

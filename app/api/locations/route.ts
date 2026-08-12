@@ -242,19 +242,115 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: true, data: [] });
   }
 
-  // 5. Fetch 100% Live Cities for a State
-  if (type === "cities" && country && state) {
+  // 5. Fetch 100% Live Cities for a Country & District/State
+  if (type === "cities" && country) {
+    if (state) {
+      const cleanState = state.trim();
+      const cleanCountry = country.trim();
+
+      // 1. OpenStreetMap Nominatim Parallel Towns & Cities Search
+      try {
+        const [townsRes, citiesRes] = await Promise.all([
+          fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`towns in ${cleanState}, ${cleanCountry}`)}&format=json&limit=100`,
+            {
+              headers: {
+                "Accept-Language": "en",
+                "User-Agent": "DilnovaCommerceHub/1.0 (Enterprise Ecommerce Platform)",
+              },
+              next: { revalidate: 86400 },
+            },
+          ),
+          fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`cities in ${cleanState}, ${cleanCountry}`)}&format=json&limit=100`,
+            {
+              headers: {
+                "Accept-Language": "en",
+                "User-Agent": "DilnovaCommerceHub/1.0 (Enterprise Ecommerce Platform)",
+              },
+              next: { revalidate: 86400 },
+            },
+          ),
+        ]);
+
+        const rawList: Array<{ name?: string }> = [];
+        if (townsRes.ok) {
+          const d1 = (await townsRes.json()) as Array<{ name?: string }>;
+          if (Array.isArray(d1)) rawList.push(...d1);
+        }
+        if (citiesRes.ok) {
+          const d2 = (await citiesRes.json()) as Array<{ name?: string }>;
+          if (Array.isArray(d2)) rawList.push(...d2);
+        }
+
+        if (rawList.length > 0) {
+          const stateLower = cleanState.toLowerCase();
+          const countryLower = cleanCountry.toLowerCase();
+          const stateCities = Array.from(
+            new Set(
+              rawList
+                .map((item) => item.name?.trim())
+                .filter((name): name is string =>
+                  Boolean(
+                    name &&
+                    name.length > 1 &&
+                    name.toLowerCase() !== stateLower &&
+                    name.toLowerCase() !== countryLower &&
+                    !name.toLowerCase().endsWith("province") &&
+                    !name.toLowerCase().endsWith("district"),
+                  ),
+                ),
+            ),
+          ).sort((a, b) => a.localeCompare(b));
+
+          if (stateCities.length >= 5) {
+            return NextResponse.json({ success: true, data: stateCities });
+          }
+        }
+      } catch (err) {
+        console.error("[ServerLocationProxy] Nominatim district/province cities fetch failed", err);
+      }
+
+      // 2. countriesnow.space State Cities API
+      try {
+        const res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ country: cleanCountry, state: cleanState }),
+          next: { revalidate: 86400 },
+        });
+
+        if (res.ok) {
+          const data = (await res.json()) as { data?: string[] };
+          if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+            const cities = data.data
+              .filter((c): c is string => typeof c === "string" && c.trim().length > 0)
+              .sort((a, b) => a.localeCompare(b));
+
+            return NextResponse.json({ success: true, data: cities });
+          }
+        }
+      } catch (err) {
+        console.error("[ServerLocationProxy] Live state cities fetch failed", {
+          state: sanitizeLogValue(state),
+          country: sanitizeLogValue(country),
+          error: err,
+        });
+      }
+    }
+
+    // Fallback to Country-level Live Cities API if state cities returned empty
     try {
-      const res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
+      const res = await fetch("https://countriesnow.space/api/v0.1/countries/cities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ country: country.trim(), state: state.trim() }),
+        body: JSON.stringify({ country: country.trim() }),
         next: { revalidate: 86400 },
       });
 
       if (res.ok) {
         const data = (await res.json()) as { data?: string[] };
-        if (data?.data && Array.isArray(data.data)) {
+        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
           const cities = data.data
             .filter((c): c is string => typeof c === "string" && c.trim().length > 0)
             .sort((a, b) => a.localeCompare(b));
@@ -263,11 +359,43 @@ export async function GET(request: Request) {
         }
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] Live cities fetch failed", {
-        state: sanitizeLogValue(state),
+      console.error("[ServerLocationProxy] Live country cities fetch failed", {
         country: sanitizeLogValue(country),
         error: err,
       });
+    }
+
+    // Fallback 2: OpenStreetMap Nominatim Live Settlement Cities API
+    try {
+      const nomRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(country.trim())}&featuretype=settlement&format=json&limit=100`,
+        {
+          headers: {
+            "Accept-Language": "en",
+            "User-Agent": "DilnovaCommerceHub/1.0 (Enterprise Ecommerce Platform)",
+          },
+          next: { revalidate: 86400 },
+        },
+      );
+
+      if (nomRes.ok) {
+        const nomData = (await nomRes.json()) as Array<{ name?: string }>;
+        if (Array.isArray(nomData) && nomData.length > 0) {
+          const nomCities = Array.from(
+            new Set(
+              nomData
+                .map((item) => item.name?.trim())
+                .filter((name): name is string => Boolean(name && name.length > 1)),
+            ),
+          ).sort((a, b) => a.localeCompare(b));
+
+          if (nomCities.length > 0) {
+            return NextResponse.json({ success: true, data: nomCities });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[ServerLocationProxy] Nominatim cities fetch failed", err);
     }
 
     return NextResponse.json({ success: false, data: [] });

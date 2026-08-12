@@ -53,6 +53,55 @@ export default function ProductTipsSidebar() {
         </div>
       </div>
 
+      <div className="bg-purple-500/5 border border-purple-500/15 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-purple-950/20 dark:border-purple-800/30">
+        <h3 className="text-sm font-bold text-purple-900 dark:text-purple-300 mb-3 flex items-center gap-1.5">
+          <span>⚙️</span> Default Fallback Values
+        </h3>
+        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mb-2.5">
+          Mandatory: <strong className="text-purple-600 dark:text-purple-400">Name</strong> &{" "}
+          <strong className="text-purple-600 dark:text-purple-400">Price</strong>. If optional
+          fields are left empty, the system uses these defaults:
+        </p>
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center justify-between py-1.5 border-b border-purple-200/50 dark:border-purple-800/30">
+            <span className="text-zinc-600 dark:text-zinc-400 font-medium">Item Weight</span>
+            <span className="font-mono font-bold text-purple-700 dark:text-purple-300">
+              100g (0.1kg)
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-1.5 border-b border-purple-200/50 dark:border-purple-800/30">
+            <span className="text-zinc-600 dark:text-zinc-400 font-medium">Availability</span>
+            <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+              In Stock
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-1.5 border-b border-purple-200/50 dark:border-purple-800/30">
+            <span className="text-zinc-600 dark:text-zinc-400 font-medium">Initial Quantity</span>
+            <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+              3 units
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-1.5 border-b border-purple-200/50 dark:border-purple-800/30">
+            <span className="text-zinc-600 dark:text-zinc-400 font-medium">Low Stock Limit</span>
+            <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+              5 units
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-1.5 border-b border-purple-200/50 dark:border-purple-800/30">
+            <span className="text-zinc-600 dark:text-zinc-400 font-medium">Shipping Class</span>
+            <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+              Standard Inland
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-zinc-600 dark:text-zinc-400 font-medium">Pre-Order Model</span>
+            <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+              100% Full Upfront
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-zinc-50 border border-zinc-200 rounded-xl sm:rounded-2xl p-4 sm:p-5 dark:bg-zinc-900/40 dark:border-zinc-800">
         <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mb-3 flex items-center gap-1.5">
           <span>📊</span> Upload Limits

@@ -48,7 +48,7 @@ export default function DeliveryAddressFormFields({
   const [isLoadingStates, setIsLoadingStates] = useState(false);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
 
-  const selectedCountryName = shippingCountry || "Sri Lanka";
+  const selectedCountryName = shippingCountry;
 
   // 1. Fetch 250+ Live Countries via Next.js Server API Proxy
   useEffect(() => {
@@ -94,15 +94,17 @@ export default function DeliveryAddressFormFields({
   // 3. Fetch Live Cities via Next.js Server API Proxy
   useEffect(() => {
     let isMounted = true;
-    if (!selectedCountryName || !shippingState) {
+    if (!selectedCountryName) {
       setCities([]);
       return;
     }
 
     setIsLoadingCities(true);
-    fetch(
-      `/api/locations?type=cities&country=${encodeURIComponent(selectedCountryName)}&state=${encodeURIComponent(shippingState)}`,
-    )
+    const url = shippingState
+      ? `/api/locations?type=cities&country=${encodeURIComponent(selectedCountryName)}&state=${encodeURIComponent(shippingState)}`
+      : `/api/locations?type=cities&country=${encodeURIComponent(selectedCountryName)}`;
+
+    fetch(url)
       .then((res) => res.json())
       .then((res) => {
         if (isMounted) {
@@ -206,7 +208,6 @@ export default function DeliveryAddressFormFields({
         }
       },
       async () => {
-        // If GPS permission denied or times out, try IP fallback
         try {
           await handleIpFallback();
         } finally {
@@ -274,11 +275,14 @@ export default function DeliveryAddressFormFields({
                   Select Country (
                   {countries.length > 0 ? `${countries.length} Countries Available` : "Loading..."})
                 </option>
-                {countries.map((c) => (
-                  <option key={c.code} value={c.name}>
-                    {c.flag} {c.name} {c.dialCode ? `(${c.dialCode})` : ""}
-                  </option>
-                ))}
+                <option value="Sri Lanka">🇱🇰 Sri Lanka (+94)</option>
+                {countries
+                  .filter((c) => c.name !== "Sri Lanka")
+                  .map((c) => (
+                    <option key={c.code} value={c.name}>
+                      {c.flag} {c.name} {c.dialCode ? `(${c.dialCode})` : ""}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>

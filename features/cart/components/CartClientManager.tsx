@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useClerkAuthRedirectUrl } from "@/features/auth/hooks/use-clerk-auth-redirect-url";
@@ -23,6 +23,7 @@ import {
   toggleProductInSelection,
 } from "@/features/cart/vendor-checkout";
 import { toast } from "sonner";
+import { extractActionErrorMessage } from "@/shared/errors/client-error";
 import { useCurrency } from "@/shared/currency/context/currency-context";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 
@@ -57,6 +58,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   const { isSignedIn, user } = useUser();
 
   const [remainingCartCount, setRemainingCartCount] = useState(0);
+  const [dynamicShippingCents, setDynamicShippingCents] = useState<number | null>(null);
 
   const {
     checkoutStatus,
@@ -83,8 +85,22 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     shippingCountry,
     shippingPhone,
     shippingPhone2,
+    addressConfirmed,
     handleAddressChange,
   } = useShippingAddressState(Boolean(isSignedIn));
+
+  const [availableShippingRates, setAvailableShippingRates] = useState<
+    Array<{
+      rateId: string;
+      carrierId: string;
+      carrierName: string;
+      serviceCode: string;
+      serviceName: string;
+      estimatedDays: number;
+      amountCents: number;
+    }>
+  >([]);
+  const [selectedRateId, setSelectedRateId] = useState<string>("");
 
   const {
     fulfillmentMethod,
@@ -153,7 +169,10 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   const compatiblePayments = checkoutOptions.payment.filter((payment) =>
     selectedFulfillment
       ? isPaymentCompatibleWithFulfillment(
-          { requiresDelivery: payment.requiresDelivery },
+          {
+            requiresDelivery: payment.requiresDelivery,
+            requiresPickup: payment.requiresPickup,
+          },
           { requiresBranch: selectedFulfillment.requiresBranch },
         )
       : true,
@@ -281,6 +300,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     const checkoutTotalsForOrder = calculateCheckoutTotals(
       checkoutSubtotal,
       selectedFulfillment?.zeroShipping ?? false,
+      estimatedTaxFromOptions,
+      dynamicShippingCents,
     );
 
     setCheckoutStatus("processing");
@@ -311,6 +332,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         shippingCountry: requiresDeliveryAddress ? shippingCountry.trim() || null : null,
         shippingPhone2: requiresDeliveryAddress ? shippingPhone2.trim() || null : null,
         idempotencyKey,
+        selectedRateId: requiresDeliveryAddress ? selectedRateId || null : null,
       });
 
       if (result?.data?.success) {
@@ -348,11 +370,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         setPickupBranchId("");
       } else {
         setCheckoutStatus("idle");
-        const errorMessage =
-          result?.data && "error" in result.data
-            ? result.data.error
-            : result?.serverError || "Checkout failed.";
-        toast.error(typeof errorMessage === "string" ? errorMessage : "Checkout failed.");
+        const errorMessage = extractActionErrorMessage(result);
+        toast.error(errorMessage);
       }
     } catch (err) {
       setCheckoutStatus("idle");
@@ -373,11 +392,135 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     router.push("/products");
   };
 
+  useEffect(() => {
+    // Only fetch rates after user has explicitly interacted with the address form.
+    // Prevents old cached/saved address from auto-triggering stale shipping quotes.
+    if (
+      !requiresDeliveryAddress ||
+      !addressConfirmed ||
+      !shippingCountry.trim() ||
+      !shippingCity.trim()
+    ) {
+      setDynamicShippingCents((prev) => (prev !== null ? null : prev));
+      setAvailableShippingRates((prev) => (prev.length > 0 ? [] : prev));
+      setSelectedRateId((prev) => (prev !== "" ? "" : prev));
+      return;
+    }
+
+    let isMounted = true;
+    const fetchRates = async () => {
+      try {
+        const res = await fetch("/api/shipping/rates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cartItems: checkoutCartItems.map((item) => ({
+              id: item.id,
+              quantity: item.quantity,
+              vendorOrgId: item.vendorOrgId || item.vendorName,
+              weightGrams: item.weightGrams ?? undefined,
+            })),
+            destinationAddress: {
+              street: shippingAddress.trim() || "Delivery Street",
+              city: shippingCity.trim(),
+              state: shippingState.trim(),
+              postalCode: shippingPostalCode.trim(),
+              country: shippingCountry.trim() || "LK",
+              phone: shippingPhone.trim() || undefined,
+            },
+          }),
+        });
+        const data = await res.json();
+        if (isMounted && data.quotes && data.quotes.length > 0) {
+          type RateItem = {
+            rateId: string;
+            carrierId: string;
+            carrierName: string;
+            serviceCode: string;
+            serviceName: string;
+            estimatedDays: number;
+            amountCents: number;
+          };
+
+          let allRates: RateItem[] = data.quotes[0].rates || [];
+
+          if (data.quotes.length > 1) {
+            // Aggregate shipping rates by serviceCode across all vendor quotes
+            const rateMap = new Map<string, RateItem>();
+            for (const quote of data.quotes) {
+              for (const r of quote.rates as RateItem[]) {
+                const key = `${r.carrierId || "slpost"}_${r.serviceCode}`;
+                const existing = rateMap.get(key);
+                if (existing) {
+                  rateMap.set(key, {
+                    ...existing,
+                    amountCents: existing.amountCents + r.amountCents,
+                    estimatedDays: Math.max(existing.estimatedDays, r.estimatedDays),
+                  });
+                } else {
+                  rateMap.set(key, { ...r });
+                }
+              }
+            }
+            allRates = Array.from(rateMap.values());
+          }
+
+          setAvailableShippingRates((prev) => {
+            const isSame =
+              prev.length === allRates.length &&
+              prev.every(
+                (p, i) =>
+                  p.rateId === allRates[i]?.rateId && p.amountCents === allRates[i]?.amountCents,
+              );
+            return isSame ? prev : allRates;
+          });
+
+          if (allRates.length > 0) {
+            const hasExistingMatch = allRates.some((r) => r.rateId === selectedRateId);
+            const activeRateId = hasExistingMatch ? selectedRateId : allRates[0].rateId;
+            if (!hasExistingMatch) {
+              setSelectedRateId(activeRateId);
+            }
+            const activeRate = allRates.find((r) => r.rateId === activeRateId) || allRates[0];
+            setDynamicShippingCents((prev) =>
+              prev !== activeRate.amountCents ? activeRate.amountCents : prev,
+            );
+          }
+        } else if (isMounted && data.totalShippingCents != null) {
+          setDynamicShippingCents((prev) =>
+            prev !== data.totalShippingCents ? data.totalShippingCents : prev,
+          );
+        }
+      } catch (err) {
+        console.warn("[CartClientManager] Failed to fetch dynamic shipping rates:", err);
+      }
+    };
+
+    const timer = setTimeout(fetchRates, 300);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [
+    requiresDeliveryAddress,
+    addressConfirmed,
+    shippingCity,
+    shippingState,
+    shippingPostalCode,
+    shippingCountry,
+    shippingAddress,
+    shippingPhone,
+    checkoutSubtotal,
+    checkoutCartItems,
+    selectedRateId,
+  ]);
+
   const estimatedTaxFromOptions = checkoutOptions.estimatedTaxCents ?? 0;
   const checkoutTotals = calculateCheckoutTotals(
     checkoutSubtotal,
     selectedFulfillment?.zeroShipping ?? false,
     estimatedTaxFromOptions,
+    dynamicShippingCents,
   );
   const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = checkoutTotals;
   const taxLabel = checkoutOptions.taxLabel ?? "Estimated Tax";
@@ -461,6 +604,14 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     />
   );
 
+  const handleSelectShippingRate = (rateId: string) => {
+    setSelectedRateId(rateId);
+    const chosenRate = availableShippingRates.find((r) => r.rateId === rateId);
+    if (chosenRate) {
+      setDynamicShippingCents(chosenRate.amountCents);
+    }
+  };
+
   const rightCol = (
     <CartCheckoutSidebar
       priceSyncNotice={priceSyncNotice}
@@ -499,6 +650,10 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       shippingPhone={shippingPhone}
       shippingPhone2={shippingPhone2}
       handleAddressChange={handleAddressChange}
+      availableShippingRates={availableShippingRates}
+      selectedRateId={selectedRateId}
+      onSelectShippingRate={handleSelectShippingRate}
+      addressConfirmed={addressConfirmed}
       compatiblePayments={compatiblePayments}
       paymentMethod={paymentMethod}
       setPaymentMethod={setPaymentMethod}

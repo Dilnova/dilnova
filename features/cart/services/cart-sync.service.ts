@@ -9,6 +9,7 @@ export async function syncCartPricesService(uniqueIds: string[]) {
       name: schema.products.name,
       price: schema.products.price,
       status: schema.products.status,
+      weightGrams: schema.products.weightGrams,
     })
     .from(schema.products)
     .where(inArray(schema.products.id, uniqueIds));
@@ -24,6 +25,7 @@ export async function syncCartPricesService(uniqueIds: string[]) {
       id: row.id,
       name: row.name,
       price: row.price,
+      weightGrams: row.weightGrams,
     })),
     removedIds: [...missingIds, ...inactiveIds],
   };

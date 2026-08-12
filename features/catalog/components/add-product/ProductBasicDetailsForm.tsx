@@ -40,6 +40,14 @@ export default function ProductBasicDetailsForm() {
     branches,
     selectedBranchId,
     setSelectedBranchId,
+    weightGrams,
+    setWeightGrams,
+    lengthCm,
+    setLengthCm,
+    widthCm,
+    setWidthCm,
+    heightCm,
+    setHeightCm,
   } = useAddProduct();
 
   return (
@@ -284,6 +292,104 @@ export default function ProductBasicDetailsForm() {
             </div>
           )}
       </div>
+
+      {type === "product" && (
+        <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/15 dark:bg-purple-950/20 dark:border-purple-800/30 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">⚖️</span>
+            <h3 className="text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider">
+              Shipping & Physical Specifications (Weight & Dimensions)
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                  Item Weight (Grams)
+                </label>
+                <span className="text-[10px] font-semibold text-purple-600 bg-purple-100 dark:bg-purple-950/60 dark:text-purple-300 px-1.5 py-0.5 rounded">
+                  Default: 100g
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  value={weightGrams}
+                  onChange={(e) => setWeightGrams(e.target.value)}
+                  placeholder="100 (Default: 100g = 0.1kg)"
+                  className="w-full pl-3.5 pr-8 py-2.5 border border-zinc-200 rounded-xl text-xs bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 font-mono focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-purple-600 dark:text-purple-400">
+                  g
+                </span>
+              </div>
+              <p className="text-[10px] text-zinc-500">
+                {weightGrams && !isNaN(parseInt(weightGrams, 10))
+                  ? `Equivalent to ${(parseInt(weightGrams, 10) / 1000).toFixed(2)} kg`
+                  : "If left blank, system assumes default 100g for Sri Lanka Post / EMS postage."}
+              </p>
+              {(!weightGrams || weightGrams.trim() === "") && (
+                <div className="flex items-start gap-1.5 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] font-medium text-amber-700 dark:text-amber-300 mt-1.5">
+                  <span className="shrink-0 text-xs">⚠️</span>
+                  <span>
+                    <strong>No weight specified:</strong> Carrier APIs (SL Post, Shippo, EasyPost)
+                    will fallback to 100g, which will underestimate postage for heavier packages.
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Length (cm) <span className="text-zinc-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={lengthCm}
+                onChange={(e) => setLengthCm(e.target.value)}
+                placeholder="e.g. 25"
+                className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl text-xs bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Width (cm) <span className="text-zinc-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={widthCm}
+                onChange={(e) => setWidthCm(e.target.value)}
+                placeholder="e.g. 15"
+                className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl text-xs bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Height (cm) <span className="text-zinc-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={heightCm}
+                onChange={(e) => setHeightCm(e.target.value)}
+                placeholder="e.g. 10"
+                className="w-full px-3.5 py-2.5 border border-zinc-200 rounded-xl text-xs bg-white dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 font-mono"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {type === "product" && stockAvailability === "pre_order" && (
         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 dark:bg-amber-950/30 dark:border-amber-800/40 space-y-4">

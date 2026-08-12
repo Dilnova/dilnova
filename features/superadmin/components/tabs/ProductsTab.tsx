@@ -23,6 +23,10 @@ export interface Product {
   categoryName: string | null;
   createdAt: Date;
   media?: { url: string; type: "image" | "video" }[] | null;
+  weightGrams?: number | null;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
 }
 
 export interface Category {

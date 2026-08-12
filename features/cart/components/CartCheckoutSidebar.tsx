@@ -19,6 +19,7 @@ export interface SidebarPaymentOption {
   label: string;
   description?: string;
   requiresDelivery: boolean;
+  requiresPickup?: boolean;
   pendingPayment?: boolean;
 }
 
@@ -86,6 +87,18 @@ interface CartCheckoutSidebarProps {
   clearCart: () => void;
   handleSendInbox: (e: React.FormEvent) => void;
   emailStatus: string;
+  availableShippingRates?: Array<{
+    rateId: string;
+    carrierId: string;
+    carrierName: string;
+    serviceCode: string;
+    serviceName: string;
+    estimatedDays: number;
+    amountCents: number;
+  }>;
+  selectedRateId?: string;
+  onSelectShippingRate?: (rateId: string) => void;
+  addressConfirmed?: boolean;
 }
 
 export function CartCheckoutSidebar({
@@ -136,6 +149,10 @@ export function CartCheckoutSidebar({
   clearCart,
   handleSendInbox,
   emailStatus,
+  availableShippingRates = [],
+  selectedRateId,
+  onSelectShippingRate,
+  addressConfirmed = false,
 }: CartCheckoutSidebarProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const displaySubtotal = checkoutSubtotal;
@@ -202,9 +219,16 @@ export function CartCheckoutSidebar({
                     >
                       <span
                         className="truncate min-w-0 flex-1"
-                        title={`${tl.name} (${tl.ratePercent}%)`}
+                        title={
+                          tl.name.includes(`(${tl.ratePercent}%)`)
+                            ? tl.name
+                            : `${tl.name} (${tl.ratePercent}%)`
+                        }
                       >
-                        • {tl.name} ({tl.ratePercent}%)
+                        •{" "}
+                        {tl.name.includes(`(${tl.ratePercent}%)`)
+                          ? tl.name
+                          : `${tl.name} (${tl.ratePercent}%)`}
                       </span>
                       <span className="font-bold text-zinc-800 dark:text-zinc-300 shrink-0">
                         {formatPrice(tl.taxAmountCents)}
@@ -237,19 +261,29 @@ export function CartCheckoutSidebar({
               <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
                 <span>Shipping</span>
                 <span className="font-bold text-zinc-900 dark:text-zinc-200">
-                  {shippingFee === 0 ? "FREE" : formatPrice(shippingFee)}
+                  {requiresDeliveryAddress &&
+                  (!addressConfirmed || !shippingCountry.trim() || !shippingCity.trim()) ? (
+                    <span className="font-medium text-amber-600 dark:text-amber-400 text-[11px] font-sans">
+                      Enter delivery address
+                    </span>
+                  ) : shippingFee === 0 ? (
+                    "FREE"
+                  ) : (
+                    formatPrice(shippingFee)
+                  )}
                 </span>
               </div>
 
-              {shippingFee > 0 && (
-                <p className="text-[10px] text-purple-600 dark:text-purple-400 block text-right mt-1">
-                  Add {formatPrice(5000 - displaySubtotal)} more for free shipping!
-                </p>
-              )}
-
               <div className="border-t border-zinc-100 dark:border-zinc-900 pt-4 flex items-center justify-between text-zinc-900 dark:text-zinc-100 font-sans font-bold">
                 <span>Total</span>
-                <span className="text-lg font-black font-mono">{formatPrice(grandTotal)}</span>
+                <span className="text-lg font-black font-mono">
+                  {formatPrice(
+                    requiresDeliveryAddress &&
+                      (!addressConfirmed || !shippingAddress.trim() || !shippingCity.trim())
+                      ? displaySubtotal + estimatedTax
+                      : grandTotal,
+                  )}
+                </span>
               </div>
             </>
           )}
@@ -401,17 +435,162 @@ export function CartCheckoutSidebar({
                 )}
 
                 {requiresDeliveryAddress && (
-                  <DeliveryAddressFormFields
-                    shippingAddress={shippingAddress}
-                    shippingAddressLine2={shippingAddressLine2}
-                    shippingCity={shippingCity}
-                    shippingState={shippingState}
-                    shippingPostalCode={shippingPostalCode}
-                    shippingCountry={shippingCountry}
-                    shippingPhone={shippingPhone}
-                    shippingPhone2={shippingPhone2}
-                    onChange={handleAddressChange}
-                  />
+                  <>
+                    <DeliveryAddressFormFields
+                      shippingAddress={shippingAddress}
+                      shippingAddressLine2={shippingAddressLine2}
+                      shippingCity={shippingCity}
+                      shippingState={shippingState}
+                      shippingPostalCode={shippingPostalCode}
+                      shippingCountry={shippingCountry}
+                      shippingPhone={shippingPhone}
+                      shippingPhone2={shippingPhone2}
+                      onChange={handleAddressChange}
+                    />
+
+                    {availableShippingRates.length > 0 ? (
+                      (() => {
+                        // Group rates by carrierId for display
+                        const CARRIER_META: Record<
+                          string,
+                          {
+                            label: string;
+                            badge: string;
+                            color: string;
+                            darkColor: string;
+                            icon: string;
+                          }
+                        > = {
+                          slpost: {
+                            label: "Sri Lanka Post",
+                            badge: "Official",
+                            color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+                            darkColor:
+                              "dark:text-emerald-400 dark:bg-emerald-950/30 dark:border-emerald-800/40",
+                            icon: "🇱🇰",
+                          },
+                          shippo: {
+                            label: "Shippo (Multi-Carrier)",
+                            badge: "Live API",
+                            color: "text-blue-700 bg-blue-50 border-blue-200",
+                            darkColor:
+                              "dark:text-blue-400 dark:bg-blue-950/30 dark:border-blue-800/40",
+                            icon: "📦",
+                          },
+                          easypost: {
+                            label: "EasyPost (Multi-Carrier)",
+                            badge: "Live API",
+                            color: "text-indigo-700 bg-indigo-50 border-indigo-200",
+                            darkColor:
+                              "dark:text-indigo-400 dark:bg-indigo-950/30 dark:border-indigo-800/40",
+                            icon: "🚀",
+                          },
+                          builtin: {
+                            label: "Platform Carrier",
+                            badge: "Built-in",
+                            color: "text-zinc-700 bg-zinc-50 border-zinc-200",
+                            darkColor:
+                              "dark:text-zinc-400 dark:bg-zinc-900/30 dark:border-zinc-800",
+                            icon: "🏪",
+                          },
+                        };
+                        const grouped = new Map<string, typeof availableShippingRates>();
+                        for (const rate of availableShippingRates) {
+                          const cid =
+                            rate.carrierId ||
+                            (rate.rateId.startsWith("easypost_")
+                              ? "easypost"
+                              : rate.rateId.startsWith("shippo_")
+                                ? "shippo"
+                                : "slpost");
+                          const g = grouped.get(cid) ?? [];
+                          g.push(rate);
+                          grouped.set(cid, g);
+                        }
+                        const ORDER = ["slpost", "shippo", "easypost", "builtin"];
+                        const sortedGroups = [...grouped.entries()].sort(
+                          ([a], [b]) => (ORDER.indexOf(a) ?? 99) - (ORDER.indexOf(b) ?? 99),
+                        );
+                        return (
+                          <fieldset className="space-y-3 pt-2">
+                            <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1 flex items-center justify-between">
+                              <span>Shipping Carrier &amp; Service</span>
+                              <span className="text-[9px] text-purple-600 dark:text-purple-400 font-bold">
+                                LIVE RATES
+                              </span>
+                            </legend>
+                            {sortedGroups.map(([carrierId, rates]) => {
+                              const meta = CARRIER_META[carrierId] ?? {
+                                label: carrierId,
+                                badge: "Carrier",
+                                color: "text-zinc-700 bg-zinc-50 border-zinc-200",
+                                darkColor:
+                                  "dark:text-zinc-400 dark:bg-zinc-900/30 dark:border-zinc-800",
+                                icon: "🚚",
+                              };
+                              return (
+                                <div key={carrierId} className="space-y-1.5">
+                                  {/* Integration header */}
+                                  <div
+                                    className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-mono font-bold ${meta.color} ${meta.darkColor}`}
+                                  >
+                                    <span>{meta.icon}</span>
+                                    <span className="flex-1">{meta.label}</span>
+                                    <span className="text-[9px] font-bold opacity-70">
+                                      {meta.badge}
+                                    </span>
+                                  </div>
+                                  {/* Rates under this carrier */}
+                                  {rates.map((rate) => (
+                                    <label
+                                      key={rate.rateId}
+                                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ml-1 ${
+                                        selectedRateId === rate.rateId
+                                          ? "border-purple-500/50 bg-purple-500/5"
+                                          : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30"
+                                      }`}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name="shippingRate"
+                                        value={rate.rateId}
+                                        checked={selectedRateId === rate.rateId}
+                                        onChange={() => onSelectShippingRate?.(rate.rateId)}
+                                        className="mt-0.5 accent-purple-600"
+                                      />
+                                      <span className="min-w-0 flex-1">
+                                        <span className="flex items-center justify-between gap-2">
+                                          <span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200 leading-tight">
+                                            {rate.serviceName}
+                                          </span>
+                                          <span className="text-xs font-mono font-extrabold text-purple-700 dark:text-purple-300 shrink-0">
+                                            {formatPrice(rate.amountCents)}
+                                          </span>
+                                        </span>
+                                        <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                          Est. {rate.estimatedDays}{" "}
+                                          {rate.estimatedDays === 1 ? "day" : "days"} · via{" "}
+                                          {rate.carrierName}
+                                        </span>
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                              );
+                            })}
+                          </fieldset>
+                        );
+                      })()
+                    ) : (
+                      <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/15 dark:bg-purple-950/20 dark:border-purple-800/30 text-xs text-purple-900 dark:text-purple-300 flex items-center gap-2 mt-2">
+                        <span className="text-base">📍</span>
+                        <span>
+                          Select <strong>Country</strong> and enter <strong>City</strong> above to
+                          fetch live shipping rates &amp; carrier options.
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {compatiblePayments.length > 0 ? (

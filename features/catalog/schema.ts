@@ -111,6 +111,10 @@ export const updateProductSchema = z.object({
     type: z.enum(["product", "service"]).optional(),
     imageUrl: optionalCloudinaryUrlSchema.optional(),
     media: z.array(productMediaItemSchema).optional(),
+    weightGrams: z.number().int().min(0).nullable().optional(),
+    lengthCm: z.number().min(0).nullable().optional(),
+    widthCm: z.number().min(0).nullable().optional(),
+    heightCm: z.number().min(0).nullable().optional(),
   }),
 });
 
@@ -147,6 +151,17 @@ export const addProductSchema = z.object({
   preorderType: z.enum(["full_upfront", "deposit", "pay_later"]).optional().default("full_upfront"),
   preorderDepositAmount: z.number().min(0).optional().nullable().default(null),
   preorderMaxQuantity: z.number().int().positive().optional().nullable().default(null),
+  // Shipping Specs (Weight & Dimensions)
+  weightGrams: z
+    .number()
+    .int("Weight must be a whole number of grams.")
+    .min(0, "Weight cannot be negative.")
+    .optional()
+    .nullable()
+    .default(null),
+  lengthCm: z.number().min(0, "Length cannot be negative.").optional().nullable().default(null),
+  widthCm: z.number().min(0, "Width cannot be negative.").optional().nullable().default(null),
+  heightCm: z.number().min(0, "Height cannot be negative.").optional().nullable().default(null),
 });
 
 export const vendorDeleteProductSchema = z.object({

@@ -35,7 +35,7 @@ export interface CartContextType {
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   syncCartPrices: (
-    updates: { id: string; name: string; price: number }[],
+    updates: { id: string; name: string; price: number; weightGrams?: number | null }[],
     removedIds?: string[],
   ) => void;
   cartTotal: number;
@@ -225,7 +225,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [accountKey]);
 
   const syncCartPrices = useCallback(
-    (updates: { id: string; name: string; price: number }[], removedIds: string[] = []) => {
+    (
+      updates: { id: string; name: string; price: number; weightGrams?: number | null }[],
+      removedIds: string[] = [],
+    ) => {
       setCartItems((prevItems) => applyCatalogSync(prevItems, updates, removedIds));
     },
     [],

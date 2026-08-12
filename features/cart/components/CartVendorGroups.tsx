@@ -207,6 +207,17 @@ export function CartVendorGroups({
                               {item.type || "product"}
                             </span>
 
+                            {item.type !== "service" && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+                                ⚖️{" "}
+                                {typeof item.weightGrams === "number" && item.weightGrams > 0
+                                  ? item.weightGrams >= 1000
+                                    ? `${(item.weightGrams / 1000).toFixed(2)} kg (${item.weightGrams}g)`
+                                    : `${item.weightGrams}g`
+                                  : "100g (est)"}
+                              </span>
+                            )}
+
                             {productTaxMap?.[item.id] && (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
                                 🏷️ Tax: {productTaxMap[item.id].name} (

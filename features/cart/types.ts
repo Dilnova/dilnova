@@ -9,5 +9,7 @@ export interface CartItem {
   imageUrl: string | null;
   quantity: number;
   vendorName: string;
+  vendorOrgId?: string;
   type: string;
+  weightGrams?: number | null;
 }

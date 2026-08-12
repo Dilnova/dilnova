@@ -395,6 +395,53 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 )}
               </div>
 
+              {/* Pre-Order Payment Terms Box */}
+              {(product.isPreorder || availabilityDef?.id === "pre_order") && (
+                <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-4 dark:bg-amber-950/30 dark:border-amber-800/50 space-y-2 text-xs">
+                  <div className="flex items-center gap-1.5 text-amber-900 dark:text-amber-300 font-bold uppercase tracking-wider font-mono">
+                    <span>⏳</span> Pre-Order Payment Terms
+                  </div>
+                  {product.preorderType === "deposit" && product.preorderDepositAmount ? (
+                    <div className="text-amber-900 dark:text-amber-200 space-y-1">
+                      <p className="font-semibold flex items-center gap-1">
+                        <span>• Pay</span>
+                        <strong className="font-mono text-purple-700 dark:text-purple-300 font-black text-sm">
+                          <ProductPriceDisplay
+                            priceInSubunits={product.preorderDepositAmount}
+                            baseCurrency={product.currency || DEFAULT_CURRENCY}
+                          />
+                        </strong>
+                        <span>deposit today to reserve slot.</span>
+                      </p>
+                      <p className="text-zinc-600 dark:text-zinc-400">
+                        • Remaining balance (
+                        <ProductPriceDisplay
+                          priceInSubunits={Math.max(
+                            0,
+                            product.price - product.preorderDepositAmount,
+                          )}
+                          baseCurrency={product.currency || DEFAULT_CURRENCY}
+                        />
+                        ) will be charged when item releases.
+                      </p>
+                    </div>
+                  ) : product.preorderType === "pay_later" ? (
+                    <p className="text-amber-900 dark:text-amber-200 font-medium">
+                      • Reserve now without immediate charge. Balance charged upon official release.
+                    </p>
+                  ) : (
+                    <p className="text-amber-900 dark:text-amber-200 font-medium">
+                      • 100% Full Upfront payment. Order will ship immediately on item release.
+                    </p>
+                  )}
+                  {product.preorderMaxQuantity && (
+                    <p className="text-[10px] text-amber-800 dark:text-amber-400 font-mono font-bold">
+                      🔥 Limited slots: Maximum {product.preorderMaxQuantity} pre-order units total.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <hr className="border-zinc-200 dark:border-zinc-800" />
 
               <div className="space-y-2">
@@ -405,6 +452,59 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   {product.description || "No detailed description provided by the seller."}
                 </p>
               </div>
+
+              {/* Physical Specifications & Shipping Specs */}
+              {product.type === "product" && (
+                <div className="bg-purple-50/40 border border-purple-100/80 rounded-2xl p-4 dark:bg-purple-950/20 dark:border-purple-800/40 space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-purple-900 dark:text-purple-300 font-mono flex items-center gap-1.5">
+                    <span>📦</span> Specifications & Shipping Details
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                    <div className="bg-white dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800">
+                      <span className="text-[10px] text-zinc-400 block font-mono">WEIGHT</span>
+                      <span className="font-bold text-zinc-800 dark:text-zinc-200 font-mono">
+                        {product.weightGrams != null && product.weightGrams > 0
+                          ? product.weightGrams >= 1000
+                            ? `${(product.weightGrams / 1000).toFixed(2)} kg (${product.weightGrams}g)`
+                            : `${product.weightGrams} g (${(product.weightGrams / 1000).toFixed(2)} kg)`
+                          : "100 g (Standard default)"}
+                      </span>
+                    </div>
+
+                    {product.lengthCm || product.widthCm || product.heightCm ? (
+                      <div className="bg-white dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800">
+                        <span className="text-[10px] text-zinc-400 block font-mono">
+                          DIMENSIONS (L×W×H)
+                        </span>
+                        <span className="font-bold text-zinc-800 dark:text-zinc-200 font-mono">
+                          {`${product.lengthCm || "-"} × ${product.widthCm || "-"} × ${product.heightCm || "-"} cm`}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="bg-white dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800">
+                        <span className="text-[10px] text-zinc-400 block font-mono">PACKAGE</span>
+                        <span className="font-semibold text-zinc-600 dark:text-zinc-400">
+                          Standard Parcel
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="bg-white dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800">
+                      <span className="text-[10px] text-zinc-400 block font-mono">CARRIER</span>
+                      <span className="font-bold text-zinc-800 dark:text-zinc-200">
+                        Sri Lanka Post / EMS
+                      </span>
+                    </div>
+
+                    <div className="bg-white dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800">
+                      <span className="text-[10px] text-zinc-400 block font-mono">COVERAGE</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                        Inland & 200+ Global
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Vendor Owner Block */}
@@ -473,7 +573,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     price: product.price,
                     imageUrl: product.imageUrl,
                     vendorName: vendorName,
+                    vendorOrgId: product.orgId,
                     type: product.type,
+                    weightGrams: product.weightGrams,
                   }}
                   canPurchase={canPurchase}
                   stockLabel={availabilityDef?.label}

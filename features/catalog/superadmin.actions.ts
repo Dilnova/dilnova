@@ -202,6 +202,22 @@ export const updateProductAction = superadminAction
         setClause.media = parsedInput.updates.media;
       }
 
+      if (parsedInput.updates.weightGrams !== undefined) {
+        setClause.weightGrams = parsedInput.updates.weightGrams;
+      }
+
+      if (parsedInput.updates.lengthCm !== undefined) {
+        setClause.lengthCm = parsedInput.updates.lengthCm;
+      }
+
+      if (parsedInput.updates.widthCm !== undefined) {
+        setClause.widthCm = parsedInput.updates.widthCm;
+      }
+
+      if (parsedInput.updates.heightCm !== undefined) {
+        setClause.heightCm = parsedInput.updates.heightCm;
+      }
+
       await db.update(schema.products).set(setClause).where(eq(schema.products.id, parsedInput.id));
 
       await logAuditAction({

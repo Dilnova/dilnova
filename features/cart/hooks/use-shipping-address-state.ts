@@ -10,6 +10,12 @@ export function useShippingAddressState(isSignedIn: boolean) {
   const [shippingCountry, setShippingCountry] = useState("");
   const [shippingPhone, setShippingPhone] = useState("");
   const [shippingPhone2, setShippingPhone2] = useState("");
+  /**
+   * Only true once the user has explicitly interacted with / confirmed the
+   * address fields in the current session. Prevents shipping rates from
+   * auto-firing on page load just because a saved address was pre-filled.
+   */
+  const [addressConfirmed, setAddressConfirmed] = useState(false);
 
   useEffect(() => {
     async function loadSavedDeliveryDetails() {
@@ -33,6 +39,8 @@ export function useShippingAddressState(isSignedIn: boolean) {
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    // Mark address as confirmed (user is actively editing) on first change
+    setAddressConfirmed(true);
     switch (name) {
       case "shippingAddress":
         setShippingAddress(value);
@@ -70,6 +78,7 @@ export function useShippingAddressState(isSignedIn: boolean) {
     shippingCountry,
     shippingPhone,
     shippingPhone2,
+    addressConfirmed,
     handleAddressChange,
   };
 }

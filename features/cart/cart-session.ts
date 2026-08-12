@@ -40,7 +40,7 @@ export function mergeCartItems(
 
 export function applyCatalogSync(
   items: SyncedCartItem[],
-  updates: { id: string; name: string; price: number }[],
+  updates: { id: string; name: string; price: number; weightGrams?: number | null }[],
   removedIds: string[],
 ): SyncedCartItem[] {
   const removedSet = new Set(removedIds);
@@ -51,7 +51,12 @@ export function applyCatalogSync(
     .map((item) => {
       const update = updateById.get(item.id);
       if (!update) return item;
-      return { ...item, name: update.name, price: update.price };
+      return {
+        ...item,
+        name: update.name,
+        price: update.price,
+        weightGrams: update.weightGrams !== undefined ? update.weightGrams : item.weightGrams,
+      };
     });
 }
 

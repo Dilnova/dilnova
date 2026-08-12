@@ -12,7 +12,7 @@ export function useCheckoutOptionsState(
   isSignedIn: boolean,
   cartItems: CartItem[],
   syncCartPrices: (
-    items: Array<{ id: string; name: string; price: number }>,
+    items: Array<{ id: string; name: string; price: number; weightGrams?: number | null }>,
     removedIds: string[],
   ) => void,
 ) {
@@ -33,6 +33,7 @@ export function useCheckoutOptionsState(
       label: string;
       description?: string;
       requiresDelivery: boolean;
+      requiresPickup?: boolean;
       pendingPayment?: boolean;
     }[];
     pickupBranches: {

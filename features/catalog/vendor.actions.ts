@@ -130,6 +130,11 @@ export const addProductAction = vendorAction
                 ? Math.round(parsedInput.preorderDepositAmount * 100)
                 : null,
             preorderMaxQuantity: parsedInput.preorderMaxQuantity ?? null,
+            // Physical Shipping Specifications
+            weightGrams: parsedInput.weightGrams ?? null,
+            lengthCm: parsedInput.lengthCm ?? null,
+            widthCm: parsedInput.widthCm ?? null,
+            heightCm: parsedInput.heightCm ?? null,
           })
           .returning();
 

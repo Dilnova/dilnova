@@ -21,15 +21,8 @@ import { logger } from "@/shared/logging/logger";
 import { getCachedUserRole, getCachedIsSuperAdmin } from "@/shared/auth/clerk-cache";
 import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
 
-// ─── Custom typed error ────────────────────────────────────────────────────────
-// Next.js redacts arbitrary thrown Error messages in production. Throwing
-// ActionError bypasses the redaction when caught by handleServerError below.
-export class ActionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ActionError";
-  }
-}
+import { ActionError } from "@/shared/errors/action-error";
+export { ActionError };
 
 // ─── Base client ───────────────────────────────────────────────────────────────
 export const actionClient = createSafeActionClient({
