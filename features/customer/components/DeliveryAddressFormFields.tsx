@@ -34,8 +34,8 @@ export default function DeliveryAddressFormFields({
   shippingState,
   shippingPostalCode,
   shippingCountry,
-  shippingPhone,
-  shippingPhone2,
+  shippingPhone: _shippingPhone,
+  shippingPhone2: _shippingPhone2,
   onChange,
 }: DeliveryAddressFormFieldsProps) {
   const [isLocating, setIsLocating] = useState(false);
@@ -52,115 +52,6 @@ export default function DeliveryAddressFormFields({
 
   const selectedCountryName = shippingCountry;
   const isThreeTierActive = districts.length > 0;
-
-  // Auto-detect location dynamically on mount if no address is set
-  useEffect(() => {
-    if (!shippingCountry && !shippingCity && !shippingAddress) {
-      handleDetectLocation();
-    }
-  }, []);
-
-  // 1. Fetch 250+ Live Countries via Next.js Server API Proxy
-  useEffect(() => {
-    let isMounted = true;
-    fetch("/api/locations?type=countries")
-      .then((res) => res.json())
-      .then((res) => {
-        if (isMounted && res?.data) setCountries(res.data);
-      })
-      .catch((err) => console.warn("Countries fetch notice", err));
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // 2. Fetch Live States/Provinces via Next.js Server API Proxy
-  useEffect(() => {
-    let isMounted = true;
-    if (!selectedCountryName) {
-      setStates([]);
-      return;
-    }
-
-    setIsLoadingStates(true);
-    fetch(`/api/locations?type=states&country=${encodeURIComponent(selectedCountryName)}`)
-      .then((res) => res.json())
-      .then((res) => {
-        if (isMounted) {
-          setStates(res?.data || []);
-          setIsLoadingStates(false);
-        }
-      })
-      .catch(() => {
-        if (isMounted) setIsLoadingStates(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedCountryName]);
-
-  // 3. Fetch Live Districts for 3-tier countries (like Sri Lanka)
-  useEffect(() => {
-    let isMounted = true;
-    if (!selectedCountryName) {
-      setDistricts([]);
-      return;
-    }
-
-    setIsLoadingDistricts(true);
-    const url = shippingState
-      ? `/api/locations?type=districts&country=${encodeURIComponent(selectedCountryName)}&province=${encodeURIComponent(shippingState)}`
-      : `/api/locations?type=districts&country=${encodeURIComponent(selectedCountryName)}`;
-
-    fetch(url)
-      .then((res) => res.json())
-      .then((res) => {
-        if (isMounted) {
-          setDistricts(res?.data || []);
-          setIsLoadingDistricts(false);
-        }
-      })
-      .catch(() => {
-        if (isMounted) setIsLoadingDistricts(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedCountryName, shippingState]);
-
-  // 4. Fetch Live Cities via Next.js Server API Proxy
-  useEffect(() => {
-    let isMounted = true;
-    if (!selectedCountryName) {
-      setCities([]);
-      return;
-    }
-
-    setIsLoadingCities(true);
-    const activeSubRegion = shippingAddressLine2 || shippingState;
-    const url = activeSubRegion
-      ? `/api/locations?type=cities&country=${encodeURIComponent(selectedCountryName)}&district=${encodeURIComponent(activeSubRegion)}`
-      : `/api/locations?type=cities&country=${encodeURIComponent(selectedCountryName)}`;
-
-    fetch(url)
-      .then((res) => res.json())
-      .then((res) => {
-        if (isMounted) {
-          setCities(res?.data || []);
-          setIsLoadingCities(false);
-        }
-      })
-      .catch(() => {
-        if (isMounted) setIsLoadingCities(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedCountryName, shippingState, shippingAddressLine2]);
 
   const triggerSyntheticChange = (name: string, value: string) => {
     const event = {
@@ -267,6 +158,116 @@ export default function DeliveryAddressFormFields({
     );
   };
 
+  // Auto-detect location dynamically on mount if no address is set
+  useEffect(() => {
+    if (!shippingCountry && !shippingCity && !shippingAddress) {
+      handleDetectLocation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 1. Fetch 250+ Live Countries via Next.js Server API Proxy
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/locations?type=countries")
+      .then((res) => res.json())
+      .then((res) => {
+        if (isMounted && res?.data) setCountries(res.data);
+      })
+      .catch((err) => console.warn("Countries fetch notice", err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // 2. Fetch Live States/Provinces via Next.js Server API Proxy
+  useEffect(() => {
+    let isMounted = true;
+    if (!selectedCountryName) {
+      setStates([]);
+      return;
+    }
+
+    setIsLoadingStates(true);
+    fetch(`/api/locations?type=states&country=${encodeURIComponent(selectedCountryName)}`)
+      .then((res) => res.json())
+      .then((res) => {
+        if (isMounted) {
+          setStates(res?.data || []);
+          setIsLoadingStates(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsLoadingStates(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCountryName]);
+
+  // 3. Fetch Live Districts for 3-tier countries (like Sri Lanka)
+  useEffect(() => {
+    let isMounted = true;
+    if (!selectedCountryName) {
+      setDistricts([]);
+      return;
+    }
+
+    setIsLoadingDistricts(true);
+    const url = shippingState
+      ? `/api/locations?type=districts&country=${encodeURIComponent(selectedCountryName)}&province=${encodeURIComponent(shippingState)}`
+      : `/api/locations?type=districts&country=${encodeURIComponent(selectedCountryName)}`;
+
+    fetch(url)
+      .then((res) => res.json())
+      .then((res) => {
+        if (isMounted) {
+          setDistricts(res?.data || []);
+          setIsLoadingDistricts(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsLoadingDistricts(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCountryName, shippingState]);
+
+  // 4. Fetch Live Cities via Next.js Server API Proxy
+  useEffect(() => {
+    let isMounted = true;
+    if (!selectedCountryName) {
+      setCities([]);
+      return;
+    }
+
+    setIsLoadingCities(true);
+    const activeSubRegion = shippingAddressLine2 || shippingState;
+    const url = activeSubRegion
+      ? `/api/locations?type=cities&country=${encodeURIComponent(selectedCountryName)}&district=${encodeURIComponent(activeSubRegion)}`
+      : `/api/locations?type=cities&country=${encodeURIComponent(selectedCountryName)}`;
+
+    fetch(url)
+      .then((res) => res.json())
+      .then((res) => {
+        if (isMounted) {
+          setCities(res?.data || []);
+          setIsLoadingCities(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsLoadingCities(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCountryName, shippingState, shippingAddressLine2]);
+
   return (
     <div className="space-y-4">
       <div className="space-y-3">
@@ -321,9 +322,7 @@ export default function DeliveryAddressFormFields({
                 list="country-suggestions-list"
                 autoComplete="off"
                 placeholder={
-                  countries.length > 0
-                    ? "Type country (e.g. Sri Lanka, United States)..."
-                    : "Loading countries..."
+                  countries.length > 0 ? "Search or select country..." : "Loading countries..."
                 }
                 required
                 className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
@@ -372,10 +371,10 @@ export default function DeliveryAddressFormFields({
                 autoComplete="off"
                 placeholder={
                   isLoadingStates
-                    ? "Loading state suggestions..."
+                    ? "Loading suggestions..."
                     : isThreeTierActive
-                      ? "Type province..."
-                      : "State / Province"
+                      ? "Enter or search province..."
+                      : "Enter or search state / province..."
                 }
                 required
                 className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
@@ -395,7 +394,7 @@ export default function DeliveryAddressFormFields({
             )}
           </div>
 
-          {/* Tier 2: District / Sub-Region Type-ahead Input (3-tier countries like Sri Lanka) */}
+          {/* Tier 2: District / Sub-Region Type-ahead Input */}
           {isThreeTierActive && (
             <div className="relative">
               <label
@@ -421,8 +420,8 @@ export default function DeliveryAddressFormFields({
                   autoComplete="off"
                   placeholder={
                     isLoadingDistricts
-                      ? "Loading district suggestions..."
-                      : "Type district (e.g. Colombo District, Kurunegala)..."
+                      ? "Loading suggestions..."
+                      : "Enter or search district / sub-region..."
                   }
                   required
                   className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
@@ -468,11 +467,7 @@ export default function DeliveryAddressFormFields({
                 list="city-suggestions-list"
                 autoComplete="off"
                 placeholder={
-                  isLoadingCities
-                    ? "Loading city suggestions..."
-                    : cities.length > 0
-                      ? "Type city (e.g. Wellawatte, Wariyapola)..."
-                      : "Type City / Town Name"
+                  isLoadingCities ? "Loading suggestions..." : "Enter or search city / town..."
                 }
                 required
                 className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
@@ -510,7 +505,7 @@ export default function DeliveryAddressFormFields({
                 name="shippingPostalCode"
                 value={shippingPostalCode}
                 onChange={onChange}
-                placeholder="e.g. 10001 or 10100"
+                placeholder="Postal / ZIP code"
                 required
                 className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
               />
@@ -535,7 +530,7 @@ export default function DeliveryAddressFormFields({
                 name="shippingAddress"
                 value={shippingAddress}
                 onChange={onChange}
-                placeholder="e.g. 123 Main Street / No. 45 Station Road"
+                placeholder="Street address, house number, or P.O. Box"
                 required
                 className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
               />
@@ -561,7 +556,7 @@ export default function DeliveryAddressFormFields({
                   name="shippingAddressLine2"
                   value={shippingAddressLine2}
                   onChange={onChange}
-                  placeholder="e.g. Apt 4B, Level 2, Sunset Towers"
+                  placeholder="Apartment, suite, unit, building, floor (optional)"
                   className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
                 />
               </div>
