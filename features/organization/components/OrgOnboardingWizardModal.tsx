@@ -13,6 +13,7 @@ import { updateOrgCheckoutOptionsAction } from "@/features/organization/checkout
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
 import type { OrgOnboardingStatus } from "@/features/organization/onboarding";
+import DeliveryAddressFormFields from "@/features/customer/components/DeliveryAddressFormFields";
 
 const CURRENCY_OPTIONS = [
   { code: "LKR", label: "LKR - Sri Lankan Rupee" },
@@ -67,12 +68,41 @@ export default function OrgOnboardingWizardModal({
 
   // Form Fields - Step 1
   const [description, setDescription] = useState(status.initialValues.description || "");
-  const [address, setAddress] = useState(status.initialValues.address || "");
+  const [shippingAddress, setShippingAddress] = useState(status.initialValues.address || "");
+  const [shippingAddressLine2, setShippingAddressLine2] = useState("");
+  const [shippingCity, setShippingCity] = useState("");
+  const [shippingState, setShippingState] = useState("");
+  const [shippingPostalCode, setShippingPostalCode] = useState("");
+  const [shippingCountry, setShippingCountry] = useState("");
   const [phone, setPhone] = useState(status.initialValues.phone || "");
+  const [phone2, setPhone2] = useState("");
   const [bannerUrl, setBannerUrl] = useState(status.initialValues.bannerUrl || "");
   const [stockAllocationMode, setStockAllocationMode] = useState<
     "target_branch" | "central_intake"
   >(status.initialValues.stockAllocationMode || "central_intake");
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    if (name === "shippingAddress") setShippingAddress(value);
+    else if (name === "shippingAddressLine2") setShippingAddressLine2(value);
+    else if (name === "shippingCity") setShippingCity(value);
+    else if (name === "shippingState") setShippingState(value);
+    else if (name === "shippingPostalCode") setShippingPostalCode(value);
+    else if (name === "shippingCountry") setShippingCountry(value);
+    else if (name === "shippingPhone") setPhone(value);
+    else if (name === "shippingPhone2") setPhone2(value);
+  };
+
+  const address = [
+    shippingAddress,
+    shippingAddressLine2,
+    shippingCity,
+    shippingState,
+    shippingPostalCode,
+    shippingCountry,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   // Form Fields - Step 2
   const [baseCurrency, setBaseCurrency] = useState(status.initialValues.baseCurrency || "LKR");
@@ -153,7 +183,19 @@ export default function OrgOnboardingWizardModal({
       toast.error("Store Description is mandatory.");
       return false;
     }
-    if (!address.trim()) {
+
+    const fullAddress = [
+      shippingAddress,
+      shippingAddressLine2,
+      shippingCity,
+      shippingState,
+      shippingPostalCode,
+      shippingCountry,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    if (!fullAddress.trim()) {
       toast.error("Business Address is mandatory.");
       return false;
     }
@@ -169,7 +211,7 @@ export default function OrgOnboardingWizardModal({
     try {
       await updateVendorMetadata(status.orgId, {
         description: description.trim(),
-        address: address.trim(),
+        address: fullAddress.trim(),
         phone: phone.trim(),
         bannerUrl: bannerUrl.trim(),
         stockAllocationMode,
@@ -499,40 +541,18 @@ export default function OrgOnboardingWizardModal({
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="modal-address"
-                    className="block font-bold text-zinc-900 dark:text-zinc-100 mb-1"
-                  >
-                    Business Address <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="modal-address"
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Physical store address or HQ..."
-                    className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-600 text-xs sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="modal-phone"
-                    className="block font-bold text-zinc-900 dark:text-zinc-100 mb-1"
-                  >
-                    Support Phone Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="modal-phone"
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+94 77 123 4567"
-                    className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-600 text-xs sm:text-sm"
-                  />
-                </div>
+              <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 bg-zinc-50/50 dark:bg-zinc-900/30">
+                <DeliveryAddressFormFields
+                  shippingAddress={shippingAddress}
+                  shippingAddressLine2={shippingAddressLine2}
+                  shippingCity={shippingCity}
+                  shippingState={shippingState}
+                  shippingPostalCode={shippingPostalCode}
+                  shippingCountry={shippingCountry}
+                  shippingPhone={phone}
+                  shippingPhone2={phone2}
+                  onChange={handleAddressChange}
+                />
               </div>
 
               <div>

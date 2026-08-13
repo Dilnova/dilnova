@@ -51,7 +51,14 @@ export default function DeliveryAddressFormFields({
   const [isLoadingCities, setIsLoadingCities] = useState(false);
 
   const selectedCountryName = shippingCountry;
-  const isSriLanka = selectedCountryName?.toLowerCase() === "sri lanka";
+  const isThreeTierActive = districts.length > 0;
+
+  // Auto-detect location dynamically on mount if no address is set
+  useEffect(() => {
+    if (!shippingCountry && !shippingCity && !shippingAddress) {
+      handleDetectLocation();
+    }
+  }, []);
 
   // 1. Fetch 250+ Live Countries via Next.js Server API Proxy
   useEffect(() => {
@@ -260,8 +267,6 @@ export default function DeliveryAddressFormFields({
     );
   };
 
-  const isThreeTierActive = isSriLanka || districts.length > 0;
-
   return (
     <div className="space-y-4">
       <div className="space-y-3">
@@ -325,14 +330,11 @@ export default function DeliveryAddressFormFields({
               />
               {countries.length > 0 && (
                 <datalist id="country-suggestions-list">
-                  <option value="Sri Lanka">🇱🇰 Sri Lanka (+94)</option>
-                  {countries
-                    .filter((c) => c.name !== "Sri Lanka")
-                    .map((c) => (
-                      <option key={c.code} value={c.name}>
-                        {c.flag} {c.name} {c.dialCode ? `(${c.dialCode})` : ""}
-                      </option>
-                    ))}
+                  {countries.map((c) => (
+                    <option key={c.code} value={c.name}>
+                      {c.flag} {c.name} {c.dialCode ? `(${c.dialCode})` : ""}
+                    </option>
+                  ))}
                 </datalist>
               )}
             </div>
@@ -351,7 +353,7 @@ export default function DeliveryAddressFormFields({
               className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1 flex items-center justify-between"
             >
               <span>
-                {isSriLanka ? "Province" : "State / Province"}{" "}
+                {isThreeTierActive ? "Province" : "State / Province"}{" "}
                 <span className="text-red-500">*</span>
               </span>
               {isLoadingStates && <Loader2 className="w-3 h-3 animate-spin text-purple-600" />}
@@ -371,8 +373,8 @@ export default function DeliveryAddressFormFields({
                 placeholder={
                   isLoadingStates
                     ? "Loading state suggestions..."
-                    : isSriLanka
-                      ? "Type province (e.g. Western Province, North Western)..."
+                    : isThreeTierActive
+                      ? "Type province..."
                       : "State / Province"
                 }
                 required
