@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Phone, Building, Map, Hash, Globe, Navigation, Loader2 } from "lucide-react";
+import { MapPin, Building, Map, Hash, Globe, Navigation, Loader2 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 
 export interface LiveCountry {
@@ -44,11 +44,14 @@ export default function DeliveryAddressFormFields({
   // Live API States
   const [countries, setCountries] = useState<LiveCountry[]>([]);
   const [states, setStates] = useState<LiveState[]>([]);
+  const [districts, setDistricts] = useState<LiveState[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [isLoadingStates, setIsLoadingStates] = useState(false);
+  const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
 
   const selectedCountryName = shippingCountry;
+  const isSriLanka = selectedCountryName?.toLowerCase() === "sri lanka";
 
   // 1. Fetch 250+ Live Countries via Next.js Server API Proxy
   useEffect(() => {
@@ -91,7 +94,37 @@ export default function DeliveryAddressFormFields({
     };
   }, [selectedCountryName]);
 
-  // 3. Fetch Live Cities via Next.js Server API Proxy
+  // 3. Fetch Live Districts for 3-tier countries (like Sri Lanka)
+  useEffect(() => {
+    let isMounted = true;
+    if (!selectedCountryName) {
+      setDistricts([]);
+      return;
+    }
+
+    setIsLoadingDistricts(true);
+    const url = shippingState
+      ? `/api/locations?type=districts&country=${encodeURIComponent(selectedCountryName)}&province=${encodeURIComponent(shippingState)}`
+      : `/api/locations?type=districts&country=${encodeURIComponent(selectedCountryName)}`;
+
+    fetch(url)
+      .then((res) => res.json())
+      .then((res) => {
+        if (isMounted) {
+          setDistricts(res?.data || []);
+          setIsLoadingDistricts(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsLoadingDistricts(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCountryName, shippingState]);
+
+  // 4. Fetch Live Cities via Next.js Server API Proxy
   useEffect(() => {
     let isMounted = true;
     if (!selectedCountryName) {
@@ -100,8 +133,9 @@ export default function DeliveryAddressFormFields({
     }
 
     setIsLoadingCities(true);
-    const url = shippingState
-      ? `/api/locations?type=cities&country=${encodeURIComponent(selectedCountryName)}&state=${encodeURIComponent(shippingState)}`
+    const activeSubRegion = shippingAddressLine2 || shippingState;
+    const url = activeSubRegion
+      ? `/api/locations?type=cities&country=${encodeURIComponent(selectedCountryName)}&district=${encodeURIComponent(activeSubRegion)}`
       : `/api/locations?type=cities&country=${encodeURIComponent(selectedCountryName)}`;
 
     fetch(url)
@@ -119,7 +153,7 @@ export default function DeliveryAddressFormFields({
     return () => {
       isMounted = false;
     };
-  }, [selectedCountryName, shippingState]);
+  }, [selectedCountryName, shippingState, shippingAddressLine2]);
 
   const triggerSyntheticChange = (name: string, value: string) => {
     const event = {
@@ -130,14 +164,22 @@ export default function DeliveryAddressFormFields({
 
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     onChange(e);
-    // Reset state & city when country changes
+    // Reset state, district & city when country changes
     triggerSyntheticChange("shippingState", "");
+    triggerSyntheticChange("shippingAddressLine2", "");
     triggerSyntheticChange("shippingCity", "");
   };
 
   const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     onChange(e);
-    // Reset city when state changes
+    // Reset district & city when province/state changes
+    triggerSyntheticChange("shippingAddressLine2", "");
+    triggerSyntheticChange("shippingCity", "");
+  };
+
+  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+    onChange(e);
+    // Reset city when district changes
     triggerSyntheticChange("shippingCity", "");
   };
 
@@ -218,6 +260,8 @@ export default function DeliveryAddressFormFields({
     );
   };
 
+  const isThreeTierActive = isSriLanka || districts.length > 0;
+
   return (
     <div className="space-y-4">
       <div className="space-y-3">
@@ -251,7 +295,7 @@ export default function DeliveryAddressFormFields({
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Live Global Country Selection Dropdown */}
+          {/* Live Global Country Type-ahead Auto-suggest Input */}
           <div className="sm:col-span-2 relative">
             <label
               htmlFor="shippingCountry"
@@ -263,38 +307,52 @@ export default function DeliveryAddressFormFields({
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
                 <Globe className="w-4 h-4 text-zinc-400" />
               </div>
-              <select
+              <input
                 id="shippingCountry"
+                type="text"
                 name="shippingCountry"
-                value={selectedCountryName}
+                value={selectedCountryName || ""}
                 onChange={handleCountryChange}
+                list="country-suggestions-list"
+                autoComplete="off"
+                placeholder={
+                  countries.length > 0
+                    ? "Type country (e.g. Sri Lanka, United States)..."
+                    : "Loading countries..."
+                }
                 required
-                className="w-full h-11 pl-10 pr-8 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm appearance-none cursor-pointer"
-              >
-                <option value="">
-                  Select Country (
-                  {countries.length > 0 ? `${countries.length} Countries Available` : "Loading..."})
-                </option>
-                <option value="Sri Lanka">🇱🇰 Sri Lanka (+94)</option>
-                {countries
-                  .filter((c) => c.name !== "Sri Lanka")
-                  .map((c) => (
-                    <option key={c.code} value={c.name}>
-                      {c.flag} {c.name} {c.dialCode ? `(${c.dialCode})` : ""}
-                    </option>
-                  ))}
-              </select>
+                className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
+              />
+              {countries.length > 0 && (
+                <datalist id="country-suggestions-list">
+                  <option value="Sri Lanka">🇱🇰 Sri Lanka (+94)</option>
+                  {countries
+                    .filter((c) => c.name !== "Sri Lanka")
+                    .map((c) => (
+                      <option key={c.code} value={c.name}>
+                        {c.flag} {c.name} {c.dialCode ? `(${c.dialCode})` : ""}
+                      </option>
+                    ))}
+                </datalist>
+              )}
             </div>
+            {countries.length > 0 && (
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 ml-1">
+                Type a few letters to see matching country suggestions ({countries.length}{" "}
+                available)
+              </p>
+            )}
           </div>
 
-          {/* Dynamic Live State / Province / District Dropdown OR Input */}
+          {/* Tier 1: State / Province Type-ahead Input */}
           <div className="relative">
             <label
               htmlFor="shippingState"
               className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1 flex items-center justify-between"
             >
               <span>
-                State / Province / District <span className="text-red-500">*</span>
+                {isSriLanka ? "Province" : "State / Province"}{" "}
+                <span className="text-red-500">*</span>
               </span>
               {isLoadingStates && <Loader2 className="w-3 h-3 animate-spin text-purple-600" />}
             </label>
@@ -302,45 +360,96 @@ export default function DeliveryAddressFormFields({
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
                 <Map className="w-4 h-4 text-zinc-400" />
               </div>
-              {states.length > 0 ? (
-                <select
-                  id="shippingState"
-                  name="shippingState"
-                  value={shippingState || ""}
-                  onChange={handleStateChange}
-                  required
-                  className="w-full h-11 pl-10 pr-8 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm appearance-none cursor-pointer"
-                >
-                  <option value="">Select State / Province ({states.length})</option>
+              <input
+                id="shippingState"
+                type="text"
+                name="shippingState"
+                value={shippingState || ""}
+                onChange={handleStateChange}
+                list="state-suggestions-list"
+                autoComplete="off"
+                placeholder={
+                  isLoadingStates
+                    ? "Loading state suggestions..."
+                    : isSriLanka
+                      ? "Type province (e.g. Western Province, North Western)..."
+                      : "State / Province"
+                }
+                required
+                className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
+              />
+              {states.length > 0 && (
+                <datalist id="state-suggestions-list">
                   {states.map((s) => (
-                    <option key={s.name} value={s.name}>
-                      {s.name}
-                    </option>
+                    <option key={s.name} value={s.name} />
                   ))}
-                </select>
-              ) : (
+                </datalist>
+              )}
+            </div>
+            {states.length > 0 && (
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 ml-1">
+                Type a few letters to see matching suggestions ({states.length} available)
+              </p>
+            )}
+          </div>
+
+          {/* Tier 2: District / Sub-Region Type-ahead Input (3-tier countries like Sri Lanka) */}
+          {isThreeTierActive && (
+            <div className="relative">
+              <label
+                htmlFor="shippingAddressLine2"
+                className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1 flex items-center justify-between"
+              >
+                <span>
+                  District / Sub-Region <span className="text-red-500">*</span>
+                </span>
+                {isLoadingDistricts && <Loader2 className="w-3 h-3 animate-spin text-purple-600" />}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
+                  <MapPin className="w-4 h-4 text-zinc-400" />
+                </div>
                 <input
-                  id="shippingState"
+                  id="shippingAddressLine2"
                   type="text"
-                  name="shippingState"
-                  value={shippingState}
-                  onChange={onChange}
-                  placeholder={isLoadingStates ? "Loading states..." : "State / Province / Region"}
+                  name="shippingAddressLine2"
+                  value={shippingAddressLine2 || ""}
+                  onChange={handleDistrictChange}
+                  list="district-suggestions-list"
+                  autoComplete="off"
+                  placeholder={
+                    isLoadingDistricts
+                      ? "Loading district suggestions..."
+                      : "Type district (e.g. Colombo District, Kurunegala)..."
+                  }
                   required
                   className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
                 />
+                {districts.length > 0 && (
+                  <datalist id="district-suggestions-list">
+                    {districts.map((d) => (
+                      <option key={d.name} value={d.name} />
+                    ))}
+                  </datalist>
+                )}
+              </div>
+              {districts.length > 0 && (
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 ml-1">
+                  Type a few letters to see matching district suggestions ({districts.length}{" "}
+                  available)
+                </p>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Dynamic Live City Dropdown OR Input */}
+          {/* Tier 3: City / Town / Suburb Type-ahead Auto-suggest Input */}
           <div className="relative">
             <label
               htmlFor="shippingCity"
               className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1 flex items-center justify-between"
             >
               <span>
-                City / Town <span className="text-red-500">*</span>
+                City / Town / Suburb <span className="text-red-500">*</span>
               </span>
               {isLoadingCities && <Loader2 className="w-3 h-3 animate-spin text-purple-600" />}
             </label>
@@ -348,35 +457,37 @@ export default function DeliveryAddressFormFields({
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
                 <Building className="w-4 h-4 text-zinc-400" />
               </div>
-              {cities.length > 0 ? (
-                <select
-                  id="shippingCity"
-                  name="shippingCity"
-                  value={shippingCity || ""}
-                  onChange={onChange}
-                  required
-                  className="w-full h-11 pl-10 pr-8 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm appearance-none cursor-pointer"
-                >
-                  <option value="">Select City / Town ({cities.length})</option>
+              <input
+                id="shippingCity"
+                type="text"
+                name="shippingCity"
+                value={shippingCity || ""}
+                onChange={onChange}
+                list="city-suggestions-list"
+                autoComplete="off"
+                placeholder={
+                  isLoadingCities
+                    ? "Loading city suggestions..."
+                    : cities.length > 0
+                      ? "Type city (e.g. Wellawatte, Wariyapola)..."
+                      : "Type City / Town Name"
+                }
+                required
+                className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
+              />
+              {cities.length > 0 && (
+                <datalist id="city-suggestions-list">
                   {cities.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
+                    <option key={city} value={city} />
                   ))}
-                </select>
-              ) : (
-                <input
-                  id="shippingCity"
-                  type="text"
-                  name="shippingCity"
-                  value={shippingCity}
-                  onChange={onChange}
-                  placeholder={isLoadingCities ? "Loading cities..." : "City Name"}
-                  required
-                  className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-                />
+                </datalist>
               )}
             </div>
+            {cities.length > 0 && (
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1 ml-1">
+                Type a few letters to see matching suggestions ({cities.length} available)
+              </p>
+            )}
           </div>
 
           {/* Postal Code Field */}
@@ -429,105 +540,31 @@ export default function DeliveryAddressFormFields({
             </div>
           </div>
 
-          {/* Address Line 2 */}
-          <div className="sm:col-span-2 relative">
-            <label
-              htmlFor="shippingAddressLine2"
-              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
-            >
-              Building, Apartment, Suite{" "}
-              <span className="text-zinc-400 font-normal">(Optional)</span>
-            </label>
-            <input
-              id="shippingAddressLine2"
-              type="text"
-              name="shippingAddressLine2"
-              value={shippingAddressLine2 || ""}
-              onChange={onChange}
-              placeholder="e.g. Apt 4B / Suite 200"
-              className="w-full h-11 px-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="h-px bg-zinc-100 dark:bg-zinc-800 w-full my-4" />
-
-      {/* Contact Phone Numbers */}
-      <div className="space-y-3">
-        <h5 className="text-[10px] font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 font-mono flex items-center gap-1.5">
-          <Phone className="w-3 h-3 text-purple-600 dark:text-purple-400" /> Contact Numbers
-        </h5>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="relative">
-            <label
-              htmlFor="shippingPhone"
-              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
-            >
-              Primary Phone{" "}
-              <span className="text-zinc-400 font-normal">(For Delivery Courier)</span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <Phone className="w-4 h-4 text-zinc-400" />
+          {/* Building / Suite (Shown when Address Line 2 is NOT being used as District) */}
+          {!isThreeTierActive && (
+            <div className="sm:col-span-2 relative">
+              <label
+                htmlFor="shippingAddressLine2"
+                className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
+              >
+                Building, Apartment, Suite (Optional)
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                  <Building className="w-4 h-4 text-zinc-400" />
+                </div>
+                <input
+                  id="shippingAddressLine2"
+                  type="text"
+                  name="shippingAddressLine2"
+                  value={shippingAddressLine2}
+                  onChange={onChange}
+                  placeholder="e.g. Apt 4B, Level 2, Sunset Towers"
+                  className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
+                />
               </div>
-              <input
-                id="shippingPhone"
-                type="tel"
-                inputMode="tel"
-                name="shippingPhone"
-                value={shippingPhone || ""}
-                onChange={(e) => {
-                  const sanitized = e.target.value.replace(/[^0-9+\-()\s]/g, "");
-                  if (sanitized !== e.target.value) {
-                    const synthEvent = {
-                      ...e,
-                      target: { ...e.target, name: e.target.name, value: sanitized },
-                    } as React.ChangeEvent<HTMLInputElement>;
-                    onChange(synthEvent);
-                  } else {
-                    onChange(e);
-                  }
-                }}
-                placeholder="e.g. +1 555-0198 or 077 123 4567"
-                className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-              />
             </div>
-          </div>
-          <div className="relative">
-            <label
-              htmlFor="shippingPhone2"
-              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
-            >
-              Secondary Phone <span className="text-zinc-400 font-normal">(Optional)</span>
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <Phone className="w-4 h-4 text-zinc-400 opacity-50" />
-              </div>
-              <input
-                id="shippingPhone2"
-                type="tel"
-                inputMode="tel"
-                name="shippingPhone2"
-                value={shippingPhone2 || ""}
-                onChange={(e) => {
-                  const sanitized = e.target.value.replace(/[^0-9+\-()\s]/g, "");
-                  if (sanitized !== e.target.value) {
-                    const synthEvent = {
-                      ...e,
-                      target: { ...e.target, name: e.target.name, value: sanitized },
-                    } as React.ChangeEvent<HTMLInputElement>;
-                    onChange(synthEvent);
-                  } else {
-                    onChange(e);
-                  }
-                }}
-                placeholder="Alternative mobile number"
-                className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
-              />
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
