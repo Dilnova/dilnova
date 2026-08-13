@@ -95,10 +95,18 @@ interface CartCheckoutSidebarProps {
     serviceName: string;
     estimatedDays: number;
     amountCents: number;
+    branchBreakdown?: Array<{
+      branchId: string | null;
+      branchName: string;
+      originCity: string;
+      amountCents: number;
+      estimatedDays: number;
+    }>;
   }>;
   selectedRateId?: string;
   onSelectShippingRate?: (rateId: string) => void;
   addressConfirmed?: boolean;
+  isFetchingRates?: boolean;
 }
 
 export function CartCheckoutSidebar({
@@ -153,6 +161,7 @@ export function CartCheckoutSidebar({
   selectedRateId,
   onSelectShippingRate,
   addressConfirmed = false,
+  isFetchingRates = false,
 }: CartCheckoutSidebarProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const displaySubtotal = checkoutSubtotal;
@@ -448,7 +457,15 @@ export function CartCheckoutSidebar({
                       onChange={handleAddressChange}
                     />
 
-                    {availableShippingRates.length > 0 ? (
+                    {isFetchingRates ? (
+                      <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/15 dark:bg-purple-950/20 dark:border-purple-800/30 text-xs text-purple-900 dark:text-purple-300 flex items-center gap-2.5 mt-2 animate-pulse">
+                        <Spinner size="sm" />
+                        <span>
+                          Calculating live shipping rates for{" "}
+                          <strong>{shippingCity || "destination"}</strong>...
+                        </span>
+                      </div>
+                    ) : availableShippingRates.length > 0 ? (
                       (() => {
                         // Group rates by carrierId for display
                         const CARRIER_META: Record<
@@ -572,6 +589,33 @@ export function CartCheckoutSidebar({
                                           {rate.estimatedDays === 1 ? "day" : "days"} · via{" "}
                                           {rate.carrierName}
                                         </span>
+                                        {rate.branchBreakdown &&
+                                          rate.branchBreakdown.length > 1 && (
+                                            <div className="mt-2 pt-2 border-t border-purple-200/50 dark:border-purple-800/40 space-y-1">
+                                              <div className="flex items-center gap-1 text-[10px] font-bold text-purple-800 dark:text-purple-300">
+                                                <span>🏬</span>
+                                                <span>
+                                                  Ships from {rate.branchBreakdown.length}{" "}
+                                                  locations:
+                                                </span>
+                                              </div>
+                                              <div className="space-y-0.5 pl-2.5">
+                                                {rate.branchBreakdown.map((b, bIdx) => (
+                                                  <div
+                                                    key={bIdx}
+                                                    className="flex items-center justify-between text-[10px] font-mono text-zinc-600 dark:text-zinc-400"
+                                                  >
+                                                    <span>
+                                                      • {b.branchName} ({b.originCity})
+                                                    </span>
+                                                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                                                      {formatPrice(b.amountCents)}
+                                                    </span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
                                       </span>
                                     </label>
                                   ))}
@@ -581,11 +625,22 @@ export function CartCheckoutSidebar({
                           </fieldset>
                         );
                       })()
+                    ) : shippingCity.trim() && shippingCountry.trim() ? (
+                      <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 dark:bg-amber-950/30 dark:border-amber-800/40 text-xs text-amber-900 dark:text-amber-300 flex items-center gap-2 mt-2">
+                        <span className="text-base">⚠️</span>
+                        <span>
+                          No shipping methods available for{" "}
+                          <strong>
+                            {shippingCity}, {shippingCountry}
+                          </strong>
+                          . Please verify city name or address details.
+                        </span>
+                      </div>
                     ) : (
                       <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/15 dark:bg-purple-950/20 dark:border-purple-800/30 text-xs text-purple-900 dark:text-purple-300 flex items-center gap-2 mt-2">
                         <span className="text-base">📍</span>
                         <span>
-                          Select <strong>Country</strong> and enter <strong>City</strong> above to
+                          Enter <strong>City</strong> and select <strong>Country</strong> above to
                           fetch live shipping rates &amp; carrier options.
                         </span>
                       </div>

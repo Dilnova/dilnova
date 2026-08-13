@@ -13,6 +13,7 @@ export interface RateEngineItem {
 export interface VendorShippingQuote {
   vendorOrgId: string;
   originBranchId: string | null;
+  originBranchName: string;
   rates: ShippingRate[];
   selectedRate: ShippingRate;
   totalCents: number;
@@ -141,6 +142,7 @@ export async function computeMultiVendorRates(opts: {
     quotes.push({
       vendorOrgId,
       originBranchId: branch?.id ?? null,
+      originBranchName: branch?.name ?? "Main Branch",
       rates,
       selectedRate,
       totalCents: selectedRate.amountCents,

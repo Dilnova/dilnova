@@ -7,13 +7,12 @@ export function useShippingAddressState(isSignedIn: boolean) {
   const [shippingCity, setShippingCity] = useState("");
   const [shippingState, setShippingState] = useState("");
   const [shippingPostalCode, setShippingPostalCode] = useState("");
-  const [shippingCountry, setShippingCountry] = useState("");
+  const [shippingCountry, setShippingCountry] = useState("LK");
   const [shippingPhone, setShippingPhone] = useState("");
   const [shippingPhone2, setShippingPhone2] = useState("");
   /**
    * Only true once the user has explicitly interacted with / confirmed the
-   * address fields in the current session. Prevents shipping rates from
-   * auto-firing on page load just because a saved address was pre-filled.
+   * address fields in the current session, or when saved delivery details are loaded.
    */
   const [addressConfirmed, setAddressConfirmed] = useState(false);
 
@@ -31,6 +30,10 @@ export function useShippingAddressState(isSignedIn: boolean) {
           if (details.shippingCountry) setShippingCountry(details.shippingCountry);
           if (details.shippingPhone) setShippingPhone(details.shippingPhone);
           if (details.shippingPhone2) setShippingPhone2(details.shippingPhone2);
+
+          if (details.shippingCity && (details.shippingCountry || "LK")) {
+            setAddressConfirmed(true);
+          }
         }
       }
     }

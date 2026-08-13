@@ -101,6 +101,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     }>
   >([]);
   const [selectedRateId, setSelectedRateId] = useState<string>("");
+  const [isFetchingRates, setIsFetchingRates] = useState<boolean>(false);
 
   const {
     fulfillmentMethod,
@@ -392,22 +393,23 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     router.push("/products");
   };
 
+  const cartItemsFingerprint = checkoutCartItems
+    .map((item) => `${item.id}:${item.quantity}:${item.weightGrams ?? 0}`)
+    .join("|");
+
   useEffect(() => {
-    // Only fetch rates after user has explicitly interacted with the address form.
-    // Prevents old cached/saved address from auto-triggering stale shipping quotes.
-    if (
-      !requiresDeliveryAddress ||
-      !addressConfirmed ||
-      !shippingCountry.trim() ||
-      !shippingCity.trim()
-    ) {
+    // Automatically fetch live carrier rates whenever destination City and Country are populated.
+    if (!requiresDeliveryAddress || !shippingCountry.trim() || !shippingCity.trim()) {
       setDynamicShippingCents((prev) => (prev !== null ? null : prev));
       setAvailableShippingRates((prev) => (prev.length > 0 ? [] : prev));
       setSelectedRateId((prev) => (prev !== "" ? "" : prev));
+      setIsFetchingRates(false);
       return;
     }
 
     let isMounted = true;
+    setIsFetchingRates(true);
+
     const fetchRates = async () => {
       try {
         const res = await fetch("/api/shipping/rates", {
@@ -432,6 +434,14 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         });
         const data = await res.json();
         if (isMounted && data.quotes && data.quotes.length > 0) {
+          type BranchBreakdownItem = {
+            branchId: string | null;
+            branchName: string;
+            originCity: string;
+            amountCents: number;
+            estimatedDays: number;
+          };
+
           type RateItem = {
             rateId: string;
             carrierId: string;
@@ -440,25 +450,48 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
             serviceName: string;
             estimatedDays: number;
             amountCents: number;
+            branchBreakdown?: BranchBreakdownItem[];
           };
 
           let allRates: RateItem[] = data.quotes[0].rates || [];
 
           if (data.quotes.length > 1) {
-            // Aggregate shipping rates by serviceCode across all vendor quotes
+            // Aggregate shipping rates by serviceCode across all vendor/branch quotes
             const rateMap = new Map<string, RateItem>();
             for (const quote of data.quotes) {
+              const bItem: BranchBreakdownItem = {
+                branchId: quote.originBranchId ?? null,
+                branchName: quote.originBranchName || "Main Branch",
+                originCity: quote.originCity || "Colombo",
+                amountCents: 0,
+                estimatedDays: 0,
+              };
+
               for (const r of quote.rates as RateItem[]) {
                 const key = `${r.carrierId || "slpost"}_${r.serviceCode}`;
                 const existing = rateMap.get(key);
+                const currentBranchDetail: BranchBreakdownItem = {
+                  ...bItem,
+                  amountCents: r.amountCents,
+                  estimatedDays: r.estimatedDays,
+                };
+
                 if (existing) {
+                  const updatedBreakdown = [
+                    ...(existing.branchBreakdown || []),
+                    currentBranchDetail,
+                  ];
                   rateMap.set(key, {
                     ...existing,
                     amountCents: existing.amountCents + r.amountCents,
                     estimatedDays: Math.max(existing.estimatedDays, r.estimatedDays),
+                    branchBreakdown: updatedBreakdown,
                   });
                 } else {
-                  rateMap.set(key, { ...r });
+                  rateMap.set(key, {
+                    ...r,
+                    branchBreakdown: [currentBranchDetail],
+                  });
                 }
               }
             }
@@ -476,15 +509,15 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
           });
 
           if (allRates.length > 0) {
-            const hasExistingMatch = allRates.some((r) => r.rateId === selectedRateId);
-            const activeRateId = hasExistingMatch ? selectedRateId : allRates[0].rateId;
-            if (!hasExistingMatch) {
-              setSelectedRateId(activeRateId);
-            }
-            const activeRate = allRates.find((r) => r.rateId === activeRateId) || allRates[0];
-            setDynamicShippingCents((prev) =>
-              prev !== activeRate.amountCents ? activeRate.amountCents : prev,
-            );
+            setSelectedRateId((prevRateId) => {
+              const hasMatch = allRates.some((r) => r.rateId === prevRateId);
+              const nextRateId = hasMatch ? prevRateId : allRates[0].rateId;
+              const activeRate = allRates.find((r) => r.rateId === nextRateId) || allRates[0];
+              setDynamicShippingCents((prevCents) =>
+                prevCents !== activeRate.amountCents ? activeRate.amountCents : prevCents,
+              );
+              return nextRateId;
+            });
           }
         } else if (isMounted && data.totalShippingCents != null) {
           setDynamicShippingCents((prev) =>
@@ -493,26 +526,28 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         }
       } catch (err) {
         console.warn("[CartClientManager] Failed to fetch dynamic shipping rates:", err);
+      } finally {
+        if (isMounted) {
+          setIsFetchingRates(false);
+        }
       }
     };
 
-    const timer = setTimeout(fetchRates, 300);
+    const timer = setTimeout(fetchRates, 500);
     return () => {
       isMounted = false;
       clearTimeout(timer);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     requiresDeliveryAddress,
-    addressConfirmed,
     shippingCity,
     shippingState,
     shippingPostalCode,
     shippingCountry,
     shippingAddress,
     shippingPhone,
-    checkoutSubtotal,
-    checkoutCartItems,
-    selectedRateId,
+    cartItemsFingerprint,
   ]);
 
   const estimatedTaxFromOptions = checkoutOptions.estimatedTaxCents ?? 0;
@@ -654,6 +689,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       selectedRateId={selectedRateId}
       onSelectShippingRate={handleSelectShippingRate}
       addressConfirmed={addressConfirmed}
+      isFetchingRates={isFetchingRates}
       compatiblePayments={compatiblePayments}
       paymentMethod={paymentMethod}
       setPaymentMethod={setPaymentMethod}

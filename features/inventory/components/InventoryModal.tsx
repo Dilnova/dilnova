@@ -19,6 +19,11 @@ export default function InventoryModal({
 }: InventoryModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -32,7 +37,7 @@ export default function InventoryModal({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         e.preventDefault();
       }
 
@@ -62,11 +67,12 @@ export default function InventoryModal({
     document.addEventListener("keydown", handleKeyDown);
 
     // Auto-focus the modal container so Escape works immediately without tabbing
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       modalRef.current?.focus();
     }, 10);
 
     return () => {
+      clearTimeout(timer);
       document.body.style.overflow = originalOverflow;
       document.removeEventListener("keydown", handleKeyDown);
       // Restore focus to the element that was focused before the modal opened
@@ -74,7 +80,7 @@ export default function InventoryModal({
         previousFocusRef.current.focus();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
