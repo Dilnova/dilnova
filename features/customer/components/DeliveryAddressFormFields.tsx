@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Building, Map, Hash, Globe, Navigation, Loader2 } from "lucide-react";
+import { MapPin, Building, Map, Hash, Globe, Navigation, Loader2, Phone } from "lucide-react";
 import React, { useState, useEffect } from "react";
 
 export interface LiveCountry {
@@ -22,8 +22,8 @@ export interface DeliveryAddressFormFieldsProps {
   shippingState: string;
   shippingPostalCode: string;
   shippingCountry: string;
-  shippingPhone: string;
-  shippingPhone2: string;
+  shippingPhone?: string;
+  shippingPhone2?: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
 }
 
@@ -34,8 +34,8 @@ export default function DeliveryAddressFormFields({
   shippingState,
   shippingPostalCode,
   shippingCountry,
-  shippingPhone: _shippingPhone,
-  shippingPhone2: _shippingPhone2,
+  shippingPhone = "",
+  shippingPhone2 = "",
   onChange,
 }: DeliveryAddressFormFieldsProps) {
   const [isLocating, setIsLocating] = useState(false);
@@ -158,10 +158,11 @@ export default function DeliveryAddressFormFields({
     );
   };
 
-  // Auto-detect location dynamically on mount if no address is set
+  // Instant auto-fill location dynamically on mount if no address is set yet
   useEffect(() => {
     if (!shippingCountry && !shippingCity && !shippingAddress) {
-      handleDetectLocation();
+      setIsLocating(true);
+      handleIpFallback().finally(() => setIsLocating(false));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -562,6 +563,55 @@ export default function DeliveryAddressFormFields({
               </div>
             </div>
           )}
+
+          {/* Phone Number Field */}
+          <div className="relative">
+            <label
+              htmlFor="shippingPhone"
+              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
+            >
+              Contact Phone Number <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <Phone className="w-4 h-4 text-zinc-400" />
+              </div>
+              <input
+                id="shippingPhone"
+                type="tel"
+                name="shippingPhone"
+                value={shippingPhone}
+                onChange={onChange}
+                placeholder="Phone number (with country code)"
+                required
+                className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
+              />
+            </div>
+          </div>
+
+          {/* Alternative Phone Field (Optional) */}
+          <div className="relative">
+            <label
+              htmlFor="shippingPhone2"
+              className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5 ml-1"
+            >
+              Alternative Phone Number (Optional)
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <Phone className="w-4 h-4 text-zinc-400" />
+              </div>
+              <input
+                id="shippingPhone2"
+                type="tel"
+                name="shippingPhone2"
+                value={shippingPhone2}
+                onChange={onChange}
+                placeholder="Secondary phone number (optional)"
+                className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors shadow-sm placeholder:text-zinc-400"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
