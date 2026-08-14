@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useClerkAuthRedirectUrl } from "@/features/auth/hooks/use-clerk-auth-redirect-url";
@@ -9,6 +9,10 @@ import {
   sendCartSummaryEmailAction,
   simulatedCheckoutAction,
 } from "@/features/cart/checkout.actions";
+import {
+  validateCartStockAction,
+  type CartStockValidationItem,
+} from "@/features/cart/stock-validation.actions";
 import { isPaymentCompatibleWithFulfillment } from "@/features/organization/checkout-options.shared";
 import { calculateCheckoutTotals } from "@/features/billing/checkout-totals";
 import { BANK_TRANSFER_PAYMENT_ID, isBankTransferPayment } from "@/features/billing/bank-transfer";
@@ -198,7 +202,10 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     const paymentsForFulfillment = checkoutOptions.payment.filter((payment) =>
       option
         ? isPaymentCompatibleWithFulfillment(
-            { requiresDelivery: payment.requiresDelivery },
+            {
+              requiresDelivery: payment.requiresDelivery,
+              requiresPickup: payment.requiresPickup,
+            },
             { requiresBranch: option.requiresBranch },
           )
         : true,
@@ -207,6 +214,15 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       setPaymentMethod(paymentsForFulfillment[0]?.id || "");
     }
   };
+
+  // Auto-sync paymentMethod whenever fulfillment method changes or options update
+  useEffect(() => {
+    if (selectedFulfillment && compatiblePayments.length > 0) {
+      if (!compatiblePayments.some((p) => p.id === paymentMethod)) {
+        setPaymentMethod(compatiblePayments[0].id);
+      }
+    }
+  }, [fulfillmentMethod, selectedFulfillment, compatiblePayments, paymentMethod, setPaymentMethod]);
 
   const handleSendInbox = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -550,6 +566,80 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     cartItemsFingerprint,
   ]);
 
+  const checkoutCartItemsRef = useRef(checkoutCartItems);
+  useEffect(() => {
+    checkoutCartItemsRef.current = checkoutCartItems;
+  }, [checkoutCartItems]);
+
+  const [stockValidationResult, setStockValidationResult] = useState<{
+    hasStockErrors: boolean;
+    itemsMap: Record<string, CartStockValidationItem>;
+    errorSummary: string[];
+  }>({
+    hasStockErrors: false,
+    itemsMap: {},
+    errorSummary: [],
+  });
+
+  const effectivePickupBranchId = selectedFulfillment?.requiresBranch
+    ? pickupBranchId || undefined
+    : undefined;
+
+  useEffect(() => {
+    const itemsToValidate = checkoutCartItemsRef.current;
+    if (!cartItemsFingerprint || itemsToValidate.length === 0) {
+      setStockValidationResult((prev) => {
+        if (!prev.hasStockErrors && Object.keys(prev.itemsMap).length === 0) return prev;
+        return {
+          hasStockErrors: false,
+          itemsMap: {},
+          errorSummary: [],
+        };
+      });
+      return;
+    }
+
+    let isMounted = true;
+    const runStockValidation = async () => {
+      try {
+        const res = await validateCartStockAction({
+          items: itemsToValidate.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            vendorOrgId: item.vendorOrgId || item.vendorName,
+          })),
+          pickupBranchId: effectivePickupBranchId,
+        }).catch((err) => {
+          console.warn("[CartClientManager] Handled stock validation call error:", err);
+          return null;
+        });
+
+        if (isMounted && res?.data) {
+          setStockValidationResult((prev) => {
+            const hasChanged =
+              prev.hasStockErrors !== res.data.hasStockErrors ||
+              JSON.stringify(prev.errorSummary) !== JSON.stringify(res.data.errorSummary) ||
+              JSON.stringify(prev.itemsMap) !== JSON.stringify(res.data.itemsMap);
+            if (!hasChanged) return prev;
+            return {
+              hasStockErrors: res.data.hasStockErrors,
+              itemsMap: res.data.itemsMap || {},
+              errorSummary: res.data.errorSummary || [],
+            };
+          });
+        }
+      } catch (err) {
+        console.warn("[CartClientManager] Stock validation error:", err);
+      }
+    };
+
+    const timer = setTimeout(runStockValidation, 300);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [cartItemsFingerprint, effectivePickupBranchId]);
+
   const estimatedTaxFromOptions = checkoutOptions.estimatedTaxCents ?? 0;
   const checkoutTotals = calculateCheckoutTotals(
     checkoutSubtotal,
@@ -569,6 +659,11 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
 
   const checkoutErrors: string[] = [];
   if (isSignedIn && cartItems.length > 0) {
+    if (stockValidationResult.hasStockErrors) {
+      for (const summaryErr of stockValidationResult.errorSummary) {
+        checkoutErrors.push(summaryErr);
+      }
+    }
     if (vendorCount > 1 && !selectedCheckoutVendorOrgId) {
       checkoutErrors.push("Select a vendor to checkout.");
     }
@@ -631,6 +726,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       selectedCheckoutVendorOrgId={selectedCheckoutVendorOrgId}
       selectedCheckoutProductIdSet={selectedCheckoutProductIdSet}
       productTaxMap={checkoutOptions.productTaxMap}
+      stockValidationMap={stockValidationResult.itemsMap}
       onSelectCheckoutVendor={handleSelectCheckoutVendor}
       onToggleProductCheckout={toggleProductCheckout}
       onToggleAllProductsInGroup={toggleAllProductsInGroup}

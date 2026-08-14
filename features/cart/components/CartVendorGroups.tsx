@@ -42,6 +42,16 @@ interface CartVendorGroupsProps {
     string,
     { code: string; name: string; ratePercent: number; taxAmountCents?: number }
   >;
+  stockValidationMap?: Record<
+    string,
+    {
+      productId: string;
+      requestedQuantity: number;
+      availableStock: number;
+      isStockValid: boolean;
+      errorMessage: string | null;
+    }
+  >;
   onSelectCheckoutVendor: (orgId: string, productIds: string[]) => void;
   onToggleProductCheckout: (productId: string) => void;
   onToggleAllProductsInGroup: (productIds: string[], checked: boolean) => void;
@@ -56,6 +66,7 @@ export function CartVendorGroups({
   selectedCheckoutVendorOrgId,
   selectedCheckoutProductIdSet,
   productTaxMap = {},
+  stockValidationMap = {},
   onSelectCheckoutVendor,
   onToggleProductCheckout,
   onToggleAllProductsInGroup,
@@ -233,12 +244,34 @@ export function CartVendorGroups({
                           >
                             {item.name}
                           </Link>
-                          {typeof item.stockQuantity === "number" &&
-                            item.quantity > item.stockQuantity && (
-                              <p className="text-[10px] text-rose-500 font-semibold mt-1">
-                                ⚠️ Requested quantity exceeds available stock.
-                              </p>
-                            )}
+                          {(() => {
+                            const val = stockValidationMap[item.id];
+                            const isInvalid = val
+                              ? !val.isStockValid
+                              : typeof item.stockQuantity === "number" &&
+                                item.quantity > item.stockQuantity;
+                            const avail = val ? val.availableStock : (item.stockQuantity ?? 0);
+                            const errMsg =
+                              val?.errorMessage || "Requested quantity exceeds available stock.";
+                            if (!isInvalid) return null;
+
+                            return (
+                              <div className="mt-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 flex flex-wrap items-center justify-between gap-2">
+                                <span className="text-[11px] font-semibold text-rose-700 dark:text-rose-300">
+                                  ⚠️ {errMsg}
+                                </span>
+                                {avail > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateQuantity(item.id, avail)}
+                                    className="px-2.5 py-1 text-[10px] font-bold font-mono uppercase rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition-all cursor-pointer shadow-xs"
+                                  >
+                                    Adjust to {avail} {avail === 1 ? "unit" : "units"}
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
 
