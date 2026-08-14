@@ -26,16 +26,12 @@ export class EasyPostAdapter implements CarrierAdapter {
   id = "easypost";
   name = "EasyPost (Multi-Carrier)";
 
-  private readonly apiKey: string;
   private readonly baseUrl = "https://api.easypost.com/v2";
   private readonly rateToShipmentCache = new Map<string, string>();
 
-  constructor() {
-    const key = process.env.EASYPOST_API_KEY ?? "";
-    if (!key) {
-      console.warn("[EasyPostAdapter] EASYPOST_API_KEY is not set. Rates will not be available.");
-    }
-    this.apiKey = key;
+  private get apiKey(): string {
+    const raw = (process.env.EASYPOST_API_KEY ?? "").trim();
+    return raw.replace(/^Bearer\s+/i, "");
   }
 
   private get authHeader(): string {
@@ -48,7 +44,8 @@ export class EasyPostAdapter implements CarrierAdapter {
     destination: ShippingDestination,
     parcels: Parcel[],
   ): Promise<ShippingRate[]> {
-    if (!this.apiKey) return [];
+    const key = this.apiKey;
+    if (!key) return [];
 
     const parcel = parcels[0]; // EasyPost rates one parcel at a time
     const weightOz = Math.max(1, Math.round((parcel.weightGrams / 28.3495) * 10) / 10);

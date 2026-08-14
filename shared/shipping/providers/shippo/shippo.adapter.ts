@@ -22,15 +22,11 @@ export class ShippoAdapter implements CarrierAdapter {
   id = "shippo";
   name = "Shippo (Multi-Carrier)";
 
-  private readonly apiKey: string;
   private readonly baseUrl = "https://api.goshippo.com";
 
-  constructor() {
-    const key = process.env.SHIPPO_API_KEY ?? "";
-    if (!key) {
-      console.warn("[ShippoAdapter] SHIPPO_API_KEY is not set. Rates will not be available.");
-    }
-    this.apiKey = key;
+  private get apiKey(): string {
+    const raw = (process.env.SHIPPO_API_KEY ?? "").trim();
+    return raw.replace(/^(?:ShippoToken|Bearer)\s+/i, "");
   }
 
   private get authHeader(): string {
@@ -42,7 +38,8 @@ export class ShippoAdapter implements CarrierAdapter {
     destination: ShippingDestination,
     parcels: Parcel[],
   ): Promise<ShippingRate[]> {
-    if (!this.apiKey) return [];
+    const key = this.apiKey;
+    if (!key) return [];
 
     const parcel = parcels[0];
     const weightKg = Math.max(0.1, Math.round((parcel.weightGrams / 1000) * 100) / 100);
@@ -64,23 +61,27 @@ export class ShippoAdapter implements CarrierAdapter {
       return "00100";
     };
 
-    const payload = {
+    const fromCountry = normalizeCountry(origin.country);
+    const toCountry = normalizeCountry(destination.country);
+    const isInternational = fromCountry !== toCountry;
+
+    const payload: Record<string, unknown> = {
       address_from: {
-        name: origin.name,
+        name: origin.name || "Store Origin Branch",
         street1: origin.street || "Main Street",
-        city: origin.city,
+        city: origin.city || "Colombo",
         state: origin.state || "",
         zip: normalizeZip(origin.postalCode, origin.country),
-        country: normalizeCountry(origin.country),
+        country: fromCountry,
         phone: origin.phone || "+94112345678",
       },
       address_to: {
-        name: destination.name,
+        name: destination.name || "Customer",
         street1: destination.street || "Delivery Street",
-        city: destination.city,
+        city: destination.city || "Colombo",
         state: destination.state || "",
         zip: normalizeZip(destination.postalCode, destination.country),
-        country: normalizeCountry(destination.country),
+        country: toCountry,
         phone: destination.phone || "+94771234567",
       },
       parcels: [
@@ -95,6 +96,26 @@ export class ShippoAdapter implements CarrierAdapter {
       ],
       async: false,
     };
+
+    if (isInternational) {
+      payload.customs_declaration = {
+        contents_type: "MERCHANDISE",
+        non_delivery_option: "RETURN",
+        certify: true,
+        certify_signer: origin.name || "Store Merchant",
+        items: [
+          {
+            description: "Merchandise Goods",
+            quantity: 1,
+            net_weight: String(weightKg),
+            mass_unit: "kg",
+            value_amount: "50.00",
+            value_currency: "USD",
+            origin_country: fromCountry,
+          },
+        ],
+      };
+    }
 
     try {
       const res = await fetch(`${this.baseUrl}/shipments/`, {
@@ -113,6 +134,14 @@ export class ShippoAdapter implements CarrierAdapter {
       }
 
       const data = await res.json();
+      const rawRates = data.rates ?? [];
+      console.log(
+        `[ShippoAdapter] Returned ${rawRates.length} rates for ${fromCountry} -> ${toCountry}`,
+      );
+      if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+        console.log(`[ShippoAdapter] Carrier messages:`, JSON.stringify(data.messages));
+      }
+
       const rates: ShippingRate[] = [];
       let lkrRate: number;
       try {
