@@ -141,7 +141,7 @@ export function useCheckoutOptionsState(
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [cartItemIds, syncCartPrices]);
+  }, [cartItemIds, isSignedIn, syncCartPrices]);
 
   useEffect(() => {
     if (!isSignedIn) {
