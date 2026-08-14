@@ -385,3 +385,45 @@ export async function removeBranchMemberAction(id: string) {
     return { success: true };
   });
 }
+
+export async function setDefaultBranchAction(id: string) {
+  return runWithCorrelationId(async () => {
+    const { userId, orgId, premiumStatus } = await verifyVendorAccess();
+    if (!premiumStatus.multiBranchActive) {
+      throw new Error("Multi-branch features are not unlocked.");
+    }
+
+    const [targetBranch] = await db
+      .select({ id: schema.branches.id })
+      .from(schema.branches)
+      .where(and(eq(schema.branches.id, id), eq(schema.branches.orgId, orgId)))
+      .limit(1);
+
+    if (!targetBranch) {
+      throw new Error("Branch not found or access denied.");
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(schema.branches)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(eq(schema.branches.orgId, orgId));
+
+      await tx
+        .update(schema.branches)
+        .set({ isDefault: true, updatedAt: new Date() })
+        .where(and(eq(schema.branches.id, id), eq(schema.branches.orgId, orgId)));
+    });
+
+    await logAuditAction({
+      userId,
+      action: "UPDATE_BRANCH",
+      targetType: "branch",
+      targetId: id,
+      metadata: { action: "SET_MAIN_BRANCH" },
+    });
+
+    revalidateVendorConsole();
+    return { success: true };
+  });
+}

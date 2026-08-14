@@ -144,7 +144,7 @@ export const addProductSchema = z.object({
     .int("Quantity must be a whole number.")
     .nonnegative("Quantity cannot be negative.")
     .optional()
-    .default(0),
+    .default(3),
   branchId: z.string().uuid("Invalid branch ID.").or(z.literal("")).optional().default(""),
   stockAvailability: z.string().min(1).max(50).optional().default("in_stock"),
   // Pre-order fields

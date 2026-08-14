@@ -2,7 +2,7 @@ import "server-only";
 
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { eq, desc, sql, inArray } from "drizzle-orm";
+import { eq, desc, sql, inArray, and } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { getCachedOrgMembers } from "@/shared/auth/clerk-cache";
 import { getPremiumStatus } from "@/features/inventory/premium-license";
@@ -274,6 +274,22 @@ export async function loadVendorInventoryData(
           .from(schema.branches)
           .where(eq(schema.branches.orgId, orgId))
           .orderBy(schema.branches.name);
+      }
+
+      // Self-heal: If legacy race conditions caused multiple default branches, keep the oldest as default
+      const defaultBranches = allBranches.filter((b) => b.isDefault);
+      if (defaultBranches.length > 1) {
+        defaultBranches.sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
+        const duplicates = defaultBranches.slice(1);
+        for (const dup of duplicates) {
+          await db
+            .update(schema.branches)
+            .set({ isDefault: false, updatedAt: new Date() })
+            .where(and(eq(schema.branches.id, dup.id), eq(schema.branches.orgId, orgId)));
+          dup.isDefault = false;
+        }
       }
 
       // Auto-migrate/initialize default branch inventory for ongoing shop records in multi-branch mode

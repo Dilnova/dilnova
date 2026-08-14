@@ -213,10 +213,13 @@ export default function ProductBasicDetailsForm() {
               <input
                 type="number"
                 min={
-                  stockAvailability === "in_stock" || stockAvailability === "limited_stock"
-                    ? "1"
-                    : "0"
+                  stockAvailability === "in_stock"
+                    ? "3"
+                    : stockAvailability === "limited_stock"
+                      ? "1"
+                      : "0"
                 }
+                max={stockAvailability === "limited_stock" ? "2" : undefined}
                 step="1"
                 inputMode="numeric"
                 value={
@@ -228,9 +231,11 @@ export default function ProductBasicDetailsForm() {
                 }
                 onChange={(e) => setQuantity(e.target.value)}
                 placeholder={
-                  stockAvailability === "in_stock" || stockAvailability === "limited_stock"
-                    ? "1"
-                    : "0"
+                  stockAvailability === "in_stock"
+                    ? "3"
+                    : stockAvailability === "limited_stock"
+                      ? "2"
+                      : "0"
                 }
                 disabled={
                   stockAvailability === "coming_soon" ||
@@ -247,12 +252,12 @@ export default function ProductBasicDetailsForm() {
               />
               {stockAvailability === "in_stock" && (
                 <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                  In Stock requires at least 1 unit in stock. Select Out of Stock for 0 quantity.
+                  In Stock requires at least 3 units in stock. For 1–2 units, select Limited Stock.
                 </p>
               )}
               {stockAvailability === "limited_stock" && (
                 <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
-                  Limited Stock requires at least 1 unit in stock.
+                  Limited Stock requires 1–2 units in stock. For 3+ units, select In Stock.
                 </p>
               )}
               {stockAvailability === "out_of_stock" && (

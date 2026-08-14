@@ -26,7 +26,7 @@ export const inventory = pgTable(
       .references(() => products.id, { onDelete: "cascade" })
       .unique(),
     sku: text("sku"),
-    quantity: integer("quantity").default(0).notNull(),
+    quantity: integer("quantity").default(3).notNull(),
     lowStockThreshold: integer("low_stock_threshold").default(5).notNull(),
     binLocation: text("bin_location"),
     supplierId: uuid("supplier_id").references(() => suppliers.id, { onDelete: "set null" }),

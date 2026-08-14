@@ -157,18 +157,17 @@ export function AddProductProvider({
   const [widthCm, setWidthCm] = useState("");
   const [heightCm, setHeightCm] = useState("");
 
-  // Reset price & quantity when availability status changes
+  // Update price & quantity when availability status changes
   useEffect(() => {
     if (stockAvailability === "coming_soon") {
       setPrice("");
       setQuantity("0");
     } else if (stockAvailability === "out_of_stock" || stockAvailability === "pre_order") {
       setQuantity("0");
-    } else if (stockAvailability === "in_stock" || stockAvailability === "limited_stock") {
-      setQuantity((prev) => {
-        const num = parseInt(prev, 10);
-        return isNaN(num) || num < 1 ? "1" : prev;
-      });
+    } else if (stockAvailability === "in_stock") {
+      setQuantity("3");
+    } else if (stockAvailability === "limited_stock") {
+      setQuantity("2");
     }
   }, [stockAvailability]);
 
@@ -422,7 +421,7 @@ export function AddProductProvider({
           setCategoryId("");
           setTaxClassId("");
           setMedia([]);
-          setQuantity("0");
+          setQuantity("3");
           setPreorderType("full_upfront");
           setPreorderDepositAmount("");
           setPreorderMaxQuantity("");
