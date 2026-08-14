@@ -41,6 +41,19 @@ function sanitizeLogValue(val: string | null): string {
 }
 
 /**
+ * ReDoS-safe case-insensitive suffix stripper that avoids regex catastrophic backtracking.
+ */
+function stripSuffixCaseInsensitive(str: string, suffix: string): string {
+  const trimmed = str.trim();
+  const lower = trimmed.toLowerCase();
+  const lowerSuffix = suffix.toLowerCase();
+  if (lower.endsWith(lowerSuffix)) {
+    return trimmed.slice(0, trimmed.length - suffix.length).trim();
+  }
+  return trimmed;
+}
+
+/**
  * 100% Pure Dynamic Server API Route Handler using `country-state-city` with external API fallbacks.
  *
  * Handles Countries, States, Districts, Cities, and Reverse Geocoding via Server Proxy.
@@ -262,10 +275,10 @@ export async function GET(request: Request) {
   // 4a. Fetch Districts / Sub-regions dynamically (Only for 3-tier countries)
   if (type === "districts" && country) {
     const cleanCountryStr = country.trim();
-    const cleanProvinceKey = (province || state || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+province$/i, "");
+    const cleanProvinceKey = stripSuffixCaseInsensitive(
+      province || state || "",
+      "province",
+    ).toLowerCase();
 
     const foundCountry = CscCountry.getAllCountries().find(
       (c) =>
@@ -373,7 +386,7 @@ export async function GET(request: Request) {
   if (type === "cities" && country) {
     const cleanCountryStr = country.trim();
     const rawSubRegionStr = (district || state || province || "").trim();
-    const cleanSubRegionStr = rawSubRegionStr.replace(/\s+district$/i, "").trim();
+    const cleanSubRegionStr = stripSuffixCaseInsensitive(rawSubRegionStr, "district");
 
     const foundCountry = CscCountry.getAllCountries().find(
       (c) =>
@@ -390,7 +403,8 @@ export async function GET(request: Request) {
         const foundState = cscStates.find(
           (s) =>
             s.name.toLowerCase() === cleanSubRegionStr.toLowerCase() ||
-            s.name.replace(/\s+district$/i, "").toLowerCase() === cleanSubRegionStr.toLowerCase() ||
+            stripSuffixCaseInsensitive(s.name, "district").toLowerCase() ===
+              cleanSubRegionStr.toLowerCase() ||
             s.isoCode.toLowerCase() === cleanSubRegionStr.toLowerCase(),
         );
 

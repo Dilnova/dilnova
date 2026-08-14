@@ -22,11 +22,13 @@ export function parseRateLimitError(error: unknown): ParsedRateLimit {
   }
 
   let message = "";
+  let status: number | undefined;
+
   if (typeof error === "string") {
     message = error;
   } else if (error instanceof Error) {
     message = error.message;
-  } else if (typeof error === "object" && error !== null) {
+  } else if (typeof error === "object") {
     const obj = error as Record<string, unknown>;
     if (typeof obj.error === "string") {
       message = obj.error;
@@ -35,15 +37,16 @@ export function parseRateLimitError(error: unknown): ParsedRateLimit {
     } else if (typeof obj.serverError === "string") {
       message = obj.serverError;
     }
+    if (typeof obj.status === "number") {
+      status = obj.status;
+    }
   }
 
   if (!message) {
     return { isRateLimit: false, retryAfterSeconds: 0, message: "" };
   }
 
-  const isRateLimit =
-    /rate limit|too many requests|429/i.test(message) ||
-    (typeof error === "object" && error !== null && (error as { status?: number }).status === 429);
+  const isRateLimit = /rate limit|too many requests|429/i.test(message) || status === 429;
 
   if (!isRateLimit) {
     return { isRateLimit: false, retryAfterSeconds: 0, message };

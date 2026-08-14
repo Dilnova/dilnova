@@ -99,7 +99,7 @@ export class EasyPostAdapter implements CarrierAdapter {
 
       const data = await res.json();
       const rates: ShippingRate[] = [];
-      let lkrRate = 307.69;
+      let lkrRate: number;
       try {
         const { getExchangeRatesMap } = await import("@/shared/currency/exchange-rates.service");
         const fxMap = await getExchangeRatesMap();
