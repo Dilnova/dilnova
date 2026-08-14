@@ -5,6 +5,7 @@ import Link from "next/link";
 import { isVideoUrl } from "@/shared/media/media";
 import { useCurrency } from "@/shared/currency/context/currency-context";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
+import { toast } from "sonner";
 
 export interface CartItemType {
   id: string;
@@ -232,6 +233,12 @@ export function CartVendorGroups({
                           >
                             {item.name}
                           </Link>
+                          {typeof item.stockQuantity === "number" &&
+                            item.quantity > item.stockQuantity && (
+                              <p className="text-[10px] text-rose-500 font-semibold mt-1">
+                                ⚠️ Requested quantity exceeds available stock.
+                              </p>
+                            )}
                         </div>
                       </div>
 
@@ -248,7 +255,17 @@ export function CartVendorGroups({
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => {
+                              if (
+                                typeof item.stockQuantity === "number" &&
+                                item.stockQuantity > 0 &&
+                                item.quantity >= item.stockQuantity
+                              ) {
+                                toast.warning(`Maximum order quantity reached for "${item.name}".`);
+                                return;
+                              }
+                              updateQuantity(item.id, item.quantity + 1);
+                            }}
                             className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-855 dark:text-zinc-400 dark:hover:text-zinc-150 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold transition-all cursor-pointer"
                             aria-label="Increase quantity"
                           >

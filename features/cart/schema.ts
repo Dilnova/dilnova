@@ -11,6 +11,8 @@ export const cartLineSchema = z.object({
   vendorOrgId: z.string().optional(),
   type: z.string(),
   weightGrams: z.number().int().nullable().optional(),
+  stockQuantity: z.number().int().nullable().optional(),
+  stockStatus: z.string().nullable().optional(),
 });
 
 export const sendCartEmailSchema = z.object({
@@ -28,6 +30,8 @@ export const checkoutItemSchema = z.object({
   type: z.string(),
   vendorOrgId: z.string().optional(),
   weightGrams: z.number().int().nullable().optional(),
+  stockQuantity: z.number().int().nullable().optional(),
+  stockStatus: z.string().nullable().optional(),
 });
 
 export const checkoutSchema = z.object({
@@ -60,6 +64,8 @@ export const syncedCartItemSchema = z.object({
   vendorName: z.string(),
   type: z.string(),
   weightGrams: z.number().int().nullable().optional(),
+  stockQuantity: z.number().int().nullable().optional(),
+  stockStatus: z.string().nullable().optional(),
 });
 
 export const syncedCartSchema = z.array(syncedCartItemSchema).max(100);

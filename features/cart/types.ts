@@ -12,4 +12,6 @@ export interface CartItem {
   vendorOrgId?: string;
   type: string;
   weightGrams?: number | null;
+  stockQuantity?: number | null;
+  stockStatus?: string | null;
 }

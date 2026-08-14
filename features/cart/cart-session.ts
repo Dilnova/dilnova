@@ -40,7 +40,14 @@ export function mergeCartItems(
 
 export function applyCatalogSync(
   items: SyncedCartItem[],
-  updates: { id: string; name: string; price: number; weightGrams?: number | null }[],
+  updates: {
+    id: string;
+    name: string;
+    price: number;
+    weightGrams?: number | null;
+    stockQuantity?: number | null;
+    stockStatus?: string | null;
+  }[],
   removedIds: string[],
 ): SyncedCartItem[] {
   const removedSet = new Set(removedIds);
@@ -56,6 +63,9 @@ export function applyCatalogSync(
         name: update.name,
         price: update.price,
         weightGrams: update.weightGrams !== undefined ? update.weightGrams : item.weightGrams,
+        stockQuantity:
+          update.stockQuantity !== undefined ? update.stockQuantity : item.stockQuantity,
+        stockStatus: update.stockStatus !== undefined ? update.stockStatus : item.stockStatus,
       };
     });
 }
