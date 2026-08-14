@@ -51,4 +51,26 @@ describe("cart session helpers", () => {
     expect(next[0]?.name).toBe("Updated");
     expect(next[0]?.price).toBe(1500);
   });
+
+  it("returns original array reference when catalog sync items and prices are unchanged", () => {
+    const initial = [sampleItem("p1", 1), sampleItem("p2", 2)];
+    const result = applyCatalogSync(
+      initial,
+      [
+        { id: "p1", name: "Product p1", price: 1000 },
+        { id: "p2", name: "Product p2", price: 1000 },
+      ],
+      [],
+    );
+
+    expect(result).toBe(initial);
+  });
+
+  it("returns new array reference when price changes", () => {
+    const initial = [sampleItem("p1", 1)];
+    const result = applyCatalogSync(initial, [{ id: "p1", name: "Product p1", price: 2000 }], []);
+
+    expect(result).not.toBe(initial);
+    expect(result[0]?.price).toBe(2000);
+  });
 });

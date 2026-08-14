@@ -56,6 +56,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const saveTimerRef = useRef<number | null>(null);
   const cartItemsRef = useRef<CartItem[]>([]);
+  const lastSavedJsonRef = useRef<string>("");
   const activeAccountKeyRef = useRef<CartAccountKey | null>(null);
   const hydrateRequestRef = useRef(0);
   const isHydratingRef = useRef(false);
@@ -143,7 +144,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setIsCartReady(true);
 
       if (merged.length > 0) {
+        lastSavedJsonRef.current = JSON.stringify(merged);
         await saveCustomerCartAction({ items: merged });
+      } else {
+        lastSavedJsonRef.current = "[]";
       }
     })();
   }, [accountKey, isLoaded, userId]);
@@ -167,11 +171,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      const itemsJson = JSON.stringify(items);
+      if (lastSavedJsonRef.current === itemsJson) {
+        return;
+      }
+
       if (saveTimerRef.current) {
         window.clearTimeout(saveTimerRef.current);
       }
 
       saveTimerRef.current = window.setTimeout(() => {
+        lastSavedJsonRef.current = itemsJson;
         void saveCustomerCartAction({ items });
       }, 300);
     },
@@ -217,6 +227,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = useCallback(() => {
     setCartItems([]);
     setCartMergeNotice(null);
+    lastSavedJsonRef.current = "[]";
     if (accountKey === "guest") {
       clearGuestCartStorage();
     } else {
@@ -229,7 +240,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       updates: { id: string; name: string; price: number; weightGrams?: number | null }[],
       removedIds: string[] = [],
     ) => {
-      setCartItems((prevItems) => applyCatalogSync(prevItems, updates, removedIds));
+      setCartItems((prevItems) => {
+        const next = applyCatalogSync(prevItems, updates, removedIds);
+        return next === prevItems ? prevItems : next;
+      });
     },
     [],
   );

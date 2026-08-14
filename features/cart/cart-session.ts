@@ -53,21 +53,53 @@ export function applyCatalogSync(
   const removedSet = new Set(removedIds);
   const updateById = new Map(updates.map((item) => [item.id, item]));
 
-  return items
-    .filter((item) => !removedSet.has(item.id))
-    .map((item) => {
-      const update = updateById.get(item.id);
-      if (!update) return item;
-      return {
-        ...item,
-        name: update.name,
-        price: update.price,
-        weightGrams: update.weightGrams !== undefined ? update.weightGrams : item.weightGrams,
-        stockQuantity:
-          update.stockQuantity !== undefined ? update.stockQuantity : item.stockQuantity,
-        stockStatus: update.stockStatus !== undefined ? update.stockStatus : item.stockStatus,
-      };
-    });
+  let hasChanged = false;
+  const filtered: SyncedCartItem[] = [];
+
+  for (const item of items) {
+    if (removedSet.has(item.id)) {
+      hasChanged = true;
+    } else {
+      filtered.push(item);
+    }
+  }
+
+  const nextItems = filtered.map((item) => {
+    const update = updateById.get(item.id);
+    if (!update) return item;
+
+    const nextWeight = update.weightGrams !== undefined ? update.weightGrams : item.weightGrams;
+    const nextStockQuantity =
+      update.stockQuantity !== undefined ? update.stockQuantity : item.stockQuantity;
+    const nextStockStatus =
+      update.stockStatus !== undefined ? update.stockStatus : item.stockStatus;
+
+    if (
+      item.name === update.name &&
+      item.price === update.price &&
+      item.weightGrams === nextWeight &&
+      item.stockQuantity === nextStockQuantity &&
+      item.stockStatus === nextStockStatus
+    ) {
+      return item;
+    }
+
+    hasChanged = true;
+    return {
+      ...item,
+      name: update.name,
+      price: update.price,
+      weightGrams: nextWeight,
+      stockQuantity: nextStockQuantity,
+      stockStatus: nextStockStatus,
+    };
+  });
+
+  if (!hasChanged) {
+    return items;
+  }
+
+  return nextItems;
 }
 
 export function buildCartMergeNotice(
