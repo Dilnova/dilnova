@@ -9,6 +9,7 @@ import {
 import { MapPin, Loader2, Save } from "lucide-react";
 import DeliveryAddressFormFields from "./DeliveryAddressFormFields";
 import { toast } from "sonner";
+import { useAutoRetryAction } from "@/shared/hooks/use-auto-retry-action";
 
 interface CustomerDeliverySettingsFormProps {
   initialData: {
@@ -72,21 +73,36 @@ export default function CustomerDeliverySettingsForm({
     return null;
   };
 
+  const {
+    execute: submitForm,
+    isLoading: isAutoSubmitting,
+    isRateLimited,
+    countdownSeconds,
+  } = useAutoRetryAction(
+    async (payload: UpdateDeliverySettingsInput) => {
+      const result = await updateCustomerDeliveryDetailsAction(payload);
+      if (result?.data?.success) {
+        return result;
+      }
+      const errorMessage =
+        result?.serverError ||
+        extractValidationError(result?.validationErrors) ||
+        "Please check your address fields and try again.";
+      throw new Error(errorMessage);
+    },
+    {
+      onSuccess: () => {
+        toast.success("Delivery preferences saved successfully!");
+        router.refresh();
+      },
+    },
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     startTransition(async () => {
-      const result = await updateCustomerDeliveryDetailsAction(formData);
-      if (result?.data?.success) {
-        toast.success("Delivery preferences saved successfully!");
-        router.refresh();
-      } else {
-        const errorMessage =
-          result?.serverError ||
-          extractValidationError(result?.validationErrors) ||
-          "Please check your address fields and try again.";
-        toast.error(errorMessage);
-      }
+      await submitForm(formData);
     });
   };
 
@@ -127,15 +143,19 @@ export default function CustomerDeliverySettingsForm({
         <div className="pt-2 flex justify-end">
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || isAutoSubmitting || isRateLimited}
             className="flex items-center gap-2 px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-sm font-semibold rounded-xl shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
           >
-            {isPending ? (
+            {isPending || isAutoSubmitting || isRateLimited ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Save className="w-4 h-4 group-hover:scale-110 transition-transform" />
             )}
-            {isPending ? "Saving..." : "Save Preferences"}
+            {isRateLimited
+              ? `Processing... (${countdownSeconds}s)`
+              : isPending || isAutoSubmitting
+                ? "Saving..."
+                : "Save Preferences"}
           </button>
         </div>
       </form>

@@ -30,10 +30,10 @@ export async function withActionHandler<T>(
     }
 
     if (error instanceof Error) {
-      // Normalize common errors like rate limits
+      // Preserve original rate limit message with wait time (e.g., "Rate limit exceeded. Please try again in 14 seconds.")
       if (error.message.includes("Rate limit")) {
         logger.warn(`[${actionName}] Rate limit exceeded`, { error: error.message });
-        return { success: false, error: "Too many requests. Please try again later." };
+        return { success: false, error: error.message };
       }
       logger.error(`[${actionName}] Action failed`, error);
       return { success: false, error: "An unexpected error occurred. Please try again." };

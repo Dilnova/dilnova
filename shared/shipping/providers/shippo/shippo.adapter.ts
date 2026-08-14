@@ -47,24 +47,41 @@ export class ShippoAdapter implements CarrierAdapter {
     const parcel = parcels[0];
     const weightKg = Math.max(0.1, Math.round((parcel.weightGrams / 1000) * 100) / 100);
 
+    const normalizeCountry = (c?: string): string => {
+      if (!c) return "LK";
+      const u = c.trim().toUpperCase();
+      if (u === "SRI LANKA" || u === "SRILANKA" || u === "LK") return "LK";
+      if (u === "UNITED STATES" || u === "USA" || u === "US") return "US";
+      if (u.length === 2) return u;
+      return "LK";
+    };
+
+    const normalizeZip = (z?: string, c?: string): string => {
+      if (z && z.trim().length > 0) return z.trim();
+      const code = normalizeCountry(c);
+      if (code === "LK") return "00100";
+      if (code === "US") return "90210";
+      return "00100";
+    };
+
     const payload = {
       address_from: {
         name: origin.name,
         street1: origin.street || "Main Street",
         city: origin.city,
         state: origin.state || "",
-        zip: origin.postalCode || "",
-        country: origin.country || "LK",
-        phone: origin.phone || "",
+        zip: normalizeZip(origin.postalCode, origin.country),
+        country: normalizeCountry(origin.country),
+        phone: origin.phone || "+94112345678",
       },
       address_to: {
         name: destination.name,
         street1: destination.street || "Delivery Street",
         city: destination.city,
         state: destination.state || "",
-        zip: destination.postalCode || "",
-        country: destination.country,
-        phone: destination.phone || "",
+        zip: normalizeZip(destination.postalCode, destination.country),
+        country: normalizeCountry(destination.country),
+        phone: destination.phone || "+94771234567",
       },
       parcels: [
         {

@@ -772,7 +772,8 @@ export function CartCheckoutSidebar({
               <button
                 onClick={() => handleCheckout(optionsLoading)}
                 disabled={
-                  checkoutStatus === "processing" ||
+                  checkoutStatus.startsWith("processing") ||
+                  checkoutStatus.includes("Retrying") ||
                   optionsLoading ||
                   cartItems.length === 0 ||
                   checkoutErrors.length > 0 ||
@@ -780,10 +781,12 @@ export function CartCheckoutSidebar({
                 }
                 className="w-full text-center py-3 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-lg shadow-purple-900/10 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                {checkoutStatus === "processing" ? (
+                {checkoutStatus.startsWith("processing") || checkoutStatus.includes("Retrying") ? (
                   <>
                     <Spinner size="sm" />
-                    <span>Processing...</span>
+                    <span>
+                      {checkoutStatus === "processing" ? "Processing..." : checkoutStatus}
+                    </span>
                   </>
                 ) : (
                   <span>

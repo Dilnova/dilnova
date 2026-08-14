@@ -1,6 +1,6 @@
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -132,6 +132,98 @@ export async function resolveTaxClassForProduct(
   return ZERO_TAX_CLASS;
 }
 
+/**
+ * Efficiently batch-resolves tax classes for multiple products in 3 bulk queries maximum (0 N+1 queries!).
+ */
+export async function batchResolveTaxClassesForProducts(
+  productIds: string[],
+  txOrDb: DbOrTransaction = db,
+): Promise<Map<string, ResolvedTaxClass>> {
+  const resultMap = new Map<string, ResolvedTaxClass>();
+  if (!productIds || productIds.length === 0) return resultMap;
+
+  const uniqueProductIds = [...new Set(productIds.filter(Boolean))];
+  if (uniqueProductIds.length === 0) return resultMap;
+
+  // 1. Bulk query: Fetch product taxClassId, orgId, and category taxClassId
+  const productRows = await txOrDb
+    .select({
+      productId: schema.products.id,
+      productOrgId: schema.products.orgId,
+      productTaxClassId: schema.products.taxClassId,
+      categoryTaxClassId: schema.categories.taxClassId,
+    })
+    .from(schema.products)
+    .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
+    .where(inArray(schema.products.id, uniqueProductIds));
+
+  const taxClassIds = new Set<string>();
+  const orgIds = new Set<string>();
+
+  for (const row of productRows) {
+    if (row.productTaxClassId) taxClassIds.add(row.productTaxClassId);
+    if (row.categoryTaxClassId) taxClassIds.add(row.categoryTaxClassId);
+    if (row.productOrgId) orgIds.add(row.productOrgId);
+  }
+
+  // 2. Bulk query: Fetch default taxClassId for all involved orgs
+  const orgDefaultsMap = new Map<string, string>();
+  if (orgIds.size > 0) {
+    const orgSettingsRows = await txOrDb
+      .select({
+        orgId: schema.orgSettings.orgId,
+        defaultTaxClassId: schema.orgSettings.defaultTaxClassId,
+      })
+      .from(schema.orgSettings)
+      .where(inArray(schema.orgSettings.orgId, [...orgIds]));
+
+    for (const orgRow of orgSettingsRows) {
+      if (orgRow.defaultTaxClassId) {
+        orgDefaultsMap.set(orgRow.orgId, orgRow.defaultTaxClassId);
+        taxClassIds.add(orgRow.defaultTaxClassId);
+      }
+    }
+  }
+
+  // 3. Bulk query: Fetch details for all required tax class IDs
+  const taxClassesMap = new Map<string, ResolvedTaxClass>();
+  if (taxClassIds.size > 0) {
+    const taxClassRows = await txOrDb
+      .select({
+        id: schema.taxClasses.id,
+        code: schema.taxClasses.code,
+        name: schema.taxClasses.name,
+        ratePercent: schema.taxClasses.ratePercent,
+      })
+      .from(schema.taxClasses)
+      .where(inArray(schema.taxClasses.id, [...taxClassIds]));
+
+    for (const tc of taxClassRows) {
+      taxClassesMap.set(tc.id, tc);
+    }
+  }
+
+  // Resolve hierarchy for each product
+  for (const row of productRows) {
+    let resolved: ResolvedTaxClass | null = null;
+
+    if (row.productTaxClassId && taxClassesMap.has(row.productTaxClassId)) {
+      resolved = taxClassesMap.get(row.productTaxClassId)!;
+    } else if (row.categoryTaxClassId && taxClassesMap.has(row.categoryTaxClassId)) {
+      resolved = taxClassesMap.get(row.categoryTaxClassId)!;
+    } else if (row.productOrgId && orgDefaultsMap.has(row.productOrgId)) {
+      const defaultTcId = orgDefaultsMap.get(row.productOrgId)!;
+      if (taxClassesMap.has(defaultTcId)) {
+        resolved = taxClassesMap.get(defaultTcId)!;
+      }
+    }
+
+    resultMap.set(row.productId, resolved || ZERO_TAX_CLASS);
+  }
+
+  return resultMap;
+}
+
 // ── Per-line calc ─────────────────────────────────────────────
 
 export function calculateLineTax(
@@ -154,6 +246,7 @@ export function calculateLineTax(
 
 /**
  * Resolves tax for each item in a cart and returns a full breakdown.
+ * Uses batch resolving to prevent N+1 queries.
  */
 export async function buildCartTaxBreakdown(
   items: Array<{
@@ -173,12 +266,12 @@ export async function buildCartTaxBreakdown(
   >();
   const productTaxMap: CartTaxBreakdown["productTaxMap"] = {};
 
+  // Batch resolve all product tax classes in bulk (0 N+1 queries!)
+  const productIds = items.map((item) => item.productId);
+  const taxClassMap = await batchResolveTaxClassesForProducts(productIds, txOrDb);
+
   for (const item of items) {
-    const tc = await resolveTaxClassForProduct(
-      item.productId,
-      item.vendorOrgId || defaultOrgId,
-      txOrDb,
-    );
+    const tc = taxClassMap.get(item.productId) || (defaultOrgId ? ZERO_TAX_CLASS : ZERO_TAX_CLASS);
     const line = calculateLineTax(item.unitPriceCents, item.quantity, tc);
     lines.push({ productId: item.productId, ...line });
     totalTaxCents += line.taxAmountCents;

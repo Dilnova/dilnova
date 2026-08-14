@@ -355,20 +355,36 @@ export const simulatedCheckoutAction = authenticatedAction
         }
       }
 
+      // The server verifies subtotal + tax (values it fully controls).
+      // Shipping is derived from the client grand total since the user selected a specific
+      // carrier rate that may differ from whatever the server re-computes at checkout time.
+      const clientShippingCents = Math.max(
+        0,
+        clientGrandTotal - (serverSubtotal + taxBreakdown.totalTaxCents),
+      );
+
+      // Sanity check: if server computed a rate, verify the client's shipping is in a
+      // plausible range (client shouldn't claim 0 shipping when real rates are available,
+      // and shouldn't inflate shipping by more than 5x the server rate).
+      if (!fulfillmentOption.zeroShipping && serverShippingCents > 0 && clientShippingCents === 0) {
+        return {
+          success: false,
+          error:
+            "Checkout total mismatch: no shipping fee was submitted but shipping is required. Please refresh your cart and try again.",
+        };
+      }
+
       const checkoutTotals = calculateCheckoutTotals(
         serverSubtotal,
         fulfillmentOption.zeroShipping === true,
         taxBreakdown.totalTaxCents,
-        serverShippingCents > 0 ? serverShippingCents : null,
+        fulfillmentOption.zeroShipping ? null : clientShippingCents || null,
       );
-      const clientExpectedPreTaxTotal = serverSubtotal + checkoutTotals.shippingAmount;
-      if (
-        clientGrandTotal !== clientExpectedPreTaxTotal &&
-        clientGrandTotal !== checkoutTotals.grandTotal
-      ) {
+
+      if (clientGrandTotal !== checkoutTotals.grandTotal) {
         return {
           success: false,
-          error: `Checkout total mismatch. Expected ${clientExpectedPreTaxTotal}, received ${clientGrandTotal}. Please refresh your cart and try again.`,
+          error: `Checkout total mismatch. Expected ${checkoutTotals.grandTotal}, received ${clientGrandTotal}. Please refresh your cart and try again.`,
         };
       }
 

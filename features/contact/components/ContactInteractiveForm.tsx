@@ -7,6 +7,7 @@ import { Spinner } from "@/shared/ui/loading";
 import { useUser } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
+import { useAutoRetryAction } from "@/shared/hooks/use-auto-retry-action";
 
 type CategoryType =
   "orders" | "billing" | "vendor" | "technical" | "collaboration" | "registration" | "info";
@@ -168,6 +169,38 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
     }
   }, [plan, systemName]);
 
+  const {
+    execute: submitForm,
+    isLoading: isAutoSubmitting,
+    isRateLimited,
+    countdownSeconds,
+  } = useAutoRetryAction(
+    async (submissionData: FormData) => {
+      const result = await submitContactFormAction(null, submissionData);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to submit contact form.");
+      }
+      return result;
+    },
+    {
+      onSuccess: () => {
+        toast.success("Thank you! Your message has been sent successfully.");
+        setFormData({
+          name: "",
+          email: "",
+          category: "info",
+          subject: "",
+          message: "",
+          middleName: "",
+        });
+        if (typeof window !== "undefined" && window.turnstile) {
+          window.turnstile.reset();
+          setTurnstileToken(null);
+        }
+      },
+    },
+  );
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -183,25 +216,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
     }
 
     startTransition(async () => {
-      const result = await submitContactFormAction(null, submissionData);
-      if (result.success) {
-        toast.success("Thank you! Your message has been sent successfully.");
-        setFormData({
-          name: "",
-          email: "",
-          category: "info",
-          subject: "",
-          message: "",
-          middleName: "",
-        });
-      } else {
-        toast.error(result.error || "Failed to submit contact form.");
-      }
-
-      if (typeof window !== "undefined" && window.turnstile) {
-        window.turnstile.reset();
-        setTurnstileToken(null);
-      }
+      await submitForm(submissionData);
     });
   };
 
@@ -507,13 +522,17 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
 
             <button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || isAutoSubmitting || isRateLimited}
               className="w-full h-11 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl transition-all duration-200 shadow-md hover:shadow-purple-500/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2 cursor-pointer"
             >
-              {isPending ? (
+              {isPending || isAutoSubmitting || isRateLimited ? (
                 <>
                   <Spinner size="sm" />
-                  <span>Sending Inquiry...</span>
+                  <span>
+                    {isRateLimited
+                      ? `Processing... (Retrying in ${countdownSeconds}s)`
+                      : "Sending Inquiry..."}
+                  </span>
                 </>
               ) : (
                 <span>Send Inquiry</span>

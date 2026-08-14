@@ -323,79 +323,111 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
 
     setCheckoutStatus("processing");
 
-    try {
-      const result = await simulatedCheckoutAction({
-        customerName,
-        customerEmail,
-        items: checkoutCartItems.map((item) => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          vendorName: item.vendorName,
-          type: item.type,
-        })),
-        totalAmount: checkoutTotalsForOrder.grandTotal,
-        fulfillmentMethod,
-        paymentMethod,
-        pickupBranchId: selectedFulfillment.requiresBranch ? pickupBranchId : null,
-        shippingAddress: requiresDeliveryAddress ? shippingAddress.trim() : null,
-        shippingPhone: requiresDeliveryAddress ? shippingPhone.trim() || null : null,
-        checkoutVendorOrgId: vendorCount > 1 ? selectedCheckoutVendorOrgId : null,
-        shippingAddressLine2: requiresDeliveryAddress ? shippingAddressLine2.trim() || null : null,
-        shippingCity: requiresDeliveryAddress ? shippingCity.trim() : null,
-        shippingState: requiresDeliveryAddress ? shippingState.trim() : null,
-        shippingPostalCode: requiresDeliveryAddress ? shippingPostalCode.trim() : null,
-        shippingCountry: requiresDeliveryAddress ? shippingCountry.trim() || null : null,
-        shippingPhone2: requiresDeliveryAddress ? shippingPhone2.trim() || null : null,
-        idempotencyKey,
-        selectedRateId: requiresDeliveryAddress ? selectedRateId || null : null,
-      });
+    let currentRetryTimer: NodeJS.Timeout | null = null;
 
-      if (result?.data?.success) {
-        const checkedOutIds = checkoutCartItems.map((item) => item.id);
-        const remainingItems = cartItems.filter((item) => !checkedOutIds.includes(item.id));
-        removeItemsByIds(checkedOutIds);
-        setRemainingCartCount(remainingItems.reduce((sum, item) => sum + item.quantity, 0));
-        setConfirmedOrderEmail(customerEmail);
-        setConfirmedOrderId("orderId" in result.data ? result.data.orderId || "" : "");
-        setBankTransferInstructions(
-          "bankTransferInstructions" in result.data
-            ? result.data.bankTransferInstructions || null
+    const executeCheckoutWithRetry = async () => {
+      try {
+        const result = await simulatedCheckoutAction({
+          customerName,
+          customerEmail,
+          items: checkoutCartItems.map((item) => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            vendorName: item.vendorName,
+            type: item.type,
+          })),
+          totalAmount: checkoutTotalsForOrder.grandTotal,
+          fulfillmentMethod,
+          paymentMethod,
+          pickupBranchId: selectedFulfillment.requiresBranch ? pickupBranchId : null,
+          shippingAddress: requiresDeliveryAddress ? shippingAddress.trim() : null,
+          shippingPhone: requiresDeliveryAddress ? shippingPhone.trim() || null : null,
+          checkoutVendorOrgId: vendorCount > 1 ? selectedCheckoutVendorOrgId : null,
+          shippingAddressLine2: requiresDeliveryAddress
+            ? shippingAddressLine2.trim() || null
             : null,
-        );
-        setConfirmationEmailSent(
-          "confirmationEmailSent" in result.data
-            ? result.data.confirmationEmailSent === true
-            : false,
-        );
-        saveCheckoutSuccessSnapshot({
-          orderId: "orderId" in result.data ? result.data.orderId || "" : "",
-          confirmedOrderEmail: customerEmail,
-          bankTransferInstructions:
+          shippingCity: requiresDeliveryAddress ? shippingCity.trim() : null,
+          shippingState: requiresDeliveryAddress ? shippingState.trim() : null,
+          shippingPostalCode: requiresDeliveryAddress ? shippingPostalCode.trim() : null,
+          shippingCountry: requiresDeliveryAddress ? shippingCountry.trim() || null : null,
+          shippingPhone2: requiresDeliveryAddress ? shippingPhone2.trim() || null : null,
+          idempotencyKey,
+          selectedRateId: requiresDeliveryAddress ? selectedRateId || null : null,
+        });
+
+        if (result?.data?.success) {
+          if (currentRetryTimer) clearInterval(currentRetryTimer);
+          const checkedOutIds = checkoutCartItems.map((item) => item.id);
+          const remainingItems = cartItems.filter((item) => !checkedOutIds.includes(item.id));
+          removeItemsByIds(checkedOutIds);
+          setRemainingCartCount(remainingItems.reduce((sum, item) => sum + item.quantity, 0));
+          setConfirmedOrderEmail(customerEmail);
+          setConfirmedOrderId("orderId" in result.data ? result.data.orderId || "" : "");
+          setBankTransferInstructions(
             "bankTransferInstructions" in result.data
               ? result.data.bankTransferInstructions || null
               : null,
-          confirmationEmailSent:
+          );
+          setConfirmationEmailSent(
             "confirmationEmailSent" in result.data
               ? result.data.confirmationEmailSent === true
               : false,
-        });
-        setCheckoutStatus("success");
-        setFulfillmentMethod("store_pickup");
-        setPaymentMethod(BANK_TRANSFER_PAYMENT_ID);
-        setPickupBranchId("");
-      } else {
+          );
+          saveCheckoutSuccessSnapshot({
+            orderId: "orderId" in result.data ? result.data.orderId || "" : "",
+            confirmedOrderEmail: customerEmail,
+            bankTransferInstructions:
+              "bankTransferInstructions" in result.data
+                ? result.data.bankTransferInstructions || null
+                : null,
+            confirmationEmailSent:
+              "confirmationEmailSent" in result.data
+                ? result.data.confirmationEmailSent === true
+                : false,
+          });
+          setCheckoutStatus("success");
+          setFulfillmentMethod("store_pickup");
+          setPaymentMethod(BANK_TRANSFER_PAYMENT_ID);
+          setPickupBranchId("");
+        } else {
+          const errorMessage = extractActionErrorMessage(result);
+          const isRateLimit = /rate limit|try again in (\d+) seconds/i.test(errorMessage);
+          const match = errorMessage.match(/try again in (\d+) seconds/i);
+          const waitSeconds = match ? parseInt(match[1], 10) : 15;
+
+          if (isRateLimit && waitSeconds > 0) {
+            let remaining = waitSeconds;
+            setCheckoutStatus(`Processing... (Retrying in ${remaining}s)`);
+
+            if (currentRetryTimer) clearInterval(currentRetryTimer);
+            currentRetryTimer = setInterval(() => {
+              remaining -= 1;
+              if (remaining > 0) {
+                setCheckoutStatus(`Processing... (Retrying in ${remaining}s)`);
+              } else {
+                if (currentRetryTimer) clearInterval(currentRetryTimer);
+                setCheckoutStatus("processing");
+                executeCheckoutWithRetry();
+              }
+            }, 1000);
+          } else {
+            if (currentRetryTimer) clearInterval(currentRetryTimer);
+            setCheckoutStatus("idle");
+            toast.error(errorMessage);
+          }
+        }
+      } catch (err) {
+        if (currentRetryTimer) clearInterval(currentRetryTimer);
         setCheckoutStatus("idle");
-        const errorMessage = extractActionErrorMessage(result);
-        toast.error(errorMessage);
+        toast.error(
+          err instanceof Error && err.message ? err.message : "An unexpected error occurred.",
+        );
       }
-    } catch (err) {
-      setCheckoutStatus("idle");
-      toast.error(
-        err instanceof Error && err.message ? err.message : "An unexpected error occurred.",
-      );
-    }
+    };
+
+    await executeCheckoutWithRetry();
   };
 
   const handleSuccessClose = () => {

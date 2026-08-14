@@ -30,8 +30,11 @@ export const actionClient = createSafeActionClient({
     // Always log the full error server-side so it lands in Sentry / logger.
     logger.error("Server Action unhandled error", e);
 
-    // Return human-readable message for ActionError; redact everything else.
+    // Return human-readable message for ActionError or Rate Limit errors; redact everything else.
     if (e instanceof ActionError) {
+      return e.message;
+    }
+    if (e instanceof Error && e.message.includes("Rate limit")) {
       return e.message;
     }
     return "An unexpected error occurred. Please try again.";
