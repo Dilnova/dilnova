@@ -35,14 +35,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Fetch order items
+    // Fetch order items and verify vendor authorization
     const orderItems = await db
       .select()
       .from(simulatedOrderItems)
       .where(eq(simulatedOrderItems.orderId, orderId));
 
+    const vendorItems = orderItems.filter((item) => item.vendorOrgId === orgId);
+    if (vendorItems.length === 0) {
+      return NextResponse.json(
+        { error: "Forbidden — this order does not contain items from your organization" },
+        { status: 403 },
+      );
+    }
+
     // Calculate total weight
-    const totalWeightGrams = orderItems.reduce((sum, item) => sum + item.quantity * 500, 0);
+    const totalWeightGrams = vendorItems.reduce((sum, item) => sum + item.quantity * 500, 0);
 
     // Fetch vendor origin branch
     const [vendorBranch] = await db

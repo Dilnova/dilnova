@@ -58,9 +58,22 @@ export async function GET(request: Request) {
 
   // 1. Reverse Geocoding (GPS Lat/Lon to Address)
   if (type === "reverse-geocode" && lat && lon) {
+    const latNum = parseFloat(lat);
+    const lonNum = parseFloat(lon);
+    if (
+      !Number.isFinite(latNum) ||
+      !Number.isFinite(lonNum) ||
+      latNum < -90 ||
+      latNum > 90 ||
+      lonNum < -180 ||
+      lonNum > 180
+    ) {
+      return NextResponse.json({ success: false, error: "Invalid coordinates" }, { status: 400 });
+    }
+
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`,
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(String(latNum))}&lon=${encodeURIComponent(String(lonNum))}&zoom=18&addressdetails=1`,
         {
           headers: {
             "Accept-Language": "en",
@@ -119,23 +132,29 @@ export async function GET(request: Request) {
   // 2. IP-based Fallback Geocoding (if browser GPS permission is denied)
   if (type === "ip-location") {
     try {
-      const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0] || "";
-      const url =
-        clientIp && clientIp !== "127.0.0.1" && clientIp !== "::1"
-          ? `http://ip-api.com/json/${encodeURIComponent(clientIp)}?fields=status,country,regionName,city,zip`
-          : `http://ip-api.com/json/?fields=status,country,regionName,city,zip`;
+      const rawIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "";
+      const isSafeIpv4 = /^(\d{1,3}\.){3}\d{1,3}$/.test(rawIp) && rawIp !== "127.0.0.1";
+      const isSafeIpv6 = /^[0-9a-fA-F:]{3,39}$/.test(rawIp) && rawIp !== "::1";
+      const safeIp = isSafeIpv4 || isSafeIpv6 ? rawIp : "";
 
-      const res = await fetch(url, { next: { revalidate: 3600 } });
+      const url = safeIp
+        ? `https://ipapi.co/${encodeURIComponent(safeIp)}/json/`
+        : `https://ipapi.co/json/`;
+
+      const res = await fetch(url, {
+        headers: { "User-Agent": "DilnovaCommerceHub/1.0" },
+        next: { revalidate: 3600 },
+      });
       if (res.ok) {
         const data = (await res.json()) as Record<string, string>;
-        if (data?.status === "success") {
+        if (data && !data.error) {
           return NextResponse.json({
             success: true,
             data: {
-              country: data.country || "",
-              state: data.regionName || "",
+              country: data.country_name || data.country || "",
+              state: data.region || "",
               city: data.city || "",
-              postcode: data.zip || "",
+              postcode: data.postal || data.zip || "",
               streetAddress: "",
             },
           });

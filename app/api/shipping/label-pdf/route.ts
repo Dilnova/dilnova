@@ -3,13 +3,24 @@ import { db } from "@/shared/db/client";
 import { shipments, simulatedOrders } from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const trackingNumber = searchParams.get("tracking");
+  const trackingNumberRaw = searchParams.get("tracking");
 
-  if (!trackingNumber) {
-    return NextResponse.json({ error: "Missing tracking number" }, { status: 400 });
+  if (!trackingNumberRaw || !/^[a-zA-Z0-9_\-\.]{3,64}$/.test(trackingNumberRaw)) {
+    return NextResponse.json({ error: "Invalid or missing tracking number" }, { status: 400 });
   }
+
+  const trackingNumber = trackingNumberRaw;
 
   // Fetch shipment and order details
   const [shipment] = await db
@@ -28,20 +39,24 @@ export async function GET(req: Request) {
       )[0]
     : null;
 
-  const recipientName = order?.customerName ?? "Customer";
-  const recipientStreet = order?.shippingAddress ?? "Delivery Address";
-  const recipientCity = order?.shippingCity ?? "Colombo";
-  const recipientCountry = order?.shippingCountry ?? "LK";
-  const carrierName = shipment?.carrierName ?? "Dilnova Express";
-  const zone = shipment?.shippingZone ?? "DOMESTIC";
-  const weightKg = shipment?.weightGrams ? (shipment.weightGrams / 1000).toFixed(2) : "0.50";
+  const recipientName = escapeHtml(order?.customerName ?? "Customer");
+  const recipientStreet = escapeHtml(order?.shippingAddress ?? "Delivery Address");
+  const recipientCity = escapeHtml(order?.shippingCity ?? "Colombo");
+  const recipientCountry = escapeHtml(order?.shippingCountry ?? "LK");
+  const carrierName = escapeHtml(shipment?.carrierName ?? "Dilnova Express");
+  const zone = escapeHtml(shipment?.shippingZone ?? "DOMESTIC");
+  const weightKg = escapeHtml(
+    shipment?.weightGrams ? (shipment.weightGrams / 1000).toFixed(2) : "0.50",
+  );
+  const safeTracking = escapeHtml(trackingNumber);
+  const jsonTracking = JSON.stringify(trackingNumber);
 
   // Return thermal 4x6 printable HTML label format with auto-print
   const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Shipping Label - ${trackingNumber}</title>
+  <title>Shipping Label - ${safeTracking}</title>
   <style>
     @page { size: 4in 6in; margin: 0; }
     body {
@@ -111,20 +126,20 @@ export async function GET(req: Request) {
 
     <div class="barcode-container">
       <svg id="barcode"></svg>
-      <div class="tracking-text">${trackingNumber}</div>
+      <div class="tracking-text">${safeTracking}</div>
     </div>
 
     <div class="footer">
       <div>CARRIER: ${carrierName.toUpperCase()}</div>
       <div>WEIGHT: ${weightKg} KG</div>
-      <div>DATE: ${new Date().toLocaleDateString()}</div>
+      <div>DATE: ${escapeHtml(new Date().toLocaleDateString())}</div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script>
     try {
-      JsBarcode("#barcode", "${trackingNumber}", {
+      JsBarcode("#barcode", ${jsonTracking}, {
         format: "CODE128",
         width: 2,
         height: 50,
