@@ -1,3 +1,32 @@
+# [1.6.0](https://github.com/Dilnova/dilnova/compare/v1.5.0...v1.6.0) (2026-08-20)
+
+### Bug Fixes
+
+- **cart:** resolve infinite sync loop and patch security scan alerts ([18c50d4](https://github.com/Dilnova/dilnova/commit/18c50d44a04a7a7772483664d52f49ecf5fe908b))
+- **cart:** update dependencies and improve checkout options state synchronization ([c5e56ec](https://github.com/Dilnova/dilnova/commit/c5e56ecbbf867d2b81f4acd7810cfb88745e57c8))
+
+### Features
+
+- add case-insensitive suffix stripping function and improve rate limit error handling ([ba4592a](https://github.com/Dilnova/dilnova/commit/ba4592a90e5057507fe22219b05f362157c8a239))
+- add phone number fields to DeliveryAddressFormFields for improved contact information ([cfc7a14](https://github.com/Dilnova/dilnova/commit/cfc7a1409561ae72760973e6bbfac30187c2c508))
+- add stock quantity and status to cart items and update related functions for inventory management ([a47e52b](https://github.com/Dilnova/dilnova/commit/a47e52bb59ac749454f3d0f44fbd5a9f12410c88))
+- **admin:** enhance AdminPage layout with logo preview and improved styling ([aafe3de](https://github.com/Dilnova/dilnova/commit/aafe3de55b7d3552046f30e1e2815ec9de38ce50))
+- **chat:** add chat schema and validation logic ([306cfa8](https://github.com/Dilnova/dilnova/commit/306cfa8f4fee065781e41116d329ec8f527c6d0c))
+- **config:** increase static page generation timeout to 180 seconds ([e64b425](https://github.com/Dilnova/dilnova/commit/e64b4255d94f9ceb253ada50caa1eb6e3decadac))
+- **contact:** enhance plan selection and messaging logic in ContactInteractiveForm ([623c2f3](https://github.com/Dilnova/dilnova/commit/623c2f37a7d853b33049df329878be2daaf74b30))
+- enhance DeliveryAddressFormFields with location detection and improved state management ([f17ffb4](https://github.com/Dilnova/dilnova/commit/f17ffb4f5d168d36a333cf93802468b9e747308b))
+- enhance shipping rate fetching with branch breakdown and loading state management ([8ec3cc0](https://github.com/Dilnova/dilnova/commit/8ec3cc0c4aa924be75131e918d2bbaf4c581e839))
+- implement batch tax class resolution for products to optimize queries ([535169f](https://github.com/Dilnova/dilnova/commit/535169fb5ae39c5c20b14eeceb8b9858c304c546))
+- Implement Shippo and Sri Lanka Post shipping adapters with rate calculation and shipment creation ([314157e](https://github.com/Dilnova/dilnova/commit/314157efa99878643180ed873c4feeb72c313ceb))
+- implement stock validation for cart items and enhance payment compatibility checks ([b200a67](https://github.com/Dilnova/dilnova/commit/b200a67c3eead834ff07d566d0719a9075afaab8))
+- Integrate country-state-city library for enhanced location management, adding dynamic fetching of districts and improved address handling in DeliveryAddressFormFields ([8804ab0](https://github.com/Dilnova/dilnova/commit/8804ab086e5921198764eda83fde44585097dfef))
+- integrate DeliveryAddressFormFields into OrgOnboardingWizardModal for improved address management ([e02d72c](https://github.com/Dilnova/dilnova/commit/e02d72cbe538a8b957e1913726c51b409d4bb654))
+- optimize cart item synchronization and add tests for unchanged prices ([1188a82](https://github.com/Dilnova/dilnova/commit/1188a823053c79cd54c0aee8e289007084b4bee0))
+- **shipping:** refactor API key handling and enhance error logging in EasyPost and Shippo adapters ([f201498](https://github.com/Dilnova/dilnova/commit/f2014980ef612b89e747b5c9069504c26f582d32))
+- update default quantity settings and validation for product availability in add product flow ([17a88f2](https://github.com/Dilnova/dilnova/commit/17a88f263898a7317188182afb6485a2184b3c02))
+- **vendor:** add vendor catalog and stock statistics query and optimize data fetching in VendorPage ([0360bc1](https://github.com/Dilnova/dilnova/commit/0360bc1a0076fa4c4533ef309f6b2363e4957fa8))
+- **vendor:** enhance UI responsiveness and improve layout for product management ([37e1ec5](https://github.com/Dilnova/dilnova/commit/37e1ec5b58610760a1c6adf2fa8417d2ba2f7ddc))
+
 # [1.5.0](https://github.com/Dilnova/dilnova/compare/v1.4.0...v1.5.0) (2026-08-11)
 
 ### Bug Fixes
