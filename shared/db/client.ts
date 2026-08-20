@@ -14,7 +14,7 @@ const isServerless = !!(
   process.env.AWS_LAMBDA_FUNCTION_NAME ||
   process.env.NETLIFY
 );
-const defaultPoolSize = isServerless ? 5 : 10;
+const defaultPoolSize = isServerless ? 10 : 10;
 
 const poolSize = process.env.DATABASE_POOL_SIZE
   ? parseInt(process.env.DATABASE_POOL_SIZE, 10)
@@ -45,9 +45,7 @@ const client =
         : false,
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.postgresClient = client;
-}
+globalForDb.postgresClient = client;
 
 import { logger } from "@/shared/logging/logger";
 
