@@ -9,7 +9,11 @@ import VendorInventoryWorkspace from "@/features/inventory/components/VendorInve
 import { RestrictedAccessBlock } from "@/shared/components/RestrictedAccessBlock";
 import { getVendorInventoryData } from "@/features/inventory/vendor-data.actions";
 import { getVendorProductsForOrg } from "@/features/catalog/queries";
-import { getBranchCountForOrg, getCachedOrganization } from "@/features/vendor/queries";
+import {
+  getBranchCountForOrg,
+  getCachedOrganization,
+  getVendorCatalogAndStockStats,
+} from "@/features/vendor/queries";
 import type { VendorInventoryFullData } from "@/features/inventory/types";
 import { getOrgOnboardingStatus, OrgOnboardingController } from "@/features/organization";
 import { logger } from "@/shared/logging/logger";
@@ -67,11 +71,19 @@ export default async function VendorPage({ searchParams }: PageProps) {
   const activeTab = resolvedParams.tab || (orgRole === "org:admin" ? "catalog" : "member");
   const initialImsTab = parseImsWorkspaceTab(resolvedParams.imsTab);
 
-  // Fetch products and inventory data in parallel to optimize loading latency (reduce TTFB)
+  // Targeted data containers for conditional tab hydration
   let vendorProducts: Product[] = [];
   let inventoryData: VendorInventoryFullData | null = null;
   let inventoryErrorMsg = "";
   let branchCount = 0;
+  let catalogStats = {
+    totalItems: 0,
+    totalProducts: 0,
+    totalServices: 0,
+    activeListings: 0,
+    outOfStockCount: 0,
+    lowStockCount: 0,
+  };
 
   const [chatResult, chatUnreadTotal] = await Promise.all([
     listOrgConversations(orgId, {
@@ -87,24 +99,33 @@ export default async function VendorPage({ searchParams }: PageProps) {
   const chatConversations = chatResult.conversations;
 
   if (orgRole === "org:admin") {
-    const [productsResult, inventoryResult, branchCountRow] = await Promise.all([
-      getVendorProductsForOrg(orgId),
-      getVendorInventoryData().catch((err: unknown) => {
-        inventoryErrorMsg = err instanceof Error ? err.message : "Unable to load inventory data.";
-        return null;
-      }),
+    // 1. Fetch lightweight aggregated stats and branch count in parallel
+    const [statsResult, branchCountRow] = await Promise.all([
+      getVendorCatalogAndStockStats(orgId),
       getBranchCountForOrg(orgId),
     ]);
-    vendorProducts = productsResult.items as Product[];
-    inventoryData = inventoryResult;
+    catalogStats = statsResult;
     branchCount = branchCountRow;
+
+    // 2. Conditionally load heavy tab-specific datasets only for the active view
+    if (activeTab === "catalog") {
+      const productsResult = await getVendorProductsForOrg(orgId);
+      vendorProducts = productsResult.items as Product[];
+    } else if (activeTab === "inventory") {
+      inventoryData = await getVendorInventoryData().catch((err: unknown) => {
+        inventoryErrorMsg = err instanceof Error ? err.message : "Unable to load inventory data.";
+        return null;
+      });
+    }
   }
 
   // Compute metrics summary stats for enterprise-grade KPI cards
-  const totalItems = vendorProducts.length;
-  const totalProducts = vendorProducts.filter((p) => p.type === "product").length;
-  const totalServices = vendorProducts.filter((p) => p.type === "service").length;
+  const totalItems = catalogStats.totalItems;
+  const totalProducts = catalogStats.totalProducts;
+  const totalServices = catalogStats.totalServices;
   const activeBranches = branchCount;
+  const lowStockCount = catalogStats.lowStockCount;
+  const outOfStockCount = catalogStats.outOfStockCount;
 
   const orgMetadata = (org.publicMetadata || {}) as {
     description?: string;
@@ -121,19 +142,6 @@ export default async function VendorPage({ searchParams }: PageProps) {
     orgMetadata.ims_max_listing_count >= 1
       ? orgMetadata.ims_max_listing_count
       : 10;
-
-  let lowStockCount = 0;
-  let outOfStockCount = 0;
-  if (inventoryData && inventoryData.inventoryItems) {
-    inventoryData.inventoryItems.forEach((item) => {
-      const qty = item.quantity ?? 0;
-      if (qty === 0) {
-        outOfStockCount++;
-      } else if (qty <= (item.lowStockThreshold ?? 5)) {
-        lowStockCount++;
-      }
-    });
-  }
 
   const onboardingStatus = await getOrgOnboardingStatus(
     orgId,
@@ -343,9 +351,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
                 initialProducts={vendorProducts}
                 orgSlug={org.slug}
                 maxListingCount={maxListingCount}
-                activeListingCount={
-                  vendorProducts.filter((p: Product) => p.status !== "archived").length
-                }
+                activeListingCount={catalogStats.activeListings}
               />
             </>
           )}

@@ -163,27 +163,34 @@ export async function loadVendorInventoryData(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let movements: any[] = [];
     if (scope === "full" && inventoryItems.length > 0) {
-      const inventoryIds = inventoryItems.map((i) => i.id);
+      const inventoryIds = inventoryItems
+        .map((i) => i.id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0);
       const movementsLimit = options?.movementsLimit ?? 100;
-      movements = await db
-        .select({
-          id: schema.inventoryMovements.id,
-          inventoryId: schema.inventoryMovements.inventoryId,
-          type: schema.inventoryMovements.type,
-          quantityChanged: schema.inventoryMovements.quantityChanged,
-          previousQuantity: schema.inventoryMovements.previousQuantity,
-          newQuantity: schema.inventoryMovements.newQuantity,
-          reason: schema.inventoryMovements.reason,
-          userId: schema.inventoryMovements.userId,
-          createdAt: schema.inventoryMovements.createdAt,
-          productName: schema.products.name,
-        })
-        .from(schema.inventoryMovements)
-        .innerJoin(schema.inventory, eq(schema.inventoryMovements.inventoryId, schema.inventory.id))
-        .innerJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
-        .where(inArray(schema.inventoryMovements.inventoryId, inventoryIds))
-        .orderBy(desc(schema.inventoryMovements.createdAt))
-        .limit(movementsLimit);
+      if (inventoryIds.length > 0) {
+        movements = await db
+          .select({
+            id: schema.inventoryMovements.id,
+            inventoryId: schema.inventoryMovements.inventoryId,
+            type: schema.inventoryMovements.type,
+            quantityChanged: schema.inventoryMovements.quantityChanged,
+            previousQuantity: schema.inventoryMovements.previousQuantity,
+            newQuantity: schema.inventoryMovements.newQuantity,
+            reason: schema.inventoryMovements.reason,
+            userId: schema.inventoryMovements.userId,
+            createdAt: schema.inventoryMovements.createdAt,
+            productName: schema.products.name,
+          })
+          .from(schema.inventoryMovements)
+          .innerJoin(
+            schema.inventory,
+            eq(schema.inventoryMovements.inventoryId, schema.inventory.id),
+          )
+          .innerJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
+          .where(inArray(schema.inventoryMovements.inventoryId, inventoryIds))
+          .orderBy(desc(schema.inventoryMovements.createdAt))
+          .limit(movementsLimit);
+      }
     }
 
     // 5. Fetch Simulated Orders (full IMS workspace only)
@@ -197,7 +204,13 @@ export async function loadVendorInventoryData(
           .from(schema.simulatedOrderItems)
           .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId));
 
-        const orderIds = Array.from(new Set(relatedItems.map((item) => item.orderId)));
+        const orderIds = Array.from(
+          new Set(
+            relatedItems
+              .map((item) => item.orderId)
+              .filter((id): id is string => typeof id === "string" && id.length > 0),
+          ),
+        );
 
         const ordersLimit = options?.ordersLimit ?? 50;
         const ordersOffset = options?.ordersOffset ?? 0;
@@ -333,7 +346,9 @@ export async function loadVendorInventoryData(
         branches = allBranches;
       }
 
-      const branchIds = branches.map((b) => b.id);
+      const branchIds = branches
+        .map((b) => b.id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0);
       if (branchIds.length > 0) {
         if (premiumStatus.multiBranchActive) {
           branchInventoryList = await db
