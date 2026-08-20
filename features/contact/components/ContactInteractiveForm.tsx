@@ -9,18 +9,135 @@ import { useSearchParams } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { useAutoRetryAction } from "@/shared/hooks/use-auto-retry-action";
 
-type CategoryType =
+export type CategoryType =
   "orders" | "billing" | "vendor" | "technical" | "collaboration" | "registration" | "info";
+
+export type PlanTier = "starter" | "growth" | "enterprise";
+
+export interface PlanConfig {
+  id: PlanTier;
+  name: string;
+  price: string;
+  period: string;
+  badge?: string;
+  description: string;
+  category: CategoryType;
+}
+
+export const AVAILABLE_PLANS: Record<PlanTier, PlanConfig> = {
+  starter: {
+    id: "starter",
+    name: "Starter",
+    price: "$0",
+    period: "/month",
+    description: "For independent creators and hobbyists launching their first store.",
+    category: "registration",
+  },
+  growth: {
+    id: "growth",
+    name: "Growth",
+    price: "$5",
+    period: "/yearly",
+    badge: "Popular",
+    description: "For growing brands requiring advanced features and unlimited listings.",
+    category: "registration",
+  },
+  enterprise: {
+    id: "enterprise",
+    name: "Enterprise",
+    price: "Custom",
+    period: "",
+    badge: "Scale",
+    description: "For large organizations needing multiple stores & custom configurations.",
+    category: "collaboration",
+  },
+};
+
+function getSampleMessage(category: CategoryType, systemName: string) {
+  if (category === "orders") {
+    return `Hi ${systemName} support,\n\nI need assistance regarding my recent order. Please help me track the package or resolve a delivery issue.\n\nOrder ID: [Optional]\n\nThank you!`;
+  }
+  if (category === "billing") {
+    return `Hi ${systemName} support,\n\nI have a question regarding a recent charge, payment receipt, or refund status on my account.\n\nThanks!`;
+  }
+  if (category === "vendor") {
+    return `Hi ${systemName} support,\n\nI am a vendor managing my storefront catalog and would like assistance with catalog listings, payouts, or store settings.\n\nBest regards!`;
+  }
+  if (category === "technical") {
+    return `Hi ${systemName} support,\n\nI experienced a technical issue or bug while navigating the platform. Here are the steps to reproduce the issue:\n\nThank you!`;
+  }
+  if (category === "collaboration") {
+    return `Hi ${systemName} team,\n\nWe are interested in exploring a strategic technology integration or partnership with ${systemName}. Please connect us with a representative to discuss potential collaboration.\n\nThanks!`;
+  }
+  if (category === "registration") {
+    return `Hi ${systemName} team,\n\nI would like to register my store on ${systemName} to manage products, inventory, and orders. Please guide me on the next steps to set up our storefront catalog.\n\nBest regards!`;
+  }
+  return `Hi ${systemName} team,\n\nI have a few questions regarding platform capabilities, pricing options, and system features. Could you please provide more details?\n\nThank you!`;
+}
+
+function getPlanMessage(planId: PlanTier, systemName: string) {
+  if (planId === "starter") {
+    return `Hi ${systemName} team,\n\nI would like to register my storefront on the Starter Plan ($0/month). Please guide me on the next steps to set up my catalog.\n\nThanks!`;
+  }
+  if (planId === "growth") {
+    return `Hi ${systemName} team,\n\nI am interested in registering my storefront on the Growth Plan ($5/yearly) to upload unlimited listings. Please let me know how to get started.\n\nThanks!`;
+  }
+  if (planId === "enterprise") {
+    return `Hi ${systemName} team,\n\nWe are looking to set up multiple storefront profiles with custom branding and priority support configurations. Please connect us with a representative to discuss the custom Enterprise Plan setup.\n\nThanks!`;
+  }
+  return `Hi ${systemName} team,\n\nI am interested in registering a new storefront on the marketplace. Please provide more details on how to get started.\n\nThanks!`;
+}
+
+function getPlanSubject(planId: PlanTier) {
+  const planConfig = AVAILABLE_PLANS[planId];
+  return `Inquiry for ${planConfig ? planConfig.name : planId} Plan Registration`;
+}
+
+function getCategorySubject(category: CategoryType) {
+  switch (category) {
+    case "collaboration":
+      return "Partnership Proposal";
+    case "registration":
+      return "New Vendor Registration Inquiry";
+    case "orders":
+      return "Order & Delivery Support Request";
+    case "billing":
+      return "Billing & Refund Inquiry";
+    case "vendor":
+      return "Vendor Storefront Assistance";
+    case "technical":
+      return "Technical Support & Bug Report";
+    case "info":
+    default:
+      return "General Information Request";
+  }
+}
+
+function isKnownTemplate(msg: string) {
+  if (!msg || msg.trim() === "") return true;
+  if (
+    msg.startsWith("Hi ") &&
+    (msg.endsWith("Thanks!") || msg.endsWith("Best regards!") || msg.endsWith("Thank you!"))
+  ) {
+    return true;
+  }
+  return false;
+}
 
 interface ContactInteractiveFormProps {
   systemName: string;
 }
 
 export default function ContactInteractiveForm({ systemName }: ContactInteractiveFormProps) {
-  const { user, isSignedIn, isLoaded } = useUser();
   const searchParams = useSearchParams();
-  const plan = searchParams.get("plan");
+  const rawPlanParam = searchParams.get("plan")?.toLowerCase() as PlanTier | undefined;
+  const initialPlan: PlanTier | null =
+    rawPlanParam && AVAILABLE_PLANS[rawPlanParam] ? rawPlanParam : null;
+
+  const { user, isSignedIn, isLoaded } = useUser();
   const [isPending, startTransition] = useTransition();
+
+  const [selectedPlan, setSelectedPlan] = useState<PlanTier | null>(initialPlan);
 
   const turnstileRef = useRef<HTMLDivElement>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -76,26 +193,20 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
     };
   }, []);
 
-  const getSampleMessage = (category: CategoryType) => {
-    if (category === "orders") {
-      return `Hi ${systemName} support,\n\nI need assistance regarding my recent order. Please help me track the package or resolve a delivery issue.\n\nOrder ID: [Optional]\n\nThank you!`;
+  const updateUrlPlan = (newPlan: PlanTier | null) => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (newPlan) {
+        params.set("plan", newPlan);
+      } else {
+        params.delete("plan");
+      }
+      const queryString = params.toString();
+      const newUrl = queryString
+        ? `${window.location.pathname}?${queryString}`
+        : window.location.pathname;
+      window.history.replaceState(null, "", newUrl);
     }
-    if (category === "billing") {
-      return `Hi ${systemName} support,\n\nI have a question regarding a recent charge, payment receipt, or refund status on my account.\n\nThanks!`;
-    }
-    if (category === "vendor") {
-      return `Hi ${systemName} support,\n\nI am a vendor managing my storefront catalog and would like assistance with catalog listings, payouts, or store settings.\n\nBest regards!`;
-    }
-    if (category === "technical") {
-      return `Hi ${systemName} support,\n\nI experienced a technical issue or bug while navigating the platform. Here are the steps to reproduce the issue:\n\nThank you!`;
-    }
-    if (category === "collaboration") {
-      return `Hi ${systemName} team,\n\nWe are interested in exploring a strategic technology integration or partnership with ${systemName}. Please connect us with a representative to discuss potential collaboration.\n\nThanks!`;
-    }
-    if (category === "registration") {
-      return `Hi ${systemName} team,\n\nI would like to register my store on ${systemName} to manage products, inventory, and orders. Please guide me on the next steps to set up our storefront catalog.\n\nBest regards!`;
-    }
-    return `Hi ${systemName} team,\n\nI have a few questions regarding platform capabilities, pricing options, and system features. Could you please provide more details?\n\nThank you!`;
   };
 
   const [formData, setFormData] = useState<{
@@ -109,19 +220,14 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
     let category: CategoryType = "info";
     let subject = "";
     let message = "";
-    if (plan) {
-      const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
-      category = plan === "enterprise" ? "collaboration" : "registration";
-      subject = `Inquiry for ${planName} Plan Registration`;
-      if (plan === "starter") {
-        message = `Hi ${systemName} team,\n\nI would like to register my storefront on the Starter Plan ($0/month). Please guide me on the next steps to set up my catalog.\n\nThanks!`;
-      } else if (plan === "growth") {
-        message = `Hi ${systemName} team,\n\nI am interested in registering my storefront on the Growth Plan ($5/yearly) to upload unlimited listings. Please let me know how to get started.\n\nThanks!`;
-      } else if (plan === "enterprise") {
-        message = `Hi ${systemName} team,\n\nWe are looking to set up multiple storefront profiles with custom branding and priority support configurations. Please connect us with a representative to discuss the custom Enterprise Plan setup.\n\nThanks!`;
-      } else {
-        message = `Hi ${systemName} team,\n\nI am interested in registering a new storefront on the marketplace. Please provide more details on how to get started.\n\nThanks!`;
-      }
+    if (initialPlan) {
+      const planConfig = AVAILABLE_PLANS[initialPlan];
+      category = planConfig.category;
+      subject = getPlanSubject(initialPlan);
+      message = getPlanMessage(initialPlan, systemName);
+    } else {
+      subject = getCategorySubject("info");
+      message = getSampleMessage("info", systemName);
     }
     return {
       name: "",
@@ -145,29 +251,80 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
     }
   }, [isLoaded, isSignedIn, user]);
 
+  // Synchronize when searchParams change externally (e.g. browser back/forward)
   useEffect(() => {
-    if (plan) {
-      const planName = plan.charAt(0).toUpperCase() + plan.slice(1);
-      const category: CategoryType = plan === "enterprise" ? "collaboration" : "registration";
-      const subject = `Inquiry for ${planName} Plan Registration`;
-      let message = "";
-      if (plan === "starter") {
-        message = `Hi ${systemName} team,\n\nI would like to register my storefront on the Starter Plan ($0/month). Please guide me on the next steps to set up my catalog.\n\nThanks!`;
-      } else if (plan === "growth") {
-        message = `Hi ${systemName} team,\n\nI am interested in registering my storefront on the Growth Plan ($5/yearly) to upload unlimited listings. Please let me know how to get started.\n\nThanks!`;
-      } else if (plan === "enterprise") {
-        message = `Hi ${systemName} team,\n\nWe are looking to set up multiple storefront profiles with custom branding and priority support configurations. Please connect us with a representative to discuss the custom Enterprise Plan setup.\n\nThanks!`;
-      } else {
-        message = `Hi ${systemName} team,\n\nI am interested in registering a new storefront on the marketplace. Please provide more details on how to get started.\n\nThanks!`;
-      }
+    const currentParam = searchParams.get("plan")?.toLowerCase() as PlanTier | undefined;
+    const validatedPlan = currentParam && AVAILABLE_PLANS[currentParam] ? currentParam : null;
+    setSelectedPlan(validatedPlan);
+    if (validatedPlan) {
+      const targetCategory = AVAILABLE_PLANS[validatedPlan].category;
       setFormData((prev) => ({
         ...prev,
-        category,
-        subject,
-        message,
+        category: targetCategory,
+        subject: getPlanSubject(validatedPlan),
+        message: isKnownTemplate(prev.message)
+          ? getPlanMessage(validatedPlan, systemName)
+          : prev.message,
       }));
     }
-  }, [plan, systemName]);
+  }, [searchParams, systemName]);
+
+  const handleSelectPlan = (planId: PlanTier | null) => {
+    setSelectedPlan(planId);
+    updateUrlPlan(planId);
+
+    if (planId) {
+      const planConfig = AVAILABLE_PLANS[planId];
+      const targetCategory = planConfig.category;
+      setFormData((prev) => {
+        const shouldUpdateMessage = isKnownTemplate(prev.message);
+        return {
+          ...prev,
+          category: targetCategory,
+          subject: getPlanSubject(planId),
+          message: shouldUpdateMessage ? getPlanMessage(planId, systemName) : prev.message,
+        };
+      });
+    } else {
+      setFormData((prev) => {
+        const shouldUpdateMessage = isKnownTemplate(prev.message);
+        return {
+          ...prev,
+          subject: getCategorySubject(prev.category),
+          message: shouldUpdateMessage ? getSampleMessage(prev.category, systemName) : prev.message,
+        };
+      });
+    }
+  };
+
+  const handleCategoryChange = (category: CategoryType) => {
+    const isPlanCompatible =
+      category === "registration" || category === "collaboration" || category === "vendor";
+
+    if (!isPlanCompatible && selectedPlan) {
+      // Switching to non-plan topics (Orders, Billing, Tech Support, Info) automatically clears the plan
+      setSelectedPlan(null);
+      updateUrlPlan(null);
+    }
+
+    setFormData((prev) => {
+      const shouldUpdateMessage = isKnownTemplate(prev.message);
+      const newSubject =
+        !isPlanCompatible || !selectedPlan ? getCategorySubject(category) : prev.subject;
+      const newMessage = shouldUpdateMessage
+        ? !isPlanCompatible || !selectedPlan
+          ? getSampleMessage(category, systemName)
+          : getPlanMessage(selectedPlan, systemName)
+        : prev.message;
+
+      return {
+        ...prev,
+        category,
+        subject: newSubject,
+        message: newMessage,
+      };
+    });
+  };
 
   const {
     execute: submitForm,
@@ -185,12 +342,14 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
     {
       onSuccess: () => {
         toast.success("Thank you! Your message has been sent successfully.");
+        setSelectedPlan(null);
+        updateUrlPlan(null);
         setFormData({
           name: "",
           email: "",
           category: "info",
-          subject: "",
-          message: "",
+          subject: getCategorySubject("info"),
+          message: getSampleMessage("info", systemName),
           middleName: "",
         });
         if (typeof window !== "undefined" && window.turnstile) {
@@ -220,45 +379,32 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
     });
   };
 
-  const selectCategory = (category: CategoryType) => {
-    setFormData((prev) => {
-      const isMessageDefault = !prev.message || prev.message.startsWith("Hi ");
-      const newSubject =
-        prev.subject === "" ||
-        ["Partnership Proposal", "New Vendor Registration Inquiry", "Information Request"].includes(
-          prev.subject,
-        )
-          ? category === "collaboration"
-            ? "Partnership Proposal"
-            : category === "registration"
-              ? "New Vendor Registration Inquiry"
-              : "Information Request"
-          : prev.subject;
-
-      return {
-        ...prev,
-        category,
-        subject: newSubject,
-        message: isMessageDefault ? getSampleMessage(category) : prev.message,
-      };
-    });
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       {/* Info cards: Left Column */}
       <div className="lg:col-span-5 flex flex-col gap-6">
-        <h2 className="text-xl font-bold tracking-tight text-zinc-800 dark:text-zinc-200 px-1">
-          Choose a topic to learn more
-        </h2>
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xl font-bold tracking-tight text-zinc-800 dark:text-zinc-200">
+            Choose a topic to learn more
+          </h2>
+          {selectedPlan && (
+            <button
+              type="button"
+              onClick={() => handleSelectPlan(null)}
+              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
+            >
+              Clear plan selection
+            </button>
+          )}
+        </div>
 
         {/* Card 1: Collaboration */}
         <button
           type="button"
-          onClick={() => selectCategory("collaboration")}
-          className={`text-left border p-6 rounded-2xl transition-all duration-300 cursor-pointer ${
+          onClick={() => handleCategoryChange("collaboration")}
+          className={`text-left border p-6 rounded-2xl transition-all duration-200 cursor-pointer ${
             formData.category === "collaboration"
-              ? "border-purple-500 bg-purple-500/5 shadow-md scale-[1.01]"
+              ? "border-purple-500 bg-purple-500/5 shadow-md"
               : "border-zinc-200/80 dark:border-zinc-800/80 bg-white/60 dark:bg-zinc-900/40 hover:bg-zinc-100/50 dark:hover:bg-zinc-900/60"
           }`}
         >
@@ -274,9 +420,16 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
               </svg>
             </div>
             <div>
-              <h3 className="font-bold text-base text-zinc-950 dark:text-zinc-50 mb-1">
-                Collaborate with Us
-              </h3>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-bold text-base text-zinc-950 dark:text-zinc-50">
+                  Collaborate with Us
+                </h3>
+                {formData.category === "collaboration" && selectedPlan === "enterprise" && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
+                    Enterprise
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
                 Build integrations, co-market solutions, or join as a strategic technology partner.
                 We love building together.
@@ -288,10 +441,10 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
         {/* Card 2: Vendor Registration */}
         <button
           type="button"
-          onClick={() => selectCategory("registration")}
-          className={`text-left border p-6 rounded-2xl transition-all duration-300 cursor-pointer ${
+          onClick={() => handleCategoryChange("registration")}
+          className={`text-left border p-6 rounded-2xl transition-all duration-200 cursor-pointer ${
             formData.category === "registration"
-              ? "border-purple-500 bg-purple-500/5 shadow-md scale-[1.01]"
+              ? "border-purple-500 bg-purple-500/5 shadow-md"
               : "border-zinc-200/80 dark:border-zinc-800/80 bg-white/60 dark:bg-zinc-900/40 hover:bg-zinc-100/50 dark:hover:bg-zinc-900/60"
           }`}
         >
@@ -307,9 +460,16 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
               </svg>
             </div>
             <div>
-              <h3 className="font-bold text-base text-zinc-950 dark:text-zinc-50 mb-1">
-                Register Organization / Store
-              </h3>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-bold text-base text-zinc-950 dark:text-zinc-50">
+                  Register Organization / Store
+                </h3>
+                {formData.category === "registration" && selectedPlan && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">
+                    {AVAILABLE_PLANS[selectedPlan]?.name || selectedPlan} Plan
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
                 Set up your storefront, manage products, handle orders, and expand your target
                 audience using {systemName}’s commerce ecosystem.
@@ -321,10 +481,10 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
         {/* Card 3: Info */}
         <button
           type="button"
-          onClick={() => selectCategory("info")}
-          className={`text-left border p-6 rounded-2xl transition-all duration-300 cursor-pointer ${
+          onClick={() => handleCategoryChange("info")}
+          className={`text-left border p-6 rounded-2xl transition-all duration-200 cursor-pointer ${
             formData.category === "info"
-              ? "border-purple-500 bg-purple-500/5 shadow-md scale-[1.01]"
+              ? "border-purple-500 bg-purple-500/5 shadow-md"
               : "border-zinc-200/80 dark:border-zinc-800/80 bg-white/60 dark:bg-zinc-900/40 hover:bg-zinc-100/50 dark:hover:bg-zinc-900/60"
           }`}
         >
@@ -355,31 +515,71 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
       {/* Form: Right Column */}
       <div className="lg:col-span-7">
         <div className="border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-xl p-8 rounded-3xl shadow-xl transition-all duration-300">
-          {plan && (
-            <div className="mb-6 p-4 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/80 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
+          {/* Dynamic Active Plan Banner */}
+          {selectedPlan && AVAILABLE_PLANS[selectedPlan] && (
+            <div className="mb-6 p-4.5 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-indigo-500/5 dark:from-indigo-950/60 dark:via-purple-950/40 dark:to-zinc-900/60 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">
                   ✓
                 </div>
                 <div>
-                  <span className="text-[11px] uppercase tracking-wider font-bold text-indigo-600 dark:text-indigo-400">
-                    Selected Package Tier
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] uppercase tracking-wider font-bold text-indigo-600 dark:text-indigo-400">
+                      Selected Package Tier
+                    </span>
+                    {AVAILABLE_PLANS[selectedPlan].badge && (
+                      <span className="px-1.5 py-0.2 text-[10px] font-bold rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
+                        {AVAILABLE_PLANS[selectedPlan].badge}
+                      </span>
+                    )}
+                  </div>
                   <h4 className="text-base font-extrabold text-zinc-900 dark:text-zinc-50">
-                    {plan.charAt(0).toUpperCase() + plan.slice(1)} Plan{" "}
-                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                      {plan === "starter"
-                        ? "($0/month)"
-                        : plan === "growth"
-                          ? "($5/yearly)"
-                          : "(Custom Setup)"}
+                    {AVAILABLE_PLANS[selectedPlan].name} Plan{" "}
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                      ({AVAILABLE_PLANS[selectedPlan].price}
+                      {AVAILABLE_PLANS[selectedPlan].period})
                     </span>
                   </h4>
                 </div>
               </div>
-              <span className="hidden sm:inline-block text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800">
-                Pre-filled in Form ↓
-              </span>
+
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                {/* Segmented plan switcher */}
+                <div className="inline-flex rounded-xl bg-white/80 dark:bg-zinc-900/80 p-1 border border-zinc-200 dark:border-zinc-800 text-xs font-medium">
+                  {(["starter", "growth", "enterprise"] as PlanTier[]).map((tierKey) => (
+                    <button
+                      key={tierKey}
+                      type="button"
+                      onClick={() => handleSelectPlan(tierKey)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        selectedPlan === tierKey
+                          ? "bg-indigo-600 text-white shadow-xs"
+                          : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      }`}
+                    >
+                      {AVAILABLE_PLANS[tierKey].name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Remove / Deselect Plan Button */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectPlan(null)}
+                  title="Remove plan selection"
+                  className="p-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-300 dark:hover:border-rose-900 transition-colors cursor-pointer text-xs font-semibold flex items-center justify-center"
+                >
+                  <span className="sr-only">Clear plan</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
 
@@ -440,10 +640,10 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
               />
             </div>
 
-            <div>
+            <div className="space-y-3">
               <label
                 htmlFor="category"
-                className="block text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 mb-2"
+                className="block text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400"
               >
                 Inquiry Type / Topic
               </label>
@@ -451,7 +651,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                 id="category"
                 name="category"
                 value={formData.category}
-                onChange={(e) => selectCategory(e.target.value as CategoryType)}
+                onChange={(e) => handleCategoryChange(e.target.value as CategoryType)}
                 className="w-full h-11 px-4 text-sm rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-purple-500/40 dark:focus:ring-purple-500/30 transition-all duration-200 cursor-pointer text-zinc-900 dark:text-zinc-100"
               >
                 <option value="orders">Orders &amp; Delivery Support</option>
@@ -462,6 +662,61 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                 <option value="registration">Register Organization / Store</option>
                 <option value="info">General Inquiry / Learn More</option>
               </select>
+
+              {/* Inline Plan Selector when in Store Registration or Collaboration mode */}
+              {(formData.category === "registration" ||
+                formData.category === "collaboration" ||
+                formData.category === "vendor") && (
+                <div className="p-3.5 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200/80 dark:border-zinc-800/80 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-zinc-700 dark:text-zinc-300">
+                      Package Tier Selection:
+                    </span>
+                    {selectedPlan && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPlan(null)}
+                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer"
+                      >
+                        Clear tier
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["starter", "growth", "enterprise"] as PlanTier[]).map((tierKey) => {
+                      const item = AVAILABLE_PLANS[tierKey];
+                      const isCurrent = selectedPlan === tierKey;
+                      return (
+                        <button
+                          key={tierKey}
+                          type="button"
+                          onClick={() => handleSelectPlan(isCurrent ? null : tierKey)}
+                          className={`p-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer flex flex-col justify-between ${
+                            isCurrent
+                              ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-950 dark:text-indigo-100 ring-1 ring-indigo-500 shadow-xs"
+                              : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                              {item.name}
+                            </span>
+                            {item.badge && (
+                              <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400">
+                                {item.badge}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-1">
+                            {item.price}
+                            {item.period}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -494,7 +749,12 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                 <button
                   type="button"
                   onClick={() =>
-                    setFormData((prev) => ({ ...prev, message: getSampleMessage(prev.category) }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      message: selectedPlan
+                        ? getPlanMessage(selectedPlan, systemName)
+                        : getSampleMessage(prev.category, systemName),
+                    }))
                   }
                   className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline cursor-pointer focus:outline-none"
                 >

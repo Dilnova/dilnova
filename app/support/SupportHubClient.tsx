@@ -18,9 +18,11 @@ export default function SupportHubClient({ systemName, children }: SupportHubCli
   const [searchQuery, setSearchQuery] = useState<string>("");
   const faqSectionRef = useRef<HTMLDivElement>(null);
   const ticketSectionRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
 
   useEffect(() => {
-    if (plan && ticketSectionRef.current) {
+    if (plan && ticketSectionRef.current && !hasScrolledRef.current) {
+      hasScrolledRef.current = true;
       ticketSectionRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [plan]);
