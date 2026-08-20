@@ -61,16 +61,13 @@ export function DynamicHeaderNav({
     const orgRole = clientAuth.orgRole;
     const data = initialSessionContext;
 
-    if (orgId && orgRole === "org:admin") {
+    if (orgId && (orgRole === "org:admin" || orgRole === "org:member")) {
       links.push({
         href: "/vendor",
         label: "Dashboard",
         colorClass:
           "text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-semibold",
       });
-    }
-
-    if (orgId && (orgRole === "org:admin" || orgRole === "org:member")) {
       links.push({
         href: "/vendor/products/add",
         label: "Create",

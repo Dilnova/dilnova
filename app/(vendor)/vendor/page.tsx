@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import ManageProductsClient, {
   type Product,
 } from "@/features/catalog/components/ManageProductsClient";
-import VendorProfileForm from "@/features/vendor/components/VendorProfileForm";
 import VendorInventoryWorkspace from "@/features/inventory/components/VendorInventoryWorkspace";
 import { RestrictedAccessBlock } from "@/shared/components/RestrictedAccessBlock";
 import { getVendorInventoryData } from "@/features/inventory/vendor-data.actions";
@@ -14,6 +13,12 @@ import { getBranchCountForOrg, getCachedOrganization } from "@/features/vendor/q
 import type { VendorInventoryFullData } from "@/features/inventory/types";
 import { getOrgOnboardingStatus, OrgOnboardingController } from "@/features/organization";
 import { logger } from "@/shared/logging/logger";
+import {
+  listOrgConversations,
+  getOrgUnreadTotal,
+  ConversationList,
+  UnreadBadge,
+} from "@/features/chat";
 
 const IMS_WORKSPACE_TABS = ["stock", "suppliers", "orders", "movements", "branches"] as const;
 type ImsWorkspaceTab = (typeof IMS_WORKSPACE_TABS)[number];
@@ -44,7 +49,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
     throw new Error("No active organization detected.");
   }
 
-  if (orgRole !== "org:admin") {
+  if (orgRole !== "org:admin" && orgRole !== "org:member") {
     return (
       <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
         <RestrictedAccessBlock type="unauthorized" />
@@ -59,7 +64,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
   });
 
   const resolvedParams = await searchParams;
-  const activeTab = resolvedParams.tab || "catalog";
+  const activeTab = resolvedParams.tab || (orgRole === "org:admin" ? "catalog" : "member");
   const initialImsTab = parseImsWorkspaceTab(resolvedParams.imsTab);
 
   // Fetch products and inventory data in parallel to optimize loading latency (reduce TTFB)
@@ -67,6 +72,19 @@ export default async function VendorPage({ searchParams }: PageProps) {
   let inventoryData: VendorInventoryFullData | null = null;
   let inventoryErrorMsg = "";
   let branchCount = 0;
+
+  const [chatResult, chatUnreadTotal] = await Promise.all([
+    listOrgConversations(orgId, {
+      userId,
+      orgRole: orgRole as string,
+      limit: 50,
+    }).catch(() => ({ conversations: [], totalCount: 0 })),
+    getOrgUnreadTotal(orgId, {
+      userId,
+      orgRole: orgRole as string,
+    }).catch(() => 0),
+  ]);
+  const chatConversations = chatResult.conversations;
 
   if (orgRole === "org:admin") {
     const [productsResult, inventoryResult, branchCountRow] = await Promise.all([
@@ -275,7 +293,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
           </div>
 
           {/* Premium Pill Segmented Tabs Switcher */}
-          <div className="flex bg-zinc-100/80 dark:bg-zinc-900/60 backdrop-blur-md p-1 rounded-2xl mb-6 border border-zinc-200/50 dark:border-zinc-800/30 max-w-xl">
+          <div className="flex bg-zinc-100/80 dark:bg-zinc-900/60 backdrop-blur-md p-1 rounded-2xl mb-6 border border-zinc-200/50 dark:border-zinc-800/30 max-w-2xl">
             <Link
               href="?tab=catalog"
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
@@ -301,6 +319,20 @@ export default async function VendorPage({ searchParams }: PageProps) {
                 📦
               </span>{" "}
               Inventory Workspace
+            </Link>
+            <Link
+              href="?tab=chat"
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "chat"
+                  ? "bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm"
+                  : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-300"
+              }`}
+            >
+              <span className="emoji text-sm" aria-hidden="true">
+                💬
+              </span>{" "}
+              <span>Customer Inquiries</span>
+              <UnreadBadge count={chatUnreadTotal} />
             </Link>
           </div>
 
@@ -333,80 +365,103 @@ export default async function VendorPage({ searchParams }: PageProps) {
               )}
             </>
           )}
+
+          {activeTab === "chat" && (
+            <ConversationList
+              initialConversations={chatConversations}
+              currentUserId={userId}
+              currentUserRole="vendor_admin"
+            />
+          )}
         </>
       ) : (
         /* Regular Members Dashboard (Non-Admin View) */
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Identity details panel */}
-          <div className="relative overflow-hidden bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm dark:bg-zinc-955 dark:border-zinc-900">
-            <div className="absolute top-0 right-0 p-6 opacity-25 dark:opacity-30 pointer-events-none">
-              <span className="text-9xl emoji">👥</span>
-            </div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-450 mb-3 font-mono">
-              Active Member Session Details
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono text-zinc-650 dark:text-zinc-400">
-              <div>
-                <span className="text-zinc-400 block mb-0.5">Authorized User</span>
-                <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                  {user?.firstName} {user?.lastName || ""} ({user?.emailAddresses[0]?.emailAddress})
-                </span>
-              </div>
-              <div>
-                <span className="text-zinc-400 block mb-0.5">Organization Context / Role</span>
-                <span className="font-semibold text-zinc-900 dark:text-zinc-100 uppercase">
-                  {org.name} ({orgRole})
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Member Banner Card */}
-          <div className="border border-emerald-250 bg-emerald-50/50 rounded-2xl p-6 dark:border-emerald-900/40 dark:bg-emerald-950/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all hover:bg-emerald-50/80">
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                <span className="emoji" aria-hidden="true">
-                  🛒
-                </span>{" "}
-                Add Catalog Listing
-              </h3>
-              <p className="text-xs text-emerald-650 dark:text-emerald-450">
-                Create new product or service listings and upload images for your storefront.
-              </p>
-            </div>
+        <div className="max-w-5xl mx-auto space-y-6">
+          {/* Member Segmented Tab Switcher */}
+          <div className="flex bg-zinc-100/80 dark:bg-zinc-900/60 backdrop-blur-md p-1 rounded-2xl mb-6 border border-zinc-200/50 dark:border-zinc-800/30 max-w-md">
             <Link
-              href="/vendor/products/add"
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all whitespace-nowrap cursor-pointer"
+              href="?tab=member"
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "member"
+                  ? "bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm"
+                  : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-300"
+              }`}
             >
-              + Add New Item &rarr;
+              <span className="emoji text-sm" aria-hidden="true">
+                👥
+              </span>{" "}
+              Member Workspace
+            </Link>
+            <Link
+              href="?tab=chat"
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "chat"
+                  ? "bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm"
+                  : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-300"
+              }`}
+            >
+              <span className="emoji text-sm" aria-hidden="true">
+                💬
+              </span>{" "}
+              <span>Branch Inquiries</span>
+              <UnreadBadge count={chatUnreadTotal} />
             </Link>
           </div>
 
-          {/* Storefront Metadata Settings Form - Admin Only */}
-          {orgRole === "org:admin" && (
-            <div className="space-y-6 border border-zinc-200/60 dark:border-zinc-900 rounded-2xl p-5 bg-zinc-50/10 dark:bg-zinc-900/5">
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 font-sans">
-                    Storefront Profile
-                  </h3>
-                  {org.slug && (
-                    <Link
-                      href={`/vendors/${org.slug}`}
-                      target="_blank"
-                      className="text-xs text-purple-600 hover:text-purple-700 font-semibold"
-                    >
-                      View Storefront &rarr;
-                    </Link>
-                  )}
+          {activeTab === "chat" ? (
+            <ConversationList
+              initialConversations={chatConversations}
+              currentUserId={userId}
+              currentUserRole="vendor_member"
+            />
+          ) : (
+            <>
+              {/* Identity details panel */}
+              <div className="relative overflow-hidden bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm dark:bg-zinc-955 dark:border-zinc-900">
+                <div className="absolute top-0 right-0 p-6 opacity-25 dark:opacity-30 pointer-events-none">
+                  <span className="text-9xl emoji">👥</span>
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-mono">
-                  Configure your public store details. Bank settings and checkout options are
-                  managed by admins.
-                </p>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-450 mb-3 font-mono">
+                  Active Member Session Details
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono text-zinc-650 dark:text-zinc-400">
+                  <div>
+                    <span className="text-zinc-400 block mb-0.5">Authorized User</span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      {user?.firstName} {user?.lastName || ""} (
+                      {user?.emailAddresses[0]?.emailAddress})
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-400 block mb-0.5">Organization Context / Role</span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100 uppercase">
+                      {org.name} ({orgRole})
+                    </span>
+                  </div>
+                </div>
               </div>
-              <VendorProfileForm orgId={orgId} initialMetadata={orgMetadata} isAdmin={false} />
-            </div>
+
+              {/* Member Banner Card */}
+              <div className="border border-emerald-250 bg-emerald-50/50 rounded-2xl p-6 dark:border-emerald-900/40 dark:bg-emerald-950/15 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all hover:bg-emerald-50/80">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                    <span className="emoji" aria-hidden="true">
+                      🛒
+                    </span>{" "}
+                    Add Catalog Listing
+                  </h3>
+                  <p className="text-xs text-emerald-650 dark:text-emerald-450">
+                    Create new product or service listings and upload images for your storefront.
+                  </p>
+                </div>
+                <Link
+                  href="/vendor/products/add"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all whitespace-nowrap cursor-pointer"
+                >
+                  + Add New Item &rarr;
+                </Link>
+              </div>
+            </>
           )}
         </div>
       )}

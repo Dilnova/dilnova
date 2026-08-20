@@ -121,11 +121,23 @@ export default async function RootLayout({
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
 
     // Fetch initial auth & session context server-side to prevent dynamic header pop-in delay
-    const { userId, orgId, orgRole } = await auth();
+    let userId: string | null = null;
+    let orgId: string | null = null;
+    let orgRole: string | null = null;
+
+    try {
+      const authState = await auth();
+      userId = authState.userId ?? null;
+      orgId = authState.orgId ?? null;
+      orgRole = authState.orgRole ?? null;
+    } catch {
+      // Fallback gracefully if auth() runs outside of clerkMiddleware matcher (e.g. 404 fallback for static assets)
+    }
+
     const initialAuth = {
-      userId: userId ?? null,
-      orgId: orgId ?? null,
-      orgRole: orgRole ?? null,
+      userId,
+      orgId,
+      orgRole,
     };
     const initialSessionContext = userId ? await getClientSessionContextAction() : null;
     const initialRatesMap = await getExchangeRatesMap();

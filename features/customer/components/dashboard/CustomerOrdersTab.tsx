@@ -7,6 +7,7 @@ import { isBankTransferPayment } from "@/features/billing/bank-transfer";
 import OrderBankTransferInstructions from "@/features/customer/components/OrderBankTransferInstructions";
 import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
+import NewChatButton from "@/features/chat/components/NewChatButton";
 
 import type { InferSelectModel } from "drizzle-orm";
 import type * as schema from "@/shared/db/schema";
@@ -247,17 +248,20 @@ export default function CustomerOrdersTab({
                       </>
                     )}
 
-                  {/* Invoice Print Link */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-3 border-t border-zinc-100 dark:border-zinc-900">
+                  {/* Actions & Invoice Print Link */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-900">
                     <div className="text-[10px] text-zinc-400 font-mono">
                       Customer Email: {order.customerEmail}
                     </div>
-                    <Link
-                      href={`/customer/invoice/${order.id}`}
-                      className="self-end sm:self-auto flex items-center gap-1.5 px-3 py-1.5 bg-zinc-150 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10px] font-bold tracking-wide transition-all border border-zinc-200 dark:border-zinc-800 cursor-pointer"
-                    >
-                      🖨️ View & Print Invoice
-                    </Link>
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                      <NewChatButton orderId={order.id} />
+                      <Link
+                        href={`/customer/invoice/${order.id}`}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs font-bold tracking-wide transition-all border border-zinc-200 dark:border-zinc-800 cursor-pointer"
+                      >
+                        🖨️ View & Print Invoice
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </details>
