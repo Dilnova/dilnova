@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { useClerkAuthRedirectUrl } from "@/features/auth/hooks/use-clerk-auth-redirect-url";
@@ -9,6 +9,10 @@ import {
   sendCartSummaryEmailAction,
   simulatedCheckoutAction,
 } from "@/features/cart/checkout.actions";
+import {
+  validateCartStockAction,
+  type CartStockValidationItem,
+} from "@/features/cart/stock-validation.actions";
 import { isPaymentCompatibleWithFulfillment } from "@/features/organization/checkout-options.shared";
 import { calculateCheckoutTotals } from "@/features/billing/checkout-totals";
 import { BANK_TRANSFER_PAYMENT_ID, isBankTransferPayment } from "@/features/billing/bank-transfer";
@@ -23,6 +27,7 @@ import {
   toggleProductInSelection,
 } from "@/features/cart/vendor-checkout";
 import { toast } from "sonner";
+import { extractActionErrorMessage } from "@/shared/errors/client-error";
 import { useCurrency } from "@/shared/currency/context/currency-context";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 
@@ -57,6 +62,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   const { isSignedIn, user } = useUser();
 
   const [remainingCartCount, setRemainingCartCount] = useState(0);
+  const [dynamicShippingCents, setDynamicShippingCents] = useState<number | null>(null);
 
   const {
     checkoutStatus,
@@ -83,8 +89,23 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     shippingCountry,
     shippingPhone,
     shippingPhone2,
+    addressConfirmed,
     handleAddressChange,
   } = useShippingAddressState(Boolean(isSignedIn));
+
+  const [availableShippingRates, setAvailableShippingRates] = useState<
+    Array<{
+      rateId: string;
+      carrierId: string;
+      carrierName: string;
+      serviceCode: string;
+      serviceName: string;
+      estimatedDays: number;
+      amountCents: number;
+    }>
+  >([]);
+  const [selectedRateId, setSelectedRateId] = useState<string>("");
+  const [isFetchingRates, setIsFetchingRates] = useState<boolean>(false);
 
   const {
     fulfillmentMethod,
@@ -153,7 +174,10 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   const compatiblePayments = checkoutOptions.payment.filter((payment) =>
     selectedFulfillment
       ? isPaymentCompatibleWithFulfillment(
-          { requiresDelivery: payment.requiresDelivery },
+          {
+            requiresDelivery: payment.requiresDelivery,
+            requiresPickup: payment.requiresPickup,
+          },
           { requiresBranch: selectedFulfillment.requiresBranch },
         )
       : true,
@@ -178,7 +202,10 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     const paymentsForFulfillment = checkoutOptions.payment.filter((payment) =>
       option
         ? isPaymentCompatibleWithFulfillment(
-            { requiresDelivery: payment.requiresDelivery },
+            {
+              requiresDelivery: payment.requiresDelivery,
+              requiresPickup: payment.requiresPickup,
+            },
             { requiresBranch: option.requiresBranch },
           )
         : true,
@@ -187,6 +214,15 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       setPaymentMethod(paymentsForFulfillment[0]?.id || "");
     }
   };
+
+  // Auto-sync paymentMethod whenever fulfillment method changes or options update
+  useEffect(() => {
+    if (selectedFulfillment && compatiblePayments.length > 0) {
+      if (!compatiblePayments.some((p) => p.id === paymentMethod)) {
+        setPaymentMethod(compatiblePayments[0].id);
+      }
+    }
+  }, [fulfillmentMethod, selectedFulfillment, compatiblePayments, paymentMethod, setPaymentMethod]);
 
   const handleSendInbox = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,85 +317,117 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     const checkoutTotalsForOrder = calculateCheckoutTotals(
       checkoutSubtotal,
       selectedFulfillment?.zeroShipping ?? false,
+      estimatedTaxFromOptions,
+      dynamicShippingCents,
     );
 
     setCheckoutStatus("processing");
 
-    try {
-      const result = await simulatedCheckoutAction({
-        customerName,
-        customerEmail,
-        items: checkoutCartItems.map((item) => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          vendorName: item.vendorName,
-          type: item.type,
-        })),
-        totalAmount: checkoutTotalsForOrder.grandTotal,
-        fulfillmentMethod,
-        paymentMethod,
-        pickupBranchId: selectedFulfillment.requiresBranch ? pickupBranchId : null,
-        shippingAddress: requiresDeliveryAddress ? shippingAddress.trim() : null,
-        shippingPhone: requiresDeliveryAddress ? shippingPhone.trim() || null : null,
-        checkoutVendorOrgId: vendorCount > 1 ? selectedCheckoutVendorOrgId : null,
-        shippingAddressLine2: requiresDeliveryAddress ? shippingAddressLine2.trim() || null : null,
-        shippingCity: requiresDeliveryAddress ? shippingCity.trim() : null,
-        shippingState: requiresDeliveryAddress ? shippingState.trim() : null,
-        shippingPostalCode: requiresDeliveryAddress ? shippingPostalCode.trim() : null,
-        shippingCountry: requiresDeliveryAddress ? shippingCountry.trim() || null : null,
-        shippingPhone2: requiresDeliveryAddress ? shippingPhone2.trim() || null : null,
-        idempotencyKey,
-      });
+    let currentRetryTimer: NodeJS.Timeout | null = null;
 
-      if (result?.data?.success) {
-        const checkedOutIds = checkoutCartItems.map((item) => item.id);
-        const remainingItems = cartItems.filter((item) => !checkedOutIds.includes(item.id));
-        removeItemsByIds(checkedOutIds);
-        setRemainingCartCount(remainingItems.reduce((sum, item) => sum + item.quantity, 0));
-        setConfirmedOrderEmail(customerEmail);
-        setConfirmedOrderId("orderId" in result.data ? result.data.orderId || "" : "");
-        setBankTransferInstructions(
-          "bankTransferInstructions" in result.data
-            ? result.data.bankTransferInstructions || null
+    const executeCheckoutWithRetry = async () => {
+      try {
+        const result = await simulatedCheckoutAction({
+          customerName,
+          customerEmail,
+          items: checkoutCartItems.map((item) => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            vendorName: item.vendorName,
+            type: item.type,
+          })),
+          totalAmount: checkoutTotalsForOrder.grandTotal,
+          fulfillmentMethod,
+          paymentMethod,
+          pickupBranchId: selectedFulfillment.requiresBranch ? pickupBranchId : null,
+          shippingAddress: requiresDeliveryAddress ? shippingAddress.trim() : null,
+          shippingPhone: requiresDeliveryAddress ? shippingPhone.trim() || null : null,
+          checkoutVendorOrgId: vendorCount > 1 ? selectedCheckoutVendorOrgId : null,
+          shippingAddressLine2: requiresDeliveryAddress
+            ? shippingAddressLine2.trim() || null
             : null,
-        );
-        setConfirmationEmailSent(
-          "confirmationEmailSent" in result.data
-            ? result.data.confirmationEmailSent === true
-            : false,
-        );
-        saveCheckoutSuccessSnapshot({
-          orderId: "orderId" in result.data ? result.data.orderId || "" : "",
-          confirmedOrderEmail: customerEmail,
-          bankTransferInstructions:
+          shippingCity: requiresDeliveryAddress ? shippingCity.trim() : null,
+          shippingState: requiresDeliveryAddress ? shippingState.trim() : null,
+          shippingPostalCode: requiresDeliveryAddress ? shippingPostalCode.trim() : null,
+          shippingCountry: requiresDeliveryAddress ? shippingCountry.trim() || null : null,
+          shippingPhone2: requiresDeliveryAddress ? shippingPhone2.trim() || null : null,
+          idempotencyKey,
+          selectedRateId: requiresDeliveryAddress ? selectedRateId || null : null,
+        });
+
+        if (result?.data?.success) {
+          if (currentRetryTimer) clearInterval(currentRetryTimer);
+          const checkedOutIds = checkoutCartItems.map((item) => item.id);
+          const remainingItems = cartItems.filter((item) => !checkedOutIds.includes(item.id));
+          removeItemsByIds(checkedOutIds);
+          setRemainingCartCount(remainingItems.reduce((sum, item) => sum + item.quantity, 0));
+          setConfirmedOrderEmail(customerEmail);
+          setConfirmedOrderId("orderId" in result.data ? result.data.orderId || "" : "");
+          setBankTransferInstructions(
             "bankTransferInstructions" in result.data
               ? result.data.bankTransferInstructions || null
               : null,
-          confirmationEmailSent:
+          );
+          setConfirmationEmailSent(
             "confirmationEmailSent" in result.data
               ? result.data.confirmationEmailSent === true
               : false,
-        });
-        setCheckoutStatus("success");
-        setFulfillmentMethod("store_pickup");
-        setPaymentMethod(BANK_TRANSFER_PAYMENT_ID);
-        setPickupBranchId("");
-      } else {
+          );
+          saveCheckoutSuccessSnapshot({
+            orderId: "orderId" in result.data ? result.data.orderId || "" : "",
+            confirmedOrderEmail: customerEmail,
+            bankTransferInstructions:
+              "bankTransferInstructions" in result.data
+                ? result.data.bankTransferInstructions || null
+                : null,
+            confirmationEmailSent:
+              "confirmationEmailSent" in result.data
+                ? result.data.confirmationEmailSent === true
+                : false,
+          });
+          setCheckoutStatus("success");
+          setFulfillmentMethod("store_pickup");
+          setPaymentMethod(BANK_TRANSFER_PAYMENT_ID);
+          setPickupBranchId("");
+        } else {
+          const errorMessage = extractActionErrorMessage(result);
+          const isRateLimit = /rate limit|try again in (\d+) seconds/i.test(errorMessage);
+          const match = errorMessage.match(/try again in (\d+) seconds/i);
+          const waitSeconds = match ? parseInt(match[1], 10) : 15;
+
+          if (isRateLimit && waitSeconds > 0) {
+            let remaining = waitSeconds;
+            setCheckoutStatus(`Processing... (Retrying in ${remaining}s)`);
+
+            if (currentRetryTimer) clearInterval(currentRetryTimer);
+            currentRetryTimer = setInterval(() => {
+              remaining -= 1;
+              if (remaining > 0) {
+                setCheckoutStatus(`Processing... (Retrying in ${remaining}s)`);
+              } else {
+                if (currentRetryTimer) clearInterval(currentRetryTimer);
+                setCheckoutStatus("processing");
+                executeCheckoutWithRetry();
+              }
+            }, 1000);
+          } else {
+            if (currentRetryTimer) clearInterval(currentRetryTimer);
+            setCheckoutStatus("idle");
+            toast.error(errorMessage);
+          }
+        }
+      } catch (err) {
+        if (currentRetryTimer) clearInterval(currentRetryTimer);
         setCheckoutStatus("idle");
-        const errorMessage =
-          result?.data && "error" in result.data
-            ? result.data.error
-            : result?.serverError || "Checkout failed.";
-        toast.error(typeof errorMessage === "string" ? errorMessage : "Checkout failed.");
+        toast.error(
+          err instanceof Error && err.message ? err.message : "An unexpected error occurred.",
+        );
       }
-    } catch (err) {
-      setCheckoutStatus("idle");
-      toast.error(
-        err instanceof Error && err.message ? err.message : "An unexpected error occurred.",
-      );
-    }
+    };
+
+    await executeCheckoutWithRetry();
   };
 
   const handleSuccessClose = () => {
@@ -373,11 +441,243 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     router.push("/products");
   };
 
+  const cartItemsFingerprint = checkoutCartItems
+    .map((item) => `${item.id}:${item.quantity}:${item.weightGrams ?? 0}`)
+    .join("|");
+
+  useEffect(() => {
+    // Automatically fetch live carrier rates whenever destination City and Country are populated.
+    if (!requiresDeliveryAddress || !shippingCountry.trim() || !shippingCity.trim()) {
+      setDynamicShippingCents((prev) => (prev !== null ? null : prev));
+      setAvailableShippingRates((prev) => (prev.length > 0 ? [] : prev));
+      setSelectedRateId((prev) => (prev !== "" ? "" : prev));
+      setIsFetchingRates(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsFetchingRates(true);
+
+    const fetchRates = async () => {
+      try {
+        const res = await fetch("/api/shipping/rates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cartItems: checkoutCartItems.map((item) => ({
+              id: item.id,
+              quantity: item.quantity,
+              vendorOrgId: item.vendorOrgId || item.vendorName,
+              weightGrams: item.weightGrams ?? undefined,
+            })),
+            destinationAddress: {
+              street: shippingAddress.trim() || "Delivery Street",
+              city: shippingCity.trim(),
+              state: shippingState.trim(),
+              postalCode: shippingPostalCode.trim(),
+              country: shippingCountry.trim() || "LK",
+              phone: shippingPhone.trim() || undefined,
+            },
+          }),
+        });
+        const data = await res.json();
+        if (isMounted && data.quotes && data.quotes.length > 0) {
+          type BranchBreakdownItem = {
+            branchId: string | null;
+            branchName: string;
+            originCity: string;
+            amountCents: number;
+            estimatedDays: number;
+          };
+
+          type RateItem = {
+            rateId: string;
+            carrierId: string;
+            carrierName: string;
+            serviceCode: string;
+            serviceName: string;
+            estimatedDays: number;
+            amountCents: number;
+            branchBreakdown?: BranchBreakdownItem[];
+          };
+
+          let allRates: RateItem[] = data.quotes[0].rates || [];
+
+          if (data.quotes.length > 1) {
+            // Aggregate shipping rates by serviceCode across all vendor/branch quotes
+            const rateMap = new Map<string, RateItem>();
+            for (const quote of data.quotes) {
+              const bItem: BranchBreakdownItem = {
+                branchId: quote.originBranchId ?? null,
+                branchName: quote.originBranchName || "Main Branch",
+                originCity: quote.originCity || "Colombo",
+                amountCents: 0,
+                estimatedDays: 0,
+              };
+
+              for (const r of quote.rates as RateItem[]) {
+                const key = `${r.carrierId || "slpost"}_${r.serviceCode}`;
+                const existing = rateMap.get(key);
+                const currentBranchDetail: BranchBreakdownItem = {
+                  ...bItem,
+                  amountCents: r.amountCents,
+                  estimatedDays: r.estimatedDays,
+                };
+
+                if (existing) {
+                  const updatedBreakdown = [
+                    ...(existing.branchBreakdown || []),
+                    currentBranchDetail,
+                  ];
+                  rateMap.set(key, {
+                    ...existing,
+                    amountCents: existing.amountCents + r.amountCents,
+                    estimatedDays: Math.max(existing.estimatedDays, r.estimatedDays),
+                    branchBreakdown: updatedBreakdown,
+                  });
+                } else {
+                  rateMap.set(key, {
+                    ...r,
+                    branchBreakdown: [currentBranchDetail],
+                  });
+                }
+              }
+            }
+            allRates = Array.from(rateMap.values());
+          }
+
+          setAvailableShippingRates((prev) => {
+            const isSame =
+              prev.length === allRates.length &&
+              prev.every(
+                (p, i) =>
+                  p.rateId === allRates[i]?.rateId && p.amountCents === allRates[i]?.amountCents,
+              );
+            return isSame ? prev : allRates;
+          });
+
+          if (allRates.length > 0) {
+            setSelectedRateId((prevRateId) => {
+              const hasMatch = allRates.some((r) => r.rateId === prevRateId);
+              const nextRateId = hasMatch ? prevRateId : allRates[0].rateId;
+              const activeRate = allRates.find((r) => r.rateId === nextRateId) || allRates[0];
+              setDynamicShippingCents((prevCents) =>
+                prevCents !== activeRate.amountCents ? activeRate.amountCents : prevCents,
+              );
+              return nextRateId;
+            });
+          }
+        } else if (isMounted && data.totalShippingCents != null) {
+          setDynamicShippingCents((prev) =>
+            prev !== data.totalShippingCents ? data.totalShippingCents : prev,
+          );
+        }
+      } catch (err) {
+        console.warn("[CartClientManager] Failed to fetch dynamic shipping rates:", err);
+      } finally {
+        if (isMounted) {
+          setIsFetchingRates(false);
+        }
+      }
+    };
+
+    const timer = setTimeout(fetchRates, 500);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    requiresDeliveryAddress,
+    shippingCity,
+    shippingState,
+    shippingPostalCode,
+    shippingCountry,
+    shippingAddress,
+    shippingPhone,
+    cartItemsFingerprint,
+  ]);
+
+  const checkoutCartItemsRef = useRef(checkoutCartItems);
+  useEffect(() => {
+    checkoutCartItemsRef.current = checkoutCartItems;
+  }, [checkoutCartItems]);
+
+  const [stockValidationResult, setStockValidationResult] = useState<{
+    hasStockErrors: boolean;
+    itemsMap: Record<string, CartStockValidationItem>;
+    errorSummary: string[];
+  }>({
+    hasStockErrors: false,
+    itemsMap: {},
+    errorSummary: [],
+  });
+
+  const effectivePickupBranchId = selectedFulfillment?.requiresBranch
+    ? pickupBranchId || undefined
+    : undefined;
+
+  useEffect(() => {
+    const itemsToValidate = checkoutCartItemsRef.current;
+    if (!cartItemsFingerprint || itemsToValidate.length === 0) {
+      setStockValidationResult((prev) => {
+        if (!prev.hasStockErrors && Object.keys(prev.itemsMap).length === 0) return prev;
+        return {
+          hasStockErrors: false,
+          itemsMap: {},
+          errorSummary: [],
+        };
+      });
+      return;
+    }
+
+    let isMounted = true;
+    const runStockValidation = async () => {
+      try {
+        const res = await validateCartStockAction({
+          items: itemsToValidate.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            vendorOrgId: item.vendorOrgId || item.vendorName,
+          })),
+          pickupBranchId: effectivePickupBranchId,
+        }).catch((err) => {
+          console.warn("[CartClientManager] Handled stock validation call error:", err);
+          return null;
+        });
+
+        if (isMounted && res?.data) {
+          setStockValidationResult((prev) => {
+            const hasChanged =
+              prev.hasStockErrors !== res.data.hasStockErrors ||
+              JSON.stringify(prev.errorSummary) !== JSON.stringify(res.data.errorSummary) ||
+              JSON.stringify(prev.itemsMap) !== JSON.stringify(res.data.itemsMap);
+            if (!hasChanged) return prev;
+            return {
+              hasStockErrors: res.data.hasStockErrors,
+              itemsMap: res.data.itemsMap || {},
+              errorSummary: res.data.errorSummary || [],
+            };
+          });
+        }
+      } catch (err) {
+        console.warn("[CartClientManager] Stock validation error:", err);
+      }
+    };
+
+    const timer = setTimeout(runStockValidation, 300);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [cartItemsFingerprint, effectivePickupBranchId]);
+
   const estimatedTaxFromOptions = checkoutOptions.estimatedTaxCents ?? 0;
   const checkoutTotals = calculateCheckoutTotals(
     checkoutSubtotal,
     selectedFulfillment?.zeroShipping ?? false,
     estimatedTaxFromOptions,
+    dynamicShippingCents,
   );
   const { taxAmount: estimatedTax, shippingAmount: shippingFee, grandTotal } = checkoutTotals;
   const taxLabel = checkoutOptions.taxLabel ?? "Estimated Tax";
@@ -391,6 +691,11 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
 
   const checkoutErrors: string[] = [];
   if (isSignedIn && cartItems.length > 0) {
+    if (stockValidationResult.hasStockErrors) {
+      for (const summaryErr of stockValidationResult.errorSummary) {
+        checkoutErrors.push(summaryErr);
+      }
+    }
     if (vendorCount > 1 && !selectedCheckoutVendorOrgId) {
       checkoutErrors.push("Select a vendor to checkout.");
     }
@@ -453,6 +758,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       selectedCheckoutVendorOrgId={selectedCheckoutVendorOrgId}
       selectedCheckoutProductIdSet={selectedCheckoutProductIdSet}
       productTaxMap={checkoutOptions.productTaxMap}
+      stockValidationMap={stockValidationResult.itemsMap}
       onSelectCheckoutVendor={handleSelectCheckoutVendor}
       onToggleProductCheckout={toggleProductCheckout}
       onToggleAllProductsInGroup={toggleAllProductsInGroup}
@@ -460,6 +766,14 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       removeFromCart={removeFromCart}
     />
   );
+
+  const handleSelectShippingRate = (rateId: string) => {
+    setSelectedRateId(rateId);
+    const chosenRate = availableShippingRates.find((r) => r.rateId === rateId);
+    if (chosenRate) {
+      setDynamicShippingCents(chosenRate.amountCents);
+    }
+  };
 
   const rightCol = (
     <CartCheckoutSidebar
@@ -499,6 +813,11 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
       shippingPhone={shippingPhone}
       shippingPhone2={shippingPhone2}
       handleAddressChange={handleAddressChange}
+      availableShippingRates={availableShippingRates}
+      selectedRateId={selectedRateId}
+      onSelectShippingRate={handleSelectShippingRate}
+      addressConfirmed={addressConfirmed}
+      isFetchingRates={isFetchingRates}
       compatiblePayments={compatiblePayments}
       paymentMethod={paymentMethod}
       setPaymentMethod={setPaymentMethod}

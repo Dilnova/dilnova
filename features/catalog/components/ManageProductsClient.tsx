@@ -178,12 +178,12 @@ export default function ManageProductsClient({
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search items..."
             aria-label="Search items"
-            className="w-full pl-10 pr-4 py-2.5 sm:py-2 border border-zinc-200 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 transition-all"
+            className="w-full pl-10 pr-9 py-2.5 sm:py-2 border border-zinc-200 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-400 transition-all"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer p-1"
               aria-label="Clear search"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,14 +199,14 @@ export default function ManageProductsClient({
         </div>
 
         {/* Filter + Add */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           {/* Type Filter */}
           <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl flex-1 sm:flex-none">
             {(["all", "product", "service"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`flex-1 sm:flex-none px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                className={`flex-1 sm:flex-none px-2.5 sm:px-3 py-2 sm:py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap text-center ${
                   filter === f
                     ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm"
                     : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
@@ -220,7 +220,7 @@ export default function ManageProductsClient({
           {/* Add Button */}
           <Link
             href="/vendor/products/add"
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-900/10 transition-all whitespace-nowrap cursor-pointer active:scale-[0.97]"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-900/10 transition-all whitespace-nowrap cursor-pointer active:scale-[0.97] shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -230,8 +230,7 @@ export default function ManageProductsClient({
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            <span className="hidden sm:inline">Add New</span>
-            <span className="sm:hidden">Add</span>
+            <span>Add New</span>
           </Link>
         </div>
       </div>
@@ -251,17 +250,17 @@ export default function ManageProductsClient({
             ? "text-amber-600 dark:text-amber-400"
             : "text-zinc-500 dark:text-zinc-400";
         return (
-          <div className="flex items-center gap-3 px-1 py-0.5">
+          <div className="flex items-center gap-2 sm:gap-3 px-1 py-0.5 flex-wrap sm:flex-nowrap">
             <span className={`text-[11px] font-mono whitespace-nowrap ${textColor}`}>
               📦 {used.toLocaleString()} / {limit.toLocaleString()} listings
             </span>
-            <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div className="flex-1 min-w-[100px] h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
               <SafeProgressBar
                 className={`h-full rounded-full transition-all duration-500 ${barColor}`}
                 percent={pct}
               />
             </div>
-            <span className={`text-[10px] font-mono ${textColor}`}>
+            <span className={`text-[10px] font-mono whitespace-nowrap ${textColor}`}>
               {isAtLimit ? "Limit reached" : `${(limit - used).toLocaleString()} left`}
             </span>
           </div>
@@ -302,12 +301,12 @@ export default function ManageProductsClient({
           {filteredProducts.map((item, index) => (
             <div
               key={item.id}
-              className={`group flex flex-row sm:flex-col bg-white border border-zinc-200 rounded-xl sm:rounded-2xl dark:bg-zinc-950 dark:border-zinc-800 overflow-hidden hover:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 ${
+              className={`group flex flex-col bg-white border border-zinc-200 rounded-xl sm:rounded-2xl dark:bg-zinc-950 dark:border-zinc-800 overflow-hidden hover:shadow-lg hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 ${
                 deletingId === item.id ? "opacity-50 pointer-events-none" : ""
               }`}
             >
-              {/* Image — square on mobile row layout, rectangle on desktop card */}
-              <div className="relative w-28 h-28 sm:w-full sm:h-40 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
+              {/* Image — consistent responsive height and aspect ratio */}
+              <div className="relative w-full h-44 sm:h-40 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
                 {item.imageUrl ? (
                   isVideoUrl(item.imageUrl) ? (
                     <video
@@ -324,7 +323,7 @@ export default function ManageProductsClient({
                       alt={item.name}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      sizes="(max-width: 640px) 112px, 280px"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                       priority={index < 4}
                     />
                   )
@@ -335,9 +334,9 @@ export default function ManageProductsClient({
                 )}
 
                 {/* Type Badge */}
-                <div className="absolute top-2 left-2">
+                <div className="absolute top-2.5 left-2.5">
                   <span
-                    className={`text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full font-mono shadow-sm ${
+                    className={`text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full font-mono shadow-sm ${
                       item.type === "service"
                         ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-350"
                         : "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-350"
@@ -349,7 +348,7 @@ export default function ManageProductsClient({
 
                 {/* Media count */}
                 {item.media && item.media.length > 1 && (
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-2.5 right-2.5">
                     <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-black/60 text-white backdrop-blur-sm">
                       {item.media.length} 📎
                     </span>
@@ -358,91 +357,111 @@ export default function ManageProductsClient({
               </div>
 
               {/* Content */}
-              <div className="flex-1 flex flex-col justify-between p-3 sm:p-4 min-w-0">
+              <div className="flex-1 flex flex-col justify-between p-3.5 sm:p-4 min-w-0">
                 <div>
-                  <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                  <h3
+                    className="font-bold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 truncate"
+                    title={item.name}
+                  >
                     {item.name}
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 mt-0.5 sm:mt-1 leading-relaxed">
+                  <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2 mt-1 leading-relaxed">
                     {item.description || "No description provided."}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-zinc-100 dark:border-zinc-800/80 gap-2">
-                  <div className="flex flex-col">
-                    <span className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 font-mono">
-                      ${(item.price / 100).toFixed(2)}
-                    </span>
-                    {item.type === "product" &&
-                      item.stockQuantity !== undefined &&
-                      item.stockQuantity !== null && (
-                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono mt-0.5 font-medium flex items-center gap-1">
-                          📦 {item.stockQuantity} in stock
-                        </span>
-                      )}
-                  </div>
+                {/* Price and Stock status row */}
+                <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 gap-2">
+                  <span className="text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-100 font-mono tracking-tight">
+                    ${(item.price / 100).toFixed(2)}
+                  </span>
+                  {item.type === "product" &&
+                    item.stockQuantity !== undefined &&
+                    item.stockQuantity !== null && (
+                      <span
+                        className={`text-[10px] sm:text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                          item.stockQuantity === 0
+                            ? "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50"
+                            : item.stockQuantity <= 5
+                              ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50"
+                              : "bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                        }`}
+                      >
+                        📦 {item.stockQuantity} in stock
+                      </span>
+                    )}
+                </div>
 
+                {/* Actions row */}
+                <div className="mt-2.5 pt-2 border-t border-zinc-100/80 dark:border-zinc-800/50">
                   {editingStockId === item.id ? (
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="number"
-                        min="0"
-                        value={editStockValue}
-                        onChange={(e) => setEditStockValue(e.target.value)}
-                        className="w-16 px-2 py-1 text-xs border border-zinc-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 focus:outline-none focus:ring-1 focus:ring-purple-500 text-center"
-                        disabled={isUpdatingStock}
-                        autoFocus
-                      />
+                    <div className="flex items-center gap-1.5 w-full">
+                      <div className="relative flex-1 min-w-0">
+                        <input
+                          type="number"
+                          min="0"
+                          value={editStockValue}
+                          onChange={(e) => setEditStockValue(e.target.value)}
+                          placeholder="Qty"
+                          className="w-full px-2.5 py-1.5 text-xs font-mono border border-zinc-300 dark:border-zinc-700 rounded-lg bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500 text-center"
+                          disabled={isUpdatingStock}
+                          autoFocus
+                        />
+                      </div>
                       <button
                         onClick={() => handleUpdateStock(item.id, item.name)}
                         disabled={isUpdatingStock}
-                        className="px-2 py-1.5 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded transition-colors disabled:opacity-50"
+                        className="px-2.5 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
                       >
                         Save
                       </button>
                       <button
                         onClick={() => setEditingStockId(null)}
                         disabled={isUpdatingStock}
-                        className="px-2 py-1.5 text-[10px] font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors disabled:opacity-50"
+                        className="px-2 py-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
                       >
                         Cancel
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5">
-                      {item.type === "product" && (
-                        <button
-                          onClick={() => {
-                            setEditingStockId(item.id);
-                            setEditStockValue(item.stockQuantity?.toString() || "0");
-                          }}
-                          disabled={deletingId === item.id}
-                          className="hidden sm:inline-flex px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 dark:text-emerald-400 rounded-lg text-[11px] font-semibold transition-all"
-                        >
-                          Stock
-                        </button>
-                      )}
-                      <Link
-                        href={`/products/${item.id}`}
-                        className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-300 rounded-lg text-[11px] font-semibold transition-all"
-                      >
-                        View
-                      </Link>
-                      {orgSlug && (
+                    <div className="flex items-center justify-between gap-1.5 w-full">
+                      <div className="flex items-center gap-1 flex-wrap min-w-0">
+                        {item.type === "product" && (
+                          <button
+                            onClick={() => {
+                              setEditingStockId(item.id);
+                              setEditStockValue(item.stockQuantity?.toString() || "0");
+                            }}
+                            disabled={deletingId === item.id}
+                            className="px-2 sm:px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 dark:text-emerald-400 rounded-lg text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap"
+                          >
+                            Stock
+                          </button>
+                        )}
                         <Link
-                          href={`/vendors/${orgSlug}`}
-                          className="hidden sm:inline-flex px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:hover:bg-purple-900/40 dark:text-purple-300 rounded-lg text-[11px] font-semibold transition-all"
+                          href={`/products/${item.id}`}
+                          className="px-2 sm:px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:text-zinc-300 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap"
                         >
-                          Store
+                          View
                         </Link>
-                      )}
+                        {orgSlug && (
+                          <Link
+                            href={`/vendors/${orgSlug}`}
+                            className="px-2 sm:px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:hover:bg-purple-900/40 dark:text-purple-300 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap"
+                          >
+                            Store
+                          </Link>
+                        )}
+                      </div>
+
                       <button
                         onClick={() => handleDeleteItem(item.id, item.name)}
                         disabled={deletingId === item.id}
-                        className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-1.5 text-[10px] sm:text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 rounded-lg sm:rounded-xl transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50"
+                        aria-label={`Delete ${item.name}`}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:text-rose-400 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 rounded-lg transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50 shrink-0 ml-auto"
                       >
                         <svg
-                          className="w-3.5 h-3.5"
+                          className="w-3.5 h-3.5 shrink-0"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -454,7 +473,7 @@ export default function ManageProductsClient({
                             d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                           />
                         </svg>
-                        Delete
+                        <span>Delete</span>
                       </button>
                     </div>
                   )}

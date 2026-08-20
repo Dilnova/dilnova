@@ -2,7 +2,7 @@
   "name": "dilnova",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.15.1",
+  "packageManager": "pnpm@11.22.0",
   "resolutions": {
     "postcss": ">=8.5.10",
     "js-cookie": ">=3.0.6",
@@ -45,6 +45,7 @@
     "@upstash/redis": "1.38.0",
     "@vercel/analytics": "2.0.1",
     "@vercel/speed-insights": "2.0.0",
+    "country-state-city": "^3.2.1",
     "dotenv": "17.4.2",
     "drizzle-orm": "0.45.2",
     "lucide-react": "^1.28.0",

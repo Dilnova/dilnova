@@ -1,6 +1,8 @@
 import { db } from "@/shared/db/client";
 import { exchangeRates, orgSettings } from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { DEFAULT_CURRENCY } from "./config";
 
 /**
@@ -21,62 +23,91 @@ export const DEFAULT_USD_RATES: Record<string, number> = {
 };
 
 /**
- * Retrieves exchange rate pairs map from DB, auto-seeding defaults if DB is empty.
- * Returns map formatted as: { "USD_LKR": 307.69, "LKR_USD": 0.00325, ... }
+ * Cached database fetch helper for exchange rates map with timeout protection.
  */
-export async function getExchangeRatesMap(): Promise<Record<string, number>> {
-  try {
-    const rates = await db.select().from(exchangeRates);
+const getCachedExchangeRates = unstable_cache(
+  async (): Promise<Record<string, number>> => {
+    try {
+      const queryPromise = db.select().from(exchangeRates);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Exchange rates query timed out")), 3000),
+      );
+      const rates = await Promise.race([queryPromise, timeoutPromise]);
 
-    if (!rates || rates.length === 0) {
-      await seedDefaultExchangeRates();
+      if (!rates || rates.length === 0) {
+        return buildRatesMapFromUsdDefaults();
+      }
+
+      const ratesMap: Record<string, number> = {};
+      for (const r of rates) {
+        const key = `${r.fromCurrency.toUpperCase()}_${r.toCurrency.toUpperCase()}`;
+        ratesMap[key] = r.rate;
+      }
+
+      return ratesMap;
+    } catch (error) {
+      console.warn("Failed to load exchange rates from database, using fallback rates:", error);
       return buildRatesMapFromUsdDefaults();
     }
+  },
+  ["exchange-rates-map"],
+  {
+    tags: ["exchange-rates"],
+    revalidate: 3600,
+  },
+);
 
-    const ratesMap: Record<string, number> = {};
-    for (const r of rates) {
-      const key = `${r.fromCurrency.toUpperCase()}_${r.toCurrency.toUpperCase()}`;
-      ratesMap[key] = r.rate;
-    }
-
-    return ratesMap;
-  } catch (error) {
-    console.error("Failed to load exchange rates from database, using fallback rates:", error);
+/**
+ * Retrieves exchange rate pairs map from cache/DB with fallback to static rates.
+ * Returns map formatted as: { "USD_LKR": 307.69, "LKR_USD": 0.00325, ... }
+ */
+export const getExchangeRatesMap = cache(async (): Promise<Record<string, number>> => {
+  try {
+    return await getCachedExchangeRates();
+  } catch {
     return buildRatesMapFromUsdDefaults();
   }
-}
+});
 
 /**
  * Gets an organization's base currency and FX markup settings.
  */
-export async function getOrgCurrencySettings(orgId: string): Promise<{
-  baseCurrency: string;
-  fxMarkupPercent: number;
-}> {
-  if (!orgId) {
-    return { baseCurrency: DEFAULT_CURRENCY, fxMarkupPercent: 0 };
-  }
-
-  try {
-    const [settings] = await db
-      .select()
-      .from(orgSettings)
-      .where(eq(orgSettings.orgId, orgId))
-      .limit(1);
-
-    if (!settings) {
+export const getOrgCurrencySettings = cache(
+  async (
+    orgId: string,
+  ): Promise<{
+    baseCurrency: string;
+    fxMarkupPercent: number;
+  }> => {
+    if (!orgId) {
       return { baseCurrency: DEFAULT_CURRENCY, fxMarkupPercent: 0 };
     }
 
-    return {
-      baseCurrency: settings.baseCurrency.toUpperCase(),
-      fxMarkupPercent: settings.fxMarkupPercent ?? 0,
-    };
-  } catch (error) {
-    console.error(`Failed to load org currency settings for orgId ${orgId}:`, error);
-    return { baseCurrency: DEFAULT_CURRENCY, fxMarkupPercent: 0 };
-  }
-}
+    try {
+      const queryPromise = db
+        .select()
+        .from(orgSettings)
+        .where(eq(orgSettings.orgId, orgId))
+        .limit(1);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Org currency settings query timed out")), 3000),
+      );
+      const [settings] = await Promise.race([queryPromise, timeoutPromise]);
+
+      if (!settings) {
+        return { baseCurrency: DEFAULT_CURRENCY, fxMarkupPercent: 0 };
+      }
+
+      return {
+        baseCurrency: settings.baseCurrency.toUpperCase(),
+        fxMarkupPercent: settings.fxMarkupPercent ?? 0,
+      };
+    } catch (error) {
+      console.warn(`Failed to load org currency settings for orgId ${orgId}:`, error);
+      return { baseCurrency: DEFAULT_CURRENCY, fxMarkupPercent: 0 };
+    }
+  },
+);
 
 /**
  * Builds full pair conversion matrix from USD base rate table.

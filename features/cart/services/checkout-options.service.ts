@@ -176,6 +176,7 @@ export async function getCheckoutOptionsService(
       label: o.label,
       description: o.description,
       requiresDelivery: o.requiresDelivery === true,
+      requiresPickup: o.requiresPickup === true,
       pendingPayment: o.pendingPayment === true,
     })),
     pickupBranches: resolved.pickupBranches,

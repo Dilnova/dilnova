@@ -11,6 +11,7 @@ import React, {
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { addProductAction } from "@/features/catalog/vendor.actions";
+import { extractActionErrorMessage } from "@/shared/errors/client-error";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
 import * as Sentry from "@sentry/nextjs";
 import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
@@ -76,6 +77,16 @@ interface AddProductContextType {
   selectedBranchId: string;
   setSelectedBranchId: (v: string) => void;
 
+  // Physical Shipping Specs
+  weightGrams: string;
+  setWeightGrams: (v: string) => void;
+  lengthCm: string;
+  setLengthCm: (v: string) => void;
+  widthCm: string;
+  setWidthCm: (v: string) => void;
+  heightCm: string;
+  setHeightCm: (v: string) => void;
+
   // Media State
   media: MediaItem[];
   uploadProgress: number | null;
@@ -140,18 +151,23 @@ export function AddProductProvider({
   const [preorderMaxQuantity, setPreorderMaxQuantity] = useState("");
   const [selectedBranchId, setSelectedBranchId] = useState("");
 
-  // Reset price & quantity when availability status changes
+  // Physical Shipping Specs (Weight & Dimensions)
+  const [weightGrams, setWeightGrams] = useState("");
+  const [lengthCm, setLengthCm] = useState("");
+  const [widthCm, setWidthCm] = useState("");
+  const [heightCm, setHeightCm] = useState("");
+
+  // Update price & quantity when availability status changes
   useEffect(() => {
     if (stockAvailability === "coming_soon") {
       setPrice("");
       setQuantity("0");
     } else if (stockAvailability === "out_of_stock" || stockAvailability === "pre_order") {
       setQuantity("0");
-    } else if (stockAvailability === "in_stock" || stockAvailability === "limited_stock") {
-      setQuantity((prev) => {
-        const num = parseInt(prev, 10);
-        return isNaN(num) || num < 1 ? "1" : prev;
-      });
+    } else if (stockAvailability === "in_stock") {
+      setQuantity("3");
+    } else if (stockAvailability === "limited_stock") {
+      setQuantity("2");
     }
   }, [stockAvailability]);
 
@@ -327,6 +343,44 @@ export function AddProductProvider({
       }
     }
 
+    // ── Shipping Specs (Weight & Dimensions) ─────────────────────────────────
+    let parsedWeightGrams: number | null = null;
+    if (type === "product" && weightGrams.trim() !== "") {
+      const w = parseInt(weightGrams.trim(), 10);
+      if (isNaN(w) || w < 0) {
+        toast.error("Please enter a valid non-negative weight in grams.");
+        return;
+      }
+      parsedWeightGrams = w;
+    }
+    let parsedLengthCm: number | null = null;
+    if (type === "product" && lengthCm.trim() !== "") {
+      const l = parseFloat(lengthCm.trim());
+      if (isNaN(l) || l < 0) {
+        toast.error("Please enter a valid length in cm.");
+        return;
+      }
+      parsedLengthCm = l;
+    }
+    let parsedWidthCm: number | null = null;
+    if (type === "product" && widthCm.trim() !== "") {
+      const w = parseFloat(widthCm.trim());
+      if (isNaN(w) || w < 0) {
+        toast.error("Please enter a valid width in cm.");
+        return;
+      }
+      parsedWidthCm = w;
+    }
+    let parsedHeightCm: number | null = null;
+    if (type === "product" && heightCm.trim() !== "") {
+      const h = parseFloat(heightCm.trim());
+      if (isNaN(h) || h < 0) {
+        toast.error("Please enter a valid height in cm.");
+        return;
+      }
+      parsedHeightCm = h;
+    }
+
     startTransition(async () => {
       try {
         const primaryThumbnail = media[0]?.url || "";
@@ -350,6 +404,11 @@ export function AddProductProvider({
           preorderDepositAmount:
             isPreorder && preorderType === "deposit" ? resolvedDepositAmount : null,
           preorderMaxQuantity: isPreorder ? resolvedMaxQuantity : null,
+          // Shipping Specs (Weight & Dimensions)
+          weightGrams: type === "product" ? parsedWeightGrams : null,
+          lengthCm: type === "product" ? parsedLengthCm : null,
+          widthCm: type === "product" ? parsedWidthCm : null,
+          heightCm: type === "product" ? parsedHeightCm : null,
         });
 
         if (result?.data?.success) {
@@ -362,15 +421,19 @@ export function AddProductProvider({
           setCategoryId("");
           setTaxClassId("");
           setMedia([]);
-          setQuantity("0");
+          setQuantity("3");
           setPreorderType("full_upfront");
           setPreorderDepositAmount("");
           setPreorderMaxQuantity("");
+          setWeightGrams("");
+          setLengthCm("");
+          setWidthCm("");
+          setHeightCm("");
 
           window.scrollTo({ top: 0, behavior: "smooth" });
-          const dataObj = result?.data as Record<string, unknown> | undefined;
-          const errMsg = dataObj && typeof dataObj.error === "string" ? dataObj.error : undefined;
-          toast.error(errMsg || result?.serverError || "Failed to add item.");
+        } else {
+          const errMsg = extractActionErrorMessage(result);
+          toast.error(errMsg);
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to add item.");
@@ -412,6 +475,14 @@ export function AddProductProvider({
         setPreorderMaxQuantity,
         selectedBranchId,
         setSelectedBranchId,
+        weightGrams,
+        setWeightGrams,
+        lengthCm,
+        setLengthCm,
+        widthCm,
+        setWidthCm,
+        heightCm,
+        setHeightCm,
         media,
         uploadProgress,
         isUploading,

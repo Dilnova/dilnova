@@ -8,7 +8,11 @@ export const cartLineSchema = z.object({
   imageUrl: z.string().nullable(),
   quantity: z.number().int().min(1, "Quantity must be at least 1"),
   vendorName: z.string(),
+  vendorOrgId: z.string().optional(),
   type: z.string(),
+  weightGrams: z.number().int().nullable().optional(),
+  stockQuantity: z.number().int().nullable().optional(),
+  stockStatus: z.string().nullable().optional(),
 });
 
 export const sendCartEmailSchema = z.object({
@@ -25,6 +29,9 @@ export const checkoutItemSchema = z.object({
   vendorName: z.string(),
   type: z.string(),
   vendorOrgId: z.string().optional(),
+  weightGrams: z.number().int().nullable().optional(),
+  stockQuantity: z.number().int().nullable().optional(),
+  stockStatus: z.string().nullable().optional(),
 });
 
 export const checkoutSchema = z.object({
@@ -45,6 +52,7 @@ export const checkoutSchema = z.object({
   shippingPhone2: phoneField.or(z.literal("")).optional().nullable(),
   idempotencyKey: z.string().uuid(),
   checkoutVendorOrgId: z.string().nullable().optional(),
+  selectedRateId: z.string().optional().nullable(),
 });
 
 export const syncedCartItemSchema = z.object({
@@ -55,6 +63,9 @@ export const syncedCartItemSchema = z.object({
   quantity: z.number().int().min(1, "Quantity must be at least 1"),
   vendorName: z.string(),
   type: z.string(),
+  weightGrams: z.number().int().nullable().optional(),
+  stockQuantity: z.number().int().nullable().optional(),
+  stockStatus: z.string().nullable().optional(),
 });
 
 export const syncedCartSchema = z.array(syncedCartItemSchema).max(100);

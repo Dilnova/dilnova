@@ -21,15 +21,8 @@ import { logger } from "@/shared/logging/logger";
 import { getCachedUserRole, getCachedIsSuperAdmin } from "@/shared/auth/clerk-cache";
 import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
 
-// ─── Custom typed error ────────────────────────────────────────────────────────
-// Next.js redacts arbitrary thrown Error messages in production. Throwing
-// ActionError bypasses the redaction when caught by handleServerError below.
-export class ActionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ActionError";
-  }
-}
+import { ActionError } from "@/shared/errors/action-error";
+export { ActionError };
 
 // ─── Base client ───────────────────────────────────────────────────────────────
 export const actionClient = createSafeActionClient({
@@ -37,8 +30,11 @@ export const actionClient = createSafeActionClient({
     // Always log the full error server-side so it lands in Sentry / logger.
     logger.error("Server Action unhandled error", e);
 
-    // Return human-readable message for ActionError; redact everything else.
+    // Return human-readable message for ActionError or Rate Limit errors; redact everything else.
     if (e instanceof ActionError) {
+      return e.message;
+    }
+    if (e instanceof Error && e.message.includes("Rate limit")) {
       return e.message;
     }
     return "An unexpected error occurred. Please try again.";

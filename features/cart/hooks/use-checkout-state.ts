@@ -6,7 +6,9 @@ import {
 import { type BankTransferCheckoutInstructions } from "@/features/billing/bank-transfer";
 
 export function useCheckoutState() {
-  const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "processing" | "success">("idle");
+  const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "processing" | "success" | string>(
+    "idle",
+  );
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "success">("idle");
   const [idempotencyKey, setIdempotencyKey] = useState<string>("");
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { isVideoUrl } from "@/shared/media/media";
 import { useCurrency } from "@/shared/currency/context/currency-context";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
+import { toast } from "sonner";
 
 export interface CartItemType {
   id: string;
@@ -41,6 +42,16 @@ interface CartVendorGroupsProps {
     string,
     { code: string; name: string; ratePercent: number; taxAmountCents?: number }
   >;
+  stockValidationMap?: Record<
+    string,
+    {
+      productId: string;
+      requestedQuantity: number;
+      availableStock: number;
+      isStockValid: boolean;
+      errorMessage: string | null;
+    }
+  >;
   onSelectCheckoutVendor: (orgId: string, productIds: string[]) => void;
   onToggleProductCheckout: (productId: string) => void;
   onToggleAllProductsInGroup: (productIds: string[], checked: boolean) => void;
@@ -55,6 +66,7 @@ export function CartVendorGroups({
   selectedCheckoutVendorOrgId,
   selectedCheckoutProductIdSet,
   productTaxMap = {},
+  stockValidationMap = {},
   onSelectCheckoutVendor,
   onToggleProductCheckout,
   onToggleAllProductsInGroup,
@@ -207,6 +219,17 @@ export function CartVendorGroups({
                               {item.type || "product"}
                             </span>
 
+                            {item.type !== "service" && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+                                ⚖️{" "}
+                                {typeof item.weightGrams === "number" && item.weightGrams > 0
+                                  ? item.weightGrams >= 1000
+                                    ? `${(item.weightGrams / 1000).toFixed(2)} kg (${item.weightGrams}g)`
+                                    : `${item.weightGrams}g`
+                                  : "100g (est)"}
+                              </span>
+                            )}
+
                             {productTaxMap?.[item.id] && (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
                                 🏷️ Tax: {productTaxMap[item.id].name} (
@@ -221,6 +244,34 @@ export function CartVendorGroups({
                           >
                             {item.name}
                           </Link>
+                          {(() => {
+                            const val = stockValidationMap[item.id];
+                            const isInvalid = val
+                              ? !val.isStockValid
+                              : typeof item.stockQuantity === "number" &&
+                                item.quantity > item.stockQuantity;
+                            const avail = val ? val.availableStock : (item.stockQuantity ?? 0);
+                            const errMsg =
+                              val?.errorMessage || "Requested quantity exceeds available stock.";
+                            if (!isInvalid) return null;
+
+                            return (
+                              <div className="mt-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 flex flex-wrap items-center justify-between gap-2">
+                                <span className="text-[11px] font-semibold text-rose-700 dark:text-rose-300">
+                                  ⚠️ {errMsg}
+                                </span>
+                                {avail > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateQuantity(item.id, avail)}
+                                    className="px-2.5 py-1 text-[10px] font-bold font-mono uppercase rounded-lg bg-rose-600 hover:bg-rose-700 text-white transition-all cursor-pointer shadow-xs"
+                                  >
+                                    Adjust to {avail} {avail === 1 ? "unit" : "units"}
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
 
@@ -237,7 +288,17 @@ export function CartVendorGroups({
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => {
+                              if (
+                                typeof item.stockQuantity === "number" &&
+                                item.stockQuantity > 0 &&
+                                item.quantity >= item.stockQuantity
+                              ) {
+                                toast.warning(`Maximum order quantity reached for "${item.name}".`);
+                                return;
+                              }
+                              updateQuantity(item.id, item.quantity + 1);
+                            }}
                             className="px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-855 dark:text-zinc-400 dark:hover:text-zinc-150 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold transition-all cursor-pointer"
                             aria-label="Increase quantity"
                           >

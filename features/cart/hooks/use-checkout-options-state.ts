@@ -12,7 +12,7 @@ export function useCheckoutOptionsState(
   isSignedIn: boolean,
   cartItems: CartItem[],
   syncCartPrices: (
-    items: Array<{ id: string; name: string; price: number }>,
+    items: Array<{ id: string; name: string; price: number; weightGrams?: number | null }>,
     removedIds: string[],
   ) => void,
 ) {
@@ -33,6 +33,7 @@ export function useCheckoutOptionsState(
       label: string;
       description?: string;
       requiresDelivery: boolean;
+      requiresPickup?: boolean;
       pendingPayment?: boolean;
     }[];
     pickupBranches: {
@@ -80,19 +81,42 @@ export function useCheckoutOptionsState(
   const selectedProductIdsKey = selectedCheckoutProductIds.slice().sort().join(",");
   const prevCartItemIdsRef = useRef<string[]>([]);
   const prevCheckoutVendorOrgIdRef = useRef("");
+  const cartItemsRef = useRef(cartItems);
+  const lastSyncedCartItemIdsRef = useRef<string>("");
+  const hasInitializedSignedInSyncRef = useRef(false);
 
   useEffect(() => {
-    if (cartItems.length === 0) {
+    cartItemsRef.current = cartItems;
+  }, [cartItems]);
+
+  useEffect(() => {
+    if (!cartItemIds) {
       setPriceSyncNotice(null);
+      lastSyncedCartItemIdsRef.current = "";
       return;
     }
 
+    // For signed-in users on initial load, CartProvider already hydrated and synced catalog prices.
+    if (isSignedIn && !hasInitializedSignedInSyncRef.current) {
+      hasInitializedSignedInSyncRef.current = true;
+      lastSyncedCartItemIdsRef.current = cartItemIds;
+      return;
+    }
+
+    if (lastSyncedCartItemIdsRef.current === cartItemIds) {
+      return;
+    }
+    lastSyncedCartItemIdsRef.current = cartItemIds;
+
     let cancelled = false;
+    const currentProductIds = cartItemsRef.current.map((item) => item.id);
+
     const timeoutId = setTimeout(() => {
-      syncCartPricesAction({ productIds: cartItems.map((item) => item.id) }).then((result) => {
+      syncCartPricesAction({ productIds: currentProductIds }).then((result) => {
         if (cancelled || !result?.data?.success) return;
 
-        const previousById = new Map(cartItems.map((item) => [item.id, item]));
+        const currentItems = cartItemsRef.current;
+        const previousById = new Map(currentItems.map((item) => [item.id, item]));
         const priceChanged = result.data.items.some(
           (item) => previousById.get(item.id)?.price !== item.price,
         );
@@ -117,7 +141,7 @@ export function useCheckoutOptionsState(
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [cartItemIds, syncCartPrices, cartItems]);
+  }, [cartItemIds, isSignedIn, syncCartPrices]);
 
   useEffect(() => {
     if (!isSignedIn) {

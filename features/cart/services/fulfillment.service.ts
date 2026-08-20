@@ -126,3 +126,140 @@ export function validateShippingAddress(opts: {
   }
   return { success: true };
 }
+
+export async function createOrderShipment(opts: {
+  orderId: string;
+  vendorOrgId: string;
+  selectedRateId?: string | null;
+  originBranchId?: string | null;
+  shippingAddress: {
+    name: string;
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    phone?: string;
+  };
+  items: Array<{ id: string; quantity: number; weightGrams?: number | null }>;
+}) {
+  const { orderId, vendorOrgId, selectedRateId, originBranchId, shippingAddress, items } = opts;
+
+  try {
+    const { db } = await import("@/shared/db/client");
+    const { shipments, branches } = await import("@/shared/db/schema");
+    const { getCarrier } = await import("@/shared/shipping/carrier-registry");
+    const { parseBranchToOrigin, consolidateParcels } =
+      await import("@/shared/shipping/rate-engine");
+    const { eq } = await import("drizzle-orm");
+
+    // 1. Fetch vendor origin branch (prefer specific originBranchId, fallback to default branch)
+    let vendorBranch;
+    if (originBranchId) {
+      [vendorBranch] = await db
+        .select({
+          id: branches.id,
+          name: branches.name,
+          address: branches.address,
+          phone: branches.phone,
+        })
+        .from(branches)
+        .where(eq(branches.id, originBranchId))
+        .limit(1);
+    }
+    if (!vendorBranch) {
+      [vendorBranch] = await db
+        .select({
+          id: branches.id,
+          name: branches.name,
+          address: branches.address,
+          phone: branches.phone,
+        })
+        .from(branches)
+        .where(eq(branches.orgId, vendorOrgId))
+        .limit(1);
+    }
+
+    const origin = parseBranchToOrigin(vendorBranch);
+    const destination = {
+      name: shippingAddress.name,
+      street: shippingAddress.street,
+      city: shippingAddress.city,
+      state: shippingAddress.state,
+      postalCode: shippingAddress.postalCode,
+      country: shippingAddress.country,
+      phone: shippingAddress.phone,
+    };
+
+    const parcel = consolidateParcels(items);
+    const rateId = selectedRateId || "slpost_domestic_parcel";
+
+    // Determine carrier adapter from rateId prefix
+    let carrierId = "slpost";
+    if (rateId.startsWith("easypost_")) carrierId = "easypost";
+    else if (rateId.startsWith("shippo_")) carrierId = "shippo";
+    else if (rateId.startsWith("builtin_")) carrierId = "builtin";
+
+    const carrier = getCarrier(carrierId);
+    const result = await carrier.createShipment(origin, destination, [parcel], rateId);
+
+    const [shipmentRecord] = await db
+      .insert(shipments)
+      .values({
+        orderId,
+        vendorOrgId,
+        originBranchId: vendorBranch?.id ?? null,
+        carrierName: carrier.name,
+        shipmentExternalId: result.shipmentExternalId,
+        trackingNumber: result.trackingNumber,
+        trackingUrl: result.trackingUrl,
+        labelUrl: result.labelUrl,
+        status: "label_created",
+        shippingService: rateId,
+        estimatedDeliveryDate: result.estimatedDeliveryDate,
+        weightGrams: parcel.weightGrams,
+        events: [
+          {
+            status: "label_created",
+            description: `Shipment label created via ${carrier.name}`,
+            location: origin.city,
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      })
+      .returning();
+
+    // Also update order record with tracking metadata
+    const { simulatedOrders } = await import("@/shared/db/schema");
+    await db
+      .update(simulatedOrders)
+      .set({
+        carrierName: carrier.name,
+        trackingNumber: result.trackingNumber,
+        trackingUrl: result.trackingUrl,
+        labelUrl: result.labelUrl,
+        shipmentExternalId: result.shipmentExternalId,
+        shippingService: rateId,
+        estimatedDeliveryDate: result.estimatedDeliveryDate,
+        updatedAt: new Date(),
+      })
+      .where(eq(simulatedOrders.id, orderId));
+
+    logger.info("[createOrderShipment] Created shipment label for order", {
+      orderId,
+      trackingNumber: result.trackingNumber,
+      carrierName: carrier.name,
+    });
+
+    return { success: true, shipment: shipmentRecord };
+  } catch (error) {
+    logger.error("[createOrderShipment] Failed to create shipment label", {
+      orderId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Shipment label creation failed",
+    };
+  }
+}

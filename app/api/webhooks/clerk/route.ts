@@ -255,6 +255,45 @@ export async function POST(req: NextRequest) {
       if (userId) {
         invalidateClerkUserCache(userId);
       }
+
+      // FIX (Gap 5): When a member is removed from an org, their branch_members rows
+      // were previously left as orphaned rows indefinitely. We now clean them up
+      // synchronously here — the query is fast (indexed on branchId + memberUserId).
+      if (eventType === "organizationMembership.deleted" && orgId && userId) {
+        try {
+          const { db: dbClient } = await import("@/shared/db/client");
+          const { branches: branchesTable, branchMembers: branchMembersTable } =
+            await import("@/shared/db/schema");
+          const { eq: deq, inArray: dinArray, and: dand } = await import("drizzle-orm");
+
+          const orgBranches = await dbClient
+            .select({ id: branchesTable.id })
+            .from(branchesTable)
+            .where(deq(branchesTable.orgId, orgId));
+
+          if (orgBranches.length > 0) {
+            const branchIds = orgBranches.map((b) => b.id);
+            await dbClient
+              .delete(branchMembersTable)
+              .where(
+                dand(
+                  dinArray(branchMembersTable.branchId, branchIds),
+                  deq(branchMembersTable.memberUserId, userId),
+                ),
+              );
+            logger.info(
+              `Cleaned up branch member assignments for removed member ${userId} in org ${orgId}`,
+            );
+          }
+        } catch (err) {
+          // Non-fatal: log the error but do not fail the webhook response.
+          // The branch_members row will remain until the org itself is deleted.
+          logger.error("Failed to clean up branch_members on organizationMembership.deleted", err, {
+            orgId,
+            userId,
+          });
+        }
+      }
     } else if (eventType === "organization.updated") {
       const orgId = data.id;
       if (orgId) {

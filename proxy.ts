@@ -49,9 +49,10 @@ async function checkEdgeRateLimit(request: NextRequest): Promise<NextResponse | 
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "127.0.0.1";
 
+  const isServerAction = request.headers.has("next-action");
   const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method);
-  const limit = isMutating ? 60 : 120;
-  const prefix = isMutating ? "mutate" : "read";
+  const limit = isServerAction ? 300 : isMutating ? 180 : 300;
+  const prefix = isServerAction ? "action" : isMutating ? "mutate" : "read";
 
   const limiter = getEdgeRateLimiter(limit, 60, prefix);
   if (!limiter) return null;

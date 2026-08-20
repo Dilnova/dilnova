@@ -5,6 +5,7 @@ import {
   createBranchAction,
   updateBranchAction,
   deleteBranchAction,
+  setDefaultBranchAction,
   assignBranchMemberAction,
   removeBranchMemberAction,
 } from "@/features/inventory/vendor-branch.actions";
@@ -166,6 +167,17 @@ export default function VendorBranchesTab({
     );
   };
 
+  const handleSetDefaultBranch = async (id: string) => {
+    toast.promise(
+      setDefaultBranchAction(id).then(() => refreshData()),
+      {
+        loading: "Setting main branch...",
+        success: "Main branch updated.",
+        error: (err) => (err instanceof Error && err.message ? err.message : "Action failed."),
+      },
+    );
+  };
+
   const handleAssignMember = (e: React.FormEvent) => {
     e.preventDefault();
     if (!assignBranchId || !assignMemberId) {
@@ -283,12 +295,20 @@ export default function VendorBranchesTab({
                   Edit
                 </button>
                 {!b.isDefault && (
-                  <button
-                    onClick={() => handleDeleteBranch(b.id)}
-                    className="text-xs text-rose-500 hover:text-rose-700"
-                  >
-                    Delete
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleSetDefaultBranch(b.id)}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
+                    >
+                      Set as Main
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBranch(b.id)}
+                      className="text-xs text-rose-500 hover:text-rose-700"
+                    >
+                      Delete
+                    </button>
+                  </>
                 )}
               </div>
             </div>

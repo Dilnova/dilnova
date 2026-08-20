@@ -130,6 +130,11 @@ export const addProductAction = vendorAction
                 ? Math.round(parsedInput.preorderDepositAmount * 100)
                 : null,
             preorderMaxQuantity: parsedInput.preorderMaxQuantity ?? null,
+            // Physical Shipping Specifications
+            weightGrams: parsedInput.weightGrams ?? null,
+            lengthCm: parsedInput.lengthCm ?? null,
+            widthCm: parsedInput.widthCm ?? null,
+            heightCm: parsedInput.heightCm ?? null,
           })
           .returning();
 
@@ -143,18 +148,19 @@ export const addProductAction = vendorAction
           // These statuses must ALWAYS start with 0 quantity regardless of
           // what the client sends. This prevents UI bypass / API abuse.
           const ZERO_QUANTITY_STATUSES = ["out_of_stock", "coming_soon", "pre_order"];
-          const rawQty = parsedInput.quantity ?? 0;
+          const rawQty = parsedInput.quantity ?? 3;
           const initialQty = ZERO_QUANTITY_STATUSES.includes(resolvedStockAvailability)
             ? 0
             : rawQty;
 
-          if (
-            (resolvedStockAvailability === "in_stock" ||
-              resolvedStockAvailability === "limited_stock") &&
-            initialQty < 1
-          ) {
+          if (resolvedStockAvailability === "in_stock" && initialQty < 3) {
             throw new ActionError(
-              "Initial Quantity must be at least 1 unit when Stock Availability is set to 'In Stock' or 'Limited Stock'. Select 'Out of Stock' for items with 0 stock.",
+              "Initial Quantity must be at least 3 units when Stock Availability is set to 'In Stock'. For 1–2 units, select 'Limited Stock'.",
+            );
+          }
+          if (resolvedStockAvailability === "limited_stock" && (initialQty < 1 || initialQty > 2)) {
+            throw new ActionError(
+              "Initial Quantity must be between 1 and 2 units when Stock Availability is set to 'Limited Stock'. Select 'In Stock' for 3+ items.",
             );
           }
           // ── End quantity guard ─────────────────────────────────────────────

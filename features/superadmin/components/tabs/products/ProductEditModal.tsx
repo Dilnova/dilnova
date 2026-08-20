@@ -38,6 +38,19 @@ export function ProductEditModal({
     product.media || [],
   );
 
+  const [editWeightGrams, setEditWeightGrams] = useState<string>(
+    product.weightGrams ? String(product.weightGrams) : "",
+  );
+  const [editLengthCm, setEditLengthCm] = useState<string>(
+    product.lengthCm ? String(product.lengthCm) : "",
+  );
+  const [editWidthCm, setEditWidthCm] = useState<string>(
+    product.widthCm ? String(product.widthCm) : "",
+  );
+  const [editHeightCm, setEditHeightCm] = useState<string>(
+    product.heightCm ? String(product.heightCm) : "",
+  );
+
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +63,10 @@ export function ProductEditModal({
       setEditProdDesc(product.description || "");
       setEditProdType(product.type as "product" | "service");
       setEditProdMedia(product.media || []);
+      setEditWeightGrams(product.weightGrams ? String(product.weightGrams) : "");
+      setEditLengthCm(product.lengthCm ? String(product.lengthCm) : "");
+      setEditWidthCm(product.widthCm ? String(product.widthCm) : "");
+      setEditHeightCm(product.heightCm ? String(product.heightCm) : "");
     }
   }, [product, isOpen]);
 
@@ -114,6 +131,12 @@ export function ProductEditModal({
     startTransition(async () => {
       try {
         const primaryThumbnail = editProdMedia[0]?.url || "";
+        const parsedWeight =
+          editWeightGrams.trim() !== "" ? parseInt(editWeightGrams.trim(), 10) : null;
+        const parsedLength = editLengthCm.trim() !== "" ? parseFloat(editLengthCm.trim()) : null;
+        const parsedWidth = editWidthCm.trim() !== "" ? parseFloat(editWidthCm.trim()) : null;
+        const parsedHeight = editHeightCm.trim() !== "" ? parseFloat(editHeightCm.trim()) : null;
+
         const result = await updateProductAction({
           id: product.id,
           updates: {
@@ -124,6 +147,30 @@ export function ProductEditModal({
             type: editProdType,
             imageUrl: primaryThumbnail,
             media: editProdMedia,
+            weightGrams:
+              editProdType === "product"
+                ? parsedWeight && !isNaN(parsedWeight)
+                  ? parsedWeight
+                  : null
+                : null,
+            lengthCm:
+              editProdType === "product"
+                ? parsedLength && !isNaN(parsedLength)
+                  ? parsedLength
+                  : null
+                : null,
+            widthCm:
+              editProdType === "product"
+                ? parsedWidth && !isNaN(parsedWidth)
+                  ? parsedWidth
+                  : null
+                : null,
+            heightCm:
+              editProdType === "product"
+                ? parsedHeight && !isNaN(parsedHeight)
+                  ? parsedHeight
+                  : null
+                : null,
           },
         });
         if (!result?.data?.success) {
@@ -240,6 +287,84 @@ export function ProductEditModal({
             </select>
           </div>
         </div>
+
+        {editProdType === "product" && (
+          <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/15 dark:bg-purple-950/20 dark:border-purple-800/30 space-y-2.5">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm">⚖️</span>
+              <h4 className="text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider">
+                Shipping & Physical Specifications
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs">
+              <div className="space-y-1">
+                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                  Weight (Grams)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={editWeightGrams}
+                    onChange={(e) => setEditWeightGrams(e.target.value)}
+                    placeholder="100 (Default: 100g)"
+                    className="w-full pl-3 pr-7 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-900 font-mono"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-purple-600">
+                    g
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                  Length (cm)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={editLengthCm}
+                  onChange={(e) => setEditLengthCm(e.target.value)}
+                  placeholder="Length"
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-900 font-mono"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                  Width (cm)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={editWidthCm}
+                  onChange={(e) => setEditWidthCm(e.target.value)}
+                  placeholder="Width"
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-900 font-mono"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                  Height (cm)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={editHeightCm}
+                  onChange={(e) => setEditHeightCm(e.target.value)}
+                  placeholder="Height"
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-900 font-mono"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-wider">

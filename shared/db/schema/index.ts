@@ -3,3 +3,7 @@ export * from "./catalog";
 export * from "./inventory";
 export * from "./orders";
 export * from "./billing";
+export * from "./shipments";
+export * from "./returns";
+export * from "./shipping";
+export * from "./chat";

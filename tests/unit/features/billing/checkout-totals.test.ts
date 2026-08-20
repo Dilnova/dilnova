@@ -1,45 +1,28 @@
 import { describe, it, expect } from "vitest";
-import {
-  calculateCheckoutTotals,
-  getOrderDisplayTotals,
-  CHECKOUT_STANDARD_SHIPPING_CENTS,
-} from "@/features/billing/checkout-totals";
+import { calculateCheckoutTotals, getOrderDisplayTotals } from "@/features/billing/checkout-totals";
 
 describe("Checkout Totals (Billing)", () => {
   describe("calculateCheckoutTotals()", () => {
-    it("calculates totals correctly below the free shipping threshold with injected tax", () => {
-      // $20.00 subtotal (below $50.00 threshold) with $1.60 tax
+    it("calculates totals correctly with calculated shipping override", () => {
       const subtotalCents = 2000;
       const taxCents = 160;
-      const result = calculateCheckoutTotals(subtotalCents, false, taxCents);
+      const shippingCents = 21500; // SL Post domestic rate (LKR 215.00)
+      const result = calculateCheckoutTotals(subtotalCents, false, taxCents, shippingCents);
 
       expect(result.subtotalAmount).toBe(2000);
       expect(result.taxAmount).toBe(160);
-      expect(result.shippingAmount).toBe(CHECKOUT_STANDARD_SHIPPING_CENTS); // 500
-      expect(result.grandTotal).toBe(2000 + 160 + 500); // 2660
-    });
-
-    it("calculates totals correctly above the free shipping threshold", () => {
-      // $60.00 subtotal (above $50.00 threshold) with $4.80 tax
-      const subtotalCents = 6000;
-      const taxCents = 480;
-      const result = calculateCheckoutTotals(subtotalCents, false, taxCents);
-
-      expect(result.subtotalAmount).toBe(6000);
-      expect(result.taxAmount).toBe(480);
-      expect(result.shippingAmount).toBe(0);
-      expect(result.grandTotal).toBe(6000 + 480 + 0); // 6480
+      expect(result.shippingAmount).toBe(21500);
+      expect(result.grandTotal).toBe(2000 + 160 + 21500);
     });
 
     it("forces zero shipping if zeroShipping flag is true", () => {
-      // $20.00 subtotal (would normally have shipping)
       const subtotalCents = 2000;
       const taxCents = 160;
-      const result = calculateCheckoutTotals(subtotalCents, true, taxCents);
+      const result = calculateCheckoutTotals(subtotalCents, true, taxCents, 21500);
 
       expect(result.subtotalAmount).toBe(2000);
       expect(result.shippingAmount).toBe(0);
-      expect(result.grandTotal).toBe(2000 + 160); // 2160
+      expect(result.grandTotal).toBe(2000 + 160);
     });
 
     it("handles zero subtotal correctly", () => {
@@ -76,7 +59,6 @@ describe("Checkout Totals (Billing)", () => {
     });
 
     it("handles legacy orders missing breakdown gracefully", () => {
-      // Only totalAmount provided
       const order = {
         totalAmount: 1000,
       };

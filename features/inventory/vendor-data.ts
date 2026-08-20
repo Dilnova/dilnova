@@ -2,7 +2,7 @@ import "server-only";
 
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { eq, desc, sql, inArray } from "drizzle-orm";
+import { eq, desc, sql, inArray, and } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { getCachedOrgMembers } from "@/shared/auth/clerk-cache";
 import { getPremiumStatus } from "@/features/inventory/premium-license";
@@ -163,27 +163,34 @@ export async function loadVendorInventoryData(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let movements: any[] = [];
     if (scope === "full" && inventoryItems.length > 0) {
-      const inventoryIds = inventoryItems.map((i) => i.id);
+      const inventoryIds = inventoryItems
+        .map((i) => i.id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0);
       const movementsLimit = options?.movementsLimit ?? 100;
-      movements = await db
-        .select({
-          id: schema.inventoryMovements.id,
-          inventoryId: schema.inventoryMovements.inventoryId,
-          type: schema.inventoryMovements.type,
-          quantityChanged: schema.inventoryMovements.quantityChanged,
-          previousQuantity: schema.inventoryMovements.previousQuantity,
-          newQuantity: schema.inventoryMovements.newQuantity,
-          reason: schema.inventoryMovements.reason,
-          userId: schema.inventoryMovements.userId,
-          createdAt: schema.inventoryMovements.createdAt,
-          productName: schema.products.name,
-        })
-        .from(schema.inventoryMovements)
-        .innerJoin(schema.inventory, eq(schema.inventoryMovements.inventoryId, schema.inventory.id))
-        .innerJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
-        .where(inArray(schema.inventoryMovements.inventoryId, inventoryIds))
-        .orderBy(desc(schema.inventoryMovements.createdAt))
-        .limit(movementsLimit);
+      if (inventoryIds.length > 0) {
+        movements = await db
+          .select({
+            id: schema.inventoryMovements.id,
+            inventoryId: schema.inventoryMovements.inventoryId,
+            type: schema.inventoryMovements.type,
+            quantityChanged: schema.inventoryMovements.quantityChanged,
+            previousQuantity: schema.inventoryMovements.previousQuantity,
+            newQuantity: schema.inventoryMovements.newQuantity,
+            reason: schema.inventoryMovements.reason,
+            userId: schema.inventoryMovements.userId,
+            createdAt: schema.inventoryMovements.createdAt,
+            productName: schema.products.name,
+          })
+          .from(schema.inventoryMovements)
+          .innerJoin(
+            schema.inventory,
+            eq(schema.inventoryMovements.inventoryId, schema.inventory.id),
+          )
+          .innerJoin(schema.products, eq(schema.inventory.productId, schema.products.id))
+          .where(inArray(schema.inventoryMovements.inventoryId, inventoryIds))
+          .orderBy(desc(schema.inventoryMovements.createdAt))
+          .limit(movementsLimit);
+      }
     }
 
     // 5. Fetch Simulated Orders (full IMS workspace only)
@@ -197,7 +204,13 @@ export async function loadVendorInventoryData(
           .from(schema.simulatedOrderItems)
           .where(eq(schema.simulatedOrderItems.vendorOrgId, orgId));
 
-        const orderIds = Array.from(new Set(relatedItems.map((item) => item.orderId)));
+        const orderIds = Array.from(
+          new Set(
+            relatedItems
+              .map((item) => item.orderId)
+              .filter((id): id is string => typeof id === "string" && id.length > 0),
+          ),
+        );
 
         const ordersLimit = options?.ordersLimit ?? 50;
         const ordersOffset = options?.ordersOffset ?? 0;
@@ -276,6 +289,22 @@ export async function loadVendorInventoryData(
           .orderBy(schema.branches.name);
       }
 
+      // Self-heal: If legacy race conditions caused multiple default branches, keep the oldest as default
+      const defaultBranches = allBranches.filter((b) => b.isDefault);
+      if (defaultBranches.length > 1) {
+        defaultBranches.sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
+        const duplicates = defaultBranches.slice(1);
+        for (const dup of duplicates) {
+          await db
+            .update(schema.branches)
+            .set({ isDefault: false, updatedAt: new Date() })
+            .where(and(eq(schema.branches.id, dup.id), eq(schema.branches.orgId, orgId)));
+          dup.isDefault = false;
+        }
+      }
+
       // Auto-migrate/initialize default branch inventory for ongoing shop records in multi-branch mode
       if (premiumStatus.multiBranchActive) {
         const defaultBranch = allBranches.find((b) => b.isDefault) || allBranches[0];
@@ -317,7 +346,9 @@ export async function loadVendorInventoryData(
         branches = allBranches;
       }
 
-      const branchIds = branches.map((b) => b.id);
+      const branchIds = branches
+        .map((b) => b.id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0);
       if (branchIds.length > 0) {
         if (premiumStatus.multiBranchActive) {
           branchInventoryList = await db

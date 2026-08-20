@@ -1,10 +1,5 @@
 /** Shared checkout pricing rules (cart UI, server validation, invoices). */
 
-/** @deprecated Use buildCartTaxBreakdown() from tax-engine.ts for new tax resolution. */
-export const CHECKOUT_TAX_RATE = 0.0;
-export const CHECKOUT_FREE_SHIPPING_THRESHOLD_CENTS = 5000; // $50.00
-export const CHECKOUT_STANDARD_SHIPPING_CENTS = 500; // $5.00
-
 export interface CheckoutTotals {
   subtotalAmount: number;
   taxAmount: number;
@@ -16,15 +11,12 @@ export function calculateCheckoutTotals(
   subtotalCents: number,
   zeroShipping = false,
   taxAmountCents = 0,
+  shippingOverrideCents?: number | null,
 ): CheckoutTotals {
   const subtotalAmount = Math.max(0, subtotalCents);
   const taxAmount = Math.max(0, taxAmountCents);
   const shippingAmount =
-    zeroShipping || subtotalAmount === 0
-      ? 0
-      : subtotalAmount > CHECKOUT_FREE_SHIPPING_THRESHOLD_CENTS
-        ? 0
-        : CHECKOUT_STANDARD_SHIPPING_CENTS;
+    zeroShipping || subtotalAmount === 0 ? 0 : Math.max(0, shippingOverrideCents ?? 0);
   const grandTotal = subtotalAmount + taxAmount + shippingAmount;
 
   return { subtotalAmount, taxAmount, shippingAmount, grandTotal };

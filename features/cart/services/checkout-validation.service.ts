@@ -127,6 +127,17 @@ export async function processCheckoutSuccess(opts: {
   name: string;
   email: string;
   userId: string | null;
+  selectedRateId?: string | null;
+  vendorOrgId?: string;
+  shippingAddress?: {
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    phone?: string;
+  } | null;
+  items?: Array<{ id: string; quantity: number; weightGrams?: number | null }>;
 }) {
   const {
     orderId: createdOrderId,
@@ -138,7 +149,38 @@ export async function processCheckoutSuccess(opts: {
     name,
     email,
     userId,
+    selectedRateId,
+    vendorOrgId,
+    shippingAddress,
+    items,
   } = opts;
+
+  // Create real carrier shipment label if delivery address is provided
+  if (shippingAddress && shippingAddress.street && shippingAddress.city) {
+    try {
+      const { createOrderShipment } = await import("./fulfillment.service");
+      await createOrderShipment({
+        orderId: createdOrderId,
+        vendorOrgId: vendorOrgId || Object.keys(createdVendorSubtotals)[0] || "default_vendor",
+        selectedRateId,
+        shippingAddress: {
+          name,
+          street: shippingAddress.street,
+          city: shippingAddress.city,
+          state: shippingAddress.state || "",
+          postalCode: shippingAddress.postalCode || "",
+          country: shippingAddress.country || "LK",
+          phone: shippingAddress.phone,
+        },
+        items: items || [],
+      });
+    } catch (shipmentError) {
+      logger.error("Failed to create shipment label during checkout", {
+        orderId: createdOrderId,
+        error: shipmentError instanceof Error ? shipmentError.message : String(shipmentError),
+      });
+    }
+  }
 
   let bankTransferInstructions: BankTransferCheckoutInstructions | undefined;
   if (isBankTransferPayment(payment)) {

@@ -47,7 +47,7 @@ export const branchInventory = pgTable(
       .notNull()
       .references(() => products.id, { onDelete: "cascade" }),
     sku: text("sku"),
-    quantity: integer("quantity").default(0).notNull(),
+    quantity: integer("quantity").default(3).notNull(),
     binLocation: text("bin_location"),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

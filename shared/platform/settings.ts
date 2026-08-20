@@ -22,51 +22,63 @@ function getSettingsRedisClient(): Redis | null {
   }
 }
 
+import { cache } from "react";
+
 /**
- * Cached database fetch helper for system settings.
+ * Cached database fetch helper for system settings with timeout protection.
  */
-const getCachedSettingValue = (key: string) =>
-  unstable_cache(
-    async () => {
-      const [setting] = await db
+const getCachedSettingValue = unstable_cache(
+  async (key: string): Promise<string | null> => {
+    try {
+      const queryPromise = db
         .select()
         .from(schema.systemSettings)
         .where(eq(schema.systemSettings.key, key))
         .limit(1);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`Settings query timeout for key: ${key}`)), 3000),
+      );
+      const [setting] = await Promise.race([queryPromise, timeoutPromise]);
       return setting ? setting.value : null;
-    },
-    ["system-settings", key],
-    {
-      tags: ["system-settings", `system-settings-${key}`],
-    },
-  )();
+    } catch {
+      return null;
+    }
+  },
+  ["system-settings-value"],
+  {
+    tags: ["system-settings"],
+    revalidate: 300,
+  },
+);
 
 /**
  * Safely fetches a system setting value by its configuration key.
  * If the setting or table doesn't exist (e.g. during migrations), it falls back to Redis, then defaultValue.
  */
-export async function getSystemSetting(key: string, defaultValue: string): Promise<string> {
-  try {
-    const cachedVal = await getCachedSettingValue(key);
-    return cachedVal !== null ? cachedVal : defaultValue;
-  } catch {
-    // Graceful recovery: Try Redis fallback if DB fails
+export const getSystemSetting = cache(
+  async (key: string, defaultValue: string): Promise<string> => {
     try {
-      const redis = getSettingsRedisClient();
-      if (redis) {
-        const fallbackVal = await redis.get<string>(`system_setting:${key}`);
-        if (fallbackVal !== null && fallbackVal !== undefined) {
-          // Redis might parse JSON automatically, ensure string return
-          return typeof fallbackVal === "string" ? fallbackVal : JSON.stringify(fallbackVal);
+      const cachedVal = await getCachedSettingValue(key);
+      return cachedVal !== null ? cachedVal : defaultValue;
+    } catch {
+      // Graceful recovery: Try Redis fallback if DB fails
+      try {
+        const redis = getSettingsRedisClient();
+        if (redis) {
+          const fallbackVal = await redis.get<string>(`system_setting:${key}`);
+          if (fallbackVal !== null && fallbackVal !== undefined) {
+            // Redis might parse JSON automatically, ensure string return
+            return typeof fallbackVal === "string" ? fallbackVal : JSON.stringify(fallbackVal);
+          }
         }
+      } catch (redisErr) {
+        logger.error("Redis fallback also failed for setting", { error: redisErr, key });
       }
-    } catch (redisErr) {
-      logger.error("Redis fallback also failed for setting", { error: redisErr, key });
-    }
 
-    return defaultValue;
-  }
-}
+      return defaultValue;
+    }
+  },
+);
 
 /**
  * Syncs a critical setting to the Redis Edge Cache.

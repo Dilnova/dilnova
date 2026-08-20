@@ -109,18 +109,46 @@ export default async function AdminPage() {
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 mb-2">
-              🛡️ Organization Admin
-            </span>
-            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-              Admin & Members Console
-            </h1>
-            <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm mt-1">
-              Configure details and manage members for{" "}
-              <strong className="text-zinc-800 dark:text-zinc-200 font-semibold">{org.name}</strong>
-              .
-            </p>
+          <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+            {/* Store Banner / Logo Preview Thumbnail */}
+            <div className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm shrink-0">
+              {metadata.bannerUrl ? (
+                <Image
+                  src={metadata.bannerUrl}
+                  alt={`${org.name} banner / logo`}
+                  fill
+                  className="object-cover"
+                  sizes="64px"
+                />
+              ) : org.imageUrl ? (
+                <Image
+                  src={org.imageUrl}
+                  alt={`${org.name} logo`}
+                  fill
+                  className="object-cover"
+                  sizes="64px"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-400 font-extrabold text-xl sm:text-2xl">
+                  {org.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 mb-1.5">
+                🛡️ Organization Admin
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 truncate">
+                Admin & Members Console
+              </h1>
+              <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm mt-0.5 truncate">
+                Configure details and manage members for{" "}
+                <strong className="text-zinc-800 dark:text-zinc-200 font-semibold">
+                  {org.name}
+                </strong>
+                .
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">

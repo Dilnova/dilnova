@@ -8,15 +8,23 @@ import { runWithCorrelationId } from "@/shared/security/async-context";
 import { authenticatedAction, ActionError } from "@/lib/safe-action";
 
 const cloudinaryUploadSignatureSchema = z.object({
-  uploadKind: z.enum(["catalog", "vendor-profile", "platform"]),
+  uploadKind: z.enum(["catalog", "vendor-profile", "platform", "chat"]),
   resourceType: z.enum(["image", "video"]),
 });
 
 export type CloudinaryUploadKind = z.infer<typeof cloudinaryUploadSignatureSchema>["uploadKind"];
 
-function resolveUploadFolder(uploadKind: CloudinaryUploadKind, orgId: string | null): string {
+function resolveUploadFolder(
+  uploadKind: CloudinaryUploadKind,
+  orgId: string | null,
+  userId?: string,
+): string {
   if (uploadKind === "platform") {
     return "dilnova/platform";
+  }
+
+  if (uploadKind === "chat") {
+    return `dilnova/chat/${userId || "general"}`;
   }
 
   if (!orgId) {
@@ -37,10 +45,12 @@ export const createCloudinaryUploadSignatureAction = authenticatedAction
       try {
         await rateLimit(30, 60 * 1000);
 
-        const { orgId, orgRole } = ctx;
+        const { orgId, orgRole, userId } = ctx;
 
         if (parsedInput.uploadKind === "platform") {
           await checkSuperAdmin();
+        } else if (parsedInput.uploadKind === "chat") {
+          // Chat uploads allowed for any signed-in customer or vendor member
         } else {
           if (!orgId) {
             throw new ActionError("Switch to a vendor organization before uploading media.");
@@ -55,7 +65,7 @@ export const createCloudinaryUploadSignatureAction = authenticatedAction
           }
         }
 
-        const folder = resolveUploadFolder(parsedInput.uploadKind, orgId ?? null);
+        const folder = resolveUploadFolder(parsedInput.uploadKind, orgId ?? null, userId);
         const signature = createCloudinaryUploadSignature({
           folder,
           resourceType: parsedInput.resourceType,

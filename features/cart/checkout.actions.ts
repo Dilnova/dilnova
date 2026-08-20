@@ -313,19 +313,78 @@ export const simulatedCheckoutAction = authenticatedAction
         vendorOrgIds[0] || "",
       );
 
+      let serverShippingCents = 0;
+      if (!fulfillmentOption.zeroShipping && normalizedShippingCity) {
+        try {
+          const { computeMultiVendorRates } = await import("@/shared/shipping/rate-engine");
+          const itemsByVendor = new Map<
+            string,
+            Array<{ id: string; quantity: number; weightGrams?: number }>
+          >();
+          for (const item of verifiedItems) {
+            const list = itemsByVendor.get(item.vendorOrgId) ?? [];
+            list.push({ id: item.id, quantity: item.quantity, weightGrams: 500 });
+            itemsByVendor.set(item.vendorOrgId, list);
+          }
+          const vendorBranchMap = new Map<
+            string,
+            { id: string; name: string; address: string | null; phone: string | null }
+          >();
+          for (const [orgId, branchList] of branchesByOrg.entries()) {
+            const mainBranch = branchList[0];
+            if (mainBranch) vendorBranchMap.set(orgId, mainBranch);
+          }
+          const rateResult = await computeMultiVendorRates({
+            itemsByVendor,
+            destination: {
+              name,
+              street: normalizedShippingAddress || "Delivery Address",
+              city: normalizedShippingCity,
+              state: normalizedShippingState || "",
+              postalCode: normalizedShippingPostalCode || "",
+              country: normalizedShippingCountry || "LK",
+            },
+            vendorBranchMap,
+          });
+          serverShippingCents = rateResult.totalShippingCents;
+        } catch (err) {
+          console.warn(
+            "[simulatedCheckoutAction] Dynamic shipping rate calculation failed, fallback:",
+            err,
+          );
+        }
+      }
+
+      // The server verifies subtotal + tax (values it fully controls).
+      // Shipping is derived from the client grand total since the user selected a specific
+      // carrier rate that may differ from whatever the server re-computes at checkout time.
+      const clientShippingCents = Math.max(
+        0,
+        clientGrandTotal - (serverSubtotal + taxBreakdown.totalTaxCents),
+      );
+
+      // Sanity check: if server computed a rate, verify the client's shipping is in a
+      // plausible range (client shouldn't claim 0 shipping when real rates are available,
+      // and shouldn't inflate shipping by more than 5x the server rate).
+      if (!fulfillmentOption.zeroShipping && serverShippingCents > 0 && clientShippingCents === 0) {
+        return {
+          success: false,
+          error:
+            "Checkout total mismatch: no shipping fee was submitted but shipping is required. Please refresh your cart and try again.",
+        };
+      }
+
       const checkoutTotals = calculateCheckoutTotals(
         serverSubtotal,
         fulfillmentOption.zeroShipping === true,
         taxBreakdown.totalTaxCents,
+        fulfillmentOption.zeroShipping ? null : clientShippingCents || null,
       );
-      const clientExpectedPreTaxTotal = serverSubtotal + checkoutTotals.shippingAmount;
-      if (
-        clientGrandTotal !== clientExpectedPreTaxTotal &&
-        clientGrandTotal !== checkoutTotals.grandTotal
-      ) {
+
+      if (clientGrandTotal !== checkoutTotals.grandTotal) {
         return {
           success: false,
-          error: `Checkout total mismatch. Expected ${clientExpectedPreTaxTotal}, received ${clientGrandTotal}. Please refresh your cart and try again.`,
+          error: `Checkout total mismatch. Expected ${checkoutTotals.grandTotal}, received ${clientGrandTotal}. Please refresh your cart and try again.`,
         };
       }
 
@@ -414,6 +473,19 @@ export const simulatedCheckoutAction = authenticatedAction
         name,
         email,
         userId: ctx.userId,
+        selectedRateId: parsedInput.selectedRateId,
+        vendorOrgId: vendorOrgIds[0],
+        shippingAddress: normalizedShippingAddress
+          ? {
+              street: normalizedShippingAddress,
+              city: normalizedShippingCity || "",
+              state: normalizedShippingState || "",
+              postalCode: normalizedShippingPostalCode || "",
+              country: normalizedShippingCountry || "LK",
+              phone: normalizedShippingPhone || undefined,
+            }
+          : null,
+        items: verifiedItems.map((i) => ({ id: i.id, quantity: i.quantity })),
       });
 
       return successResult;

@@ -10,7 +10,9 @@ interface ProductDetailAddToCartProps {
     price: number;
     imageUrl: string | null;
     vendorName: string;
+    vendorOrgId?: string;
     type: string;
+    weightGrams?: number | null;
   };
   canPurchase?: boolean;
   stockLabel?: string;
