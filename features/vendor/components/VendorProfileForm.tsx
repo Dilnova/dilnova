@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { updateVendorMetadata } from "@/features/vendor/actions";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
 import * as Sentry from "@sentry/nextjs";
@@ -58,6 +59,7 @@ export default function VendorProfileForm({
   initialMetadata,
   isAdmin = false,
 }: VendorProfileFormProps) {
+  const router = useRouter();
   const initialAddrData = parseInitialBusinessAddress(initialMetadata.address || "");
 
   const [description, setDescription] = useState(initialMetadata.description || "");
@@ -91,6 +93,26 @@ export default function VendorProfileForm({
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const bannerCameraInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync state if initialMetadata changes from server refresh
+  useEffect(() => {
+    const addr = parseInitialBusinessAddress(initialMetadata.address || "");
+    setDescription(initialMetadata.description || "");
+    setPhone(initialMetadata.phone || "");
+    setShippingAddress(addr.street);
+    setShippingAddressLine2(addr.line2);
+    setShippingCity(addr.city);
+    setShippingState(addr.state);
+    setShippingPostalCode(addr.postalCode);
+    setShippingCountry(addr.country);
+    setBannerUrl(initialMetadata.bannerUrl || "");
+    setStockAllocationMode(initialMetadata.stockAllocationMode || "central_intake");
+    setBankName(initialMetadata.bankName || "");
+    setBankAccountName(initialMetadata.bankAccountName || "");
+    setBankAccountNumber(initialMetadata.bankAccountNumber || "");
+    setBankBranchCode(initialMetadata.bankBranchCode || "");
+    setBankTransferInstructions(initialMetadata.bankTransferInstructions || "");
+  }, [initialMetadata]);
+
   const handleAddressFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === "shippingAddress") setShippingAddress(value);
@@ -101,6 +123,18 @@ export default function VendorProfileForm({
     if (name === "shippingCountry") setShippingCountry(value);
     if (name === "shippingPhone") setPhone(value);
   };
+
+  const getFullFormattedAddress = () =>
+    [
+      shippingAddress,
+      shippingAddressLine2,
+      shippingCity,
+      shippingState,
+      shippingPostalCode,
+      shippingCountry,
+    ]
+      .filter(Boolean)
+      .join(", ");
 
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -129,7 +163,20 @@ export default function VendorProfileForm({
 
       if (result.success && result.publicUrl) {
         setBannerUrl(result.publicUrl);
-        toast.success("Banner image uploaded! Save profile to apply changes.");
+        await updateVendorMetadata(orgId, {
+          description,
+          address: getFullFormattedAddress(),
+          phone,
+          bannerUrl: result.publicUrl,
+          stockAllocationMode,
+          bankName,
+          bankAccountName,
+          bankAccountNumber,
+          bankBranchCode,
+          bankTransferInstructions,
+        });
+        toast.success("Store banner uploaded and saved successfully!");
+        router.refresh();
       } else {
         toast.error(result.error || "Banner upload failed.");
       }
@@ -144,19 +191,32 @@ export default function VendorProfileForm({
     }
   };
 
+  const handleRemoveBanner = async () => {
+    setBannerUrl("");
+    try {
+      await updateVendorMetadata(orgId, {
+        description,
+        address: getFullFormattedAddress(),
+        phone,
+        bannerUrl: "",
+        stockAllocationMode,
+        bankName,
+        bankAccountName,
+        bankAccountNumber,
+        bankBranchCode,
+        bankTransferInstructions,
+      });
+      toast.success("Store banner removed.");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove banner.");
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const formattedAddress = [
-      shippingAddress,
-      shippingAddressLine2,
-      shippingCity,
-      shippingState,
-      shippingPostalCode,
-      shippingCountry,
-    ]
-      .filter(Boolean)
-      .join(", ");
+    const formattedAddress = getFullFormattedAddress();
 
     startTransition(async () => {
       try {
@@ -174,6 +234,7 @@ export default function VendorProfileForm({
         });
         if (result.success) {
           toast.success("Storefront profile updated successfully!");
+          router.refresh();
         }
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Failed to update profile settings.");
@@ -218,7 +279,7 @@ export default function VendorProfileForm({
               </button>
               <button
                 type="button"
-                onClick={() => setBannerUrl("")}
+                onClick={handleRemoveBanner}
                 disabled={isBannerUploading}
                 className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
               >

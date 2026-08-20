@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
 import * as Sentry from "@sentry/nextjs";
@@ -52,6 +53,7 @@ export default function OrgOnboardingWizardModal({
   onSuccess,
   taxClasses = [],
 }: OrgOnboardingWizardModalProps) {
+  const router = useRouter();
   const [step, setStep] = useState<number>(1);
   const [isPending, startTransition] = useTransition();
 
@@ -343,18 +345,21 @@ export default function OrgOnboardingWizardModal({
         const ok = await handleSaveStep1();
         if (ok) {
           toast.success("Step 1 complete: Store Details saved.");
+          router.refresh();
           setStep(2);
         }
       } else if (step === 2) {
         const ok = await handleSaveStep2();
         if (ok) {
           toast.success("Step 2 complete: Base Currency configured.");
+          router.refresh();
           setStep(3);
         }
       } else if (step === 3) {
         const ok = await handleSaveStep3();
         if (ok) {
           toast.success("Step 3 complete: Checkout Methods saved.");
+          router.refresh();
           setStep(4);
         }
       }
@@ -370,6 +375,7 @@ export default function OrgOnboardingWizardModal({
         try {
           await completeOrgOnboarding(status.orgId);
           toast.success("🎉 Organization onboarding completed successfully!");
+          router.refresh();
           if (onSuccess) onSuccess();
           onClose();
         } catch (err) {
@@ -576,48 +582,110 @@ export default function OrgOnboardingWizardModal({
               </div>
 
               <div>
-                <label
-                  htmlFor="modal-banner-url"
-                  className="block font-bold text-zinc-900 dark:text-zinc-100 mb-1"
-                >
-                  Store Banner / Logo URL <span className="text-red-500">*</span>
+                <label className="block font-bold text-zinc-900 dark:text-zinc-100 mb-1.5">
+                  Store Banner / Logo <span className="text-red-500">*</span>
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    id="modal-banner-url"
-                    type="url"
-                    value={bannerUrl}
-                    onChange={(e) => setBannerUrl(e.target.value)}
-                    placeholder="https://res.cloudinary.com/..."
-                    className="flex-1 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-purple-600 text-xs sm:text-sm"
-                  />
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleBannerUpload}
-                    className="hidden"
-                  />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBannerUpload}
+                  className="hidden"
+                />
+
+                {bannerUrl ? (
+                  <div className="space-y-2">
+                    <div className="relative h-28 w-full rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900">
+                      <Image
+                        src={bannerUrl}
+                        alt="Store Banner Preview"
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-2.5">
+                        <span className="text-[10px] text-white font-mono bg-zinc-900/60 px-2 py-0.5 rounded">
+                          Banner Preview
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isBannerUploading}
+                        className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/20 dark:hover:bg-purple-900/30 dark:text-purple-400 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {isBannerUploading ? "Uploading..." : "Replace Image"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBannerUrl("")}
+                        disabled={isBannerUploading}
+                        className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isBannerUploading}
-                    className="px-4 py-2 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-semibold text-xs transition-colors cursor-pointer shrink-0"
+                    className="w-full flex flex-col items-center justify-center gap-2 py-6 px-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/40 hover:bg-zinc-100/80 dark:hover:bg-zinc-900/70 transition-all cursor-pointer disabled:opacity-50 group"
                   >
-                    {isBannerUploading ? "Uploading..." : "Upload File"}
+                    <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-950/50 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                      {isBannerUploading ? (
+                        <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8H4z"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                        {isBannerUploading
+                          ? "Uploading Image..."
+                          : "Click to Upload Store Banner / Logo"}
+                      </span>
+                      <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+                        PNG, JPG, or WEBP up to 10MB
+                      </p>
+                    </div>
                   </button>
-                </div>
+                )}
+
                 {bannerUploadProgress !== null && (
                   <div className="mt-2">
                     <SafeProgressBar
                       percent={bannerUploadProgress}
                       className="h-1.5 bg-purple-600 rounded-full"
                     />
-                  </div>
-                )}
-                {bannerUrl && (
-                  <div className="mt-3 relative h-24 w-full rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100">
-                    <Image src={bannerUrl} alt="Banner Preview" fill className="object-cover" />
                   </div>
                 )}
               </div>
