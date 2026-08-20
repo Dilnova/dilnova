@@ -301,10 +301,10 @@ export default async function VendorPage({ searchParams }: PageProps) {
           </div>
 
           {/* Premium Pill Segmented Tabs Switcher */}
-          <div className="flex bg-zinc-100/80 dark:bg-zinc-900/60 backdrop-blur-md p-1 rounded-2xl mb-6 border border-zinc-200/50 dark:border-zinc-800/30 max-w-2xl">
+          <div className="flex overflow-x-auto no-scrollbar bg-zinc-100/80 dark:bg-zinc-900/60 backdrop-blur-md p-1 rounded-2xl mb-6 border border-zinc-200/50 dark:border-zinc-800/30 max-w-2xl">
             <Link
               href="?tab=catalog"
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex-1 min-w-[125px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === "catalog"
                   ? "bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm"
                   : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
@@ -317,7 +317,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
             </Link>
             <Link
               href="?tab=inventory"
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex-1 min-w-[135px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === "inventory"
                   ? "bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm"
                   : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-300"
@@ -330,7 +330,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
             </Link>
             <Link
               href="?tab=chat"
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex-1 min-w-[140px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === "chat"
                   ? "bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm"
                   : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-300"
@@ -384,10 +384,10 @@ export default async function VendorPage({ searchParams }: PageProps) {
         /* Regular Members Dashboard (Non-Admin View) */
         <div className="max-w-5xl mx-auto space-y-6">
           {/* Member Segmented Tab Switcher */}
-          <div className="flex bg-zinc-100/80 dark:bg-zinc-900/60 backdrop-blur-md p-1 rounded-2xl mb-6 border border-zinc-200/50 dark:border-zinc-800/30 max-w-md">
+          <div className="flex overflow-x-auto no-scrollbar bg-zinc-100/80 dark:bg-zinc-900/60 backdrop-blur-md p-1 rounded-2xl mb-6 border border-zinc-200/50 dark:border-zinc-800/30 max-w-md">
             <Link
               href="?tab=member"
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex-1 min-w-[125px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === "member"
                   ? "bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm"
                   : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-300"
@@ -400,7 +400,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
             </Link>
             <Link
               href="?tab=chat"
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex-1 min-w-[125px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === "chat"
                   ? "bg-white dark:bg-zinc-800 text-purple-700 dark:text-purple-400 shadow-sm"
                   : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-300"
