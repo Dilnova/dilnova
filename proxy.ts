@@ -1,4 +1,11 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+
+const isProtectedRoute = createRouteMatcher([
+  "/admin(.*)",
+  "/vendor(.*)",
+  "/superadmin(.*)",
+  "/customer(.*)",
+]);
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -124,6 +131,10 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 }
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
+  if (isProtectedRoute(req)) {
+    await auth.protect();
+  }
+
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
   const nonce = crypto.randomUUID();
 
