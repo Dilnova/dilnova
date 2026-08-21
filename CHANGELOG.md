@@ -1,3 +1,15 @@
+# [1.8.0](https://github.com/Dilnova/dilnova/compare/v1.7.0...v1.8.0) (2026-08-21)
+
+### Features
+
+- Enhance authentication checks in routes and tests for unauthenticated access ([eee3ea4](https://github.com/Dilnova/dilnova/commit/eee3ea459fec8dec34aea77c0bafb20ddddbdf3a))
+- Enhance beta lock logic with Vercel environment checks and bypass headers ([ef3ffb0](https://github.com/Dilnova/dilnova/commit/ef3ffb0b9176e6fa81dc61f75535811f5b89ea65))
+- Enhance clerk middleware to handle user authentication and redirection ([c8bcda1](https://github.com/Dilnova/dilnova/commit/c8bcda1158122923f41f1aef1cb0aca296e18e8a))
+- Implement multi-domain support for Dilnova and Distar brands ([d18b722](https://github.com/Dilnova/dilnova/commit/d18b722eddd4a96b60a4161123be5cd66e981201))
+- Implement route protection in proxy middleware with clerk authentication ([d7fcedd](https://github.com/Dilnova/dilnova/commit/d7fcedd4666ac44c74091977d8a2d840703caac7))
+- Improve public route tests with error handling for deployment issues ([e9a9aae](https://github.com/Dilnova/dilnova/commit/e9a9aae48e6c91f59b412902ee932dec0d7ddd23))
+- Update beta lock logic to validate bypass secret from headers ([a87b526](https://github.com/Dilnova/dilnova/commit/a87b526cf1c9838e7c2c250805397759e5309621))
+
 # [1.7.0](https://github.com/Dilnova/dilnova/compare/v1.6.0...v1.7.0) (2026-08-21)
 
 ### Features
