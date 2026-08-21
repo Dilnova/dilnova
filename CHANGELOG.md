@@ -1,3 +1,62 @@
+# [1.7.0](https://github.com/Dilnova/dilnova/compare/v1.6.0...v1.7.0) (2026-08-21)
+
+### Features
+
+- **vendor:** integrate GlobalNotificationListener into VendorLayout and adjust polling intervals for notifications ([4023fb4](https://github.com/Dilnova/dilnova/commit/4023fb46e5e34415d12664b4829569f5e8e8f16e))
+
+# [1.6.0](https://github.com/Dilnova/dilnova/compare/v1.5.0...v1.6.0) (2026-08-20)
+
+### Bug Fixes
+
+- **cart:** resolve infinite sync loop and patch security scan alerts ([18c50d4](https://github.com/Dilnova/dilnova/commit/18c50d44a04a7a7772483664d52f49ecf5fe908b))
+- **cart:** update dependencies and improve checkout options state synchronization ([c5e56ec](https://github.com/Dilnova/dilnova/commit/c5e56ecbbf867d2b81f4acd7810cfb88745e57c8))
+
+### Features
+
+- add case-insensitive suffix stripping function and improve rate limit error handling ([ba4592a](https://github.com/Dilnova/dilnova/commit/ba4592a90e5057507fe22219b05f362157c8a239))
+- add phone number fields to DeliveryAddressFormFields for improved contact information ([cfc7a14](https://github.com/Dilnova/dilnova/commit/cfc7a1409561ae72760973e6bbfac30187c2c508))
+- add stock quantity and status to cart items and update related functions for inventory management ([a47e52b](https://github.com/Dilnova/dilnova/commit/a47e52bb59ac749454f3d0f44fbd5a9f12410c88))
+- **admin:** enhance AdminPage layout with logo preview and improved styling ([aafe3de](https://github.com/Dilnova/dilnova/commit/aafe3de55b7d3552046f30e1e2815ec9de38ce50))
+- **chat:** add chat schema and validation logic ([306cfa8](https://github.com/Dilnova/dilnova/commit/306cfa8f4fee065781e41116d329ec8f527c6d0c))
+- **config:** increase static page generation timeout to 180 seconds ([e64b425](https://github.com/Dilnova/dilnova/commit/e64b4255d94f9ceb253ada50caa1eb6e3decadac))
+- **contact:** enhance plan selection and messaging logic in ContactInteractiveForm ([623c2f3](https://github.com/Dilnova/dilnova/commit/623c2f37a7d853b33049df329878be2daaf74b30))
+- enhance DeliveryAddressFormFields with location detection and improved state management ([f17ffb4](https://github.com/Dilnova/dilnova/commit/f17ffb4f5d168d36a333cf93802468b9e747308b))
+- enhance shipping rate fetching with branch breakdown and loading state management ([8ec3cc0](https://github.com/Dilnova/dilnova/commit/8ec3cc0c4aa924be75131e918d2bbaf4c581e839))
+- implement batch tax class resolution for products to optimize queries ([535169f](https://github.com/Dilnova/dilnova/commit/535169fb5ae39c5c20b14eeceb8b9858c304c546))
+- Implement Shippo and Sri Lanka Post shipping adapters with rate calculation and shipment creation ([314157e](https://github.com/Dilnova/dilnova/commit/314157efa99878643180ed873c4feeb72c313ceb))
+- implement stock validation for cart items and enhance payment compatibility checks ([b200a67](https://github.com/Dilnova/dilnova/commit/b200a67c3eead834ff07d566d0719a9075afaab8))
+- Integrate country-state-city library for enhanced location management, adding dynamic fetching of districts and improved address handling in DeliveryAddressFormFields ([8804ab0](https://github.com/Dilnova/dilnova/commit/8804ab086e5921198764eda83fde44585097dfef))
+- integrate DeliveryAddressFormFields into OrgOnboardingWizardModal for improved address management ([e02d72c](https://github.com/Dilnova/dilnova/commit/e02d72cbe538a8b957e1913726c51b409d4bb654))
+- optimize cart item synchronization and add tests for unchanged prices ([1188a82](https://github.com/Dilnova/dilnova/commit/1188a823053c79cd54c0aee8e289007084b4bee0))
+- **shipping:** refactor API key handling and enhance error logging in EasyPost and Shippo adapters ([f201498](https://github.com/Dilnova/dilnova/commit/f2014980ef612b89e747b5c9069504c26f582d32))
+- update default quantity settings and validation for product availability in add product flow ([17a88f2](https://github.com/Dilnova/dilnova/commit/17a88f263898a7317188182afb6485a2184b3c02))
+- **vendor:** add vendor catalog and stock statistics query and optimize data fetching in VendorPage ([0360bc1](https://github.com/Dilnova/dilnova/commit/0360bc1a0076fa4c4533ef309f6b2363e4957fa8))
+- **vendor:** enhance UI responsiveness and improve layout for product management ([37e1ec5](https://github.com/Dilnova/dilnova/commit/37e1ec5b58610760a1c6adf2fa8417d2ba2f7ddc))
+
+# [1.5.0](https://github.com/Dilnova/dilnova/compare/v1.4.0...v1.5.0) (2026-08-11)
+
+### Bug Fixes
+
+- **merge:** resolve package.json and pnpm-lock.yaml merge conflicts with main ([70b5206](https://github.com/Dilnova/dilnova/commit/70b5206c4d5fced911dbff4ae7b727ea21459ac6))
+- update fast-uri package from 3.1.4 to 3.1.5 in pnpm-lock.yaml ([cd4757a](https://github.com/Dilnova/dilnova/commit/cd4757a0fa1fd0b75456950a0a365a9adac7268f))
+
+### Features
+
+- add organization tax settings form and superadmin tax classes manager ([dd6f183](https://github.com/Dilnova/dilnova/commit/dd6f1838527e0dd26805d4e3520a9e6bcfcd1eab))
+- add ProcedureFlowchart component and update home page content for clarity and engagement ([a0ae52d](https://github.com/Dilnova/dilnova/commit/a0ae52d337eadb47eda0bb32a496ea48dee642ed))
+- add support hub and contact form enhancements ([f08109f](https://github.com/Dilnova/dilnova/commit/f08109fe87a77abb62eb874e4e08a2a5be6aeb74))
+- enhance address handling by allowing selection from dropdowns for country, state, and city, and update input types for better compatibility ([15e569d](https://github.com/Dilnova/dilnova/commit/15e569d22daedd3f91e21fa06103f28f85355948))
+- enhance contact form submission to send confirmation email to user and admin ([d10c8ee](https://github.com/Dilnova/dilnova/commit/d10c8ee640d78c95a9c916dbec5befa900bdd8ef))
+- enhance customer metrics and orders display with currency formatting and UI improvements ([638181d](https://github.com/Dilnova/dilnova/commit/638181d760826b502b08453b4f3e1cbe495c4d8a))
+- enhance error logging in location API by sanitizing user input and improving error messages ([da2ecbc](https://github.com/Dilnova/dilnova/commit/da2ecbc7f0233d647c0847355c3f1e398d6aad2b))
+- enhance location detection by adding reverse geocoding and IP fallback methods, and improve address validation in forms ([33ff536](https://github.com/Dilnova/dilnova/commit/33ff536c0524d23ef049108e0fd755919b8416ea))
+- enhance price formatting to support dynamic currency selection with default fallback ([acdd881](https://github.com/Dilnova/dilnova/commit/acdd8810de9044877bc0fd989994060abc028fe3))
+- enhance VendorBranchesTab by integrating DeliveryAddressFormFields for structured address management and improving address parsing logic ([390e5c7](https://github.com/Dilnova/dilnova/commit/390e5c730c9caff63bffcb2f292775950e84e425))
+- enhance VendorProfileForm by improving address parsing and integrating DeliveryAddressFormFields for better address management ([56d297a](https://github.com/Dilnova/dilnova/commit/56d297a5b24ac6d2153cbc91c2821f66fe96727b))
+- **invoice:** display unique vendor organization IDs and tax rates in invoice table ([3837bad](https://github.com/Dilnova/dilnova/commit/3837bad29bed0f3534c67f5bb291439c3163d4b4))
+- **tax-engine:** implement tax resolution and calculation logic ([eaac209](https://github.com/Dilnova/dilnova/commit/eaac209b6ee41a955947fd105f66081a67723426))
+- update home page to display trending products and enhance flowchart steps for clarity ([1e8f131](https://github.com/Dilnova/dilnova/commit/1e8f131a847d94724c3670d997fc0ad6ec5fabb9))
+
 # [1.4.0](https://github.com/Dilnova/dilnova/compare/v1.3.0...v1.4.0) (2026-08-03)
 
 ### Features
