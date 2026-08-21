@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { useAuth } from "@clerk/nextjs";
@@ -12,6 +13,7 @@ const fetcher = async (url: string) => {
 };
 
 export function GlobalNotificationListener() {
+  const router = useRouter();
   const { userId } = useAuth();
   const emptyCountRef = useRef(0);
   const seenIdsRef = useRef<Set<string>>(new Set());
@@ -91,7 +93,7 @@ export function GlobalNotificationListener() {
           duration: 10000,
           action: {
             label: "View Order",
-            onClick: () => (window.location.href = `/vendor?tab=inventory`),
+            onClick: () => router.push("/vendor?tab=inventory"),
           },
         });
 
@@ -107,7 +109,7 @@ export function GlobalNotificationListener() {
           });
           desktopNotif.onclick = () => {
             window.focus();
-            window.location.href = `/vendor?tab=inventory`;
+            router.push("/vendor?tab=inventory");
           };
         }
       }

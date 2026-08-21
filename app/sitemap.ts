@@ -1,19 +1,134 @@
 import { logger } from "@/shared/logging/logger";
 import { MetadataRoute } from "next";
+import { headers } from "next/headers";
 import { db } from "@/shared/db/client";
 import { products, categories } from "@/shared/db/schema";
 import { DEFAULT_APP_URL } from "@/shared/platform/brand";
+import { getCachedOrganizations } from "@/shared/auth/clerk-cache";
 
 export const revalidate = 3600; // Regenerate sitemap at most once per hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+  let host = "";
+  try {
+    const headersList = await headers();
+    host = headersList.get("x-forwarded-host") || headersList.get("host") || "";
+  } catch {
+    // headers() might not be available during static build export
+  }
 
+  const isDilstar = host.includes("dilstar.pp.ua");
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const baseUrl = host
+    ? `${protocol}://${host}`
+    : isDilstar
+      ? "https://www.dilstar.pp.ua"
+      : process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+
+  // ── DILSTAR BRAND SITEMAP ─────────────────────────────────────
+  if (isDilstar) {
+    let distarProductEntries: MetadataRoute.Sitemap = [];
+
+    try {
+      const orgs = await getCachedOrganizations();
+      const distarOrgIds = orgs
+        .filter(
+          (o) =>
+            o.slug === "distar" ||
+            o.slug?.startsWith("distar-") ||
+            o.slug === "dilstar-services" ||
+            o.name.toLowerCase().includes("distar") ||
+            o.name.toLowerCase().includes("dilstar"),
+        )
+        .map((o) => o.id);
+
+      const dbProducts = await db
+        .select({
+          id: products.id,
+          orgId: products.orgId,
+          updatedAt: products.updatedAt,
+        })
+        .from(products);
+
+      const filtered = dbProducts.filter(
+        (p) => distarOrgIds.length === 0 || distarOrgIds.includes(p.orgId),
+      );
+
+      distarProductEntries = filtered.map((p) => ({
+        url: `${baseUrl}/products/${p.id}`,
+        lastModified: p.updatedAt || new Date(),
+        changeFrequency: "daily" as const,
+        priority: 0.8,
+      }));
+    } catch (error) {
+      logger.error("Sitemap: Failed to load Distar brand products", error);
+    }
+
+    return [
+      {
+        url: baseUrl,
+        lastModified: new Date(),
+        changeFrequency: "daily" as const,
+        priority: 1.0,
+      },
+      {
+        url: `${baseUrl}/hardware`,
+        lastModified: new Date(),
+        changeFrequency: "daily" as const,
+        priority: 0.95,
+      },
+      {
+        url: `${baseUrl}/tech`,
+        lastModified: new Date(),
+        changeFrequency: "daily" as const,
+        priority: 0.9,
+      },
+      {
+        url: `${baseUrl}/nursery`,
+        lastModified: new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.9,
+      },
+      {
+        url: `${baseUrl}/services`,
+        lastModified: new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.9,
+      },
+      {
+        url: `${baseUrl}/contact`,
+        lastModified: new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.5,
+      },
+      {
+        url: `${baseUrl}/privacy`,
+        lastModified: new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.3,
+      },
+      {
+        url: `${baseUrl}/terms`,
+        lastModified: new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.3,
+      },
+      {
+        url: `${baseUrl}/refund`,
+        lastModified: new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.3,
+      },
+      ...distarProductEntries,
+    ];
+  }
+
+  // ── DILNOVA MARKETPLACE SITEMAP ───────────────────────────────
   let productEntries: MetadataRoute.Sitemap = [];
   let categoryEntries: MetadataRoute.Sitemap = [];
+  let vendorEntries: MetadataRoute.Sitemap = [];
 
   try {
-    // Retrieve all active products
     const dbProducts = await db
       .select({
         id: products.id,
@@ -32,7 +147,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   try {
-    // Retrieve all categories
     const dbCategories = await db
       .select({
         slug: categories.slug,
@@ -50,6 +164,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     logger.error("Sitemap: Failed to load categories for sitemap", error);
   }
 
+  try {
+    const orgs = await getCachedOrganizations();
+    vendorEntries = orgs
+      .filter((o) => !!o.slug)
+      .map((o) => ({
+        url: `${baseUrl}/vendors/${o.slug}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      }));
+  } catch (error) {
+    logger.error("Sitemap: Failed to load vendor orgs for sitemap", error);
+  }
+
   return [
     {
       url: baseUrl,
@@ -59,6 +187,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${baseUrl}/products`,
+      lastModified: new Date(),
+      changeFrequency: "daily" as const,
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/vendors`,
       lastModified: new Date(),
       changeFrequency: "daily" as const,
       priority: 0.9,
@@ -75,6 +209,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.5,
     },
+    {
+      url: `${baseUrl}/privacy`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/terms`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/refund`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.3,
+    },
+    ...vendorEntries,
     ...categoryEntries,
     ...productEntries,
   ];

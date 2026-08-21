@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import React from "react";
 import { ClerkProvider } from "@clerk/nextjs";
 import Link from "next/link";
@@ -46,30 +47,59 @@ const interFont = Inter({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers();
+  const host = headersList.get("x-forwarded-host") || headersList.get("host") || "";
+  const isDilstar = host.includes("dilstar.pp.ua");
+
   const faviconUrl = await getSystemSetting("system_favicon", "");
-  const systemName = await getSystemSetting("system_name", "Dilnova Commerce Hub");
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+  const systemName = isDilstar
+    ? "Distar"
+    : await getSystemSetting("system_name", "Dilnova Commerce Hub");
+
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const baseUrl = host
+    ? `${protocol}://${host}`
+    : process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+
+  const siteTitle = isDilstar ? "Distar | Industrial Motors & Hardware" : systemName;
+
+  const siteDescription = isDilstar
+    ? "Official store for Distar industrial motors, heavy hardware, workstations, botanical flora, and services."
+    : "Enterprise multi-vendor commerce hub and curated marketplace.";
+
+  const keywords = isDilstar
+    ? [
+        "distar",
+        "distar motors",
+        "industrial induction motor",
+        "contractor tools",
+        "distar tech",
+        "distar nursery",
+        "dilstar services",
+      ]
+    : [
+        "dilnova",
+        "dilnova commerce hub",
+        "marketplace",
+        "multi-vendor",
+        "ecommerce",
+        "distar",
+        "b2b platform",
+      ];
+
   return {
     title: {
       template: `%s | ${systemName}`,
-      default: systemName,
+      default: siteTitle,
     },
-    description: "Enterprise RBAC sandbox with multi-vendor isolation",
-    keywords: [
-      "dilstar",
-      "dilstar marketplace",
-      "marketplace",
-      "multi-vendor",
-      "ecommerce",
-      "b2b",
-      "platform",
-    ],
+    description: siteDescription,
+    keywords,
     authors: [{ name: systemName }],
     creator: systemName,
     publisher: systemName,
     openGraph: {
-      title: systemName,
-      description: "Enterprise RBAC sandbox with multi-vendor isolation",
+      title: siteTitle,
+      description: siteDescription,
       url: baseUrl,
       siteName: systemName,
       locale: "en_US",
@@ -77,9 +107,9 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: systemName,
-      description: "Enterprise RBAC sandbox with multi-vendor isolation",
-      creator: "@dilnova",
+      title: siteTitle,
+      description: siteDescription,
+      creator: isDilstar ? "@dilstar" : "@dilnova",
     },
     robots: {
       index: true,
@@ -141,11 +171,20 @@ export default async function RootLayout({
     const initialSessionContext = userId ? await getClientSessionContextAction() : null;
     const initialRatesMap = await getExchangeRatesMap();
 
+    const headersList = await headers();
     // Enterprise-grade dynamic Beta Lock check
     const isBetaLocked = (await getSystemSetting("enable_beta_lock", "false")) === "true";
-    const isCI = process.env.CI === "true";
+    const isCI =
+      process.env.CI === "true" ||
+      process.env.VERCEL_ENV === "preview" ||
+      process.env.NODE_ENV === "test";
+    const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+    const incomingSecret = headersList.get("x-vercel-protection-bypass");
+    const hasValidSecret = Boolean(
+      bypassSecret && incomingSecret && bypassSecret === incomingSecret,
+    );
 
-    if (isBetaLocked && !isCI) {
+    if (isBetaLocked && !isCI && !hasValidSecret) {
       return (
         <html lang="en">
           <body

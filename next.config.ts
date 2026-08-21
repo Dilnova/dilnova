@@ -53,6 +53,10 @@ const remotePatterns: Array<{ protocol: "https" | "http"; hostname: string }> = 
     protocol: "https",
     hostname: "clerk.dilstar.pp.ua",
   },
+  {
+    protocol: "https",
+    hostname: "clerk.dilnova.pp.ua",
+  },
 ];
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -112,13 +116,17 @@ const nextConfig: NextConfig = {
       return [];
     }
 
-    const bareHost = canonicalHost.replace(/^www\./, "");
-
     return [
       {
         source: "/:path*",
-        has: [{ type: "host" as const, value: bareHost }],
-        destination: `${DEFAULT_APP_URL}/:path*`,
+        has: [{ type: "host" as const, value: "dilnova.pp.ua" }],
+        destination: "https://www.dilnova.pp.ua/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host" as const, value: "dilstar.pp.ua" }],
+        destination: "https://www.dilstar.pp.ua/:path*",
         permanent: true,
       },
     ];
@@ -135,6 +143,7 @@ const nextConfig: NextConfig = {
       "https://*.clerk.com",
       "https://*.clerk.accounts.dev",
       "https://clerk.dilstar.pp.ua",
+      "https://clerk.dilnova.pp.ua",
     ];
     if (clerkDomain) {
       clerkDomains.push(`https://${clerkDomain}`);
