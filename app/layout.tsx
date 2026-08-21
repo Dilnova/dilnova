@@ -178,11 +178,13 @@ export default async function RootLayout({
       process.env.CI === "true" ||
       process.env.VERCEL_ENV === "preview" ||
       process.env.NODE_ENV === "test";
-    const hasBypass = Boolean(
-      headersList.get("x-vercel-protection-bypass") || headersList.get("x-e2e-bypass"),
+    const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+    const incomingSecret = headersList.get("x-vercel-protection-bypass");
+    const hasValidSecret = Boolean(
+      bypassSecret && incomingSecret && bypassSecret === incomingSecret,
     );
 
-    if (isBetaLocked && !isCI && !hasBypass) {
+    if (isBetaLocked && !isCI && !hasValidSecret) {
       return (
         <html lang="en">
           <body
