@@ -135,12 +135,33 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     req.headers.get("cf-ipcountry")?.trim() || req.headers.get("x-country")?.trim() || "XX";
   requestHeaders.set("x-country", country);
 
+  // Host detection for multi-domain routing
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  const isDilstarDomain = host.includes("dilstar.pp.ua");
+
+  const brandRouteMap: Record<string, string> = {
+    "/": "/brand/dilstar",
+    "/hardware": "/vendors/distar-hardware",
+    "/tech": "/vendors/distar-tech",
+    "/nursery": "/vendors/distar-nursery",
+    "/services": "/vendors/dilstar-services",
+  };
+
+  const normalizedPath = req.nextUrl.pathname.replace(/\/$/, "") || "/";
+  let rewrittenUrl: URL | null = null;
+
+  if (isDilstarDomain && brandRouteMap[normalizedPath]) {
+    rewrittenUrl = req.nextUrl.clone();
+    rewrittenUrl.pathname = brandRouteMap[normalizedPath];
+  }
+
   // Define CSP first to attach to both request and response
   const clerkDomains = [
     "https://img.clerk.com",
     "https://*.clerk.com",
     "https://*.clerk.accounts.dev",
     "https://clerk.dilstar.pp.ua",
+    "https://clerk.dilnova.pp.ua",
   ];
   const clerkDomainsStr = clerkDomains.join(" ");
 
@@ -164,11 +185,17 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 
   requestHeaders.set("Content-Security-Policy", cspHeader);
 
-  const response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
+  const response = rewrittenUrl
+    ? NextResponse.rewrite(rewrittenUrl, {
+        request: {
+          headers: requestHeaders,
+        },
+      })
+    : NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
 
   response.headers.set("x-request-id", requestId);
   response.headers.set("x-country", country);
