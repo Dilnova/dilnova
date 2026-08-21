@@ -158,11 +158,9 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   const excludeEval = isProd || isVercelProdOrPreview;
   const sentryCspUrl = getSentryCspReportUri();
 
-  const reportingDirectives = sentryCspUrl
-    ? `report-uri ${sentryCspUrl};`
-    : `report-uri /api/csp-report; report-to csp-endpoint;`;
+  const reportingDirectives = sentryCspUrl ? ` report-uri ${sentryCspUrl};` : "";
 
-  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:${excludeEval ? "" : " 'unsafe-eval'"}; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.googleusercontent.com https://avatars.githubusercontent.com https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com https://*.ingest.de.sentry.io https://*.sentry.io; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:; ${reportingDirectives}${isProd ? " upgrade-insecure-requests;" : ""}`;
+  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:${excludeEval ? "" : " 'unsafe-eval'"}; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.googleusercontent.com https://avatars.githubusercontent.com https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com https://*.ingest.de.sentry.io https://*.sentry.io; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:;${reportingDirectives}${isProd ? " upgrade-insecure-requests;" : ""}`;
 
   requestHeaders.set("Content-Security-Policy", cspHeader);
 
@@ -172,24 +170,9 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     },
   });
 
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
-  const protocol = req.headers.get("x-forwarded-proto") || "http";
-  const reportToUrl = `${protocol}://${host}/api/csp-report`;
-
-  const reportToHeader = sentryCspUrl
-    ? null
-    : JSON.stringify({
-        group: "csp-endpoint",
-        max_age: 10886400,
-        endpoints: [{ url: reportToUrl }],
-      });
-
   response.headers.set("x-request-id", requestId);
   response.headers.set("x-country", country);
   response.headers.set("Content-Security-Policy", cspHeader);
-  if (reportToHeader) {
-    response.headers.set("Report-To", reportToHeader);
-  }
   return response;
 });
 

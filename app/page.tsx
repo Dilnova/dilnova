@@ -1,4 +1,3 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Layers, Shield, ShoppingCart, Zap } from "lucide-react";
@@ -17,6 +16,8 @@ import PricingCards from "@/components/home/PricingCards";
 import ProcedureFlowchart from "@/components/home/ProcedureFlowchart";
 
 import { DEFAULT_APP_URL } from "@/shared/platform/brand";
+
+export const revalidate = 60; // ISR: cache and regenerate at edge at most once every 60 seconds
 
 export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemSetting("system_name", "Dilnova");
@@ -47,9 +48,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  await auth();
-
-  const clientPromise = clerkClient();
   const plansPromise = getPricingPlansOrderedByCreatedAtAsc();
   const productsPromise = getTrendingProducts(8);
   const settingsPromise = Promise.all([
@@ -60,8 +58,7 @@ export default async function Home() {
     getSystemSetting("custom_storefront_dilstar-services", "true"),
   ]);
 
-  const [client, dbPlans, trendingProducts, settingsResult] = await Promise.all([
-    clientPromise,
+  const [dbPlans, trendingProducts, settingsResult] = await Promise.all([
     plansPromise,
     productsPromise,
     settingsPromise,
@@ -145,7 +142,7 @@ export default async function Home() {
   }
 
   // Fetch all registered organization vendors from Clerk (cached)
-  const allOrganizations = await getCachedOrganizations(client);
+  const allOrganizations = await getCachedOrganizations();
 
   // Filter out the core four portals so we only show "other" custom vendors
   const coreSlugs = ["distar-hardware", "distar-nursery", "distar-tech", "dilstar-services"];

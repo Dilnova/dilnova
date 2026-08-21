@@ -89,6 +89,7 @@ export async function GET(
   let isAborted = false;
   let intervalId: NodeJS.Timeout | null = null;
   let keepAliveId: NodeJS.Timeout | null = null;
+  let maxDurationId: NodeJS.Timeout | null = null;
   let lastCheckedTimestamp = Date.now();
 
   const stream = new ReadableStream({
@@ -100,7 +101,19 @@ export async function GET(
         ),
       );
 
-      // Keepalive ping every 15s to prevent cloud proxy timeout
+      // Graceful timeout after 25 seconds to prevent unbounded Serverless Function Active CPU accumulation
+      maxDurationId = setTimeout(() => {
+        if (isAborted) return;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "stream_end" })}\n\n`));
+          cleanup();
+          controller.close();
+        } catch {
+          cleanup();
+        }
+      }, 25000);
+
+      // Keepalive ping every 12s
       keepAliveId = setInterval(() => {
         if (isAborted) return;
         try {
@@ -109,9 +122,9 @@ export async function GET(
           isAborted = true;
           cleanup();
         }
-      }, 15000);
+      }, 12000);
 
-      // Poll check every 2 seconds for new messages or Redis event
+      // Poll check every 4 seconds for new messages or Redis event
       const redis = getChatRedisClient();
 
       intervalId = setInterval(async () => {
@@ -156,7 +169,7 @@ export async function GET(
         } catch (error) {
           logger.warn("SSE polling error in chat stream", { conversationId, error });
         }
-      }, 2000);
+      }, 4000);
     },
     cancel() {
       isAborted = true;
@@ -167,6 +180,7 @@ export async function GET(
   function cleanup() {
     if (intervalId) clearInterval(intervalId);
     if (keepAliveId) clearInterval(keepAliveId);
+    if (maxDurationId) clearTimeout(maxDurationId);
   }
 
   request.signal.addEventListener("abort", () => {

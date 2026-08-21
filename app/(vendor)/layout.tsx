@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getCachedUserRole, getCachedIsSuperAdmin } from "@/shared/auth/clerk-cache";
+import { GlobalNotificationListener } from "@/shared/ui/notifications/GlobalNotificationListener";
 
 export default async function VendorLayout({ children }: { children: React.ReactNode }) {
   const { userId, orgId, orgRole } = await auth();
@@ -23,5 +24,10 @@ export default async function VendorLayout({ children }: { children: React.React
     }
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <GlobalNotificationListener />
+      {children}
+    </>
+  );
 }

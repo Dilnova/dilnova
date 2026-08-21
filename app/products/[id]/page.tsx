@@ -39,7 +39,7 @@ interface PageProps {
   }>;
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // ISR: cache and revalidate product details every 60s
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
