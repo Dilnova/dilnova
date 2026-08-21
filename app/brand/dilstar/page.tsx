@@ -23,6 +23,7 @@ import {
   Laptop,
 } from "lucide-react";
 import { DILSTAR_BRAND_URL, DILSTAR_BRAND_NAME } from "@/shared/platform/brand";
+import DilstarNewsletterForm from "./DilstarNewsletterForm";
 
 export const revalidate = 60;
 
@@ -942,24 +943,7 @@ export default function DilstarBrandHomePage() {
               Get notified of seasonal garden arrivals, exclusive contractor sales, and flash tech
               upgrades.
             </p>
-            <form
-              action="#"
-              className="mt-6 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
-              onSubmit={(e) => e.preventDefault()}
-            >
-              <input
-                type="email"
-                placeholder="Enter your email address..."
-                className="flex-1 px-4 py-3 rounded-xl bg-zinc-950/80 border border-zinc-700 text-white placeholder:text-zinc-500 text-xs focus:outline-none focus:ring-2 focus:ring-[#1565D8]"
-                required
-              />
-              <button
-                type="submit"
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#1565D8] to-[#0B4F5C] text-white font-bold text-xs hover:opacity-95 transition-opacity shadow-md"
-              >
-                Subscribe
-              </button>
-            </form>
+            <DilstarNewsletterForm />
             <p className="text-[10px] text-zinc-500 mt-3">
               We respect your privacy. Unsubscribe at any time.
             </p>
