@@ -32,7 +32,18 @@ interface ChatWindowProps {
   titleOverride?: string;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (res.status === 404) {
+    const error = new Error("Conversation not found") as Error & { status: number };
+    error.status = 404;
+    throw error;
+  }
+  if (!res.ok) {
+    throw new Error("Failed to fetch messages");
+  }
+  return res.json();
+};
 
 export default function ChatWindow({
   conversationId,
@@ -51,13 +62,21 @@ export default function ChatWindow({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. Initial hydration via SWR
+  // 1. Message sync via SWR (4s active polling, paused when tab is hidden/offline)
   const { data, mutate, isLoading } = useSWR<{
     conversation: ConversationDetail;
     messages: ChatMessageItem[];
-  }>(`/api/chat/messages/${conversationId}`, fetcher, {
+  }>(isConversationDeleted ? null : `/api/chat/messages/${conversationId}`, fetcher, {
     revalidateOnFocus: true,
-    refreshInterval: 10000, // Background fallback poll
+    refreshWhenHidden: false,
+    refreshWhenOffline: false,
+    refreshInterval: isConversationDeleted ? 0 : 4000,
+    onError: (err: { status?: number }) => {
+      if (err?.status === 404) {
+        setIsConversationDeleted(true);
+        toast.error("This order conversation is no longer active.");
+      }
+    },
   });
 
   const conversation = data?.conversation;
@@ -69,10 +88,10 @@ export default function ChatWindow({
 
   // 2. Mark as read on mount and when messages update
   useEffect(() => {
-    if (conversationId) {
+    if (conversationId && !isConversationDeleted) {
       markConversationReadAction({ conversationId }).catch(() => {});
     }
-  }, [conversationId, messages.length]);
+  }, [conversationId, messages.length, isConversationDeleted]);
 
   // 3. Auto-scroll on initial load and message count change
   useEffect(() => {
@@ -80,45 +99,6 @@ export default function ChatWindow({
       scrollToBottom(false);
     }
   }, [messages.length, scrollToBottom]);
-
-  // 4. Live SSE subscription
-  useEffect(() => {
-    if (!conversationId) return;
-
-    let eventSource: EventSource | null = null;
-
-    try {
-      eventSource = new EventSource(`/api/chat/stream/${conversationId}`);
-
-      eventSource.onmessage = (e) => {
-        try {
-          const payload = JSON.parse(e.data);
-
-          if (payload.type === "conversation_deleted") {
-            setIsConversationDeleted(true);
-            toast.error("This order conversation is no longer active.");
-            eventSource?.close();
-            return;
-          }
-
-          if (payload.type === "new_message" || payload.type === "conversation_resolved") {
-            mutate();
-            markConversationReadAction({ conversationId }).catch(() => {});
-          }
-        } catch {}
-      };
-
-      eventSource.onerror = () => {
-        // SSE reconnects automatically
-      };
-    } catch {}
-
-    return () => {
-      if (eventSource) {
-        eventSource.close();
-      }
-    };
-  }, [conversationId, mutate]);
 
   // 5. Send message handler
   const handleSendMessage = async (e?: React.FormEvent) => {

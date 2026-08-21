@@ -51,10 +51,10 @@ export function GlobalNotificationListener() {
     refreshInterval: (data) => {
       if (data?.notVendor) return 0; // Stop polling completely
 
-      // Dynamic backoff
-      if (emptyCountRef.current > 20) return 60000;
-      if (emptyCountRef.current > 10) return 30000;
-      return 15000; // Default fast poll
+      // Dynamic backoff when idle
+      if (emptyCountRef.current > 10) return 120000; // 2 minutes
+      if (emptyCountRef.current > 5) return 90000; // 1.5 minutes
+      return 45000; // Default polite poll (45s)
     },
     onSuccess: (data) => {
       if (data.notVendor) return;

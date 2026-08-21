@@ -25,7 +25,6 @@ import { getSystemSetting } from "@/shared/platform/settings";
 import Image from "next/image";
 import { Toaster } from "sonner";
 import { ConfirmProvider } from "@/shared/ui/notifications";
-import { GlobalNotificationListener } from "@/shared/ui/notifications/GlobalNotificationListener";
 import { Inter } from "next/font/google";
 
 import { DynamicHeaderNav, DynamicHeaderAuth } from "@/shared/ui/DynamicHeader";
@@ -341,7 +340,6 @@ export default async function RootLayout({
                   <CartMergeBanner />
                 </CartProvider>
               </CurrencyProvider>
-              <GlobalNotificationListener />
               <Toaster
                 position="top-right"
                 toastOptions={{ className: "text-xs font-semibold", duration: 4000 }}
