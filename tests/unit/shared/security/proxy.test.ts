@@ -5,9 +5,19 @@ import { NextRequest, NextResponse } from "next/server";
 vi.mock("@clerk/nextjs/server", () => ({
   clerkMiddleware: vi.fn((handler) => {
     return (req: unknown, event: unknown) => {
-      const mockAuth = {
-        protect: vi.fn(),
-      };
+      const mockAuth = Object.assign(
+        vi.fn().mockResolvedValue({
+          userId: "user_test_mock",
+          redirectToSignIn: vi
+            .fn()
+            .mockReturnValue(
+              new Response(null, { status: 307, headers: { Location: "/sign-in" } }),
+            ),
+        }),
+        {
+          protect: vi.fn(),
+        },
+      );
       return handler(mockAuth, req, event);
     };
   }),

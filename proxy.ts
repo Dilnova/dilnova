@@ -132,7 +132,10 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
-    await auth.protect();
+    const authState = await auth();
+    if (!authState.userId) {
+      return authState.redirectToSignIn({ returnBackUrl: req.url });
+    }
   }
 
   const requestId = req.headers.get("x-request-id") || crypto.randomUUID();
@@ -391,7 +394,16 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
   try {
     const res = await clerkHandler(request, event);
     return res;
-  } catch (error) {
+  } catch (error: unknown) {
+    if (
+      error &&
+      typeof error === "object" &&
+      ("digest" in error || "message" in error) &&
+      (String((error as { digest?: string }).digest).startsWith("NEXT_REDIRECT") ||
+        String((error as { message?: string }).message).includes("NEXT_REDIRECT"))
+    ) {
+      throw error;
+    }
     logger.error("Clerk Middleware execution failed (API outage)", error);
     return applySecurityHeaders(
       new NextResponse("Authentication Service is currently unavailable. Please try again later.", {
