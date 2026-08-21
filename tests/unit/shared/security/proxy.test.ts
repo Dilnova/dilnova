@@ -43,8 +43,11 @@ vi.mock("next/server", async (importOriginal) => {
       this.status = init?.status ?? 200;
       this.headers = new Headers(init?.headers);
     }
-    static next() {
-      return { headers: new Headers() };
+    static next(init?: { request?: { headers?: Headers } }) {
+      return { headers: init?.request?.headers || new Headers() };
+    }
+    static rewrite(destination: URL | string, init?: { request?: { headers?: Headers } }) {
+      return { headers: init?.request?.headers || new Headers(), rewrittenUrl: destination };
     }
   }
   return {
@@ -377,5 +380,111 @@ describe("Proxy Middleware Edge Rate Limiting Protection", () => {
     });
     const result = await proxy(request, mockEvent);
     expect(result).not.toBeInstanceOf(NextResponse);
+  });
+});
+
+describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
+  it("rewrites root / to /brand/dilstar when host is dilstar.pp.ua", async () => {
+    const request = new NextRequest("https://dilstar.pp.ua/", {
+      method: "GET",
+      headers: {
+        host: "dilstar.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeDefined();
+    expect(result.rewrittenUrl?.pathname).toBe("/brand/dilstar");
+  });
+
+  it("rewrites /hardware to /vendors/distar-hardware when host is dilstar.pp.ua", async () => {
+    const request = new NextRequest("https://dilstar.pp.ua/hardware", {
+      method: "GET",
+      headers: {
+        host: "dilstar.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeDefined();
+    expect(result.rewrittenUrl?.pathname).toBe("/vendors/distar-hardware");
+  });
+
+  it("rewrites /tech to /vendors/distar-tech when host is dilstar.pp.ua", async () => {
+    const request = new NextRequest("https://dilstar.pp.ua/tech", {
+      method: "GET",
+      headers: {
+        host: "dilstar.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeDefined();
+    expect(result.rewrittenUrl?.pathname).toBe("/vendors/distar-tech");
+  });
+
+  it("rewrites /nursery to /vendors/distar-nursery when host is dilstar.pp.ua", async () => {
+    const request = new NextRequest("https://dilstar.pp.ua/nursery", {
+      method: "GET",
+      headers: {
+        host: "dilstar.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeDefined();
+    expect(result.rewrittenUrl?.pathname).toBe("/vendors/distar-nursery");
+  });
+
+  it("rewrites /services to /vendors/dilstar-services when host is dilstar.pp.ua", async () => {
+    const request = new NextRequest("https://dilstar.pp.ua/services", {
+      method: "GET",
+      headers: {
+        host: "dilstar.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeDefined();
+    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-services");
+  });
+
+  it("does not rewrite when host is dilnova.pp.ua", async () => {
+    const request = new NextRequest("https://dilnova.pp.ua/", {
+      method: "GET",
+      headers: {
+        host: "dilnova.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeUndefined();
+  });
+
+  it("includes both dilstar and dilnova Clerk domains in CSP header", async () => {
+    const request = new NextRequest("https://dilnova.pp.ua/", {
+      method: "GET",
+      headers: {
+        host: "dilnova.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      headers: Headers;
+    };
+    const csp = result.headers.get("Content-Security-Policy") || "";
+    expect(csp).toContain("https://clerk.dilstar.pp.ua");
+    expect(csp).toContain("https://clerk.dilnova.pp.ua");
   });
 });
