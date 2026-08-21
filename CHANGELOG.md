@@ -1,3 +1,9 @@
+# [1.7.0](https://github.com/Dilnova/dilnova/compare/v1.6.0...v1.7.0) (2026-08-21)
+
+### Features
+
+- **vendor:** integrate GlobalNotificationListener into VendorLayout and adjust polling intervals for notifications ([4023fb4](https://github.com/Dilnova/dilnova/commit/4023fb46e5e34415d12664b4829569f5e8e8f16e))
+
 # [1.6.0](https://github.com/Dilnova/dilnova/compare/v1.5.0...v1.6.0) (2026-08-20)
 
 ### Bug Fixes
