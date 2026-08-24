@@ -8,13 +8,13 @@ import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 /**
  * ═══════════════════════════════════════════════════════════════
- * DISTAR TECH STORE — Custom Storefront
+ * DILSTAR TECH SHOP — Custom Storefront
  * ═══════════════════════════════════════════════════════════════
  * Futuristic tech/cyberpunk theme featuring deep indigo/violet background,
  * neon cyan/violet accents, monospace stats, and digital grid aesthetics.
  * ═══════════════════════════════════════════════════════════════
  */
-export default function DistarTechStorefront({ org, products }: StorefrontProps) {
+export default function DilstarTechStorefront({ org, products }: StorefrontProps) {
   const metadata = org.publicMetadata;
 
   return (

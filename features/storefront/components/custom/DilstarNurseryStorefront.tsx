@@ -8,7 +8,7 @@ import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 /**
  * ═══════════════════════════════════════════════════════════════
- * DISTAR NURSERY — Custom Storefront
+ * DILSTAR NURSERY — Custom Storefront
  * ═══════════════════════════════════════════════════════════════
  * Soft organic nature theme with earthy greens, cream backgrounds,
  * botanical design elements, rounded shapes, and a warm feel.
@@ -17,7 +17,7 @@ import { DEFAULT_CURRENCY } from "@/shared/currency";
  * section, or content. This is YOUR page — no restrictions.
  * ═══════════════════════════════════════════════════════════════
  */
-export default function DistarNurseryStorefront({ org, products }: StorefrontProps) {
+export default function DilstarNurseryStorefront({ org, products }: StorefrontProps) {
   const metadata = org.publicMetadata;
   const plantProducts = products.filter((p) => p.type === "product");
   const serviceProducts = products.filter((p) => p.type === "service");

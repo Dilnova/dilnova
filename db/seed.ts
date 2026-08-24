@@ -89,24 +89,35 @@ async function main() {
 
       const orgList = { data: allOrgs };
 
-      const distarOrgFallback = orgList.data.find(
+      const dilstarOrgFallback = orgList.data.find(
         (o: ClerkOrgItem) =>
-          o.name.toLowerCase() === "distar" || o.slug === "distar" || o.slug.startsWith("distar-"),
+          o.name.toLowerCase() === "dilstar" ||
+          o.slug === "dilstar" ||
+          o.slug.startsWith("dilstar-") ||
+          o.name.toLowerCase() === "distar" ||
+          o.slug === "distar" ||
+          o.slug.startsWith("distar-"),
       );
 
       const hardwareOrg =
-        orgList.data.find((o: ClerkOrgItem) => o.slug === "distar-hardware") || distarOrgFallback;
+        orgList.data.find(
+          (o: ClerkOrgItem) => o.slug === "dilstar-hardware" || o.slug === "distar-hardware",
+        ) || dilstarOrgFallback;
       const nurseryOrg =
-        orgList.data.find((o: ClerkOrgItem) => o.slug === "distar-nursery") || distarOrgFallback;
+        orgList.data.find(
+          (o: ClerkOrgItem) => o.slug === "dilstar-nursery" || o.slug === "distar-nursery",
+        ) || dilstarOrgFallback;
       const techOrg =
-        orgList.data.find((o: ClerkOrgItem) => o.slug === "distar-tech") || distarOrgFallback;
+        orgList.data.find(
+          (o: ClerkOrgItem) => o.slug === "dilstar-tech" || o.slug === "distar-tech",
+        ) || dilstarOrgFallback;
       const servicesOrg =
         orgList.data.find((o: ClerkOrgItem) => o.slug === "dilstar-services") ||
         orgList.data.find(
           (o: ClerkOrgItem) =>
             o.slug.startsWith("dilstar-services-") || o.name.toLowerCase() === "dilstar services",
         ) ||
-        distarOrgFallback;
+        dilstarOrgFallback;
 
       if (hardwareOrg) hardwareOrgId = hardwareOrg.id;
       if (nurseryOrg) nurseryOrgId = nurseryOrg.id;

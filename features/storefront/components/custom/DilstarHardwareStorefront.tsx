@@ -8,7 +8,7 @@ import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 /**
  * ═══════════════════════════════════════════════════════════════
- * DISTAR HARDWARE — Custom Storefront
+ * DILSTAR HARDWARE — Custom Storefront
  * ═══════════════════════════════════════════════════════════════
  * Dark industrial theme with bold typography, orange accent colors,
  * angular design elements, and a rugged professional feel.
@@ -17,7 +17,7 @@ import { DEFAULT_CURRENCY } from "@/shared/currency";
  * section, or content. This is YOUR page — no restrictions.
  * ═══════════════════════════════════════════════════════════════
  */
-export default function DistarHardwareStorefront({ org, products }: StorefrontProps) {
+export default function DilstarHardwareStorefront({ org, products }: StorefrontProps) {
   const metadata = org.publicMetadata;
 
   return (

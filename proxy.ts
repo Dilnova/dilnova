@@ -155,9 +155,9 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 
   const brandRouteMap: Record<string, string> = {
     "/": "/brand/dilstar",
-    "/hardware": "/vendors/distar-hardware",
-    "/tech": "/vendors/distar-tech",
-    "/nursery": "/vendors/distar-nursery",
+    "/hardware": "/vendors/dilstar-hardware",
+    "/tech": "/vendors/dilstar-tech",
+    "/nursery": "/vendors/dilstar-nursery",
     "/services": "/vendors/dilstar-services",
   };
 

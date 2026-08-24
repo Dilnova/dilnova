@@ -213,7 +213,7 @@ export default async function Home() {
                   title="Dilstar Hardware"
                   category="Industrial"
                   description="Raw industrial power, heavy-duty machinery, and contractor-grade tools."
-                  href="/vendors/distar-hardware"
+                  href="/vendors/dilstar-hardware"
                 />
               )}
               {nurseryCustomEnabled && (
@@ -222,7 +222,7 @@ export default async function Home() {
                   title="Dilstar Nursery"
                   category="Botanical"
                   description="Curated organic flora, seeds, exotic indoor plants, and landscaping."
-                  href="/vendors/distar-nursery"
+                  href="/vendors/dilstar-nursery"
                 />
               )}
               {techCustomEnabled && (
@@ -231,7 +231,7 @@ export default async function Home() {
                   title="Dilstar Tech Shop"
                   category="Technology"
                   description="Mobile devices, accessories, fast chargers, and developer hardware."
-                  href="/vendors/distar-tech"
+                  href="/vendors/dilstar-tech"
                 />
               )}
               {servicesCustomEnabled && (

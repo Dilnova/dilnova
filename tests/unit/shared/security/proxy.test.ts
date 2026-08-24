@@ -463,7 +463,7 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
     expect(result.rewrittenUrl?.pathname).toBe("/brand/dilstar");
   });
 
-  it("rewrites /hardware to /vendors/distar-hardware when host is dilstar.pp.ua", async () => {
+  it("rewrites /hardware to /vendors/dilstar-hardware when host is dilstar.pp.ua", async () => {
     const request = new NextRequest("https://dilstar.pp.ua/hardware", {
       method: "GET",
       headers: {
@@ -475,10 +475,10 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
       headers: Headers;
     };
     expect(result.rewrittenUrl).toBeDefined();
-    expect(result.rewrittenUrl?.pathname).toBe("/vendors/distar-hardware");
+    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-hardware");
   });
 
-  it("rewrites /tech to /vendors/distar-tech when host is dilstar.pp.ua", async () => {
+  it("rewrites /tech to /vendors/dilstar-tech when host is dilstar.pp.ua", async () => {
     const request = new NextRequest("https://dilstar.pp.ua/tech", {
       method: "GET",
       headers: {
@@ -490,10 +490,10 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
       headers: Headers;
     };
     expect(result.rewrittenUrl).toBeDefined();
-    expect(result.rewrittenUrl?.pathname).toBe("/vendors/distar-tech");
+    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-tech");
   });
 
-  it("rewrites /nursery to /vendors/distar-nursery when host is dilstar.pp.ua", async () => {
+  it("rewrites /nursery to /vendors/dilstar-nursery when host is dilstar.pp.ua", async () => {
     const request = new NextRequest("https://dilstar.pp.ua/nursery", {
       method: "GET",
       headers: {
@@ -505,7 +505,7 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
       headers: Headers;
     };
     expect(result.rewrittenUrl).toBeDefined();
-    expect(result.rewrittenUrl?.pathname).toBe("/vendors/distar-nursery");
+    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-nursery");
   });
 
   it("rewrites /services to /vendors/dilstar-services when host is dilstar.pp.ua", async () => {
