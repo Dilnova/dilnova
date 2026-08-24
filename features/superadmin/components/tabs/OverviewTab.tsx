@@ -1,8 +1,12 @@
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
+
 export interface Product {
   id: string;
   name: string;
   type: string;
   price: number;
+  currency?: string | null;
   description: string | null;
   imageUrl: string | null;
   orgId: string;
@@ -118,7 +122,10 @@ export default function OverviewTab({ stats, products }: OverviewTabProps) {
                     </span>
                   </td>
                   <td className="py-3 px-4 font-mono font-semibold">
-                    ${(p.price / 100).toFixed(2)}
+                    <ProductPriceDisplay
+                      priceInSubunits={p.price}
+                      baseCurrency={p.currency || DEFAULT_CURRENCY}
+                    />
                   </td>
                   <td className="py-3 px-4 text-zinc-500">{p.categoryName || "Uncategorized"}</td>
                   <td className="py-3 px-4 font-mono font-black text-zinc-850 dark:text-white">
@@ -149,7 +156,11 @@ export default function OverviewTab({ stats, products }: OverviewTabProps) {
                   {p.name}
                 </p>
                 <p className="text-[10px] text-zinc-400 font-mono">
-                  ${(p.price / 100).toFixed(2)} · {p.categoryName || "Uncategorized"}
+                  <ProductPriceDisplay
+                    priceInSubunits={p.price}
+                    baseCurrency={p.currency || DEFAULT_CURRENCY}
+                  />{" "}
+                  · {p.categoryName || "Uncategorized"}
                 </p>
               </div>
               <div className="text-right flex-shrink-0">

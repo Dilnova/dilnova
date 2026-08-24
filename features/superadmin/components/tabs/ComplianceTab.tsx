@@ -9,6 +9,8 @@ import {
 } from "@/features/superadmin/actions";
 import SuperadminFormCard from "../ui/SuperadminFormCard";
 import { PendingOverlay } from "@/shared/ui/PendingOverlay";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 export default function ComplianceTab() {
   const [isPending, startTransition] = useTransition();
@@ -363,7 +365,14 @@ export default function ComplianceTab() {
                           </p>
                         </div>
                         <span className="font-mono font-bold">
-                          ${(order.totalAmount / 100).toFixed(2)}
+                          <ProductPriceDisplay
+                            priceInSubunits={order.totalAmount}
+                            baseCurrency={
+                              order.presentmentCurrency ||
+                              order.vendorBaseCurrency ||
+                              DEFAULT_CURRENCY
+                            }
+                          />
                         </span>
                       </div>
                     ))}

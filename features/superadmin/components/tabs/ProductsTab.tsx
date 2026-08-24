@@ -8,6 +8,8 @@ import { deleteProductAction } from "@/features/catalog/superadmin.actions";
 import { TabDataTableLayout, type ColumnDef } from "@/shared/ui/TabDataTableLayout";
 import { ProductsFilters } from "./products/ProductsFilters";
 import { ProductEditModal } from "./products/ProductEditModal";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 export interface Product {
   id: string;
@@ -149,7 +151,14 @@ export default function ProductsTab({
     },
     {
       header: "Price",
-      cell: (p) => <span className="font-mono font-bold">${(p.price / 100).toFixed(2)}</span>,
+      cell: (p) => (
+        <span className="font-mono font-bold">
+          <ProductPriceDisplay
+            priceInSubunits={p.price}
+            baseCurrency={p.currency || DEFAULT_CURRENCY}
+          />
+        </span>
+      ),
     },
     {
       header: "Views",
@@ -224,7 +233,10 @@ export default function ProductsTab({
           </div>
           <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-400 font-mono">
             <span className="font-bold text-zinc-700 dark:text-zinc-300">
-              ${(p.price / 100).toFixed(2)}
+              <ProductPriceDisplay
+                priceInSubunits={p.price}
+                baseCurrency={p.currency || DEFAULT_CURRENCY}
+              />
             </span>
             <span>·</span>
             <span>👀 {p.views}</span>

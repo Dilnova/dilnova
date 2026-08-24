@@ -16,6 +16,8 @@ import {
 } from "@/features/organization/checkout-options.shared";
 import { getOrderDisplayTotals } from "@/features/billing/checkout-totals";
 import { updateSimulatedOrderStatusAction } from "@/features/inventory/superadmin.actions";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 interface SuperadminOrdersTabProps {
   simulatedOrders: SimulatedOrder[];
@@ -145,7 +147,12 @@ export default function SuperadminOrdersTab({
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-black font-mono text-zinc-900 dark:text-zinc-100">
-                      ${(getOrderDisplayTotals(order).grandTotal / 100).toFixed(2)}
+                      <ProductPriceDisplay
+                        priceInSubunits={getOrderDisplayTotals(order).grandTotal}
+                        baseCurrency={
+                          order.presentmentCurrency || order.vendorBaseCurrency || DEFAULT_CURRENCY
+                        }
+                      />
                     </p>
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -173,7 +180,15 @@ export default function SuperadminOrdersTab({
                         {item.productName} × {item.quantity}
                       </span>
                       <span className="font-mono text-zinc-500">
-                        ${((item.unitPrice * item.quantity) / 100).toFixed(2)}
+                        <ProductPriceDisplay
+                          priceInSubunits={item.unitPrice * item.quantity}
+                          baseCurrency={
+                            item.vendorBaseCurrency ||
+                            order.presentmentCurrency ||
+                            order.vendorBaseCurrency ||
+                            DEFAULT_CURRENCY
+                          }
+                        />
                       </span>
                     </div>
                   ))}
