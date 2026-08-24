@@ -15,8 +15,8 @@ export default function POSReceiptModal() {
   const receiptCurrency = receipt.currency || selectedCurrency || DEFAULT_CURRENCY;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-white text-zinc-900 p-6 rounded-2xl w-full max-w-sm border border-zinc-200 shadow-2xl space-y-4 print:shadow-none print:border-none print:w-full print:p-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 print:static print:bg-transparent print:p-0 print:block">
+      <div className="bg-white text-zinc-900 p-6 rounded-2xl w-full max-w-sm border border-zinc-200 shadow-2xl space-y-4 print:shadow-none print:border-none print:w-full print:max-w-none print:p-0 print:text-black">
         <div className="text-center space-y-1">
           <h3 className="font-black text-base">{systemName} Receipt</h3>
           <p className="text-[11px] text-zinc-500 font-mono">ID: {receipt.id}</p>

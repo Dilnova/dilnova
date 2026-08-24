@@ -102,7 +102,7 @@ export default async function InvoicePage({ params }: PageProps) {
   });
 
   return (
-    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-4 sm:p-8 md:p-12 font-sans text-zinc-900 dark:text-zinc-150 print:bg-white print:text-black print:p-0">
+    <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-4 sm:p-8 md:p-12 font-sans text-zinc-900 dark:text-zinc-150 print:bg-white print:text-black print:p-0 print:m-0 print:min-h-0 print:max-w-none print:w-full">
       {/* Control panel - hidden on printing */}
       <div className="max-w-3xl mx-auto mb-8 flex items-center justify-between gap-4 print:hidden border-b border-zinc-200 dark:border-zinc-800 pb-4">
         <Link
@@ -111,23 +111,23 @@ export default async function InvoicePage({ params }: PageProps) {
         >
           &larr; Back to Portal
         </Link>
-        <PrintButton className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer text-center">
+        <PrintButton className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer text-center active:scale-[0.97]">
           🖨️ Print Invoice
         </PrintButton>
       </div>
 
       {/* Invoice Sheet */}
-      <div className="max-w-3xl mx-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-10 shadow-lg print:shadow-none print:border-none print:bg-white print:p-0 print:dark:bg-white">
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pb-8 border-b border-zinc-150 dark:border-zinc-800">
+      <div className="max-w-3xl mx-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-10 shadow-lg print:shadow-none print:border-none print:bg-white print:p-0 print:dark:bg-white print:max-w-none print:w-full print:rounded-none">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pb-8 border-b border-zinc-150 dark:border-zinc-800 print:border-zinc-300 print:pb-4">
           <div>
             <h1 className="text-2xl font-black tracking-wider uppercase text-purple-700 dark:text-purple-400 print:text-black">
               DILNOVA HUB
             </h1>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 print:text-zinc-600 mt-1">
               Enterprise Commerce & Multi-Vendor Sandbox System
             </p>
           </div>
-          <div className="text-left sm:text-right font-mono text-xs text-zinc-500 dark:text-zinc-400 space-y-1">
+          <div className="text-left sm:text-right font-mono text-xs text-zinc-500 dark:text-zinc-400 print:text-black space-y-1">
             <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
               INVOICE
             </h2>
@@ -142,26 +142,32 @@ export default async function InvoicePage({ params }: PageProps) {
 
         {/* Bill to section */}
         <div
-          className={`grid grid-cols-1 gap-8 py-8 text-xs ${order.shippingAddress ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+          className={`grid grid-cols-1 gap-8 py-8 text-xs ${order.shippingAddress ? "sm:grid-cols-3" : "sm:grid-cols-2"} print:grid-cols-3 print:py-4 print:gap-4`}
         >
           <div>
-            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
+            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 print:text-zinc-600 uppercase tracking-wider mb-2">
               Billed To:
             </h3>
             <p className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
               {order.customerName}
             </p>
-            <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">{order.customerEmail}</p>
+            <p className="text-zinc-500 dark:text-zinc-400 print:text-zinc-700 mt-0.5">
+              {order.customerEmail}
+            </p>
             {order.shippingPhone && (
-              <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">{order.shippingPhone}</p>
+              <p className="text-zinc-500 dark:text-zinc-400 print:text-zinc-700 mt-0.5">
+                {order.shippingPhone}
+              </p>
             )}
             {order.shippingPhone2 && (
-              <p className="text-zinc-500 dark:text-zinc-400 mt-0.5">{order.shippingPhone2}</p>
+              <p className="text-zinc-500 dark:text-zinc-400 print:text-zinc-700 mt-0.5">
+                {order.shippingPhone2}
+              </p>
             )}
           </div>
           {(order.shippingAddress || order.shippingCity) && (
             <div>
-              <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
+              <h3 className="font-bold text-zinc-400 dark:text-zinc-500 print:text-zinc-600 uppercase tracking-wider mb-2">
                 Ship To:
               </h3>
               <p className="text-zinc-800 dark:text-zinc-200 print:text-black whitespace-pre-line">
@@ -178,20 +184,22 @@ export default async function InvoicePage({ params }: PageProps) {
               </p>
             </div>
           )}
-          <div className="sm:text-right">
-            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">
+          <div className="sm:text-right print:text-right">
+            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 print:text-zinc-600 uppercase tracking-wider mb-2">
               Vendor Organization ID{uniqueVendorOrgIds.length > 1 ? "s" : ""}:
             </h3>
             <p className="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100 print:text-black break-all">
               {uniqueVendorOrgIds.join(", ")}
             </p>
-            <p className="text-zinc-500 dark:text-zinc-400 mt-1">Dilnova Registry Service</p>
+            <p className="text-zinc-500 dark:text-zinc-400 print:text-zinc-600 mt-1">
+              Dilnova Registry Service
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-8 text-xs border-b border-zinc-150 dark:border-zinc-800">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-8 text-xs border-b border-zinc-150 dark:border-zinc-800 print:grid-cols-3 print:border-zinc-300 print:pb-4">
           <div>
-            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
+            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 print:text-zinc-600 uppercase tracking-wider mb-1">
               Fulfillment
             </h3>
             <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">
@@ -199,7 +207,7 @@ export default async function InvoicePage({ params }: PageProps) {
             </p>
           </div>
           <div>
-            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
+            <h3 className="font-bold text-zinc-400 dark:text-zinc-500 print:text-zinc-600 uppercase tracking-wider mb-1">
               Payment
             </h3>
             <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">
@@ -208,7 +216,7 @@ export default async function InvoicePage({ params }: PageProps) {
           </div>
           {checkoutDetails.pickup && (
             <div>
-              <h3 className="font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
+              <h3 className="font-bold text-zinc-400 dark:text-zinc-500 print:text-zinc-600 uppercase tracking-wider mb-1">
                 Pickup Branch
               </h3>
               <p className="font-semibold text-zinc-900 dark:text-zinc-100 print:text-black">
@@ -219,10 +227,10 @@ export default async function InvoicePage({ params }: PageProps) {
         </div>
 
         {/* Table of items */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto print:overflow-visible">
           <table className="w-full text-xs text-left border-collapse">
             <thead>
-              <tr className="border-b-2 border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider">
+              <tr className="border-b-2 border-zinc-200 dark:border-zinc-800 print:border-zinc-400 text-zinc-400 dark:text-zinc-500 print:text-black font-bold uppercase tracking-wider">
                 <th className="py-3 px-1">Product Description</th>
                 <th className="py-3 px-1 text-center">Qty</th>
                 <th className="py-3 px-1 text-right">Unit Price</th>
@@ -230,7 +238,7 @@ export default async function InvoicePage({ params }: PageProps) {
                 <th className="py-3 px-1 text-right">Total Price</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 print:divide-zinc-300">
               {items.map((item) => {
                 const lineSubtotal = item.unitPrice * item.quantity;
                 const itemTax = item.taxAmount ?? 0;
@@ -239,19 +247,19 @@ export default async function InvoicePage({ params }: PageProps) {
 
                 return (
                   <tr key={item.id} className="text-zinc-800 dark:text-zinc-200 print:text-black">
-                    <td className="py-4 px-1">
+                    <td className="py-4 px-1 print:py-2">
                       <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black block">
                         {item.productName}
                       </span>
                     </td>
-                    <td className="py-4 px-1 text-center font-mono">{item.quantity}</td>
-                    <td className="py-4 px-1 text-right font-mono">
+                    <td className="py-4 px-1 print:py-2 text-center font-mono">{item.quantity}</td>
+                    <td className="py-4 px-1 print:py-2 text-right font-mono">
                       <ProductPriceDisplay
                         priceInSubunits={item.unitPrice}
                         baseCurrency={orderCurrency}
                       />
                     </td>
-                    <td className="py-4 px-1 text-right font-mono">
+                    <td className="py-4 px-1 print:py-2 text-right font-mono">
                       {taxRate > 0 ? (
                         <div>
                           <span className="font-bold text-purple-700 dark:text-purple-400 print:text-black block">
@@ -261,15 +269,17 @@ export default async function InvoicePage({ params }: PageProps) {
                               baseCurrency={orderCurrency}
                             />
                           </span>
-                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-sans">
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 print:text-zinc-600 font-sans">
                             ({taxRate}%)
                           </span>
                         </div>
                       ) : (
-                        <span className="text-zinc-400 dark:text-zinc-500">0%</span>
+                        <span className="text-zinc-400 dark:text-zinc-500 print:text-zinc-600">
+                          0%
+                        </span>
                       )}
                     </td>
-                    <td className="py-4 px-1 text-right font-mono font-bold">
+                    <td className="py-4 px-1 print:py-2 text-right font-mono font-bold">
                       <ProductPriceDisplay
                         priceInSubunits={lineTotal}
                         baseCurrency={orderCurrency}
@@ -283,7 +293,7 @@ export default async function InvoicePage({ params }: PageProps) {
         </div>
 
         {bankTransferInstructions && (
-          <div className="pt-8">
+          <div className="pt-8 print:pt-4">
             <BankTransferInstructions instructions={bankTransferInstructions} />
           </div>
         )}
@@ -302,7 +312,7 @@ export default async function InvoicePage({ params }: PageProps) {
         </div>
 
         {/* Totals Block */}
-        <div className="flex justify-end pt-6">
+        <div className="flex justify-end pt-6 print:pt-4">
           <div className="w-full sm:w-64 space-y-2 text-xs font-mono text-zinc-600 dark:text-zinc-400 print:text-black">
             <div className="flex justify-between">
               <span>Subtotal:</span>
@@ -326,7 +336,7 @@ export default async function InvoicePage({ params }: PageProps) {
                 )}
               </span>
             </div>
-            <div className="flex justify-between text-sm font-bold text-zinc-900 dark:text-zinc-100 print:text-black border-t border-zinc-200 dark:border-zinc-850 pt-2">
+            <div className="flex justify-between text-sm font-bold text-zinc-900 dark:text-zinc-100 print:text-black border-t border-zinc-200 dark:border-zinc-850 print:border-zinc-400 pt-2">
               <span>Total Amount:</span>
               <span className="text-base font-black">
                 <ProductPriceDisplay priceInSubunits={grandTotal} baseCurrency={orderCurrency} />
@@ -335,7 +345,7 @@ export default async function InvoicePage({ params }: PageProps) {
           </div>
         </div>
 
-        <div className="mt-16 pt-8 border-t border-zinc-100 dark:border-zinc-800 text-center text-[10px] text-zinc-400 dark:text-zinc-500 print:text-black">
+        <div className="mt-16 pt-8 border-t border-zinc-100 dark:border-zinc-800 print:border-zinc-300 text-center text-[10px] text-zinc-400 dark:text-zinc-500 print:text-zinc-600 print:mt-8 print:pt-4">
           {showBankTransferInstructions
             ? "Complete your bank transfer using the instructions above. Your order will be prepared after payment is verified."
             : "Thank you for shopping with Dilnova Commerce Hub."}

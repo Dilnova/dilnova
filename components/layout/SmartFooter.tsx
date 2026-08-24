@@ -10,5 +10,5 @@ export default function SmartFooter({ children }: { children: React.ReactNode })
     return null;
   }
 
-  return <>{children}</>;
+  return <div className="print:hidden">{children}</div>;
 }
