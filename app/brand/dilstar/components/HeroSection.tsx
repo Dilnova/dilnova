@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { Wrench, Sprout, Smartphone, Store, MapPin, HeartHandshake } from "lucide-react";
 import { AnimatedCounter } from "./MotionWrapper";
+import { DILSTAR_MEDIA } from "../data/media";
 
 export function HeroSection() {
   const [mounted, setMounted] = useState(false);
@@ -15,6 +17,25 @@ export function HeroSection() {
 
   return (
     <section className="relative min-h-[92vh] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 overflow-hidden pt-8 pb-16">
+      {/* ── HERO BACKGROUND MEDIA (KEN BURNS EFFECT + 75% DARK GRADIENT OVERLAY) ── */}
+      {/* [PLACEHOLDER: replace with real workshop / store video or high-res photo in DILSTAR_MEDIA.hero] */}
+      <div
+        className="absolute inset-0 overflow-hidden -z-30 pointer-events-none"
+        aria-hidden="true"
+      >
+        <Image
+          src={DILSTAR_MEDIA.hero.posterSrc}
+          alt={DILSTAR_MEDIA.hero.alt}
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center opacity-25 scale-105 animate-[pulse_14s_ease-in-out_infinite_alternate]"
+        />
+        {/* Dark gradient overlays (60-80% dark) ensuring crisp text legibility */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#04060a]/95 via-[#04060a]/80 to-[#04060a]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#04060a_85%)]" />
+      </div>
+
       {/* ── DRIFTING AMBIENT GLOWING ORBS (BLUE FADING INTO TEAL) ── */}
       <div
         className="absolute inset-0 pointer-events-none overflow-hidden -z-10"
@@ -25,9 +46,6 @@ export function HeroSection() {
 
         {/* Deep teal drifting accent */}
         <div className="absolute top-1/3 left-1/2 translate-x-[15%] -translate-y-1/3 w-[300px] sm:w-[520px] lg:w-[660px] h-[300px] sm:h-[520px] lg:h-[660px] bg-gradient-to-bl from-[#0d9488]/20 via-[#0B4F5C]/15 to-transparent rounded-full blur-[100px] animate-[pulse_11s_ease-in-out_infinite_2.5s]" />
-
-        {/* Center ambient deep indigo pool */}
-        <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-[280px] sm:w-[420px] h-[280px] sm:h-[420px] bg-gradient-to-b from-[#1e1b4b]/20 to-transparent rounded-full blur-[90px]" />
 
         {/* Fine grid texture overlay like looking into a control room at night */}
         <div className="absolute inset-0 opacity-[0.035] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_45%,#000_70%,transparent_100%)]" />
