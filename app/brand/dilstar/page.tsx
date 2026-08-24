@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import { DILSTAR_BRAND_URL } from "@/shared/platform/brand";
 import { HeroSection } from "./components/HeroSection";
-import { ShopShowcaseSection } from "./components/ShopShowcaseSection";
+import { ShopTakeoverSection } from "./components/ShopTakeoverSection";
 import { WhyDilstarSection } from "./components/WhyDilstarSection";
 import { LocationsSection } from "./components/LocationsSection";
 
 export const revalidate = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const title = "Dilstar | Hardware, Nursery & Tech Shop in Ambalantota";
+  const title = "Dilstar | Hardware, Nursery, Tech Shop & Services in Ambalantota";
   const description =
-    "One name. Three shops. Everything close to home. Dilstar is your trusted local business in Ambalantota, Sri Lanka for hardware, coconut saplings, and mobile electronics.";
+    "One name. Four shops. Everything close to home. Dilstar is your trusted local business in Ambalantota, Sri Lanka for hardware, coconut saplings, mobile electronics, and professional technical services.";
 
   return {
     title,
@@ -40,7 +40,7 @@ export default function DilstarBrandPage() {
     "@type": "LocalBusiness",
     name: "Dilstar",
     description:
-      "Trusted local business in Ambalantota, Sri Lanka running three shops under one name: Dilstar Hardware, Dilstar Nursery, and Dilstar Tech Shop.",
+      "Trusted local business in Ambalantota, Sri Lanka running four shops under one name: Dilstar Hardware, Dilstar Nursery, Dilstar Tech Shop, and Dilstar Services.",
     url: DILSTAR_BRAND_URL,
     address: {
       "@type": "PostalAddress",
@@ -64,6 +64,12 @@ export default function DilstarBrandPage() {
         name: "Dilstar Tech Shop",
         description: "Phones, electronics, and honest advice — no jargon, no pressure.",
       },
+      {
+        "@type": "ProfessionalService",
+        name: "Dilstar Services",
+        description:
+          "Professional equipment repair, electrical maintenance, and expert technical consultations.",
+      },
     ],
   };
 
@@ -77,16 +83,16 @@ export default function DilstarBrandPage() {
         }}
       />
 
-      {/* 1. Hero Section (Headline Reveal, Ambient Glow, Signature 3-Node Visual & Stat Chips) */}
+      {/* 1. Scene 0: Hero Section (Title Card Reveal, Ambient Glow, Signature 4-Node Visual & Stat Chips) */}
       <HeroSection />
 
-      {/* 2. Shop Showcase (Three Cinematic Panels: Hardware, Nursery, Tech Shop) */}
-      <ShopShowcaseSection />
+      {/* 2. Scenes 1, 2, 3, 4: Full-Screen Scroll-Driven Takeover Sequence (Hardware, Nursery, Tech Shop, Services) */}
+      <ShopTakeoverSection />
 
-      {/* 3. Why Dilstar (4 Minimalist Value Cards) */}
+      {/* 3. Scene 5: Why Dilstar (4 Minimal Typography Blocks, No Cards, Generous Whitespace) */}
       <WhyDilstarSection />
 
-      {/* 4. Locations & Practical Contact Cards */}
+      {/* 4. Scene 6: Locations & Practical Contacts (4 Clean List-Style Blocks) */}
       <LocationsSection />
     </main>
   );

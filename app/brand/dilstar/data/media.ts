@@ -15,25 +15,32 @@ export const DILSTAR_MEDIA = {
     alt: "Dilstar workshop and store ambient atmosphere in Ambalantota",
   },
 
-  // Showcase Panel 1: Hardware
+  // Showcase Scene 1: Hardware
   hardware: {
     // [PLACEHOLDER: replace with real hardware shop photo - tools, shelving, building materials]
     src: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=1200&q=80",
     alt: "Dilstar Hardware power tools, masonry supplies, and building materials in Ambalantota",
   },
 
-  // Showcase Panel 2: Nursery
+  // Showcase Scene 2: Nursery
   nursery: {
     // [PLACEHOLDER: replace with real nursery photo - coconut saplings, greenery, garden plants]
     src: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=1200&q=80",
     alt: "Dilstar Nursery healthy coconut saplings and agricultural green stock in Ambalantota",
   },
 
-  // Showcase Panel 3: Tech Shop
+  // Showcase Scene 3: Tech Shop
   tech: {
     // [PLACEHOLDER: replace with real tech shop photo - smartphones, accessories, chargers]
     src: "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=1200&q=80",
     alt: "Dilstar Tech Shop mobile devices, fast chargers, and electronics in Ambalantota",
+  },
+
+  // Showcase Scene 4: Services
+  services: {
+    // [PLACEHOLDER: replace with real services photo - workshop repairs, diagnostics, maintenance]
+    src: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=1200&q=80",
+    alt: "Dilstar Services equipment repair, electrical maintenance, and technical diagnostics in Ambalantota",
   },
 
   // Locations Section Storefront Thumbnails
@@ -52,6 +59,11 @@ export const DILSTAR_MEDIA = {
       // [PLACEHOLDER: replace with real tech shop storefront photo]
       src: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=600&q=80",
       alt: "Dilstar Tech Shop electronics counter in Ambalantota",
+    },
+    servicesThumb: {
+      // [PLACEHOLDER: replace with real services workshop storefront photo]
+      src: "https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=600&q=80",
+      alt: "Dilstar Services technical workshop in Ambalantota",
     },
   },
 };

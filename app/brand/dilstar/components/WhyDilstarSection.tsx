@@ -2,66 +2,64 @@
 
 import React from "react";
 import { ScrollReveal } from "./MotionWrapper";
-import { Users, ShieldCheck, MapPin, Smile } from "lucide-react";
 
 export function WhyDilstarSection() {
   const pillars = [
     {
-      icon: Users,
+      number: "01",
       title: "Locally owned",
       shortLine: "Proudly independent and rooted in Ambalantota's local community.",
     },
     {
-      icon: ShieldCheck,
+      number: "02",
       title: "One trusted name",
-      shortLine: "The same standard of honesty across all three stores.",
+      shortLine: "The same standard of honesty across all four stores.",
     },
     {
-      icon: MapPin,
+      number: "03",
       title: "One easy location",
-      shortLine: "Building tools, plants, and mobile tech in one trip.",
+      shortLine: "Building tools, plants, mobile tech, and services in one trip.",
     },
     {
-      icon: Smile,
+      number: "04",
       title: "Honest, friendly service",
       shortLine: "Straightforward guidance and fair local pricing every visit.",
     },
   ];
 
   return (
-    <section className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#05070d]/60 border-t border-zinc-900/80">
+    <section className="relative py-28 sm:py-40 px-6 sm:px-12 lg:px-24 bg-[#04060a]">
       <div className="max-w-6xl mx-auto">
-        <ScrollReveal direction="up" className="text-center max-w-xl mx-auto mb-16 sm:mb-20">
-          <span className="text-xs font-semibold tracking-wider uppercase text-teal-400">
+        {/* Section Header with generous whitespace */}
+        <ScrollReveal direction="up" className="max-w-2xl mb-20 sm:mb-28">
+          <span className="text-xs font-mono tracking-widest uppercase text-teal-400">
             The Dilstar Standard
           </span>
-          <h2 className="mt-3 text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Why Ambalantota trusts Dilstar
+          <h2 className="mt-4 text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1]">
+            Why Ambalantota trusts Dilstar.
           </h2>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-          {pillars.map((pillar, idx) => {
-            const Icon = pillar.icon;
-            return (
-              <ScrollReveal
-                key={pillar.title}
-                delayMs={idx * 100}
-                direction="up"
-                className="group relative flex flex-col p-6 sm:p-7 rounded-2xl bg-zinc-900/35 border border-zinc-800/60 hover:border-zinc-700/80 hover:bg-zinc-900/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl backdrop-blur-sm"
-              >
-                <div className="w-11 h-11 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-teal-400 group-hover:text-teal-300 group-hover:scale-105 transition-all duration-300 mb-5">
-                  <Icon className="w-5 h-5" />
-                </div>
-                <h3 className="text-base font-bold text-white tracking-tight mb-2">
-                  {pillar.title}
-                </h3>
-                <p className="text-xs text-zinc-400 leading-relaxed font-normal">
-                  {pillar.shortLine}
-                </p>
-              </ScrollReveal>
-            );
-          })}
+        {/* 4 Minimal Text Blocks (NO cards, NO borders, NO containers) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 sm:gap-14 lg:gap-16">
+          {pillars.map((pillar, idx) => (
+            <ScrollReveal
+              key={pillar.title}
+              delayMs={idx * 100}
+              direction="up"
+              className="space-y-4"
+            >
+              <span className="text-xs font-mono tracking-widest text-zinc-600 font-bold block">
+                {pillar.number}
+              </span>
+              <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                {pillar.title}
+              </h3>
+              <p className="text-sm text-zinc-400 font-normal leading-relaxed">
+                {pillar.shortLine}
+              </p>
+            </ScrollReveal>
+          ))}
         </div>
       </div>
     </section>

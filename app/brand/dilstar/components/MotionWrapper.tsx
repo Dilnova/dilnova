@@ -8,6 +8,7 @@ interface ScrollRevealProps {
   delayMs?: number;
   direction?: "up" | "down" | "left" | "right" | "none";
   threshold?: number;
+  style?: React.CSSProperties;
 }
 
 export function ScrollReveal({
@@ -16,12 +17,12 @@ export function ScrollReveal({
   delayMs = 0,
   direction = "up",
   threshold = 0.15,
+  style = {},
 }: ScrollRevealProps) {
   const elementRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Respect prefers-reduced-motion
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (prefersReducedMotion) {
@@ -81,6 +82,7 @@ export function ScrollReveal({
         transitionDuration: "850ms",
         transitionDelay: `${delayMs}ms`,
         transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
+        ...style,
       }}
       className={`transform transition-all ${getDirectionTransform()} ${className}`}
     >
@@ -127,7 +129,6 @@ export function AnimatedCounter({
             const step = (timestamp: number) => {
               if (!startTime) startTime = timestamp;
               const progress = Math.min((timestamp - startTime) / durationMs, 1);
-              // Ease out quart: 1 - (1 - progress)^4
               const easeOut = 1 - Math.pow(1 - progress, 4);
               setCount(Math.floor(easeOut * value));
 
@@ -166,5 +167,56 @@ export function AnimatedCounter({
       {count}
       {suffix}
     </span>
+  );
+}
+
+interface PanelRevealProps {
+  children: (isVisible: boolean) => React.ReactNode;
+  className?: string;
+  threshold?: number;
+}
+
+export function PanelReveal({ children, className = "", threshold = 0.15 }: PanelRevealProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReducedMotion) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        });
+      },
+      {
+        threshold,
+        rootMargin: "0px 0px -50px 0px",
+      },
+    );
+
+    const currentEl = panelRef.current;
+    if (currentEl) {
+      observer.observe(currentEl);
+    }
+
+    return () => {
+      if (currentEl) {
+        observer.unobserve(currentEl);
+      }
+    };
+  }, [threshold]);
+
+  return (
+    <div ref={panelRef} className={className}>
+      {children(isVisible)}
+    </div>
   );
 }
