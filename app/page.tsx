@@ -210,7 +210,7 @@ export default async function Home() {
               {hardwareCustomEnabled && (
                 <StoreCard
                   type="hardware"
-                  title="Distar Hardware"
+                  title="Dilstar Hardware"
                   category="Industrial"
                   description="Raw industrial power, heavy-duty machinery, and contractor-grade tools."
                   href="/vendors/distar-hardware"
@@ -219,7 +219,7 @@ export default async function Home() {
               {nurseryCustomEnabled && (
                 <StoreCard
                   type="nursery"
-                  title="Distar Nursery"
+                  title="Dilstar Nursery"
                   category="Botanical"
                   description="Curated organic flora, seeds, exotic indoor plants, and landscaping."
                   href="/vendors/distar-nursery"
@@ -228,9 +228,9 @@ export default async function Home() {
               {techCustomEnabled && (
                 <StoreCard
                   type="tech"
-                  title="Distar Tech Store"
+                  title="Dilstar Tech Shop"
                   category="Technology"
-                  description="Developer workstations, high-performance components, and servers."
+                  description="Mobile devices, accessories, fast chargers, and developer hardware."
                   href="/vendors/distar-tech"
                 />
               )}
@@ -239,7 +239,7 @@ export default async function Home() {
                   type="services"
                   title="Dilstar Services"
                   category="Consulting"
-                  description="Connect with enterprise architects, gardeners, and tool technicians."
+                  description="Practical technical advice, repair services, and coconut cultivation guidance."
                   href="/vendors/dilstar-services"
                 />
               )}

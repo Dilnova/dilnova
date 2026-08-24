@@ -339,10 +339,10 @@ export default function SettingsTab({
                 htmlFor="toggle-hardware"
                 className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
               >
-                Distar Hardware Storefront
+                Dilstar Hardware Storefront
               </label>
               <p className="text-[10px] text-zinc-400">
-                Toggle custom dashboard storefront layout for Distar Hardware
+                Toggle custom dashboard storefront layout for Dilstar Hardware
               </p>
             </div>
             <button
@@ -368,10 +368,10 @@ export default function SettingsTab({
                 htmlFor="toggle-nursery"
                 className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
               >
-                Distar Nursery Storefront
+                Dilstar Nursery Storefront
               </label>
               <p className="text-[10px] text-zinc-400">
-                Toggle custom dashboard storefront layout for Distar Nursery
+                Toggle custom dashboard storefront layout for Dilstar Nursery
               </p>
             </div>
             <button
@@ -397,10 +397,10 @@ export default function SettingsTab({
                 htmlFor="toggle-tech"
                 className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
               >
-                Distar Tech Storefront
+                Dilstar Tech Shop Storefront
               </label>
               <p className="text-[10px] text-zinc-400">
-                Toggle custom dashboard storefront layout for Distar Tech Store
+                Toggle custom dashboard storefront layout for Dilstar Tech Shop
               </p>
             </div>
             <button

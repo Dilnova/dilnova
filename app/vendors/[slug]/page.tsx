@@ -56,11 +56,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   let displayName = clerkOrg.name;
   if (slug === "distar-hardware") {
-    displayName = "Distar Hardware";
+    displayName = "Dilstar Hardware";
   } else if (slug === "distar-nursery") {
-    displayName = "Distar Nursery";
+    displayName = "Dilstar Nursery";
   } else if (slug === "distar-tech") {
-    displayName = "Distar Tech Store";
+    displayName = "Dilstar Tech Shop";
   } else if (slug === "dilstar-services") {
     displayName = "Dilstar Services";
   }
@@ -136,10 +136,10 @@ export default async function VendorProfilePage({ params }: PageProps) {
 
   if (!clerkOrg) {
     if (isDistarSubVendor) {
-      let fallbackName = "Distar Storefront";
-      if (slug === "distar-hardware") fallbackName = "Distar Hardware";
-      else if (slug === "distar-nursery") fallbackName = "Distar Nursery";
-      else if (slug === "distar-tech") fallbackName = "Distar Tech Store";
+      let fallbackName = "Dilstar Storefront";
+      if (slug === "distar-hardware") fallbackName = "Dilstar Hardware";
+      else if (slug === "distar-nursery") fallbackName = "Dilstar Nursery";
+      else if (slug === "distar-tech") fallbackName = "Dilstar Tech Shop";
       else if (slug === "dilstar-services") fallbackName = "Dilstar Services";
 
       clerkOrg = {
@@ -157,14 +157,14 @@ export default async function VendorProfilePage({ params }: PageProps) {
     }
   }
 
-  // 2. Normalize org data into our StorefrontProps shape, overriding the name for specific sub-vendors sharing the 'distar' Clerk organization
+  // 2. Normalize org data into our StorefrontProps shape, overriding the name for specific sub-vendors sharing the 'dilstar' Clerk organization
   let displayName = clerkOrg.name;
   if (slug === "distar-hardware") {
-    displayName = "Distar Hardware";
+    displayName = "Dilstar Hardware";
   } else if (slug === "distar-nursery") {
-    displayName = "Distar Nursery";
+    displayName = "Dilstar Nursery";
   } else if (slug === "distar-tech") {
-    displayName = "Distar Tech Store";
+    displayName = "Dilstar Tech Shop";
   } else if (slug === "dilstar-services") {
     displayName = "Dilstar Services";
   }

@@ -53,7 +53,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const faviconUrl = await getSystemSetting("system_favicon", "");
   const systemName = isDilstar
-    ? "Distar"
+    ? "Dilstar"
     : await getSystemSetting("system_name", "Dilnova Commerce Hub");
 
   const protocol = host.includes("localhost") ? "http" : "https";
@@ -61,21 +61,22 @@ export async function generateMetadata(): Promise<Metadata> {
     ? `${protocol}://${host}`
     : process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
 
-  const siteTitle = isDilstar ? "Distar | Industrial Motors & Hardware" : systemName;
+  const siteTitle = isDilstar ? "Dilstar | Hardware, Nursery, Tech Shop & Services" : systemName;
 
   const siteDescription = isDilstar
-    ? "Official store for Distar industrial motors, heavy hardware, workstations, botanical flora, and services."
+    ? "Official brand portal for Dilstar Hardware, Nursery, Tech Shop, and Technical Services in Ambalantota, Sri Lanka."
     : "Enterprise multi-vendor commerce hub and curated marketplace.";
 
   const keywords = isDilstar
     ? [
-        "distar",
-        "distar motors",
-        "industrial induction motor",
-        "contractor tools",
-        "distar tech",
-        "distar nursery",
+        "dilstar",
+        "dilstar ambalantota",
+        "dilstar hardware",
+        "dilstar nursery",
+        "dilstar tech",
         "dilstar services",
+        "coconut saplings",
+        "tools and hardware",
       ]
     : [
         "dilnova",
