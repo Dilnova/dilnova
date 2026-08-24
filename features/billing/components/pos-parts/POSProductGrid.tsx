@@ -3,6 +3,8 @@
 import React, { useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { usePOSContext } from "../POSBillingProvider";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 export default function POSProductGrid() {
   const {
@@ -172,7 +174,10 @@ export default function POSProductGrid() {
 
                 <div className="flex justify-between items-center mt-1 pt-1 border-t border-zinc-100 dark:border-zinc-800">
                   <span className="text-xs font-black font-mono text-zinc-900 dark:text-white">
-                    ${((item.productPrice ?? 0) / 100).toFixed(2)}
+                    <ProductPriceDisplay
+                      priceInSubunits={item.productPrice ?? 0}
+                      baseCurrency={item.productCurrency || DEFAULT_CURRENCY}
+                    />
                   </span>
 
                   {item.productType === "service" ? (
