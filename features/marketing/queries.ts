@@ -3,11 +3,14 @@ import { categories, products } from "@/shared/db/schema/catalog";
 import { eq, desc, and } from "drizzle-orm";
 import { getCachedOrganizations } from "@/shared/auth/clerk-cache";
 import { logger } from "@/shared/logging/logger";
+import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
 
 export type Product = {
   id: string;
   name: string;
   price: string;
+  priceInCents?: number;
+  currency?: string | null;
   imageUrl: string;
   vendorName: string;
   vendorSlug: string;
@@ -20,11 +23,8 @@ export type FeaturedSeries = {
   products: Product[];
 };
 
-const formatPrice = (priceInCents: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(priceInCents / 100);
+const formatPrice = (priceInCents: number, currency: string = DEFAULT_CURRENCY) => {
+  return formatMoney(priceInCents, currency);
 };
 
 /**
@@ -51,7 +51,9 @@ export async function getTrendingProducts(limitCount = 8): Promise<Product[]> {
       return {
         id: p.id,
         name: p.name,
-        price: formatPrice(p.price),
+        price: formatPrice(p.price, p.currency || DEFAULT_CURRENCY),
+        priceInCents: p.price,
+        currency: p.currency || DEFAULT_CURRENCY,
         imageUrl: p.imageUrl || "",
         vendorName: org?.name || "Unknown Vendor",
         vendorSlug: org?.slug || p.orgId,
@@ -99,7 +101,9 @@ export async function getFeaturedSeries(): Promise<FeaturedSeries[]> {
         return {
           id: p.id,
           name: p.name,
-          price: formatPrice(p.price),
+          price: formatPrice(p.price, p.currency || DEFAULT_CURRENCY),
+          priceInCents: p.price,
+          currency: p.currency || DEFAULT_CURRENCY,
           imageUrl: p.imageUrl || "",
           vendorName: org?.name || "Unknown Vendor",
           vendorSlug: org?.slug || p.orgId,
