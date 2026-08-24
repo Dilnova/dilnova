@@ -12,6 +12,8 @@ import { isVideoUrl } from "@/shared/media/media";
 import { toast } from "sonner";
 import { useConfirm } from "@/shared/ui/notifications";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 export interface Product {
   id: string;
@@ -19,6 +21,7 @@ export interface Product {
   type: string; // 'product' | 'service'
   description: string | null;
   price: number;
+  currency?: string | null;
   imageUrl: string | null;
   media?: { url: string; type: "image" | "video" }[] | null;
   categoryId: string | null;
@@ -373,7 +376,10 @@ export default function ManageProductsClient({
                 {/* Price and Stock status row */}
                 <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 gap-2">
                   <span className="text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-100 font-mono tracking-tight">
-                    ${(item.price / 100).toFixed(2)}
+                    <ProductPriceDisplay
+                      priceInSubunits={item.price}
+                      baseCurrency={item.currency || DEFAULT_CURRENCY}
+                    />
                   </span>
                   {item.type === "product" &&
                     item.stockQuantity !== undefined &&

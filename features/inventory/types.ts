@@ -27,6 +27,8 @@ export type VendorInventoryFullData = {
     id: string;
     customerName: string;
     customerEmail: string;
+    presentmentCurrency?: string;
+    vendorBaseCurrency?: string;
     totalAmount: number;
     status: string;
     fulfillmentMethod: string;

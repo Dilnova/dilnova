@@ -15,6 +15,7 @@ import { validateStockAvailabilityId } from "@/features/inventory/availability.s
 import { isAllowedCloudinaryDeliveryUrl } from "@/shared/media/cloudinary-url";
 import { deleteCloudinaryAsset } from "@/shared/media/cloudinary-server";
 import { getOrgCurrencySettings } from "@/shared/currency/exchange-rates.service";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 import { z } from "zod/v3";
 import { vendorAction, orgAdminAction, ActionError } from "@/lib/safe-action";
 
@@ -115,7 +116,7 @@ export const addProductAction = vendorAction
             type: parsedInput.type,
             description: parsedInput.description,
             price: priceInCents,
-            currency: orgCurrency.baseCurrency || "USD",
+            currency: orgCurrency.baseCurrency || DEFAULT_CURRENCY,
             imageUrl: parsedInput.imageUrl || null,
             media: mediaPayload,
             orgId: orgId,
