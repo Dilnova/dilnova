@@ -223,82 +223,84 @@ export default async function VendorPage({ searchParams }: PageProps) {
 
       {orgRole === "org:admin" ? (
         <>
-          {/* Enterprise-grade KPI Metrics Summary Dashboard */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {/* Card 1: Catalog Size */}
-            <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
-                <span className="text-5xl emoji">📁</span>
+          {/* Enterprise-grade KPI Metrics Summary Dashboard (hidden when in Chat view for focused communication) */}
+          {activeTab !== "chat" && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {/* Card 1: Catalog Size */}
+              <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
+                <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
+                  <span className="text-5xl emoji">📁</span>
+                </div>
+                <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">
+                  Catalog Items
+                </p>
+                <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 font-mono mt-1">
+                  {totalItems}
+                </h3>
+                <div className="flex gap-2 text-[10px] text-zinc-400 mt-2 font-mono">
+                  <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                    {totalProducts} products
+                  </span>
+                  <span>•</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    {totalServices} services
+                  </span>
+                </div>
               </div>
-              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">
-                Catalog Items
-              </p>
-              <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 font-mono mt-1">
-                {totalItems}
-              </h3>
-              <div className="flex gap-2 text-[10px] text-zinc-400 mt-2 font-mono">
-                <span className="text-indigo-600 dark:text-indigo-400 font-bold">
-                  {totalProducts} products
-                </span>
-                <span>•</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                  {totalServices} services
-                </span>
-              </div>
-            </div>
 
-            {/* Card 2: Active Branches */}
-            <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
-                <span className="text-5xl emoji">🏬</span>
+              {/* Card 2: Active Branches */}
+              <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
+                <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
+                  <span className="text-5xl emoji">🏬</span>
+                </div>
+                <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">
+                  Branches
+                </p>
+                <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 font-mono mt-1">
+                  {activeBranches}
+                </h3>
+                <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-2 font-mono">
+                  Active branch channels
+                </div>
               </div>
-              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">
-                Branches
-              </p>
-              <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 font-mono mt-1">
-                {activeBranches}
-              </h3>
-              <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-2 font-mono">
-                Active branch channels
-              </div>
-            </div>
 
-            {/* Card 3: Low Stock Alerts */}
-            <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
-                <span className="text-5xl emoji">⚠️</span>
+              {/* Card 3: Low Stock Alerts */}
+              <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
+                <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
+                  <span className="text-5xl emoji">⚠️</span>
+                </div>
+                <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">
+                  Low Stock Alerts
+                </p>
+                <h3
+                  className={`text-2xl font-black font-mono mt-1 ${lowStockCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-zinc-50"}`}
+                >
+                  {lowStockCount}
+                </h3>
+                <div className="text-[10px] text-zinc-450 dark:text-zinc-500 mt-2 font-mono">
+                  {lowStockCount > 0 ? "Requires restocking soon" : "All stock levels OK"}
+                </div>
               </div>
-              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">
-                Low Stock Alerts
-              </p>
-              <h3
-                className={`text-2xl font-black font-mono mt-1 ${lowStockCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-zinc-50"}`}
-              >
-                {lowStockCount}
-              </h3>
-              <div className="text-[10px] text-zinc-450 dark:text-zinc-500 mt-2 font-mono">
-                {lowStockCount > 0 ? "Requires restocking soon" : "All stock levels OK"}
-              </div>
-            </div>
 
-            {/* Card 4: Out of Stock Warnings */}
-            <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
-              <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
-                <span className="text-5xl emoji">🚫</span>
-              </div>
-              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">
-                Out of Stock
-              </p>
-              <h3
-                className={`text-2xl font-black font-mono mt-1 ${outOfStockCount > 0 ? "text-rose-600 dark:text-rose-400" : "text-zinc-900 dark:text-zinc-50"}`}
-              >
-                {outOfStockCount}
-              </h3>
-              <div className="text-[10px] text-zinc-450 dark:text-zinc-500 mt-2 font-mono">
-                {outOfStockCount > 0 ? "Requires immediate action" : "No empty stock lanes"}
+              {/* Card 4: Out of Stock Warnings */}
+              <div className="relative overflow-hidden bg-white border border-zinc-200 dark:bg-zinc-950 dark:border-zinc-900 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
+                <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-55 transition-opacity pointer-events-none">
+                  <span className="text-5xl emoji">🚫</span>
+                </div>
+                <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-mono">
+                  Out of Stock
+                </p>
+                <h3
+                  className={`text-2xl font-black font-mono mt-1 ${outOfStockCount > 0 ? "text-rose-600 dark:text-rose-400" : "text-zinc-900 dark:text-zinc-50"}`}
+                >
+                  {outOfStockCount}
+                </h3>
+                <div className="text-[10px] text-zinc-450 dark:text-zinc-500 mt-2 font-mono">
+                  {outOfStockCount > 0 ? "Requires immediate action" : "No empty stock lanes"}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Premium Pill Segmented Tabs Switcher */}
           <div className="flex overflow-x-auto no-scrollbar bg-zinc-100/80 dark:bg-zinc-900/60 backdrop-blur-md p-1 rounded-2xl mb-6 border border-zinc-200/50 dark:border-zinc-800/30 max-w-2xl">

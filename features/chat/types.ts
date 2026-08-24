@@ -19,6 +19,9 @@ export interface ConversationDetail extends OrderConversationRow {
   customerEmail?: string;
   branchName?: string | null;
   itemsSummary?: string;
+  lastMessageSnippet?: string | null;
+  lastMessageSenderRole?: SenderRole | null;
+  lastMessageType?: MessageType | null;
 }
 
 export interface ChatMessageItem {
