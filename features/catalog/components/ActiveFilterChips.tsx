@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { useCurrency } from "@/shared/currency/context/currency-context";
+import { SUPPORTED_CURRENCIES } from "@/shared/currency";
 import type {
   CatalogCategoryRef,
   CatalogVendorRef,
@@ -36,6 +38,10 @@ export default function ActiveFilterChips({
   onRemoveFilter,
   onClearAll,
 }: ActiveFilterChipsProps) {
+  const { selectedCurrency } = useCurrency();
+  const currencySymbol =
+    SUPPORTED_CURRENCIES.find((c) => c.code === selectedCurrency)?.symbol || selectedCurrency;
+
   const chips: { key: string; label: string; valueLabel: string }[] = [];
 
   if (currentSearch) {
@@ -71,11 +77,11 @@ export default function ActiveFilterChips({
   if (currentMinPrice || currentMaxPrice) {
     let priceText = "";
     if (currentMinPrice && currentMaxPrice) {
-      priceText = `$${currentMinPrice} - $${currentMaxPrice}`;
+      priceText = `${currencySymbol}${currentMinPrice} - ${currencySymbol}${currentMaxPrice}`;
     } else if (currentMinPrice) {
-      priceText = `Min $${currentMinPrice}`;
+      priceText = `Min ${currencySymbol}${currentMinPrice}`;
     } else if (currentMaxPrice) {
-      priceText = `Max $${currentMaxPrice}`;
+      priceText = `Max ${currencySymbol}${currentMaxPrice}`;
     }
     chips.push({ key: "price", label: "Price", valueLabel: priceText });
   }

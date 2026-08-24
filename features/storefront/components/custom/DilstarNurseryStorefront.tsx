@@ -241,11 +241,6 @@ export default function DilstarNurseryStorefront({ org, products }: StorefrontPr
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {serviceProducts.map((service) => {
-                const formattedPrice = (service.price / 100).toLocaleString("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                });
-
                 return (
                   <Link
                     key={service.id}
@@ -286,7 +281,12 @@ export default function DilstarNurseryStorefront({ org, products }: StorefrontPr
                         {service.description}
                       </p>
                       <div className="flex items-center gap-3 mt-3">
-                        <span className="text-sm font-bold text-emerald-800">{formattedPrice}</span>
+                        <span className="text-sm font-bold text-emerald-800">
+                          <ProductPriceDisplay
+                            priceInSubunits={service.price}
+                            baseCurrency={service.currency || DEFAULT_CURRENCY}
+                          />
+                        </span>
                         <span className="text-[10px] font-mono text-emerald-600/40 uppercase">
                           per session
                         </span>
