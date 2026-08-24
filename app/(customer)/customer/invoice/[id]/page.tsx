@@ -16,6 +16,8 @@ import { CustomerPaymentSlipSection } from "@/features/orders/components/OrderPa
 import { formatOrderStatusLabel } from "@/features/orders/status";
 import { attachPaymentSlipPreview } from "@/features/orders/payment-slip-preview";
 import { PrintButton } from "@/shared/ui/PrintButton";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -80,6 +82,7 @@ export default async function InvoicePage({ params }: PageProps) {
     return acc;
   }, {});
   const serverSubtotal = Object.values(vendorSubtotals).reduce((sum, amount) => sum + amount, 0);
+  const orderCurrency = order.presentmentCurrency || order.vendorBaseCurrency || DEFAULT_CURRENCY;
   const showBankTransferInstructions =
     isBankTransferPayment(order.paymentMethod) &&
     (order.status === "pending_payment" || order.status === "payment_submitted");
@@ -87,16 +90,10 @@ export default async function InvoicePage({ params }: PageProps) {
     ? await buildBankTransferCheckoutInstructions({
         orderId: order.id,
         grandTotalCents: grandTotal,
+        currency: orderCurrency,
         vendorAmounts: allocateVendorPaymentAmounts(vendorSubtotals, serverSubtotal, grandTotal),
       })
     : null;
-
-  const formatPrice = (cents: number) => {
-    return (cents / 100).toLocaleString("en-US", {
-      style: "currency",
-      currency: "USD",
-    });
-  };
 
   const invoiceDate = new Date(order.createdAt).toLocaleDateString("en-US", {
     year: "numeric",
@@ -249,13 +246,20 @@ export default async function InvoicePage({ params }: PageProps) {
                     </td>
                     <td className="py-4 px-1 text-center font-mono">{item.quantity}</td>
                     <td className="py-4 px-1 text-right font-mono">
-                      {formatPrice(item.unitPrice)}
+                      <ProductPriceDisplay
+                        priceInSubunits={item.unitPrice}
+                        baseCurrency={orderCurrency}
+                      />
                     </td>
                     <td className="py-4 px-1 text-right font-mono">
                       {taxRate > 0 ? (
                         <div>
                           <span className="font-bold text-purple-700 dark:text-purple-400 print:text-black block">
-                            +{formatPrice(itemTax)}
+                            +
+                            <ProductPriceDisplay
+                              priceInSubunits={itemTax}
+                              baseCurrency={orderCurrency}
+                            />
                           </span>
                           <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-sans">
                             ({taxRate}%)
@@ -266,7 +270,10 @@ export default async function InvoicePage({ params }: PageProps) {
                       )}
                     </td>
                     <td className="py-4 px-1 text-right font-mono font-bold">
-                      {formatPrice(lineTotal)}
+                      <ProductPriceDisplay
+                        priceInSubunits={lineTotal}
+                        baseCurrency={orderCurrency}
+                      />
                     </td>
                   </tr>
                 );
@@ -300,24 +307,30 @@ export default async function InvoicePage({ params }: PageProps) {
             <div className="flex justify-between">
               <span>Subtotal:</span>
               <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
-                {formatPrice(subtotal)}
+                <ProductPriceDisplay priceInSubunits={subtotal} baseCurrency={orderCurrency} />
               </span>
             </div>
             <div className="flex justify-between">
               <span>{taxLabel}</span>
               <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
-                {formatPrice(tax)}
+                <ProductPriceDisplay priceInSubunits={tax} baseCurrency={orderCurrency} />
               </span>
             </div>
             <div className="flex justify-between">
               <span>Shipping:</span>
               <span className="font-bold text-zinc-900 dark:text-zinc-100 print:text-black">
-                {shipping === 0 ? "FREE" : formatPrice(shipping)}
+                {shipping === 0 ? (
+                  "FREE"
+                ) : (
+                  <ProductPriceDisplay priceInSubunits={shipping} baseCurrency={orderCurrency} />
+                )}
               </span>
             </div>
             <div className="flex justify-between text-sm font-bold text-zinc-900 dark:text-zinc-100 print:text-black border-t border-zinc-200 dark:border-zinc-850 pt-2">
               <span>Total Amount:</span>
-              <span className="text-base font-black">{formatPrice(grandTotal)}</span>
+              <span className="text-base font-black">
+                <ProductPriceDisplay priceInSubunits={grandTotal} baseCurrency={orderCurrency} />
+              </span>
             </div>
           </div>
         </div>

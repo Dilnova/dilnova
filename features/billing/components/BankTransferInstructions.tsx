@@ -1,11 +1,6 @@
 import type { BankTransferCheckoutInstructions } from "@/features/billing/bank-transfer";
-
-function formatPrice(cents: number) {
-  return (cents / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
-}
+import { DEFAULT_CURRENCY } from "@/shared/currency";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
 
 interface BankTransferInstructionsProps {
   instructions: BankTransferCheckoutInstructions;
@@ -16,7 +11,7 @@ export default function BankTransferInstructions({
   instructions,
   compact = false,
 }: BankTransferInstructionsProps) {
-  const { reference, grandTotalCents, vendors } = instructions;
+  const { reference, grandTotalCents, vendors, currency = DEFAULT_CURRENCY } = instructions;
 
   return (
     <div
@@ -47,7 +42,7 @@ export default function BankTransferInstructions({
         <div className="flex justify-between gap-4">
           <span className="text-zinc-500">Amount to transfer</span>
           <span className="font-bold text-zinc-900 dark:text-zinc-100">
-            {formatPrice(grandTotalCents)}
+            <ProductPriceDisplay priceInSubunits={grandTotalCents} baseCurrency={currency} />
           </span>
         </div>
       </div>
@@ -64,7 +59,10 @@ export default function BankTransferInstructions({
               </span>
               {vendors.length > 1 && (
                 <span className="font-mono font-bold text-zinc-700 dark:text-zinc-300">
-                  {formatPrice(vendor.amountCents)}
+                  <ProductPriceDisplay
+                    priceInSubunits={vendor.amountCents}
+                    baseCurrency={currency}
+                  />
                 </span>
               )}
             </div>

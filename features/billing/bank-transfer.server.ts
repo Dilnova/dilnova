@@ -42,6 +42,7 @@ export async function getBankTransferDetailsForOrgs(
 export async function buildBankTransferCheckoutInstructions(input: {
   orderId: string;
   grandTotalCents: number;
+  currency?: string;
   vendorAmounts: { orgId: string; amountCents: number }[];
 }): Promise<BankTransferCheckoutInstructions> {
   const detailsByOrg = await getBankTransferDetailsForOrgs(
@@ -59,6 +60,7 @@ export async function buildBankTransferCheckoutInstructions(input: {
     orderId: input.orderId,
     reference: formatBankTransferReference(input.orderId),
     grandTotalCents: input.grandTotalCents,
+    currency: input.currency,
     vendors,
   };
 }

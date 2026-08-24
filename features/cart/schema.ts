@@ -53,6 +53,7 @@ export const checkoutSchema = z.object({
   idempotencyKey: z.string().uuid(),
   checkoutVendorOrgId: z.string().nullable().optional(),
   selectedRateId: z.string().optional().nullable(),
+  presentmentCurrency: z.string().optional(),
 });
 
 export const syncedCartItemSchema = z.object({

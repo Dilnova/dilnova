@@ -16,6 +16,7 @@ import {
   aggregateCheckoutItems,
   type CheckoutTransactionResult,
 } from "@/features/cart/checkout.helpers";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 import { z } from "zod/v3";
 import { validateFulfillment, validateShippingAddress } from "./services/fulfillment.service";
 import { validatePayment } from "./services/payment.service";
@@ -437,6 +438,8 @@ export const simulatedCheckoutAction = authenticatedAction
             normalizedShippingPhone2,
             serverSubtotal,
             uniqueItemIds,
+            presentmentCurrency: parsedInput.presentmentCurrency || DEFAULT_CURRENCY,
+            vendorBaseCurrency: verifiedItems[0]?.vendorBaseCurrency || DEFAULT_CURRENCY,
           })) as CheckoutTransactionResult;
           break;
         } catch (error) {
@@ -466,6 +469,7 @@ export const simulatedCheckoutAction = authenticatedAction
       const successResult = await processCheckoutSuccess({
         orderId: txResult.orderId,
         grandTotalCents: txResult.grandTotalCents,
+        currency: parsedInput.presentmentCurrency || DEFAULT_CURRENCY,
         vendorSubtotals: txResult.vendorSubtotals,
         serverSubtotalCents: txResult.serverSubtotalCents,
         payment,
