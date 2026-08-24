@@ -82,6 +82,7 @@ export const sendCartSummaryEmailAction = authenticatedAction
       ),
       cartTotal: z.number().nonnegative(),
       zeroShipping: z.boolean().optional().default(false),
+      currency: z.string().optional(),
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
@@ -90,6 +91,7 @@ export const sendCartSummaryEmailAction = authenticatedAction
         emailAddress: parsedInput.emailAddress,
         cartItems: parsedInput.cartItems,
         cartTotal: parsedInput.cartTotal,
+        currency: parsedInput.currency,
       });
       if (!parsedCartInput.success) {
         return {
@@ -122,6 +124,7 @@ export const sendCartSummaryEmailAction = authenticatedAction
         validatedItems,
         validatedEmail,
         parsedInput.zeroShipping,
+        parsedInput.currency || DEFAULT_CURRENCY,
       );
     } catch (error: unknown) {
       const apiError = handleApiError(error, "Failed to send cart summary email");

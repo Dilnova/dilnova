@@ -13,6 +13,7 @@ import {
 } from "@/features/billing/bank-transfer";
 import { buildOrderConfirmationEmailHtml } from "@/features/orders/email/confirmation-html";
 import { sendRawSmtpEmail } from "@/shared/email/smtp-client";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 import { getSystemSetting } from "@/shared/platform/settings";
 import { logger } from "@/shared/logging/logger";
 
@@ -115,6 +116,7 @@ export async function sendOrderConfirmationEmailForOrder(
       bankTransferInstructions: context.bankTransferInstructions,
       isSignedIn: context.isSignedIn,
       appUrl,
+      currency: order.presentmentCurrency || order.vendorBaseCurrency || DEFAULT_CURRENCY,
     });
 
     const subjectPrefix = isBankTransferPayment(context.paymentMethod)

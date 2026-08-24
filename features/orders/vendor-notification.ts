@@ -12,6 +12,7 @@ import { sendRawSmtpEmail } from "@/shared/email/smtp-client";
 import { getSystemSetting } from "@/shared/platform/settings";
 import { logger } from "@/shared/logging/logger";
 import { isVendorOnline, queueVendorNotification } from "@/shared/security/vendor-presence";
+import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
 
 export async function dispatchVendorOrderNotifications(orderId: string): Promise<void> {
   try {
@@ -89,10 +90,9 @@ export async function dispatchVendorOrderNotifications(orderId: string): Promise
             (acc, item) => acc + item.unitPrice * item.quantity,
             0,
           );
-          const formattedTotal = new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "LKR",
-          }).format(vendorTotal / 100);
+          const orderCurrency =
+            order.presentmentCurrency || order.vendorBaseCurrency || DEFAULT_CURRENCY;
+          const formattedTotal = formatMoney(vendorTotal, orderCurrency);
 
           await queueVendorNotification(target.userId, {
             orderId,
@@ -112,6 +112,8 @@ export async function dispatchVendorOrderNotifications(orderId: string): Promise
             continue;
           }
 
+          const orderCurrency =
+            order.presentmentCurrency || order.vendorBaseCurrency || DEFAULT_CURRENCY;
           const emailHtml = buildVendorNewOrderEmailHtml({
             systemName,
             orderId,
@@ -120,6 +122,7 @@ export async function dispatchVendorOrderNotifications(orderId: string): Promise
             paymentLabel: checkoutDetails.payment,
             vendorConsoleUrl,
             items: vendorItems,
+            currency: orderCurrency,
           });
 
           await sendRawSmtpEmail({

@@ -238,6 +238,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         cartItems,
         cartTotal,
         zeroShipping: selectedFulfillment?.zeroShipping ?? false,
+        currency: selectedCurrency,
       });
       if (res?.data?.success) {
         setEmailStatus("idle");

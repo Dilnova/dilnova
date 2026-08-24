@@ -1,4 +1,5 @@
 import { escapeHtml } from "@/shared/email/smtp-client";
+import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
 
 export interface VendorNewOrderEmailInput {
   systemName: string;
@@ -12,16 +13,13 @@ export interface VendorNewOrderEmailInput {
     quantity: number;
     unitPrice: number;
   }[];
-}
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "LKR",
-  }).format(cents / 100);
+  currency?: string;
 }
 
 export function buildVendorNewOrderEmailHtml(input: VendorNewOrderEmailInput): string {
+  const currency = input.currency || DEFAULT_CURRENCY;
+  const formatPrice = (cents: number) => formatMoney(cents, currency);
+
   const itemsHtml = input.items
     .map(
       (item) => `

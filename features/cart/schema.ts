@@ -19,6 +19,7 @@ export const sendCartEmailSchema = z.object({
   emailAddress: z.string().email("Invalid email address format."),
   cartItems: z.array(cartLineSchema),
   cartTotal: z.number().nonnegative(),
+  currency: z.string().optional(),
 });
 
 export const checkoutItemSchema = z.object({
