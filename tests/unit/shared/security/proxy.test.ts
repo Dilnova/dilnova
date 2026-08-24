@@ -330,6 +330,70 @@ describe("Proxy Middleware WAF Protection", () => {
   });
 });
 
+describe("Proxy Middleware Sensitive File & Directory Probe Protection", () => {
+  it.each([
+    ["/.env"],
+    ["/.env.local"],
+    ["/.env.production"],
+    ["/.env.backup"],
+    ["/.git"],
+    ["/.git/config"],
+    ["/.gitignore"],
+    ["/.aws/credentials"],
+    ["/.ssh/id_rsa"],
+    ["/.vscode/settings.json"],
+    ["/.ds_store"],
+    ["/wp-admin"],
+    ["/wp-login.php"],
+    ["/xmlrpc.php"],
+    ["/phpmyadmin"],
+    ["/adminer.php"],
+    ["/actuator/health"],
+    ["/backup.sql"],
+    ["/dump.tar.gz"],
+    ["/script.php"],
+  ])("blocks sensitive probe path %s with 404 and security headers", async (probePath) => {
+    const request = new NextRequest(`http://localhost:3000${probePath}`, {
+      method: "GET",
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      status: number;
+      body: string;
+      headers: Headers;
+    };
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(404);
+    expect(result.body).toBe("Not Found");
+    expect(result.headers.get("X-Frame-Options")).toBe("DENY");
+    expect(result.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+
+  it("blocks URL-encoded sensitive probe paths like /%2e%65%6e%76 with 404", async () => {
+    const request = new NextRequest("http://localhost:3000/%2e%65%6e%76", {
+      method: "GET",
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(404);
+  });
+
+  it("allows standard RFC .well-known routes", async () => {
+    const request = new NextRequest("http://localhost:3000/.well-known/security.txt", {
+      method: "GET",
+    });
+    const result = await proxy(request, mockEvent);
+    expect(result).not.toBeInstanceOf(NextResponse);
+  });
+
+  it("allows normal product and store pages", async () => {
+    const request = new NextRequest("http://localhost:3000/products/motor-1", {
+      method: "GET",
+    });
+    const result = await proxy(request, mockEvent);
+    expect(result).not.toBeInstanceOf(NextResponse);
+  });
+});
+
 describe("Proxy Middleware Edge Rate Limiting Protection", () => {
   const originalUrl = process.env.UPSTASH_REDIS_REST_URL;
   const originalToken = process.env.UPSTASH_REDIS_REST_TOKEN;
