@@ -44,7 +44,7 @@ export function LocationsSection() {
     {
       id: "services-location",
       name: "Dilstar Services",
-      tag: "Repairs & Technical",
+      tag: "Technical & Advisory",
       thumb: DILSTAR_MEDIA.locations.servicesThumb,
       address: "Dilstar, Ambalantota, Sri Lanka",
       phone: "Phone number to be added",
