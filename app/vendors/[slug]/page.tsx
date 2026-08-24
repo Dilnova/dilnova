@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { customStorefronts } from "@/features/storefront/components/custom/registry";
 import DefaultStorefront from "@/features/storefront/components/DefaultStorefront";
@@ -8,6 +9,7 @@ import type { VendorOrg } from "@/features/storefront/components/custom/types";
 import { getCachedOrganizations, getCachedOrganizationBySlug } from "@/shared/auth/clerk-cache";
 import { sanitizeVendorPublicMetadata } from "@/shared/media/sanitize-vendor-public-metadata";
 import { getSystemSetting } from "@/shared/platform/settings";
+import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 import { logger } from "@/shared/logging/logger";
 
 interface PageProps {
@@ -29,7 +31,17 @@ const DILSTAR_SLUGS = [
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const systemName = await getSystemSetting("system_name", "Dilnova");
+
+  // Domain-aware system name detection
+  const headersList = await headers();
+  const host = headersList.get("x-forwarded-host") || headersList.get("host") || "";
+  const isDilstar = host.includes("dilstar.pp.ua");
+  const systemName = isDilstar ? "Dilstar" : await getSystemSetting("system_name", "Dilnova");
+
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const baseUrl = host
+    ? `${protocol}://${host}`
+    : process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
 
   const isDilstarSubVendor = DILSTAR_SLUGS.includes(slug);
 
@@ -79,14 +91,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? (clerkOrg.publicMetadata.description as string)
     : `Browse products and services catalog offered by ${displayName} on ${systemName}.`;
 
+  const ogImages = clerkOrg.imageUrl
+    ? [{ url: clerkOrg.imageUrl }]
+    : [{ url: `${baseUrl}/apple-touch-icon.png`, width: 180, height: 180 }];
+
   return {
     title,
     description,
+    alternates: {
+      canonical: `/vendors/${slug}`,
+    },
     openGraph: {
       title,
       description,
+      url: `${baseUrl}/vendors/${slug}`,
+      siteName: systemName,
       type: "website",
-      images: clerkOrg.imageUrl ? [{ url: clerkOrg.imageUrl }] : [],
+      images: ogImages,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      creator: isDilstar ? "@dilstar" : "@dilnova",
     },
   };
 }
@@ -197,16 +224,65 @@ export default async function VendorProfilePage({ params }: PageProps) {
   const rawProducts = await getVendorProducts(clerkOrg.id);
   const products = await enrichVendorProductsWithPurchaseFlags(rawProducts);
 
-  // 4. Check if custom storefront component is enabled via system settings
+  // 4. Build JSON-LD structured data for search engines
+  const isDilstarSubVendorForLD = DILSTAR_SLUGS.includes(slug);
+  const storeTypeMap: Record<string, string> = {
+    "dilstar-hardware": "HardwareStore",
+    "distar-hardware": "HardwareStore",
+    "dilstar-nursery": "GardenStore",
+    "distar-nursery": "GardenStore",
+    "dilstar-tech": "ElectronicsStore",
+    "distar-tech": "ElectronicsStore",
+    "dilstar-services": "ProfessionalService",
+  };
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": isDilstarSubVendorForLD ? storeTypeMap[slug] || "Store" : "Organization",
+    name: displayName,
+    ...(clerkOrg.imageUrl ? { logo: clerkOrg.imageUrl } : {}),
+    ...(isDilstarSubVendorForLD
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: "Ambalantota",
+            addressCountry: "LK",
+          },
+          parentOrganization: {
+            "@type": "Organization",
+            name: "Dilstar",
+          },
+        }
+      : {}),
+  };
+
+  // 5. Check if custom storefront component is enabled via system settings
   const customEnabledSetting = await getSystemSetting(`custom_storefront_${slug}`, "true");
   const isCustomEnabled = customEnabledSetting === "true";
 
-  // 5. Lookup custom storefront in registry if setting is enabled
+  const structuredDataScript = (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
+
+  // 6. Lookup custom storefront in registry if setting is enabled
   if (isCustomEnabled && customStorefronts[slug]) {
     const CustomComponent = customStorefronts[slug];
-    return <CustomComponent org={org} products={products} />;
+    return (
+      <>
+        {structuredDataScript}
+        <CustomComponent org={org} products={products} />
+      </>
+    );
   }
 
-  // 6. Fallback to DefaultStorefront for standard vendors
-  return <DefaultStorefront org={org} products={products} />;
+  // 7. Fallback to DefaultStorefront for standard vendors
+  return (
+    <>
+      {structuredDataScript}
+      <DefaultStorefront org={org} products={products} />
+    </>
+  );
 }

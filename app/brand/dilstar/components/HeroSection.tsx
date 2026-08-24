@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Wrench,
   Sprout,
@@ -25,57 +26,53 @@ export function HeroSection() {
   const headlinePhrases = ["One name.", "Four shops.", "Everything close to home."];
 
   return (
-    <section className="relative min-h-[92vh] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 overflow-hidden pt-8 pb-16">
-      {/* ── HERO BACKGROUND MEDIA (KEN BURNS EFFECT + 75% DARK GRADIENT OVERLAY) ── */}
-      {/* [PLACEHOLDER: replace with real workshop / store video or high-res photo in DILSTAR_MEDIA.hero] */}
-      <div
-        className="absolute inset-0 overflow-hidden -z-30 pointer-events-none"
-        aria-hidden="true"
-      >
-        <Image
-          src={DILSTAR_MEDIA.hero.posterSrc}
-          alt={DILSTAR_MEDIA.hero.alt}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center opacity-25 scale-105 animate-[pulse_14s_ease-in-out_infinite_alternate]"
-        />
-        {/* Dark gradient overlays (60-80% dark) ensuring crisp text legibility */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#04060a]/95 via-[#04060a]/80 to-[#04060a]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#04060a_85%)]" />
-      </div>
+    <section className="relative min-h-[90vh] sm:min-h-screen flex flex-col justify-center items-center px-6 sm:px-12 lg:px-24 overflow-hidden bg-[#04060a]">
+      {/* ── BACKGROUND MEDIA & ATMOSPHERIC GLOW ── */}
+      <div className="absolute inset-0 -z-20 overflow-hidden pointer-events-none">
+        {/* Subtle Ken Burns Zoom Image Backdrop */}
+        <div className="absolute inset-0 scale-105 animate-[kenburns_24s_ease-in-out_infinite_alternate]">
+          <Image
+            src={DILSTAR_MEDIA.hero.posterSrc}
+            alt={DILSTAR_MEDIA.hero.alt}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center opacity-30"
+          />
+        </div>
 
-      {/* ── DRIFTING AMBIENT GLOWING ORBS (BLUE FADING INTO TEAL) ── */}
-      <div
-        className="absolute inset-0 pointer-events-none overflow-hidden -z-10"
-        aria-hidden="true"
-      >
-        {/* Deep electric blue drifting light */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-[65%] -translate-y-1/2 w-[340px] sm:w-[580px] lg:w-[720px] h-[340px] sm:h-[580px] lg:h-[720px] bg-gradient-to-tr from-[#1565D8]/22 via-[#1565D8]/10 to-transparent rounded-full blur-[100px] animate-[pulse_9s_ease-in-out_infinite]" />
+        {/* 75% Dark Gradient Overlay ensuring crisp typography contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#04060a]/85 via-[#04060a]/75 to-[#04060a]" />
 
-        {/* Deep teal drifting accent */}
-        <div className="absolute top-1/3 left-1/2 translate-x-[15%] -translate-y-1/3 w-[300px] sm:w-[520px] lg:w-[660px] h-[300px] sm:h-[520px] lg:h-[660px] bg-gradient-to-bl from-[#0d9488]/20 via-[#0B4F5C]/15 to-transparent rounded-full blur-[100px] animate-[pulse_11s_ease-in-out_infinite_2.5s]" />
-
-        {/* Fine grid texture overlay like looking into a control room at night */}
-        <div className="absolute inset-0 opacity-[0.035] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_45%,#000_70%,transparent_100%)]" />
-
-        {/* Bottom smooth fade to section below */}
-        <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-[#04060a] to-transparent" />
-      </div>
-
-      <div className="max-w-4xl mx-auto text-center relative z-10 flex flex-col items-center">
-        {/* Subtle Angular-Cut Location Tag */}
+        {/* Signature Drifting Electric Blue -> Deep Teal Gradient Orbs */}
         <div
-          style={{
-            clipPath:
-              "polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)",
-          }}
-          className={`inline-flex items-center gap-2 px-4 py-1.5 bg-zinc-900/90 border border-zinc-800 text-zinc-400 text-xs font-medium tracking-wider uppercase mb-6 sm:mb-8 backdrop-blur-md transition-all duration-700 ${
+          className="absolute -top-32 -left-32 w-[34rem] h-[34rem] rounded-full bg-gradient-to-br from-[#1565D8]/20 via-[#0d9488]/15 to-transparent blur-3xl animate-[pulse_10s_ease-in-out_infinite]"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute -bottom-32 -right-32 w-[36rem] h-[36rem] rounded-full bg-gradient-to-tl from-[#0d9488]/20 via-[#1565D8]/10 to-transparent blur-3xl animate-[pulse_12s_ease-in-out_infinite_2s]"
+          aria-hidden="true"
+        />
+
+        {/* Fine background grid texture */}
+        <div
+          className="absolute inset-0 opacity-[0.035] bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px]"
+          aria-hidden="true"
+        />
+      </div>
+
+      {/* ── CENTRAL HERO CONTENT ── */}
+      <div className="relative max-w-5xl w-full mx-auto flex flex-col items-center text-center pt-24 sm:pt-28 pb-16 z-10">
+        {/* Established Badge */}
+        <div
+          className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-teal-500/20 bg-teal-950/40 backdrop-blur-md mb-8 transition-all duration-700 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
-          <span>Ambalantota, Sri Lanka</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
+          <span className="text-[11px] sm:text-xs font-mono uppercase tracking-widest text-teal-300 font-semibold">
+            Ambalantota, Sri Lanka • Trusted Local Group
+          </span>
         </div>
 
         {/* ── CINEMATIC HEADLINE REVEAL ── */}
@@ -120,7 +117,7 @@ export function HeroSection() {
           expert technical services — all in Ambalantota.
         </p>
 
-        {/* ── SIGNATURE VISUAL: 4 CONNECTED GLOWING NODES ── */}
+        {/* ── SIGNATURE VISUAL: 4 CONNECTED GLOWING NODES (DIRECT STOREFRONT NAVIGATION) ── */}
         <div
           className={`mt-12 sm:mt-14 w-full max-w-2xl px-4 transition-all duration-1000 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
@@ -138,8 +135,8 @@ export function HeroSection() {
             </div>
 
             {/* Node 1: Hardware */}
-            <a
-              href="#hardware"
+            <Link
+              href="/vendors/dilstar-hardware"
               className="group flex flex-col items-center focus:outline-none transition-transform hover:-translate-y-1"
             >
               <div
@@ -155,11 +152,11 @@ export function HeroSection() {
               <span className="mt-2.5 text-[11px] sm:text-xs font-semibold text-zinc-300 group-hover:text-white transition-colors tracking-wide">
                 Hardware
               </span>
-            </a>
+            </Link>
 
             {/* Node 2: Nursery */}
-            <a
-              href="#nursery"
+            <Link
+              href="/vendors/dilstar-nursery"
               className="group flex flex-col items-center focus:outline-none transition-transform hover:-translate-y-1"
             >
               <div
@@ -175,11 +172,11 @@ export function HeroSection() {
               <span className="mt-2.5 text-[11px] sm:text-xs font-semibold text-emerald-300/90 group-hover:text-emerald-300 transition-colors tracking-wide">
                 Nursery
               </span>
-            </a>
+            </Link>
 
             {/* Node 3: Tech Shop */}
-            <a
-              href="#tech"
+            <Link
+              href="/vendors/dilstar-tech"
               className="group flex flex-col items-center focus:outline-none transition-transform hover:-translate-y-1"
             >
               <div
@@ -195,11 +192,11 @@ export function HeroSection() {
               <span className="mt-2.5 text-[11px] sm:text-xs font-semibold text-cyan-300/90 group-hover:text-cyan-300 transition-colors tracking-wide">
                 Tech Shop
               </span>
-            </a>
+            </Link>
 
             {/* Node 4: Services */}
-            <a
-              href="#services"
+            <Link
+              href="/vendors/dilstar-services"
               className="group flex flex-col items-center focus:outline-none transition-transform hover:-translate-y-1"
             >
               <div
@@ -215,76 +212,81 @@ export function HeroSection() {
               <span className="mt-2.5 text-[11px] sm:text-xs font-semibold text-amber-300/90 group-hover:text-amber-300 transition-colors tracking-wide">
                 Services
               </span>
-            </a>
+            </Link>
           </div>
         </div>
 
-        {/* ── THREE ANGULAR-CUT STAT CHIPS (COUNTING UP SMOOTHLY) ── */}
+        {/* ── THREE COMPACT STAT CHIPS ── */}
         <div
-          className={`mt-12 sm:mt-14 flex flex-wrap items-center justify-center gap-3 sm:gap-4 transition-all duration-1000 ${
+          className={`mt-14 sm:mt-16 flex flex-wrap items-center justify-center gap-3 sm:gap-4 transition-all duration-1000 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
           style={{
-            transitionDelay: "1300ms",
+            transitionDelay: "1350ms",
             transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
+          {/* Stat 1: 4 Specialized Shops */}
           <div
             style={{
               clipPath:
-                "polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)",
+                "polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)",
             }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900/80 border border-zinc-800/90 backdrop-blur-md text-xs text-zinc-300 hover:border-zinc-700 transition-colors"
+            className="flex items-center gap-2.5 px-4 py-2.5 bg-zinc-900/80 border border-zinc-800/80 backdrop-blur-sm"
           >
-            <Store className="w-3.5 h-3.5 text-teal-400" />
-            <span className="font-bold text-white text-sm">
-              <AnimatedCounter value={4} />
+            <Store className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-xs sm:text-sm font-semibold text-white">
+              <AnimatedCounter value={4} durationMs={1200} /> Shops
             </span>
-            <span className="text-zinc-400">Shops</span>
           </div>
 
+          {/* Stat 2: 1 Ambalantota Location */}
           <div
             style={{
               clipPath:
-                "polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)",
+                "polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)",
             }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900/80 border border-zinc-800/90 backdrop-blur-md text-xs text-zinc-300 hover:border-zinc-700 transition-colors"
+            className="flex items-center gap-2.5 px-4 py-2.5 bg-zinc-900/80 border border-zinc-800/80 backdrop-blur-sm"
           >
             <MapPin className="w-3.5 h-3.5 text-teal-400" />
-            <span className="font-bold text-white text-sm">
-              <AnimatedCounter value={1} />
+            <span className="text-xs sm:text-sm font-semibold text-white">
+              <AnimatedCounter value={1} durationMs={800} /> Location (Ambalantota)
             </span>
-            <span className="text-zinc-400">Location (Ambalantota)</span>
           </div>
 
+          {/* Stat 3: 100% Locally Owned */}
           <div
             style={{
               clipPath:
-                "polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)",
+                "polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)",
             }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900/80 border border-zinc-800/90 backdrop-blur-md text-xs text-zinc-300 hover:border-zinc-700 transition-colors"
+            className="flex items-center gap-2.5 px-4 py-2.5 bg-zinc-900/80 border border-zinc-800/80 backdrop-blur-sm"
           >
-            <HeartHandshake className="w-3.5 h-3.5 text-teal-400" />
-            <span className="font-bold text-white text-sm">
-              <AnimatedCounter value={100} suffix="%" />
+            <HeartHandshake className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-xs sm:text-sm font-semibold text-white">
+              <AnimatedCounter value={100} durationMs={1800} />% Locally Owned
             </span>
-            <span className="text-zinc-400">Locally Owned</span>
           </div>
         </div>
 
-        {/* ── SUBTLE DOWNWARD SCROLL CUE TO TAKEOVER ── */}
-        <a
-          href="#takeover"
-          className={`mt-14 sm:mt-16 inline-flex flex-col items-center gap-2 text-xs font-mono tracking-widest text-zinc-500 hover:text-zinc-300 transition-all duration-700 uppercase ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+        {/* ── DOWNWARD SCROLL CUE ── */}
+        <div
+          className={`mt-14 sm:mt-16 transition-all duration-1000 ${
+            mounted ? "opacity-100" : "opacity-0"
           }`}
-          style={{
-            transitionDelay: "1500ms",
-          }}
+          style={{ transitionDelay: "1600ms" }}
         >
-          <span>Scroll to explore shops</span>
-          <ArrowDown className="w-3.5 h-3.5 animate-bounce text-teal-400" />
-        </a>
+          <a
+            href="#takeover"
+            className="group flex flex-col items-center gap-2 text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors focus:outline-none"
+            aria-label="Scroll to shop showcase"
+          >
+            <span className="uppercase tracking-widest text-[10px]">Scroll to Explore</span>
+            <div className="w-5 h-8 rounded-full border border-zinc-700 flex items-start justify-center p-1">
+              <ArrowDown className="w-3 h-3 text-teal-400 animate-bounce" />
+            </div>
+          </a>
+        </div>
       </div>
     </section>
   );

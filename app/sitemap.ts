@@ -103,6 +103,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.5,
       },
       {
+        url: `${baseUrl}/support`,
+        lastModified: new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.5,
+      },
+      {
         url: `${baseUrl}/privacy`,
         lastModified: new Date(),
         changeFrequency: "monthly" as const,
@@ -116,6 +122,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
       {
         url: `${baseUrl}/refund`,
+        lastModified: new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.3,
+      },
+      {
+        url: `${baseUrl}/cookie`,
         lastModified: new Date(),
         changeFrequency: "monthly" as const,
         priority: 0.3,
@@ -224,6 +236,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${baseUrl}/refund`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/cookie`,
       lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.3,

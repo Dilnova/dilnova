@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { DILSTAR_MEDIA } from "../data/media";
 
@@ -17,6 +18,7 @@ interface SceneData {
   overlayClass: string;
   accentTextClass: string;
   locationHref: string;
+  storefrontHref: string;
 }
 
 const SCENES: SceneData[] = [
@@ -40,6 +42,7 @@ const SCENES: SceneData[] = [
     overlayClass: "from-[#04060a]/95 via-[#0f172a]/75 to-[#04060a]/90",
     accentTextClass: "text-slate-400",
     locationHref: "#locations",
+    storefrontHref: "/vendors/dilstar-hardware",
   },
   {
     id: "nursery",
@@ -62,6 +65,7 @@ const SCENES: SceneData[] = [
     overlayClass: "from-[#04060a]/95 via-[#022c22]/75 to-[#04060a]/90",
     accentTextClass: "text-emerald-400",
     locationHref: "#locations",
+    storefrontHref: "/vendors/dilstar-nursery",
   },
   {
     id: "tech",
@@ -83,6 +87,7 @@ const SCENES: SceneData[] = [
     overlayClass: "from-[#04060a]/95 via-[#083344]/75 to-[#04060a]/90",
     accentTextClass: "text-cyan-400",
     locationHref: "#locations",
+    storefrontHref: "/vendors/dilstar-tech",
   },
   {
     id: "services",
@@ -103,6 +108,7 @@ const SCENES: SceneData[] = [
     overlayClass: "from-[#04060a]/95 via-[#2c1d09]/75 to-[#042f2e]/85",
     accentTextClass: "text-amber-400",
     locationHref: "#locations",
+    storefrontHref: "/vendors/dilstar-services",
   },
 ];
 
@@ -193,9 +199,11 @@ export function ShopTakeoverSection() {
               <span className="text-xs font-mono tracking-widest text-zinc-400 uppercase">
                 {scene.number} &mdash; {scene.name}
               </span>
-              <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight">
-                {scene.name}
-              </h2>
+              <Link href={scene.storefrontHref} className="group/title block focus:outline-none">
+                <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight group-hover/title:text-teal-300 transition-colors">
+                  {scene.name}
+                </h2>
+              </Link>
               <p className="text-lg sm:text-xl text-zinc-200 font-medium max-w-2xl">
                 {scene.description}
               </p>
@@ -209,13 +217,19 @@ export function ShopTakeoverSection() {
                   </React.Fragment>
                 ))}
               </div>
-              <div className="pt-6">
+              <div className="pt-6 flex flex-wrap items-center gap-4">
+                <Link
+                  href={scene.storefrontHref}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-zinc-950 font-semibold text-sm rounded-lg hover:bg-slate-200 transition-colors"
+                >
+                  <span>Enter Storefront</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
                 <a
                   href="#locations"
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-white hover:text-teal-300 transition-colors"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
                 >
                   <span>View location</span>
-                  <ArrowRight className="w-4 h-4" />
                 </a>
               </div>
             </div>
@@ -274,9 +288,11 @@ export function ShopTakeoverSection() {
               <span>{SCENES[0].departmentTitle}</span>
             </div>
 
-            <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05]">
-              {SCENES[0].name}
-            </h2>
+            <Link href={SCENES[0].storefrontHref} className="group/title block focus:outline-none">
+              <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05] group-hover/title:text-slate-300 transition-colors">
+                {SCENES[0].name}
+              </h2>
+            </Link>
 
             <p className="text-lg sm:text-2xl text-slate-200 font-normal leading-relaxed max-w-2xl">
               {SCENES[0].description}
@@ -293,13 +309,19 @@ export function ShopTakeoverSection() {
               ))}
             </div>
 
-            <div className="pt-8">
+            <div className="pt-8 flex flex-wrap items-center gap-4">
+              <Link
+                href={SCENES[0].storefrontHref}
+                className="group/btn inline-flex items-center gap-2.5 px-5 py-2.5 bg-white text-zinc-950 font-semibold text-sm rounded-lg hover:bg-slate-200 transition-all shadow-lg shadow-white/5"
+              >
+                <span>Enter Storefront</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+              </Link>
               <a
                 href="#locations"
-                className="group/link inline-flex items-center gap-2.5 text-sm font-semibold text-white hover:text-slate-300 transition-colors"
+                className="group/link inline-flex items-center gap-2 text-sm font-semibold text-zinc-400 hover:text-white transition-colors"
               >
                 <span>View location</span>
-                <ArrowRight className="w-4 h-4 text-slate-400 group-hover/link:text-white transition-transform duration-300 group-hover/link:translate-x-1.5" />
               </a>
             </div>
           </div>
@@ -356,9 +378,11 @@ export function ShopTakeoverSection() {
               <span>{SCENES[1].departmentTitle}</span>
             </div>
 
-            <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05]">
-              {SCENES[1].name}
-            </h2>
+            <Link href={SCENES[1].storefrontHref} className="group/title block focus:outline-none">
+              <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05] group-hover/title:text-emerald-300 transition-colors">
+                {SCENES[1].name}
+              </h2>
+            </Link>
 
             <p className="text-lg sm:text-2xl text-emerald-100 font-normal leading-relaxed max-w-2xl">
               {SCENES[1].description}
@@ -375,13 +399,19 @@ export function ShopTakeoverSection() {
               ))}
             </div>
 
-            <div className="pt-8">
+            <div className="pt-8 flex flex-wrap items-center gap-4">
+              <Link
+                href={SCENES[1].storefrontHref}
+                className="group/btn inline-flex items-center gap-2.5 px-5 py-2.5 bg-emerald-400 text-zinc-950 font-semibold text-sm rounded-lg hover:bg-emerald-300 transition-all shadow-lg shadow-emerald-400/10"
+              >
+                <span>Enter Storefront</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+              </Link>
               <a
                 href="#locations"
-                className="group/link inline-flex items-center gap-2.5 text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                className="group/link inline-flex items-center gap-2 text-sm font-semibold text-emerald-300/80 hover:text-white transition-colors"
               >
                 <span>View location</span>
-                <ArrowRight className="w-4 h-4 text-emerald-400 group-hover/link:text-emerald-300 transition-transform duration-300 group-hover/link:translate-x-1.5" />
               </a>
             </div>
           </div>
@@ -464,9 +494,11 @@ export function ShopTakeoverSection() {
               <span>{SCENES[2].departmentTitle}</span>
             </div>
 
-            <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05]">
-              {SCENES[2].name}
-            </h2>
+            <Link href={SCENES[2].storefrontHref} className="group/title block focus:outline-none">
+              <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05] group-hover/title:text-cyan-300 transition-colors">
+                {SCENES[2].name}
+              </h2>
+            </Link>
 
             <p className="text-lg sm:text-2xl text-cyan-100 font-normal leading-relaxed max-w-2xl">
               {SCENES[2].description}
@@ -483,13 +515,19 @@ export function ShopTakeoverSection() {
               ))}
             </div>
 
-            <div className="pt-8">
+            <div className="pt-8 flex flex-wrap items-center gap-4">
+              <Link
+                href={SCENES[2].storefrontHref}
+                className="group/btn inline-flex items-center gap-2.5 px-5 py-2.5 bg-cyan-400 text-zinc-950 font-semibold text-sm rounded-lg hover:bg-cyan-300 transition-all shadow-lg shadow-cyan-400/10"
+              >
+                <span>Enter Storefront</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+              </Link>
               <a
                 href="#locations"
-                className="group/link inline-flex items-center gap-2.5 text-sm font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+                className="group/link inline-flex items-center gap-2 text-sm font-semibold text-cyan-300/80 hover:text-white transition-colors"
               >
                 <span>View location</span>
-                <ArrowRight className="w-4 h-4 text-cyan-400 group-hover/link:text-cyan-300 transition-transform duration-300 group-hover/link:translate-x-1.5" />
               </a>
             </div>
           </div>
@@ -558,9 +596,11 @@ export function ShopTakeoverSection() {
               <span>{SCENES[3].departmentTitle}</span>
             </div>
 
-            <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05]">
-              {SCENES[3].name}
-            </h2>
+            <Link href={SCENES[3].storefrontHref} className="group/title block focus:outline-none">
+              <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05] group-hover/title:text-amber-300 transition-colors">
+                {SCENES[3].name}
+              </h2>
+            </Link>
 
             <p className="text-lg sm:text-2xl text-amber-100 font-normal leading-relaxed max-w-2xl">
               {SCENES[3].description}
@@ -577,13 +617,19 @@ export function ShopTakeoverSection() {
               ))}
             </div>
 
-            <div className="pt-8">
+            <div className="pt-8 flex flex-wrap items-center gap-4">
+              <Link
+                href={SCENES[3].storefrontHref}
+                className="group/btn inline-flex items-center gap-2.5 px-5 py-2.5 bg-amber-400 text-zinc-950 font-semibold text-sm rounded-lg hover:bg-amber-300 transition-all shadow-lg shadow-amber-400/10"
+              >
+                <span>Enter Storefront</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+              </Link>
               <a
                 href="#locations"
-                className="group/link inline-flex items-center gap-2.5 text-sm font-semibold text-amber-400 hover:text-amber-300 transition-colors"
+                className="group/link inline-flex items-center gap-2 text-sm font-semibold text-amber-300/80 hover:text-white transition-colors"
               >
                 <span>View location</span>
-                <ArrowRight className="w-4 h-4 text-amber-400 group-hover/link:text-amber-300 transition-transform duration-300 group-hover/link:translate-x-1.5" />
               </a>
             </div>
           </div>

@@ -84,7 +84,7 @@ export async function generateMetadata(): Promise<Metadata> {
         "marketplace",
         "multi-vendor",
         "ecommerce",
-        "distar",
+        "dilstar",
         "b2b platform",
       ];
 
@@ -105,6 +105,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: systemName,
       locale: "en_US",
       type: "website",
+      images: [{ url: `${baseUrl}/apple-touch-icon.png`, width: 180, height: 180 }],
     },
     twitter: {
       card: "summary_large_image",
@@ -132,7 +133,6 @@ export async function generateMetadata(): Promise<Metadata> {
           ],
           apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
         },
-    manifest: "/site.webmanifest",
     metadataBase: new URL(baseUrl),
     alternates: {
       canonical: "/",
