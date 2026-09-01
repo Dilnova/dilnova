@@ -959,35 +959,41 @@ export default function SocialSettingsHubPage() {
               </div>
 
               {/* Step 3: Live Connected Facebook Page Banner (If Page ID set) */}
-              {facebookPageId && (
-                <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 flex items-center justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
-                      ✓
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
-                        Connected to Page ID: {facebookPageId}
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
-                          Active
-                        </span>
+              {(() => {
+                const cleanPageId = facebookPageId.replace(/[^a-zA-Z0-9.-]/g, "");
+                if (!cleanPageId) return null;
+                const safeUrl = `https://www.facebook.com/${encodeURIComponent(cleanPageId)}`;
+
+                return (
+                  <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                        ✓
                       </div>
-                      <p className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80">
-                        Posts published through Dilnova will appear instantly on this Page timeline
-                        feed.
-                      </p>
+                      <div>
+                        <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                          Connected to Page ID: {cleanPageId}
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
+                            Active
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80">
+                          Posts published through Dilnova will appear instantly on this Page
+                          timeline feed.
+                        </p>
+                      </div>
                     </div>
+                    <a
+                      href={safeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:underline px-3 py-1.5 rounded-xl bg-white/80 dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-800 shadow-2xs"
+                    >
+                      View Page on Facebook <ExternalLink className="h-3 w-3" />
+                    </a>
                   </div>
-                  <a
-                    href={`https://facebook.com/${facebookPageId}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:underline px-3 py-1.5 rounded-xl bg-white/80 dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-800 shadow-2xs"
-                  >
-                    View Page on Facebook <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Post Caption Customization */}
               <div>
