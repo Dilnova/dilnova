@@ -345,8 +345,9 @@ export default function SocialSettingsHubPage() {
     startTransition(async () => {
       try {
         const res = await discoverInstagramAccountAction({
-          facebookPageId: pageIdToUse,
+          facebookPageId: pageIdToUse || undefined,
           accessToken: tokenToUse.includes("••••") ? undefined : tokenToUse || undefined,
+          igAccountIdHint: instagramAccountId.trim() || undefined,
         });
 
         if (res?.data?.account) {

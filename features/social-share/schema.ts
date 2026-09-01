@@ -49,4 +49,6 @@ export const discoverFacebookPagesSchema = z.object({
 export const discoverInstagramAccountSchema = z.object({
   facebookPageId: z.string().trim().optional(),
   accessToken: z.string().trim().optional(),
+  businessManagerId: z.string().trim().optional(),
+  igAccountIdHint: z.string().trim().optional(),
 });

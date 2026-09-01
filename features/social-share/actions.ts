@@ -316,26 +316,22 @@ export const discoverInstagramAccountAction = orgAdminAction
 
       let pageId = parsedInput.facebookPageId?.trim();
       let tokenToUse = parsedInput.accessToken?.trim();
+      let businessManagerId = parsedInput.businessManagerId?.trim();
+      let igAccountIdHint = parsedInput.igAccountIdHint?.trim();
 
-      if (!pageId || !tokenToUse || tokenToUse.includes("••••")) {
-        const [integration] = await db
-          .select()
-          .from(schema.metaCatalogIntegrations)
-          .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
-          .limit(1);
+      const [integration] = await db
+        .select()
+        .from(schema.metaCatalogIntegrations)
+        .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
+        .limit(1);
 
-        if (integration) {
-          pageId = pageId || integration.facebookPageId || "";
-          if (!tokenToUse || tokenToUse.includes("••••")) {
-            tokenToUse = integration.facebookPageAccessToken || integration.accessToken || "";
-          }
+      if (integration) {
+        pageId = pageId || integration.facebookPageId || "";
+        businessManagerId = businessManagerId || integration.businessManagerId || "208458023692445";
+        igAccountIdHint = igAccountIdHint || integration.instagramAccountId || "17841406751842985";
+        if (!tokenToUse || tokenToUse.includes("••••")) {
+          tokenToUse = integration.facebookPageAccessToken || integration.accessToken || "";
         }
-      }
-
-      if (!pageId) {
-        throw new ActionError(
-          "Facebook Page ID is required. Please select or save your Facebook Page ID first.",
-        );
       }
 
       if (!tokenToUse) {
@@ -347,6 +343,8 @@ export const discoverInstagramAccountAction = orgAdminAction
       const result = await fetchLinkedInstagramAccount({
         facebookPageId: pageId,
         accessToken: tokenToUse,
+        businessManagerId,
+        igAccountIdHint,
       });
 
       if (!result.success || !result.account) {

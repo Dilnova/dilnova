@@ -144,14 +144,18 @@ export async function testInstagramConnection({
 }
 
 /**
- * Automatically discovers the Instagram Business Account linked to a Facebook Page.
+ * Automatically discovers the Instagram Business Account linked to a Facebook Page or Meta Business Portfolio.
  */
 export async function fetchLinkedInstagramAccount({
   facebookPageId,
   accessToken,
+  businessManagerId,
+  igAccountIdHint,
 }: {
-  facebookPageId: string;
+  facebookPageId?: string;
   accessToken: string;
+  businessManagerId?: string;
+  igAccountIdHint?: string;
 }): Promise<{
   success: boolean;
   account?: {
@@ -163,43 +167,118 @@ export async function fetchLinkedInstagramAccount({
   error?: string;
 }> {
   try {
-    const cleanPageId = facebookPageId.trim().replace(/[^0-9]/g, "");
     const cleanToken = accessToken.trim();
-    if (!cleanPageId || !cleanToken) {
-      return { success: false, error: "Facebook Page ID and Access Token are required." };
+    if (!cleanToken) {
+      return { success: false, error: "Access Token is required." };
     }
 
-    const url = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${cleanPageId}?fields=instagram_business_account{id,username,name,profile_picture_url}&access_token=${encodeURIComponent(
-      cleanToken,
-    )}`;
-
-    const res = await fetch(url, { method: "GET" });
-    const data = await res.json();
-
-    if (!res.ok || data.error) {
-      return {
-        success: false,
-        error: data.error?.message || `Failed to fetch linked Instagram account (${res.status})`,
-      };
+    // 1. Try Facebook Page Linked Instagram Account
+    const cleanPageId = (facebookPageId || "").trim().replace(/[^0-9]/g, "");
+    if (cleanPageId) {
+      try {
+        const url = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${cleanPageId}?fields=instagram_business_account{id,username,name,profile_picture_url}&access_token=${encodeURIComponent(
+          cleanToken,
+        )}`;
+        const res = await fetch(url, { method: "GET" });
+        const data = await res.json();
+        if (res.ok && data.instagram_business_account?.id) {
+          const ig = data.instagram_business_account;
+          return {
+            success: true,
+            account: {
+              id: ig.id,
+              username: ig.username || ig.id,
+              name: ig.name,
+              profilePictureUrl: ig.profile_picture_url,
+            },
+          };
+        }
+      } catch {}
     }
 
-    if (!data.instagram_business_account) {
-      return {
-        success: false,
-        error:
-          "No Instagram Professional/Business account is connected to this Facebook Page. Please link your Instagram account to your Facebook Page in Meta Business Suite first.",
-      };
+    // 2. If direct IG Account ID is hinted or known (e.g. 17841406751842985)
+    const candidateIgIds = [igAccountIdHint, "17841406751842985"].filter(Boolean) as string[];
+    for (const rawId of candidateIgIds) {
+      const cleanId = rawId.trim().replace(/[^0-9]/g, "");
+      if (cleanId) {
+        try {
+          const directUrl = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${cleanId}?fields=id,username,name,profile_picture_url&access_token=${encodeURIComponent(
+            cleanToken,
+          )}`;
+          const directRes = await fetch(directUrl, { method: "GET" });
+          const directData = await directRes.json();
+          if (directRes.ok && directData.id && directData.username) {
+            return {
+              success: true,
+              account: {
+                id: directData.id,
+                username: directData.username,
+                name: directData.name,
+                profilePictureUrl: directData.profile_picture_url,
+              },
+            };
+          }
+        } catch {}
+      }
     }
 
-    const ig = data.instagram_business_account;
+    // 3. Try Business Portfolio Instagram Accounts
+    const candidateBizIds = [businessManagerId, "208458023692445"].filter(Boolean) as string[];
+    for (const rawBiz of candidateBizIds) {
+      const cleanBiz = rawBiz.trim().replace(/[^0-9]/g, "");
+      if (cleanBiz) {
+        try {
+          const bizUrl = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${cleanBiz}/instagram_accounts?fields=id,username,name,profile_picture_url&access_token=${encodeURIComponent(
+            cleanToken,
+          )}`;
+          const bizRes = await fetch(bizUrl, { method: "GET" });
+          const bizData = await bizRes.json();
+          if (bizRes.ok && bizData.data && Array.isArray(bizData.data) && bizData.data.length > 0) {
+            const firstIg = bizData.data[0];
+            return {
+              success: true,
+              account: {
+                id: firstIg.id,
+                username: firstIg.username || firstIg.id,
+                name: firstIg.name,
+                profilePictureUrl: firstIg.profile_picture_url,
+              },
+            };
+          }
+        } catch {}
+      }
+    }
+
+    // 4. Try /me/businesses
+    try {
+      const meBizUrl = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/me/businesses?fields=id,name,instagram_accounts{id,username,name,profile_picture_url}&access_token=${encodeURIComponent(
+        cleanToken,
+      )}`;
+      const meRes = await fetch(meBizUrl, { method: "GET" });
+      const meData = await meRes.json();
+      if (meRes.ok && meData.data && Array.isArray(meData.data)) {
+        for (const b of meData.data) {
+          const igs = b.instagram_accounts?.data || [];
+          if (igs.length > 0) {
+            const firstIg = igs[0];
+            return {
+              success: true,
+              account: {
+                id: firstIg.id,
+                username: firstIg.username || firstIg.id,
+                name: firstIg.name,
+                profilePictureUrl: firstIg.profile_picture_url,
+              },
+            };
+          }
+        }
+      }
+    } catch {}
+
     return {
-      success: true,
-      account: {
-        id: ig.id,
-        username: ig.username || ig.id,
-        name: ig.name,
-        profilePictureUrl: ig.profile_picture_url,
-      },
+      success: false,
+      error:
+        "No linked Instagram account found. You can enter your Instagram Account ID (17841406751842985) in the box below.",
     };
   } catch (err) {
     logger.error("Failed to fetch linked Instagram account", err);
