@@ -20,6 +20,7 @@ import { runWithCorrelationId } from "@/shared/security/async-context";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { isAllowedCloudinaryDeliveryUrl } from "@/shared/media/cloudinary-url";
 import { deleteCloudinaryAsset } from "@/shared/media/cloudinary-server";
+import { dispatchProductSocialPublishing } from "@/features/social-share";
 
 export const createCategoryAction = superadminAction
   .schema(createCategorySchema)
@@ -227,6 +228,13 @@ export const updateProductAction = superadminAction
         targetId: parsedInput.id,
         metadata: { updates: parsedInput.updates },
       });
+
+      // Non-blocking Multi-Channel Social Publishing (UPDATE)
+      dispatchProductSocialPublishing({
+        orgId: productOrgId,
+        productId: parsedInput.id,
+        action: "UPDATE",
+      }).catch(() => {});
 
       revalidatePath("/superadmin");
       revalidatePath("/products");

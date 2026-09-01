@@ -202,15 +202,26 @@ export default async function VendorPage({ searchParams }: PageProps) {
             </Link>
           )}
           {orgRole === "org:admin" && (
-            <Link
-              href="/admin"
-              className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-red-200 hover:bg-red-50 dark:border-red-905/40 dark:hover:bg-red-955/20 text-red-750 dark:text-red-400 transition-colors whitespace-nowrap cursor-pointer"
-            >
-              <span className="emoji" aria-hidden="true">
-                ⚙️
-              </span>{" "}
-              Org Admin Console
-            </Link>
+            <>
+              <Link
+                href="/vendor/settings/facebook-shop"
+                className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-blue-200 hover:bg-blue-50 dark:border-blue-900/40 dark:hover:bg-blue-950/20 text-blue-700 dark:text-blue-400 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5"
+              >
+                <span className="emoji" aria-hidden="true">
+                  🛍️
+                </span>{" "}
+                Facebook Shop
+              </Link>
+              <Link
+                href="/admin"
+                className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-red-200 hover:bg-red-50 dark:border-red-905/40 dark:hover:bg-red-955/20 text-red-750 dark:text-red-400 transition-colors whitespace-nowrap cursor-pointer"
+              >
+                <span className="emoji" aria-hidden="true">
+                  ⚙️
+                </span>{" "}
+                Org Admin Console
+              </Link>
+            </>
           )}
           <Link
             href="/"

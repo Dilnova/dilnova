@@ -16,6 +16,7 @@ import { isAllowedCloudinaryDeliveryUrl } from "@/shared/media/cloudinary-url";
 import { deleteCloudinaryAsset } from "@/shared/media/cloudinary-server";
 import { getOrgCurrencySettings } from "@/shared/currency/exchange-rates.service";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
+import { dispatchProductSocialPublishing } from "@/features/social-share";
 import { z } from "zod/v3";
 import { vendorAction, orgAdminAction, ActionError } from "@/lib/safe-action";
 
@@ -258,6 +259,14 @@ export const addProductAction = vendorAction
             orgId: newProduct.orgId,
           },
         });
+
+        // Non-blocking Multi-Channel Social Publishing (Facebook Feed, Instagram, Meta Catalog, Webhooks)
+        dispatchProductSocialPublishing({
+          orgId,
+          productId: newProduct.id,
+          action: "CREATE",
+          productNameHint: newProduct.name,
+        }).catch(() => {});
       }
 
       // Cache Invalidation
@@ -322,6 +331,14 @@ export const deleteProductAction = orgAdminAction
             orgId: deletedProduct.orgId,
           },
         });
+
+        // Non-blocking Multi-Channel Social Publishing (DELETE)
+        dispatchProductSocialPublishing({
+          orgId,
+          productId: deletedProduct.id,
+          action: "DELETE",
+          productNameHint: deletedProduct.name,
+        }).catch(() => {});
       }
 
       // Cache Invalidation
@@ -409,6 +426,13 @@ export const quickUpdateProductStockAction = vendorAction
       revalidatePath("/vendors");
       revalidateVendorConsole();
       updateTag(`vendor-products-${orgId}`);
+
+      // Non-blocking Multi-Channel Social Publishing (UPDATE stock)
+      dispatchProductSocialPublishing({
+        orgId,
+        productId,
+        action: "UPDATE",
+      }).catch(() => {});
 
       return { success: true };
     });
