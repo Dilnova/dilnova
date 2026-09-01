@@ -7,6 +7,7 @@ import {
 import {
   postProductToInstagramFeed,
   testInstagramConnection,
+  fetchLinkedInstagramAccount,
 } from "@/features/social-share/services/instagram-feed";
 import { dispatchProductWebhook } from "@/features/social-share/services/webhook-dispatcher";
 import {
@@ -223,8 +224,9 @@ describe("Multi-Channel Social Publishing Suite", () => {
       });
 
       expect(res.success).toBe(false);
-      expect(res.error).toContain("requires a product image URL");
+      expect(res.error).toContain("Product has no image or media uploaded");
     });
+
     it("verifies Instagram account connection", async () => {
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
@@ -237,11 +239,34 @@ describe("Multi-Channel Social Publishing Suite", () => {
 
       const res = await testInstagramConnection({
         igAccountId: "987654321",
-        accessToken: "valid_token",
+        accessToken: "valid_ig_token",
       });
 
       expect(res.valid).toBe(true);
       expect(res.username).toBe("artisan_crafts_official");
+    });
+
+    it("discovers linked Instagram account for a page", async () => {
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          instagram_business_account: {
+            id: "17841400000000000",
+            username: "dilnova_store",
+            name: "Dilnova Official",
+          },
+        }),
+      });
+
+      const res = await fetchLinkedInstagramAccount({
+        facebookPageId: "123456789",
+        accessToken: "valid_token",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.account?.id).toBe("17841400000000000");
+      expect(res.account?.username).toBe("dilnova_store");
     });
   });
 

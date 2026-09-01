@@ -45,3 +45,8 @@ export const discoverFacebookPagesSchema = z.object({
   accessToken: z.string().trim().min(1, "Access Token is required to discover pages."),
   pageIdHint: z.string().trim().optional(),
 });
+
+export const discoverInstagramAccountSchema = z.object({
+  facebookPageId: z.string().trim().min(1, "Facebook Page ID is required."),
+  accessToken: z.string().trim().min(1, "Access Token is required."),
+});

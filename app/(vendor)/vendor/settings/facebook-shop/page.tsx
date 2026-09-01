@@ -31,6 +31,7 @@ import {
   testWebhookAction,
   triggerBatchFacebookFeedPostAction,
   discoverFacebookPagesAction,
+  discoverInstagramAccountAction,
 } from "@/features/social-share/actions";
 import {
   testFacebookShopConnectionAction,
@@ -106,6 +107,16 @@ export default function SocialSettingsHubPage() {
   >([]);
   const [isDiscoveringPages, setIsDiscoveringPages] = useState(false);
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
+
+  // Instagram Auto-Discovery state
+  const [isDiscoveringInstagram, setIsDiscoveringInstagram] = useState(false);
+  const [instagramDiscoveryError, setInstagramDiscoveryError] = useState<string | null>(null);
+  const [discoveredInstagramAccount, setDiscoveredInstagramAccount] = useState<{
+    id: string;
+    username: string;
+    name?: string;
+    profilePictureUrl?: string;
+  } | null>(null);
 
   // Logs
   const [logs, setLogs] = useState<SyncLogItem[]>([]);
@@ -301,6 +312,58 @@ export default function SocialSettingsHubPage() {
           valid: false,
           message: err instanceof Error ? err.message : "Network error testing connection.",
         });
+      }
+    });
+  };
+
+  const handleDiscoverInstagram = () => {
+    const tokenToUse = facebookPageAccessToken.trim() || accessToken.trim();
+    const pageIdToUse = facebookPageId.trim();
+
+    if (!pageIdToUse) {
+      setInstagramDiscoveryError(
+        "Please configure and save your Facebook Page ID in the Facebook Feed tab first.",
+      );
+      return;
+    }
+
+    if (!tokenToUse || tokenToUse.includes("••••")) {
+      setInstagramDiscoveryError("Please paste or save your Meta Access Token first.");
+      return;
+    }
+
+    setInstagramDiscoveryError(null);
+    setIsDiscoveringInstagram(true);
+
+    startTransition(async () => {
+      try {
+        const res = await discoverInstagramAccountAction({
+          facebookPageId: pageIdToUse,
+          accessToken: tokenToUse,
+        });
+
+        if (res?.data?.account) {
+          const acc = res.data.account;
+          setInstagramAccountId(acc.id);
+          setDiscoveredInstagramAccount(acc);
+          setTestResult({
+            valid: true,
+            message: `Connected to Instagram: @${acc.username}! Click "Save Instagram Settings" to apply.`,
+          });
+          setSaveSuccess(
+            `Found Instagram Account: @${acc.username}! Click "Save Instagram Settings" below.`,
+          );
+        } else {
+          setInstagramDiscoveryError(
+            "No linked Instagram Professional/Business account found for this Facebook Page. Link your Instagram account in Meta Business Suite first.",
+          );
+        }
+      } catch (err) {
+        setInstagramDiscoveryError(
+          err instanceof Error ? err.message : "Failed to find linked Instagram account.",
+        );
+      } finally {
+        setIsDiscoveringInstagram(false);
       }
     });
   };
@@ -1206,15 +1269,15 @@ export default function SocialSettingsHubPage() {
 
           {/* TAB 3: Instagram Auto-Poster */}
           {activeTab === "instagram_feed" && (
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-5">
+            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-pink-600 font-mono">
-                    Instagram Business Auto-Poster
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-pink-600 font-mono flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" /> Instagram Business Auto-Poster
                   </h2>
                   <p className="text-xs text-zinc-500 mt-0.5">
-                    Automatically publishes photos & captions to your linked Instagram Business or
-                    Creator account.
+                    Automatically publishes photos & promotional captions to your linked Instagram
+                    Business or Creator account.
                   </p>
                 </div>
                 <span className="p-2 rounded-xl bg-pink-50 dark:bg-pink-950/60 text-pink-600">
@@ -1222,43 +1285,143 @@ export default function SocialSettingsHubPage() {
                 </span>
               </div>
 
-              {/* Step-by-Step Instagram Helper */}
-              <div className="p-4 rounded-2xl bg-pink-50/60 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-900/50 space-y-2 text-xs">
-                <span className="font-bold text-pink-900 dark:text-pink-300 flex items-center gap-1.5">
-                  <Info className="h-3.5 w-3.5" /> Prerequisites for Instagram Auto-Posting:
-                </span>
+              {/* Step 1: Link Instagram to Facebook Page Guide */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-pink-50/80 to-rose-50/50 dark:from-pink-950/40 dark:to-rose-950/20 border border-pink-100 dark:border-pink-900/50 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-xs font-bold text-pink-900 dark:text-pink-300 flex items-center gap-1.5">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-600 text-white text-[10px] font-mono">
+                      1
+                    </span>
+                    Prerequisites for Instagram Publishing
+                  </span>
+                  <a
+                    href="https://business.facebook.com/latest/settings/instagram_account"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white transition-all shadow-sm cursor-pointer"
+                  >
+                    🔗 Open Meta Instagram Settings <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+
                 <ol className="list-decimal list-inside space-y-1 text-[11px] text-zinc-600 dark:text-zinc-400">
                   <li>
-                    Convert personal Instagram account to a{" "}
-                    <strong>Business or Creator Account</strong>.
+                    Your Instagram must be a <strong>Professional (Business or Creator)</strong>{" "}
+                    account.
                   </li>
                   <li>
-                    Link your Instagram Account to your Facebook Page in Facebook Page Settings
-                    &rarr; <em>Linked Accounts</em>.
+                    In Meta Business Suite, your Instagram account must be linked to your Facebook
+                    Page (<strong>Dil</strong>).
                   </li>
                   <li>
-                    Enter your numeric <strong>Instagram Business Account ID</strong> below. (Uses
-                    your Facebook Page Token).
+                    Click <strong>Auto-Detect</strong> below to automatically fetch your Instagram
+                    Business ID!
                   </li>
                 </ol>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
-                  Instagram Business Account ID (Numeric)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 17841400000000000"
-                  value={instagramAccountId}
-                  onChange={(e) => setInstagramAccountId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-pink-500 focus:outline-none"
-                />
-                <span className="text-[10px] text-zinc-400 mt-1 block">
-                  Found in Meta Business Suite &rarr; Settings &rarr; Instagram Accounts or via
-                  Graph API.
-                </span>
+              {/* Step 2: Auto-Detect Linked Instagram Account */}
+              <div className="p-4 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 text-[10px] font-mono">
+                      2
+                    </span>
+                    Connect Your Instagram Account
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleDiscoverInstagram}
+                    disabled={isDiscoveringInstagram || isPending}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800 hover:bg-pink-100 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isDiscoveringInstagram ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Zap className="h-3.5 w-3.5" />
+                    )}
+                    🔍 Auto-Detect from Facebook Page
+                  </button>
+                </div>
+
+                {instagramDiscoveryError && (
+                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-700 dark:text-rose-300">
+                    {instagramDiscoveryError}
+                  </div>
+                )}
+
+                {/* Discovered Instagram Account Card */}
+                {discoveredInstagramAccount && (
+                  <div className="p-3 rounded-xl bg-pink-50/90 dark:bg-pink-950/50 border border-pink-300 dark:border-pink-800 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0 overflow-hidden">
+                        {discoveredInstagramAccount.profilePictureUrl ? (
+                          <img
+                            src={discoveredInstagramAccount.profilePictureUrl}
+                            alt={discoveredInstagramAccount.username}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          "IG"
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-pink-900 dark:text-pink-200 flex items-center gap-1">
+                          @{discoveredInstagramAccount.username}
+                          <Check className="h-3.5 w-3.5 text-pink-600" />
+                        </div>
+                        <div className="text-[10px] text-zinc-500 font-mono">
+                          ID: {discoveredInstagramAccount.id}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-pink-600 text-white">
+                      Connected
+                    </span>
+                  </div>
+                )}
+
+                {/* Manual Numeric Account ID Input */}
+                <div className="pt-2">
+                  <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                    Instagram Business Account ID (Numeric)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 17841400000000000"
+                    value={instagramAccountId}
+                    onChange={(e) => setInstagramAccountId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-zinc-400 mt-1 block">
+                    Automatically populated by clicking Auto-Detect above, or found in Meta Business
+                    Suite.
+                  </span>
+                </div>
               </div>
+
+              {/* Step 3: Live Connected Instagram Banner (If Account ID set) */}
+              {instagramAccountId && (
+                <div className="p-4 rounded-2xl bg-pink-50/70 dark:bg-pink-950/30 border border-pink-200/70 dark:border-pink-900/50 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                      📸
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-pink-900 dark:text-pink-200 flex items-center gap-1.5">
+                        Connected to Instagram Account ID: {instagramAccountId}
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-pink-200/60 dark:bg-pink-900/60 text-pink-800 dark:text-pink-300">
+                          Active
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-pink-700/80 dark:text-pink-300/80">
+                        Products with images will automatically be published to your Instagram feed
+                        grid.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Action Buttons for Instagram */}
               <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1267,7 +1430,7 @@ export default function SocialSettingsHubPage() {
                     type="button"
                     onClick={handleSave}
                     disabled={isPending}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white transition-all disabled:opacity-50 cursor-pointer shadow-sm"
                   >
                     {isPending ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1280,7 +1443,7 @@ export default function SocialSettingsHubPage() {
                     type="button"
                     onClick={handleTestInstagram}
                     disabled={isPending}
-                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border border-pink-200 dark:border-pink-800 hover:bg-pink-50 dark:hover:bg-pink-950/30 text-pink-700 dark:text-pink-400 transition-colors disabled:opacity-50 cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-pink-200 dark:border-pink-800 hover:bg-pink-50 dark:hover:bg-pink-950/30 text-pink-700 dark:text-pink-400 transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     <Zap className="h-3.5 w-3.5" /> Test Connection
                   </button>
@@ -1289,8 +1452,8 @@ export default function SocialSettingsHubPage() {
                   <span
                     className={`text-xs font-medium px-3 py-1.5 rounded-lg ${
                       testResult.valid
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-rose-50 text-rose-700"
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+                        : "bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300"
                     }`}
                   >
                     {testResult.message}

@@ -16,13 +16,14 @@ import {
   testWebhookSchema,
   manualPublishProductSchema,
   discoverFacebookPagesSchema,
+  discoverInstagramAccountSchema,
 } from "./schema";
 import {
   postProductToFacebookPageFeed,
   testFacebookPageConnection,
   fetchFacebookManagedPages,
 } from "./services/facebook-feed";
-import { testInstagramConnection } from "./services/instagram-feed";
+import { testInstagramConnection, fetchLinkedInstagramAccount } from "./services/instagram-feed";
 import { dispatchProductWebhook } from "./services/webhook-dispatcher";
 import { dispatchProductSocialPublishing } from "./dispatcher";
 
@@ -215,6 +216,30 @@ export const discoverFacebookPagesAction = orgAdminAction
       return {
         success: true,
         pages: result.pages,
+      };
+    });
+  });
+
+/**
+ * Automatically discovers the linked Instagram Business Account for the Facebook Page.
+ */
+export const discoverInstagramAccountAction = orgAdminAction
+  .schema(discoverInstagramAccountSchema)
+  .action(async ({ parsedInput }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(15, 60 * 1000);
+      const result = await fetchLinkedInstagramAccount({
+        facebookPageId: parsedInput.facebookPageId,
+        accessToken: parsedInput.accessToken,
+      });
+
+      if (!result.success || !result.account) {
+        throw new ActionError(result.error || "Failed to discover linked Instagram account.");
+      }
+
+      return {
+        success: true,
+        account: result.account,
       };
     });
   });

@@ -1,7 +1,6 @@
 import { logger } from "@/shared/logging/logger";
 import { InstagramFeedPostParams } from "../types";
-
-import { META_GRAPH_API_VERSION } from "./facebook-feed";
+import { META_GRAPH_API_VERSION, resolveProductFeedImageUrl } from "./facebook-feed";
 
 /**
  * Automatically publishes a photo and caption to an Instagram Business account via Graph API.
@@ -18,10 +17,11 @@ export async function postProductToInstagramFeed({
     const cleanIgId = igAccountId.trim().replace(/[^0-9]/g, "");
     const cleanToken = accessToken.trim();
 
-    if (!product.imageUrl) {
+    const finalImageUrl = resolveProductFeedImageUrl(product.imageUrl);
+    if (!finalImageUrl) {
       return {
         success: false,
-        error: "Instagram feed publishing requires a product image URL.",
+        error: "Product has no image or media uploaded. Skipping Instagram Feed post.",
       };
     }
 
@@ -45,7 +45,7 @@ export async function postProductToInstagramFeed({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        image_url: product.imageUrl,
+        image_url: finalImageUrl,
         caption,
         access_token: cleanToken,
       }),
@@ -139,6 +139,73 @@ export async function testInstagramConnection({
     return {
       valid: false,
       error: error instanceof Error ? error.message : "Network error contacting Instagram",
+    };
+  }
+}
+
+/**
+ * Automatically discovers the Instagram Business Account linked to a Facebook Page.
+ */
+export async function fetchLinkedInstagramAccount({
+  facebookPageId,
+  accessToken,
+}: {
+  facebookPageId: string;
+  accessToken: string;
+}): Promise<{
+  success: boolean;
+  account?: {
+    id: string;
+    username: string;
+    name?: string;
+    profilePictureUrl?: string;
+  };
+  error?: string;
+}> {
+  try {
+    const cleanPageId = facebookPageId.trim().replace(/[^0-9]/g, "");
+    const cleanToken = accessToken.trim();
+    if (!cleanPageId || !cleanToken) {
+      return { success: false, error: "Facebook Page ID and Access Token are required." };
+    }
+
+    const url = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${cleanPageId}?fields=instagram_business_account{id,username,name,profile_picture_url}&access_token=${encodeURIComponent(
+      cleanToken,
+    )}`;
+
+    const res = await fetch(url, { method: "GET" });
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      return {
+        success: false,
+        error: data.error?.message || `Failed to fetch linked Instagram account (${res.status})`,
+      };
+    }
+
+    if (!data.instagram_business_account) {
+      return {
+        success: false,
+        error:
+          "No Instagram Professional/Business account is connected to this Facebook Page. Please link your Instagram account to your Facebook Page in Meta Business Suite first.",
+      };
+    }
+
+    const ig = data.instagram_business_account;
+    return {
+      success: true,
+      account: {
+        id: ig.id,
+        username: ig.username || ig.id,
+        name: ig.name,
+        profilePictureUrl: ig.profile_picture_url,
+      },
+    };
+  } catch (err) {
+    logger.error("Failed to fetch linked Instagram account", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to connect to Instagram",
     };
   }
 }
