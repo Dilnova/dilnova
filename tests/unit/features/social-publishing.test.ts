@@ -121,6 +121,7 @@ describe("Multi-Channel Social Publishing Suite", () => {
           imageUrl: "https://example.com/scarf.jpg",
         },
         currency: "EUR",
+        storeUrl: "https://dilnova.com",
         customTemplate: "FLASH SALE: {title} now only {price}! Order: {link}",
       });
 
