@@ -128,13 +128,40 @@ export const saveSocialSettingsAction = orgAdminAction
  */
 export const testFacebookPageConnectionAction = orgAdminAction
   .schema(testFacebookPagePostSchema)
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
       await rateLimit(10, 60 * 1000);
+      const { orgId, db } = ctx;
+
+      if (!orgId) {
+        throw new ActionError("Not authorized: Active organization required.");
+      }
+
+      let pageId = parsedInput.facebookPageId?.trim();
+      let pageAccessToken = parsedInput.facebookPageAccessToken?.trim();
+
+      if (!pageId || !pageAccessToken || pageAccessToken.includes("••••")) {
+        const [integration] = await db
+          .select()
+          .from(schema.metaCatalogIntegrations)
+          .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
+          .limit(1);
+
+        if (integration) {
+          pageId = pageId || integration.facebookPageId || "";
+          if (!pageAccessToken || pageAccessToken.includes("••••")) {
+            pageAccessToken = integration.facebookPageAccessToken || integration.accessToken || "";
+          }
+        }
+      }
+
+      if (!pageId || !pageAccessToken) {
+        throw new ActionError("Facebook Page ID and Access Token are required.");
+      }
 
       const result = await testFacebookPageConnection({
-        pageId: parsedInput.facebookPageId,
-        pageAccessToken: parsedInput.facebookPageAccessToken,
+        pageId,
+        pageAccessToken,
       });
 
       if (!result.valid) {
@@ -153,13 +180,40 @@ export const testFacebookPageConnectionAction = orgAdminAction
  */
 export const testInstagramConnectionAction = orgAdminAction
   .schema(testInstagramPostSchema)
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
       await rateLimit(10, 60 * 1000);
+      const { orgId, db } = ctx;
+
+      if (!orgId) {
+        throw new ActionError("Not authorized: Active organization required.");
+      }
+
+      let igAccountId = parsedInput.instagramAccountId?.trim();
+      let accessToken = parsedInput.accessToken?.trim();
+
+      if (!igAccountId || !accessToken || accessToken.includes("••••")) {
+        const [integration] = await db
+          .select()
+          .from(schema.metaCatalogIntegrations)
+          .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
+          .limit(1);
+
+        if (integration) {
+          igAccountId = igAccountId || integration.instagramAccountId || "";
+          if (!accessToken || accessToken.includes("••••")) {
+            accessToken = integration.facebookPageAccessToken || integration.accessToken || "";
+          }
+        }
+      }
+
+      if (!igAccountId || !accessToken) {
+        throw new ActionError("Instagram Account ID and Access Token are required.");
+      }
 
       const result = await testInstagramConnection({
-        igAccountId: parsedInput.instagramAccountId,
-        accessToken: parsedInput.accessToken,
+        igAccountId,
+        accessToken,
       });
 
       if (!result.valid) {
@@ -201,12 +255,38 @@ export const testWebhookAction = orgAdminAction
  */
 export const discoverFacebookPagesAction = orgAdminAction
   .schema(discoverFacebookPagesSchema)
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
       await rateLimit(15, 60 * 1000);
+      const { orgId, db } = ctx;
+
+      if (!orgId) {
+        throw new ActionError("Not authorized: Active organization required.");
+      }
+
+      let tokenToUse = parsedInput.accessToken?.trim();
+      let pageIdHint = parsedInput.pageIdHint?.trim();
+
+      if (!tokenToUse || tokenToUse.includes("••••")) {
+        const [integration] = await db
+          .select()
+          .from(schema.metaCatalogIntegrations)
+          .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
+          .limit(1);
+
+        if (integration) {
+          tokenToUse = integration.facebookPageAccessToken || integration.accessToken || "";
+          pageIdHint = pageIdHint || integration.facebookPageId || undefined;
+        }
+      }
+
+      if (!tokenToUse) {
+        throw new ActionError("Please paste or save a Meta Access Token first.");
+      }
+
       const result = await fetchFacebookManagedPages({
-        accessToken: parsedInput.accessToken,
-        pageIdHint: parsedInput.pageIdHint,
+        accessToken: tokenToUse,
+        pageIdHint,
       });
 
       if (!result.success) {
@@ -225,12 +305,48 @@ export const discoverFacebookPagesAction = orgAdminAction
  */
 export const discoverInstagramAccountAction = orgAdminAction
   .schema(discoverInstagramAccountSchema)
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
     return runWithCorrelationId(async () => {
       await rateLimit(15, 60 * 1000);
+      const { orgId, db } = ctx;
+
+      if (!orgId) {
+        throw new ActionError("Not authorized: Active organization required.");
+      }
+
+      let pageId = parsedInput.facebookPageId?.trim();
+      let tokenToUse = parsedInput.accessToken?.trim();
+
+      if (!pageId || !tokenToUse || tokenToUse.includes("••••")) {
+        const [integration] = await db
+          .select()
+          .from(schema.metaCatalogIntegrations)
+          .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
+          .limit(1);
+
+        if (integration) {
+          pageId = pageId || integration.facebookPageId || "";
+          if (!tokenToUse || tokenToUse.includes("••••")) {
+            tokenToUse = integration.facebookPageAccessToken || integration.accessToken || "";
+          }
+        }
+      }
+
+      if (!pageId) {
+        throw new ActionError(
+          "Facebook Page ID is required. Please select or save your Facebook Page ID first.",
+        );
+      }
+
+      if (!tokenToUse) {
+        throw new ActionError(
+          "Meta Access Token is required. Please paste or save your token first.",
+        );
+      }
+
       const result = await fetchLinkedInstagramAccount({
-        facebookPageId: parsedInput.facebookPageId,
-        accessToken: parsedInput.accessToken,
+        facebookPageId: pageId,
+        accessToken: tokenToUse,
       });
 
       if (!result.success || !result.account) {

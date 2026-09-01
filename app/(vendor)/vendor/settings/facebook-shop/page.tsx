@@ -184,7 +184,7 @@ export default function SocialSettingsHubPage() {
 
   const handleDiscoverPages = () => {
     const tokenToUse = facebookPageAccessToken.trim() || accessToken.trim();
-    if (!tokenToUse || tokenToUse.includes("••••")) {
+    if (!tokenToUse && !hasExistingPageToken && !hasExistingCatalogToken) {
       setDiscoveryError(
         "Please paste an Access Token in Step 1 first (e.g. from Graph API Explorer).",
       );
@@ -197,7 +197,7 @@ export default function SocialSettingsHubPage() {
     startTransition(async () => {
       try {
         const res = await discoverFacebookPagesAction({
-          accessToken: tokenToUse,
+          accessToken: tokenToUse.includes("••••") ? undefined : tokenToUse || undefined,
           pageIdHint: facebookPageId.trim() || undefined,
         });
         if (res?.data?.pages && res.data.pages.length > 0) {
@@ -239,14 +239,21 @@ export default function SocialSettingsHubPage() {
   };
 
   const handleTestFacebookPage = () => {
-    if (
-      !facebookPageId.trim() ||
-      !facebookPageAccessToken.trim() ||
-      facebookPageAccessToken.includes("••••")
-    ) {
+    const pageId = facebookPageId.trim();
+    const token = facebookPageAccessToken.trim() || accessToken.trim();
+
+    if (!pageId) {
       setTestResult({
         valid: false,
-        message: "Please enter a valid numeric Facebook Page ID and Page Access Token.",
+        message: "Please enter or select a valid Facebook Page ID.",
+      });
+      return;
+    }
+
+    if (!token && !hasExistingPageToken && !hasExistingCatalogToken) {
+      setTestResult({
+        valid: false,
+        message: "Please enter a valid Page Access Token or save your settings first.",
       });
       return;
     }
@@ -255,14 +262,14 @@ export default function SocialSettingsHubPage() {
     startTransition(async () => {
       try {
         const res = await testFacebookPageConnectionAction({
-          facebookPageId: facebookPageId.trim(),
-          facebookPageAccessToken: facebookPageAccessToken.trim(),
+          facebookPageId: pageId,
+          facebookPageAccessToken: token.includes("••••") ? undefined : token || undefined,
         });
 
         if (res?.data?.success) {
           setTestResult({
             valid: true,
-            message: `Facebook Page Verified: "${res.data.pageName || facebookPageId}"! Ready to auto-post.`,
+            message: `Facebook Page Verified: "${res.data.pageName || pageId}"! Ready to auto-post.`,
           });
         } else {
           setTestResult({
@@ -280,7 +287,7 @@ export default function SocialSettingsHubPage() {
   };
 
   const handleTestCatalog = () => {
-    if (!catalogId.trim() || !accessToken.trim() || accessToken.includes("••••")) {
+    if (!catalogId.trim() || (!accessToken.trim() && !hasExistingCatalogToken)) {
       setTestResult({
         valid: false,
         message: "Please enter a valid Meta Catalog ID and System User Access Token.",
@@ -293,7 +300,7 @@ export default function SocialSettingsHubPage() {
       try {
         const res = await testFacebookShopConnectionAction({
           catalogId: catalogId.trim(),
-          accessToken: accessToken.trim(),
+          accessToken: accessToken.includes("••••") ? "" : accessToken.trim(),
         });
 
         if (res?.data?.success) {
@@ -327,7 +334,7 @@ export default function SocialSettingsHubPage() {
       return;
     }
 
-    if (!tokenToUse || tokenToUse.includes("••••")) {
+    if (!tokenToUse && !hasExistingPageToken && !hasExistingCatalogToken) {
       setInstagramDiscoveryError("Please paste or save your Meta Access Token first.");
       return;
     }
@@ -339,7 +346,7 @@ export default function SocialSettingsHubPage() {
       try {
         const res = await discoverInstagramAccountAction({
           facebookPageId: pageIdToUse,
-          accessToken: tokenToUse,
+          accessToken: tokenToUse.includes("••••") ? undefined : tokenToUse || undefined,
         });
 
         if (res?.data?.account) {
@@ -369,14 +376,21 @@ export default function SocialSettingsHubPage() {
   };
 
   const handleTestInstagram = () => {
-    if (
-      !instagramAccountId.trim() ||
-      !facebookPageAccessToken.trim() ||
-      facebookPageAccessToken.includes("••••")
-    ) {
+    const igId = instagramAccountId.trim();
+    const token = facebookPageAccessToken.trim() || accessToken.trim();
+
+    if (!igId) {
       setTestResult({
         valid: false,
-        message: "Please enter your Instagram Business Account ID and Page Token.",
+        message: "Please enter or auto-detect your Instagram Business Account ID.",
+      });
+      return;
+    }
+
+    if (!token && !hasExistingPageToken && !hasExistingCatalogToken) {
+      setTestResult({
+        valid: false,
+        message: "Please enter your Meta Access Token or save your settings first.",
       });
       return;
     }
@@ -385,14 +399,14 @@ export default function SocialSettingsHubPage() {
     startTransition(async () => {
       try {
         const res = await testInstagramConnectionAction({
-          instagramAccountId: instagramAccountId.trim(),
-          accessToken: facebookPageAccessToken.trim(),
+          instagramAccountId: igId,
+          accessToken: token.includes("••••") ? undefined : token || undefined,
         });
 
         if (res?.data?.success) {
           setTestResult({
             valid: true,
-            message: `Instagram Verified: @${res.data.username || instagramAccountId}!`,
+            message: `Instagram Verified: @${res.data.username || igId}!`,
           });
         } else {
           setTestResult({
@@ -403,7 +417,7 @@ export default function SocialSettingsHubPage() {
       } catch (err) {
         setTestResult({
           valid: false,
-          message: err instanceof Error ? err.message : "Network error contacting Instagram.",
+          message: err instanceof Error ? err.message : "Network error testing connection.",
         });
       }
     });

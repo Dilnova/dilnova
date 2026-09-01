@@ -23,13 +23,13 @@ export const saveSocialSettingsSchema = z.object({
 });
 
 export const testFacebookPagePostSchema = z.object({
-  facebookPageId: z.string().trim().min(1, "Facebook Page ID is required."),
-  facebookPageAccessToken: z.string().trim().min(1, "Facebook Page Access Token is required."),
+  facebookPageId: z.string().trim().optional(),
+  facebookPageAccessToken: z.string().trim().optional(),
 });
 
 export const testInstagramPostSchema = z.object({
-  instagramAccountId: z.string().trim().min(1, "Instagram Account ID is required."),
-  accessToken: z.string().trim().min(1, "Access Token is required."),
+  instagramAccountId: z.string().trim().optional(),
+  accessToken: z.string().trim().optional(),
 });
 
 export const testWebhookSchema = z.object({
@@ -42,11 +42,11 @@ export const manualPublishProductSchema = z.object({
 });
 
 export const discoverFacebookPagesSchema = z.object({
-  accessToken: z.string().trim().min(1, "Access Token is required to discover pages."),
+  accessToken: z.string().trim().optional(),
   pageIdHint: z.string().trim().optional(),
 });
 
 export const discoverInstagramAccountSchema = z.object({
-  facebookPageId: z.string().trim().min(1, "Facebook Page ID is required."),
-  accessToken: z.string().trim().min(1, "Access Token is required."),
+  facebookPageId: z.string().trim().optional(),
+  accessToken: z.string().trim().optional(),
 });
