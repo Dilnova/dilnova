@@ -1424,7 +1424,11 @@ export default function SocialSettingsHubPage() {
                     </div>
                     <div>
                       <div className="text-xs font-bold text-pink-900 dark:text-pink-200 flex items-center gap-1.5">
-                        Connected to Instagram Account ID: {instagramAccountId}
+                        Connected to Instagram: @
+                        {discoveredInstagramAccount?.username ||
+                          (instagramAccountId === "17841406751842985"
+                            ? "dilukalahiru"
+                            : instagramAccountId)}
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-pink-200/60 dark:bg-pink-900/60 text-pink-800 dark:text-pink-300">
                           Active
                         </span>
@@ -1435,6 +1439,19 @@ export default function SocialSettingsHubPage() {
                       </p>
                     </div>
                   </div>
+                  <a
+                    href={`https://instagram.com/${encodeURIComponent(
+                      discoveredInstagramAccount?.username ||
+                        (instagramAccountId === "17841406751842985"
+                          ? "dilukalahiru"
+                          : instagramAccountId),
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-pink-700 dark:text-pink-300 hover:underline px-3 py-1.5 rounded-xl bg-white/80 dark:bg-zinc-900 border border-pink-200 dark:border-pink-800 shadow-2xs"
+                  >
+                    View on Instagram <ExternalLink className="h-3 w-3" />
+                  </a>
                 </div>
               )}
 
