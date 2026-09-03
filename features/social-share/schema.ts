@@ -52,3 +52,7 @@ export const discoverInstagramAccountSchema = z.object({
   businessManagerId: z.string().trim().optional(),
   igAccountIdHint: z.string().trim().optional(),
 });
+
+export const triggerBatchPostSchema = z.object({
+  forceRepost: z.boolean().optional().default(false),
+});

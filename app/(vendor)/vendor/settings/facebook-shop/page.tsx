@@ -97,18 +97,22 @@ export default function SocialSettingsHubPage() {
   const [batchFeedResult, setBatchFeedResult] = useState<{
     total: number;
     success: number;
+    alreadySynced?: number;
     skipped: number;
     failed: number;
   } | null>(null);
   const [isBulkPostingFeed, setIsBulkPostingFeed] = useState(false);
+  const [forceRepostFeed, setForceRepostFeed] = useState(false);
 
   const [batchInstagramResult, setBatchInstagramResult] = useState<{
     total: number;
     success: number;
+    alreadySynced?: number;
     skipped: number;
     failed: number;
   } | null>(null);
   const [isBulkPostingInstagram, setIsBulkPostingInstagram] = useState(false);
+  const [forceRepostInstagram, setForceRepostInstagram] = useState(false);
 
   // Facebook Page Auto-Discovery state
   const [discoveredPages, setDiscoveredPages] = useState<
@@ -531,22 +535,23 @@ export default function SocialSettingsHubPage() {
 
     startTransition(async () => {
       try {
-        const res = await triggerBatchFacebookFeedPostAction();
+        const res = await triggerBatchFacebookFeedPostAction({ forceRepost: forceRepostFeed });
         if (res?.data) {
           setBatchFeedResult({
             total: res.data.totalCount,
             success: res.data.totalSuccess,
+            alreadySynced: res.data.alreadySyncedCount ?? 0,
             skipped: res.data.skippedCount ?? 0,
             failed: res.data.totalFailed,
           });
-          setSaveSuccess(res.data.message || "Bulk Facebook Feed publishing completed!");
+          setSaveSuccess(res.data.message || "Facebook Feed sync completed!");
           loadLogs();
         } else {
-          setSaveError(res?.serverError || "Bulk Facebook Feed publishing failed.");
+          setSaveError(res?.serverError || "Facebook Feed sync failed.");
         }
       } catch (err) {
         setSaveError(
-          err instanceof Error ? err.message : "Unexpected error bulk publishing to Facebook Feed.",
+          err instanceof Error ? err.message : "Unexpected error syncing Facebook Feed.",
         );
       } finally {
         setIsBulkPostingFeed(false);
@@ -562,24 +567,25 @@ export default function SocialSettingsHubPage() {
 
     startTransition(async () => {
       try {
-        const res = await triggerBatchInstagramFeedPostAction();
+        const res = await triggerBatchInstagramFeedPostAction({
+          forceRepost: forceRepostInstagram,
+        });
         if (res?.data) {
           setBatchInstagramResult({
             total: res.data.totalCount,
             success: res.data.totalSuccess,
+            alreadySynced: res.data.alreadySyncedCount ?? 0,
             skipped: res.data.skippedCount ?? 0,
             failed: res.data.totalFailed,
           });
-          setSaveSuccess(res.data.message || "Bulk Instagram Feed publishing completed!");
+          setSaveSuccess(res.data.message || "Instagram Feed sync completed!");
           loadLogs();
         } else {
-          setSaveError(res?.serverError || "Bulk Instagram Feed publishing failed.");
+          setSaveError(res?.serverError || "Instagram Feed sync failed.");
         }
       } catch (err) {
         setSaveError(
-          err instanceof Error
-            ? err.message
-            : "Unexpected error bulk publishing to Instagram Feed.",
+          err instanceof Error ? err.message : "Unexpected error syncing Instagram Feed.",
         );
       } finally {
         setIsBulkPostingInstagram(false);
@@ -1238,7 +1244,7 @@ export default function SocialSettingsHubPage() {
                       </>
                     ) : (
                       <>
-                        <Share2 className="h-3.5 w-3.5" /> Bulk Post All to Feed
+                        <Share2 className="h-3.5 w-3.5" /> 🚀 Sync All to Feed
                       </>
                     )}
                   </button>
@@ -1250,6 +1256,15 @@ export default function SocialSettingsHubPage() {
                   >
                     <Zap className="h-3.5 w-3.5" /> Test Connection
                   </button>
+                  <label className="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400 cursor-pointer select-none ml-1">
+                    <input
+                      type="checkbox"
+                      checked={forceRepostFeed}
+                      onChange={(e) => setForceRepostFeed(e.target.checked)}
+                      className="rounded border-zinc-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500"
+                    />
+                    Force Repost (Allow Duplicates)
+                  </label>
                 </div>
                 {testResult && (
                   <span
@@ -1729,14 +1744,17 @@ export default function SocialSettingsHubPage() {
               {batchInstagramResult && (
                 <div className="p-4 rounded-2xl bg-pink-50 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-800 space-y-2">
                   <div className="text-xs font-bold text-pink-900 dark:text-pink-200 flex items-center justify-between">
-                    <span>Batch Instagram Publishing Results:</span>
+                    <span>Instagram Feed Sync Results:</span>
                     <span className="font-mono text-[11px] text-pink-700 dark:text-pink-300">
                       Total Products: {batchInstagramResult.total}
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
                     <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold">
-                      ✅ {batchInstagramResult.success} Published
+                      ✅ {batchInstagramResult.success} New Published
+                    </div>
+                    <div className="p-2 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 font-bold">
+                      🛡️ {batchInstagramResult.alreadySynced ?? 0} Already on Grid
                     </div>
                     <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold">
                       ⏭️ {batchInstagramResult.skipped} Skipped (No Photo)
@@ -1745,12 +1763,16 @@ export default function SocialSettingsHubPage() {
                       ❌ {batchInstagramResult.failed} Failed
                     </div>
                   </div>
+                  <p className="text-[11px] text-pink-800 dark:text-pink-300/80">
+                    💡 <strong>Safe Sync Active:</strong> Products already posted to your Instagram
+                    grid are protected and skipped to prevent duplicate posts.
+                  </p>
                 </div>
               )}
 
               {/* Action Buttons for Instagram */}
               <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
                   <button
                     type="button"
                     onClick={handleSave}
@@ -1772,12 +1794,11 @@ export default function SocialSettingsHubPage() {
                   >
                     {isBulkPostingInstagram ? (
                       <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Publishing Instagram
-                        Posts...
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Syncing Instagram Feed...
                       </>
                     ) : (
                       <>
-                        <Sparkles className="h-3.5 w-3.5" /> 🚀 Bulk Post All to Instagram
+                        <Sparkles className="h-3.5 w-3.5" /> 🚀 Sync All to Instagram Feed
                       </>
                     )}
                   </button>
@@ -1789,6 +1810,15 @@ export default function SocialSettingsHubPage() {
                   >
                     <Zap className="h-3.5 w-3.5" /> Test Connection
                   </button>
+                  <label className="flex items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400 cursor-pointer select-none ml-1">
+                    <input
+                      type="checkbox"
+                      checked={forceRepostInstagram}
+                      onChange={(e) => setForceRepostInstagram(e.target.checked)}
+                      className="rounded border-zinc-300 dark:border-zinc-700 text-pink-600 focus:ring-pink-500"
+                    />
+                    Force Repost (Allow Duplicates)
+                  </label>
                 </div>
                 {testResult && (
                   <span

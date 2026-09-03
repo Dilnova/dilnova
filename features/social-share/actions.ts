@@ -17,6 +17,7 @@ import {
   manualPublishProductSchema,
   discoverFacebookPagesSchema,
   discoverInstagramAccountSchema,
+  triggerBatchPostSchema,
 } from "./schema";
 import {
   postProductToFacebookPageFeed,
@@ -421,239 +422,297 @@ export const manualPublishProductAction = vendorAction
 /**
  * Bulk publishes all active store products to the Facebook Page Feed.
  */
-export const triggerBatchFacebookFeedPostAction = vendorAction.action(async ({ ctx }) => {
-  const { orgId, db } = ctx;
+export const triggerBatchFacebookFeedPostAction = vendorAction
+  .schema(triggerBatchPostSchema.optional())
+  .action(async ({ parsedInput, ctx }) => {
+    const { orgId, db } = ctx;
+    const forceRepost = parsedInput?.forceRepost ?? false;
 
-  return runWithCorrelationId(async () => {
-    await rateLimit(5, 60 * 1000);
+    return runWithCorrelationId(async () => {
+      await rateLimit(5, 60 * 1000);
 
-    if (!orgId) {
-      throw new ActionError("Not authorized: You must be signed in with an active organization.");
-    }
-
-    const [integration] = await db
-      .select()
-      .from(schema.metaCatalogIntegrations)
-      .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
-      .limit(1);
-
-    if (!integration?.facebookPageId) {
-      throw new ActionError(
-        "Facebook Page ID is not configured. Please enter your numeric Page ID.",
-      );
-    }
-
-    const fbToken = integration.facebookPageAccessToken || integration.accessToken;
-    if (!fbToken) {
-      throw new ActionError("Facebook Access Token is missing. Please save your Page Token first.");
-    }
-
-    // Fetch all active products
-    const activeProducts = await db
-      .select()
-      .from(schema.products)
-      .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, "active")));
-
-    const orgCurrency = await getOrgCurrencySettings(orgId);
-    const currency = orgCurrency.baseCurrency || "LKR";
-    const brandName = integration.brandName || "Dilnova Store";
-
-    let totalSuccess = 0;
-    let totalFailed = 0;
-    let skippedCount = 0;
-
-    for (const prod of activeProducts) {
-      const hasMedia = Boolean(
-        prod.imageUrl?.trim() ||
-        (Array.isArray(prod.media) &&
-          prod.media.some((m) => m && (typeof m === "string" ? Boolean(m) : Boolean(m.url)))),
-      );
-      if (!hasMedia) {
-        skippedCount++;
-        await db.insert(schema.metaCatalogSyncLogs).values({
-          orgId,
-          productId: prod.id,
-          action: "FACEBOOK_FEED_POST",
-          status: "SKIPPED",
-          productName: prod.name,
-          productSku: prod.sku,
-          errorMessage: "Skipped: No photo or media uploaded",
-        });
-        continue;
+      if (!orgId) {
+        throw new ActionError("Not authorized: You must be signed in with an active organization.");
       }
 
-      try {
-        const res = await postProductToFacebookPageFeed({
-          pageId: integration.facebookPageId,
-          pageAccessToken: fbToken,
-          product: prod,
-          currency,
-          brandName,
-          customTemplate: integration.customPostTemplate,
-        });
+      const [integration] = await db
+        .select()
+        .from(schema.metaCatalogIntegrations)
+        .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
+        .limit(1);
 
-        if (res.success) {
-          totalSuccess++;
+      if (!integration?.facebookPageId) {
+        throw new ActionError(
+          "Facebook Page ID is not configured. Please enter your numeric Page ID.",
+        );
+      }
+
+      const fbToken = integration.facebookPageAccessToken || integration.accessToken;
+      if (!fbToken) {
+        throw new ActionError(
+          "Facebook Access Token is missing. Please save your Page Token first.",
+        );
+      }
+
+      // Fetch all active products
+      const activeProducts = await db
+        .select()
+        .from(schema.products)
+        .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, "active")));
+
+      // Fetch existing successful posts to prevent duplicates (Idempotent Sync)
+      const existingSuccessPosts = await db
+        .select({ productId: schema.metaCatalogSyncLogs.productId })
+        .from(schema.metaCatalogSyncLogs)
+        .where(
+          and(
+            eq(schema.metaCatalogSyncLogs.orgId, orgId),
+            eq(schema.metaCatalogSyncLogs.action, "FACEBOOK_FEED_POST"),
+            eq(schema.metaCatalogSyncLogs.status, "SUCCESS"),
+          ),
+        );
+
+      const alreadyPostedProductIds = new Set(
+        existingSuccessPosts.map((p) => p.productId).filter(Boolean) as string[],
+      );
+
+      const orgCurrency = await getOrgCurrencySettings(orgId);
+      const currency = orgCurrency.baseCurrency || "LKR";
+      const brandName = integration.brandName || "Dilnova Store";
+
+      let totalSuccess = 0;
+      let totalFailed = 0;
+      let skippedCount = 0;
+      let alreadySyncedCount = 0;
+
+      for (const prod of activeProducts) {
+        const hasMedia = Boolean(
+          prod.imageUrl?.trim() ||
+          (Array.isArray(prod.media) &&
+            prod.media.some((m) => m && (typeof m === "string" ? Boolean(m) : Boolean(m.url)))),
+        );
+        if (!hasMedia) {
+          skippedCount++;
           await db.insert(schema.metaCatalogSyncLogs).values({
             orgId,
             productId: prod.id,
             action: "FACEBOOK_FEED_POST",
-            status: "SUCCESS",
+            status: "SKIPPED",
             productName: prod.name,
             productSku: prod.sku,
-            errorMessage: null,
+            errorMessage: "Skipped: No photo or media uploaded",
           });
-        } else {
-          totalFailed++;
-          await db.insert(schema.metaCatalogSyncLogs).values({
-            orgId,
-            productId: prod.id,
-            action: "FACEBOOK_FEED_POST",
-            status: "FAILED",
-            productName: prod.name,
-            productSku: prod.sku,
-            errorMessage: res.error || "Failed to publish photo post",
-          });
+          continue;
         }
 
-        // Small delay between posts to prevent Facebook spam throttling
-        await new Promise((r) => setTimeout(r, 600));
-      } catch (err) {
-        totalFailed++;
-        logger.error("Error bulk posting product to Facebook Feed", { prodId: prod.id, err });
+        // Prevent duplicate posts on timeline unless explicitly forced
+        if (!forceRepost && alreadyPostedProductIds.has(prod.id)) {
+          alreadySyncedCount++;
+          continue;
+        }
+
+        try {
+          const res = await postProductToFacebookPageFeed({
+            pageId: integration.facebookPageId,
+            pageAccessToken: fbToken,
+            product: prod,
+            currency,
+            brandName,
+            customTemplate: integration.customPostTemplate,
+          });
+
+          if (res.success) {
+            totalSuccess++;
+            alreadyPostedProductIds.add(prod.id);
+            await db.insert(schema.metaCatalogSyncLogs).values({
+              orgId,
+              productId: prod.id,
+              action: "FACEBOOK_FEED_POST",
+              status: "SUCCESS",
+              productName: prod.name,
+              productSku: prod.sku,
+              errorMessage: null,
+            });
+          } else {
+            totalFailed++;
+            await db.insert(schema.metaCatalogSyncLogs).values({
+              orgId,
+              productId: prod.id,
+              action: "FACEBOOK_FEED_POST",
+              status: "FAILED",
+              productName: prod.name,
+              productSku: prod.sku,
+              errorMessage: res.error || "Failed to publish photo post",
+            });
+          }
+
+          // Small delay between posts to prevent Facebook spam throttling
+          await new Promise((r) => setTimeout(r, 600));
+        } catch (err) {
+          totalFailed++;
+          logger.error("Error bulk posting product to Facebook Feed", { prodId: prod.id, err });
+        }
       }
-    }
 
-    revalidatePath("/vendor");
-    revalidatePath("/vendor/settings/facebook-shop");
+      revalidatePath("/vendor");
+      revalidatePath("/vendor/settings/facebook-shop");
 
-    return {
-      totalSuccess,
-      totalFailed,
-      skippedCount,
-      totalCount: activeProducts.length,
-      message: `Bulk Facebook Feed publishing finished: ${totalSuccess} published, ${skippedCount} skipped (no media), ${totalFailed} failed.`,
-    };
+      return {
+        totalSuccess,
+        totalFailed,
+        skippedCount,
+        alreadySyncedCount,
+        totalCount: activeProducts.length,
+        message: `Facebook Feed Sync: ${totalSuccess} new published, ${alreadySyncedCount} already on Feed (duplicates skipped), ${skippedCount} skipped (no media), ${totalFailed} failed.`,
+      };
+    });
   });
-});
 
 /**
  * Bulk publishes all active store products with images to the linked Instagram Feed.
  */
-export const triggerBatchInstagramFeedPostAction = vendorAction.action(async ({ ctx }) => {
-  const { orgId, db } = ctx;
+export const triggerBatchInstagramFeedPostAction = vendorAction
+  .schema(triggerBatchPostSchema.optional())
+  .action(async ({ parsedInput, ctx }) => {
+    const { orgId, db } = ctx;
+    const forceRepost = parsedInput?.forceRepost ?? false;
 
-  return runWithCorrelationId(async () => {
-    await rateLimit(5, 60 * 1000);
+    return runWithCorrelationId(async () => {
+      await rateLimit(5, 60 * 1000);
 
-    if (!orgId) {
-      throw new ActionError("Not authorized: You must be signed in with an active organization.");
-    }
-
-    const [integration] = await db
-      .select()
-      .from(schema.metaCatalogIntegrations)
-      .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
-      .limit(1);
-
-    if (!integration?.instagramAccountId) {
-      throw new ActionError(
-        "Instagram Account ID is not configured. Please enter or auto-detect your Instagram Account ID first.",
-      );
-    }
-
-    const igToken = integration.facebookPageAccessToken || integration.accessToken;
-    if (!igToken) {
-      throw new ActionError("Meta Access Token is missing. Please save your Access Token first.");
-    }
-
-    // Fetch all active products
-    const activeProducts = await db
-      .select()
-      .from(schema.products)
-      .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, "active")));
-
-    const orgCurrency = await getOrgCurrencySettings(orgId);
-    const currency = orgCurrency.baseCurrency || "LKR";
-    const brandName = integration.brandName || "Dilnova Store";
-
-    let totalSuccess = 0;
-    let totalFailed = 0;
-    let skippedCount = 0;
-
-    for (const prod of activeProducts) {
-      const hasMedia = Boolean(
-        prod.imageUrl?.trim() ||
-        (Array.isArray(prod.media) &&
-          prod.media.some((m) => m && (typeof m === "string" ? Boolean(m) : Boolean(m.url)))),
-      );
-      if (!hasMedia) {
-        skippedCount++;
-        await db.insert(schema.metaCatalogSyncLogs).values({
-          orgId,
-          productId: prod.id,
-          action: "INSTAGRAM_FEED_POST",
-          status: "SKIPPED",
-          productName: prod.name,
-          productSku: prod.sku,
-          errorMessage: "Skipped: No photo or media uploaded",
-        });
-        continue;
+      if (!orgId) {
+        throw new ActionError("Not authorized: You must be signed in with an active organization.");
       }
 
-      try {
-        const res = await postProductToInstagramFeed({
-          igAccountId: integration.instagramAccountId,
-          accessToken: igToken,
-          product: prod,
-          currency,
-          brandName,
-        });
+      const [integration] = await db
+        .select()
+        .from(schema.metaCatalogIntegrations)
+        .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
+        .limit(1);
 
-        if (res.success) {
-          totalSuccess++;
+      if (!integration?.instagramAccountId) {
+        throw new ActionError(
+          "Instagram Account ID is not configured. Please enter or auto-detect your Instagram Account ID first.",
+        );
+      }
+
+      const igToken = integration.facebookPageAccessToken || integration.accessToken;
+      if (!igToken) {
+        throw new ActionError("Meta Access Token is missing. Please save your Access Token first.");
+      }
+
+      // Fetch all active products
+      const activeProducts = await db
+        .select()
+        .from(schema.products)
+        .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, "active")));
+
+      // Fetch existing successful posts to prevent duplicates (Idempotent Sync)
+      const existingSuccessPosts = await db
+        .select({ productId: schema.metaCatalogSyncLogs.productId })
+        .from(schema.metaCatalogSyncLogs)
+        .where(
+          and(
+            eq(schema.metaCatalogSyncLogs.orgId, orgId),
+            eq(schema.metaCatalogSyncLogs.action, "INSTAGRAM_FEED_POST"),
+            eq(schema.metaCatalogSyncLogs.status, "SUCCESS"),
+          ),
+        );
+
+      const alreadyPostedProductIds = new Set(
+        existingSuccessPosts.map((p) => p.productId).filter(Boolean) as string[],
+      );
+
+      const orgCurrency = await getOrgCurrencySettings(orgId);
+      const currency = orgCurrency.baseCurrency || "LKR";
+      const brandName = integration.brandName || "Dilnova Store";
+
+      let totalSuccess = 0;
+      let totalFailed = 0;
+      let skippedCount = 0;
+      let alreadySyncedCount = 0;
+
+      for (const prod of activeProducts) {
+        const hasMedia = Boolean(
+          prod.imageUrl?.trim() ||
+          (Array.isArray(prod.media) &&
+            prod.media.some((m) => m && (typeof m === "string" ? Boolean(m) : Boolean(m.url)))),
+        );
+        if (!hasMedia) {
+          skippedCount++;
           await db.insert(schema.metaCatalogSyncLogs).values({
             orgId,
             productId: prod.id,
             action: "INSTAGRAM_FEED_POST",
-            status: "SUCCESS",
+            status: "SKIPPED",
             productName: prod.name,
             productSku: prod.sku,
-            errorMessage: null,
+            errorMessage: "Skipped: No photo or media uploaded",
           });
-        } else {
-          totalFailed++;
-          await db.insert(schema.metaCatalogSyncLogs).values({
-            orgId,
-            productId: prod.id,
-            action: "INSTAGRAM_FEED_POST",
-            status: "FAILED",
-            productName: prod.name,
-            productSku: prod.sku,
-            errorMessage: res.error || "Failed to publish photo to Instagram",
-          });
+          continue;
         }
 
-        // Small delay between posts to respect Instagram rate limits
-        await new Promise((r) => setTimeout(r, 1000));
-      } catch (err) {
-        totalFailed++;
-        logger.error("Error bulk posting product to Instagram Feed", { prodId: prod.id, err });
+        // Prevent duplicate posts on Instagram grid unless explicitly forced
+        if (!forceRepost && alreadyPostedProductIds.has(prod.id)) {
+          alreadySyncedCount++;
+          continue;
+        }
+
+        try {
+          const res = await postProductToInstagramFeed({
+            igAccountId: integration.instagramAccountId,
+            accessToken: igToken,
+            product: prod,
+            currency,
+            brandName,
+          });
+
+          if (res.success) {
+            totalSuccess++;
+            alreadyPostedProductIds.add(prod.id);
+            await db.insert(schema.metaCatalogSyncLogs).values({
+              orgId,
+              productId: prod.id,
+              action: "INSTAGRAM_FEED_POST",
+              status: "SUCCESS",
+              productName: prod.name,
+              productSku: prod.sku,
+              errorMessage: null,
+            });
+          } else {
+            totalFailed++;
+            await db.insert(schema.metaCatalogSyncLogs).values({
+              orgId,
+              productId: prod.id,
+              action: "INSTAGRAM_FEED_POST",
+              status: "FAILED",
+              productName: prod.name,
+              productSku: prod.sku,
+              errorMessage: res.error || "Failed to publish photo to Instagram",
+            });
+          }
+
+          // Small delay between posts to respect Instagram rate limits
+          await new Promise((r) => setTimeout(r, 1000));
+        } catch (err) {
+          totalFailed++;
+          logger.error("Error bulk posting product to Instagram Feed", { prodId: prod.id, err });
+        }
       }
-    }
 
-    revalidatePath("/vendor");
-    revalidatePath("/vendor/settings/facebook-shop");
+      revalidatePath("/vendor");
+      revalidatePath("/vendor/settings/facebook-shop");
 
-    return {
-      totalSuccess,
-      totalFailed,
-      skippedCount,
-      totalCount: activeProducts.length,
-      message: `Bulk Instagram Feed publishing finished: ${totalSuccess} published, ${skippedCount} skipped (no media), ${totalFailed} failed.`,
-    };
+      return {
+        totalSuccess,
+        totalFailed,
+        skippedCount,
+        alreadySyncedCount,
+        totalCount: activeProducts.length,
+        message: `Instagram Sync: ${totalSuccess} new published, ${alreadySyncedCount} already on Instagram (duplicates skipped), ${skippedCount} skipped (no media), ${totalFailed} failed.`,
+      };
+    });
   });
-});
 
 /**
  * Fetches all social publishing settings with token masking.
