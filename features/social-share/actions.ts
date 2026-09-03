@@ -460,21 +460,43 @@ export const triggerBatchFacebookFeedPostAction = vendorAction
         .from(schema.products)
         .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, "active")));
 
-      // Fetch existing successful posts to prevent duplicates (Idempotent Sync)
-      const existingSuccessPosts = await db
-        .select({ productId: schema.metaCatalogSyncLogs.productId })
-        .from(schema.metaCatalogSyncLogs)
-        .where(
-          and(
-            eq(schema.metaCatalogSyncLogs.orgId, orgId),
-            eq(schema.metaCatalogSyncLogs.action, "FACEBOOK_FEED_POST"),
-            eq(schema.metaCatalogSyncLogs.status, "SUCCESS"),
-          ),
-        );
-
-      const alreadyPostedProductIds = new Set(
-        existingSuccessPosts.map((p) => p.productId).filter(Boolean) as string[],
-      );
+      // Query live Facebook Page feed to detect what is actually published on the timeline right now
+      const alreadyPostedProductIds = new Set<string>();
+      if (!forceRepost) {
+        try {
+          const liveRes = await fetch(
+            `https://graph.facebook.com/v21.0/${integration.facebookPageId}/feed?fields=id,message&limit=100&access_token=${encodeURIComponent(fbToken)}`,
+          );
+          if (liveRes.ok) {
+            const liveData = await liveRes.json();
+            if (Array.isArray(liveData.data)) {
+              for (const item of liveData.data) {
+                const message = item.message || "";
+                for (const prod of activeProducts) {
+                  if (message.includes(prod.id)) {
+                    alreadyPostedProductIds.add(prod.id);
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          logger.warn("Could not query live Facebook feed, falling back to sync logs", { err });
+          const existingSuccessPosts = await db
+            .select({ productId: schema.metaCatalogSyncLogs.productId })
+            .from(schema.metaCatalogSyncLogs)
+            .where(
+              and(
+                eq(schema.metaCatalogSyncLogs.orgId, orgId),
+                eq(schema.metaCatalogSyncLogs.action, "FACEBOOK_FEED_POST"),
+                eq(schema.metaCatalogSyncLogs.status, "SUCCESS"),
+              ),
+            );
+          for (const p of existingSuccessPosts) {
+            if (p.productId) alreadyPostedProductIds.add(p.productId);
+          }
+        }
+      }
 
       const orgCurrency = await getOrgCurrencySettings(orgId);
       const currency = orgCurrency.baseCurrency || "LKR";
@@ -607,21 +629,43 @@ export const triggerBatchInstagramFeedPostAction = vendorAction
         .from(schema.products)
         .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, "active")));
 
-      // Fetch existing successful posts to prevent duplicates (Idempotent Sync)
-      const existingSuccessPosts = await db
-        .select({ productId: schema.metaCatalogSyncLogs.productId })
-        .from(schema.metaCatalogSyncLogs)
-        .where(
-          and(
-            eq(schema.metaCatalogSyncLogs.orgId, orgId),
-            eq(schema.metaCatalogSyncLogs.action, "INSTAGRAM_FEED_POST"),
-            eq(schema.metaCatalogSyncLogs.status, "SUCCESS"),
-          ),
-        );
-
-      const alreadyPostedProductIds = new Set(
-        existingSuccessPosts.map((p) => p.productId).filter(Boolean) as string[],
-      );
+      // Query live Instagram feed to detect what is actually published on the profile right now
+      const alreadyPostedProductIds = new Set<string>();
+      if (!forceRepost) {
+        try {
+          const liveRes = await fetch(
+            `https://graph.facebook.com/v21.0/${integration.instagramAccountId}/media?fields=id,caption&limit=100&access_token=${encodeURIComponent(igToken)}`,
+          );
+          if (liveRes.ok) {
+            const liveData = await liveRes.json();
+            if (Array.isArray(liveData.data)) {
+              for (const item of liveData.data) {
+                const caption = item.caption || "";
+                for (const prod of activeProducts) {
+                  if (caption.includes(prod.id)) {
+                    alreadyPostedProductIds.add(prod.id);
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          logger.warn("Could not query live Instagram media, falling back to sync logs", { err });
+          const existingSuccessPosts = await db
+            .select({ productId: schema.metaCatalogSyncLogs.productId })
+            .from(schema.metaCatalogSyncLogs)
+            .where(
+              and(
+                eq(schema.metaCatalogSyncLogs.orgId, orgId),
+                eq(schema.metaCatalogSyncLogs.action, "INSTAGRAM_FEED_POST"),
+                eq(schema.metaCatalogSyncLogs.status, "SUCCESS"),
+              ),
+            );
+          for (const p of existingSuccessPosts) {
+            if (p.productId) alreadyPostedProductIds.add(p.productId);
+          }
+        }
+      }
 
       const orgCurrency = await getOrgCurrencySettings(orgId);
       const currency = orgCurrency.baseCurrency || "LKR";

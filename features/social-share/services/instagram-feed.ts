@@ -21,10 +21,18 @@ export async function postProductToInstagramFeed({
     const cleanIgId = igAccountId.trim().replace(/[^0-9]/g, "");
     const cleanToken = accessToken.trim();
 
-    const rawUrl =
-      product.imageUrl?.trim() ||
-      (product.media && Array.isArray(product.media) && product.media.find((m) => m.url)?.url) ||
-      null;
+    let rawUrl: string | null = null;
+    if (product.media && Array.isArray(product.media)) {
+      const explicitImg = product.media.find(
+        (m) => m && (m.type === "image" || /\.(jpe?g|png|webp)/i.test(m.url)),
+      );
+      if (explicitImg?.url) {
+        rawUrl = explicitImg.url;
+      }
+    }
+    if (!rawUrl) {
+      rawUrl = product.imageUrl?.trim() || product.media?.[0]?.url || null;
+    }
     const finalImageUrl = resolveProductFeedImageUrl(rawUrl);
     if (!finalImageUrl) {
       return {
