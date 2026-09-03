@@ -24,10 +24,7 @@ import {
   Info,
   MessageCircle,
   Smartphone,
-  ArrowRight,
   ShieldCheck,
-  CheckCheck,
-  Copy,
   Pin,
 } from "lucide-react";
 import {
@@ -148,7 +145,6 @@ export default function SocialSettingsHubPage() {
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ valid: boolean; message: string } | null>(null);
-  const [copiedDemo, setCopiedDemo] = useState(false);
 
   const [batchSyncResult, setBatchSyncResult] = useState<{
     total: number;
@@ -881,13 +877,13 @@ export default function SocialSettingsHubPage() {
         </div>
       </div>
 
-      {/* Collapsible Interactive Multi-Channel Guide */}
+      {/* Collapsible Interactive Multi-Channel Platform Guide */}
       {showGuide && (
         <div className="mb-8 p-6 rounded-3xl bg-gradient-to-br from-purple-50/60 via-indigo-50/40 to-blue-50/40 dark:from-purple-950/30 dark:via-indigo-950/20 dark:to-blue-950/20 border border-purple-200/80 dark:border-purple-900/60 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-purple-600" /> Multi-Channel Social & Search
-              Architecture
+              Architecture Guide
             </h2>
             <button
               type="button"
@@ -898,36 +894,148 @@ export default function SocialSettingsHubPage() {
             </button>
           </div>
           <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-            Dilnova publishes directly to official platform APIs without third-party aggregators.
-            Choose the tabs below to connect each channel:
+            Dilnova connects directly to official first-party APIs (Zero Third Parties). Choose the
+            tabs below to configure your store&apos;s channels:
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-            <div className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-blue-100 dark:border-blue-900/40 space-y-1.5">
-              <span className="text-xs font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
-                📢 Facebook Page Feed
-              </span>
-              <p className="text-[11px] text-zinc-500 leading-relaxed">
-                Uses Meta Graph API v21.0 to post product photos and prices directly to your
-                Facebook Page timeline.
-              </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-1">
+            {/* 1. Facebook Feed */}
+            <div className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-blue-100 dark:border-blue-950/60 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-blue-700 dark:text-blue-400">
+                    📢 Facebook Feed
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    Easy (5m)
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed mb-3">
+                  Auto-posts photos, prices, and links to your Page timeline on product creation.
+                </p>
+                <div className="space-y-1 text-[10px] text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/80 pt-2">
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> Zero domain verification
+                  </div>
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> 100% Global availability
+                  </div>
+                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                    <Info className="h-3 w-3" /> Needs Facebook Page Admin
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-900/40 space-y-1.5">
-              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                💬 WhatsApp Business
-              </span>
-              <p className="text-[11px] text-zinc-500 leading-relaxed">
-                Connects your synced Meta Catalog directly to your WhatsApp Business phone number in
-                Meta Business Suite.
-              </p>
+
+            {/* 2. WhatsApp Business & 1-Click */}
+            <div className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-950/60 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                    🟢 WhatsApp Business
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    Official Meta
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed mb-3">
+                  Links your synced Meta Catalog directly to your WhatsApp Business phone number.
+                </p>
+                <div className="space-y-1 text-[10px] text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/80 pt-2">
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> 100% Free & Zero 3rd parties
+                  </div>
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> Auto-syncs live inventory
+                  </div>
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> 1-Click Share to WhatsApp
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-red-100 dark:border-red-900/40 space-y-1.5">
-              <span className="text-xs font-bold text-red-700 dark:text-red-400 flex items-center gap-1.5">
-                📌 Pinterest & Google SEO
-              </span>
-              <p className="text-[11px] text-zinc-500 leading-relaxed">
-                Posts Product Pins with schema markup. Google Search & Images index these pins for
-                permanent organic discovery.
-              </p>
+
+            {/* 3. Instagram Auto-Poster */}
+            <div className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-pink-100 dark:border-pink-950/60 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-pink-700 dark:text-pink-400">
+                    📸 Instagram Feed
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                    Moderate (10m)
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed mb-3">
+                  Publishes photo posts & captions to your Instagram Business account grid.
+                </p>
+                <div className="space-y-1 text-[10px] text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/80 pt-2">
+                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                    <Info className="h-3 w-3" /> Must be IG Business/Creator
+                  </div>
+                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                    <Info className="h-3 w-3" /> Must link IG to Facebook Page
+                  </div>
+                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                    <Info className="h-3 w-3" /> 25 posts/24h Meta rate limit
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Pinterest & Google SEO */}
+            <div className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-red-100 dark:border-red-950/60 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-red-700 dark:text-red-400">
+                    📌 Pinterest & Google
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">
+                    SEO (DA 94)
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed mb-3">
+                  Publishes Product Pins with Schema.org markup. Indexed by Google Search & Images.
+                </p>
+                <div className="space-y-1 text-[10px] text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/80 pt-2">
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> Google Search indexing
+                  </div>
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> Live prices & in-stock badge
+                  </div>
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> 1,000 pins/day free
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 5. Meta Commerce Catalog */}
+            <div className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-purple-100 dark:border-purple-950/60 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-purple-700 dark:text-purple-400">
+                    🛍️ Meta Catalog
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                    Advanced
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed mb-3">
+                  Syncs catalog inventory for Facebook Shop, WhatsApp Business Catalog, and ad tags.
+                </p>
+                <div className="space-y-1 text-[10px] text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/80 pt-2">
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> Powers WhatsApp Catalog
+                  </div>
+                  <div className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
+                    <ShieldAlert className="h-3 w-3" /> Shop Tab needs Domain Check
+                  </div>
+                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                    <Info className="h-3 w-3" /> System User Token required
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1236,33 +1344,143 @@ export default function SocialSettingsHubPage() {
                 </span>
               </div>
 
-              {/* Step 1: Token Configuration */}
+              {/* Step 1: Choose Your Token Type & Get Meta Access Token */}
               <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50/80 to-indigo-50/50 dark:from-blue-950/40 dark:to-indigo-950/20 border border-blue-100 dark:border-blue-900/50 space-y-3">
-                <span className="text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
-                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-mono">
-                    1
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-xs font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-mono">
+                      1
+                    </span>
+                    Choose Your Token Type & Get Meta Access Token
                   </span>
-                  Meta Access Token (System User or Page Token)
-                </span>
-                <div className="relative">
-                  <input
-                    type={showPageToken ? "text" : "password"}
-                    placeholder={
-                      hasExistingPageToken
-                        ? "••••••••••••••••••••••••••••••••"
-                        : "Paste token starting with EAA..."
-                    }
-                    value={facebookPageAccessToken}
-                    onChange={(e) => setFacebookPageAccessToken(e.target.value)}
-                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPageToken(!showPageToken)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer"
-                  >
-                    {showPageToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                </div>
+
+                {/* Token Comparison: Permanent vs Temporary */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1">
+                  {/* Option 1: Permanent System User Token */}
+                  <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 flex flex-col justify-between gap-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                          🛡️ Option 1: System User Token
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-600 text-white tracking-wide uppercase">
+                          Permanent • Recommended
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-800/90 dark:text-emerald-300/90">
+                        Generated in Meta Business Suite under <strong>System Users</strong>.
+                      </p>
+                      <div className="mt-2.5 space-y-1.5 text-[11px]">
+                        <div className="flex items-start gap-1.5 text-emerald-900 dark:text-emerald-200">
+                          <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>PRO: Never Expires!</strong> Feed posts & sync run 24/7
+                            indefinitely without breaking.
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-1.5 text-zinc-600 dark:text-zinc-400">
+                          <span className="text-[11px] shrink-0 mt-0.5">ℹ️</span>
+                          <span>
+                            <strong>CON:</strong> Takes 1–2 minutes to create a System User once in
+                            Meta Suite.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href="https://business.facebook.com/latest/settings/system_users/?business_id=208458023692445&nav_ref=bm_settings_redirect_migration&bm_redirect_migration=true&selected_user_id=61593935072406"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-xs cursor-pointer text-center"
+                    >
+                      🛡️ Open Meta System Users (Never Expires) <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+
+                  {/* Option 2: Graph API Explorer Token */}
+                  <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 flex flex-col justify-between gap-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                          ⚡ Option 2: Graph API Explorer
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 uppercase">
+                          Quick Test Only
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90">
+                        Generated in Meta Developer Tools Graph Explorer.
+                      </p>
+                      <div className="mt-2.5 space-y-1.5 text-[11px]">
+                        <div className="flex items-start gap-1.5 text-amber-900 dark:text-amber-200">
+                          <Check className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>PRO:</strong> Instant 10-second token creation right in your
+                            browser.
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-1.5 text-rose-700 dark:text-rose-400 font-medium">
+                          <span className="text-[11px] shrink-0 mt-0.5">⚠️</span>
+                          <span>
+                            <strong>CON (Warning):</strong> Hard 24-hour expiry! Auto-posting stops
+                            working after 1 day until re-pasted daily.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href="https://developers.facebook.com/tools/explorer/?method=GET&path=me%2Faccounts&version=v21.0"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-xs cursor-pointer text-center"
+                    >
+                      🔑 Open Graph API Explorer (Expires in 24h){" "}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 pt-1">
+                  Required Facebook Page permissions for your token:
+                </p>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 text-[11px] font-mono font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    pages_manage_posts
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 text-[11px] font-mono font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    pages_read_engagement
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 text-[11px] font-mono font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    pages_show_list
+                  </span>
+                </div>
+
+                <div className="pt-2">
+                  <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                    Paste Access Token (User or Page Token)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPageToken ? "text" : "password"}
+                      placeholder={
+                        hasExistingPageToken
+                          ? "••••••••••••••••••••••••••••••••"
+                          : "Paste token starting with EAA..."
+                      }
+                      value={facebookPageAccessToken}
+                      onChange={(e) => setFacebookPageAccessToken(e.target.value)}
+                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPageToken(!showPageToken)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                    >
+                      {showPageToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1565,8 +1783,8 @@ export default function SocialSettingsHubPage() {
                     <Sparkles className="h-4 w-4" /> Instagram Business Auto-Poster
                   </h2>
                   <p className="text-xs text-zinc-500 mt-0.5">
-                    Automatically publishes photos & captions to your linked Instagram Business
-                    account grid.
+                    Automatically publishes photos & captions to your linked Instagram Business or
+                    Creator account.
                   </p>
                 </div>
                 <span className="p-2 rounded-xl bg-pink-50 dark:bg-pink-950/60 text-pink-600">
@@ -1574,9 +1792,130 @@ export default function SocialSettingsHubPage() {
                 </span>
               </div>
 
+              {/* Step 1: Get Access Token with Direct Links */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-pink-50/80 to-rose-50/50 dark:from-pink-950/40 dark:to-rose-950/20 border border-pink-100 dark:border-pink-900/50 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-xs font-bold text-pink-900 dark:text-pink-300 flex items-center gap-1.5">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-600 text-white text-[10px] font-mono">
+                      1
+                    </span>
+                    Choose Your Token Type & Get Meta Token
+                  </span>
+                </div>
+
+                {/* Token Comparison: Permanent vs Temporary */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1">
+                  {/* Option 1: Permanent System User Token */}
+                  <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 flex flex-col justify-between gap-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                          🛡️ Option 1: System User Token
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-600 text-white tracking-wide uppercase">
+                          Permanent • Recommended
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-800/90 dark:text-emerald-300/90">
+                        Generated in Meta Business Suite under <strong>System Users</strong>.
+                      </p>
+                      <div className="mt-2.5 space-y-1.5 text-[11px]">
+                        <div className="flex items-start gap-1.5 text-emerald-900 dark:text-emerald-200">
+                          <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>PRO: Never Expires!</strong> Instagram feed publishing runs 24/7
+                            forever without breaking.
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-1.5 text-zinc-600 dark:text-zinc-400">
+                          <span className="text-[11px] shrink-0 mt-0.5">ℹ️</span>
+                          <span>
+                            <strong>CON:</strong> Takes 1–2 minutes to create a System User once in
+                            Meta Suite.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href="https://business.facebook.com/latest/settings/system_users/?business_id=208458023692445&nav_ref=bm_settings_redirect_migration&bm_redirect_migration=true&selected_user_id=61593935072406"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-xs cursor-pointer text-center"
+                    >
+                      🛡️ Open Meta System Users (Never Expires) <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+
+                  {/* Option 2: Graph API Explorer Token */}
+                  <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 flex flex-col justify-between gap-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                          ⚡ Option 2: Graph API Explorer
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 uppercase">
+                          Quick Test Only
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90">
+                        Generated in Meta Developer Tools Graph Explorer.
+                      </p>
+                      <div className="mt-2.5 space-y-1.5 text-[11px]">
+                        <div className="flex items-start gap-1.5 text-amber-900 dark:text-amber-200">
+                          <Check className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>PRO:</strong> Instant 10-second token creation right in your
+                            browser.
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-1.5 text-rose-700 dark:text-rose-400 font-medium">
+                          <span className="text-[11px] shrink-0 mt-0.5">⚠️</span>
+                          <span>
+                            <strong>CON (Warning):</strong> Hard 24-hour expiry! Auto-posting stops
+                            working after 1 day until re-pasted daily.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href="https://developers.facebook.com/tools/explorer/?method=GET&path=me%2Faccounts&version=v21.0"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-xs cursor-pointer text-center"
+                    >
+                      🔑 Open Graph API Explorer (Expires in 24h){" "}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 pt-1">
+                  Generate your token with these required Instagram & Page permissions:
+                </p>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 text-[11px] font-mono font-bold text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                    instagram_basic
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 text-[11px] font-mono font-bold text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                    instagram_content_publish
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 text-[11px] font-mono font-bold text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                    pages_show_list
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 text-[11px] font-mono font-bold text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                    pages_read_engagement
+                  </span>
+                </div>
+              </div>
+
+              {/* Step 2: Connect Instagram Business Account */}
               <div className="p-4 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-600 text-white text-[10px] font-mono">
+                      2
+                    </span>
                     Connect Instagram Business Account
                   </span>
                   <button
@@ -1718,7 +2057,7 @@ export default function SocialSettingsHubPage() {
                 <div className="p-4 rounded-xl bg-white dark:bg-zinc-950 border border-red-200/80 dark:border-red-900/50 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-red-900 dark:text-red-200 flex items-center gap-1.5">
-                      📋 "Connect App" Form Cheat-Sheet (Choose these exact options):
+                      📋 &quot;Connect App&quot; Form Cheat-Sheet (Choose these exact options):
                     </span>
                     <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full">
                       Instant Trial Approval
@@ -1790,7 +2129,7 @@ export default function SocialSettingsHubPage() {
                         Reads Pins / Boards data
                       </span>
                       <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                        🔘 Yes, mine (authenticated Pinner's own pins)
+                        🔘 Yes, mine (authenticated Pinner&apos;s own pins)
                       </span>
                     </div>
                   </div>
@@ -1890,8 +2229,8 @@ export default function SocialSettingsHubPage() {
                         Select or Create Your Pinterest Board
                       </h3>
                       <p className="text-[11px] text-zinc-500">
-                        Every Product Pin must be placed in a board (e.g. "Store Catalog", "New
-                        Arrivals").
+                        Every Product Pin must be placed in a board (e.g. &quot;Store Catalog&quot;,
+                        &quot;New Arrivals&quot;).
                       </p>
                     </div>
                   </div>
