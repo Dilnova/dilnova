@@ -1291,8 +1291,8 @@ export default function SocialSettingsHubPage() {
                     <Sparkles className="h-4 w-4" /> Instagram Business Auto-Poster
                   </h2>
                   <p className="text-xs text-zinc-500 mt-0.5">
-                    Automatically publishes photos & promotional captions to your linked Instagram
-                    Business or Creator account.
+                    Automatically publishes photos & captions to your linked Instagram Business or
+                    Creator account.
                   </p>
                 </div>
                 <span className="p-2 rounded-xl bg-pink-50 dark:bg-pink-950/60 text-pink-600">
@@ -1300,49 +1300,132 @@ export default function SocialSettingsHubPage() {
                 </span>
               </div>
 
-              {/* Step 1: Link Instagram to Facebook Page Guide */}
+              {/* Step 1: Get Access Token with Direct Links */}
               <div className="p-4 rounded-2xl bg-gradient-to-br from-pink-50/80 to-rose-50/50 dark:from-pink-950/40 dark:to-rose-950/20 border border-pink-100 dark:border-pink-900/50 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-pink-900 dark:text-pink-300 flex items-center gap-1.5">
                     <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-600 text-white text-[10px] font-mono">
                       1
                     </span>
-                    Prerequisites for Instagram Publishing
+                    Generate Meta Token with Instagram Permissions
                   </span>
-                  <a
-                    href="https://business.facebook.com/latest/settings/instagram_account"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white transition-all shadow-sm cursor-pointer"
-                  >
-                    🔗 Open Meta Instagram Settings <ExternalLink className="h-3 w-3" />
-                  </a>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <a
+                      href="https://developers.facebook.com/tools/explorer/?method=GET&path=me%2Faccounts&version=v21.0"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white transition-all shadow-sm cursor-pointer"
+                    >
+                      🔑 Open Graph API Explorer <ExternalLink className="h-3 w-3" />
+                    </a>
+                    <a
+                      href="https://business.facebook.com/settings/system-users?business_id=208458023692445"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-pink-300 dark:border-pink-800 bg-white/90 dark:bg-zinc-900 text-pink-700 dark:text-pink-300 hover:bg-pink-50 transition-all shadow-2xs cursor-pointer"
+                    >
+                      🛡️ Permanent Token (Never Expires) <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
                 </div>
 
-                <ol className="list-decimal list-inside space-y-1 text-[11px] text-zinc-600 dark:text-zinc-400">
-                  <li>
-                    Your Instagram must be a <strong>Professional (Business or Creator)</strong>{" "}
-                    account.
-                  </li>
-                  <li>
-                    In Meta Business Suite, your Instagram account must be linked to your Facebook
-                    Page (<strong>Dil</strong>).
-                  </li>
-                  <li>
-                    Click <strong>Auto-Detect</strong> below to automatically fetch your Instagram
-                    Business ID!
-                  </li>
-                </ol>
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                  Generate your token with these required Instagram & Page permissions:
+                </p>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 text-[11px] font-mono font-bold text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                    instagram_basic
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 text-[11px] font-mono font-bold text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                    instagram_content_publish
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 text-[11px] font-mono font-bold text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                    pages_show_list
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/80 dark:bg-zinc-900 text-[11px] font-mono font-bold text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                    pages_read_engagement
+                  </span>
+                </div>
+
+                <div className="pt-2">
+                  <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                    Meta Access Token
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPageToken ? "text" : "password"}
+                      placeholder={
+                        hasExistingPageToken
+                          ? "••••••••••••••••••••••••••••••••"
+                          : "Paste token starting with EAA..."
+                      }
+                      value={facebookPageAccessToken}
+                      onChange={(e) => setFacebookPageAccessToken(e.target.value)}
+                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-pink-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPageToken(!showPageToken)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                    >
+                      {showPageToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-zinc-400 mt-1 block">
+                    Temporary tokens from Graph API Explorer expire after 24 hours. For production,
+                    create a permanent System User token.
+                  </span>
+                </div>
               </div>
 
-              {/* Step 2: Auto-Detect Linked Instagram Account */}
+              {/* Step 2: Link Facebook Page under Connected Assets in Meta */}
               <div className="p-4 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                     <span className="flex items-center justify-center w-5 h-5 rounded-full bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 text-[10px] font-mono">
                       2
                     </span>
-                    Connect Your Instagram Account
+                    Link Facebook Page in Meta Business Suite
+                  </span>
+                  <a
+                    href="https://business.facebook.com/latest/settings/instagram_account?business_id=208458023692445"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-zinc-800 hover:bg-zinc-900 dark:bg-zinc-200 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 transition-all shadow-sm cursor-pointer"
+                  >
+                    🔗 Open Meta Instagram Accounts <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+
+                <div className="p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 space-y-1.5">
+                  <div className="font-semibold text-zinc-900 dark:text-zinc-100">
+                    Quick 3-Click Linking Guide in Meta Business Suite:
+                  </div>
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li>
+                      Click your Instagram account (<strong>@dilukalahiru</strong>).
+                    </li>
+                    <li>
+                      Click the <strong>Connected assets</strong> tab (next to <em>People</em> and{" "}
+                      <em>Partners</em>).
+                    </li>
+                    <li>
+                      Click <strong>Add assets</strong> &rarr; Select <strong>Pages</strong> &rarr;
+                      Check <strong>Dil</strong> &rarr; Click <strong>Save changes</strong>.
+                    </li>
+                  </ol>
+                </div>
+              </div>
+
+              {/* Step 3: Select or Enter Instagram Account */}
+              <div className="p-4 rounded-2xl bg-zinc-50/80 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900 text-[10px] font-mono">
+                      3
+                    </span>
+                    Connect Instagram Business Account
                   </span>
                   <button
                     type="button"
@@ -1403,19 +1486,19 @@ export default function SocialSettingsHubPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. 17841400000000000"
+                    placeholder="e.g. 17841406751842985"
                     value={instagramAccountId}
                     onChange={(e) => setInstagramAccountId(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-pink-500 focus:outline-none"
                   />
                   <span className="text-[10px] text-zinc-400 mt-1 block">
-                    Automatically populated by clicking Auto-Detect above, or found in Meta Business
-                    Suite.
+                    Your Instagram ID (e.g. <code>17841406751842985</code>) found in Meta Business
+                    Suite &rarr; Instagram Accounts.
                   </span>
                 </div>
               </div>
 
-              {/* Step 3: Live Connected Instagram Banner (If Account ID set) */}
+              {/* Step 4: Live Connected Instagram Banner */}
               {instagramAccountId && (
                 <div className="p-4 rounded-2xl bg-pink-50/70 dark:bg-pink-950/30 border border-pink-200/70 dark:border-pink-900/50 flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-3">

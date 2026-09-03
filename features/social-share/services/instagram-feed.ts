@@ -1,6 +1,10 @@
 import { logger } from "@/shared/logging/logger";
 import { InstagramFeedPostParams } from "../types";
-import { META_GRAPH_API_VERSION, resolveProductFeedImageUrl } from "./facebook-feed";
+import {
+  META_GRAPH_API_VERSION,
+  resolveProductFeedImageUrl,
+  formatMetaErrorMessage,
+} from "./facebook-feed";
 
 /**
  * Automatically publishes a photo and caption to an Instagram Business account via Graph API.
@@ -126,7 +130,9 @@ export async function testInstagramConnection({
     if (!response.ok || data.error) {
       return {
         valid: false,
-        error: data.error?.message || `Instagram API returned HTTP ${response.status}`,
+        error: formatMetaErrorMessage(
+          data.error?.message || `Instagram API returned HTTP ${response.status}`,
+        ),
       };
     }
 

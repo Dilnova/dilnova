@@ -313,7 +313,9 @@ export async function testFacebookPageConnection({
     if (!response.ok || data.error) {
       return {
         valid: false,
-        error: data.error?.message || `Facebook returned HTTP ${response.status}`,
+        error: formatMetaErrorMessage(
+          data.error?.message || `Facebook returned HTTP ${response.status}`,
+        ),
       };
     }
 
@@ -330,4 +332,20 @@ export async function testFacebookPageConnection({
       error: error instanceof Error ? error.message : "Network error contacting Facebook",
     };
   }
+}
+
+/**
+ * Standardizes Meta API error messages into actionable, user-friendly guidance.
+ */
+export function formatMetaErrorMessage(errorMsg?: string): string {
+  if (!errorMsg) return "Meta API request failed.";
+  if (
+    errorMsg.includes("Session has expired") ||
+    errorMsg.includes("Error validating access token") ||
+    errorMsg.includes("The access token could not be decrypted") ||
+    errorMsg.includes("Malformed access token")
+  ) {
+    return "🔑 Your Meta Access Token has expired. Please open Meta Graph API Explorer to generate a fresh token (or use a permanent System User token) and paste it into Step 1.";
+  }
+  return errorMsg;
 }
