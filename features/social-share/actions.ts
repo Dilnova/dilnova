@@ -463,7 +463,12 @@ export const triggerBatchFacebookFeedPostAction = vendorAction.action(async ({ c
     let skippedCount = 0;
 
     for (const prod of activeProducts) {
-      if (!prod.imageUrl || !prod.imageUrl.trim()) {
+      const hasMedia = Boolean(
+        prod.imageUrl?.trim() ||
+        (Array.isArray(prod.media) &&
+          prod.media.some((m) => m && (typeof m === "string" ? Boolean(m) : Boolean(m.url)))),
+      );
+      if (!hasMedia) {
         skippedCount++;
         await db.insert(schema.metaCatalogSyncLogs).values({
           orgId,
@@ -577,7 +582,12 @@ export const triggerBatchInstagramFeedPostAction = vendorAction.action(async ({ 
     let skippedCount = 0;
 
     for (const prod of activeProducts) {
-      if (!prod.imageUrl || !prod.imageUrl.trim()) {
+      const hasMedia = Boolean(
+        prod.imageUrl?.trim() ||
+        (Array.isArray(prod.media) &&
+          prod.media.some((m) => m && (typeof m === "string" ? Boolean(m) : Boolean(m.url)))),
+      );
+      if (!hasMedia) {
         skippedCount++;
         await db.insert(schema.metaCatalogSyncLogs).values({
           orgId,

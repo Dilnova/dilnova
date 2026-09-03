@@ -21,7 +21,11 @@ export async function postProductToInstagramFeed({
     const cleanIgId = igAccountId.trim().replace(/[^0-9]/g, "");
     const cleanToken = accessToken.trim();
 
-    const finalImageUrl = resolveProductFeedImageUrl(product.imageUrl);
+    const rawUrl =
+      product.imageUrl?.trim() ||
+      (product.media && Array.isArray(product.media) && product.media.find((m) => m.url)?.url) ||
+      null;
+    const finalImageUrl = resolveProductFeedImageUrl(rawUrl);
     if (!finalImageUrl) {
       return {
         success: false,
@@ -70,7 +74,31 @@ export async function postProductToInstagramFeed({
 
     const creationId = containerData.id;
 
-    // Step 2: Publish the Media Container
+    // Step 2: Poll container readiness to prevent "Media ID is not available"
+    const pollDelay = process.env.NODE_ENV === "test" ? 10 : 2000;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await new Promise((r) => setTimeout(r, pollDelay));
+      try {
+        const statusUrl = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${creationId}?fields=status_code&access_token=${encodeURIComponent(
+          cleanToken,
+        )}`;
+        const statusRes = await fetch(statusUrl, { method: "GET" });
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          if (statusData.status_code === "FINISHED") {
+            break;
+          }
+          if (statusData.status_code === "ERROR") {
+            return {
+              success: false,
+              error: "Meta failed to process media image for Instagram.",
+            };
+          }
+        }
+      } catch {}
+    }
+
+    // Step 3: Publish the Media Container
     const publishUrl = `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${cleanIgId}/media_publish`;
     const publishRes = await fetch(publishUrl, {
       method: "POST",

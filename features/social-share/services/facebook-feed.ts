@@ -70,7 +70,11 @@ export async function postProductToFacebookPageFeed({
     }
 
     // Only publish products that have their own uploaded media/image
-    const finalImageUrl = resolveProductFeedImageUrl(product.imageUrl);
+    const rawUrl =
+      product.imageUrl?.trim() ||
+      (product.media && Array.isArray(product.media) && product.media.find((m) => m.url)?.url) ||
+      null;
+    const finalImageUrl = resolveProductFeedImageUrl(rawUrl);
     if (!finalImageUrl) {
       return {
         success: false,

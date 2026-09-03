@@ -189,7 +189,13 @@ describe("Multi-Channel Social Publishing Suite", () => {
         status: 200,
         json: async () => ({ id: "creation_id_111" }),
       });
-      // Step 2: Media Publish
+      // Step 2: Container Readiness Status
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ status_code: "FINISHED" }),
+      });
+      // Step 3: Media Publish
       (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -209,7 +215,7 @@ describe("Multi-Channel Social Publishing Suite", () => {
 
       expect(res.success).toBe(true);
       expect(res.mediaId).toBe("ig_media_222");
-      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(global.fetch).toHaveBeenCalledTimes(3);
     });
 
     it("rejects publishing if product lacks an image", async () => {
