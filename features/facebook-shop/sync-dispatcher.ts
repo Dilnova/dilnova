@@ -96,7 +96,7 @@ export async function dispatchFacebookShopSync({
         item_type: "PRODUCT_ITEM",
         requests: [
           {
-            method: action,
+            method: "UPDATE",
             data: formatted,
           },
         ],

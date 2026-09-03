@@ -44,6 +44,17 @@ export async function dispatchProductSocialPublishing({
       return results;
     }
 
+    // Check specific action sync toggle
+    if (action === "CREATE" && !integration.autoSyncOnCreate) {
+      return results;
+    }
+    if (action === "UPDATE" && !integration.autoSyncOnUpdate) {
+      return results;
+    }
+    if (action === "DELETE" && !integration.autoSyncOnDelete) {
+      return results;
+    }
+
     // 2. Fetch product details
     let prod: SocialProductPayload | null = null;
     let productName = productNameHint || "Product";
@@ -80,35 +91,90 @@ export async function dispatchProductSocialPublishing({
     const brandName = integration.brandName || "Dilnova Store";
     const fbToken = integration.facebookPageAccessToken || integration.accessToken;
 
+    const hasMedia = Boolean(
+      prod?.imageUrl?.trim() ||
+      (Array.isArray(prod?.media) &&
+        prod?.media.some((m) => m && (typeof m === "string" ? Boolean(m) : Boolean(m.url)))),
+    );
+
     // ── CHANNEL 1: Facebook Page Feed Auto-Posting ───────────────────────────
-    if (integration.facebookPageId && fbToken && action !== "DELETE" && prod) {
-      try {
-        const fbResult = await postProductToFacebookPageFeed({
-          pageId: integration.facebookPageId,
-          pageAccessToken: fbToken,
-          product: prod,
-          currency,
-          brandName,
-          customTemplate: integration.customPostTemplate,
-        });
+    if (integration.autoPostFacebookFeed && integration.facebookPageId && fbToken) {
+      if (action === "DELETE") {
+        // Automatically delete post from Facebook Page when product is deleted in Dilnova
+        try {
+          let pageTokenToUse = fbToken;
+          const pageTokenRes = await fetch(
+            `https://graph.facebook.com/v21.0/${integration.facebookPageId}?fields=access_token&access_token=${encodeURIComponent(fbToken)}`,
+          );
+          if (pageTokenRes.ok) {
+            const pageTokenData = await pageTokenRes.json();
+            if (pageTokenData.access_token) {
+              pageTokenToUse = pageTokenData.access_token;
+            }
+          }
 
-        results.facebookFeed = fbResult;
+          const postsRes = await fetch(
+            `https://graph.facebook.com/v21.0/${integration.facebookPageId}/published_posts?fields=id,message&limit=50&access_token=${encodeURIComponent(pageTokenToUse)}`,
+          );
+          if (postsRes.ok) {
+            const postsData = await postsRes.json();
+            for (const post of postsData.data || []) {
+              if (post.message && post.message.includes(productId)) {
+                await fetch(
+                  `https://graph.facebook.com/v21.0/${post.id}?access_token=${encodeURIComponent(pageTokenToUse)}`,
+                  { method: "DELETE" },
+                );
+              }
+            }
+          }
+        } catch (err) {
+          logger.warn("Could not delete Facebook page post on product delete", { productId, err });
+        }
+      } else if (action === "CREATE" && prod && hasMedia) {
+        // Prevent duplicate posts on Facebook Page Feed
+        const [existingLog] = await db
+          .select({ id: schema.metaCatalogSyncLogs.id })
+          .from(schema.metaCatalogSyncLogs)
+          .where(
+            and(
+              eq(schema.metaCatalogSyncLogs.orgId, orgId),
+              eq(schema.metaCatalogSyncLogs.productId, productId),
+              eq(schema.metaCatalogSyncLogs.action, "FACEBOOK_FEED_POST"),
+              eq(schema.metaCatalogSyncLogs.status, "SUCCESS"),
+            ),
+          )
+          .limit(1);
 
-        await db.insert(schema.metaCatalogSyncLogs).values({
-          orgId,
-          productId,
-          action: "FACEBOOK_FEED_POST",
-          status: fbResult.success ? "SUCCESS" : "FAILED",
-          productName,
-          productSku,
-          errorMessage: fbResult.error || null,
-        });
-      } catch (err) {
-        logger.error("Facebook feed auto-post failed", { orgId, productId, err });
-        results.facebookFeed = {
-          success: false,
-          error: err instanceof Error ? err.message : "Failed to post to Facebook Feed",
-        };
+        if (!existingLog) {
+          try {
+            const fbResult = await postProductToFacebookPageFeed({
+              pageId: integration.facebookPageId,
+              pageAccessToken: fbToken,
+              product: prod,
+              currency,
+              brandName,
+              customTemplate: integration.customPostTemplate,
+            });
+
+            results.facebookFeed = fbResult;
+
+            await db.insert(schema.metaCatalogSyncLogs).values({
+              orgId,
+              productId,
+              action: "FACEBOOK_FEED_POST",
+              status: fbResult.success ? "SUCCESS" : "FAILED",
+              productName,
+              productSku,
+              errorMessage: fbResult.error || null,
+            });
+          } catch (err) {
+            logger.error("Facebook feed auto-post failed", { orgId, productId, err });
+            results.facebookFeed = {
+              success: false,
+              error: err instanceof Error ? err.message : "Failed to post to Facebook Feed",
+            };
+          }
+        }
       }
     }
 
@@ -116,32 +182,49 @@ export async function dispatchProductSocialPublishing({
     if (
       integration.autoPostInstagramFeed &&
       integration.instagramAccountId &&
-      integration.facebookPageAccessToken &&
+      fbToken &&
       action === "CREATE" &&
-      prod?.imageUrl
+      hasMedia &&
+      prod
     ) {
-      try {
-        const igResult = await postProductToInstagramFeed({
-          igAccountId: integration.instagramAccountId,
-          accessToken: integration.facebookPageAccessToken,
-          product: prod,
-          currency,
-          brandName,
-        });
+      // Prevent duplicate posts on Instagram Feed
+      const [existingLog] = await db
+        .select({ id: schema.metaCatalogSyncLogs.id })
+        .from(schema.metaCatalogSyncLogs)
+        .where(
+          and(
+            eq(schema.metaCatalogSyncLogs.orgId, orgId),
+            eq(schema.metaCatalogSyncLogs.productId, productId),
+            eq(schema.metaCatalogSyncLogs.action, "INSTAGRAM_FEED_POST"),
+            eq(schema.metaCatalogSyncLogs.status, "SUCCESS"),
+          ),
+        )
+        .limit(1);
 
-        results.instagramFeed = igResult;
+      if (!existingLog) {
+        try {
+          const igResult = await postProductToInstagramFeed({
+            igAccountId: integration.instagramAccountId,
+            accessToken: fbToken,
+            product: prod,
+            currency,
+            brandName,
+          });
 
-        await db.insert(schema.metaCatalogSyncLogs).values({
-          orgId,
-          productId,
-          action: "INSTAGRAM_FEED_POST",
-          status: igResult.success ? "SUCCESS" : "FAILED",
-          productName,
-          productSku,
-          errorMessage: igResult.error || null,
-        });
-      } catch (err) {
-        logger.error("Instagram feed auto-post failed", { orgId, productId, err });
+          results.instagramFeed = igResult;
+
+          await db.insert(schema.metaCatalogSyncLogs).values({
+            orgId,
+            productId,
+            action: "INSTAGRAM_FEED_POST",
+            status: igResult.success ? "SUCCESS" : "FAILED",
+            productName,
+            productSku,
+            errorMessage: igResult.error || null,
+          });
+        } catch (err) {
+          logger.error("Instagram feed auto-post failed", { orgId, productId, err });
+        }
       }
     }
 
@@ -163,9 +246,10 @@ export async function dispatchProductSocialPublishing({
             brandName,
           });
 
+          // UPDATE in Meta items_batch acts as an upsert (creates if not existing, updates if existing)
           payload = {
             item_type: "PRODUCT_ITEM",
-            requests: [{ method: action, data: formatted }],
+            requests: [{ method: "UPDATE", data: formatted }],
           };
         } else {
           payload = { item_type: "PRODUCT_ITEM", requests: [] };

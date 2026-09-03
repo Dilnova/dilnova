@@ -463,9 +463,22 @@ export const triggerBatchFacebookFeedPostAction = vendorAction
       // Query live Facebook Page feed to detect what is actually published on the timeline right now
       const alreadyPostedProductIds = new Set<string>();
       if (!forceRepost) {
+        let pageTokenToUse = fbToken;
+        try {
+          const pageTokenRes = await fetch(
+            `https://graph.facebook.com/v21.0/${integration.facebookPageId}?fields=access_token&access_token=${encodeURIComponent(fbToken)}`,
+          );
+          if (pageTokenRes.ok) {
+            const pageTokenData = await pageTokenRes.json();
+            if (pageTokenData.access_token) {
+              pageTokenToUse = pageTokenData.access_token;
+            }
+          }
+        } catch {}
+
         try {
           const liveRes = await fetch(
-            `https://graph.facebook.com/v21.0/${integration.facebookPageId}/feed?fields=id,message&limit=100&access_token=${encodeURIComponent(fbToken)}`,
+            `https://graph.facebook.com/v21.0/${integration.facebookPageId}/published_posts?fields=id,message&limit=100&access_token=${encodeURIComponent(pageTokenToUse)}`,
           );
           if (liveRes.ok) {
             const liveData = await liveRes.json();
@@ -479,6 +492,8 @@ export const triggerBatchFacebookFeedPostAction = vendorAction
                 }
               }
             }
+          } else {
+            throw new Error(`Facebook API responded with HTTP ${liveRes.status}`);
           }
         } catch (err) {
           logger.warn("Could not query live Facebook feed, falling back to sync logs", { err });
@@ -648,6 +663,8 @@ export const triggerBatchInstagramFeedPostAction = vendorAction
                 }
               }
             }
+          } else {
+            throw new Error(`Instagram API responded with HTTP ${liveRes.status}`);
           }
         } catch (err) {
           logger.warn("Could not query live Instagram media, falling back to sync logs", { err });
