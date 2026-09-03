@@ -23,7 +23,11 @@ import {
   testFacebookPageConnection,
   fetchFacebookManagedPages,
 } from "./services/facebook-feed";
-import { testInstagramConnection, fetchLinkedInstagramAccount } from "./services/instagram-feed";
+import {
+  testInstagramConnection,
+  fetchLinkedInstagramAccount,
+  postProductToInstagramFeed,
+} from "./services/instagram-feed";
 import { dispatchProductWebhook } from "./services/webhook-dispatcher";
 import { dispatchProductSocialPublishing } from "./dispatcher";
 
@@ -524,6 +528,119 @@ export const triggerBatchFacebookFeedPostAction = vendorAction.action(async ({ c
       skippedCount,
       totalCount: activeProducts.length,
       message: `Bulk Facebook Feed publishing finished: ${totalSuccess} published, ${skippedCount} skipped (no media), ${totalFailed} failed.`,
+    };
+  });
+});
+
+/**
+ * Bulk publishes all active store products with images to the linked Instagram Feed.
+ */
+export const triggerBatchInstagramFeedPostAction = vendorAction.action(async ({ ctx }) => {
+  const { orgId, db } = ctx;
+
+  return runWithCorrelationId(async () => {
+    await rateLimit(5, 60 * 1000);
+
+    if (!orgId) {
+      throw new ActionError("Not authorized: You must be signed in with an active organization.");
+    }
+
+    const [integration] = await db
+      .select()
+      .from(schema.metaCatalogIntegrations)
+      .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
+      .limit(1);
+
+    if (!integration?.instagramAccountId) {
+      throw new ActionError(
+        "Instagram Account ID is not configured. Please enter or auto-detect your Instagram Account ID first.",
+      );
+    }
+
+    const igToken = integration.facebookPageAccessToken || integration.accessToken;
+    if (!igToken) {
+      throw new ActionError("Meta Access Token is missing. Please save your Access Token first.");
+    }
+
+    // Fetch all active products
+    const activeProducts = await db
+      .select()
+      .from(schema.products)
+      .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, "active")));
+
+    const orgCurrency = await getOrgCurrencySettings(orgId);
+    const currency = orgCurrency.baseCurrency || "LKR";
+    const brandName = integration.brandName || "Dilnova Store";
+
+    let totalSuccess = 0;
+    let totalFailed = 0;
+    let skippedCount = 0;
+
+    for (const prod of activeProducts) {
+      if (!prod.imageUrl || !prod.imageUrl.trim()) {
+        skippedCount++;
+        await db.insert(schema.metaCatalogSyncLogs).values({
+          orgId,
+          productId: prod.id,
+          action: "INSTAGRAM_FEED_POST",
+          status: "SKIPPED",
+          productName: prod.name,
+          productSku: prod.sku,
+          errorMessage: "Skipped: No photo or media uploaded",
+        });
+        continue;
+      }
+
+      try {
+        const res = await postProductToInstagramFeed({
+          igAccountId: integration.instagramAccountId,
+          accessToken: igToken,
+          product: prod,
+          currency,
+          brandName,
+        });
+
+        if (res.success) {
+          totalSuccess++;
+          await db.insert(schema.metaCatalogSyncLogs).values({
+            orgId,
+            productId: prod.id,
+            action: "INSTAGRAM_FEED_POST",
+            status: "SUCCESS",
+            productName: prod.name,
+            productSku: prod.sku,
+            errorMessage: null,
+          });
+        } else {
+          totalFailed++;
+          await db.insert(schema.metaCatalogSyncLogs).values({
+            orgId,
+            productId: prod.id,
+            action: "INSTAGRAM_FEED_POST",
+            status: "FAILED",
+            productName: prod.name,
+            productSku: prod.sku,
+            errorMessage: res.error || "Failed to publish photo to Instagram",
+          });
+        }
+
+        // Small delay between posts to respect Instagram rate limits
+        await new Promise((r) => setTimeout(r, 1000));
+      } catch (err) {
+        totalFailed++;
+        logger.error("Error bulk posting product to Instagram Feed", { prodId: prod.id, err });
+      }
+    }
+
+    revalidatePath("/vendor");
+    revalidatePath("/vendor/settings/facebook-shop");
+
+    return {
+      totalSuccess,
+      totalFailed,
+      skippedCount,
+      totalCount: activeProducts.length,
+      message: `Bulk Instagram Feed publishing finished: ${totalSuccess} published, ${skippedCount} skipped (no media), ${totalFailed} failed.`,
     };
   });
 });

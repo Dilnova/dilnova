@@ -30,6 +30,7 @@ import {
   testInstagramConnectionAction,
   testWebhookAction,
   triggerBatchFacebookFeedPostAction,
+  triggerBatchInstagramFeedPostAction,
   discoverFacebookPagesAction,
   discoverInstagramAccountAction,
 } from "@/features/social-share/actions";
@@ -100,6 +101,14 @@ export default function SocialSettingsHubPage() {
     failed: number;
   } | null>(null);
   const [isBulkPostingFeed, setIsBulkPostingFeed] = useState(false);
+
+  const [batchInstagramResult, setBatchInstagramResult] = useState<{
+    total: number;
+    success: number;
+    skipped: number;
+    failed: number;
+  } | null>(null);
+  const [isBulkPostingInstagram, setIsBulkPostingInstagram] = useState(false);
 
   // Facebook Page Auto-Discovery state
   const [discoveredPages, setDiscoveredPages] = useState<
@@ -541,6 +550,39 @@ export default function SocialSettingsHubPage() {
         );
       } finally {
         setIsBulkPostingFeed(false);
+      }
+    });
+  };
+
+  const handleBatchInstagramFeedPublish = () => {
+    setBatchInstagramResult(null);
+    setSaveError(null);
+    setSaveSuccess(null);
+    setIsBulkPostingInstagram(true);
+
+    startTransition(async () => {
+      try {
+        const res = await triggerBatchInstagramFeedPostAction();
+        if (res?.data) {
+          setBatchInstagramResult({
+            total: res.data.totalCount,
+            success: res.data.totalSuccess,
+            skipped: res.data.skippedCount ?? 0,
+            failed: res.data.totalFailed,
+          });
+          setSaveSuccess(res.data.message || "Bulk Instagram Feed publishing completed!");
+          loadLogs();
+        } else {
+          setSaveError(res?.serverError || "Bulk Instagram Feed publishing failed.");
+        }
+      } catch (err) {
+        setSaveError(
+          err instanceof Error
+            ? err.message
+            : "Unexpected error bulk publishing to Instagram Feed.",
+        );
+      } finally {
+        setIsBulkPostingInstagram(false);
       }
     });
   };
@@ -1683,6 +1725,29 @@ export default function SocialSettingsHubPage() {
                 </div>
               )}
 
+              {/* Batch Instagram Result Notification */}
+              {batchInstagramResult && (
+                <div className="p-4 rounded-2xl bg-pink-50 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-800 space-y-2">
+                  <div className="text-xs font-bold text-pink-900 dark:text-pink-200 flex items-center justify-between">
+                    <span>Batch Instagram Publishing Results:</span>
+                    <span className="font-mono text-[11px] text-pink-700 dark:text-pink-300">
+                      Total Products: {batchInstagramResult.total}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold">
+                      ✅ {batchInstagramResult.success} Published
+                    </div>
+                    <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold">
+                      ⏭️ {batchInstagramResult.skipped} Skipped (No Photo)
+                    </div>
+                    <div className="p-2 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 font-bold">
+                      ❌ {batchInstagramResult.failed} Failed
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons for Instagram */}
               <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1698,6 +1763,23 @@ export default function SocialSettingsHubPage() {
                       <Save className="h-3.5 w-3.5" />
                     )}
                     Save Instagram Settings
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBatchInstagramFeedPublish}
+                    disabled={isPending || isBulkPostingInstagram}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+                  >
+                    {isBulkPostingInstagram ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Publishing Instagram
+                        Posts...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-3.5 w-3.5" /> 🚀 Bulk Post All to Instagram
+                      </>
+                    )}
                   </button>
                   <button
                     type="button"
