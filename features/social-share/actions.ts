@@ -13,6 +13,8 @@ import {
   saveSocialSettingsSchema,
   testFacebookPagePostSchema,
   testInstagramPostSchema,
+  testPinterestConnectionSchema,
+  discoverPinterestBoardsSchema,
   testWebhookSchema,
   manualPublishProductSchema,
   discoverFacebookPagesSchema,
@@ -29,6 +31,11 @@ import {
   fetchLinkedInstagramAccount,
   postProductToInstagramFeed,
 } from "./services/instagram-feed";
+import {
+  verifyPinterestAccount,
+  fetchPinterestBoards,
+  createPinterestProductPin,
+} from "./services/pinterest";
 import { dispatchProductWebhook } from "./services/webhook-dispatcher";
 import { dispatchProductSocialPublishing } from "./dispatcher";
 
@@ -84,6 +91,18 @@ export const saveSocialSettingsAction = orgAdminAction
       if (parsedInput.instagramAccountId !== undefined) {
         updateValues.instagramAccountId = parsedInput.instagramAccountId || null;
       }
+      if (parsedInput.pinterestBoardId !== undefined) {
+        updateValues.pinterestBoardId = parsedInput.pinterestBoardId || null;
+      }
+      if (parsedInput.pinterestBoardName !== undefined) {
+        updateValues.pinterestBoardName = parsedInput.pinterestBoardName || null;
+      }
+      if (parsedInput.pinterestAccessToken && !parsedInput.pinterestAccessToken.includes("••••")) {
+        updateValues.pinterestAccessToken = parsedInput.pinterestAccessToken;
+      }
+      if (parsedInput.autoPostPinterest !== undefined) {
+        updateValues.autoPostPinterest = parsedInput.autoPostPinterest;
+      }
 
       if (existing) {
         await db
@@ -106,6 +125,10 @@ export const saveSocialSettingsAction = orgAdminAction
           autoSyncMetaCatalog: parsedInput.autoSyncMetaCatalog,
           autoTriggerWebhook: parsedInput.autoTriggerWebhook,
           customPostTemplate: parsedInput.customPostTemplate || null,
+          pinterestAccessToken: parsedInput.pinterestAccessToken || null,
+          pinterestBoardId: parsedInput.pinterestBoardId || null,
+          pinterestBoardName: parsedInput.pinterestBoardName || null,
+          autoPostPinterest: parsedInput.autoPostPinterest || false,
         });
       }
 
@@ -776,6 +799,256 @@ export const triggerBatchInstagramFeedPostAction = vendorAction
   });
 
 /**
+ * Tests Pinterest API connection and verifies token.
+ */
+export const testPinterestConnectionAction = orgAdminAction
+  .schema(testPinterestConnectionSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(10, 60 * 1000);
+      const { orgId, db } = ctx;
+
+      if (!orgId) {
+        throw new ActionError("Not authorized: Active organization required.");
+      }
+
+      let token = parsedInput.accessToken?.trim();
+      if (!token || token.includes("••••")) {
+        const [integration] = await db
+          .select({ pinterestAccessToken: schema.metaCatalogIntegrations.pinterestAccessToken })
+          .from(schema.metaCatalogIntegrations)
+          .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
+          .limit(1);
+
+        if (integration?.pinterestAccessToken) {
+          token = integration.pinterestAccessToken;
+        }
+      }
+
+      if (!token) {
+        throw new ActionError("Pinterest Access Token is required.");
+      }
+
+      const res = await verifyPinterestAccount(token);
+      if (!res.success || !res.user) {
+        throw new ActionError(res.error || "Failed to verify Pinterest connection.");
+      }
+
+      return {
+        success: true,
+        username: res.user.username,
+        businessName: res.user.businessName,
+        profileImage: res.user.profileImage,
+      };
+    });
+  });
+
+/**
+ * Auto-detects boards on the vendor's Pinterest account.
+ */
+export const discoverPinterestBoardsAction = orgAdminAction
+  .schema(discoverPinterestBoardsSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(10, 60 * 1000);
+      const { orgId, db } = ctx;
+
+      if (!orgId) {
+        throw new ActionError("Not authorized: Active organization required.");
+      }
+
+      let token = parsedInput.accessToken?.trim();
+      if (!token || token.includes("••••")) {
+        const [integration] = await db
+          .select({ pinterestAccessToken: schema.metaCatalogIntegrations.pinterestAccessToken })
+          .from(schema.metaCatalogIntegrations)
+          .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
+          .limit(1);
+
+        if (integration?.pinterestAccessToken) {
+          token = integration.pinterestAccessToken;
+        }
+      }
+
+      if (!token) {
+        throw new ActionError("Pinterest Access Token is required.");
+      }
+
+      const res = await fetchPinterestBoards(token);
+      if (!res.success) {
+        throw new ActionError(res.error || "Failed to retrieve Pinterest boards.");
+      }
+
+      return {
+        success: true,
+        boards: res.boards,
+      };
+    });
+  });
+
+/**
+ * Batch publishes all active catalog products to the configured Pinterest Board.
+ */
+export const triggerBatchPinterestPublishAction = orgAdminAction
+  .schema(triggerBatchPostSchema)
+  .action(async ({ parsedInput, ctx }) => {
+    return runWithCorrelationId(async () => {
+      await rateLimit(5, 60 * 1000);
+      const { userId, orgId, db } = ctx;
+
+      if (!orgId) {
+        throw new ActionError("Not authorized: Active organization required.");
+      }
+
+      const { forceRepost } = parsedInput;
+
+      const [integration] = await db
+        .select()
+        .from(schema.metaCatalogIntegrations)
+        .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
+        .limit(1);
+
+      if (!integration?.pinterestBoardId || !integration.pinterestAccessToken) {
+        throw new ActionError("Pinterest Board and Access Token are not configured.");
+      }
+
+      const pinToken = integration.pinterestAccessToken;
+      const boardId = integration.pinterestBoardId;
+
+      const activeProducts = await db
+        .select()
+        .from(schema.products)
+        .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, "ACTIVE")));
+
+      if (activeProducts.length === 0) {
+        return {
+          totalSuccess: 0,
+          totalFailed: 0,
+          skippedCount: 0,
+          alreadySyncedCount: 0,
+          totalCount: 0,
+          message: "No active products available to sync to Pinterest.",
+        };
+      }
+
+      const alreadyPinnedProductIds = new Set<string>();
+      if (!forceRepost) {
+        const existingSuccessPins = await db
+          .select({ productId: schema.metaCatalogSyncLogs.productId })
+          .from(schema.metaCatalogSyncLogs)
+          .where(
+            and(
+              eq(schema.metaCatalogSyncLogs.orgId, orgId),
+              eq(schema.metaCatalogSyncLogs.action, "PINTEREST_PIN"),
+              eq(schema.metaCatalogSyncLogs.status, "SUCCESS"),
+            ),
+          );
+        for (const p of existingSuccessPins) {
+          if (p.productId) alreadyPinnedProductIds.add(p.productId);
+        }
+      }
+
+      const orgCurrency = await getOrgCurrencySettings(orgId);
+      const currency = orgCurrency.baseCurrency || "LKR";
+      const brandName = integration.brandName || "Dilnova Store";
+
+      let totalSuccess = 0;
+      let totalFailed = 0;
+      let skippedCount = 0;
+      let alreadySyncedCount = 0;
+
+      for (const prod of activeProducts) {
+        const hasMedia = Boolean(
+          prod.imageUrl?.trim() ||
+          (Array.isArray(prod.media) &&
+            prod.media.some((m) => m && (typeof m === "string" ? Boolean(m) : Boolean(m.url)))),
+        );
+
+        if (!hasMedia) {
+          skippedCount++;
+          await db.insert(schema.metaCatalogSyncLogs).values({
+            orgId,
+            productId: prod.id,
+            action: "PINTEREST_PIN",
+            status: "SKIPPED",
+            productName: prod.name,
+            productSku: prod.sku,
+            errorMessage: "Skipped: No photo or media uploaded",
+          });
+          continue;
+        }
+
+        if (!forceRepost && alreadyPinnedProductIds.has(prod.id)) {
+          alreadySyncedCount++;
+          continue;
+        }
+
+        try {
+          const res = await createPinterestProductPin({
+            boardId,
+            accessToken: pinToken,
+            product: prod,
+            currency,
+            brandName,
+          });
+
+          if (res.success) {
+            totalSuccess++;
+            alreadyPinnedProductIds.add(prod.id);
+            await db.insert(schema.metaCatalogSyncLogs).values({
+              orgId,
+              productId: prod.id,
+              action: "PINTEREST_PIN",
+              status: "SUCCESS",
+              productName: prod.name,
+              productSku: prod.sku,
+              metaBatchHandle: res.pinId || null,
+            });
+          } else {
+            totalFailed++;
+            await db.insert(schema.metaCatalogSyncLogs).values({
+              orgId,
+              productId: prod.id,
+              action: "PINTEREST_PIN",
+              status: "FAILED",
+              productName: prod.name,
+              productSku: prod.sku,
+              errorMessage: res.error || "Failed to create Pin",
+            });
+          }
+        } catch (err) {
+          totalFailed++;
+          logger.error("Pinterest batch pin error", { productId: prod.id, err });
+        }
+      }
+
+      await logAuditAction({
+        userId,
+        action: "BATCH_PINTEREST_PIN_SYNC",
+        targetType: "vendor",
+        targetId: orgId,
+        metadata: {
+          totalProducts: activeProducts.length,
+          totalSuccess,
+          totalFailed,
+          skippedCount,
+          alreadySyncedCount,
+        },
+      });
+
+      revalidatePath("/vendor/settings/facebook-shop");
+      return {
+        totalSuccess,
+        totalFailed,
+        skippedCount,
+        alreadySyncedCount,
+        totalCount: activeProducts.length,
+        message: `Pinterest Sync: ${totalSuccess} new pinned, ${alreadySyncedCount} already on Board (skipped), ${skippedCount} skipped (no media), ${totalFailed} failed.`,
+      };
+    });
+  });
+
+/**
  * Fetches all social publishing settings with token masking.
  */
 export const getSocialSettingsAction = vendorAction.action(async ({ ctx }) => {
@@ -800,8 +1073,10 @@ export const getSocialSettingsAction = vendorAction.action(async ({ ctx }) => {
       ...integration,
       hasAccessToken: Boolean(integration.accessToken),
       hasPageAccessToken: Boolean(integration.facebookPageAccessToken),
+      hasPinterestAccessToken: Boolean(integration.pinterestAccessToken),
       accessToken: integration.accessToken ? "••••••••••••••••" : "",
       facebookPageAccessToken: integration.facebookPageAccessToken ? "••••••••••••••••" : "",
+      pinterestAccessToken: integration.pinterestAccessToken ? "••••••••••••••••" : "",
     },
   };
 });

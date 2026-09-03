@@ -30,6 +30,15 @@ export interface InstagramFeedPostParams {
   brandName?: string | null;
 }
 
+export interface PinterestPinParams {
+  boardId: string;
+  accessToken: string;
+  product: SocialProductPayload;
+  currency?: string;
+  storeUrl?: string;
+  brandName?: string | null;
+}
+
 export interface WebhookPayload {
   event: "product.created" | "product.updated" | "product.deleted" | "ping";
   orgId: string;
@@ -51,5 +60,6 @@ export interface MultiChannelPublishResult {
   facebookFeed?: { success: boolean; postId?: string; error?: string };
   instagramFeed?: { success: boolean; mediaId?: string; error?: string };
   metaCatalog?: { success: boolean; error?: string };
+  pinterestPin?: { success: boolean; pinId?: string; error?: string };
   webhook?: { success: boolean; status?: number; error?: string };
 }

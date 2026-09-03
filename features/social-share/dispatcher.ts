@@ -6,6 +6,7 @@ import { getOrgCurrencySettings } from "@/shared/currency/exchange-rates.service
 import { postProductToFacebookPageFeed } from "./services/facebook-feed";
 import { postProductToInstagramFeed } from "./services/instagram-feed";
 import { dispatchProductWebhook } from "./services/webhook-dispatcher";
+import { createPinterestProductPin } from "./services/pinterest";
 import {
   formatDilnovaProductForMeta,
   sendMetaItemsBatch,
@@ -310,6 +311,56 @@ export async function dispatchProductSocialPublishing({
           productId,
           err,
         });
+      }
+    }
+
+    // ── CHANNEL 5: Pinterest Product Pin Auto-Posting ────────────────────────
+    if (
+      integration.autoPostPinterest &&
+      integration.pinterestBoardId &&
+      integration.pinterestAccessToken &&
+      action === "CREATE" &&
+      prod &&
+      hasMedia
+    ) {
+      const [existingPinLog] = await db
+        .select({ id: schema.metaCatalogSyncLogs.id })
+        .from(schema.metaCatalogSyncLogs)
+        .where(
+          and(
+            eq(schema.metaCatalogSyncLogs.orgId, orgId),
+            eq(schema.metaCatalogSyncLogs.productId, productId),
+            eq(schema.metaCatalogSyncLogs.action, "PINTEREST_PIN"),
+            eq(schema.metaCatalogSyncLogs.status, "SUCCESS"),
+          ),
+        )
+        .limit(1);
+
+      if (!existingPinLog) {
+        try {
+          const pinRes = await createPinterestProductPin({
+            boardId: integration.pinterestBoardId,
+            accessToken: integration.pinterestAccessToken,
+            product: prod,
+            currency,
+            brandName,
+          });
+
+          results.pinterestPin = pinRes;
+
+          await db.insert(schema.metaCatalogSyncLogs).values({
+            orgId,
+            productId,
+            action: "PINTEREST_PIN",
+            status: pinRes.success ? "SUCCESS" : "FAILED",
+            productName,
+            productSku,
+            metaBatchHandle: pinRes.pinId || null,
+            errorMessage: pinRes.error || null,
+          });
+        } catch (err) {
+          logger.error("Pinterest Product Pin auto-post failed", { orgId, productId, err });
+        }
       }
     }
 

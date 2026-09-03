@@ -20,6 +20,10 @@ export const saveSocialSettingsSchema = z.object({
   autoSyncMetaCatalog: z.boolean().default(true),
   autoTriggerWebhook: z.boolean().default(false),
   customPostTemplate: z.string().max(1000).optional().nullable(),
+  pinterestAccessToken: z.string().trim().max(1000).optional().nullable(),
+  pinterestBoardId: z.string().trim().max(100).optional().nullable(),
+  pinterestBoardName: z.string().trim().max(200).optional().nullable(),
+  autoPostPinterest: z.boolean().default(false),
 });
 
 export const testFacebookPagePostSchema = z.object({
@@ -32,13 +36,23 @@ export const testInstagramPostSchema = z.object({
   accessToken: z.string().trim().optional(),
 });
 
+export const testPinterestConnectionSchema = z.object({
+  accessToken: z.string().trim().optional(),
+});
+
+export const discoverPinterestBoardsSchema = z.object({
+  accessToken: z.string().trim().optional(),
+});
+
 export const testWebhookSchema = z.object({
   webhookUrl: z.string().trim().url("Must be a valid HTTP or HTTPS URL."),
 });
 
 export const manualPublishProductSchema = z.object({
   productId: z.string().uuid("Invalid product ID."),
-  channels: z.array(z.enum(["facebook_feed", "instagram_feed", "meta_catalog", "webhook"])).min(1),
+  channels: z
+    .array(z.enum(["facebook_feed", "instagram_feed", "meta_catalog", "pinterest_pin", "webhook"]))
+    .min(1),
 });
 
 export const discoverFacebookPagesSchema = z.object({
