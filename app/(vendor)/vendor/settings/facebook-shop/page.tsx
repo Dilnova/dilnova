@@ -872,21 +872,98 @@ export default function SocialSettingsHubPage() {
                     <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-mono">
                       1
                     </span>
-                    Get Your Meta Page Access Token
+                    Choose Your Token Type & Get Meta Access Token
                   </span>
-                  <a
-                    href="https://developers.facebook.com/tools/explorer/?method=GET&path=me%2Faccounts&version=v21.0"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-sm cursor-pointer"
-                  >
-                    🔑 Open Meta Graph API Explorer <ExternalLink className="h-3 w-3" />
-                  </a>
                 </div>
 
-                <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                  In Graph API Explorer, select your Meta App (<strong>Dilnova Catalog Sync</strong>
-                  ) and check these 3 permissions:
+                {/* Token Comparison: Permanent vs Temporary */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1">
+                  {/* Option 1: Permanent System User Token */}
+                  <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 flex flex-col justify-between gap-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                          🛡️ Option 1: System User Token
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-600 text-white tracking-wide uppercase">
+                          Permanent • Recommended
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-800/90 dark:text-emerald-300/90">
+                        Generated in Meta Business Suite under <strong>System Users</strong>.
+                      </p>
+                      <div className="mt-2.5 space-y-1.5 text-[11px]">
+                        <div className="flex items-start gap-1.5 text-emerald-900 dark:text-emerald-200">
+                          <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>PRO: Never Expires!</strong> Feed posts & sync run 24/7
+                            indefinitely without breaking.
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-1.5 text-zinc-600 dark:text-zinc-400">
+                          <span className="text-[11px] shrink-0 mt-0.5">ℹ️</span>
+                          <span>
+                            <strong>CON:</strong> Takes 1–2 minutes to create a System User once in
+                            Meta Suite.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href="https://business.facebook.com/latest/settings/system_users/?business_id=208458023692445&nav_ref=bm_settings_redirect_migration&bm_redirect_migration=true&selected_user_id=61593935072406"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-xs cursor-pointer text-center"
+                    >
+                      🛡️ Open Meta System Users (Never Expires) <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+
+                  {/* Option 2: Graph API Explorer Token */}
+                  <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 flex flex-col justify-between gap-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                          ⚡ Option 2: Graph API Explorer
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 uppercase">
+                          Quick Test Only
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90">
+                        Generated in Meta Developer Tools Graph Explorer.
+                      </p>
+                      <div className="mt-2.5 space-y-1.5 text-[11px]">
+                        <div className="flex items-start gap-1.5 text-amber-900 dark:text-amber-200">
+                          <Check className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>PRO:</strong> Instant 10-second token creation right in your
+                            browser.
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-1.5 text-rose-700 dark:text-rose-400 font-medium">
+                          <span className="text-[11px] shrink-0 mt-0.5">⚠️</span>
+                          <span>
+                            <strong>CON (Warning):</strong> Hard 24-hour expiry! Auto-posting stops
+                            working after 1 day until re-pasted daily.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href="https://developers.facebook.com/tools/explorer/?method=GET&path=me%2Faccounts&version=v21.0"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-xs cursor-pointer text-center"
+                    >
+                      🔑 Open Graph API Explorer (Expires in 24h){" "}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 pt-1">
+                  Required Facebook Page permissions for your token:
                 </p>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1307,29 +1384,97 @@ export default function SocialSettingsHubPage() {
                     <span className="flex items-center justify-center w-5 h-5 rounded-full bg-pink-600 text-white text-[10px] font-mono">
                       1
                     </span>
-                    Generate Meta Token with Instagram Permissions
+                    Choose Your Token Type & Get Meta Token
                   </span>
-                  <div className="flex items-center gap-2 flex-wrap">
+                </div>
+
+                {/* Token Comparison: Permanent vs Temporary */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pt-1">
+                  {/* Option 1: Permanent System User Token */}
+                  <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 flex flex-col justify-between gap-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                          🛡️ Option 1: System User Token
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-600 text-white tracking-wide uppercase">
+                          Permanent • Recommended
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-800/90 dark:text-emerald-300/90">
+                        Generated in Meta Business Suite under <strong>System Users</strong>.
+                      </p>
+                      <div className="mt-2.5 space-y-1.5 text-[11px]">
+                        <div className="flex items-start gap-1.5 text-emerald-900 dark:text-emerald-200">
+                          <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>PRO: Never Expires!</strong> Instagram feed publishing runs 24/7
+                            forever without breaking.
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-1.5 text-zinc-600 dark:text-zinc-400">
+                          <span className="text-[11px] shrink-0 mt-0.5">ℹ️</span>
+                          <span>
+                            <strong>CON:</strong> Takes 1–2 minutes to create a System User once in
+                            Meta Suite.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href="https://business.facebook.com/latest/settings/system_users/?business_id=208458023692445&nav_ref=bm_settings_redirect_migration&bm_redirect_migration=true&selected_user_id=61593935072406"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-xs cursor-pointer text-center"
+                    >
+                      🛡️ Open Meta System Users (Never Expires) <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+
+                  {/* Option 2: Graph API Explorer Token */}
+                  <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 flex flex-col justify-between gap-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                          ⚡ Option 2: Graph API Explorer
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 uppercase">
+                          Quick Test Only
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90">
+                        Generated in Meta Developer Tools Graph Explorer.
+                      </p>
+                      <div className="mt-2.5 space-y-1.5 text-[11px]">
+                        <div className="flex items-start gap-1.5 text-amber-900 dark:text-amber-200">
+                          <Check className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>PRO:</strong> Instant 10-second token creation right in your
+                            browser.
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-1.5 text-rose-700 dark:text-rose-400 font-medium">
+                          <span className="text-[11px] shrink-0 mt-0.5">⚠️</span>
+                          <span>
+                            <strong>CON (Warning):</strong> Hard 24-hour expiry! Auto-posting stops
+                            working after 1 day until re-pasted daily.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                     <a
                       href="https://developers.facebook.com/tools/explorer/?method=GET&path=me%2Faccounts&version=v21.0"
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white transition-all shadow-sm cursor-pointer"
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-xs cursor-pointer text-center"
                     >
-                      🔑 Open Graph API Explorer <ExternalLink className="h-3 w-3" />
-                    </a>
-                    <a
-                      href="https://business.facebook.com/settings/system-users?business_id=208458023692445"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-pink-300 dark:border-pink-800 bg-white/90 dark:bg-zinc-900 text-pink-700 dark:text-pink-300 hover:bg-pink-50 transition-all shadow-2xs cursor-pointer"
-                    >
-                      🛡️ Permanent Token (Never Expires) <ExternalLink className="h-3 w-3" />
+                      🔑 Open Graph API Explorer (Expires in 24h){" "}
+                      <ExternalLink className="h-3 w-3" />
                     </a>
                   </div>
                 </div>
 
-                <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 pt-1">
                   Generate your token with these required Instagram & Page permissions:
                 </p>
 
