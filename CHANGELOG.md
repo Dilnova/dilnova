@@ -1,3 +1,46 @@
+# [1.9.0](https://github.com/Dilnova/dilnova/compare/v1.8.0...v1.9.0) (2026-09-04)
+
+### Bug Fixes
+
+- **brand:** extract DilstarNewsletterForm as client component to fix RSC event handler runtime error ([f811130](https://github.com/Dilnova/dilnova/commit/f811130bb4032f6e6c8afa4612f68f73b73bd245))
+- **instagram:** poll media container readiness to guarantee publishing and support media array images ([8d6d6ec](https://github.com/Dilnova/dilnova/commit/8d6d6ecf7b315e7a2ff1965fccceaeac076f4ecc))
+- **security:** sanitize and encode Facebook page link to resolve CodeQL alert ([66a8f2b](https://github.com/Dilnova/dilnova/commit/66a8f2bf33acefecd30181d3416e33cda87bd3ad))
+- **social-share:** allow auto-discovery and connection tests using saved encrypted tokens without re-pasting ([ea5d132](https://github.com/Dilnova/dilnova/commit/ea5d132ba103792588039a37a1d50417fa85322c))
+
+### Features
+
+- Add currency handling to cart summary email and related components ([98dcf07](https://github.com/Dilnova/dilnova/commit/98dcf07d970e8c0beeb20c23f0a7a9f75eb5bfa8))
+- Add currency handling to product management and vendor order components ([179bc97](https://github.com/Dilnova/dilnova/commit/179bc97899b63e9188efa210db9e25ed5635b712))
+- Add currency handling to simulated orders and product displays across various tabs ([b7bc7b0](https://github.com/Dilnova/dilnova/commit/b7bc7b009e4975ade6302b2436b9c1726ef35daa))
+- add Google Merchant Center integration and settings management ([d62ebba](https://github.com/Dilnova/dilnova/commit/d62ebba199dcb37bd88f650e0ceb0e1827010326))
+- Add main sections for the Dilstar brand website including Hero, Locations, Shop Showcase, and Why Dilstar sections ([c4ef1b3](https://github.com/Dilnova/dilnova/commit/c4ef1b3be49a3144d3375e45993693b53d01f122))
+- add SEO & domain verification tokens for Pinterest, Google, and Facebook ([49cba15](https://github.com/Dilnova/dilnova/commit/49cba159a509da87f03466bce8fb745953815f04))
+- **brand:** rebuild Dilstar 3-business single-page homepage from scratch ([062eb1c](https://github.com/Dilnova/dilnova/commit/062eb1c5e9f3eb2c50c96d9c629348f2ce9510cc))
+- **chat:** enhance conversation list with real-time updates and improved filtering ([840b735](https://github.com/Dilnova/dilnova/commit/840b7354abd500b0c3dedafacc69e77d475ab772))
+- Enhance HeroSection and LocationsSection with storefront links and improved visuals ([53ecc7a](https://github.com/Dilnova/dilnova/commit/53ecc7a9df5d156cd4ef96e219712195f6494d7a))
+- Enhance print styles across components for improved invoice and receipt formatting ([a22d176](https://github.com/Dilnova/dilnova/commit/a22d17609b5d31f1f9642d37a1c702a253b0e44c))
+- Enhance product pricing handling with currency support in FeaturedSeries component ([ccfd7d3](https://github.com/Dilnova/dilnova/commit/ccfd7d3aa6e19fac002af16eda6800656a1bddce))
+- Implement currency handling across invoice and bank transfer components ([3cfdc45](https://github.com/Dilnova/dilnova/commit/3cfdc451d2fe0cc9d4735730b73d4b2ea41ae717))
+- Implement currency handling across POS components and update product data structure ([331ea32](https://github.com/Dilnova/dilnova/commit/331ea32ef17860f2ea14d463dcb9b4d60543cc18))
+- **instagram:** add 1-click linked Instagram discovery and feed publishing setup wizard ([3f16afc](https://github.com/Dilnova/dilnova/commit/3f16afc6903a10f6343eabcac2765de372eec4fe))
+- **instagram:** add Bulk Post All to Instagram button and batch execution handler ([e75317e](https://github.com/Dilnova/dilnova/commit/e75317ed9579825d672603ca8a5b0e0c7209fe10))
+- **instagram:** add complete 4-step wizard with direct links, token input, and Meta Suite guide in UI ([e3c85ec](https://github.com/Dilnova/dilnova/commit/e3c85ec87a5363c60a9af46620bd9159edb4aaac))
+- **instagram:** resolve Portfolio Instagram account [@dilukalahiru](https://github.com/dilukalahiru) and add live profile link ([32b2368](https://github.com/Dilnova/dilnova/commit/32b2368d00f573bba19d03231848e59acbf26fa8))
+- **instagram:** support multi-source Instagram account discovery from Business Portfolio and Page ([b88efc1](https://github.com/Dilnova/dilnova/commit/b88efc10ad53d38228cf6ff4d69593c3fbfe01c2))
+- Integrate currency handling in product detail, price filter, and storefront components ([db1ee41](https://github.com/Dilnova/dilnova/commit/db1ee4118876c98f78829deb2d110af3a17fa84a))
+- Integrate media assets for Dilstar brand components and update sections with placeholders ([da5a66f](https://github.com/Dilnova/dilnova/commit/da5a66fdeecfeb659644760073baa4bcade85b07))
+- integrate Pinterest API for product pinning and board management ([3613ef8](https://github.com/Dilnova/dilnova/commit/3613ef87a16abbb7a0a8e6ff89e73768bd320b3d))
+- **proxy:** add sensitive file and directory probe protection with corresponding tests ([55acbbe](https://github.com/Dilnova/dilnova/commit/55acbbe7ee9d516d62ca5bd01c6d771c618ed6a6))
+- Revamp WhyDilstarSection and introduce ShopTakeoverSection for enhanced user experience ([af5f9f1](https://github.com/Dilnova/dilnova/commit/af5f9f1c61ba549ac889decd85597858c7401b11))
+- **social-share:** add clear comparison cards with pros and cons for permanent vs temporary tokens in UI ([8eaa1ef](https://github.com/Dilnova/dilnova/commit/8eaa1ef57280a2b6cf5ec62c2b1f13785eb414cb))
+- **social-share:** add multi-channel social publishing and Facebook Page Feed auto-posting ([4cdb8f9](https://github.com/Dilnova/dilnova/commit/4cdb8f94aed001610bd009805b770562b5d197fa))
+- **social-share:** enhance Facebook and Instagram feed posting logic with auto-sync toggles and error handling ([da2df6d](https://github.com/Dilnova/dilnova/commit/da2df6db50a5b1efb4ba81306acc550c7e118b3a))
+- **social-share:** enhance multi-channel guides with Pinterest wizard and restore platform comparisons ([619f394](https://github.com/Dilnova/dilnova/commit/619f394730c30e0a02eba8ae6517604d341d0069))
+- **social-share:** implement idempotent safe sync with duplicate prevention and optional force repost ([f38a321](https://github.com/Dilnova/dilnova/commit/f38a321758b24e25f3c46ba2a2950a4aa16ceec9))
+- **social-share:** inspect live feed posts to automatically detect missing products ([3403472](https://github.com/Dilnova/dilnova/commit/340347242218d7532804ef84851bdc36b8916d35))
+- Update brand references from "Distar" to "Dilstar" across multiple components for consistency ([a007c48](https://github.com/Dilnova/dilnova/commit/a007c484fc2bcf0c68c1d4d5ad959045c7b02bcb))
+- Update Locations and ShopTakeover sections for improved clarity and add README for local image guidelines ([c6b5fb5](https://github.com/Dilnova/dilnova/commit/c6b5fb5e5f1380afd7815d5abae6f3f23a76f0df))
+
 # [1.8.0](https://github.com/Dilnova/dilnova/compare/v1.7.0...v1.8.0) (2026-08-21)
 
 ### Features
