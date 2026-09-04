@@ -103,6 +103,12 @@ export const saveSocialSettingsAction = orgAdminAction
       if (parsedInput.autoPostPinterest !== undefined) {
         updateValues.autoPostPinterest = parsedInput.autoPostPinterest;
       }
+      if (parsedInput.googleMerchantId !== undefined) {
+        updateValues.googleMerchantId = parsedInput.googleMerchantId || null;
+      }
+      if (parsedInput.autoSyncGoogle !== undefined) {
+        updateValues.autoSyncGoogle = parsedInput.autoSyncGoogle;
+      }
 
       if (existing) {
         await db
@@ -129,6 +135,8 @@ export const saveSocialSettingsAction = orgAdminAction
           pinterestBoardId: parsedInput.pinterestBoardId || null,
           pinterestBoardName: parsedInput.pinterestBoardName || null,
           autoPostPinterest: parsedInput.autoPostPinterest || false,
+          googleMerchantId: parsedInput.googleMerchantId || null,
+          autoSyncGoogle: parsedInput.autoSyncGoogle ?? true,
         });
       }
 

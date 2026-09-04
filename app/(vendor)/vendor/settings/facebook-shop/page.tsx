@@ -26,6 +26,9 @@ import {
   Smartphone,
   ShieldCheck,
   Pin,
+  Globe,
+  Copy,
+  Search,
 } from "lucide-react";
 import {
   getSocialSettingsAction,
@@ -41,6 +44,12 @@ import {
   discoverFacebookPagesAction,
   discoverInstagramAccountAction,
 } from "@/features/social-share/actions";
+import {
+  getGoogleMerchantSettingsAction,
+  saveGoogleMerchantSettingsAction,
+  regenerateGoogleFeedTokenAction,
+  validateGoogleCatalogAction,
+} from "@/features/google-merchant/actions";
 import {
   testFacebookShopConnectionAction,
   triggerBatchFacebookShopSyncAction,
@@ -59,7 +68,13 @@ interface SyncLogItem {
 }
 
 type ActiveTab =
-  "facebook_feed" | "whatsapp" | "instagram_feed" | "pinterest" | "meta_catalog" | "webhooks";
+  | "facebook_feed"
+  | "whatsapp"
+  | "instagram_feed"
+  | "pinterest"
+  | "google_shopping"
+  | "meta_catalog"
+  | "webhooks";
 
 function ToggleSwitch({
   checked,
@@ -70,7 +85,7 @@ function ToggleSwitch({
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
-  color?: "purple" | "blue" | "pink" | "emerald" | "amber" | "red";
+  color?: "purple" | "blue" | "pink" | "emerald" | "amber" | "red" | "sky";
 }) {
   const activeColor = {
     purple: "bg-purple-600",
@@ -79,6 +94,7 @@ function ToggleSwitch({
     emerald: "bg-emerald-600",
     amber: "bg-amber-600",
     red: "bg-red-600",
+    sky: "bg-sky-600",
   }[color];
 
   return (
@@ -123,6 +139,32 @@ export default function SocialSettingsHubPage() {
   const [autoPostPinterest, setAutoPostPinterest] = useState(false);
   const [showPinterestToken, setShowPinterestToken] = useState(false);
   const [hasExistingPinterestToken, setHasExistingPinterestToken] = useState(false);
+
+  // Google Merchant State
+  const [googleMerchantId, setGoogleMerchantId] = useState("");
+  const [googleFeedToken, setGoogleFeedToken] = useState("");
+  const [autoSyncGoogle, setAutoSyncGoogle] = useState(true);
+  const [googleFeedUrl, setGoogleFeedUrl] = useState("");
+  const [copiedGoogleUrl, setCopiedGoogleUrl] = useState(false);
+  const [isValidatingGoogle, setIsValidatingGoogle] = useState(false);
+  const [isRegeneratingToken, setIsRegeneratingToken] = useState(false);
+  const [isSavingGoogle, setIsSavingGoogle] = useState(false);
+  const [googleValidation, setGoogleValidation] = useState<{
+    totalProducts: number;
+    readyProducts: number;
+    skippedProducts: number;
+    currency: string;
+    items: Array<{
+      id: string;
+      name: string;
+      sku: string | null;
+      hasImage: boolean;
+      hasPrice: boolean;
+      hasDescription: boolean;
+      isReady: boolean;
+      issues: string[];
+    }>;
+  } | null>(null);
 
   // Automation Toggles
   const [isEnabled, setIsEnabled] = useState(true);
@@ -255,6 +297,21 @@ export default function SocialSettingsHubPage() {
         if (intg.hasPinterestAccessToken) {
           setPinterestAccessToken("••••••••••••••••••••••••••••••••");
         }
+      }
+
+      try {
+        const gRes = await getGoogleMerchantSettingsAction();
+        if (gRes?.data?.settings) {
+          if (gRes.data.settings.googleMerchantId)
+            setGoogleMerchantId(gRes.data.settings.googleMerchantId);
+          if (gRes.data.settings.googleFeedToken)
+            setGoogleFeedToken(gRes.data.settings.googleFeedToken);
+          if (gRes.data.settings.feedUrl) setGoogleFeedUrl(gRes.data.settings.feedUrl);
+          if (gRes.data.settings.autoSyncGoogle !== undefined)
+            setAutoSyncGoogle(gRes.data.settings.autoSyncGoogle);
+        }
+      } catch {
+        // Fallback
       }
     } catch {
       // Gracefully handle load error
@@ -666,6 +723,65 @@ export default function SocialSettingsHubPage() {
     });
   };
 
+  const handleCopyGoogleFeedUrl = () => {
+    if (!googleFeedUrl) return;
+    navigator.clipboard.writeText(googleFeedUrl);
+    setCopiedGoogleUrl(true);
+    setTimeout(() => setCopiedGoogleUrl(false), 2000);
+  };
+
+  const handleRegenerateGoogleToken = async () => {
+    setIsRegeneratingToken(true);
+    try {
+      const res = await regenerateGoogleFeedTokenAction();
+      if (res?.data?.feedUrl) {
+        setGoogleFeedUrl(res.data.feedUrl);
+        setGoogleFeedToken(res.data.feedToken || "");
+        setSaveSuccess("Google Feed URL & security token rotated successfully!");
+        setTimeout(() => setSaveSuccess(null), 3000);
+      }
+    } catch {
+      setSaveError("Failed to rotate Google feed token.");
+      setTimeout(() => setSaveError(null), 3000);
+    } finally {
+      setIsRegeneratingToken(false);
+    }
+  };
+
+  const handleValidateGoogleCatalog = async () => {
+    setIsValidatingGoogle(true);
+    try {
+      const res = await validateGoogleCatalogAction();
+      if (res?.data?.validation) {
+        setGoogleValidation(res.data.validation);
+      }
+    } catch {
+      setSaveError("Failed to run Google catalog audit.");
+      setTimeout(() => setSaveError(null), 3000);
+    } finally {
+      setIsValidatingGoogle(false);
+    }
+  };
+
+  const handleSaveGoogleSettings = async () => {
+    setIsSavingGoogle(true);
+    try {
+      const res = await saveGoogleMerchantSettingsAction({
+        googleMerchantId,
+        autoSyncGoogle,
+      });
+      if (res?.data?.success) {
+        setSaveSuccess("Google Merchant settings saved successfully!");
+        setTimeout(() => setSaveSuccess(null), 3000);
+      }
+    } catch {
+      setSaveError("Failed to save Google Merchant settings.");
+      setTimeout(() => setSaveError(null), 3000);
+    } finally {
+      setIsSavingGoogle(false);
+    }
+  };
+
   const handleSave = () => {
     setSaveError(null);
     setSaveSuccess(null);
@@ -897,7 +1013,7 @@ export default function SocialSettingsHubPage() {
             Dilnova connects directly to official first-party APIs (Zero Third Parties). Choose the
             tabs below to configure your store&apos;s channels:
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 pt-1">
             {/* 1. Facebook Feed */}
             <div className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-blue-100 dark:border-blue-950/60 shadow-xs flex flex-col justify-between">
               <div>
@@ -1010,7 +1126,36 @@ export default function SocialSettingsHubPage() {
               </div>
             </div>
 
-            {/* 5. Meta Commerce Catalog */}
+            {/* 5. Google Shopping & Search */}
+            <div className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-sky-100 dark:border-sky-950/60 shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-sky-700 dark:text-sky-400 flex items-center gap-1">
+                    🌐 Google Search & Shopping
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300">
+                    DA 99 • Free
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed mb-3">
+                  Syncs your product catalog into Google Search organic shopping results & Google
+                  Lens for free.
+                </p>
+                <div className="space-y-1 text-[10px] text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/80 pt-2">
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> Free Listings (Zero ad spend)
+                  </div>
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> Auto-updates prices & stock
+                  </div>
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle className="h-3 w-3" /> Zero expiring OAuth tokens
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 6. Meta Commerce Catalog */}
             <div className="bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-purple-100 dark:border-purple-950/60 shadow-xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -1149,7 +1294,34 @@ export default function SocialSettingsHubPage() {
           </div>
         </div>
 
-        {/* 5. Meta Catalog Status */}
+        {/* 5. Google Shopping Status */}
+        <div
+          onClick={() => setActiveTab("google_shopping")}
+          className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+            activeTab === "google_shopping"
+              ? "bg-sky-50/90 dark:bg-sky-950/40 border-sky-300 dark:border-sky-800 ring-2 ring-sky-500/20 shadow-xs"
+              : "bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300"
+          }`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-sky-700 dark:text-sky-400 flex items-center gap-1">
+              🌐 Google Shopping
+            </span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                autoSyncGoogle ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700"
+              }`}
+            />
+          </div>
+          <div className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+            {googleMerchantId ? `Merchant: ${googleMerchantId}` : "Feed Ready"}
+          </div>
+          <div className="text-[10px] text-zinc-400 mt-0.5">
+            {autoSyncGoogle ? "Search Index: Live" : "Feed Disabled"}
+          </div>
+        </div>
+
+        {/* 6. Meta Catalog Status */}
         <div
           onClick={() => setActiveTab("meta_catalog")}
           className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
@@ -1289,6 +1461,21 @@ export default function SocialSettingsHubPage() {
           }`}
         >
           <span>📌</span> Pinterest Pins
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("google_shopping");
+            setTestResult(null);
+          }}
+          className={`flex-1 min-w-[135px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+            activeTab === "google_shopping"
+              ? "bg-white dark:bg-zinc-800 text-sky-600 dark:text-sky-400 shadow-sm"
+              : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+          }`}
+        >
+          <span>🌐</span> Google Shopping
         </button>
 
         <button
@@ -2412,6 +2599,361 @@ export default function SocialSettingsHubPage() {
             </div>
           )}
 
+          {/* TAB 5: Google Shopping & Free Search Listings */}
+          {activeTab === "google_shopping" && (
+            <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-sky-600 font-mono flex items-center gap-2">
+                    <Globe className="h-4 w-4" /> Google Merchant Center & Free Search Listings
+                  </h2>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Publishes your catalog to Google Search, Google Shopping, Google Images, and
+                    Google Lens with Zero Third Parties.
+                  </p>
+                </div>
+                <span className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600">
+                  <Sparkles className="h-5 w-5" />
+                </span>
+              </div>
+
+              {/* Free Google Search Listings Explainer Banner */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-sky-50/90 via-blue-50/80 to-indigo-50/80 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-indigo-950/30 border border-sky-200/80 dark:border-sky-800/60 flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-sky-600 text-white shrink-0 mt-0.5">
+                  <Search className="h-4 w-4" />
+                </div>
+                <div className="text-xs space-y-1">
+                  <div className="font-bold text-sky-950 dark:text-sky-100 flex items-center gap-2">
+                    <span>100% Free Organic Listings on Google (Zero Ad Spend Required)</span>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-sky-600 text-white uppercase tracking-wider">
+                      Google DA 99
+                    </span>
+                  </div>
+                  <p className="text-sky-800/90 dark:text-sky-300 leading-relaxed text-[11px]">
+                    Google Merchant Center allows any merchant to list their products across Google
+                    for <strong>FREE</strong>. When customers search for products you sell, Google
+                    displays your photos, prices, ratings, and in-stock badges directly in search
+                    results.
+                  </p>
+                </div>
+              </div>
+
+              {/* STEP 1: Your Automated Google Feed URL */}
+              <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-sky-600 text-white text-xs font-mono font-bold shrink-0">
+                      1
+                    </span>
+                    <div>
+                      <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                        Your Automated Google Merchant XML Feed URL
+                      </h3>
+                      <p className="text-[11px] text-zinc-500">
+                        This dynamic feed updates prices, stock availability, and images in
+                        real-time as you manage products.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRegenerateGoogleToken}
+                    disabled={isRegeneratingToken}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${isRegeneratingToken ? "animate-spin" : ""}`} />
+                    Rotate Secret Token
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      readOnly
+                      value={googleFeedUrl || "Generating feed URL..."}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-700 dark:text-zinc-300 select-all focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyGoogleFeedUrl}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white transition-all shadow-xs shrink-0 cursor-pointer"
+                  >
+                    {copiedGoogleUrl ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" /> Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" /> Copy Feed URL
+                      </>
+                    )}
+                  </button>
+                  {googleFeedUrl && (
+                    <a
+                      href={googleFeedUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-colors shrink-0"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" /> View XML
+                    </a>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-zinc-400 font-mono px-1">
+                  <span>
+                    Security Token:{" "}
+                    <strong className="text-zinc-600 dark:text-zinc-300">
+                      {googleFeedToken
+                        ? `${googleFeedToken.slice(0, 8)}••••••••`
+                        : "Auto-generated"}
+                    </strong>
+                  </span>
+                  <span>Format: Google Shopping RSS 2.0 XML</span>
+                </div>
+              </div>
+
+              {/* STEP 2: 3-Step Google Merchant Center Setup Guide */}
+              <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-sky-600 text-white text-xs font-mono font-bold shrink-0">
+                      2
+                    </span>
+                    <div>
+                      <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                        3-Step Setup in Google Merchant Center (5 Minutes)
+                      </h3>
+                      <p className="text-[11px] text-zinc-500">
+                        Add the Feed URL once into Google. Google automatically refreshes your
+                        products every day.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href="https://merchants.google.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90 transition-all shadow-xs"
+                  >
+                    Open Google Merchant Center <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-sky-600 font-mono">
+                      Step A • Add Feed
+                    </div>
+                    <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                      Go to Products &rarr; Feeds
+                    </div>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                      In Google Merchant Center, click <strong>Products</strong> on the left
+                      sidebar, then click <strong>Feeds</strong> &rarr;{" "}
+                      <strong>Add Primary Feed</strong> (+ icon).
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-sky-600 font-mono">
+                      Step B • Choose Schedule
+                    </div>
+                    <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                      Select &quot;Scheduled fetch&quot;
+                    </div>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                      Select <strong>Scheduled fetch</strong> as your feed method. Enter a feed name
+                      (e.g. <em>Dilnova Catalog</em>) and set the fetch frequency to{" "}
+                      <strong>Daily</strong>.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-1.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-sky-600 font-mono">
+                      Step C • Paste URL
+                    </div>
+                    <div className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                      Paste Your Feed URL
+                    </div>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                      Paste the Feed URL from Step 1 into the <strong>File URL</strong> field. Click{" "}
+                      <strong>Create Feed</strong>. Google will begin importing your products
+                      immediately!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-900/40 text-[11px] text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
+                  <span className="text-base">💡</span>
+                  <span>
+                    <strong>Pro-Tip:</strong> In Google Merchant Center, go to{" "}
+                    <strong>Growth &rarr; Manage programs</strong> and enable{" "}
+                    <strong>Free product listings</strong>. This lets you appear in Google Search
+                    and Google Images without any advertising budget!
+                  </span>
+                </div>
+              </div>
+
+              {/* STEP 3: Catalog Readiness Audit & Live Validator */}
+              <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-sky-600 text-white text-xs font-mono font-bold shrink-0">
+                      3
+                    </span>
+                    <div>
+                      <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                        Catalog Readiness Audit (Google Pre-Check)
+                      </h3>
+                      <p className="text-[11px] text-zinc-500">
+                        Verify your products meet Google&apos;s strict requirements (valid image,
+                        price &gt; 0, description) before submission.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleValidateGoogleCatalog}
+                    disabled={isValidatingGoogle}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 hover:bg-sky-200 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isValidatingGoogle ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Search className="h-3.5 w-3.5" />
+                    )}
+                    🔍 Run Google Catalog Audit
+                  </button>
+                </div>
+
+                {googleValidation && (
+                  <div className="space-y-3 pt-1">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-center">
+                        <div className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                          {googleValidation.totalProducts}
+                        </div>
+                        <div className="text-[10px] text-zinc-400 font-semibold uppercase">
+                          Total Active Products
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center">
+                        <div className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                          {googleValidation.readyProducts}
+                        </div>
+                        <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold uppercase">
+                          100% Google Ready
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center">
+                        <div className="text-base font-bold text-amber-600 dark:text-amber-400">
+                          {googleValidation.skippedProducts}
+                        </div>
+                        <div className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold uppercase">
+                          Needs Attention
+                        </div>
+                      </div>
+                    </div>
+
+                    {googleValidation.skippedProducts > 0 && (
+                      <div className="p-3 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 space-y-2 max-h-48 overflow-y-auto">
+                        <div className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200">
+                          Products needing updates for Google:
+                        </div>
+                        {googleValidation.items
+                          .filter((item) => !item.isReady)
+                          .map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between text-xs py-1 border-b border-zinc-100 dark:border-zinc-800 last:border-0"
+                            >
+                              <span className="font-medium text-zinc-700 dark:text-zinc-300 truncate max-w-[200px]">
+                                {item.name}
+                              </span>
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                                {item.issues.join(", ")}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* STEP 4: Google Merchant Account ID & Settings */}
+              <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-4">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-sky-600 text-white text-xs font-mono font-bold shrink-0">
+                    4
+                  </span>
+                  <div>
+                    <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                      Google Merchant Account Settings
+                    </h3>
+                    <p className="text-[11px] text-zinc-500">
+                      Save your Merchant Center ID for easy reference and manage your live sync
+                      status.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                  <div>
+                    <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                      Google Merchant ID (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 123456789"
+                      value={googleMerchantId}
+                      onChange={(e) => setGoogleMerchantId(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                    />
+                    <span className="text-[10px] text-zinc-400 block mt-1">
+                      Found in the top-right corner of your Google Merchant Center dashboard.
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+                    <div>
+                      <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 block">
+                        Auto-Sync Google Feed
+                      </span>
+                      <span className="text-[11px] text-zinc-500">
+                        Keeps the feed active for Google&apos;s scheduled crawlers.
+                      </span>
+                    </div>
+                    <ToggleSwitch
+                      checked={autoSyncGoogle}
+                      onChange={setAutoSyncGoogle}
+                      color="sky"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSaveGoogleSettings}
+                    disabled={isSavingGoogle}
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingGoogle ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                    Save Google Settings
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB 5: Meta Commerce Catalog */}
           {activeTab === "meta_catalog" && (
             <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-5">
@@ -2797,6 +3339,38 @@ export default function SocialSettingsHubPage() {
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Active Tab: Google Shopping Quick Actions */}
+          {activeTab === "google_shopping" && (
+            <div className="bg-sky-50/50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-800 rounded-3xl p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-sky-900 dark:text-sky-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  🌐 Google Feed Actions
+                </span>
+                <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
+              </div>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Your store product feed is served in official Google Shopping XML RSS 2.0 format.
+              </p>
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleCopyGoogleFeedUrl}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white transition-all shadow-xs cursor-pointer"
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copy Feed URL for Google
+                </button>
+                <button
+                  type="button"
+                  onClick={handleValidateGoogleCatalog}
+                  disabled={isValidatingGoogle}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border border-sky-300 dark:border-sky-800 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/40 transition-all cursor-pointer"
+                >
+                  <Search className="h-3.5 w-3.5" /> Run Catalog Readiness Audit
+                </button>
+              </div>
             </div>
           )}
 

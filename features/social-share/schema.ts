@@ -24,6 +24,8 @@ export const saveSocialSettingsSchema = z.object({
   pinterestBoardId: z.string().trim().max(100).optional().nullable(),
   pinterestBoardName: z.string().trim().max(200).optional().nullable(),
   autoPostPinterest: z.boolean().default(false),
+  googleMerchantId: z.string().trim().max(100).optional().nullable(),
+  autoSyncGoogle: z.boolean().default(true),
 });
 
 export const testFacebookPagePostSchema = z.object({
