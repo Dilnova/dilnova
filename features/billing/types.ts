@@ -16,6 +16,7 @@ export type VendorBillingRegisterData = {
     productName: string;
     productType: string;
     productPrice: number | null;
+    productCurrency: string | null;
     supplierName: string | null;
   }>;
   branches: Array<typeof schema.branches.$inferSelect>;

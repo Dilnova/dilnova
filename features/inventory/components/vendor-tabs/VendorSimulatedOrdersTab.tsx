@@ -10,6 +10,7 @@ import { formatOrderStatusLabel, matchesOrderStatusFilter } from "@/features/ord
 import { describeOrderCheckout } from "@/features/organization/checkout-options.shared";
 import { getOrderDisplayTotals } from "@/features/billing/checkout-totals";
 import { VendorOrderPaymentPanel } from "@/features/orders/components/OrderPaymentPanels";
+import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
 
 import type { VendorInventoryFullData } from "@/features/inventory/types";
 
@@ -152,7 +153,11 @@ export default function VendorSimulatedOrdersTab({
                 <div className="mt-2 pl-2 border-l-2 border-zinc-200 space-y-1">
                   {o.items.map((item: OrderLineItem) => (
                     <p key={item.id} className="text-xs text-zinc-600 dark:text-zinc-400">
-                      • {item.productName} (x{item.quantity}) — ${(item.unitPrice / 100).toFixed(2)}
+                      • {item.productName} (x{item.quantity}) —{" "}
+                      {formatMoney(
+                        item.unitPrice,
+                        o.presentmentCurrency || o.vendorBaseCurrency || DEFAULT_CURRENCY,
+                      )}
                     </p>
                   ))}
                 </div>
@@ -160,7 +165,10 @@ export default function VendorSimulatedOrdersTab({
               <div className="text-right flex flex-col justify-between items-end">
                 <div>
                   <span className="text-sm font-mono font-black text-zinc-900 dark:text-zinc-100">
-                    ${(getOrderDisplayTotals(o).grandTotal / 100).toFixed(2)}
+                    {formatMoney(
+                      getOrderDisplayTotals(o).grandTotal,
+                      o.presentmentCurrency || o.vendorBaseCurrency || DEFAULT_CURRENCY,
+                    )}
                   </span>
                   <p
                     className={`text-[10px] uppercase font-bold mt-1 ${

@@ -45,10 +45,10 @@ describe("bankTransfer utilities", () => {
 
   it("builds pre-checkout availability without exposing account numbers", () => {
     const availability = toVendorBankTransferAvailability({
-      vendorName: "Distar Hardware",
+      vendorName: "Dilstar Hardware",
       bankDetails: {
         bankName: "Commercial Bank",
-        accountName: "Distar Hardware",
+        accountName: "Dilstar Hardware",
         accountNumber: "1234567890",
         branchCode: "001",
         instructions: "Include order reference.",
@@ -56,7 +56,7 @@ describe("bankTransfer utilities", () => {
     });
 
     expect(availability).toEqual({
-      vendorName: "Distar Hardware",
+      vendorName: "Dilstar Hardware",
       configured: true,
     });
     expect(availability).not.toHaveProperty("bankDetails");

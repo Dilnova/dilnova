@@ -6,12 +6,14 @@ import { inArray } from "drizzle-orm";
 import { calculateCheckoutTotals } from "@/features/billing/checkout-totals";
 import { escapeHtml, sendRawSmtpEmail } from "@/shared/email/smtp-client";
 import { logger } from "@/shared/logging/logger";
+import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
 import type { CartLineInput } from "@/features/cart/schema";
 
 export async function sendCartSummaryEmailService(
   validatedItems: CartLineInput[],
   validatedEmail: string,
   zeroShipping: boolean,
+  currency: string = DEFAULT_CURRENCY,
 ) {
   const systemName = await getSystemSetting("system_name", "Dilnova");
   const systemNameHub = `${systemName} Commerce Hub`;
@@ -36,6 +38,7 @@ export async function sendCartSummaryEmailService(
             id: schema.products.id,
             price: schema.products.price,
             name: schema.products.name,
+            currency: schema.products.currency,
           })
           .from(schema.products)
           .where(inArray(schema.products.id, uniqueItemIds))
@@ -56,10 +59,7 @@ export async function sendCartSummaryEmailService(
   // Cart emails are a pre-checkout summary — tax is not yet determined.
 
   const formatPrice = (cents: number) => {
-    return (cents / 100).toLocaleString("en-US", {
-      style: "currency",
-      currency: "USD",
-    });
+    return formatMoney(cents, currency);
   };
 
   // Construct beautiful HTML items rows

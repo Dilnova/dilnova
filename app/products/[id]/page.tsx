@@ -20,7 +20,7 @@ import { getStockAvailabilityCatalog } from "@/features/inventory/availability.s
 import { resolveOnlineProductPurchaseState } from "@/features/inventory/availability.shared";
 import StockAvailabilityBadge from "@/features/inventory/components/StockAvailabilityBadge";
 import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
-import { DEFAULT_CURRENCY } from "@/shared/currency";
+import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
 import { DEFAULT_APP_URL, DEFAULT_SUPPORT_EMAIL } from "@/shared/platform/brand";
 import { getVerifiedReviewerIdsForProduct } from "@/features/catalog/verified-buyer";
 import {
@@ -55,10 +55,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
 
     const { product } = result;
-    const formattedPrice = (product.price / 100).toLocaleString("en-US", {
-      style: "currency",
-      currency: "USD",
-    });
+    const formattedPrice = formatMoney(product.price, product.currency || DEFAULT_CURRENCY);
 
     const title = `${product.name} | ${systemName}`;
     const description = product.description
@@ -180,7 +177,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     offers: {
       "@type": "Offer",
       url: `${baseUrl}/products/${product.id}`,
-      priceCurrency: "USD",
+      priceCurrency: product.currency || DEFAULT_CURRENCY,
       price: (product.price / 100).toFixed(2),
       itemCondition: "https://schema.org/NewCondition",
       availability: canPurchase ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",

@@ -5,8 +5,13 @@ import { processBillingCheckoutAction } from "@/features/billing/checkout.action
 import { resolveEffectiveStockAvailability } from "@/features/inventory/availability.shared";
 import { toast } from "sonner";
 import { playAudioFeedback } from "../utils/pos-audio";
+import { useCurrency } from "@/shared/currency/context/currency-context";
+import { formatMoney, DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from "@/shared/currency";
 
 export function usePOSBilling(initialData: VendorBillingRegisterData) {
+  const { selectedCurrency } = useCurrency();
+  const currencySymbol =
+    SUPPORTED_CURRENCIES.find((c) => c.code === selectedCurrency)?.symbol || selectedCurrency;
   const [isPending, startTransition] = useTransition();
   const [data, setData] = useState(initialData);
 
@@ -193,7 +198,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
     }
     if (paymentMethod === "cash" && cashTenderedVal < totalAmount && cashTenderedVal > 0) {
       toast.error(
-        `Cash tendered ($${cashTenderedVal.toFixed(2)}) is less than total ($${totalAmount.toFixed(2)}).`,
+        `Cash tendered (${currencySymbol}${cashTenderedVal.toFixed(2)}) is less than total (${currencySymbol}${totalAmount.toFixed(2)}).`,
       );
       playAudioFeedback("error");
       return;
@@ -229,12 +234,13 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
 
         playAudioFeedback("checkout");
         toast.success(
-          `POS receipt processed! Total: $${(result.data.totalAmount / 100).toFixed(2)}`,
+          `POS receipt processed! Total: ${formatMoney(result.data.totalAmount, selectedCurrency || DEFAULT_CURRENCY)}`,
         );
 
         setReceiptToPrint({
           id: result.data.receiptId,
           branchName: data.branches.find((b) => b.id === selectedBranchId)?.name || "Main Register",
+          currency: selectedCurrency,
           items: cart.map((i) => ({
             name: i.product.productName,
             qty: i.quantity,

@@ -18,6 +18,7 @@ import { getOrgAdminEmails, getOrganizationName } from "@/features/vendor-org/em
 import { logger } from "@/shared/logging/logger";
 import { isCodPayment } from "@/features/orders/payment.rules";
 import { escapeHtml } from "@/shared/email/smtp-client";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 export async function sendPaymentSlipUploadedNotifications(
   orderId: string,
@@ -71,6 +72,7 @@ export async function sendPaymentSlipUploadedNotifications(
       customerEmail: order.customerEmail,
       grandTotalCents: grandTotal,
       vendorConsoleUrl,
+      currency: order.presentmentCurrency || order.vendorBaseCurrency || DEFAULT_CURRENCY,
     });
 
     for (const email of adminEmails) {
@@ -154,6 +156,7 @@ export async function sendPaymentVerifiedCustomerEmail(
     introText: isCod
       ? `Hi ${escapeHtml(order.customerName)}, your cash-on-delivery order <strong>#${orderRef}</strong> has been fulfilled. Thank you for your purchase.`
       : undefined,
+    currency: order.presentmentCurrency || order.vendorBaseCurrency || DEFAULT_CURRENCY,
   });
 
   return sendSystemHtmlEmail(
@@ -194,6 +197,7 @@ export async function sendOrderCancelledCustomerEmail(
     customerName: order.customerName,
     grandTotalCents: grandTotal,
     invoiceUrl,
+    currency: order.presentmentCurrency || order.vendorBaseCurrency || DEFAULT_CURRENCY,
   });
 
   return sendSystemHtmlEmail(
@@ -234,6 +238,7 @@ export async function sendPaymentSlipRejectedCustomerEmail(
     grandTotalCents: grandTotal,
     reason,
     invoiceUrl,
+    currency: order.presentmentCurrency || order.vendorBaseCurrency || DEFAULT_CURRENCY,
   });
 
   return sendSystemHtmlEmail(

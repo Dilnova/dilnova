@@ -10,4 +10,4 @@ export const DEFAULT_SYSTEM_NAME = "Dilnova";
 // Brand Portal Constants (Dilstar Motors & Hardware)
 export const DILSTAR_BRAND_URL = "https://www.dilstar.pp.ua";
 export const DILSTAR_SUPPORT_EMAIL = "info@dilstar.pp.ua";
-export const DILSTAR_BRAND_NAME = "Distar";
+export const DILSTAR_BRAND_NAME = "Dilstar";

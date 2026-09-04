@@ -1,7 +1,7 @@
 import type { StorefrontProps } from "./types";
-import DistarHardwareStorefront from "./DistarHardwareStorefront";
-import DistarNurseryStorefront from "./DistarNurseryStorefront";
-import DistarTechStorefront from "./DistarTechStorefront";
+import DilstarHardwareStorefront from "./DilstarHardwareStorefront";
+import DilstarNurseryStorefront from "./DilstarNurseryStorefront";
+import DilstarTechStorefront from "./DilstarTechStorefront";
 import DilstarServicesStorefront from "./DilstarServicesStorefront";
 
 /**
@@ -19,10 +19,14 @@ import DilstarServicesStorefront from "./DilstarServicesStorefront";
  * ═══════════════════════════════════════════════════════════════
  */
 export const customStorefronts: Record<string, React.ComponentType<StorefrontProps>> = {
-  "distar-hardware": DistarHardwareStorefront,
-  "distar-nursery": DistarNurseryStorefront,
-  "distar-tech": DistarTechStorefront,
+  // Primary Dilstar Sub-Vendor Portals
+  "dilstar-hardware": DilstarHardwareStorefront,
+  "dilstar-nursery": DilstarNurseryStorefront,
+  "dilstar-tech": DilstarTechStorefront,
   "dilstar-services": DilstarServicesStorefront,
-  // Add more custom vendor pages here...
-  // 'vendor-slug': VendorStorefrontComponent,
+
+  // Backward compatibility alias mappings
+  "distar-hardware": DilstarHardwareStorefront,
+  "distar-nursery": DilstarNurseryStorefront,
+  "distar-tech": DilstarTechStorefront,
 };

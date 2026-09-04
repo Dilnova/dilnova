@@ -2,9 +2,14 @@
 
 import React from "react";
 import { usePOSContext } from "../POSBillingProvider";
+import { useCurrency } from "@/shared/currency/context/currency-context";
+import { SUPPORTED_CURRENCIES } from "@/shared/currency";
 import POSTicketPanel from "./POSTicketPanel";
 
 export default function POSMobileCheckout() {
+  const { selectedCurrency } = useCurrency();
+  const currencySymbol =
+    SUPPORTED_CURRENCIES.find((c) => c.code === selectedCurrency)?.symbol || selectedCurrency;
   const { totalItemCount, totalAmount, isMobileCartOpen, setIsMobileCartOpen } = usePOSContext();
 
   return (
@@ -14,7 +19,8 @@ export default function POSMobileCheckout() {
         <div>
           <p className="text-[11px] text-zinc-400 font-bold">{totalItemCount} items in ticket</p>
           <p className="text-base font-black font-mono text-emerald-400">
-            ${totalAmount.toFixed(2)}
+            {currencySymbol}
+            {totalAmount.toFixed(2)}
           </p>
         </div>
         <button

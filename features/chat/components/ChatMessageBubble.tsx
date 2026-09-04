@@ -4,10 +4,21 @@ import React from "react";
 import Image from "next/image";
 import type { ChatMessageItem, ShippingQuoteMetadata } from "../types";
 import { Truck, FileText, Download, Check, CheckCheck } from "lucide-react";
+import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
 
 interface ChatMessageBubbleProps {
   message: ChatMessageItem;
   isSelf: boolean;
+}
+
+function formatChatTime(dateInput: string | Date): string {
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return "";
+  let hours = d.getHours();
+  const minutes = d.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  return `${hours}:${minutes} ${ampm}`;
 }
 
 export default function ChatMessageBubble({ message, isSelf }: ChatMessageBubbleProps) {
@@ -15,10 +26,7 @@ export default function ChatMessageBubble({ message, isSelf }: ChatMessageBubble
   const isShippingQuote = message.messageType === "shipping_quote";
   const isAttachment = message.messageType === "attachment";
 
-  const formattedTime = new Date(message.createdAt).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const formattedTime = formatChatTime(message.createdAt);
 
   if (isSystem) {
     return (
@@ -95,7 +103,7 @@ export default function ChatMessageBubble({ message, isSelf }: ChatMessageBubble
                 <div className="flex justify-between items-baseline mb-1">
                   <span className="text-xs font-semibold opacity-90">Shipping Fee:</span>
                   <span className="text-base font-extrabold font-mono text-emerald-400 dark:text-emerald-300">
-                    {shippingMeta.currency} {(shippingMeta.fee / 100).toFixed(2)}
+                    {formatMoney(shippingMeta.fee, shippingMeta.currency || DEFAULT_CURRENCY)}
                   </span>
                 </div>
                 {shippingMeta.carrier && (
@@ -178,7 +186,10 @@ export default function ChatMessageBubble({ message, isSelf }: ChatMessageBubble
       </div>
 
       <div className="flex items-center gap-1 mt-1 px-1">
-        <span className="text-[10px] text-zinc-600 dark:text-zinc-300 font-mono">
+        <span
+          className="text-[10px] text-zinc-600 dark:text-zinc-300 font-mono"
+          suppressHydrationWarning
+        >
           {formattedTime}
         </span>
         {isSelf && (

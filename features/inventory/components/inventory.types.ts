@@ -46,6 +46,8 @@ export interface SimulatedOrder {
   subtotalAmount?: number | null;
   taxAmount?: number | null;
   shippingAmount?: number | null;
+  presentmentCurrency?: string | null;
+  vendorBaseCurrency?: string | null;
   status: string;
   fulfillmentMethod: string;
   paymentMethod: string;
@@ -59,6 +61,7 @@ export interface SimulatedOrder {
     id: string;
     productName: string;
     vendorOrgId: string;
+    vendorBaseCurrency?: string | null;
     quantity: number;
     unitPrice: number;
   }[];

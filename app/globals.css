@@ -359,3 +359,50 @@ textarea::placeholder {
     opacity: 1;
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   PRINT STYLES
+   ═══════════════════════════════════════════════════════ */
+@media print {
+  /* Hide all non-printable layout chrome */
+  header,
+  footer,
+  nav,
+  aside,
+  [data-radix-popper-content-wrapper],
+  .sonner-toaster,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset body and html for clean crisp paper printing */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    position: static !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Remove default margins and set clean page margins */
+  @page {
+    margin: 1.5cm;
+    size: auto;
+  }
+
+  /* Ensure page breaks behave properly */
+  tr,
+  img,
+  table,
+  .avoid-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}

@@ -238,6 +238,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         cartItems,
         cartTotal,
         zeroShipping: selectedFulfillment?.zeroShipping ?? false,
+        currency: selectedCurrency,
       });
       if (res?.data?.success) {
         setEmailStatus("idle");
@@ -254,7 +255,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     }
   };
 
-  const { format } = useCurrency();
+  const { format, selectedCurrency } = useCurrency();
   const formatPrice = (cents: number, currency?: string) => {
     return format(cents, currency || DEFAULT_CURRENCY);
   };
@@ -355,6 +356,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
           shippingPhone2: requiresDeliveryAddress ? shippingPhone2.trim() || null : null,
           idempotencyKey,
           selectedRateId: requiresDeliveryAddress ? selectedRateId || null : null,
+          presentmentCurrency: selectedCurrency,
         });
 
         if (result?.data?.success) {

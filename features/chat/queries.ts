@@ -163,15 +163,61 @@ export async function listOrgConversations(
       .offset(offset),
   ]);
 
-  const conversations: ConversationDetail[] = rows.map(({ conversation, order, branchName }) => ({
-    ...conversation,
-    orderTotalAmount: order.totalAmount,
-    orderCurrency: order.presentmentCurrency || order.vendorBaseCurrency || "LKR",
-    orderStatus: order.status,
-    customerName: order.customerName,
-    customerEmail: order.customerEmail,
-    branchName: branchName || null,
-  }));
+  const convIds = rows.map((r) => r.conversation.id);
+  const latestMessageByConvId = new Map<
+    string,
+    { content: string; senderRole: string; messageType: string; attachmentName: string | null }
+  >();
+
+  if (convIds.length > 0) {
+    const latestMessages = await db
+      .select({
+        conversationId: schema.orderChatMessages.conversationId,
+        content: schema.orderChatMessages.content,
+        senderRole: schema.orderChatMessages.senderRole,
+        messageType: schema.orderChatMessages.messageType,
+        attachmentName: schema.orderChatMessages.attachmentName,
+      })
+      .from(schema.orderChatMessages)
+      .where(inArray(schema.orderChatMessages.conversationId, convIds))
+      .orderBy(desc(schema.orderChatMessages.createdAt));
+
+    for (const msg of latestMessages) {
+      if (!latestMessageByConvId.has(msg.conversationId)) {
+        latestMessageByConvId.set(msg.conversationId, msg);
+      }
+    }
+  }
+
+  const conversations: ConversationDetail[] = rows.map(({ conversation, order, branchName }) => {
+    const lastMsg = latestMessageByConvId.get(conversation.id);
+    let snippet: string | null = null;
+    if (lastMsg) {
+      if (lastMsg.messageType === "shipping_quote") {
+        snippet = "📦 Shipping Quote Sent";
+      } else if (lastMsg.messageType === "attachment") {
+        snippet = `📎 ${lastMsg.attachmentName || "Attachment"}`;
+      } else if (lastMsg.messageType === "system") {
+        snippet = `ℹ️ ${lastMsg.content}`;
+      } else {
+        snippet = lastMsg.content;
+      }
+    }
+
+    return {
+      ...conversation,
+      orderTotalAmount: order.totalAmount,
+      orderCurrency: order.presentmentCurrency || order.vendorBaseCurrency || "LKR",
+      orderStatus: order.status,
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      branchName: branchName || null,
+      lastMessageSnippet: snippet,
+      lastMessageSenderRole:
+        (lastMsg?.senderRole as ConversationDetail["lastMessageSenderRole"]) || null,
+      lastMessageType: (lastMsg?.messageType as ConversationDetail["lastMessageType"]) || null,
+    };
+  });
 
   return {
     conversations,
@@ -208,15 +254,61 @@ export async function listCustomerConversations(
     .where(eq(schema.orderConversations.customerUserId, customerUserId))
     .orderBy(desc(schema.orderConversations.lastMessageAt));
 
-  return rows.map(({ conversation, order, branchName }) => ({
-    ...conversation,
-    orderTotalAmount: order.totalAmount,
-    orderCurrency: order.presentmentCurrency || order.vendorBaseCurrency || "LKR",
-    orderStatus: order.status,
-    customerName: order.customerName,
-    customerEmail: order.customerEmail,
-    branchName: branchName || null,
-  }));
+  const convIds = rows.map((r) => r.conversation.id);
+  const latestMessageByConvId = new Map<
+    string,
+    { content: string; senderRole: string; messageType: string; attachmentName: string | null }
+  >();
+
+  if (convIds.length > 0) {
+    const latestMessages = await db
+      .select({
+        conversationId: schema.orderChatMessages.conversationId,
+        content: schema.orderChatMessages.content,
+        senderRole: schema.orderChatMessages.senderRole,
+        messageType: schema.orderChatMessages.messageType,
+        attachmentName: schema.orderChatMessages.attachmentName,
+      })
+      .from(schema.orderChatMessages)
+      .where(inArray(schema.orderChatMessages.conversationId, convIds))
+      .orderBy(desc(schema.orderChatMessages.createdAt));
+
+    for (const msg of latestMessages) {
+      if (!latestMessageByConvId.has(msg.conversationId)) {
+        latestMessageByConvId.set(msg.conversationId, msg);
+      }
+    }
+  }
+
+  return rows.map(({ conversation, order, branchName }) => {
+    const lastMsg = latestMessageByConvId.get(conversation.id);
+    let snippet: string | null = null;
+    if (lastMsg) {
+      if (lastMsg.messageType === "shipping_quote") {
+        snippet = "📦 Shipping Quote Sent";
+      } else if (lastMsg.messageType === "attachment") {
+        snippet = `📎 ${lastMsg.attachmentName || "Attachment"}`;
+      } else if (lastMsg.messageType === "system") {
+        snippet = `ℹ️ ${lastMsg.content}`;
+      } else {
+        snippet = lastMsg.content;
+      }
+    }
+
+    return {
+      ...conversation,
+      orderTotalAmount: order.totalAmount,
+      orderCurrency: order.presentmentCurrency || order.vendorBaseCurrency || "LKR",
+      orderStatus: order.status,
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      branchName: branchName || null,
+      lastMessageSnippet: snippet,
+      lastMessageSenderRole:
+        (lastMsg?.senderRole as ConversationDetail["lastMessageSenderRole"]) || null,
+      lastMessageType: (lastMsg?.messageType as ConversationDetail["lastMessageType"]) || null,
+    };
+  });
 }
 
 /**

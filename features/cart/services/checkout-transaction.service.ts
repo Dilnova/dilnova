@@ -9,6 +9,7 @@ import { logger } from "@/shared/logging/logger";
 import { clerkClient } from "@clerk/nextjs/server";
 import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
 import type { CheckoutOptionDefinition } from "@/features/organization/checkout-options.shared";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 import type { VerifiedCheckoutItem, DbTransaction } from "./checkout.types";
 import type { CartTaxBreakdown } from "@/features/billing/tax-engine";
 
@@ -136,8 +137,8 @@ export async function executeCheckoutTransaction(opts: {
         customerEmail: opts.email,
         customerEmailHash: hashPii(opts.email),
         customerUserId: opts.userId,
-        presentmentCurrency: opts.presentmentCurrency || "USD",
-        vendorBaseCurrency: opts.vendorBaseCurrency || "USD",
+        presentmentCurrency: opts.presentmentCurrency || DEFAULT_CURRENCY,
+        vendorBaseCurrency: opts.vendorBaseCurrency || DEFAULT_CURRENCY,
         exchangeRate: opts.exchangeRate || 1.0,
         subtotalAmount: opts.checkoutTotals.subtotalAmount,
         taxAmount: opts.checkoutTotals.taxAmount,
@@ -190,7 +191,7 @@ export async function executeCheckoutTransaction(opts: {
             productId: item.id,
             productName: item.name,
             vendorOrgId: item.vendorOrgId,
-            vendorBaseCurrency: item.vendorBaseCurrency || "USD",
+            vendorBaseCurrency: item.vendorBaseCurrency || DEFAULT_CURRENCY,
             quantity: item.quantity,
             unitPrice: item.price,
             unitPriceBase: item.unitPriceBase || item.price,

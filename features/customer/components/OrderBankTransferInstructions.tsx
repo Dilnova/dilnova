@@ -6,6 +6,7 @@ import {
 import { buildBankTransferCheckoutInstructions } from "@/features/billing/bank-transfer.server";
 import { getOrderDisplayTotals } from "@/features/billing/checkout-totals";
 import BankTransferInstructions from "@/features/billing/components/BankTransferInstructions";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 type OrderRecord = typeof schema.simulatedOrders.$inferSelect;
 
@@ -32,10 +33,12 @@ export default async function OrderBankTransferInstructions({
   }, {});
   const serverSubtotal = Object.values(vendorSubtotals).reduce((sum, amount) => sum + amount, 0);
   const grandTotal = getOrderDisplayTotals(order).grandTotal;
+  const orderCurrency = order.presentmentCurrency || order.vendorBaseCurrency || DEFAULT_CURRENCY;
 
   const bankTransferInstructions = await buildBankTransferCheckoutInstructions({
     orderId: order.id,
     grandTotalCents: grandTotal,
+    currency: orderCurrency,
     vendorAmounts: allocateVendorPaymentAmounts(vendorSubtotals, serverSubtotal, grandTotal),
   });
 

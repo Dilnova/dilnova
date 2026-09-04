@@ -15,6 +15,7 @@ import {
 import { buildBankTransferCheckoutInstructions } from "@/features/billing/bank-transfer.server";
 import { sendOrderConfirmationEmailForOrder } from "@/features/orders/email/confirmation";
 import { logger } from "@/shared/logging/logger";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 import type { VerifiedCheckoutItem } from "./checkout.types";
 
 export async function validateAndPrepareCartItems(
@@ -33,6 +34,7 @@ export async function validateAndPrepareCartItems(
             id: schema.products.id,
             name: schema.products.name,
             price: schema.products.price,
+            currency: schema.products.currency,
             orgId: schema.products.orgId,
             type: schema.products.type,
             status: schema.products.status,
@@ -63,6 +65,7 @@ export async function validateAndPrepareCartItems(
       quantity: item.quantity,
       vendorOrgId: product.orgId,
       type: product.type,
+      vendorBaseCurrency: product.currency || DEFAULT_CURRENCY,
     });
   }
 
@@ -120,6 +123,7 @@ export async function validateAndPrepareCartItems(
 export async function processCheckoutSuccess(opts: {
   orderId: string;
   grandTotalCents: number;
+  currency?: string;
   vendorSubtotals: Record<string, number>;
   serverSubtotalCents: number;
   payment: string;
@@ -142,6 +146,7 @@ export async function processCheckoutSuccess(opts: {
   const {
     orderId: createdOrderId,
     grandTotalCents,
+    currency,
     vendorSubtotals: createdVendorSubtotals,
     serverSubtotalCents,
     payment,
@@ -192,6 +197,7 @@ export async function processCheckoutSuccess(opts: {
     bankTransferInstructions = await buildBankTransferCheckoutInstructions({
       orderId: createdOrderId,
       grandTotalCents,
+      currency,
       vendorAmounts,
     });
   }

@@ -43,8 +43,11 @@ vi.mock("next/server", async (importOriginal) => {
       this.status = init?.status ?? 200;
       this.headers = new Headers(init?.headers);
     }
-    static next() {
-      return { headers: new Headers() };
+    static next(init?: { request?: { headers?: Headers } }) {
+      return { headers: init?.request?.headers || new Headers() };
+    }
+    static rewrite(destination: URL | string, init?: { request?: { headers?: Headers } }) {
+      return { headers: init?.request?.headers || new Headers(), rewrittenUrl: destination };
     }
   }
   return {
@@ -327,6 +330,70 @@ describe("Proxy Middleware WAF Protection", () => {
   });
 });
 
+describe("Proxy Middleware Sensitive File & Directory Probe Protection", () => {
+  it.each([
+    ["/.env"],
+    ["/.env.local"],
+    ["/.env.production"],
+    ["/.env.backup"],
+    ["/.git"],
+    ["/.git/config"],
+    ["/.gitignore"],
+    ["/.aws/credentials"],
+    ["/.ssh/id_rsa"],
+    ["/.vscode/settings.json"],
+    ["/.ds_store"],
+    ["/wp-admin"],
+    ["/wp-login.php"],
+    ["/xmlrpc.php"],
+    ["/phpmyadmin"],
+    ["/adminer.php"],
+    ["/actuator/health"],
+    ["/backup.sql"],
+    ["/dump.tar.gz"],
+    ["/script.php"],
+  ])("blocks sensitive probe path %s with 404 and security headers", async (probePath) => {
+    const request = new NextRequest(`http://localhost:3000${probePath}`, {
+      method: "GET",
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      status: number;
+      body: string;
+      headers: Headers;
+    };
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(404);
+    expect(result.body).toBe("Not Found");
+    expect(result.headers.get("X-Frame-Options")).toBe("DENY");
+    expect(result.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+
+  it("blocks URL-encoded sensitive probe paths like /%2e%65%6e%76 with 404", async () => {
+    const request = new NextRequest("http://localhost:3000/%2e%65%6e%76", {
+      method: "GET",
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as MockResponse;
+    expect(result).toBeInstanceOf(NextResponse);
+    expect(result.status).toBe(404);
+  });
+
+  it("allows standard RFC .well-known routes", async () => {
+    const request = new NextRequest("http://localhost:3000/.well-known/security.txt", {
+      method: "GET",
+    });
+    const result = await proxy(request, mockEvent);
+    expect(result).not.toBeInstanceOf(NextResponse);
+  });
+
+  it("allows normal product and store pages", async () => {
+    const request = new NextRequest("http://localhost:3000/products/motor-1", {
+      method: "GET",
+    });
+    const result = await proxy(request, mockEvent);
+    expect(result).not.toBeInstanceOf(NextResponse);
+  });
+});
+
 describe("Proxy Middleware Edge Rate Limiting Protection", () => {
   const originalUrl = process.env.UPSTASH_REDIS_REST_URL;
   const originalToken = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -377,5 +444,111 @@ describe("Proxy Middleware Edge Rate Limiting Protection", () => {
     });
     const result = await proxy(request, mockEvent);
     expect(result).not.toBeInstanceOf(NextResponse);
+  });
+});
+
+describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
+  it("rewrites root / to /brand/dilstar when host is dilstar.pp.ua", async () => {
+    const request = new NextRequest("https://dilstar.pp.ua/", {
+      method: "GET",
+      headers: {
+        host: "dilstar.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeDefined();
+    expect(result.rewrittenUrl?.pathname).toBe("/brand/dilstar");
+  });
+
+  it("rewrites /hardware to /vendors/dilstar-hardware when host is dilstar.pp.ua", async () => {
+    const request = new NextRequest("https://dilstar.pp.ua/hardware", {
+      method: "GET",
+      headers: {
+        host: "dilstar.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeDefined();
+    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-hardware");
+  });
+
+  it("rewrites /tech to /vendors/dilstar-tech when host is dilstar.pp.ua", async () => {
+    const request = new NextRequest("https://dilstar.pp.ua/tech", {
+      method: "GET",
+      headers: {
+        host: "dilstar.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeDefined();
+    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-tech");
+  });
+
+  it("rewrites /nursery to /vendors/dilstar-nursery when host is dilstar.pp.ua", async () => {
+    const request = new NextRequest("https://dilstar.pp.ua/nursery", {
+      method: "GET",
+      headers: {
+        host: "dilstar.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeDefined();
+    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-nursery");
+  });
+
+  it("rewrites /services to /vendors/dilstar-services when host is dilstar.pp.ua", async () => {
+    const request = new NextRequest("https://dilstar.pp.ua/services", {
+      method: "GET",
+      headers: {
+        host: "dilstar.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeDefined();
+    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-services");
+  });
+
+  it("does not rewrite when host is dilnova.pp.ua", async () => {
+    const request = new NextRequest("https://dilnova.pp.ua/", {
+      method: "GET",
+      headers: {
+        host: "dilnova.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      rewrittenUrl?: URL;
+      headers: Headers;
+    };
+    expect(result.rewrittenUrl).toBeUndefined();
+  });
+
+  it("includes both dilstar and dilnova Clerk domains in CSP header", async () => {
+    const request = new NextRequest("https://dilnova.pp.ua/", {
+      method: "GET",
+      headers: {
+        host: "dilnova.pp.ua",
+      },
+    });
+    const result = (await proxy(request, mockEvent)) as unknown as {
+      headers: Headers;
+    };
+    const csp = result.headers.get("Content-Security-Policy") || "";
+    expect(csp).toContain("https://clerk.dilstar.pp.ua");
+    expect(csp).toContain("https://clerk.dilnova.pp.ua");
   });
 });

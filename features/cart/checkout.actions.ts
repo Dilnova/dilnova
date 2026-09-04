@@ -16,6 +16,7 @@ import {
   aggregateCheckoutItems,
   type CheckoutTransactionResult,
 } from "@/features/cart/checkout.helpers";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 import { z } from "zod/v3";
 import { validateFulfillment, validateShippingAddress } from "./services/fulfillment.service";
 import { validatePayment } from "./services/payment.service";
@@ -81,6 +82,7 @@ export const sendCartSummaryEmailAction = authenticatedAction
       ),
       cartTotal: z.number().nonnegative(),
       zeroShipping: z.boolean().optional().default(false),
+      currency: z.string().optional(),
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
@@ -89,6 +91,7 @@ export const sendCartSummaryEmailAction = authenticatedAction
         emailAddress: parsedInput.emailAddress,
         cartItems: parsedInput.cartItems,
         cartTotal: parsedInput.cartTotal,
+        currency: parsedInput.currency,
       });
       if (!parsedCartInput.success) {
         return {
@@ -121,6 +124,7 @@ export const sendCartSummaryEmailAction = authenticatedAction
         validatedItems,
         validatedEmail,
         parsedInput.zeroShipping,
+        parsedInput.currency || DEFAULT_CURRENCY,
       );
     } catch (error: unknown) {
       const apiError = handleApiError(error, "Failed to send cart summary email");
@@ -437,6 +441,8 @@ export const simulatedCheckoutAction = authenticatedAction
             normalizedShippingPhone2,
             serverSubtotal,
             uniqueItemIds,
+            presentmentCurrency: parsedInput.presentmentCurrency || DEFAULT_CURRENCY,
+            vendorBaseCurrency: verifiedItems[0]?.vendorBaseCurrency || DEFAULT_CURRENCY,
           })) as CheckoutTransactionResult;
           break;
         } catch (error) {
@@ -466,6 +472,7 @@ export const simulatedCheckoutAction = authenticatedAction
       const successResult = await processCheckoutSuccess({
         orderId: txResult.orderId,
         grandTotalCents: txResult.grandTotalCents,
+        currency: parsedInput.presentmentCurrency || DEFAULT_CURRENCY,
         vendorSubtotals: txResult.vendorSubtotals,
         serverSubtotalCents: txResult.serverSubtotalCents,
         payment,

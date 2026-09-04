@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { type FeaturedSeries, type Product } from "@/features/marketing/queries";
 import { ShoppingBag } from "lucide-react";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 interface FeaturedSeriesProps {
   seriesList?: FeaturedSeries[];
@@ -51,8 +53,15 @@ export default function FeaturedSeriesList({ seriesList, products }: FeaturedSer
                   </Link>
                 </h4>
                 <div className="mt-auto pt-4 flex items-center justify-between">
-                  <span className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-                    {product.price}
+                  <span className="text-lg font-bold text-zinc-900 dark:text-zinc-50 font-mono">
+                    {product.priceInCents != null ? (
+                      <ProductPriceDisplay
+                        priceInSubunits={product.priceInCents}
+                        baseCurrency={product.currency || DEFAULT_CURRENCY}
+                      />
+                    ) : (
+                      product.price
+                    )}
                   </span>
                   <button className="relative z-20 w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
                     <ShoppingBag className="w-4 h-4" />
@@ -141,8 +150,15 @@ export default function FeaturedSeriesList({ seriesList, products }: FeaturedSer
                     </Link>
                   </h4>
                   <div className="mt-auto pt-4 flex items-center justify-between">
-                    <span className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-                      {product.price}
+                    <span className="text-lg font-bold text-zinc-900 dark:text-zinc-50 font-mono">
+                      {product.priceInCents != null ? (
+                        <ProductPriceDisplay
+                          priceInSubunits={product.priceInCents}
+                          baseCurrency={product.currency || DEFAULT_CURRENCY}
+                        />
+                      ) : (
+                        product.price
+                      )}
                     </span>
                     <button className="relative z-20 w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
                       <ShoppingBag className="w-4 h-4" />

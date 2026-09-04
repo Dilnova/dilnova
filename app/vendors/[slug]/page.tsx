@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { customStorefronts } from "@/features/storefront/components/custom/registry";
 import DefaultStorefront from "@/features/storefront/components/DefaultStorefront";
@@ -8,6 +9,7 @@ import type { VendorOrg } from "@/features/storefront/components/custom/types";
 import { getCachedOrganizations, getCachedOrganizationBySlug } from "@/shared/auth/clerk-cache";
 import { sanitizeVendorPublicMetadata } from "@/shared/media/sanitize-vendor-public-metadata";
 import { getSystemSetting } from "@/shared/platform/settings";
+import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 import { logger } from "@/shared/logging/logger";
 
 interface PageProps {
@@ -16,23 +18,42 @@ interface PageProps {
 
 export const revalidate = 300; // Cache and regenerate page in background at most every 5 minutes (ISR)
 
+const DILSTAR_SLUGS = [
+  "dilstar-hardware",
+  "dilstar-nursery",
+  "dilstar-tech",
+  "dilstar-services",
+  // Backward-compatibility aliases
+  "distar-hardware",
+  "distar-nursery",
+  "distar-tech",
+];
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const systemName = await getSystemSetting("system_name", "Dilnova");
 
-  const isDistarSubVendor = [
-    "distar-hardware",
-    "distar-nursery",
-    "distar-tech",
-    "dilstar-services",
-  ].includes(slug);
+  // Domain-aware system name detection
+  const headersList = await headers();
+  const host = headersList.get("x-forwarded-host") || headersList.get("host") || "";
+  const isDilstar = host.includes("dilstar.pp.ua");
+  const systemName = isDilstar ? "Dilstar" : await getSystemSetting("system_name", "Dilnova");
+
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const baseUrl = host
+    ? `${protocol}://${host}`
+    : process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+
+  const isDilstarSubVendor = DILSTAR_SLUGS.includes(slug);
 
   let clerkOrg = null;
   try {
     const orgs = await getCachedOrganizations();
-    if (isDistarSubVendor) {
+    if (isDilstarSubVendor) {
       clerkOrg = orgs.find(
         (o) =>
+          o.name.toLowerCase() === "dilstar" ||
+          o.slug === "dilstar" ||
+          (o.slug && o.slug.startsWith("dilstar-")) ||
           o.name.toLowerCase() === "distar" ||
           o.slug === "distar" ||
           (o.slug && o.slug.startsWith("distar-")),
@@ -55,12 +76,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   let displayName = clerkOrg.name;
-  if (slug === "distar-hardware") {
-    displayName = "Distar Hardware";
-  } else if (slug === "distar-nursery") {
-    displayName = "Distar Nursery";
-  } else if (slug === "distar-tech") {
-    displayName = "Distar Tech Store";
+  if (slug === "dilstar-hardware" || slug === "distar-hardware") {
+    displayName = "Dilstar Hardware";
+  } else if (slug === "dilstar-nursery" || slug === "distar-nursery") {
+    displayName = "Dilstar Nursery";
+  } else if (slug === "dilstar-tech" || slug === "distar-tech") {
+    displayName = "Dilstar Tech Shop";
   } else if (slug === "dilstar-services") {
     displayName = "Dilstar Services";
   }
@@ -70,14 +91,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? (clerkOrg.publicMetadata.description as string)
     : `Browse products and services catalog offered by ${displayName} on ${systemName}.`;
 
+  const ogImages = clerkOrg.imageUrl
+    ? [{ url: clerkOrg.imageUrl }]
+    : [{ url: `${baseUrl}/apple-touch-icon.png`, width: 180, height: 180 }];
+
   return {
     title,
     description,
+    alternates: {
+      canonical: `/vendors/${slug}`,
+    },
     openGraph: {
       title,
       description,
+      url: `${baseUrl}/vendors/${slug}`,
+      siteName: systemName,
       type: "website",
-      images: clerkOrg.imageUrl ? [{ url: clerkOrg.imageUrl }] : [],
+      images: ogImages,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      creator: isDilstar ? "@dilstar" : "@dilnova",
     },
   };
 }
@@ -85,10 +121,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // Pre-render the core sub-vendor storefront paths at build-time for instant first load
 export async function generateStaticParams() {
   return [
+    { slug: "dilstar-hardware" },
+    { slug: "dilstar-nursery" },
+    { slug: "dilstar-tech" },
+    { slug: "dilstar-services" },
     { slug: "distar-hardware" },
     { slug: "distar-nursery" },
     { slug: "distar-tech" },
-    { slug: "dilstar-services" },
   ];
 }
 
@@ -104,20 +143,18 @@ export async function generateStaticParams() {
 export default async function VendorProfilePage({ params }: PageProps) {
   const { slug } = await params;
 
-  const isDistarSubVendor = [
-    "distar-hardware",
-    "distar-nursery",
-    "distar-tech",
-    "dilstar-services",
-  ].includes(slug);
+  const isDilstarSubVendor = DILSTAR_SLUGS.includes(slug);
 
   // 1. Fetch/resolve organization from Clerk using cache
   let clerkOrg = null;
   try {
     const orgs = await getCachedOrganizations();
-    if (isDistarSubVendor) {
+    if (isDilstarSubVendor) {
       clerkOrg = orgs.find(
         (o) =>
+          o.name.toLowerCase() === "dilstar" ||
+          o.slug === "dilstar" ||
+          (o.slug && o.slug.startsWith("dilstar-")) ||
           o.name.toLowerCase() === "distar" ||
           o.slug === "distar" ||
           (o.slug && o.slug.startsWith("distar-")),
@@ -135,11 +172,14 @@ export default async function VendorProfilePage({ params }: PageProps) {
   }
 
   if (!clerkOrg) {
-    if (isDistarSubVendor) {
-      let fallbackName = "Distar Storefront";
-      if (slug === "distar-hardware") fallbackName = "Distar Hardware";
-      else if (slug === "distar-nursery") fallbackName = "Distar Nursery";
-      else if (slug === "distar-tech") fallbackName = "Distar Tech Store";
+    if (isDilstarSubVendor) {
+      let fallbackName = "Dilstar Storefront";
+      if (slug === "dilstar-hardware" || slug === "distar-hardware")
+        fallbackName = "Dilstar Hardware";
+      else if (slug === "dilstar-nursery" || slug === "distar-nursery")
+        fallbackName = "Dilstar Nursery";
+      else if (slug === "dilstar-tech" || slug === "distar-tech")
+        fallbackName = "Dilstar Tech Shop";
       else if (slug === "dilstar-services") fallbackName = "Dilstar Services";
 
       clerkOrg = {
@@ -157,14 +197,14 @@ export default async function VendorProfilePage({ params }: PageProps) {
     }
   }
 
-  // 2. Normalize org data into our StorefrontProps shape, overriding the name for specific sub-vendors sharing the 'distar' Clerk organization
+  // 2. Normalize org data into our StorefrontProps shape, overriding the name for specific sub-vendors sharing the 'dilstar' Clerk organization
   let displayName = clerkOrg.name;
-  if (slug === "distar-hardware") {
-    displayName = "Distar Hardware";
-  } else if (slug === "distar-nursery") {
-    displayName = "Distar Nursery";
-  } else if (slug === "distar-tech") {
-    displayName = "Distar Tech Store";
+  if (slug === "dilstar-hardware" || slug === "distar-hardware") {
+    displayName = "Dilstar Hardware";
+  } else if (slug === "dilstar-nursery" || slug === "distar-nursery") {
+    displayName = "Dilstar Nursery";
+  } else if (slug === "dilstar-tech" || slug === "distar-tech") {
+    displayName = "Dilstar Tech Shop";
   } else if (slug === "dilstar-services") {
     displayName = "Dilstar Services";
   }
@@ -179,30 +219,70 @@ export default async function VendorProfilePage({ params }: PageProps) {
     ),
   };
 
-  // 3. Fetch vendor products from Supabase
-  let products = await getVendorProducts(clerkOrg.id);
+  // 3. Fetch products for this org from Supabase
 
-  // 3.5 Filter products by category for shared distar organization
-  if (slug === "distar-hardware") {
-    products = products.filter((p) => p.categorySlug === "hardware");
-  } else if (slug === "distar-nursery") {
-    products = products.filter((p) => p.categorySlug === "plants");
-  } else if (slug === "distar-tech") {
-    products = products.filter((p) => p.categorySlug === "tech");
-  } else if (slug === "dilstar-services") {
-    products = products.filter((p) => p.categorySlug === "services");
+  const rawProducts = await getVendorProducts(clerkOrg.id);
+  const products = await enrichVendorProductsWithPurchaseFlags(rawProducts);
+
+  // 4. Build JSON-LD structured data for search engines
+  const isDilstarSubVendorForLD = DILSTAR_SLUGS.includes(slug);
+  const storeTypeMap: Record<string, string> = {
+    "dilstar-hardware": "HardwareStore",
+    "distar-hardware": "HardwareStore",
+    "dilstar-nursery": "GardenStore",
+    "distar-nursery": "GardenStore",
+    "dilstar-tech": "ElectronicsStore",
+    "distar-tech": "ElectronicsStore",
+    "dilstar-services": "ProfessionalService",
+  };
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": isDilstarSubVendorForLD ? storeTypeMap[slug] || "Store" : "Organization",
+    name: displayName,
+    ...(clerkOrg.imageUrl ? { logo: clerkOrg.imageUrl } : {}),
+    ...(isDilstarSubVendorForLD
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: "Ambalantota",
+            addressCountry: "LK",
+          },
+          parentOrganization: {
+            "@type": "Organization",
+            name: "Dilstar",
+          },
+        }
+      : {}),
+  };
+
+  // 5. Check if custom storefront component is enabled via system settings
+  const customEnabledSetting = await getSystemSetting(`custom_storefront_${slug}`, "true");
+  const isCustomEnabled = customEnabledSetting === "true";
+
+  const structuredDataScript = (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
+
+  // 6. Lookup custom storefront in registry if setting is enabled
+  if (isCustomEnabled && customStorefronts[slug]) {
+    const CustomComponent = customStorefronts[slug];
+    return (
+      <>
+        {structuredDataScript}
+        <CustomComponent org={org} products={products} />
+      </>
+    );
   }
 
-  products = await enrichVendorProductsWithPurchaseFlags(products);
-
-  // 4. Check registry for custom storefront
-  const isCustomEnabled = (await getSystemSetting(`custom_storefront_${slug}`, "true")) === "true";
-  const CustomStorefront = slug && isCustomEnabled ? customStorefronts[slug] : undefined;
-
-  if (CustomStorefront) {
-    return <CustomStorefront org={org} products={products} />;
-  }
-
-  // 5. Fallback to default layout
-  return <DefaultStorefront org={org} products={products} />;
+  // 7. Fallback to DefaultStorefront for standard vendors
+  return (
+    <>
+      {structuredDataScript}
+      <DefaultStorefront org={org} products={products} />
+    </>
+  );
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "meta_catalog_integrations" ADD COLUMN "auto_sync_meta_catalog" boolean DEFAULT true NOT NULL;

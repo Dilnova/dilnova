@@ -273,6 +273,7 @@ export async function getVendorProductsForOrg(
       type: schema.products.type,
       description: schema.products.description,
       price: schema.products.price,
+      currency: schema.products.currency,
       imageUrl: schema.products.imageUrl,
       media: schema.products.media,
       categoryId: schema.products.categoryId,

@@ -1,4 +1,6 @@
 import React from "react";
+import { useCurrency } from "@/shared/currency/context/currency-context";
+import { SUPPORTED_CURRENCIES } from "@/shared/currency";
 
 interface PriceFilterProps {
   currentMinPrice?: string;
@@ -14,10 +16,10 @@ interface PriceFilterProps {
 }
 
 const PRICE_PRESETS = [
-  { label: "Under $25", min: "", max: "25" },
-  { label: "$25 - $50", min: "25", max: "50" },
-  { label: "$50 - $100", min: "50", max: "100" },
-  { label: "$100+", min: "100", max: "" },
+  { min: "", max: "25" },
+  { min: "25", max: "50" },
+  { min: "50", max: "100" },
+  { min: "100", max: "" },
 ];
 
 export default function PriceFilter({
@@ -32,11 +34,15 @@ export default function PriceFilter({
   handleApplyPresetPrice,
   isPending,
 }: PriceFilterProps) {
+  const { selectedCurrency } = useCurrency();
+  const currencySymbol =
+    SUPPORTED_CURRENCIES.find((c) => c.code === selectedCurrency)?.symbol || selectedCurrency;
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <label className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-zinc-100 font-mono">
-          Price Range ($)
+          Price Range ({currencySymbol})
         </label>
         {(currentMinPrice || currentMaxPrice) && (
           <button
@@ -56,9 +62,16 @@ export default function PriceFilter({
       <div className="flex flex-wrap gap-1.5">
         {PRICE_PRESETS.map((preset) => {
           const isPresetActive = currentMinPrice === preset.min && currentMaxPrice === preset.max;
+          const presetLabel =
+            preset.min && preset.max
+              ? `${currencySymbol}${preset.min} - ${currencySymbol}${preset.max}`
+              : preset.min
+                ? `${currencySymbol}${preset.min}+`
+                : `Under ${currencySymbol}${preset.max}`;
+
           return (
             <button
-              key={preset.label}
+              key={`${preset.min}-${preset.max}`}
               type="button"
               onClick={() => handleApplyPresetPrice(preset.min, preset.max)}
               className={`text-[11px] font-mono px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
@@ -67,7 +80,7 @@ export default function PriceFilter({
                   : "bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-800 dark:hover:bg-zinc-800"
               }`}
             >
-              {preset.label}
+              {presetLabel}
             </button>
           );
         })}
@@ -77,7 +90,7 @@ export default function PriceFilter({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <span className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">
-              Min ($)
+              Min ({currencySymbol})
             </span>
             <input
               type="number"
@@ -91,7 +104,7 @@ export default function PriceFilter({
           </div>
           <div>
             <span className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">
-              Max ($)
+              Max ({currencySymbol})
             </span>
             <input
               type="number"

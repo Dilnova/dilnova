@@ -53,7 +53,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const faviconUrl = await getSystemSetting("system_favicon", "");
   const systemName = isDilstar
-    ? "Distar"
+    ? "Dilstar"
     : await getSystemSetting("system_name", "Dilnova Commerce Hub");
 
   const protocol = host.includes("localhost") ? "http" : "https";
@@ -61,21 +61,22 @@ export async function generateMetadata(): Promise<Metadata> {
     ? `${protocol}://${host}`
     : process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
 
-  const siteTitle = isDilstar ? "Distar | Industrial Motors & Hardware" : systemName;
+  const siteTitle = isDilstar ? "Dilstar | Hardware, Nursery, Tech Shop & Services" : systemName;
 
   const siteDescription = isDilstar
-    ? "Official store for Distar industrial motors, heavy hardware, workstations, botanical flora, and services."
+    ? "Official brand portal for Dilstar Hardware, Nursery, Tech Shop, and Technical Services in Ambalantota, Sri Lanka."
     : "Enterprise multi-vendor commerce hub and curated marketplace.";
 
   const keywords = isDilstar
     ? [
-        "distar",
-        "distar motors",
-        "industrial induction motor",
-        "contractor tools",
-        "distar tech",
-        "distar nursery",
+        "dilstar",
+        "dilstar ambalantota",
+        "dilstar hardware",
+        "dilstar nursery",
+        "dilstar tech",
         "dilstar services",
+        "coconut saplings",
+        "tools and hardware",
       ]
     : [
         "dilnova",
@@ -83,9 +84,22 @@ export async function generateMetadata(): Promise<Metadata> {
         "marketplace",
         "multi-vendor",
         "ecommerce",
-        "distar",
+        "dilstar",
         "b2b platform",
       ];
+
+  const pinterestVerify = await getSystemSetting(
+    "pinterest_domain_verify",
+    process.env.PINTEREST_DOMAIN_VERIFY ?? "",
+  );
+  const metaDomainVerify = await getSystemSetting(
+    "facebook_domain_verify",
+    process.env.FACEBOOK_DOMAIN_VERIFY || "",
+  );
+  const googleSiteVerify = await getSystemSetting(
+    "google_site_verify",
+    process.env.GOOGLE_SITE_VERIFY || "",
+  );
 
   return {
     title: {
@@ -104,6 +118,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: systemName,
       locale: "en_US",
       type: "website",
+      images: [{ url: `${baseUrl}/apple-touch-icon.png`, width: 180, height: 180 }],
     },
     twitter: {
       card: "summary_large_image",
@@ -131,10 +146,16 @@ export async function generateMetadata(): Promise<Metadata> {
           ],
           apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
         },
-    manifest: "/site.webmanifest",
     metadataBase: new URL(baseUrl),
     alternates: {
       canonical: "/",
+    },
+    verification: {
+      ...(googleSiteVerify ? { google: googleSiteVerify } : {}),
+      other: {
+        ...(pinterestVerify ? { "p:domain_verify": pinterestVerify } : {}),
+        ...(metaDomainVerify ? { "facebook-domain-verification": metaDomainVerify } : {}),
+      },
     },
   };
 }

@@ -1,11 +1,5 @@
 import { escapeHtml } from "@/shared/email/smtp-client";
-
-function formatPrice(cents: number): string {
-  return (cents / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
-}
+import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
 
 export function buildPaymentSlipUploadedEmailHtml(input: {
   systemName: string;
@@ -15,8 +9,10 @@ export function buildPaymentSlipUploadedEmailHtml(input: {
   customerEmail: string;
   grandTotalCents: number;
   vendorConsoleUrl: string;
+  currency?: string;
 }): string {
   const orderRef = input.orderId.slice(0, 8).toUpperCase();
+  const currency = input.currency || DEFAULT_CURRENCY;
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; padding: 24px;">
@@ -41,7 +37,7 @@ export function buildPaymentSlipUploadedEmailHtml(input: {
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #71717a;">Order total</td>
-              <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: 700;">${formatPrice(input.grandTotalCents)}</td>
+              <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: 700;">${formatMoney(input.grandTotalCents, currency)}</td>
             </tr>
           </table>
           <a href="${escapeHtml(input.vendorConsoleUrl)}" style="display: inline-block; background: #7e22ce; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700;">
@@ -64,8 +60,10 @@ export function buildPaymentVerifiedEmailHtml(input: {
   invoiceUrl: string;
   headline?: string;
   introText?: string;
+  currency?: string;
 }): string {
   const orderRef = input.orderId.slice(0, 8).toUpperCase();
+  const currency = input.currency || DEFAULT_CURRENCY;
   const headline = input.headline || "Payment Verified";
   const introText =
     input.introText ||
@@ -101,7 +99,7 @@ export function buildPaymentVerifiedEmailHtml(input: {
             }
             <tr>
               <td style="padding: 8px 0; color: #71717a;">Total paid</td>
-              <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: 700;">${formatPrice(input.grandTotalCents)}</td>
+              <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: 700;">${formatMoney(input.grandTotalCents, currency)}</td>
             </tr>
           </table>
           <a href="${escapeHtml(input.invoiceUrl)}" style="display: inline-block; background: #7e22ce; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700;">
@@ -119,8 +117,10 @@ export function buildOrderCancelledEmailHtml(input: {
   customerName: string;
   grandTotalCents: number;
   invoiceUrl: string;
+  currency?: string;
 }): string {
   const orderRef = input.orderId.slice(0, 8).toUpperCase();
+  const currency = input.currency || DEFAULT_CURRENCY;
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; padding: 24px;">
@@ -137,7 +137,7 @@ export function buildOrderCancelledEmailHtml(input: {
           <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
             <tr>
               <td style="padding: 8px 0; color: #71717a;">Order total</td>
-              <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: 700;">${formatPrice(input.grandTotalCents)}</td>
+              <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: 700;">${formatMoney(input.grandTotalCents, currency)}</td>
             </tr>
           </table>
           <a href="${escapeHtml(input.invoiceUrl)}" style="display: inline-block; background: #7e22ce; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700;">
@@ -156,8 +156,10 @@ export function buildPaymentSlipRejectedEmailHtml(input: {
   grandTotalCents: number;
   reason?: string | null;
   invoiceUrl: string;
+  currency?: string;
 }): string {
   const orderRef = input.orderId.slice(0, 8).toUpperCase();
+  const currency = input.currency || DEFAULT_CURRENCY;
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; padding: 24px;">
@@ -179,7 +181,7 @@ export function buildPaymentSlipRejectedEmailHtml(input: {
           <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;">
             <tr>
               <td style="padding: 8px 0; color: #71717a;">Order total</td>
-              <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: 700;">${formatPrice(input.grandTotalCents)}</td>
+              <td style="padding: 8px 0; text-align: right; font-family: monospace; font-weight: 700;">${formatMoney(input.grandTotalCents, currency)}</td>
             </tr>
           </table>
           <a href="${escapeHtml(input.invoiceUrl)}" style="display: inline-block; background: #7e22ce; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700;">

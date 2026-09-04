@@ -27,18 +27,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // ── DILSTAR BRAND SITEMAP ─────────────────────────────────────
   if (isDilstar) {
-    let distarProductEntries: MetadataRoute.Sitemap = [];
+    let dilstarProductEntries: MetadataRoute.Sitemap = [];
 
     try {
       const orgs = await getCachedOrganizations();
-      const distarOrgIds = orgs
+      const dilstarOrgIds = orgs
         .filter(
           (o) =>
+            o.slug === "dilstar" ||
+            o.slug?.startsWith("dilstar-") ||
             o.slug === "distar" ||
             o.slug?.startsWith("distar-") ||
-            o.slug === "dilstar-services" ||
-            o.name.toLowerCase().includes("distar") ||
-            o.name.toLowerCase().includes("dilstar"),
+            o.name.toLowerCase().includes("dilstar") ||
+            o.name.toLowerCase().includes("distar"),
         )
         .map((o) => o.id);
 
@@ -51,17 +52,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .from(products);
 
       const filtered = dbProducts.filter(
-        (p) => distarOrgIds.length === 0 || distarOrgIds.includes(p.orgId),
+        (p) => dilstarOrgIds.length === 0 || dilstarOrgIds.includes(p.orgId),
       );
 
-      distarProductEntries = filtered.map((p) => ({
+      dilstarProductEntries = filtered.map((p) => ({
         url: `${baseUrl}/products/${p.id}`,
         lastModified: p.updatedAt || new Date(),
         changeFrequency: "daily" as const,
         priority: 0.8,
       }));
     } catch (error) {
-      logger.error("Sitemap: Failed to load Distar brand products", error);
+      logger.error("Sitemap: Failed to load Dilstar brand products", error);
     }
 
     return [
@@ -102,6 +103,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.5,
       },
       {
+        url: `${baseUrl}/support`,
+        lastModified: new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.5,
+      },
+      {
         url: `${baseUrl}/privacy`,
         lastModified: new Date(),
         changeFrequency: "monthly" as const,
@@ -119,7 +126,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "monthly" as const,
         priority: 0.3,
       },
-      ...distarProductEntries,
+      {
+        url: `${baseUrl}/cookie`,
+        lastModified: new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.3,
+      },
+      ...dilstarProductEntries,
     ];
   }
 
@@ -223,6 +236,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${baseUrl}/refund`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/cookie`,
       lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.3,

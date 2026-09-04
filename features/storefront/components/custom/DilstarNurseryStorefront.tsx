@@ -8,7 +8,7 @@ import { DEFAULT_CURRENCY } from "@/shared/currency";
 
 /**
  * ═══════════════════════════════════════════════════════════════
- * DISTAR NURSERY — Custom Storefront
+ * DILSTAR NURSERY — Custom Storefront
  * ═══════════════════════════════════════════════════════════════
  * Soft organic nature theme with earthy greens, cream backgrounds,
  * botanical design elements, rounded shapes, and a warm feel.
@@ -17,7 +17,7 @@ import { DEFAULT_CURRENCY } from "@/shared/currency";
  * section, or content. This is YOUR page — no restrictions.
  * ═══════════════════════════════════════════════════════════════
  */
-export default function DistarNurseryStorefront({ org, products }: StorefrontProps) {
+export default function DilstarNurseryStorefront({ org, products }: StorefrontProps) {
   const metadata = org.publicMetadata;
   const plantProducts = products.filter((p) => p.type === "product");
   const serviceProducts = products.filter((p) => p.type === "service");
@@ -241,11 +241,6 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {serviceProducts.map((service) => {
-                const formattedPrice = (service.price / 100).toLocaleString("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                });
-
                 return (
                   <Link
                     key={service.id}
@@ -286,7 +281,12 @@ export default function DistarNurseryStorefront({ org, products }: StorefrontPro
                         {service.description}
                       </p>
                       <div className="flex items-center gap-3 mt-3">
-                        <span className="text-sm font-bold text-emerald-800">{formattedPrice}</span>
+                        <span className="text-sm font-bold text-emerald-800">
+                          <ProductPriceDisplay
+                            priceInSubunits={service.price}
+                            baseCurrency={service.currency || DEFAULT_CURRENCY}
+                          />
+                        </span>
                         <span className="text-[10px] font-mono text-emerald-600/40 uppercase">
                           per session
                         </span>

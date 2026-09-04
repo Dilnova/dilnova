@@ -3,12 +3,18 @@
 import React from "react";
 import { playAudioFeedback } from "../../utils/pos-audio";
 import { usePOSContext } from "../POSBillingProvider";
+import { useCurrency } from "@/shared/currency/context/currency-context";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from "@/shared/currency";
 
 interface TicketPanelProps {
   isMobileSheet?: boolean;
 }
 
 export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelProps) {
+  const { selectedCurrency } = useCurrency();
+  const currencySymbol =
+    SUPPORTED_CURRENCIES.find((c) => c.code === selectedCurrency)?.symbol || selectedCurrency;
   const {
     cart,
     setCart,
@@ -78,10 +84,19 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
                   {item.product.productName}
                 </span>
                 <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-mono">
-                  <span>${((item.product.productPrice ?? 0) / 100).toFixed(2)} ea</span>
+                  <span>
+                    <ProductPriceDisplay
+                      priceInSubunits={item.product.productPrice ?? 0}
+                      baseCurrency={item.product.productCurrency || DEFAULT_CURRENCY}
+                    />{" "}
+                    ea
+                  </span>
                   <span>•</span>
                   <span className="font-bold text-zinc-700 dark:text-zinc-300">
-                    ${((item.quantity * (item.product.productPrice ?? 0)) / 100).toFixed(2)}
+                    <ProductPriceDisplay
+                      priceInSubunits={item.quantity * (item.product.productPrice ?? 0)}
+                      baseCurrency={item.product.productCurrency || DEFAULT_CURRENCY}
+                    />
                   </span>
                 </div>
               </div>
@@ -164,13 +179,19 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
           {discountPercent > 0 && (
             <div className="flex justify-between text-zinc-500 text-[11px]">
               <span>Subtotal:</span>
-              <span className="font-mono">${subtotalAmount.toFixed(2)}</span>
+              <span className="font-mono">
+                {currencySymbol}
+                {subtotalAmount.toFixed(2)}
+              </span>
             </div>
           )}
           {discountPercent > 0 && (
             <div className="flex justify-between text-emerald-600 dark:text-emerald-400 text-[11px] font-medium">
               <span>Discount ({discountPercent}%):</span>
-              <span className="font-mono">-${discountAmount.toFixed(2)}</span>
+              <span className="font-mono">
+                -{currencySymbol}
+                {discountAmount.toFixed(2)}
+              </span>
             </div>
           )}
           <div className="flex justify-between items-baseline pt-0.5">
@@ -178,7 +199,8 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
               Total Due:
             </span>
             <span className="font-mono text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
-              ${totalAmount.toFixed(2)}
+              {currencySymbol}
+              {totalAmount.toFixed(2)}
             </span>
           </div>
         </div>
@@ -221,23 +243,26 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
                   step="0.01"
                   value={cashTendered}
                   onChange={(e) => setCashTendered(e.target.value)}
-                  placeholder={`$${totalAmount.toFixed(2)}`}
+                  placeholder={`${currencySymbol}${totalAmount.toFixed(2)}`}
                   className="w-20 px-2 py-0.5 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-right font-mono font-bold bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none"
                 />
               </div>
 
               {/* Quick Cash Preset Buttons */}
               <div className="flex gap-1">
-                {[10, 20, 50, 100].map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setCashTendered(amt.toString())}
-                    className="flex-1 py-0.5 rounded bg-white dark:bg-zinc-900 border border-amber-300/60 dark:border-amber-800 text-[10px] font-bold text-amber-900 dark:text-amber-200 hover:bg-amber-100/50 cursor-pointer"
-                  >
-                    ${amt}
-                  </button>
-                ))}
+                {(selectedCurrency === "LKR" ? [500, 1000, 2000, 5000] : [10, 20, 50, 100]).map(
+                  (amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setCashTendered(amt.toString())}
+                      className="flex-1 py-0.5 rounded bg-white dark:bg-zinc-900 border border-amber-300/60 dark:border-amber-800 text-[10px] font-bold text-amber-900 dark:text-amber-200 hover:bg-amber-100/50 cursor-pointer"
+                    >
+                      {currencySymbol}
+                      {amt}
+                    </button>
+                  ),
+                )}
                 <button
                   type="button"
                   onClick={() => setCashTendered(totalAmount.toFixed(2))}
@@ -259,7 +284,8 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
                         : "text-rose-600 dark:text-rose-400"
                     }`}
                   >
-                    ${changeDue.toFixed(2)}
+                    {currencySymbol}
+                    {changeDue.toFixed(2)}
                   </span>
                 </div>
               )}
@@ -283,7 +309,10 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
           {isPending ? (
             <span>Processing...</span>
           ) : (
-            <span>✓ Complete Checkout (${totalAmount.toFixed(2)})</span>
+            <span>
+              ✓ Complete Checkout ({currencySymbol}
+              {totalAmount.toFixed(2)})
+            </span>
           )}
         </button>
       </div>

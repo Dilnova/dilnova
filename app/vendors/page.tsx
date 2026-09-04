@@ -8,9 +8,25 @@ export const revalidate = 300; // ISR: cache and regenerate in background every 
 
 export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemSetting("system_name", "Dilnova");
+  const title = `Active Vendors Directory | ${systemName}`;
+  const description = `Explore the registered local sub-vendors, stores, and service providers offering catalog items inside the ${systemName} Commerce Hub.`;
   return {
-    title: `Active Vendors Directory | ${systemName}`,
-    description: `Explore the registered local sub-vendors, stores, and service providers offering catalog items inside the ${systemName} Commerce Hub.`,
+    title,
+    description,
+    alternates: {
+      canonical: "/vendors",
+    },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: systemName,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 

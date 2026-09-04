@@ -130,6 +130,7 @@ export async function loadVendorInventoryData(
           productName: schema.products.name,
           productType: schema.products.type,
           productPrice: schema.products.price,
+          productCurrency: schema.products.currency,
           supplierName: schema.suppliers.name,
         })
         .from(schema.products)

@@ -7,3 +7,4 @@ export * from "./shipments";
 export * from "./returns";
 export * from "./shipping";
 export * from "./chat";
+export * from "./meta-catalog";

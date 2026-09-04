@@ -155,9 +155,9 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 
   const brandRouteMap: Record<string, string> = {
     "/": "/brand/dilstar",
-    "/hardware": "/vendors/distar-hardware",
-    "/tech": "/vendors/distar-tech",
-    "/nursery": "/vendors/distar-nursery",
+    "/hardware": "/vendors/dilstar-hardware",
+    "/tech": "/vendors/dilstar-tech",
+    "/nursery": "/vendors/dilstar-nursery",
     "/services": "/vendors/dilstar-services",
   };
 
@@ -289,6 +289,16 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
 
   const matchesAnyPattern = (patterns: RegExp[]) =>
     patterns.some((pattern) => sanitizedVariants.some((variant) => pattern.test(variant)));
+
+  // Sensitive File & Directory Probe Protection (Drops malicious bot scans before hitting auth or SSR functions)
+  const SENSITIVE_PROBE_PATTERNS = [
+    /(?:^|\/)\.(?!well-known(?:$|\/))(?:env(?:\..*)?|git(?:ignore|attributes)?|svn|hg|bzr|aws|ssh|docker|kube|vscode|idea|ds_store|config|history)(?:$|\/)/i,
+    /\.(?:php\d?|asp|aspx|jsp|jspx|cgi|pl|py|sh|bash|bat|cmd|exe|dll|bak|backup|old|save|temp|tmp|swp|sql|tar|gz|tgz|bz2|7z)(?:$|\?)/i,
+    /(?:^|\/)(?:wp-(?:admin|includes|content|login\.php)|xmlrpc\.php|phpmyadmin|pma|adminer|mysqladmin|myadmin|_profiler|telescope|actuator)(?:$|\/)/i,
+  ];
+  if (matchesAnyPattern(SENSITIVE_PROBE_PATTERNS)) {
+    return applySecurityHeaders(new NextResponse("Not Found", { status: 404 }));
+  }
 
   // Directory Traversal protection
   const TRAVERSAL_PATTERNS = [

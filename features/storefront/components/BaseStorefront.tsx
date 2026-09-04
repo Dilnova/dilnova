@@ -4,7 +4,7 @@ import Image from "next/image";
 import { isVideoUrl } from "@/shared/media/media";
 import AddToCartButton from "@/features/cart/components/AddToCartButton";
 import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
-import { DEFAULT_CURRENCY } from "@/shared/currency";
+import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
 import type { StorefrontProps } from "./custom/types";
 
 export interface BaseStorefrontProps extends StorefrontProps {
@@ -172,10 +172,10 @@ export default function BaseStorefront({
           )}
           <div className={productsGridClassName}>
             {products.map((product) => {
-              const formattedPrice = (product.price / 100).toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-              });
+              const formattedPrice = formatMoney(
+                product.price,
+                product.currency || DEFAULT_CURRENCY,
+              );
 
               if (renderProductCard) {
                 return renderProductCard(product, formattedPrice);

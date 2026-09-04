@@ -19,6 +19,7 @@ export interface BankTransferCheckoutInstructions {
   orderId: string;
   reference: string;
   grandTotalCents: number;
+  currency?: string;
   vendors: BankTransferVendorInstruction[];
 }
 

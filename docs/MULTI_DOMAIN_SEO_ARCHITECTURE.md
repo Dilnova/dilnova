@@ -1,7 +1,7 @@
 # Multi-Domain & SEO Architecture Specification — Dilnova Commerce Hub
 
 **Platform:** Dilnova Commerce Hub  
-**Flagship Brand:** Distar Industries (Motors & Hardware)  
+**Flagship Brand:** Dilstar (Hardware, Nursery, Tech Shop, Services)  
 **Primary Platform Domain:** `dilnova.pp.ua`  
 **Flagship Brand Domain:** `dilstar.pp.ua`  
 **Architecture Style:** Multi-Tenant Host Rewriting with Dynamic SEO Isolation
@@ -17,7 +17,7 @@ flowchart TD
     Visitor([Web Visitor / Googlebot]) --> CF{Cloudflare Edge WAF}
 
     CF -->|Host: dilnova.pp.ua| DilnovaHub["Dilnova Marketplace Hub<br/>(Full Platform, Directory, Multi-Vendor Cart)"]
-    CF -->|Host: dilstar.pp.ua| DilstarHub["Dilstar Brand Portal<br/>(Motors & 4 Specialized Divisions)"]
+    CF -->|Host: dilstar.pp.ua| DilstarHub["Dilstar Brand Portal<br/>(4 Specialized Divisions)"]
 
     DilnovaHub --> Proxy["Next.js 16 Edge Proxy (proxy.ts)"]
     DilstarHub --> Proxy
@@ -37,15 +37,15 @@ flowchart TD
 
 Serves the complete multi-vendor marketplace, third-party sellers, vendor admin console, customer dashboard, and platform billing.
 
-| Route on `dilnova.pp.ua`                   | Component / Purpose                       | Notes                                                          |
-| :----------------------------------------- | :---------------------------------------- | :------------------------------------------------------------- |
-| `https://www.dilnova.pp.ua/`               | Marketplace Homepage (`app/page.tsx`)     | 3D Hero, Featured Stores, Independent Sellers, Pricing plans   |
-| `https://www.dilnova.pp.ua/vendors`        | Vendor Directory (`app/vendors/page.tsx`) | Browse all registered sellers                                  |
-| `https://www.dilnova.pp.ua/vendors/[slug]` | Vendor Storefronts                        | Dynamic vendor stores (`distar-hardware`, `distar-tech`, etc.) |
-| `https://www.dilnova.pp.ua/products`       | Global Catalog                            | Search across all marketplace products                         |
-| `https://www.dilnova.pp.ua/cart`           | Unified Shopping Cart                     | Cross-vendor shared cart                                       |
-| `https://www.dilnova.pp.ua/admin`          | Org Admin Console                         | Catalog and order management                                   |
-| `https://www.dilnova.pp.ua/superadmin`     | Platform Superadmin                       | System-level governance and settings                           |
+| Route on `dilnova.pp.ua`                   | Component / Purpose                       | Notes                                                            |
+| :----------------------------------------- | :---------------------------------------- | :--------------------------------------------------------------- |
+| `https://www.dilnova.pp.ua/`               | Marketplace Homepage (`app/page.tsx`)     | 3D Hero, Featured Stores, Independent Sellers, Pricing plans     |
+| `https://www.dilnova.pp.ua/vendors`        | Vendor Directory (`app/vendors/page.tsx`) | Browse all registered sellers                                    |
+| `https://www.dilnova.pp.ua/vendors/[slug]` | Vendor Storefronts                        | Dynamic vendor stores (`dilstar-hardware`, `dilstar-tech`, etc.) |
+| `https://www.dilnova.pp.ua/products`       | Global Catalog                            | Search across all marketplace products                           |
+| `https://www.dilnova.pp.ua/cart`           | Unified Shopping Cart                     | Cross-vendor shared cart                                         |
+| `https://www.dilnova.pp.ua/admin`          | Org Admin Console                         | Catalog and order management                                     |
+| `https://www.dilnova.pp.ua/superadmin`     | Platform Superadmin                       | System-level governance and settings                             |
 
 ---
 

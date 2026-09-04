@@ -12,6 +12,12 @@ import { isVideoUrl } from "@/shared/media/media";
 import { toast } from "sonner";
 import { useConfirm } from "@/shared/ui/notifications";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
+import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
+import { DEFAULT_CURRENCY } from "@/shared/currency";
+import {
+  QuickSocialShareModal,
+  type ShareModalProduct,
+} from "@/features/social-share/components/QuickSocialShareModal";
 
 export interface Product {
   id: string;
@@ -19,6 +25,7 @@ export interface Product {
   type: string; // 'product' | 'service'
   description: string | null;
   price: number;
+  currency?: string | null;
   imageUrl: string | null;
   media?: { url: string; type: "image" | "video" }[] | null;
   categoryId: string | null;
@@ -50,6 +57,7 @@ export default function ManageProductsClient({
   const [editingStockId, setEditingStockId] = useState<string | null>(null);
   const [editStockValue, setEditStockValue] = useState<string>("");
   const [isUpdatingStock, setIsUpdatingStock] = useState(false);
+  const [sharingProduct, setSharingProduct] = useState<ShareModalProduct | null>(null);
 
   // Keep local list in sync when server data refreshes (e.g. after add on another page)
   useEffect(() => {
@@ -373,7 +381,10 @@ export default function ManageProductsClient({
                 {/* Price and Stock status row */}
                 <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 gap-2">
                   <span className="text-base sm:text-lg font-black text-zinc-900 dark:text-zinc-100 font-mono tracking-tight">
-                    ${(item.price / 100).toFixed(2)}
+                    <ProductPriceDisplay
+                      priceInSubunits={item.price}
+                      baseCurrency={item.currency || DEFAULT_CURRENCY}
+                    />
                   </span>
                   {item.type === "product" &&
                     item.stockQuantity !== undefined &&
@@ -452,6 +463,15 @@ export default function ManageProductsClient({
                             Store
                           </Link>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => setSharingProduct(item)}
+                          aria-label={`Share ${item.name}`}
+                          className="px-2 sm:px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 dark:text-blue-300 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>🚀</span>
+                          <span>Share</span>
+                        </button>
                       </div>
 
                       <button
@@ -483,6 +503,13 @@ export default function ManageProductsClient({
           ))}
         </div>
       )}
+
+      {/* 1-Click Multi-Channel Social Share Modal */}
+      <QuickSocialShareModal
+        product={sharingProduct}
+        isOpen={Boolean(sharingProduct)}
+        onClose={() => setSharingProduct(null)}
+      />
     </div>
   );
 }
