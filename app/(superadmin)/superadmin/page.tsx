@@ -161,6 +161,9 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
         checkoutOptionsCatalog,
         stockAvailabilityCatalog,
         allTaxClasses,
+        pinterestDomainVerify,
+        googleSiteVerify,
+        facebookDomainVerify,
       ] = await Promise.all([
         getSystemSetting("max_media_limit", "5"),
         getSystemSetting("system_logo", ""),
@@ -173,6 +176,10 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
         getCheckoutOptionsCatalog(),
         getStockAvailabilityCatalog(),
         getAllTaxClasses(),
+        // SEO & Domain Verification: DB → env var → empty
+        getSystemSetting("pinterest_domain_verify", process.env.PINTEREST_DOMAIN_VERIFY ?? ""),
+        getSystemSetting("google_site_verify", process.env.GOOGLE_SITE_VERIFY ?? ""),
+        getSystemSetting("facebook_domain_verify", process.env.FACEBOOK_DOMAIN_VERIFY ?? ""),
       ]);
 
       content = (
@@ -188,6 +195,9 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
           checkoutOptionsCatalog={checkoutOptionsCatalog}
           stockAvailabilityCatalog={stockAvailabilityCatalog}
           taxClasses={allTaxClasses}
+          pinterestDomainVerify={pinterestDomainVerify}
+          googleSiteVerify={googleSiteVerify}
+          facebookDomainVerify={facebookDomainVerify}
         />
       );
       break;

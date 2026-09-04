@@ -41,8 +41,15 @@ export async function verifyPinterestAccount(accessToken: string): Promise<{
 
     const data = await res.json();
     if (!res.ok) {
-      const msg =
+      let msg =
         data?.message || data?.error?.message || `Pinterest API returned status ${res.status}`;
+      if (msg.includes("consumer type is not supported")) {
+        msg =
+          "Pinterest App Status: Trial Access Pending. Your Pinterest App (ID: 1607805) is currently in review by Pinterest. Pinterest blocks API calls until trial access is approved (usually 24–48 hours). Once approved, Auto-Detect will work immediately. You can also manually enter your Board ID below and save.";
+      } else if (res.status === 401 || msg.toLowerCase().includes("authentication failed")) {
+        msg =
+          "Pinterest Authentication Failed (HTTP 401). In your Pinterest App (https://developers.pinterest.com/apps/1607805/), under 'Select environment', make sure you choose 'Production limited' (do NOT select 'Sandbox'), then click 'Generate token' and paste the new token.";
+      }
       return { success: false, error: msg };
     }
 
@@ -87,7 +94,14 @@ export async function fetchPinterestBoards(accessToken: string): Promise<{
 
     const data = await res.json();
     if (!res.ok) {
-      const msg = data?.message || data?.error?.message || `Pinterest API error (${res.status})`;
+      let msg = data?.message || data?.error?.message || `Pinterest API error (${res.status})`;
+      if (msg.includes("consumer type is not supported")) {
+        msg =
+          "Pinterest App Status: Trial Access Pending. Your Pinterest App (ID: 1607805) is currently in review by Pinterest. Pinterest blocks API calls until trial access is approved (usually 24–48 hours). Once approved, Auto-Detect will work immediately. You can also manually enter your Board ID below and save.";
+      } else if (res.status === 401 || msg.toLowerCase().includes("authentication failed")) {
+        msg =
+          "Pinterest Authentication Failed (HTTP 401). In your Pinterest App (https://developers.pinterest.com/apps/1607805/), under 'Select environment', make sure you choose 'Production limited' (do NOT select 'Sandbox'), then click 'Generate token' and paste the new token.";
+      }
       return { success: false, boards: [], error: msg };
     }
 
@@ -165,8 +179,32 @@ export async function createPinterestProductPin({
 
     const description = descParts.join("\n").slice(0, 800);
 
+    let resolvedBoardId = cleanBoardId;
+    if (!/^\d+$/.test(cleanBoardId)) {
+      try {
+        const boardsRes = await fetchPinterestBoards(cleanToken);
+        if (boardsRes.success && boardsRes.boards.length > 0) {
+          const rawSlug = cleanBoardId
+            .replace(/https?:\/\/(www\.)?pinterest\.com\/[^\/]+\//i, "")
+            .replace(/\/+$/, "")
+            .toLowerCase();
+          const matched = boardsRes.boards.find(
+            (b) =>
+              b.id === cleanBoardId ||
+              b.name.toLowerCase() === cleanBoardId.toLowerCase() ||
+              b.name.toLowerCase().replace(/\s+/g, "-") === rawSlug,
+          );
+          if (matched) {
+            resolvedBoardId = matched.id;
+          }
+        }
+      } catch {
+        // Fallback to user-provided string
+      }
+    }
+
     const payload = {
-      board_id: cleanBoardId,
+      board_id: resolvedBoardId,
       media_source: {
         source_type: "image_url",
         url: imageUrl,

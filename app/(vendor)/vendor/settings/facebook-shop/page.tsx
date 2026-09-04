@@ -593,6 +593,11 @@ export default function SocialSettingsHubPage() {
           accessToken: token.includes("••••") ? undefined : token || undefined,
         });
 
+        if (res?.serverError) {
+          setBoardDiscoveryError(res.serverError);
+          return;
+        }
+
         if (res?.data?.boards && res.data.boards.length > 0) {
           setDiscoveredBoards(res.data.boards);
           setSaveSuccess(
@@ -2340,28 +2345,26 @@ export default function SocialSettingsHubPage() {
                     </div>
                   </div>
                   <a
-                    href="https://developers.pinterest.com/apps/"
+                    href="https://developers.pinterest.com/apps/1607805/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white transition-all shadow-xs cursor-pointer"
                   >
-                    Open My Apps Dashboard <ExternalLink className="h-3 w-3" />
+                    Open Dilnova Store Sync App (ID: 1607805) <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 space-y-2">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    Quick 3-Click Token Generation:
+                <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 space-y-2.5">
+                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                    <span>How to generate your token in 3 clicks:</span>
                   </div>
-                  <ol className="list-decimal list-inside space-y-1">
+                  <ol className="list-decimal list-inside space-y-1.5 text-zinc-600 dark:text-zinc-400">
                     <li>
-                      Click <strong>Manage</strong> on your app (e.g. <em>Dilnova Store Sync</em>).
+                      In your app, click the <strong>Configure</strong> tab or scroll down to the{" "}
+                      <strong>Generate access token</strong> section.
                     </li>
                     <li>
-                      Scroll down to the <strong>Generate access token</strong> section.
-                    </li>
-                    <li>
-                      Check these 4 permissions:
+                      Select these 4 scopes:
                       <span className="inline-flex gap-1 flex-wrap ml-1 font-mono font-bold text-[10px] text-red-600 dark:text-red-400">
                         <code>boards:read</code>, <code>pins:read</code>, <code>pins:write</code>,{" "}
                         <code>user_accounts:read</code>
@@ -2371,11 +2374,18 @@ export default function SocialSettingsHubPage() {
                       Click <strong>Generate token</strong> and paste the copied token below:
                     </li>
                   </ol>
+
+                  <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 text-[11px] text-amber-900 dark:text-amber-200">
+                    <strong>⚠️ Important:</strong> Do NOT use a Conversions API token from Pinterest
+                    Ads Manager (tokens starting with <code>pina_</code>). Conversions tokens only
+                    track pixel ad events and cannot access boards or create product pins. Generate
+                    an <strong>API v5 User Token</strong> inside your Developer App.
+                  </div>
                 </div>
 
                 <div>
                   <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
-                    Pinterest API Access Token (pina_...)
+                    Pinterest API v5 Access Token
                   </label>
                   <div className="relative">
                     <input
@@ -2383,7 +2393,7 @@ export default function SocialSettingsHubPage() {
                       placeholder={
                         hasExistingPinterestToken
                           ? "••••••••••••••••••••••••••••••••"
-                          : "Paste your generated token starting with pina_..."
+                          : "Paste your Developer App token here"
                       }
                       value={pinterestAccessToken}
                       onChange={(e) => setPinterestAccessToken(e.target.value)}

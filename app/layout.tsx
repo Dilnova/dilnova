@@ -88,6 +88,19 @@ export async function generateMetadata(): Promise<Metadata> {
         "b2b platform",
       ];
 
+  const pinterestVerify = await getSystemSetting(
+    "pinterest_domain_verify",
+    process.env.PINTEREST_DOMAIN_VERIFY ?? "",
+  );
+  const metaDomainVerify = await getSystemSetting(
+    "facebook_domain_verify",
+    process.env.FACEBOOK_DOMAIN_VERIFY || "",
+  );
+  const googleSiteVerify = await getSystemSetting(
+    "google_site_verify",
+    process.env.GOOGLE_SITE_VERIFY || "",
+  );
+
   return {
     title: {
       template: `%s | ${systemName}`,
@@ -136,6 +149,13 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(baseUrl),
     alternates: {
       canonical: "/",
+    },
+    verification: {
+      ...(googleSiteVerify ? { google: googleSiteVerify } : {}),
+      other: {
+        ...(pinterestVerify ? { "p:domain_verify": pinterestVerify } : {}),
+        ...(metaDomainVerify ? { "facebook-domain-verification": metaDomainVerify } : {}),
+      },
     },
   };
 }

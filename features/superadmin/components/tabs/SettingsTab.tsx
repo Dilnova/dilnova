@@ -27,6 +27,10 @@ interface SettingsTabProps {
   checkoutOptionsCatalog: CheckoutOptionDefinition[];
   stockAvailabilityCatalog: StockAvailabilityDefinition[];
   taxClasses?: TaxClassItem[];
+  // SEO & Domain Verification (public tokens, not secrets)
+  pinterestDomainVerify: string;
+  googleSiteVerify: string;
+  facebookDomainVerify: string;
 }
 
 export default function SettingsTab({
@@ -41,6 +45,9 @@ export default function SettingsTab({
   checkoutOptionsCatalog,
   stockAvailabilityCatalog,
   taxClasses = [],
+  pinterestDomainVerify,
+  googleSiteVerify,
+  facebookDomainVerify,
 }: SettingsTabProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -52,6 +59,11 @@ export default function SettingsTab({
   const [techCustomEnabledInput, setTechCustomEnabledInput] = useState(techCustomEnabled);
   const [servicesCustomEnabledInput, setServicesCustomEnabledInput] =
     useState(servicesCustomEnabled);
+
+  // SEO & Verification token state
+  const [pinterestVerifyInput, setPinterestVerifyInput] = useState(pinterestDomainVerify);
+  const [googleVerifyInput, setGoogleVerifyInput] = useState(googleSiteVerify);
+  const [facebookVerifyInput, setFacebookVerifyInput] = useState(facebookDomainVerify);
 
   // Logo Upload State
   const [logoInput, setLogoInput] = useState(logoUrl || "");
@@ -170,6 +182,13 @@ export default function SettingsTab({
             key: "custom_services_storefront_enabled",
             value: servicesCustomEnabledInput ? "true" : "false",
           }),
+          // SEO & Domain Verification tokens
+          updateSystemSettingAction({
+            key: "pinterest_domain_verify",
+            value: pinterestVerifyInput,
+          }),
+          updateSystemSettingAction({ key: "google_site_verify", value: googleVerifyInput }),
+          updateSystemSettingAction({ key: "facebook_domain_verify", value: facebookVerifyInput }),
         ]);
         const firstError = results.find((r) => r?.serverError);
         if (firstError?.serverError) throw new Error(firstError.serverError);
@@ -447,6 +466,101 @@ export default function SettingsTab({
                 }`}
               />
             </button>
+          </div>
+        </SuperadminFormCard>
+
+        {/* SEO & Domain Verification */}
+        <SuperadminFormCard title="SEO & Domain Verification" icon="🔍" className="space-y-4">
+          <p className="text-[10px] text-zinc-400 leading-relaxed">
+            Public domain-ownership tokens injected into{" "}
+            <code className="font-mono text-purple-600 dark:text-purple-400">&lt;meta&gt;</code>{" "}
+            tags in the site&apos;s{" "}
+            <code className="font-mono text-purple-600 dark:text-purple-400">&lt;head&gt;</code>.
+            Changes here take effect on the next page request — no redeploy needed.
+          </p>
+
+          {/* Pinterest */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+              <span>🎯</span> Pinterest Domain Verify
+            </label>
+            <input
+              type="text"
+              maxLength={64}
+              value={pinterestVerifyInput}
+              onChange={(e) => setPinterestVerifyInput(e.target.value)}
+              className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all placeholder:text-zinc-400"
+              placeholder="e.g. a1b2c3d4e5f60718293a4b5c6d7e8f9a"
+            />
+            <p className="text-[10px] text-zinc-400">
+              From:{" "}
+              <a
+                href="https://www.pinterest.com/business/hub/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-purple-500 hover:underline"
+              >
+                Pinterest Business Hub
+              </a>{" "}
+              → Claim Website → HTML tag method → copy only the{" "}
+              <code className="font-mono">content=&quot;…&quot;</code> value.
+            </p>
+          </div>
+
+          {/* Google */}
+          <div className="space-y-1.5 border-t border-zinc-100 dark:border-zinc-900 pt-4">
+            <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+              <span>🔎</span> Google Site Verify
+            </label>
+            <input
+              type="text"
+              maxLength={64}
+              value={googleVerifyInput}
+              onChange={(e) => setGoogleVerifyInput(e.target.value)}
+              className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all placeholder:text-zinc-400"
+              placeholder="e.g. abc123XYZ..."
+            />
+            <p className="text-[10px] text-zinc-400">
+              From:{" "}
+              <a
+                href="https://search.google.com/search-console"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-purple-500 hover:underline"
+              >
+                Google Search Console
+              </a>{" "}
+              → Add property → HTML tag method → copy only the{" "}
+              <code className="font-mono">content=&quot;…&quot;</code> value.
+            </p>
+          </div>
+
+          {/* Facebook */}
+          <div className="space-y-1.5 border-t border-zinc-100 dark:border-zinc-900 pt-4">
+            <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+              <span>📘</span> Facebook Domain Verify
+            </label>
+            <input
+              type="text"
+              maxLength={64}
+              value={facebookVerifyInput}
+              onChange={(e) => setFacebookVerifyInput(e.target.value)}
+              className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all placeholder:text-zinc-400"
+              placeholder="e.g. abcdefgh12345678"
+            />
+            <p className="text-[10px] text-zinc-400">
+              From:{" "}
+              <a
+                href="https://business.facebook.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-purple-500 hover:underline"
+              >
+                Meta Business Suite
+              </a>{" "}
+              → Brand Safety → Domains → Add domain → copy only the{" "}
+              <code className="font-mono">content=&quot;…&quot;</code> value.
+            </p>
           </div>
         </SuperadminFormCard>
 
