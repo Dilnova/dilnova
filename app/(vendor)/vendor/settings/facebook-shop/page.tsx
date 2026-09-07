@@ -308,7 +308,7 @@ export default function SocialSettingsHubPage() {
           );
         } else {
           setDiscoveryError(
-            "No managed Facebook Pages found. You can also enter your Page ID (1366821166509556) manually below.",
+            "No managed Facebook Pages found. You can also enter your Page ID manually below.",
           );
         }
       } catch (err) {
@@ -1155,7 +1155,7 @@ export default function SocialSettingsHubPage() {
           </div>
           <div className="text-[11px] font-semibold text-zinc-900 dark:text-zinc-100 truncate">
             {instagramAccountId
-              ? `@${discoveredInstagramAccount?.username || "dilukalahiru"}`
+              ? `@${discoveredInstagramAccount?.username || "connected"}`
               : "Not connected"}
           </div>
           <div className="text-[10px] text-zinc-400 mt-0.5">
@@ -1451,7 +1451,7 @@ export default function SocialSettingsHubPage() {
                       </div>
                     </div>
                     <a
-                      href="https://business.facebook.com/latest/settings/system_users/?business_id=208458023692445&nav_ref=bm_settings_redirect_migration&bm_redirect_migration=true&selected_user_id=61593935072406"
+                      href="https://business.facebook.com/latest/settings/system_users"
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-xs cursor-pointer text-center"
@@ -1747,7 +1747,7 @@ export default function SocialSettingsHubPage() {
                       Add Your WhatsApp Number in Meta Business Portfolio
                     </span>
                     <a
-                      href="https://business.facebook.com/settings/whatsapp-business-accounts/?business_id=208458023692445"
+                      href="https://business.facebook.com/settings/whatsapp-business-accounts"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-xs cursor-pointer"
@@ -1756,7 +1756,7 @@ export default function SocialSettingsHubPage() {
                     </a>
                   </div>
                   <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    In your Meta Business Portfolio (<strong>ĐIŁỮҜΔ ŁΔĦIŘỮ</strong>), click{" "}
+                    In your Meta Business Portfolio, click{" "}
                     <strong>Add &rarr; Connect a WhatsApp Business account</strong>.
                   </p>
                 </div>
@@ -1771,7 +1771,7 @@ export default function SocialSettingsHubPage() {
                     </span>
                     <div className="flex items-center gap-2 flex-wrap">
                       <a
-                        href="https://business.facebook.com/settings/whatsapp-business-accounts/?business_id=208458023692445"
+                        href="https://business.facebook.com/settings/whatsapp-business-accounts"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-xs cursor-pointer"
@@ -1779,7 +1779,7 @@ export default function SocialSettingsHubPage() {
                         WhatsApp Connected Assets (Direct) <ExternalLink className="h-3 w-3" />
                       </a>
                       <a
-                        href="https://business.facebook.com/commerce_manager/catalogs/?business_id=208458023692445"
+                        href="https://business.facebook.com/commerce_manager/catalogs"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors"
@@ -1899,7 +1899,7 @@ export default function SocialSettingsHubPage() {
                       </div>
                     </div>
                     <a
-                      href="https://business.facebook.com/latest/settings/system_users/?business_id=208458023692445&nav_ref=bm_settings_redirect_migration&bm_redirect_migration=true&selected_user_id=61593935072406"
+                      href="https://business.facebook.com/latest/settings/system_users"
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all shadow-xs cursor-pointer text-center"
@@ -2055,17 +2055,17 @@ export default function SocialSettingsHubPage() {
             </div>
           )}
 
-          {/* TAB 4: 📌 Pinterest Product Pins & Search Engine Indexing */}
+          {/* TAB 4: 📌 Pinterest Product Pins */}
           {activeTab === "pinterest" && (
             <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-red-600 font-mono flex items-center gap-2">
-                    <Pin className="h-4 w-4" /> Pinterest Product Pins & Search Engine Discovery
+                    <Pin className="h-4 w-4" /> Pinterest Product Pins
                   </h2>
                   <p className="text-xs text-zinc-500 mt-0.5">
-                    Step-by-step guide to connect Pinterest API v5 and get your products indexed on
-                    Google Search & Images.
+                    Automatically publish your store&apos;s products directly to your Pinterest
+                    boards with photos, prices, and store links.
                   </p>
                 </div>
                 <span className="p-2 rounded-xl bg-red-50 dark:bg-red-950/60 text-red-600">
@@ -2073,23 +2073,7 @@ export default function SocialSettingsHubPage() {
                 </span>
               </div>
 
-              {/* Search Engine Authority Callout */}
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-red-50/80 to-amber-50/40 dark:from-red-950/40 dark:to-amber-950/20 border border-red-200/70 dark:border-red-900/60 space-y-2 text-xs">
-                <span className="font-bold text-red-900 dark:text-red-200 flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-red-600" /> Google Search Discovery Engine
-                  (Domain Authority 94):
-                </span>
-                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                  Pinterest is crawled aggressively by{" "}
-                  <strong>Google Search & Google Images</strong>. Because Dilnova automatically
-                  embeds
-                  <code>Schema.org/Product</code> JSON-LD on your store pages, Pinterest validates
-                  and converts every Pin into an official
-                  <strong>Rich Product Pin</strong> with live prices and an in-stock badge.
-                </p>
-              </div>
-
-              {/* STEP 1: Create Pinterest Developer App (With Exact Form Answers) */}
+              {/* Step 1: Connect Pinterest */}
               <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2.5">
@@ -2098,129 +2082,21 @@ export default function SocialSettingsHubPage() {
                     </span>
                     <div>
                       <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                        Create Your Pinterest Developer App
+                        Get Your Pinterest Developer Access Token
                       </h3>
                       <p className="text-[11px] text-zinc-500">
-                        100% Free with 1,000 pins/day. Takes 1 minute to submit.
+                        Generate a user token with pins and boards permissions from Pinterest
+                        Developers.
                       </p>
                     </div>
                   </div>
                   <a
-                    href="https://developers.pinterest.com/apps/connect/"
+                    href="https://developers.pinterest.com/apps/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white transition-all shadow-xs cursor-pointer"
                   >
-                    Open Pinterest &rarr; Connect App <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                </div>
-
-                {/* Form Cheat-Sheet Box */}
-                <div className="p-4 rounded-xl bg-white dark:bg-zinc-950 border border-red-200/80 dark:border-red-900/50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-red-900 dark:text-red-200 flex items-center gap-1.5">
-                      📋 &quot;Connect App&quot; Form Cheat-Sheet (Choose these exact options):
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full">
-                      Instant Trial Approval
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-[11px]">
-                    <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/80">
-                      <span className="text-zinc-400 block text-[10px] uppercase tracking-wider font-bold">
-                        App Name
-                      </span>
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-200 font-mono">
-                        Dilnova Store Sync
-                      </span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/80">
-                      <span className="text-zinc-400 block text-[10px] uppercase tracking-wider font-bold">
-                        Company Name & Site
-                      </span>
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-200 font-mono">
-                        Dilnova (https://dilnova.com)
-                      </span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/80">
-                      <span className="text-zinc-400 block text-[10px] uppercase tracking-wider font-bold">
-                        Privacy Policy
-                      </span>
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-200 font-mono">
-                        https://dilnova.com/privacy
-                      </span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-900/40">
-                      <span className="text-emerald-700 dark:text-emerald-400 block text-[10px] uppercase tracking-wider font-bold">
-                        ⭐️ App Purpose (Important)
-                      </span>
-                      <span className="font-bold text-emerald-900 dark:text-emerald-200">
-                        Personal API access (single, personal use)
-                      </span>
-                      <span className="block text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5">
-                        Approved immediately with zero wait time
-                      </span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/80">
-                      <span className="text-zinc-400 block text-[10px] uppercase tracking-wider font-bold">
-                        Sharing access with
-                      </span>
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-200 font-mono">
-                        No one (or Just me)
-                      </span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/80">
-                      <span className="text-zinc-400 block text-[10px] uppercase tracking-wider font-bold">
-                        Use Cases (Select both)
-                      </span>
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                        ☑️ Pin creation and scheduling & ☑️ Ecommerce
-                      </span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/80">
-                      <span className="text-zinc-400 block text-[10px] uppercase tracking-wider font-bold">
-                        Audience (Select both)
-                      </span>
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                        ☑️ Merchants & ☑️ Businesses
-                      </span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800/80">
-                      <span className="text-zinc-400 block text-[10px] uppercase tracking-wider font-bold">
-                        Reads Pins / Boards data
-                      </span>
-                      <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                        🔘 Yes, mine (authenticated Pinner&apos;s own pins)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* STEP 2: Generate Access Token */}
-              <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-red-600 text-white text-xs font-mono font-bold shrink-0">
-                      2
-                    </span>
-                    <div>
-                      <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                        Generate Your Access Token
-                      </h3>
-                      <p className="text-[11px] text-zinc-500">
-                        Open your app dashboard and generate a private token with 4 permissions.
-                      </p>
-                    </div>
-                  </div>
-                  <a
-                    href="https://developers.pinterest.com/apps/1607805/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white transition-all shadow-xs cursor-pointer"
-                  >
-                    Open Dilnova Store Sync App (ID: 1607805) <ExternalLink className="h-3 w-3" />
+                    Open Pinterest Developers <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 </div>
 
@@ -2606,7 +2482,7 @@ export default function SocialSettingsHubPage() {
                 <span className="text-[10px] text-zinc-400 mt-1 block">
                   Found in{" "}
                   <a
-                    href="https://business.facebook.com/commerce_manager/catalogs/?business_id=208458023692445"
+                    href="https://business.facebook.com/commerce_manager/catalogs"
                     target="_blank"
                     rel="noreferrer"
                     className="text-purple-600 underline"

@@ -324,6 +324,9 @@ export async function generateGoogleMerchantFeed({
 
     // Pricing & Currency sanitization
     let priceNum = Number(prod.price) || 0;
+    if (priceNum <= 0) {
+      continue; // Google Merchant Center disapproves items with price <= 0.00
+    }
     let itemCurrency = (prod.currency || defaultCurrency).toUpperCase();
 
     // If destination is Sri Lanka (LKR default) and item is stored in USD, convert to LKR
