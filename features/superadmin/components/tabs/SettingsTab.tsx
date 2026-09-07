@@ -31,6 +31,9 @@ interface SettingsTabProps {
   pinterestDomainVerify: string;
   googleSiteVerify: string;
   facebookDomainVerify: string;
+  // Google Merchant Center IDs
+  googleMerchantIdDilstar: string;
+  googleMerchantIdDilnova: string;
 }
 
 export default function SettingsTab({
@@ -48,6 +51,8 @@ export default function SettingsTab({
   pinterestDomainVerify,
   googleSiteVerify,
   facebookDomainVerify,
+  googleMerchantIdDilstar,
+  googleMerchantIdDilnova,
 }: SettingsTabProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -64,6 +69,22 @@ export default function SettingsTab({
   const [pinterestVerifyInput, setPinterestVerifyInput] = useState(pinterestDomainVerify);
   const [googleVerifyInput, setGoogleVerifyInput] = useState(googleSiteVerify);
   const [facebookVerifyInput, setFacebookVerifyInput] = useState(facebookDomainVerify);
+
+  // Dual Google Merchant Center state
+  const [googleMerchantIdDilstarInput, setGoogleMerchantIdDilstarInput] = useState(
+    googleMerchantIdDilstar || "5848179436",
+  );
+  const [googleMerchantIdDilnovaInput, setGoogleMerchantIdDilnovaInput] = useState(
+    googleMerchantIdDilnova || "5848718366",
+  );
+  const [copiedFeed, setCopiedFeed] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedFeed(label);
+    toast.success(`${label} copied to clipboard!`);
+    setTimeout(() => setCopiedFeed(null), 2500);
+  };
 
   // Logo Upload State
   const [logoInput, setLogoInput] = useState(logoUrl || "");
@@ -189,6 +210,15 @@ export default function SettingsTab({
           }),
           updateSystemSettingAction({ key: "google_site_verify", value: googleVerifyInput }),
           updateSystemSettingAction({ key: "facebook_domain_verify", value: facebookVerifyInput }),
+          // Google Merchant Center IDs
+          updateSystemSettingAction({
+            key: "google_merchant_id_dilstar",
+            value: googleMerchantIdDilstarInput,
+          }),
+          updateSystemSettingAction({
+            key: "google_merchant_id_dilnova",
+            value: googleMerchantIdDilnovaInput,
+          }),
         ]);
         const firstError = results.find((r) => r?.serverError);
         if (firstError?.serverError) throw new Error(firstError.serverError);
@@ -466,6 +496,157 @@ export default function SettingsTab({
                 }`}
               />
             </button>
+          </div>
+        </SuperadminFormCard>
+
+        {/* Google Merchant Center & Global Feeds */}
+        <SuperadminFormCard
+          title="Google Merchant Center & Global Feeds"
+          icon="🛍️"
+          className="space-y-5"
+        >
+          <p className="text-[10px] text-zinc-400 leading-relaxed">
+            Centralized Google Shopping and Free Search Listings management for both the Dilstar
+            Flagship Brand and Dilnova Multi-Vendor Marketplace. Feeds update automatically every 24
+            hours.
+          </p>
+
+          {/* Dilstar Feed Card */}
+          <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🏪</span>
+                <div>
+                  <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                    Dilstar Flagship Feed (dilstar.pp.ua)
+                  </h4>
+                  <p className="text-[10px] text-zinc-400">
+                    Scoped exclusively to Dilstar Hardware, Nursery, Tech &amp; Motors in
+                    Ambalantota
+                  </p>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                Brand Store
+              </span>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 block">
+                Google Merchant Center ID (Dilstar)
+              </label>
+              <input
+                type="text"
+                maxLength={40}
+                value={googleMerchantIdDilstarInput}
+                onChange={(e) => setGoogleMerchantIdDilstarInput(e.target.value)}
+                placeholder="5848179436"
+                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-950 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 block">
+                Live XML Feed URL
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value="https://dilstar.pp.ua/api/feeds/google-merchant"
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-[11px] bg-zinc-100/80 dark:bg-zinc-800 font-mono text-zinc-700 dark:text-zinc-300 select-all"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyToClipboard(
+                      "https://dilstar.pp.ua/api/feeds/google-merchant",
+                      "Dilstar Feed URL",
+                    )
+                  }
+                  className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shrink-0 cursor-pointer transition-colors"
+                >
+                  {copiedFeed === "Dilstar Feed URL" ? "Copied!" : "Copy"}
+                </button>
+                <a
+                  href="/api/feeds/google-merchant?scope=dilstar"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-semibold shrink-0 transition-colors"
+                >
+                  View XML
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Dilnova Feed Card */}
+          <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🌐</span>
+                <div>
+                  <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                    Dilnova Marketplace Master Feed (dilnova.pp.ua)
+                  </h4>
+                  <p className="text-[10px] text-zinc-400">
+                    Aggregates all approved multi-vendor marketplace products with vendor brand
+                    attribution
+                  </p>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
+                Multi-Vendor
+              </span>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 block">
+                Google Merchant Center ID (Dilnova)
+              </label>
+              <input
+                type="text"
+                maxLength={40}
+                value={googleMerchantIdDilnovaInput}
+                onChange={(e) => setGoogleMerchantIdDilnovaInput(e.target.value)}
+                placeholder="5848718366"
+                className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-950 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300 block">
+                Live XML Feed URL
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value="https://dilnova.pp.ua/api/feeds/google-merchant"
+                  className="w-full px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-[11px] bg-zinc-100/80 dark:bg-zinc-800 font-mono text-zinc-700 dark:text-zinc-300 select-all"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyToClipboard(
+                      "https://dilnova.pp.ua/api/feeds/google-merchant",
+                      "Dilnova Feed URL",
+                    )
+                  }
+                  className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shrink-0 cursor-pointer transition-colors"
+                >
+                  {copiedFeed === "Dilnova Feed URL" ? "Copied!" : "Copy"}
+                </button>
+                <a
+                  href="/api/feeds/google-merchant?scope=all"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-semibold shrink-0 transition-colors"
+                >
+                  View XML
+                </a>
+              </div>
+            </div>
           </div>
         </SuperadminFormCard>
 
