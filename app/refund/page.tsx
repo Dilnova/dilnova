@@ -1,27 +1,16 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
-import { getSystemSetting } from "@/shared/platform/settings";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const headersList = await headers();
-  const host = headersList.get("x-forwarded-host") || headersList.get("host") || "";
-  const isDilstar = host.includes("dilstar.pp.ua");
-  const brandName = isDilstar ? "Dilstar" : await getSystemSetting("system_name", "Dilnova");
-
-  return {
-    title: `Refund & Return Policy | ${brandName}`,
-    description: `Official Refund and Return Policy for ${brandName} in Sri Lanka. Learn about our 1-day return window, in-store returns, and refund processing terms.`,
-  };
-}
+export const metadata: Metadata = {
+  title: "Refund & Return Policy | Dilstar & Dilnova",
+  description:
+    "Official Refund and Return Policy for Dilstar and Dilnova in Sri Lanka. Learn about our 7-day return window, in-store returns, and refund processing terms.",
+};
 
 export const revalidate = 86400;
 
-export default async function RefundPolicy() {
-  const headersList = await headers();
-  const host = headersList.get("x-forwarded-host") || headersList.get("host") || "";
-  const isDilstar = host.includes("dilstar.pp.ua");
-  const brandName = isDilstar ? "Dilstar" : await getSystemSetting("system_name", "Dilnova");
+export default function RefundPolicy() {
+  const brandName = "Dilstar";
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-sans py-12 px-4 sm:px-6 lg:px-8">
@@ -40,7 +29,7 @@ export default async function RefundPolicy() {
                 d="M10 19l-7-7m0 0l7-7m-7 7h18"
               />
             </svg>
-            Back to {brandName}
+            Back to Store
           </Link>
         </div>
 
@@ -72,12 +61,12 @@ export default async function RefundPolicy() {
           {/* Section 2: Window & Condition */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              2. 1-Day Return Window &amp; Eligibility
+              2. 7-Day Return Window &amp; Eligibility
             </h2>
             <p>
               We accept returns for <strong>both defective and non-defective products</strong>{" "}
-              within <strong>1 day (24 hours)</strong> of receiving your order or completing your
-              in-store purchase.
+              within <strong>7 days</strong> of receiving your order or completing your in-store
+              purchase.
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
@@ -91,8 +80,8 @@ export default async function RefundPolicy() {
               </li>
               <li>
                 <strong>Defective Products:</strong> If an item arrives damaged or has a
-                manufacturing defect, please notify us within 1 day of delivery to qualify for an
-                immediate return inspection.
+                manufacturing defect, please notify us within 7 days of delivery to qualify for an
+                immediate return inspection or exchange.
               </li>
             </ul>
           </section>
@@ -152,7 +141,7 @@ export default async function RefundPolicy() {
             </h2>
             <p>
               Due to health, agricultural, or safety regulations, certain items cannot be returned
-              under the 1-day policy:
+              under the 7-day policy:
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Perishable flora or nursery saplings that have been replanted or altered.</li>
