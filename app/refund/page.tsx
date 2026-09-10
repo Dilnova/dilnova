@@ -64,9 +64,9 @@ export default function RefundPolicy() {
               2. 7-Day Return Window &amp; Eligibility
             </h2>
             <p>
-              We accept returns for <strong>both defective and non-defective products</strong>{" "}
-              within <strong>7 days</strong> of receiving your order or completing your in-store
-              purchase.
+              We accept returns for <strong>defective products only</strong> (such as items damaged
+              in transit or manufacturing faults) within <strong>7 days</strong> of receiving your
+              order or completing your in-store purchase. Non-defective items are non-returnable.
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>

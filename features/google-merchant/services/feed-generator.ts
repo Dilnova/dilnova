@@ -319,8 +319,18 @@ export async function generateGoogleMerchantFeed({
       continue;
     }
 
-    const primaryImageUrl = imageUrls[0];
-    const secondaryImages = imageUrls.slice(1, 11);
+    const optimizeImageUrl = (url: string): string => {
+      // If Cloudinary URL, enforce safe dimensions (max 1600px) and clean JPG encoding to prevent Google 64MP/encoding errors
+      if (url.includes("res.cloudinary.com") && url.includes("/image/upload/")) {
+        if (!url.includes("/c_limit") && !url.includes("/w_")) {
+          return url.replace("/image/upload/", "/image/upload/c_limit,w_1600,h_1600,q_auto,f_jpg/");
+        }
+      }
+      return url;
+    };
+
+    const primaryImageUrl = optimizeImageUrl(imageUrls[0]);
+    const secondaryImages = imageUrls.slice(1, 11).map(optimizeImageUrl);
 
     // Pricing & Currency sanitization
     let priceNum = Number(prod.price) || 0;
