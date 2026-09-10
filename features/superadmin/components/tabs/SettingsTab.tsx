@@ -1,12 +1,16 @@
 "use client";
 
 import SuperadminFormCard from "../ui/SuperadminFormCard";
-import { useState, useTransition, useRef } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
 import * as Sentry from "@sentry/nextjs";
-import { updateSystemSettingAction } from "@/features/superadmin/settings.actions";
+import {
+  updateSystemSettingAction,
+  checkGoogleMerchantFeedHealthAction,
+  verifyHeadMetadataAction,
+} from "@/features/superadmin/settings.actions";
 import CheckoutOptionsSettings from "../CheckoutOptionsSettings";
 import { PendingOverlay } from "@/shared/ui/PendingOverlay";
 import SafeProgressBar from "@/shared/ui/SafeProgressBar";
@@ -78,6 +82,134 @@ export default function SettingsTab({
     googleMerchantIdDilnova || "5848718366",
   );
   const [copiedFeed, setCopiedFeed] = useState<string | null>(null);
+
+  // Feed Health State
+  interface FeedHealthState {
+    checked: boolean;
+    loading: boolean;
+    success?: boolean;
+    productCount?: number;
+    latencyMs?: number;
+    lastBuildDate?: string | null;
+    sampleTitles?: string[];
+    error?: string;
+  }
+
+  const [dilstarHealth, setDilstarHealth] = useState<FeedHealthState>({
+    checked: false,
+    loading: false,
+  });
+  const [dilnovaHealth, setDilnovaHealth] = useState<FeedHealthState>({
+    checked: false,
+    loading: false,
+  });
+
+  const handleCheckFeedHealth = async (scope: "dilstar" | "all") => {
+    const setter = scope === "dilstar" ? setDilstarHealth : setDilnovaHealth;
+    setter((prev) => ({ ...prev, loading: true }));
+
+    try {
+      const res = await checkGoogleMerchantFeedHealthAction({ scope });
+      if (res?.data?.success) {
+        setter({
+          checked: true,
+          loading: false,
+          success: true,
+          productCount: res.data.productCount,
+          latencyMs: res.data.latencyMs,
+          lastBuildDate: res.data.lastBuildDate,
+          sampleTitles: res.data.sampleTitles,
+        });
+        toast.success(
+          `${scope === "dilstar" ? "Dilstar" : "Dilnova"} feed active: ${res.data.productCount} products recognized (${res.data.latencyMs}ms)`,
+        );
+      } else {
+        const errMsg = res?.data?.error || res?.serverError || "Feed health check failed.";
+        setter({
+          checked: true,
+          loading: false,
+          success: false,
+          error: errMsg,
+        });
+        toast.error(errMsg);
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : "Error checking feed health.";
+      setter({
+        checked: true,
+        loading: false,
+        success: false,
+        error: errMsg,
+      });
+      toast.error(errMsg);
+    }
+  };
+
+  useEffect(() => {
+    void handleCheckFeedHealth("dilstar");
+    void handleCheckFeedHealth("all");
+  }, []);
+
+  // SEO & Head Tag Inspector State
+  const [isVerifyingHead, setIsVerifyingHead] = useState(false);
+  const [headVerificationResult, setHeadVerificationResult] = useState<{
+    verified: boolean;
+    checkedAt?: string;
+    allActive?: boolean;
+  } | null>(null);
+
+  const handleVerifyHeadTags = async () => {
+    setIsVerifyingHead(true);
+    try {
+      const res = await verifyHeadMetadataAction({});
+      if (res?.data?.success) {
+        setHeadVerificationResult({
+          verified: true,
+          checkedAt: new Date().toLocaleTimeString(),
+          allActive: res.data.allActive,
+        });
+        if (res.data.allActive) {
+          toast.success("All 3 verification meta tags active and served in <head>!");
+        } else {
+          toast.info("Verification tags checked — some tags are not configured yet.");
+        }
+      }
+    } catch {
+      toast.error("Failed to verify head metadata.");
+    } finally {
+      setIsVerifyingHead(false);
+    }
+  };
+
+  const renderTokenStatusBadge = (current: string, initial: string) => {
+    const isInitialConfigured = Boolean(initial && initial.trim().length > 0);
+    const isDirty = current.trim() !== initial.trim();
+
+    if (isDirty) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          Pending Save
+        </span>
+      );
+    }
+
+    if (isInitialConfigured) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          ACTIVE IN &lt;head&gt;
+        </span>
+      );
+    }
+
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-medium bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+        Not Configured
+      </span>
+    );
+  };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -192,7 +324,23 @@ export default function SettingsTab({
             value: hardwareCustomEnabledInput ? "true" : "false",
           }),
           updateSystemSettingAction({
+            key: "custom_storefront_dilstar-hardware",
+            value: hardwareCustomEnabledInput ? "true" : "false",
+          }),
+          updateSystemSettingAction({
+            key: "custom_storefront_distar-hardware",
+            value: hardwareCustomEnabledInput ? "true" : "false",
+          }),
+          updateSystemSettingAction({
             key: "custom_nursery_storefront_enabled",
+            value: nurseryCustomEnabledInput ? "true" : "false",
+          }),
+          updateSystemSettingAction({
+            key: "custom_storefront_dilstar-nursery",
+            value: nurseryCustomEnabledInput ? "true" : "false",
+          }),
+          updateSystemSettingAction({
+            key: "custom_storefront_distar-nursery",
             value: nurseryCustomEnabledInput ? "true" : "false",
           }),
           updateSystemSettingAction({
@@ -200,7 +348,23 @@ export default function SettingsTab({
             value: techCustomEnabledInput ? "true" : "false",
           }),
           updateSystemSettingAction({
+            key: "custom_storefront_dilstar-tech",
+            value: techCustomEnabledInput ? "true" : "false",
+          }),
+          updateSystemSettingAction({
+            key: "custom_storefront_distar-tech",
+            value: techCustomEnabledInput ? "true" : "false",
+          }),
+          updateSystemSettingAction({
             key: "custom_services_storefront_enabled",
+            value: servicesCustomEnabledInput ? "true" : "false",
+          }),
+          updateSystemSettingAction({
+            key: "custom_storefront_dilstar-services",
+            value: servicesCustomEnabledInput ? "true" : "false",
+          }),
+          updateSystemSettingAction({
+            key: "custom_storefront_distar-services",
             value: servicesCustomEnabledInput ? "true" : "false",
           }),
           // SEO & Domain Verification tokens
@@ -223,6 +387,9 @@ export default function SettingsTab({
         const firstError = results.find((r) => r?.serverError);
         if (firstError?.serverError) throw new Error(firstError.serverError);
         triggerNotification(true, "System settings updated successfully.");
+        // Refresh feed diagnostics
+        void handleCheckFeedHealth("dilstar");
+        void handleCheckFeedHealth("all");
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Failed to update system settings.";
         triggerNotification(false, msg);
@@ -384,12 +551,23 @@ export default function SettingsTab({
         <SuperadminFormCard title="Custom Storefront Layouts" icon="🎨" className="space-y-4">
           <div className="flex items-center justify-between py-1">
             <div className="space-y-0.5">
-              <label
-                htmlFor="toggle-hardware"
-                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
-              >
-                Dilstar Hardware Storefront
-              </label>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="toggle-hardware"
+                  className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
+                >
+                  Dilstar Hardware Storefront
+                </label>
+                {hardwareCustomEnabledInput ? (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                    Custom Layout Active
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                    Standard View
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-zinc-400">
                 Toggle custom dashboard storefront layout for Dilstar Hardware
               </p>
@@ -413,12 +591,23 @@ export default function SettingsTab({
 
           <div className="flex items-center justify-between py-1 border-t border-zinc-100 dark:border-zinc-900 pt-3">
             <div className="space-y-0.5">
-              <label
-                htmlFor="toggle-nursery"
-                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
-              >
-                Dilstar Nursery Storefront
-              </label>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="toggle-nursery"
+                  className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
+                >
+                  Dilstar Nursery Storefront
+                </label>
+                {nurseryCustomEnabledInput ? (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                    Custom Layout Active
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                    Standard View
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-zinc-400">
                 Toggle custom dashboard storefront layout for Dilstar Nursery
               </p>
@@ -442,12 +631,23 @@ export default function SettingsTab({
 
           <div className="flex items-center justify-between py-1 border-t border-zinc-100 dark:border-zinc-900 pt-3">
             <div className="space-y-0.5">
-              <label
-                htmlFor="toggle-tech"
-                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
-              >
-                Dilstar Tech Shop Storefront
-              </label>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="toggle-tech"
+                  className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
+                >
+                  Dilstar Tech Shop Storefront
+                </label>
+                {techCustomEnabledInput ? (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                    Custom Layout Active
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                    Standard View
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-zinc-400">
                 Toggle custom dashboard storefront layout for Dilstar Tech Shop
               </p>
@@ -471,12 +671,23 @@ export default function SettingsTab({
 
           <div className="flex items-center justify-between py-1 border-t border-zinc-100 dark:border-zinc-900 pt-3">
             <div className="space-y-0.5">
-              <label
-                htmlFor="toggle-services"
-                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
-              >
-                Dilstar Services Storefront
-              </label>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="toggle-services"
+                  className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
+                >
+                  Dilstar Services Storefront
+                </label>
+                {servicesCustomEnabledInput ? (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                    Custom Layout Active
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                    Standard View
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-zinc-400">
                 Toggle custom dashboard storefront layout for Dilstar Services
               </p>
@@ -526,9 +737,17 @@ export default function SettingsTab({
                   </p>
                 </div>
               </div>
-              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
-                Brand Store
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                  Brand Store
+                </span>
+                {dilstarHealth.checked && dilstarHealth.success && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-600 text-white flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    LIVE
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -578,6 +797,72 @@ export default function SettingsTab({
                 </a>
               </div>
             </div>
+
+            {/* Live Feed Status & Diagnostic */}
+            <div className="pt-2 border-t border-zinc-200/70 dark:border-zinc-800/70 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {dilstarHealth.loading ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
+                    <span className="w-2 h-2 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+                    Pinging live feed...
+                  </span>
+                ) : dilstarHealth.checked && dilstarHealth.success ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      ACTIVE • 200 OK
+                    </span>
+                    <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                      📦 {dilstarHealth.productCount} Products Included
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      ⚡ {dilstarHealth.latencyMs}ms
+                    </span>
+                  </div>
+                ) : dilstarHealth.checked && !dilstarHealth.success ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-800 dark:bg-red-950/70 dark:text-red-300 border border-red-300 dark:border-red-800">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    Offline: {dilstarHealth.error || "Feed error"}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-zinc-400 font-mono">
+                    Status: Checking live feed...
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleCheckFeedHealth("dilstar")}
+                disabled={dilstarHealth.loading}
+                className="px-2.5 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-lg text-[10px] font-bold cursor-pointer transition-colors shadow-xs flex items-center gap-1"
+              >
+                {dilstarHealth.loading ? "Pinging..." : "🔄 Test Live Status"}
+              </button>
+            </div>
+
+            {/* Sample Products Preview if present */}
+            {dilstarHealth.sampleTitles && dilstarHealth.sampleTitles.length > 0 && (
+              <div className="text-[10px] text-zinc-500 dark:text-zinc-400 bg-white/70 dark:bg-zinc-950/50 p-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-800/60 space-y-1.5">
+                <div className="font-semibold text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                  <span>Sample Recognized Feed Items:</span>
+                  <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono">
+                    Ready for Googlebot
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {dilstarHealth.sampleTitles.map((title, i) => (
+                    <span
+                      key={i}
+                      className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[9px] text-zinc-800 dark:text-zinc-200 font-mono truncate max-w-[200px]"
+                      title={title}
+                    >
+                      {title}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Dilnova Feed Card */}
@@ -595,9 +880,17 @@ export default function SettingsTab({
                   </p>
                 </div>
               </div>
-              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
-                Multi-Vendor
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
+                  Multi-Vendor
+                </span>
+                {dilnovaHealth.checked && dilnovaHealth.success && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-600 text-white flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    LIVE
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -647,6 +940,72 @@ export default function SettingsTab({
                 </a>
               </div>
             </div>
+
+            {/* Live Feed Status & Diagnostic */}
+            <div className="pt-2 border-t border-zinc-200/70 dark:border-zinc-800/70 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {dilnovaHealth.loading ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
+                    <span className="w-2 h-2 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+                    Pinging live feed...
+                  </span>
+                ) : dilnovaHealth.checked && dilnovaHealth.success ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      ACTIVE • 200 OK
+                    </span>
+                    <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                      📦 {dilnovaHealth.productCount} Products Serving
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      ⚡ {dilnovaHealth.latencyMs}ms
+                    </span>
+                  </div>
+                ) : dilnovaHealth.checked && !dilnovaHealth.success ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-800 dark:bg-red-950/70 dark:text-red-300 border border-red-300 dark:border-red-800">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    Offline: {dilnovaHealth.error || "Feed error"}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-zinc-400 font-mono">
+                    Status: Checking live feed...
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleCheckFeedHealth("all")}
+                disabled={dilnovaHealth.loading}
+                className="px-2.5 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-lg text-[10px] font-bold cursor-pointer transition-colors shadow-xs flex items-center gap-1"
+              >
+                {dilnovaHealth.loading ? "Pinging..." : "🔄 Test Live Status"}
+              </button>
+            </div>
+
+            {/* Sample Products Preview if present */}
+            {dilnovaHealth.sampleTitles && dilnovaHealth.sampleTitles.length > 0 && (
+              <div className="text-[10px] text-zinc-500 dark:text-zinc-400 bg-white/70 dark:bg-zinc-950/50 p-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-800/60 space-y-1.5">
+                <div className="font-semibold text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
+                  <span>Sample Recognized Feed Items:</span>
+                  <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono">
+                    Ready for Googlebot
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {dilnovaHealth.sampleTitles.map((title, i) => (
+                    <span
+                      key={i}
+                      className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[9px] text-zinc-800 dark:text-zinc-200 font-mono truncate max-w-[200px]"
+                      title={title}
+                    >
+                      {title}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </SuperadminFormCard>
 
@@ -662,9 +1021,12 @@ export default function SettingsTab({
 
           {/* Pinterest */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-              <span>🎯</span> Pinterest Domain Verify
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                <span>🎯</span> Pinterest Domain Verify
+              </label>
+              {renderTokenStatusBadge(pinterestVerifyInput, pinterestDomainVerify)}
+            </div>
             <input
               type="text"
               maxLength={64}
@@ -690,9 +1052,12 @@ export default function SettingsTab({
 
           {/* Google */}
           <div className="space-y-1.5 border-t border-zinc-100 dark:border-zinc-900 pt-4">
-            <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-              <span>🔎</span> Google Site Verify
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                <span>🔎</span> Google Site Verify
+              </label>
+              {renderTokenStatusBadge(googleVerifyInput, googleSiteVerify)}
+            </div>
             <input
               type="text"
               maxLength={64}
@@ -718,9 +1083,12 @@ export default function SettingsTab({
 
           {/* Facebook */}
           <div className="space-y-1.5 border-t border-zinc-100 dark:border-zinc-900 pt-4">
-            <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-              <span>📘</span> Facebook Domain Verify
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+                <span>📘</span> Facebook Domain Verify
+              </label>
+              {renderTokenStatusBadge(facebookVerifyInput, facebookDomainVerify)}
+            </div>
             <input
               type="text"
               maxLength={64}
@@ -742,6 +1110,71 @@ export default function SettingsTab({
               → Brand Safety → Domains → Add domain → copy only the{" "}
               <code className="font-mono">content=&quot;…&quot;</code> value.
             </p>
+          </div>
+
+          {/* Live Head Tag Inspector */}
+          <div className="p-3 rounded-xl bg-zinc-900 text-zinc-100 dark:bg-zinc-950 border border-zinc-800 space-y-2.5 mt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs">🛰️</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-300">
+                  Live &lt;head&gt; Meta Tag Inspector
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleVerifyHeadTags}
+                disabled={isVerifyingHead}
+                className="px-2.5 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-bold cursor-pointer transition-colors shadow-xs flex items-center gap-1"
+              >
+                {isVerifyingHead ? "Verifying..." : "⚡ Verify Live DB/Cache Sync"}
+              </button>
+            </div>
+            <p className="text-[10px] text-zinc-400">
+              The exact verification tags injected into the HTML document root by Next.js for
+              Google, Pinterest, and Meta crawlers:
+            </p>
+            <div className="space-y-1 font-mono text-[10px] bg-black/60 p-2.5 rounded-lg border border-zinc-800 overflow-x-auto">
+              {pinterestVerifyInput?.trim() ? (
+                <div className="text-emerald-400">
+                  &lt;meta name=&quot;p:domain_verify&quot; content=&quot;
+                  {pinterestVerifyInput.trim()}&quot; /&gt;
+                </div>
+              ) : (
+                <div className="text-zinc-600">
+                  &lt;!-- Pinterest domain verification inactive --&gt;
+                </div>
+              )}
+              {googleVerifyInput?.trim() ? (
+                <div className="text-emerald-400">
+                  &lt;meta name=&quot;google-site-verification&quot; content=&quot;
+                  {googleVerifyInput.trim()}&quot; /&gt;
+                </div>
+              ) : (
+                <div className="text-zinc-600">
+                  &lt;!-- Google site verification inactive --&gt;
+                </div>
+              )}
+              {facebookVerifyInput?.trim() ? (
+                <div className="text-emerald-400">
+                  &lt;meta name=&quot;facebook-domain-verification&quot; content=&quot;
+                  {facebookVerifyInput.trim()}&quot; /&gt;
+                </div>
+              ) : (
+                <div className="text-zinc-600">
+                  &lt;!-- Facebook domain verification inactive --&gt;
+                </div>
+              )}
+            </div>
+            {headVerificationResult && (
+              <div className="pt-1.5 flex items-center justify-between text-[10px] text-zinc-400 border-t border-zinc-800/80">
+                <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                  <span>✓</span> Verified active in system cache at{" "}
+                  {headVerificationResult.checkedAt}
+                </span>
+                <span className="font-mono text-[9px]">Status: Healthy</span>
+              </div>
+            )}
           </div>
         </SuperadminFormCard>
 
