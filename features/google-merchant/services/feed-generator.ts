@@ -321,10 +321,22 @@ export async function generateGoogleMerchantFeed({
 
     const optimizeImageUrl = (url: string): string => {
       // If Cloudinary URL, enforce safe dimensions (max 1600px) and clean JPG encoding to prevent Google 64MP/encoding errors
-      if (url.includes("res.cloudinary.com") && url.includes("/image/upload/")) {
-        if (!url.includes("/c_limit") && !url.includes("/w_")) {
-          return url.replace("/image/upload/", "/image/upload/c_limit,w_1600,h_1600,q_auto,f_jpg/");
+      try {
+        const parsed = new URL(url);
+        if (
+          parsed.hostname === "res.cloudinary.com" &&
+          parsed.pathname.includes("/image/upload/") &&
+          !parsed.pathname.includes("/c_limit") &&
+          !parsed.pathname.includes("/w_")
+        ) {
+          parsed.pathname = parsed.pathname.replace(
+            "/image/upload/",
+            "/image/upload/c_limit,w_1600,h_1600,q_auto,f_jpg/",
+          );
+          return parsed.toString();
         }
+      } catch {
+        // Return original if URL parsing fails
       }
       return url;
     };
