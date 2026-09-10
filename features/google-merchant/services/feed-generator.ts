@@ -1,12 +1,18 @@
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
 import { eq, and, or } from "drizzle-orm";
-import { getOrgCurrencySettings } from "@/shared/currency/exchange-rates.service";
+import {
+  getOrgCurrencySettings,
+  getExchangeRatesMap,
+  DEFAULT_USD_RATES,
+} from "@/shared/currency/exchange-rates.service";
+import { getCachedOrganizations } from "@/shared/auth/clerk-cache";
 import { logger } from "@/shared/logging/logger";
 
-interface FeedGeneratorOptions {
+export interface FeedGeneratorOptions {
   orgId?: string;
   baseUrl: string;
+  scope?: "dilstar" | "all";
 }
 
 interface FeedValidationItem {
@@ -62,6 +68,7 @@ export async function validateCatalogForGoogle(orgId: string): Promise<FeedValid
       and(
         eq(schema.products.orgId, orgId),
         or(eq(schema.products.status, "active"), eq(schema.products.status, "ACTIVE")),
+        eq(schema.products.type, "product"),
       ),
     );
 
@@ -123,21 +130,47 @@ export async function validateCatalogForGoogle(orgId: string): Promise<FeedValid
 }
 
 /**
+ * Known Dilstar division slugs and brand markers.
+ */
+const DILSTAR_SLUG_PREFIXES = [
+  "distar-hardware",
+  "dilstar-hardware",
+  "distar-nursery",
+  "dilstar-nursery",
+  "distar-tech",
+  "dilstar-tech",
+  "distar-services",
+  "dilstar-services",
+  "dilstar",
+  "distar",
+];
+
+/**
  * Generates official Google Merchant Center RSS 2.0 XML product feed.
+ * Host-aware:
+ * - dilstar.pp.ua (or scope="dilstar"): Exclusively serves Dilstar brand products.
+ * - dilnova.pp.ua (or scope="all"): Serves all active marketplace products with vendor brand attribution.
  */
 export async function generateGoogleMerchantFeed({
   orgId,
   baseUrl,
+  scope,
 }: FeedGeneratorOptions): Promise<string> {
-  // Query active products
+  // Determine if this feed should be scoped exclusively to Dilstar
+  const isDilstarScope =
+    scope === "dilstar" ||
+    (!scope && (baseUrl.includes("dilstar.pp.ua") || baseUrl.includes("dilstar")));
+
+  // Query active physical products
   const productConditions = [
     or(eq(schema.products.status, "active"), eq(schema.products.status, "ACTIVE")),
+    eq(schema.products.type, "product"),
   ];
   if (orgId) {
     productConditions.push(eq(schema.products.orgId, orgId));
   }
 
-  const activeProducts = await db
+  const allActiveProducts = await db
     .select({
       id: schema.products.id,
       name: schema.products.name,
@@ -156,26 +189,77 @@ export async function generateGoogleMerchantFeed({
     .from(schema.products)
     .where(and(...productConditions));
 
-  let brandName = "Dilnova Store";
+  // Retrieve vendor organizations from Clerk cache for brand names and Dilstar filtering
+  const orgNameMap = new Map<string, string>();
+  const dilstarOrgIds = new Set<string>();
+
+  try {
+    const orgs = await getCachedOrganizations();
+    for (const o of orgs) {
+      orgNameMap.set(o.id, o.name);
+      const isDilstar =
+        DILSTAR_SLUG_PREFIXES.some((slug) => o.slug?.toLowerCase().startsWith(slug)) ||
+        o.name.toLowerCase().includes("dilstar") ||
+        o.name.toLowerCase().includes("distar");
+      if (isDilstar) {
+        dilstarOrgIds.add(o.id);
+      }
+    }
+  } catch (err) {
+    logger.warn("Google Merchant feed: unable to load cached organizations", { err });
+  }
+
+  // Also query meta_catalog_integrations for custom vendor brand names
+  const integrationBrandMap = new Map<string, string>();
+  try {
+    const integrations = await db
+      .select({
+        orgId: schema.metaCatalogIntegrations.orgId,
+        brandName: schema.metaCatalogIntegrations.brandName,
+      })
+      .from(schema.metaCatalogIntegrations);
+    for (const int of integrations) {
+      if (int.brandName?.trim()) {
+        integrationBrandMap.set(int.orgId, int.brandName.trim());
+      }
+    }
+  } catch {
+    // Ignore
+  }
+
+  // Filter products by scope
+  let activeProducts = allActiveProducts;
+  if (isDilstarScope && !orgId) {
+    const dilstarItems = allActiveProducts.filter((p) => {
+      if (dilstarOrgIds.has(p.orgId)) return true;
+      const nameLower = (p.name || "").toLowerCase();
+      return nameLower.includes("dilstar") || nameLower.includes("distar");
+    });
+    // If there are Dilstar-specific products, filter to them; otherwise fallback gracefully
+    if (dilstarItems.length > 0) {
+      activeProducts = dilstarItems;
+    }
+  }
+
+  // Set feed-level title and currency
+  const defaultFeedTitle = isDilstarScope ? "Dilstar Store" : "Dilnova Marketplace";
   let defaultCurrency = "LKR";
 
   if (orgId) {
-    const [integration] = await db
-      .select({ brandName: schema.metaCatalogIntegrations.brandName })
-      .from(schema.metaCatalogIntegrations)
-      .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
-      .limit(1);
-
-    if (integration?.brandName) {
-      brandName = integration.brandName;
-    }
-
     try {
       const orgCurrency = await getOrgCurrencySettings(orgId);
       defaultCurrency = orgCurrency.baseCurrency || "LKR";
     } catch {
-      // Fallback
+      // Fallback to LKR
     }
+  }
+
+  // Fetch exchange rates for safe Sri Lanka currency formatting (prevent USD mismatch on LK feed)
+  let ratesMap: Record<string, number> = {};
+  try {
+    ratesMap = await getExchangeRatesMap();
+  } catch {
+    ratesMap = DEFAULT_USD_RATES;
   }
 
   // Fetch category names for taxonomy mapping
@@ -235,12 +319,46 @@ export async function generateGoogleMerchantFeed({
       continue;
     }
 
-    const primaryImageUrl = imageUrls[0];
-    const secondaryImages = imageUrls.slice(1, 11);
+    const optimizeImageUrl = (url: string): string => {
+      // If Cloudinary URL, enforce safe dimensions (max 1600px) and clean JPG encoding to prevent Google 64MP/encoding errors
+      try {
+        const parsed = new URL(url);
+        if (
+          parsed.hostname === "res.cloudinary.com" &&
+          parsed.pathname.includes("/image/upload/") &&
+          !parsed.pathname.includes("/c_limit") &&
+          !parsed.pathname.includes("/w_")
+        ) {
+          parsed.pathname = parsed.pathname.replace(
+            "/image/upload/",
+            "/image/upload/c_limit,w_1600,h_1600,q_auto,f_jpg/",
+          );
+          return parsed.toString();
+        }
+      } catch {
+        // Return original if URL parsing fails
+      }
+      return url;
+    };
 
-    const priceNum = Number(prod.price) || 0;
-    const currency = prod.currency || defaultCurrency;
-    const formattedPrice = `${priceNum.toFixed(2)} ${currency}`;
+    const primaryImageUrl = optimizeImageUrl(imageUrls[0]);
+    const secondaryImages = imageUrls.slice(1, 11).map(optimizeImageUrl);
+
+    // Pricing & Currency sanitization
+    let priceNum = Number(prod.price) || 0;
+    if (priceNum <= 0) {
+      continue; // Google Merchant Center disapproves items with price <= 0.00
+    }
+    let itemCurrency = (prod.currency || defaultCurrency).toUpperCase();
+
+    // If destination is Sri Lanka (LKR default) and item is stored in USD, convert to LKR
+    if (defaultCurrency === "LKR" && itemCurrency === "USD") {
+      const usdToLkrRate = ratesMap["USD_LKR"] || DEFAULT_USD_RATES["LKR"] || 307.69;
+      priceNum = Math.round(priceNum * usdToLkrRate);
+      itemCurrency = "LKR";
+    }
+
+    const formattedPrice = `${priceNum.toFixed(2)} ${itemCurrency}`;
 
     const qty = inventoryMap.get(prod.id) ?? 1;
     const availability = qty > 0 ? "in_stock" : "out_of_stock";
@@ -249,6 +367,12 @@ export async function generateGoogleMerchantFeed({
     const description = prod.description ? escapeXml(cleanDescription(prod.description)) : title;
     const link = `${baseUrl}/products/${prod.id}`;
     const categoryName = prod.categoryId ? categoryMap.get(prod.categoryId) : undefined;
+
+    // Resolve brand name dynamically per vendor
+    const itemBrand =
+      integrationBrandMap.get(prod.orgId) ||
+      orgNameMap.get(prod.orgId) ||
+      (isDilstarScope ? "Dilstar" : "Dilnova");
 
     // Check barcode / GTIN
     const gtin = Array.isArray(prod.barcodes) && prod.barcodes.length > 0 ? prod.barcodes[0] : null;
@@ -267,7 +391,7 @@ export async function generateGoogleMerchantFeed({
     itemStr += `      <g:condition>new</g:condition>\n`;
     itemStr += `      <g:availability>${availability}</g:availability>\n`;
     itemStr += `      <g:price>${formattedPrice}</g:price>\n`;
-    itemStr += `      <g:brand>${escapeXml(brandName)}</g:brand>\n`;
+    itemStr += `      <g:brand>${escapeXml(itemBrand)}</g:brand>\n`;
 
     if (gtin) {
       itemStr += `      <g:gtin>${escapeXml(String(gtin))}</g:gtin>\n`;
@@ -291,7 +415,7 @@ export async function generateGoogleMerchantFeed({
     itemsXml.push(itemStr);
   }
 
-  const cleanStoreTitle = escapeXml(brandName);
+  const cleanStoreTitle = escapeXml(defaultFeedTitle);
   const cleanBaseUrl = escapeXml(baseUrl);
 
   return `<?xml version="1.0" encoding="UTF-8"?>

@@ -79,7 +79,15 @@ export const updatePricingPlanSchema = z.object({
   updates: createPricingPlanSchema.partial(),
 });
 
+export const checkFeedHealthSchema = z.object({
+  scope: z.enum(["dilstar", "all"]),
+});
+
+export const verifyHeadMetadataSchema = z.object({}).optional();
+
 export type UpdateSystemSettingInput = z.infer<typeof updateSystemSettingSchema>;
 export type UpdateCheckoutOptionsCatalogInput = z.infer<typeof updateCheckoutOptionsCatalogSchema>;
 export type CreatePricingPlanInput = z.infer<typeof createPricingPlanSchema>;
 export type UpdatePricingPlanInput = z.infer<typeof updatePricingPlanSchema>;
+export type CheckFeedHealthInput = z.infer<typeof checkFeedHealthSchema>;
+export type VerifyHeadMetadataInput = z.infer<typeof verifyHeadMetadataSchema>;

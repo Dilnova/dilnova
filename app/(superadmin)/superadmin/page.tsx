@@ -164,6 +164,8 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
         pinterestDomainVerify,
         googleSiteVerify,
         facebookDomainVerify,
+        googleMerchantIdDilstar,
+        googleMerchantIdDilnova,
       ] = await Promise.all([
         getSystemSetting("max_media_limit", "5"),
         getSystemSetting("system_logo", ""),
@@ -180,6 +182,9 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
         getSystemSetting("pinterest_domain_verify", process.env.PINTEREST_DOMAIN_VERIFY ?? ""),
         getSystemSetting("google_site_verify", process.env.GOOGLE_SITE_VERIFY ?? ""),
         getSystemSetting("facebook_domain_verify", process.env.FACEBOOK_DOMAIN_VERIFY ?? ""),
+        // Google Merchant Center IDs
+        getSystemSetting("google_merchant_id_dilstar", "5848179436"),
+        getSystemSetting("google_merchant_id_dilnova", "5848718366"),
       ]);
 
       content = (
@@ -198,6 +203,8 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
           pinterestDomainVerify={pinterestDomainVerify}
           googleSiteVerify={googleSiteVerify}
           facebookDomainVerify={facebookDomainVerify}
+          googleMerchantIdDilstar={googleMerchantIdDilstar}
+          googleMerchantIdDilnova={googleMerchantIdDilnova}
         />
       );
       break;

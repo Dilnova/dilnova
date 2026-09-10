@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get("orgId") || undefined;
     const token = searchParams.get("token") || undefined;
+    const rawScope = searchParams.get("scope");
 
     // If orgId is provided, verify token if token protection is set
     if (orgId) {
@@ -41,16 +42,28 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Resolve base URL
+    // Resolve base URL and host
     const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
     const protocol = host.includes("localhost") ? "http" : "https";
     const baseUrl = host
       ? `${protocol}://${host}`
       : process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
 
+    // Determine scope: explicit ?scope= takes precedence, then host detection
+    const isDilstarHost = host.includes("dilstar.pp.ua");
+    const scope: "dilstar" | "all" =
+      rawScope === "dilstar"
+        ? "dilstar"
+        : rawScope === "all"
+          ? "all"
+          : isDilstarHost
+            ? "dilstar"
+            : "all";
+
     const xml = await generateGoogleMerchantFeed({
       orgId,
       baseUrl,
+      scope,
     });
 
     return new NextResponse(xml, {

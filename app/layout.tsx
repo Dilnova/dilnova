@@ -88,10 +88,8 @@ export async function generateMetadata(): Promise<Metadata> {
         "b2b platform",
       ];
 
-  const pinterestVerify = await getSystemSetting(
-    "pinterest_domain_verify",
-    process.env.PINTEREST_DOMAIN_VERIFY ?? "",
-  );
+  const pinterestVerify =
+    process.env.PINTEREST_DOMAIN_VERIFY || (await getSystemSetting("pinterest_domain_verify", ""));
   const metaDomainVerify = await getSystemSetting(
     "facebook_domain_verify",
     process.env.FACEBOOK_DOMAIN_VERIFY || "",
