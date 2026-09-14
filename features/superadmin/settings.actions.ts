@@ -23,14 +23,14 @@ import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 
 function cleanVerificationValue(key: string, value: string): string {
   if (
-    key === "facebook_domain_verify" ||
+    key.startsWith("facebook_domain_verify") ||
     key === "pinterest_domain_verify" ||
     key === "google_site_verify"
   ) {
     const trimmed = value.trim();
     const match = trimmed.match(/content=["']([^"']+)["']/i);
-    if (match) return match[1].trim();
-    return trimmed.replace(/<[^>]*>/g, "").trim();
+    if (match) return match[1].replace(/[<>]/g, "").trim();
+    return trimmed.replace(/[<>]/g, "").trim();
   }
   return value;
 }

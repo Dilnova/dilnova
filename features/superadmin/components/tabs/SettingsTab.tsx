@@ -239,8 +239,8 @@ export default function SettingsTab({
   const sanitizeToken = (raw: string) => {
     const trimmed = raw.trim();
     const contentMatch = trimmed.match(/content=["']([^"']+)["']/i);
-    if (contentMatch) return contentMatch[1].trim();
-    return trimmed.replace(/<[^>]*>/g, "").trim();
+    if (contentMatch) return contentMatch[1].replace(/[<>]/g, "").trim();
+    return trimmed.replace(/[<>]/g, "").trim();
   };
 
   // Logo Upload State

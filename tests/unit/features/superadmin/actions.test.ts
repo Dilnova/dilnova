@@ -28,11 +28,26 @@ const mockUpdate = vi.fn(() => ({
   set: mockUpdateSet,
 }));
 
+const mockInsertValues = vi.fn(() => Promise.resolve());
+const mockInsert = vi.fn(() => ({
+  values: mockInsertValues,
+}));
+
 vi.mock("@/shared/db/client", () => ({
   db: {
     select: () => mockSelect(),
     update: () => mockUpdate(),
+    insert: () => mockInsert(),
   },
+}));
+
+vi.mock("@/shared/platform/settings", () => ({
+  syncSettingToRedis: vi.fn(() => Promise.resolve()),
+  getSystemSetting: vi.fn(() => Promise.resolve("")),
+}));
+
+vi.mock("@/features/vendor/revalidate", () => ({
+  revalidateVendorConsole: vi.fn(() => Promise.resolve()),
 }));
 
 // Mock Clerk
@@ -84,6 +99,7 @@ vi.mock("@/shared/audit/logger", () => ({
 }));
 
 import { updateContactStatusAction } from "@/features/superadmin/actions";
+import { updateSystemSettingAction } from "@/features/superadmin/settings.actions";
 
 describe("updateContactStatusAction", () => {
   const originalAllowlist = process.env.SUPERADMIN_USER_IDS;
@@ -152,5 +168,60 @@ describe("updateContactStatusAction", () => {
     // privateMetadata still has platformRole from beforeEach
     const validUuid = "123e4567-e89b-12d3-a456-426614174000";
     await expect(updateContactStatusAction(validUuid, "connected")).rejects.toThrow("Unauthorized");
+  });
+});
+
+describe("updateSystemSettingAction verification sanitization", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.SUPERADMIN_USER_IDS = "admin_user_id";
+    mockAuth.mockResolvedValue({ userId: "admin_user_id" });
+    mockGetUser.mockResolvedValue({
+      id: "admin_user_id",
+      privateMetadata: { platformRole: "superadmin" },
+    });
+    mockSelectLimit.mockResolvedValue([{ key: "google_site_verify", value: "old" }]);
+  });
+
+  it("extracts token from meta tag and strips any dangerous brackets", async () => {
+    const result = await updateSystemSettingAction({
+      key: "google_site_verify",
+      value: '<meta name="google-site-verification" content="abc123token" />',
+    });
+
+    expect(result?.data?.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        value: "abc123token",
+      }),
+    );
+  });
+
+  it("strips angle brackets from verification token if script tags are injected", async () => {
+    const result = await updateSystemSettingAction({
+      key: "facebook_domain_verify_dilstar",
+      value: "<script>alert('xss')</script>",
+    });
+
+    expect(result?.data?.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        value: "scriptalert('xss')/script",
+      }),
+    );
+  });
+
+  it("strips angle brackets even if inside content attribute", async () => {
+    const result = await updateSystemSettingAction({
+      key: "pinterest_domain_verify",
+      value: '<meta content="evil<script>nested</script>" />',
+    });
+
+    expect(result?.data?.success).toBe(true);
+    expect(mockUpdateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        value: "evilscriptnested/script",
+      }),
+    );
   });
 });
