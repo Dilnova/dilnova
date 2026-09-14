@@ -6,6 +6,7 @@ export {
 } from "@/features/superadmin/actions";
 export {
   updateSystemSettingAction,
+  updateSystemSettingsBatchAction,
   checkGoogleMerchantFeedHealthAction,
   verifyHeadMetadataAction,
 } from "@/features/superadmin/settings.actions";

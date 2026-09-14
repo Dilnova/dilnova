@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
 import * as Sentry from "@sentry/nextjs";
 import {
-  updateSystemSettingAction,
+  updateSystemSettingsBatchAction,
   checkGoogleMerchantFeedHealthAction,
   verifyHeadMetadataAction,
 } from "@/features/superadmin/settings.actions";
@@ -35,6 +35,8 @@ interface SettingsTabProps {
   pinterestDomainVerify: string;
   googleSiteVerify: string;
   facebookDomainVerify: string;
+  facebookDomainVerifyDilstar?: string;
+  facebookDomainVerifyDilnova?: string;
   // Google Merchant Center IDs
   googleMerchantIdDilstar: string;
   googleMerchantIdDilnova: string;
@@ -55,6 +57,8 @@ export default function SettingsTab({
   pinterestDomainVerify,
   googleSiteVerify,
   facebookDomainVerify,
+  facebookDomainVerifyDilstar = "",
+  facebookDomainVerifyDilnova = "",
   googleMerchantIdDilstar,
   googleMerchantIdDilnova,
 }: SettingsTabProps) {
@@ -72,7 +76,12 @@ export default function SettingsTab({
   // SEO & Verification token state
   const [pinterestVerifyInput, setPinterestVerifyInput] = useState(pinterestDomainVerify);
   const [googleVerifyInput, setGoogleVerifyInput] = useState(googleSiteVerify);
-  const [facebookVerifyInput, setFacebookVerifyInput] = useState(facebookDomainVerify);
+  const [facebookVerifyDilstarInput, setFacebookVerifyDilstarInput] = useState(
+    facebookDomainVerifyDilstar || facebookDomainVerify || "",
+  );
+  const [facebookVerifyDilnovaInput, setFacebookVerifyDilnovaInput] = useState(
+    facebookDomainVerifyDilnova || "",
+  );
 
   // Dual Google Merchant Center state
   const [googleMerchantIdDilstarInput, setGoogleMerchantIdDilstarInput] = useState(
@@ -181,7 +190,7 @@ export default function SettingsTab({
     }
   };
 
-  const renderTokenStatusBadge = (current: string, initial: string) => {
+  const renderTokenStatusBadge = (current: string, initial: string, altVerification?: string) => {
     const isInitialConfigured = Boolean(initial && initial.trim().length > 0);
     const isDirty = current.trim() !== initial.trim();
 
@@ -203,6 +212,15 @@ export default function SettingsTab({
       );
     }
 
+    if (altVerification) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
+          <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+          {altVerification}
+        </span>
+      );
+    }
+
     return (
       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-medium bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
         <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
@@ -216,6 +234,13 @@ export default function SettingsTab({
     setCopiedFeed(label);
     toast.success(`${label} copied to clipboard!`);
     setTimeout(() => setCopiedFeed(null), 2500);
+  };
+
+  const sanitizeToken = (raw: string) => {
+    const trimmed = raw.trim();
+    const contentMatch = trimmed.match(/content=["']([^"']+)["']/i);
+    if (contentMatch) return contentMatch[1].trim();
+    return trimmed.replace(/<[^>]*>/g, "").trim();
   };
 
   // Logo Upload State
@@ -311,81 +336,94 @@ export default function SettingsTab({
     e.preventDefault();
     startTransition(async () => {
       try {
-        const results = await Promise.all([
-          updateSystemSettingAction({ key: "system_name", value: systemNameInput }),
-          updateSystemSettingAction({
-            key: "max_media_per_product",
-            value: mediaLimitInput.toString(),
-          }),
-          updateSystemSettingAction({ key: "logo_url", value: logoInput }),
-          updateSystemSettingAction({ key: "favicon_url", value: faviconInput }),
-          updateSystemSettingAction({
-            key: "custom_hardware_storefront_enabled",
-            value: hardwareCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_storefront_dilstar-hardware",
-            value: hardwareCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_storefront_distar-hardware",
-            value: hardwareCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_nursery_storefront_enabled",
-            value: nurseryCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_storefront_dilstar-nursery",
-            value: nurseryCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_storefront_distar-nursery",
-            value: nurseryCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_tech_storefront_enabled",
-            value: techCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_storefront_dilstar-tech",
-            value: techCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_storefront_distar-tech",
-            value: techCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_services_storefront_enabled",
-            value: servicesCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_storefront_dilstar-services",
-            value: servicesCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_storefront_distar-services",
-            value: servicesCustomEnabledInput ? "true" : "false",
-          }),
-          // SEO & Domain Verification tokens
-          updateSystemSettingAction({
-            key: "pinterest_domain_verify",
-            value: pinterestVerifyInput,
-          }),
-          updateSystemSettingAction({ key: "google_site_verify", value: googleVerifyInput }),
-          updateSystemSettingAction({ key: "facebook_domain_verify", value: facebookVerifyInput }),
-          // Google Merchant Center IDs
-          updateSystemSettingAction({
-            key: "google_merchant_id_dilstar",
-            value: googleMerchantIdDilstarInput,
-          }),
-          updateSystemSettingAction({
-            key: "google_merchant_id_dilnova",
-            value: googleMerchantIdDilnovaInput,
-          }),
-        ]);
-        const firstError = results.find((r) => r?.serverError);
-        if (firstError?.serverError) throw new Error(firstError.serverError);
+        const res = await updateSystemSettingsBatchAction({
+          settings: [
+            { key: "system_name", value: systemNameInput },
+            {
+              key: "max_media_per_product",
+              value: mediaLimitInput.toString(),
+            },
+            { key: "logo_url", value: logoInput },
+            { key: "favicon_url", value: faviconInput },
+            {
+              key: "custom_hardware_storefront_enabled",
+              value: hardwareCustomEnabledInput ? "true" : "false",
+            },
+            {
+              key: "custom_storefront_dilstar-hardware",
+              value: hardwareCustomEnabledInput ? "true" : "false",
+            },
+            {
+              key: "custom_storefront_distar-hardware",
+              value: hardwareCustomEnabledInput ? "true" : "false",
+            },
+            {
+              key: "custom_nursery_storefront_enabled",
+              value: nurseryCustomEnabledInput ? "true" : "false",
+            },
+            {
+              key: "custom_storefront_dilstar-nursery",
+              value: nurseryCustomEnabledInput ? "true" : "false",
+            },
+            {
+              key: "custom_storefront_distar-nursery",
+              value: nurseryCustomEnabledInput ? "true" : "false",
+            },
+            {
+              key: "custom_tech_storefront_enabled",
+              value: techCustomEnabledInput ? "true" : "false",
+            },
+            {
+              key: "custom_storefront_dilstar-tech",
+              value: techCustomEnabledInput ? "true" : "false",
+            },
+            {
+              key: "custom_storefront_distar-tech",
+              value: techCustomEnabledInput ? "true" : "false",
+            },
+            {
+              key: "custom_services_storefront_enabled",
+              value: servicesCustomEnabledInput ? "true" : "false",
+            },
+            {
+              key: "custom_storefront_dilstar-services",
+              value: servicesCustomEnabledInput ? "true" : "false",
+            },
+            {
+              key: "custom_storefront_distar-services",
+              value: servicesCustomEnabledInput ? "true" : "false",
+            },
+            // SEO & Domain Verification tokens
+            {
+              key: "pinterest_domain_verify",
+              value: pinterestVerifyInput,
+            },
+            { key: "google_site_verify", value: googleVerifyInput },
+            {
+              key: "facebook_domain_verify_dilstar",
+              value: facebookVerifyDilstarInput,
+            },
+            {
+              key: "facebook_domain_verify_dilnova",
+              value: facebookVerifyDilnovaInput,
+            },
+            {
+              key: "facebook_domain_verify",
+              value: facebookVerifyDilstarInput || facebookVerifyDilnovaInput,
+            },
+            // Google Merchant Center IDs
+            {
+              key: "google_merchant_id_dilstar",
+              value: googleMerchantIdDilstarInput,
+            },
+            {
+              key: "google_merchant_id_dilnova",
+              value: googleMerchantIdDilnovaInput,
+            },
+          ],
+        });
+
+        if (res?.serverError) throw new Error(res.serverError);
         triggerNotification(true, "System settings updated successfully.");
         // Refresh feed diagnostics
         void handleCheckFeedHealth("dilstar");
@@ -1029,9 +1067,9 @@ export default function SettingsTab({
             </div>
             <input
               type="text"
-              maxLength={64}
+              maxLength={256}
               value={pinterestVerifyInput}
-              onChange={(e) => setPinterestVerifyInput(e.target.value)}
+              onChange={(e) => setPinterestVerifyInput(sanitizeToken(e.target.value))}
               className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all placeholder:text-zinc-400"
               placeholder="e.g. a1b2c3d4e5f60718293a4b5c6d7e8f9a"
             />
@@ -1056,18 +1094,21 @@ export default function SettingsTab({
               <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
                 <span>🔎</span> Google Site Verify
               </label>
-              {renderTokenStatusBadge(googleVerifyInput, googleSiteVerify)}
+              {renderTokenStatusBadge(googleVerifyInput, googleSiteVerify, "Verified via DNS")}
             </div>
             <input
               type="text"
-              maxLength={64}
+              maxLength={256}
               value={googleVerifyInput}
-              onChange={(e) => setGoogleVerifyInput(e.target.value)}
+              onChange={(e) => setGoogleVerifyInput(sanitizeToken(e.target.value))}
               className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all placeholder:text-zinc-400"
               placeholder="e.g. abc123XYZ..."
             />
             <p className="text-[10px] text-zinc-400">
-              From:{" "}
+              <span className="text-emerald-500 font-semibold">
+                ✓ Both domains verified via DNS
+              </span>{" "}
+              in{" "}
               <a
                 href="https://search.google.com/search-console"
                 target="_blank"
@@ -1075,41 +1116,161 @@ export default function SettingsTab({
                 className="text-purple-500 hover:underline"
               >
                 Google Search Console
-              </a>{" "}
-              → Add property → HTML tag method → copy only the{" "}
-              <code className="font-mono">content=&quot;…&quot;</code> value.
+              </a>
+              . This HTML tag is an{" "}
+              <span className="font-semibold text-zinc-500 dark:text-zinc-300">
+                optional backup
+              </span>{" "}
+              — DNS verification is the highest tier and already active.
             </p>
           </div>
 
-          {/* Facebook */}
-          <div className="space-y-1.5 border-t border-zinc-100 dark:border-zinc-900 pt-4">
+          {/* Facebook Dual Domain Verification */}
+          <div className="space-y-4 border-t border-zinc-100 dark:border-zinc-900 pt-4">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-                <span>📘</span> Facebook Domain Verify
-              </label>
-              {renderTokenStatusBadge(facebookVerifyInput, facebookDomainVerify)}
+              <div>
+                <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <span>📘</span> Meta / Facebook Domain Verification (Dual Domains)
+                </h4>
+                <p className="text-[10px] text-zinc-400 mt-0.5">
+                  Meta verifies ownership per-domain. Enter the respective tokens for Dilstar and
+                  Dilnova below.
+                </p>
+              </div>
             </div>
-            <input
-              type="text"
-              maxLength={64}
-              value={facebookVerifyInput}
-              onChange={(e) => setFacebookVerifyInput(e.target.value)}
-              className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all placeholder:text-zinc-400"
-              placeholder="e.g. abcdefgh12345678"
-            />
-            <p className="text-[10px] text-zinc-400">
-              From:{" "}
-              <a
-                href="https://business.facebook.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple-500 hover:underline"
-              >
-                Meta Business Suite
-              </a>{" "}
-              → Brand Safety → Domains → Add domain → copy only the{" "}
-              <code className="font-mono">content=&quot;…&quot;</code> value.
-            </p>
+
+            {/* 1. Dilstar (dilstar.pp.ua) */}
+            <div className="p-3.5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <span>🏪</span> Dilstar Brand Portal (dilstar.pp.ua)
+                </label>
+                {renderTokenStatusBadge(
+                  facebookVerifyDilstarInput,
+                  facebookDomainVerifyDilstar || facebookDomainVerify,
+                  "Optional",
+                )}
+              </div>
+              <input
+                type="text"
+                maxLength={256}
+                value={facebookVerifyDilstarInput}
+                onChange={(e) => setFacebookVerifyDilstarInput(sanitizeToken(e.target.value))}
+                className="w-full px-3 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-xs bg-white dark:bg-zinc-950 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all placeholder:text-zinc-400"
+                placeholder="e.g. eml5dxi95zbgr... (or paste full <meta> tag)"
+              />
+              <div className="flex items-center justify-between pt-0.5">
+                <span className="text-[10px] text-zinc-400">
+                  Serves in &lt;head&gt; on dilstar.pp.ua
+                </span>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard("dilstar.pp.ua", "Domain: dilstar.pp.ua")}
+                  className="px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-mono text-[9px] text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                >
+                  📋 Copy dilstar.pp.ua
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Dilnova (dilnova.pp.ua) */}
+            <div className="p-3.5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/40 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <span>🌐</span> Dilnova Marketplace (dilnova.pp.ua)
+                </label>
+                {renderTokenStatusBadge(
+                  facebookVerifyDilnovaInput,
+                  facebookDomainVerifyDilnova,
+                  "Optional",
+                )}
+              </div>
+              <input
+                type="text"
+                maxLength={256}
+                value={facebookVerifyDilnovaInput}
+                onChange={(e) => setFacebookVerifyDilnovaInput(sanitizeToken(e.target.value))}
+                className="w-full px-3 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-xs bg-white dark:bg-zinc-950 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all placeholder:text-zinc-400"
+                placeholder="e.g. abcdefgh12345678 (or paste full <meta> tag)"
+              />
+              <div className="flex items-center justify-between pt-0.5">
+                <span className="text-[10px] text-zinc-400">
+                  Serves in &lt;head&gt; on dilnova.pp.ua
+                </span>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard("dilnova.pp.ua", "Domain: dilnova.pp.ua")}
+                  className="px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 font-mono text-[9px] text-zinc-700 dark:text-zinc-300 transition-colors cursor-pointer"
+                >
+                  📋 Copy dilnova.pp.ua
+                </button>
+              </div>
+            </div>
+
+            {/* Interactive Step-by-Step Meta Setup Guide */}
+            <details className="group rounded-xl border border-blue-200/70 dark:border-blue-900/50 bg-blue-50/40 dark:bg-blue-950/20 overflow-hidden text-xs">
+              <summary className="px-3.5 py-2.5 font-semibold text-blue-900 dark:text-blue-300 flex items-center justify-between cursor-pointer hover:bg-blue-100/50 dark:hover:bg-blue-900/40 transition-colors select-none">
+                <span className="flex items-center gap-2">
+                  <span>📖</span>
+                  <span>Step-by-Step Guide: How to Get Your Meta Verification Tokens</span>
+                </span>
+                <span className="text-[10px] text-blue-500 font-mono group-open:rotate-180 transition-transform duration-200">
+                  ▼
+                </span>
+              </summary>
+              <div className="p-3.5 pt-2 space-y-2.5 text-[11px] text-zinc-600 dark:text-zinc-400 border-t border-blue-200/50 dark:border-blue-900/40">
+                <ol className="list-decimal list-inside space-y-2 leading-relaxed">
+                  <li>
+                    Open{" "}
+                    <a
+                      href="https://business.facebook.com/settings/owned-domains"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-purple-600 dark:text-purple-400 font-semibold underline inline-flex items-center gap-0.5"
+                    >
+                      Meta Business Settings &rarr; Brand Safety &rarr; Domains &UpperRightArrow;
+                    </a>
+                  </li>
+                  <li>
+                    Click the blue <strong>&quot;Add&quot;</strong> button &rarr; select{" "}
+                    <strong>&quot;Create a new domain&quot;</strong>.
+                  </li>
+                  <li>
+                    Enter either <code className="font-mono text-[10px]">dilstar.pp.ua</code> or{" "}
+                    <code className="font-mono text-[10px]">dilnova.pp.ua</code> (without{" "}
+                    <code className="font-mono text-[10px]">https://</code> or{" "}
+                    <code className="font-mono text-[10px]">www</code>).
+                  </li>
+                  <li>
+                    Under <em>&quot;Select a verification method&quot;</em>, select:
+                    <div className="mt-1 px-2.5 py-1.5 rounded-lg bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/80 font-medium text-zinc-800 dark:text-zinc-200 text-[10px]">
+                      &quot;Add a meta-tag to your HTML source code&quot;
+                    </div>
+                  </li>
+                  <li>
+                    Meta will display a code snippet like:
+                    <div className="mt-1 p-2 rounded-lg bg-zinc-950 text-emerald-400 font-mono text-[10px] border border-zinc-800 overflow-x-auto">
+                      &lt;meta name=&quot;facebook-domain-verification&quot; content=&quot;
+                      <span className="text-amber-300 font-bold">abcdef0123456789</span>&quot; /&gt;
+                    </div>
+                    Copy either just the token inside{" "}
+                    <code className="font-mono text-[10px] text-purple-600 dark:text-purple-400">
+                      content=&quot;...&quot;
+                    </code>{" "}
+                    or the whole snippet (it will automatically extract the token).
+                  </li>
+                  <li>
+                    Paste into the respective domain field above (Dilstar or Dilnova) and click{" "}
+                    <strong>&quot;Save All Settings&quot;</strong> at the bottom of the page.
+                  </li>
+                  <li>
+                    Return to Meta Business Suite and click the green{" "}
+                    <strong>&quot;Verify domain&quot;</strong> button. Repeat for the second domain
+                    if you wish to verify both!
+                  </li>
+                </ol>
+              </div>
+            </details>
           </div>
 
           {/* Live Head Tag Inspector */}
@@ -1132,9 +1293,9 @@ export default function SettingsTab({
             </div>
             <p className="text-[10px] text-zinc-400">
               The exact verification tags injected into the HTML document root by Next.js for
-              Google, Pinterest, and Meta crawlers:
+              Google, Pinterest, and Meta crawlers across your domains:
             </p>
-            <div className="space-y-1 font-mono text-[10px] bg-black/60 p-2.5 rounded-lg border border-zinc-800 overflow-x-auto">
+            <div className="space-y-1.5 font-mono text-[10px] bg-black/60 p-2.5 rounded-lg border border-zinc-800 overflow-x-auto">
               {pinterestVerifyInput?.trim() ? (
                 <div className="text-emerald-400">
                   &lt;meta name=&quot;p:domain_verify&quot; content=&quot;
@@ -1155,12 +1316,21 @@ export default function SettingsTab({
                   &lt;!-- Google site verification inactive --&gt;
                 </div>
               )}
-              {facebookVerifyInput?.trim() ? (
+              {facebookVerifyDilstarInput?.trim() ? (
                 <div className="text-emerald-400">
                   &lt;meta name=&quot;facebook-domain-verification&quot; content=&quot;
-                  {facebookVerifyInput.trim()}&quot; /&gt;
+                  {facebookVerifyDilstarInput.trim()}&quot; /&gt;{" "}
+                  <span className="text-zinc-500 text-[9px]">(dilstar.pp.ua)</span>
                 </div>
-              ) : (
+              ) : null}
+              {facebookVerifyDilnovaInput?.trim() ? (
+                <div className="text-emerald-400">
+                  &lt;meta name=&quot;facebook-domain-verification&quot; content=&quot;
+                  {facebookVerifyDilnovaInput.trim()}&quot; /&gt;{" "}
+                  <span className="text-zinc-500 text-[9px]">(dilnova.pp.ua)</span>
+                </div>
+              ) : null}
+              {!facebookVerifyDilstarInput?.trim() && !facebookVerifyDilnovaInput?.trim() && (
                 <div className="text-zinc-600">
                   &lt;!-- Facebook domain verification inactive --&gt;
                 </div>

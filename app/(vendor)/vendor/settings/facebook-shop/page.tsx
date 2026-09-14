@@ -1686,11 +1686,11 @@ export default function SocialSettingsHubPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-bold uppercase tracking-wider text-emerald-600 font-mono flex items-center gap-2">
-                    <MessageCircle className="h-4 w-4" /> Official WhatsApp Business Integration
+                    <MessageCircle className="h-4 w-4" /> WhatsApp Business Storefront
                   </h2>
                   <p className="text-xs text-zinc-500 mt-0.5">
-                    Connect your WhatsApp Business account directly to your synced Meta Catalog with
-                    zero third parties.
+                    Sync your Meta Catalog to WhatsApp Business via Meta Commerce — products appear
+                    in your WhatsApp Business app storefront automatically.
                   </p>
                 </div>
                 <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600">
@@ -1698,18 +1698,19 @@ export default function SocialSettingsHubPage() {
                 </span>
               </div>
 
-              {/* Zero Third Parties Official Guarantee Banner */}
+              {/* How It Works Banner */}
               <div className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex items-start gap-3">
                 <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                 <div className="space-y-1 text-xs">
                   <span className="font-bold text-emerald-900 dark:text-emerald-200 block">
-                    100% Official Meta Infrastructure (Zero Third Parties)
+                    How This Works
                   </span>
                   <p className="text-zinc-600 dark:text-zinc-400 text-[11px] leading-relaxed">
-                    Meta powers WhatsApp Business Storefronts natively through your{" "}
-                    <strong>Meta Commerce Catalog</strong>. Dilnova continuously syncs your products
-                    directly to Meta without any middleman (no Zapier, no Make, no extra monthly
-                    fees).
+                    This uses your <strong>Meta Commerce Catalog</strong> (configured in the Meta
+                    Catalog tab). When products are synced to Meta, they automatically appear in
+                    your WhatsApp Business app&apos;s storefront. This also generates click-to-chat{" "}
+                    <code className="font-mono text-[10px]">wa.me</code> share links for your
+                    products.
                   </p>
                 </div>
               </div>
@@ -1802,7 +1803,7 @@ export default function SocialSettingsHubPage() {
                       </li>
                       <li>
                         Check <strong>Dilnova Store Catalog</strong> (ID:{" "}
-                        <code>{catalogId || "2187911822144469"}</code>) &rarr; click{" "}
+                        <code>{catalogId || "your-catalog-id"}</code>) &rarr; click{" "}
                         <strong>Save Changes</strong>.
                       </li>
                     </ol>
@@ -1814,7 +1815,7 @@ export default function SocialSettingsHubPage() {
               <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
-                    Meta Catalog Attached: {catalogId || "2187911822144469"}
+                    Meta Catalog Attached: {catalogId || "Not Set"}
                     <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
                       Auto-Sync Active
                     </span>

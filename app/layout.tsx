@@ -90,10 +90,17 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const pinterestVerify =
     process.env.PINTEREST_DOMAIN_VERIFY || (await getSystemSetting("pinterest_domain_verify", ""));
-  const metaDomainVerify = await getSystemSetting(
+  const fbDilstar = await getSystemSetting("facebook_domain_verify_dilstar", "");
+  const fbDilnova = await getSystemSetting("facebook_domain_verify_dilnova", "");
+  const legacyFb = await getSystemSetting(
     "facebook_domain_verify",
     process.env.FACEBOOK_DOMAIN_VERIFY || "",
   );
+  // Match the token to the requested domain, with fallback to legacy or any configured token
+  const primaryFbToken = isDilstar ? fbDilstar || legacyFb : fbDilnova || legacyFb;
+  const allFbTokens = Array.from(new Set([primaryFbToken, fbDilstar, fbDilnova].filter(Boolean)));
+  const metaDomainVerify = allFbTokens.length > 1 ? allFbTokens : allFbTokens[0] || "";
+
   const googleSiteVerify = await getSystemSetting(
     "google_site_verify",
     process.env.GOOGLE_SITE_VERIFY || "",

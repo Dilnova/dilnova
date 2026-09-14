@@ -238,8 +238,8 @@ export async function fetchLinkedInstagramAccount({
       } catch {}
     }
 
-    // 2. If direct IG Account ID is hinted or known (e.g. 17841406751842985)
-    const candidateIgIds = [igAccountIdHint, "17841406751842985"].filter(Boolean) as string[];
+    // 2. If direct IG Account ID is hinted or known
+    const candidateIgIds = [igAccountIdHint].filter(Boolean) as string[];
     for (const rawId of candidateIgIds) {
       const cleanId = rawId.trim().replace(/[^0-9]/g, "");
       if (cleanId) {
@@ -260,23 +260,12 @@ export async function fetchLinkedInstagramAccount({
               },
             };
           }
-
-          if (cleanId === "17841406751842985") {
-            return {
-              success: true,
-              account: {
-                id: "17841406751842985",
-                username: "dilukalahiru",
-                name: "ĐIŁỮҜΔ ŁΔĦIŘỮ",
-              },
-            };
-          }
         } catch {}
       }
     }
 
     // 3. Try Business Portfolio Instagram Accounts
-    const candidateBizIds = [businessManagerId, "208458023692445"].filter(Boolean) as string[];
+    const candidateBizIds = [businessManagerId].filter(Boolean) as string[];
     for (const rawBiz of candidateBizIds) {
       const cleanBiz = rawBiz.trim().replace(/[^0-9]/g, "");
       if (cleanBiz) {
@@ -331,7 +320,7 @@ export async function fetchLinkedInstagramAccount({
     return {
       success: false,
       error:
-        "No linked Instagram account found. You can enter your Instagram Account ID (17841406751842985) in the box below.",
+        "No linked Instagram account found. Please enter your Instagram Business Account ID in the box below, or use Auto-Detect after connecting your Instagram to a Facebook Page.",
     };
   } catch (err) {
     logger.error("Failed to fetch linked Instagram account", err);
