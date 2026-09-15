@@ -140,11 +140,34 @@ jobs:
             echo "| **Target S3/B2 Bucket** | 🟡 Skipped (S3_BACKUP_BUCKET secret missing) |" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: 4. Upload Backup & Checksum Artifacts to GitHub
+      - name: 4. Encrypt Backup for Secure Artifact Storage
+        env:
+          ENCRYPTION_KEY: ${{ secrets.DB_BACKUP_ENCRYPTION_KEY || secrets.PII_ENCRYPTION_KEY }}
+        run: |
+          if [ -z "${ENCRYPTION_KEY}" ]; then
+            echo "::error ::DB_BACKUP_ENCRYPTION_KEY (or PII_ENCRYPTION_KEY) secret is not set. Cannot upload unencrypted backup."
+            exit 1
+          fi
+
+          ENCRYPTED_FILE="${BACKUP_FILE}.enc"
+          echo "Encrypting backup with AES-256-CBC..."
+          openssl enc -aes-256-cbc -salt -pbkdf2 -in "${BACKUP_FILE}" -out "${ENCRYPTED_FILE}" -pass "pass:${ENCRYPTION_KEY}"
+
+          # Remove plaintext dump — only encrypted file should remain
+          rm -f "${BACKUP_FILE}"
+
+          ENCRYPTED_SIZE=$(du -h "${ENCRYPTED_FILE}" | cut -f1)
+          echo "ENCRYPTED_FILE=${ENCRYPTED_FILE}" >> $GITHUB_ENV
+          echo "Encrypted backup created: ${ENCRYPTED_FILE} (${ENCRYPTED_SIZE})"
+          echo ""
+          echo "To decrypt locally:"
+          echo "  openssl enc -d -aes-256-cbc -pbkdf2 -in ${ENCRYPTED_FILE} -out ${BACKUP_FILE} -pass 'pass:\$DB_BACKUP_ENCRYPTION_KEY'"
+
+      - name: 5. Upload Encrypted Backup & Checksum Artifacts to GitHub
         uses: actions/upload-artifact@v7
         with:
           name: enterprise-database-backup-package
           path: |
-            *.sql.gz
+            *.sql.gz.enc
             *.sha256
           retention-days: 14
