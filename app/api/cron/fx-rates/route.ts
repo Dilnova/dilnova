@@ -7,9 +7,12 @@ export async function GET(request: Request) {
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
 
-    // Verify cron authorization header if configured in production
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Fail-closed authorization: require valid CRON_SECRET in production or whenever configured
+    if (process.env.NODE_ENV === "production" || cronSecret) {
+      if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+        logger.warn("Unauthorized request to cron FX exchange rate sync endpoint");
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
 
     const result = await syncLiveExchangeRates();

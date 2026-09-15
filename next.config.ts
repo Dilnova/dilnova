@@ -118,14 +118,28 @@ const nextConfig: NextConfig = {
 
     return [
       {
-        source: "/:path*",
+        source: "/((?!google.*\\.html).*)",
         has: [{ type: "host" as const, value: "dilnova.pp.ua" }],
+        missing: [
+          {
+            type: "header" as const,
+            key: "user-agent",
+            value: ".*(Pinterest|Pinterestbot).*",
+          },
+        ],
         destination: "https://www.dilnova.pp.ua/:path*",
         permanent: true,
       },
       {
-        source: "/:path*",
+        source: "/((?!google.*\\.html).*)",
         has: [{ type: "host" as const, value: "dilstar.pp.ua" }],
+        missing: [
+          {
+            type: "header" as const,
+            key: "user-agent",
+            value: ".*(Pinterest|Pinterestbot).*",
+          },
+        ],
         destination: "https://www.dilstar.pp.ua/:path*",
         permanent: true,
       },

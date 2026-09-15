@@ -363,8 +363,8 @@ export const discoverInstagramAccountAction = orgAdminAction
 
       if (integration) {
         pageId = pageId || integration.facebookPageId || "";
-        businessManagerId = businessManagerId || integration.businessManagerId || "208458023692445";
-        igAccountIdHint = igAccountIdHint || integration.instagramAccountId || "17841406751842985";
+        businessManagerId = businessManagerId || integration.businessManagerId || "";
+        igAccountIdHint = igAccountIdHint || integration.instagramAccountId || "";
         if (!tokenToUse || tokenToUse.includes("••••")) {
           tokenToUse = integration.facebookPageAccessToken || integration.accessToken || "";
         }
@@ -926,7 +926,7 @@ export const triggerBatchPinterestPublishAction = orgAdminAction
       const activeProducts = await db
         .select()
         .from(schema.products)
-        .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, "ACTIVE")));
+        .where(and(eq(schema.products.orgId, orgId), eq(schema.products.status, "active")));
 
       if (activeProducts.length === 0) {
         return {

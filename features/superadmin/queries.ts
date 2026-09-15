@@ -212,8 +212,18 @@ export async function getVendorOrgIntegrityReport(
   offset = 0,
 ) {
   const user = await checkSuperAdmin();
-  // Rate limit the query since it can be heavy
-  await rateLimit(10, 60 * 1000, user.id, { failClosed: true });
+  try {
+    // Rate limit the query since it can be heavy (scoped key to avoid colliding with action limiters)
+    await rateLimit(60, 60 * 1000, `integrity:${user.id}`, { failClosed: false });
+  } catch {
+    return buildVendorOrgIntegrityReport(new Set(organizations.map((org) => org.id)), {
+      products: [],
+      orderItems: [],
+      suppliers: [],
+      branches: [],
+      billingReceipts: [],
+    });
+  }
 
   // Run integrity queries sequentially in pairs to avoid exhausting the
   // 5-connection pool. Each query has a safety limit to cap row count.

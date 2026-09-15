@@ -4,7 +4,7 @@
  */
 
 export const DEFAULT_APP_URL = "https://www.dilnova.pp.ua";
-export const DEFAULT_SUPPORT_EMAIL = "support@dilnova.pp.ua";
+export const DEFAULT_SUPPORT_EMAIL = "info@dilstar.pp.ua";
 export const DEFAULT_SYSTEM_NAME = "Dilnova";
 
 // Brand Portal Constants (Dilstar Motors & Hardware)

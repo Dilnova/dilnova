@@ -205,12 +205,12 @@ export default async function VendorPage({ searchParams }: PageProps) {
             <>
               <Link
                 href="/vendor/settings/facebook-shop"
-                className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-blue-200 hover:bg-blue-50 dark:border-blue-900/40 dark:hover:bg-blue-950/20 text-blue-700 dark:text-blue-400 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5"
+                className="text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-purple-200 hover:bg-purple-50 dark:border-purple-900/40 dark:hover:bg-purple-950/20 text-purple-700 dark:text-purple-400 transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5"
               >
                 <span className="emoji" aria-hidden="true">
-                  🛍️
+                  📣
                 </span>{" "}
-                Facebook Shop
+                Social &amp; Messaging
               </Link>
               <Link
                 href="/admin"
