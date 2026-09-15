@@ -158,6 +158,7 @@ jobs:
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
           QSTASH_TOKEN: "dummy_qstash_token"
+          CRON_SECRET: "placeholder_cron_secret"
           ANALYZE: "true"
 
       - name: Analyze Bundle Size
