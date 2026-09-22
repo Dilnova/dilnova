@@ -11,19 +11,19 @@
 
 A complete, enterprise-grade security audit was performed across all 11 security domains specified for pre-production launch readiness.
 
-| #   | Domain                              | Status                  | Key Highlights                                                                                                                                                           |
-| --- | ----------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Secrets & Configuration             | ✅ Confirmed Secure     | 0 hardcoded secrets across 928 commits. `.env` files strictly gitignored. All 26 required production variables including `CRON_SECRET` validated fail-closed on startup. |
-| 2   | Injection & Input Validation        | ⚠️ Issue Found (Medium) | 100% parameterized queries via Drizzle ORM. 0 command injection risks. Unescaped `<` in JSON-LD in `app/vendors/[slug]/page.tsx`.                                        |
-| 3   | Authentication                      | ✅ Confirmed Secure     | 100% delegated to Clerk. Zero custom password storage. Session cookies use `HttpOnly`, `Secure`, `SameSite=Lax`.                                                         |
-| 4   | Authorization & Access Control      | 🚨 Issue Found (High)   | Server-side dual-gate superadmin protection. Multi-tenant isolation enforced. **Unauthenticated PII leak in shipping label PDF endpoint** and **IDOR in tracking page**. |
-| 5   | CSRF & CORS                         | ✅ Confirmed Secure     | Custom edge CSRF verification on all mutating requests. Next.js Server Action CSRF. Strict single-origin CORS without wildcards.                                         |
-| 6   | Security Headers & Transport        | ✅ Confirmed Secure     | Strict HSTS, CSP with nonces (`unsafe-eval` disabled in production), X-Frame-Options DENY, Permissions-Policy.                                                           |
-| 7   | Rate Limiting & Abuse Prevention    | ✅ Confirmed Secure     | Upstash Redis sliding window with memory fallback. Critical actions fail closed. Scoped by user ID and edge IP.                                                          |
-| 8   | Data Exposure & API Security        | 🚨 Issue Found (High)   | Unprotected tracking number route leaks customer name and address. All other API responses strictly filter database columns.                                             |
-| 9   | Dependency & Supply Chain           | ✅ Confirmed Secure     | `pnpm audit` reports **0 known vulnerabilities**. All core dependencies active and supported.                                                                            |
-| 10  | Logging & Error Handling            | ⚠️ Issue Found (Low)    | Centralized structured JSON logging with recursive key redaction and CRLF sanitization. 2 route catch blocks bypass structured logger.                                   |
-| 11  | Webhooks & Third-Party Integrations | ✅ Confirmed Secure     | Svix HMAC-SHA256 signature verification for Clerk with DB idempotency fallback. QStash signature verification and locks.                                                 |
+| #   | Domain                              | Status                | Key Highlights                                                                                                                                                           |
+| --- | ----------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Secrets & Configuration             | ✅ Confirmed Secure   | 0 hardcoded secrets across 928 commits. `.env` files strictly gitignored. All 26 required production variables including `CRON_SECRET` validated fail-closed on startup. |
+| 2   | Injection & Input Validation        | ✅ Confirmed Secure   | 100% parameterized queries via Drizzle ORM. 0 command injection risks. All 4 `dangerouslySetInnerHTML` JSON-LD blocks escape `<` to `\u003c`.                            |
+| 3   | Authentication                      | ✅ Confirmed Secure   | 100% delegated to Clerk. Zero custom password storage. Session cookies use `HttpOnly`, `Secure`, `SameSite=Lax`.                                                         |
+| 4   | Authorization & Access Control      | 🚨 Issue Found (High) | Server-side dual-gate superadmin protection. Multi-tenant isolation enforced. **Unauthenticated PII leak in shipping label PDF endpoint** and **IDOR in tracking page**. |
+| 5   | CSRF & CORS                         | ✅ Confirmed Secure   | Custom edge CSRF verification on all mutating requests. Next.js Server Action CSRF. Strict single-origin CORS without wildcards.                                         |
+| 6   | Security Headers & Transport        | ✅ Confirmed Secure   | Strict HSTS, CSP with nonces (`unsafe-eval` disabled in production), X-Frame-Options DENY, Permissions-Policy.                                                           |
+| 7   | Rate Limiting & Abuse Prevention    | ✅ Confirmed Secure   | Upstash Redis sliding window with memory fallback. Critical actions fail closed. Scoped by user ID and edge IP.                                                          |
+| 8   | Data Exposure & API Security        | 🚨 Issue Found (High) | Unprotected tracking number route leaks customer name and address. All other API responses strictly filter database columns.                                             |
+| 9   | Dependency & Supply Chain           | ✅ Confirmed Secure   | `pnpm audit` reports **0 known vulnerabilities**. All core dependencies active and supported.                                                                            |
+| 10  | Logging & Error Handling            | ⚠️ Issue Found (Low)  | Centralized structured JSON logging with recursive key redaction and CRLF sanitization. 2 route catch blocks bypass structured logger.                                   |
+| 11  | Webhooks & Third-Party Integrations | ✅ Confirmed Secure   | Svix HMAC-SHA256 signature verification for Clerk with DB idempotency fallback. QStash signature verification and locks.                                                 |
 
 ---
 
@@ -180,39 +180,46 @@ A complete, enterprise-grade security audit was performed across all 11 security
 
 ### 2.2 XSS (Cross-Site Scripting) & dangerouslySetInnerHTML
 
-- **Status:** ⚠️ Issue Found (Medium)
+- **Status:** ✅ Confirmed Secure
 - **Code Evidence:**
-  Four occurrences of `dangerouslySetInnerHTML` exist in the codebase:
-  1. `app/products/[id]/page.tsx:256-258` — ✅ Properly sanitized:
+  All four occurrences of `dangerouslySetInnerHTML` in the codebase are strictly sanitized using `.replace(/</g, "\\u003c")` to prevent inline `<script>` parser breakouts:
+  1. `app/products/[id]/page.tsx:256-258` — ✅ Sanitized:
      ```typescript
      // File: app/products/[id]/page.tsx#L256-L258
      dangerouslySetInnerHTML={{
        __html: JSON.stringify([productJsonLd, breadcrumbJsonLd]).replace(/</g, "\\u003c"),
      }}
      ```
-  2. `app/brand/dilstar/page.tsx:81-83` — ✅ Properly sanitized:
+  2. `app/brand/dilstar/page.tsx:81-83` — ✅ Sanitized:
      ```typescript
      // File: app/brand/dilstar/page.tsx#L81-L83
      dangerouslySetInnerHTML={{
        __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
      }}
      ```
-  3. `app/layout.tsx:241-243` — ⚠️ Missing `<` escaping:
+  3. `app/layout.tsx:241-274` — ✅ Sanitized:
      ```typescript
-     // File: app/layout.tsx#L241-L243
+     // File: app/layout.tsx#L241-L274
      dangerouslySetInnerHTML={{
-       __html: JSON.stringify({ "@context": "https://schema.org", ... }),
+       __html: JSON.stringify({
+         "@context": "https://schema.org",
+         "@graph": [ ... ],
+       }).replace(/</g, "\\u003c"),
      }}
      ```
-  4. `app/vendors/[slug]/page.tsx:266` — ⚠️ Missing `<` escaping:
+  4. `app/vendors/[slug]/page.tsx:264-268` — ✅ Sanitized:
      ```typescript
-     // File: app/vendors/[slug]/page.tsx#L266
-     dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+     // File: app/vendors/[slug]/page.tsx#L264-L268
+     const structuredDataScript = (
+       <script
+         type="application/ld+json"
+         dangerouslySetInnerHTML={{
+           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+         }}
+       />
+     );
      ```
-- **Vulnerability Analysis:**
-  In `app/vendors/[slug]/page.tsx`, `jsonLd` incorporates vendor database fields (`vendor.name`, `vendor.description`). Standard `JSON.stringify` does not escape `<`. If an administrative vendor store name includes `</script><script>...`, browser HTML parsers will break out of the script block.
-- **Severity:** Medium
-- **Remediation:** Replace with `__html: JSON.stringify(jsonLd).replace(/</g, "\\u003c")`.
+  Zero unescaped HTML injections or `innerHTML` assignments exist across the application.
 
 ### 2.3 Command Execution (exec / spawn / eval)
 
@@ -756,6 +763,6 @@ A complete, enterprise-grade security audit was performed across all 11 security
 
 1. 🚨 **High Severity:** Secure `app/api/shipping/label-pdf/route.ts` with Clerk session validation, vendor org / customer ownership check, and rate limiting.
 2. ⚠️ **Medium Severity:** Add `customerOwnsOrder(order, userId)` ownership check to `app/(customer)/customer/track/[orderId]/page.tsx`.
-3. ⚠️ **Medium Severity:** Sanitize JSON-LD in `app/vendors/[slug]/page.tsx:266` and `app/layout.tsx:242` by replacing `<` with `\u003c`.
-4. ℹ️ **Low Severity:** Replace `console.error` with `logger.error` in `app/api/shipping/labels/route.ts:121` and `app/api/shipping/rates/route.ts:169`.
-5. ✅ **Completed:** `CRON_SECRET` added to `productionServerEnvSchema` in `shared/env/server.ts:52` and test added in `tests/unit/shared/env/server.test.ts`.
+3. ℹ️ **Low Severity:** Replace `console.error` with `logger.error` in `app/api/shipping/labels/route.ts:121` and `app/api/shipping/rates/route.ts:169`.
+4. ✅ **Completed:** `CRON_SECRET` added to `productionServerEnvSchema` in `shared/env/server.ts:52` and test added in `tests/unit/shared/env/server.test.ts`.
+5. ✅ **Completed:** JSON-LD structured data in `app/vendors/[slug]/page.tsx:266` sanitized with `.replace(/</g, "\\u003c")`.
