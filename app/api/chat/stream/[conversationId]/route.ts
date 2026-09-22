@@ -14,6 +14,12 @@ export async function GET(
   { params }: { params: Promise<{ conversationId: string }> },
 ) {
   const { conversationId } = await params;
+  if (!conversationId || !/^[0-9a-fA-F-]{36}$/.test(conversationId)) {
+    return new Response(JSON.stringify({ error: "Invalid conversation ID format" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   const { userId, orgId, orgRole } = await auth();
 
   if (!userId) {

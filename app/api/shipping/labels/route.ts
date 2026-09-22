@@ -6,6 +6,7 @@ import { simulatedOrders, simulatedOrderItems, shipments, branches } from "@/sha
 import { eq } from "drizzle-orm";
 import { getCarrier } from "@/shared/shipping/carrier-registry";
 import { parseBranchToOrigin } from "@/shared/shipping/rate-engine";
+import { logger } from "@/shared/logging/logger";
 
 const createLabelSchema = z.object({
   orderId: z.string().uuid(),
@@ -118,9 +119,12 @@ export async function POST(req: Request) {
       estimatedDeliveryDate: shipmentResult.estimatedDeliveryDate,
     });
   } catch (err: unknown) {
-    console.error("[POST /api/shipping/labels] Error:", err);
+    logger.error("[POST /api/shipping/labels] Error", err);
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: err.errors }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid input", details: err.issues.map((i) => i.message) },
+        { status: 400 },
+      );
     }
     return NextResponse.json({ error: "Failed to generate shipment label" }, { status: 500 });
   }

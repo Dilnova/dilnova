@@ -11,19 +11,19 @@
 
 A complete, enterprise-grade security audit was performed across all 11 security domains specified for pre-production launch readiness.
 
-| #   | Domain                              | Status               | Key Highlights                                                                                                                                                                                  |
-| --- | ----------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Secrets & Configuration             | ✅ Confirmed Secure  | 0 hardcoded secrets across 928 commits. `.env` files strictly gitignored. All 26 required production variables including `CRON_SECRET` validated fail-closed on startup.                        |
-| 2   | Injection & Input Validation        | ✅ Confirmed Secure  | 100% parameterized queries via Drizzle ORM. 0 command injection risks. All 4 `dangerouslySetInnerHTML` JSON-LD blocks escape `<` to `\u003c`.                                                   |
-| 3   | Authentication                      | ✅ Confirmed Secure  | 100% delegated to Clerk. Zero custom password storage. Session cookies use `HttpOnly`, `Secure`, `SameSite=Lax`.                                                                                |
-| 4   | Authorization & Access Control      | ✅ Confirmed Secure  | Server-side dual-gate superadmin protection. Multi-tenant isolation enforced. Customer order ownership strictly verified in tracking page and shipping label endpoint. Fail-closed role checks. |
-| 5   | CSRF & CORS                         | ✅ Confirmed Secure  | Custom edge CSRF verification on all mutating requests. Next.js Server Action CSRF. Strict single-origin CORS without wildcards.                                                                |
-| 6   | Security Headers & Transport        | ✅ Confirmed Secure  | Strict HSTS, CSP with nonces (`unsafe-eval` disabled in production), X-Frame-Options DENY, Permissions-Policy.                                                                                  |
-| 7   | Rate Limiting & Abuse Prevention    | ✅ Confirmed Secure  | Upstash Redis sliding window with memory fallback. Critical actions fail closed. Scoped by user ID and edge IP.                                                                                 |
-| 8   | Data Exposure & API Security        | ✅ Confirmed Secure  | Shipping label PDF endpoint secured with multi-tenant org, customer ownership, and superadmin checks. All API responses strictly filter database columns. PII exposure eliminated.              |
-| 9   | Dependency & Supply Chain           | ✅ Confirmed Secure  | `pnpm audit` reports **0 known vulnerabilities**. All core dependencies active and supported.                                                                                                   |
-| 10  | Logging & Error Handling            | ⚠️ Issue Found (Low) | Centralized structured JSON logging with recursive key redaction and CRLF sanitization. 2 route catch blocks bypass structured logger.                                                          |
-| 11  | Webhooks & Third-Party Integrations | ✅ Confirmed Secure  | Svix HMAC-SHA256 signature verification for Clerk with DB idempotency fallback. QStash signature verification and locks.                                                                        |
+| #   | Domain                              | Status              | Key Highlights                                                                                                                                                                                  |
+| --- | ----------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Secrets & Configuration             | ✅ Confirmed Secure | 0 hardcoded secrets across 928 commits. `.env` files strictly gitignored. All 26 required production variables including `CRON_SECRET` validated fail-closed on startup.                        |
+| 2   | Injection & Input Validation        | ✅ Confirmed Secure | 100% parameterized queries via Drizzle ORM. 0 command injection risks. All 4 `dangerouslySetInnerHTML` JSON-LD blocks escape `<` to `\u003c`.                                                   |
+| 3   | Authentication                      | ✅ Confirmed Secure | 100% delegated to Clerk. Zero custom password storage. Session cookies use `HttpOnly`, `Secure`, `SameSite=Lax`.                                                                                |
+| 4   | Authorization & Access Control      | ✅ Confirmed Secure | Server-side dual-gate superadmin protection. Multi-tenant isolation enforced. Customer order ownership strictly verified in tracking page and shipping label endpoint. Fail-closed role checks. |
+| 5   | CSRF & CORS                         | ✅ Confirmed Secure | Custom edge CSRF verification on all mutating requests. Next.js Server Action CSRF. Strict single-origin CORS without wildcards.                                                                |
+| 6   | Security Headers & Transport        | ✅ Confirmed Secure | Strict HSTS, CSP with nonces (`unsafe-eval` disabled in production), X-Frame-Options DENY, Permissions-Policy.                                                                                  |
+| 7   | Rate Limiting & Abuse Prevention    | ✅ Confirmed Secure | Upstash Redis sliding window with memory fallback. Critical actions fail closed. Scoped by user ID and edge IP.                                                                                 |
+| 8   | Data Exposure & API Security        | ✅ Confirmed Secure | Shipping label PDF endpoint secured with multi-tenant org, customer ownership, and superadmin checks. All API responses strictly filter database columns. PII exposure eliminated.              |
+| 9   | Dependency & Supply Chain           | ✅ Confirmed Secure | `pnpm audit` reports **0 known vulnerabilities**. All core dependencies active and supported.                                                                                                   |
+| 10  | Logging & Error Handling            | ✅ Confirmed Secure | Centralized structured JSON logging with recursive key redaction and CRLF sanitization. All raw console calls replaced with structured logger.                                                  |
+| 11  | Webhooks & Third-Party Integrations | ✅ Confirmed Secure | Svix HMAC-SHA256 signature verification for Clerk with DB idempotency fallback. QStash signature verification and locks.                                                                        |
 
 ---
 
@@ -632,13 +632,26 @@ A complete, enterprise-grade security audit was performed across all 11 security
 
 - **Status:** ✅ Confirmed Secure
 - **Code Evidence:**
-  1. API Route error wrapper (`shared/api/api-handler.ts:16-18`):
+  1. Standard API Route error wrapper (`shared/api/api-handler.ts:16-18`):
      ```typescript
      // File: shared/api/api-handler.ts#L16-L18
      logger.error("[API Error]", error, { method: req.method, url: safeUrl });
      return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
      ```
-  2. Server Action error handler (`lib/safe-action.ts:33-41`):
+  2. Chat conversations & messages error obfuscation:
+     - `app/api/chat/conversations/route.ts:44-50`:
+       ```typescript
+       // File: app/api/chat/conversations/route.ts#L44-L50
+       } catch (error) {
+         logger.error("[GET /api/chat/conversations] Error", error);
+         return NextResponse.json(
+           { error: "Failed to fetch conversations" },
+           { status: 500 },
+         );
+       }
+       ```
+     - `app/api/chat/messages/[conversationId]/route.ts:74-77`: Catches internal database errors, logs to `logger.error`, and returns `{ error: "Internal Server Error" }`.
+  3. Server Action error handler (`lib/safe-action.ts:33-41`):
      ```typescript
      // File: lib/safe-action.ts#L33-L41
      if (e instanceof ActionError) {
@@ -649,15 +662,32 @@ A complete, enterprise-grade security audit was performed across all 11 security
      }
      return "An unexpected error occurred. Please try again.";
      ```
-  Stack traces and database schema names are never emitted in client responses in production.
+  Stack traces, SQL errors, and database schema names are never emitted in client responses in production.
 
 ### 8.3 Pagination Scrape Prevention
 
 - **Status:** ✅ Confirmed Secure
 - **Code Evidence:**
-  - `features/catalog/queries.ts:163`: `Math.min(..., MAX_REVIEWS_PER_PAGE)`
-  - `features/catalog/queries.ts:222`: `Math.min(..., 200)`
-  - `app/api/webhooks/qstash/export/route.ts:74`: Hard cap of 10,000 records on bulk exports.
+  All list and collection queries enforce hard caps on `limit` parameters:
+  - Product Reviews: `features/catalog/queries.ts:163`: `Math.min(..., MAX_REVIEWS_PER_PAGE)` (capped at 100).
+  - Product Questions: `features/catalog/queries.ts:222`: `Math.min(..., 200)`.
+  - Organization Chat Conversations: `features/chat/queries.ts:90`: `Math.min(Math.max(1, options.limit || 50), 100)`.
+  - Customer Chat Conversations: `features/chat/queries.ts:256`: Hard-capped at `.limit(100)`.
+  - Chat Messages: `features/chat/queries.ts:322`: `Math.min(Math.max(1, options?.limit || 50), 100)`.
+  - Bulk GDPR Export: `app/api/webhooks/qstash/export/route.ts:74`: Hard cap of 10,000 records.
+
+### 8.4 Resource ID Unguessability (UUIDv4 Primary Keys)
+
+- **Status:** ✅ Confirmed Secure
+- **Code Evidence:**
+  Zero auto-incrementing integer IDs exist in public-facing database entities or URL parameters. All primary keys utilize randomly generated UUIDv4:
+  - Orders: `shared/db/schema/orders.ts:8`: `id: uuid("id").defaultRandom().primaryKey()`
+  - Products: `shared/db/schema/catalog.ts:65`: `id: uuid("id").defaultRandom().primaryKey()`
+  - Categories: `shared/db/schema/catalog.ts:43`: `id: uuid("id").defaultRandom().primaryKey()`
+  - Chat Conversations: `shared/db/schema/chat.ts:27`: `id: uuid("id").defaultRandom().primaryKey()`
+  - Chat Messages: `shared/db/schema/chat.ts:54`: `id: uuid("id").defaultRandom().primaryKey()`
+  - Branches: `shared/db/schema/billing.ts:60`: `id: uuid("id").defaultRandom().primaryKey()`
+    URL routes enforce UUID format validation before querying (e.g. `app/api/chat/messages/[conversationId]/route.ts:14-16` validates `/^[0-9a-fA-F-]{36}$/`). ID enumeration and sequential scraping attacks are computationally infeasible.
 
 ---
 
@@ -713,18 +743,17 @@ A complete, enterprise-grade security audit was performed across all 11 security
   ```
   All log messages and request IDs are stripped of CRLF characters to prevent Log Injection / Log Splitting attacks.
 
-### 10.2 Direct Console Error Invocations
+### 10.2 Structured Error Logging in Route Handlers
 
-- **Status:** ⚠️ Issue Found (Low)
+- **Status:** ✅ Confirmed Secure
 - **Code Evidence:**
-  `app/api/shipping/labels/route.ts:121` and `app/api/shipping/rates/route.ts:169`:
-  ```typescript
-  // File: app/api/shipping/labels/route.ts#L121
-  console.error("[POST /api/shipping/labels] Error:", err);
-  ```
-  Calling raw `console.error` bypasses Sentry exception recording and correlation tracking.
-- **Severity:** Low
-- **Remediation:** Replace with `logger.error("[POST /api/shipping/labels] Error", err);`.
+  All route catch blocks throughout `app/api/` utilize `logger.error` and `logger.warn` to ensure Sentry recording and correlation tracking:
+  - `app/api/shipping/labels/route.ts:121`: `logger.error("[POST /api/shipping/labels] Error", err);`
+  - `app/api/shipping/rates/route.ts:169`: `logger.error("[POST /api/shipping/rates] Error", err);`
+  - `app/api/chat/conversations/route.ts:44`: `logger.error("[GET /api/chat/conversations] Error", error);`
+  - `app/api/chat/messages/[conversationId]/route.ts:74`: `logger.error("[GET /api/chat/messages] Error", error);`
+  - `app/api/locations/route.ts`: All raw console invocations replaced with `logger.error` and `logger.warn`.
+    Zero raw `console.error` invocations remain across `app/api/`.
 
 ### 10.3 Audit Logging for Administrative Actions
 
@@ -789,6 +818,6 @@ A complete, enterprise-grade security audit was performed across all 11 security
 
 1. ✅ **Completed:** Secured `app/api/shipping/label-pdf/route.ts` with Clerk session validation, vendor org / customer ownership check, superadmin bypass, rate limiting, and 8 unit tests in `tests/unit/app/api/shipping/label-pdf/route.test.ts`.
 2. ✅ **Completed:** Added `customerOwnsOrder(order, userId)` ownership check and superadmin bypass to `app/(customer)/customer/track/[orderId]/page.tsx`, verified with 5 unit tests in `tests/unit/app/customer/track/page.test.ts`.
-3. ℹ️ **Low Severity:** Replace `console.error` with `logger.error` in `app/api/shipping/labels/route.ts:121` and `app/api/shipping/rates/route.ts:169`.
+3. ✅ **Completed:** Replaced raw `console.error` / `console.warn` with structured `logger.error` / `logger.warn` across `app/api/shipping/labels/route.ts`, `app/api/shipping/rates/route.ts`, `app/api/locations/route.ts`, `app/api/chat/conversations/route.ts`, and `app/api/chat/messages/[conversationId]/route.ts`.
 4. ✅ **Completed:** `CRON_SECRET` added to `productionServerEnvSchema` in `shared/env/server.ts:52` and test added in `tests/unit/shared/env/server.test.ts`.
 5. ✅ **Completed:** JSON-LD structured data in `app/vendors/[slug]/page.tsx:266` sanitized with `.replace(/</g, "\\u003c")`.

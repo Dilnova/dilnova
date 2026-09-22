@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { listOrgConversations, listCustomerConversations } from "@/features/chat/queries";
+import { logger } from "@/shared/logging/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,10 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") || undefined;
   const branchId = searchParams.get("branchId") || undefined;
+  const rawLimit = searchParams.get("limit");
+  const rawOffset = searchParams.get("offset");
+  const limit = Math.min(Math.max(1, rawLimit ? parseInt(rawLimit, 10) || 50 : 50), 100);
+  const offset = Math.max(0, rawOffset ? parseInt(rawOffset, 10) || 0 : 0);
 
   try {
     if (orgId && (orgRole === "org:admin" || orgRole === "org:member")) {
@@ -22,7 +27,8 @@ export async function GET(request: NextRequest) {
         orgRole,
         status,
         branchId,
-        limit: 50,
+        limit,
+        offset,
       });
 
       return NextResponse.json({
@@ -38,9 +44,7 @@ export async function GET(request: NextRequest) {
       totalCount: conversations.length,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to fetch conversations" },
-      { status: 500 },
-    );
+    logger.error("[GET /api/chat/conversations] Error", error);
+    return NextResponse.json({ error: "Failed to fetch conversations" }, { status: 500 });
   }
 }
