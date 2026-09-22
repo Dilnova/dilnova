@@ -1,7 +1,10 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/shared/db/client";
 import { simulatedOrders, shipments } from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
+import { customerOwnsOrder } from "@/features/orders/customer-ownership";
+import { getCachedIsSuperAdmin } from "@/shared/auth/clerk-cache";
 import { Truck, CheckCircle2, MapPin, ExternalLink, PackageCheck, Clock } from "lucide-react";
 
 export const revalidate = 0;
@@ -11,6 +14,11 @@ interface TrackPageProps {
 }
 
 export default async function CustomerTrackPage({ params }: TrackPageProps) {
+  const { userId } = await auth();
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
   const { orderId } = await params;
 
   const [order] = await db
@@ -20,6 +28,13 @@ export default async function CustomerTrackPage({ params }: TrackPageProps) {
     .limit(1);
 
   if (!order) {
+    notFound();
+  }
+
+  const isOwner = customerOwnsOrder(order, userId);
+  const isSuperAdmin = await getCachedIsSuperAdmin(userId);
+
+  if (!isOwner && !isSuperAdmin) {
     notFound();
   }
 

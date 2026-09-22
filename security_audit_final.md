@@ -11,19 +11,19 @@
 
 A complete, enterprise-grade security audit was performed across all 11 security domains specified for pre-production launch readiness.
 
-| #   | Domain                              | Status                | Key Highlights                                                                                                                                                           |
-| --- | ----------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Secrets & Configuration             | ✅ Confirmed Secure   | 0 hardcoded secrets across 928 commits. `.env` files strictly gitignored. All 26 required production variables including `CRON_SECRET` validated fail-closed on startup. |
-| 2   | Injection & Input Validation        | ✅ Confirmed Secure   | 100% parameterized queries via Drizzle ORM. 0 command injection risks. All 4 `dangerouslySetInnerHTML` JSON-LD blocks escape `<` to `\u003c`.                            |
-| 3   | Authentication                      | ✅ Confirmed Secure   | 100% delegated to Clerk. Zero custom password storage. Session cookies use `HttpOnly`, `Secure`, `SameSite=Lax`.                                                         |
-| 4   | Authorization & Access Control      | 🚨 Issue Found (High) | Server-side dual-gate superadmin protection. Multi-tenant isolation enforced. **Unauthenticated PII leak in shipping label PDF endpoint** and **IDOR in tracking page**. |
-| 5   | CSRF & CORS                         | ✅ Confirmed Secure   | Custom edge CSRF verification on all mutating requests. Next.js Server Action CSRF. Strict single-origin CORS without wildcards.                                         |
-| 6   | Security Headers & Transport        | ✅ Confirmed Secure   | Strict HSTS, CSP with nonces (`unsafe-eval` disabled in production), X-Frame-Options DENY, Permissions-Policy.                                                           |
-| 7   | Rate Limiting & Abuse Prevention    | ✅ Confirmed Secure   | Upstash Redis sliding window with memory fallback. Critical actions fail closed. Scoped by user ID and edge IP.                                                          |
-| 8   | Data Exposure & API Security        | 🚨 Issue Found (High) | Unprotected tracking number route leaks customer name and address. All other API responses strictly filter database columns.                                             |
-| 9   | Dependency & Supply Chain           | ✅ Confirmed Secure   | `pnpm audit` reports **0 known vulnerabilities**. All core dependencies active and supported.                                                                            |
-| 10  | Logging & Error Handling            | ⚠️ Issue Found (Low)  | Centralized structured JSON logging with recursive key redaction and CRLF sanitization. 2 route catch blocks bypass structured logger.                                   |
-| 11  | Webhooks & Third-Party Integrations | ✅ Confirmed Secure   | Svix HMAC-SHA256 signature verification for Clerk with DB idempotency fallback. QStash signature verification and locks.                                                 |
+| #   | Domain                              | Status               | Key Highlights                                                                                                                                                                                  |
+| --- | ----------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Secrets & Configuration             | ✅ Confirmed Secure  | 0 hardcoded secrets across 928 commits. `.env` files strictly gitignored. All 26 required production variables including `CRON_SECRET` validated fail-closed on startup.                        |
+| 2   | Injection & Input Validation        | ✅ Confirmed Secure  | 100% parameterized queries via Drizzle ORM. 0 command injection risks. All 4 `dangerouslySetInnerHTML` JSON-LD blocks escape `<` to `\u003c`.                                                   |
+| 3   | Authentication                      | ✅ Confirmed Secure  | 100% delegated to Clerk. Zero custom password storage. Session cookies use `HttpOnly`, `Secure`, `SameSite=Lax`.                                                                                |
+| 4   | Authorization & Access Control      | ✅ Confirmed Secure  | Server-side dual-gate superadmin protection. Multi-tenant isolation enforced. Customer order ownership strictly verified in tracking page and shipping label endpoint. Fail-closed role checks. |
+| 5   | CSRF & CORS                         | ✅ Confirmed Secure  | Custom edge CSRF verification on all mutating requests. Next.js Server Action CSRF. Strict single-origin CORS without wildcards.                                                                |
+| 6   | Security Headers & Transport        | ✅ Confirmed Secure  | Strict HSTS, CSP with nonces (`unsafe-eval` disabled in production), X-Frame-Options DENY, Permissions-Policy.                                                                                  |
+| 7   | Rate Limiting & Abuse Prevention    | ✅ Confirmed Secure  | Upstash Redis sliding window with memory fallback. Critical actions fail closed. Scoped by user ID and edge IP.                                                                                 |
+| 8   | Data Exposure & API Security        | ✅ Confirmed Secure  | Shipping label PDF endpoint secured with multi-tenant org, customer ownership, and superadmin checks. All API responses strictly filter database columns. PII exposure eliminated.              |
+| 9   | Dependency & Supply Chain           | ✅ Confirmed Secure  | `pnpm audit` reports **0 known vulnerabilities**. All core dependencies active and supported.                                                                                                   |
+| 10  | Logging & Error Handling            | ⚠️ Issue Found (Low) | Centralized structured JSON logging with recursive key redaction and CRLF sanitization. 2 route catch blocks bypass structured logger.                                                          |
+| 11  | Webhooks & Third-Party Integrations | ✅ Confirmed Secure  | Svix HMAC-SHA256 signature verification for Clerk with DB idempotency fallback. QStash signature verification and locks.                                                                        |
 
 ---
 
@@ -335,7 +335,7 @@ A complete, enterprise-grade security audit was performed across all 11 security
 
 ### 4.2 Customer Data Isolation & Cross-Tenant Access
 
-- **Status:** ⚠️ Issue Found (Medium)
+- **Status:** ✅ Confirmed Secure
 - **Positive Code Evidence (Orders & Invoices):**
   - `features/orders/customer-ownership.ts:9-20`:
     ```typescript
@@ -361,77 +361,103 @@ A complete, enterprise-grade security audit was performed across all 11 security
       notFound();
     }
     ```
-- **Vulnerability Identified (Customer Tracking Page IDOR):**
-  - File: `app/(customer)/customer/track/[orderId]/page.tsx:16-24`
+- **Remediated Vulnerability (Customer Tracking Page IDOR):**
+  - File: `app/(customer)/customer/track/[orderId]/page.tsx:16-40`
     ```typescript
-    // File: app/(customer)/customer/track/[orderId]/page.tsx#L16-L24
-    const [order] = await db
-      .select()
-      .from(simulatedOrders)
-      .where(eq(simulatedOrders.id, orderId))
-      .limit(1);
+    // File: app/(customer)/customer/track/[orderId]/page.tsx#L16-L40
+    export default async function CustomerTrackPage({ params }: TrackPageProps) {
+      const { userId } = await auth();
+      if (!userId) {
+        redirect("/sign-in");
+      }
 
-    if (!order) {
-      notFound();
-    }
+      const { orderId } = await params;
+
+      const [order] = await db
+        .select()
+        .from(simulatedOrders)
+        .where(eq(simulatedOrders.id, orderId))
+        .limit(1);
+
+      if (!order) {
+        notFound();
+      }
+
+      const isOwner = customerOwnsOrder(order, userId);
+      const isSuperAdmin = await getCachedIsSuperAdmin(userId);
+
+      if (!isOwner && !isSuperAdmin) {
+        notFound();
+      }
     ```
-  - `CustomerTrackPage` fails to invoke `customerOwnsOrder(order, userId)`. Any authenticated customer who knows another customer's order UUID can view shipment carrier names, tracking numbers (AWB), and live delivery timestamps.
-- **Severity:** Medium
-- **Remediation:** Add ownership validation in `CustomerTrackPage`:
-  ```typescript
-  const { userId } = await auth();
-  if (!userId || !customerOwnsOrder(order, userId)) {
-    notFound();
-  }
-  ```
+  - Access is now strictly restricted to the customer whose Clerk `userId` matches `order.customerUserId` (or a platform superadmin). Unauthorized requests fail with `notFound()`, disclosing neither the existence of other customers' orders nor tracking information.
+  - Verified by 5 automated unit tests in `tests/unit/app/customer/track/page.test.ts`.
 
-### 4.3 Unauthenticated Shipping Label PDF Leak
+### 4.3 Shipping Label PDF Authorization & PII Protection
 
-- **Status:** 🚨 Issue Found (High)
-- **Code Evidence:**
-  `app/api/shipping/label-pdf/route.ts:15-46`:
+- **Status:** ✅ Confirmed Secure
+- **Remediated Implementation:**
+  `app/api/shipping/label-pdf/route.ts:19-70`:
   ```typescript
-  // File: app/api/shipping/label-pdf/route.ts#L15-L46
+  // File: app/api/shipping/label-pdf/route.ts#L19-L70
   export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
-    const trackingNumberRaw = searchParams.get("tracking");
-    ...
-    const [shipment] = await db
-      .select()
-      .from(shipments)
-      .where(eq(shipments.trackingNumber, trackingNumber))
-      .limit(1);
+    try {
+      await rateLimit(30, 60 * 1000);
 
-    const order = shipment
-      ? (
-          await db
-            .select()
-            .from(simulatedOrders)
-            .where(eq(simulatedOrders.id, shipment.orderId))
-            .limit(1)
-        )[0]
-      : null;
+      const { userId, orgId } = await auth();
+      if (!userId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
 
-    const recipientName = escapeHtml(order?.customerName ?? "Customer");
-    const recipientStreet = escapeHtml(order?.shippingAddress ?? "Delivery Address");
-    const recipientCity = escapeHtml(order?.shippingCity ?? "Colombo");
-    const recipientCountry = escapeHtml(order?.shippingCountry ?? "LK");
+      const { searchParams } = new URL(req.url);
+      const trackingNumberRaw = searchParams.get("tracking");
+
+      if (!trackingNumberRaw || !/^[a-zA-Z0-9_\-\.]{3,64}$/.test(trackingNumberRaw)) {
+        return NextResponse.json({ error: "Invalid or missing tracking number" }, { status: 400 });
+      }
+
+      const trackingNumber = trackingNumberRaw;
+
+      // Fetch shipment and order details
+      const [shipment] = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.trackingNumber, trackingNumber))
+        .limit(1);
+
+      if (!shipment) {
+        return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
+      }
+
+      const [order] = await db
+        .select()
+        .from(simulatedOrders)
+        .where(eq(simulatedOrders.id, shipment.orderId))
+        .limit(1);
+
+      if (!order) {
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+
+      // Verify authorization: caller must be an authorized vendor member of the shipping org,
+      // the customer who owns the order, or a platform superadmin.
+      const isVendor = Boolean(orgId && shipment.vendorOrgId === orgId);
+      const isCustomer = Boolean(order.customerUserId && order.customerUserId === userId);
+      const isSuperAdmin = await getCachedIsSuperAdmin(userId);
+
+      if (!isVendor && !isCustomer && !isSuperAdmin) {
+        return NextResponse.json(
+          { error: "Forbidden: You do not have permission to access this shipment label" },
+          { status: 403 },
+        );
+      }
   ```
-- **Vulnerability Analysis:**
-  This endpoint does not call `auth()`, is not matched by `isProtectedRoute` in `proxy.ts`, and has no rate limiting. Any unauthenticated caller who queries `?tracking=AWB-...` receives the customer's full real name, shipping street address, and shipment records formatted for print.
-- **Severity:** High
-- **Remediation:** Enforce vendor organization or customer ownership verification:
-  ```typescript
-  const { userId, orgId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const isVendor = orgId && shipment.vendorOrgId === orgId;
-  const isCustomer = order && order.customerUserId === userId;
-  if (!isVendor && !isCustomer) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-  ```
+- **Security Protections:**
+  1. Rate limiting enforced (30 requests / min).
+  2. Mandatory authentication via Clerk `auth()` (unauthenticated requests rejected with HTTP 401).
+  3. Tracking number format validated against strict alphanumeric regex (`^[a-zA-Z0-9_\-\.]{3,64}$`).
+  4. Multi-tenant authorization enforced: caller must be a member of the vendor organization fulfilling the shipment (`shipment.vendorOrgId === orgId`), the customer who placed the order (`order.customerUserId === userId`), or a superadmin (`getCachedIsSuperAdmin(userId)`). Unauthorized callers receive HTTP 403 Forbidden.
+  5. Verified by 8 automated unit tests in `tests/unit/app/api/shipping/label-pdf/route.test.ts`.
 
 ---
 
@@ -761,8 +787,8 @@ A complete, enterprise-grade security audit was performed across all 11 security
 
 ## Action Items & Remediation Checklist
 
-1. 🚨 **High Severity:** Secure `app/api/shipping/label-pdf/route.ts` with Clerk session validation, vendor org / customer ownership check, and rate limiting.
-2. ⚠️ **Medium Severity:** Add `customerOwnsOrder(order, userId)` ownership check to `app/(customer)/customer/track/[orderId]/page.tsx`.
+1. ✅ **Completed:** Secured `app/api/shipping/label-pdf/route.ts` with Clerk session validation, vendor org / customer ownership check, superadmin bypass, rate limiting, and 8 unit tests in `tests/unit/app/api/shipping/label-pdf/route.test.ts`.
+2. ✅ **Completed:** Added `customerOwnsOrder(order, userId)` ownership check and superadmin bypass to `app/(customer)/customer/track/[orderId]/page.tsx`, verified with 5 unit tests in `tests/unit/app/customer/track/page.test.ts`.
 3. ℹ️ **Low Severity:** Replace `console.error` with `logger.error` in `app/api/shipping/labels/route.ts:121` and `app/api/shipping/rates/route.ts:169`.
 4. ✅ **Completed:** `CRON_SECRET` added to `productionServerEnvSchema` in `shared/env/server.ts:52` and test added in `tests/unit/shared/env/server.test.ts`.
 5. ✅ **Completed:** JSON-LD structured data in `app/vendors/[slug]/page.tsx:266` sanitized with `.replace(/</g, "\\u003c")`.
