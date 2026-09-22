@@ -49,6 +49,7 @@ export const productionServerEnvSchema = z.object({
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: nonEmpty,
   TURNSTILE_SECRET_KEY: nonEmpty,
   QSTASH_TOKEN: nonEmpty,
+  CRON_SECRET: nonEmpty,
 });
 
 export type ProductionServerEnv = z.infer<typeof productionServerEnvSchema>;
