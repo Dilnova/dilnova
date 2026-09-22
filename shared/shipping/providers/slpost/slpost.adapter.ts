@@ -14,6 +14,7 @@ import {
   calculateEMSParcelFee,
   isDomesticCountry,
 } from "./slpost-rates";
+import { logger } from "@/shared/logging/logger";
 
 export class SLPostAdapter implements CarrierAdapter {
   id = "slpost";
@@ -147,7 +148,7 @@ export class SLPostAdapter implements CarrierAdapter {
         .set({ status: "cancelled", updatedAt: new Date() })
         .where(eq(shipments.shipmentExternalId, shipmentExternalId));
     } catch (err) {
-      console.error("[SLPostAdapter.cancelShipment] Error:", err);
+      logger.error("[SLPostAdapter.cancelShipment] Error", err);
     }
   }
 
@@ -164,7 +165,7 @@ export class SLPostAdapter implements CarrierAdapter {
         return shipment.events;
       }
     } catch (err) {
-      console.error("[SLPostAdapter.getTrackingEvents] Error:", err);
+      logger.error("[SLPostAdapter.getTrackingEvents] Error", err);
     }
 
     return [

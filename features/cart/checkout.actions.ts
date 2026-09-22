@@ -352,9 +352,9 @@ export const simulatedCheckoutAction = authenticatedAction
           });
           serverShippingCents = rateResult.totalShippingCents;
         } catch (err) {
-          console.warn(
-            "[simulatedCheckoutAction] Dynamic shipping rate calculation failed, fallback:",
-            err,
+          logger.warn(
+            "[simulatedCheckoutAction] Dynamic shipping rate calculation failed, fallback",
+            { error: err },
           );
         }
       }

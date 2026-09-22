@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { DEFAULT_CURRENCY } from "./config";
+import { logger } from "@/shared/logging/logger";
 
 /**
  * Fallback static rate matrix relative to USD (1 USD = X Target Currency)
@@ -46,7 +47,7 @@ const getCachedExchangeRates = unstable_cache(
 
       return ratesMap;
     } catch (error) {
-      console.warn("Failed to load exchange rates from database, using fallback rates:", error);
+      logger.warn("Failed to load exchange rates from database, using fallback rates", { error });
       return buildRatesMapFromUsdDefaults();
     }
   },
@@ -103,7 +104,7 @@ export const getOrgCurrencySettings = cache(
         fxMarkupPercent: settings.fxMarkupPercent ?? 0,
       };
     } catch (error) {
-      console.warn(`Failed to load org currency settings for orgId ${orgId}:`, error);
+      logger.warn(`Failed to load org currency settings for orgId ${orgId}`, { error });
       return { baseCurrency: DEFAULT_CURRENCY, fxMarkupPercent: 0 };
     }
   },
@@ -158,7 +159,7 @@ export async function seedDefaultExchangeRates(): Promise<void> {
     await db.delete(exchangeRates);
     await db.insert(exchangeRates).values(recordsToInsert);
   } catch (error) {
-    console.error("Error seeding default exchange rates:", error);
+    logger.error("Error seeding default exchange rates", error);
   }
 }
 
@@ -222,7 +223,7 @@ export async function syncLiveExchangeRates(): Promise<{ success: boolean; updat
 
     return { success: true, updatedCount: records.length };
   } catch (error) {
-    console.error("Failed to sync live exchange rates, falling back to defaults:", error);
+    logger.error("Failed to sync live exchange rates, falling back to defaults", error);
     await seedDefaultExchangeRates();
     return { success: false, updatedCount: 0 };
   }

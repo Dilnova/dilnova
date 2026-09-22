@@ -5,6 +5,7 @@ import { simulatedOrders, shipments } from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
 import { customerOwnsOrder } from "@/features/orders/customer-ownership";
 import { getCachedIsSuperAdmin } from "@/shared/auth/clerk-cache";
+import { logger } from "@/shared/logging/logger";
 import { Truck, CheckCircle2, MapPin, ExternalLink, PackageCheck, Clock } from "lucide-react";
 
 export const revalidate = 0;
@@ -68,7 +69,7 @@ export default async function CustomerTrackPage({ params }: TrackPageProps) {
         liveEvents = fetched;
       }
     } catch (err) {
-      console.warn("[CustomerTrackPage] Failed to fetch live tracking events:", err);
+      logger.warn("[CustomerTrackPage] Failed to fetch live tracking events", { error: err });
     }
   }
 

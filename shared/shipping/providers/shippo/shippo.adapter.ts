@@ -7,6 +7,7 @@ import type {
   ShippingOrigin,
   ShippingRate,
 } from "../../carrier.types";
+import { logger } from "@/shared/logging/logger";
 
 /**
  * Shippo multi-carrier adapter.
@@ -129,17 +130,17 @@ export class ShippoAdapter implements CarrierAdapter {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        console.error("[ShippoAdapter.getRates] API error:", res.status, err);
+        logger.error("[ShippoAdapter.getRates] API error", err, { status: res.status });
         return [];
       }
 
       const data = await res.json();
       const rawRates = data.rates ?? [];
-      console.log(
+      logger.info(
         `[ShippoAdapter] Returned ${rawRates.length} rates for ${fromCountry} -> ${toCountry}`,
       );
       if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
-        console.log(`[ShippoAdapter] Carrier messages:`, JSON.stringify(data.messages));
+        logger.info("[ShippoAdapter] Carrier messages", { messages: data.messages });
       }
 
       const rates: ShippingRate[] = [];
@@ -156,20 +157,17 @@ export class ShippoAdapter implements CarrierAdapter {
           : 307.69;
       }
 
-      for (const rate of data.rates ?? []) {
+      for (const rate of rawRates) {
         const amountUsd = parseFloat(rate.amount ?? "0");
         const amountCents = Math.round(amountUsd * lkrRate * 100);
-
-        const providerName = rate.provider ?? "Shippo";
-        const serviceName = rate.servicelevel?.name ?? "Standard";
 
         rates.push({
           rateId: `shippo_${rate.object_id}`,
           carrierId: "shippo",
-          carrierName: providerName,
+          carrierName: rate.provider ?? "Shippo",
           serviceCode: rate.servicelevel?.token ?? "STANDARD",
-          serviceName: `${providerName} ${serviceName} (via Shippo)`,
-          estimatedDays: rate.estimated_days ?? 5,
+          serviceName: `${rate.provider ?? "Shippo"} ${rate.servicelevel?.name ?? "Standard"} (via Shippo)`,
+          estimatedDays: rate.estimated_days ?? 7,
           amountCents,
           currency: "LKR",
         });
@@ -177,7 +175,7 @@ export class ShippoAdapter implements CarrierAdapter {
 
       return rates;
     } catch (err) {
-      console.error("[ShippoAdapter.getRates] Network error:", err);
+      logger.error("[ShippoAdapter.getRates] Network error", err);
       return [];
     }
   }
@@ -241,7 +239,7 @@ export class ShippoAdapter implements CarrierAdapter {
         Authorization: this.authHeader,
       },
       body: JSON.stringify({ transaction: shipmentExternalId }),
-    }).catch((err) => console.error("[ShippoAdapter.cancelShipment]", err));
+    }).catch((err) => logger.error("[ShippoAdapter.cancelShipment]", err));
   }
 
   async getTrackingEvents(trackingNumber: string): Promise<ShipmentEvent[]> {
@@ -274,7 +272,7 @@ export class ShippoAdapter implements CarrierAdapter {
         }),
       );
     } catch (err) {
-      console.error("[ShippoAdapter.getTrackingEvents]", err);
+      logger.error("[ShippoAdapter.getTrackingEvents]", err);
       return [];
     }
   }
