@@ -5,6 +5,16 @@ import * as schema from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "@/shared/logging/logger";
 import { DEFAULT_APP_URL } from "@/shared/platform/brand";
+import crypto from "crypto";
+
+function timingSafeTokenMatch(expected: string, provided: string): boolean {
+  const expectedBuf = Buffer.from(expected);
+  const providedBuf = Buffer.from(provided);
+  if (expectedBuf.length !== providedBuf.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(expectedBuf, providedBuf);
+}
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600; // Cache for 1 hour
@@ -13,10 +23,12 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get("orgId") || undefined;
-    const token = searchParams.get("token") || undefined;
+    const authHeader = request.headers.get("authorization");
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : undefined;
+    const token = bearerToken || searchParams.get("token") || undefined;
     const rawScope = searchParams.get("scope");
 
-    // If orgId is provided, verify token if token protection is set
+    // If orgId is provided, enforce fail-closed authorization and constant-time token verification
     if (orgId) {
       const [integration] = await db
         .select({
@@ -28,17 +40,30 @@ export async function GET(request: NextRequest) {
         .where(eq(schema.metaCatalogIntegrations.orgId, orgId))
         .limit(1);
 
-      if (integration?.googleFeedToken && integration.googleFeedToken !== token) {
-        return new NextResponse("Unauthorized: Invalid Google Feed token", { status: 401 });
+      if (!integration) {
+        return new NextResponse("Google Shopping feed is not configured for this organization", {
+          status: 403,
+        });
       }
 
-      if (integration && (!integration.isEnabled || !integration.autoSyncGoogle)) {
+      if (!integration.isEnabled || !integration.autoSyncGoogle) {
         return new NextResponse(
           "Google Shopping feed is currently disabled for this organization",
           {
             status: 403,
           },
         );
+      }
+
+      if (!integration.googleFeedToken) {
+        return new NextResponse(
+          "Unauthorized: Google Feed token not configured for this organization",
+          { status: 401 },
+        );
+      }
+
+      if (!token || !timingSafeTokenMatch(integration.googleFeedToken, token)) {
+        return new NextResponse("Unauthorized: Invalid Google Feed token", { status: 401 });
       }
     }
 
