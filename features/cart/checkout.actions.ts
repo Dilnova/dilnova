@@ -318,6 +318,7 @@ export const simulatedCheckoutAction = authenticatedAction
       );
 
       let serverShippingCents = 0;
+      let shippingCalculationError: string | null = null;
       if (!fulfillmentOption.zeroShipping && normalizedShippingCity) {
         try {
           const { computeMultiVendorRates } = await import("@/shared/shipping/rate-engine");
@@ -352,10 +353,22 @@ export const simulatedCheckoutAction = authenticatedAction
           });
           serverShippingCents = rateResult.totalShippingCents;
         } catch (err) {
+          shippingCalculationError = err instanceof Error ? err.message : String(err);
           logger.warn(
-            "[simulatedCheckoutAction] Dynamic shipping rate calculation failed, fallback",
+            "[simulatedCheckoutAction] Dynamic shipping rate calculation failed, fail closed",
             { error: err },
           );
+        }
+      }
+
+      // Fail-closed validation for orders requiring shipping
+      if (!fulfillmentOption.zeroShipping) {
+        if (shippingCalculationError || serverShippingCents <= 0) {
+          return {
+            success: false,
+            error:
+              "Unable to calculate shipping rates for the delivery address. Please verify your address or select another fulfillment option.",
+          };
         }
       }
 
@@ -367,15 +380,27 @@ export const simulatedCheckoutAction = authenticatedAction
         clientGrandTotal - (serverSubtotal + taxBreakdown.totalTaxCents),
       );
 
-      // Sanity check: if server computed a rate, verify the client's shipping is in a
-      // plausible range (client shouldn't claim 0 shipping when real rates are available,
-      // and shouldn't inflate shipping by more than 5x the server rate).
-      if (!fulfillmentOption.zeroShipping && serverShippingCents > 0 && clientShippingCents === 0) {
-        return {
-          success: false,
-          error:
-            "Checkout total mismatch: no shipping fee was submitted but shipping is required. Please refresh your cart and try again.",
-        };
+      // Verify that shipping fee is non-zero and within a plausible range (50% to 500% of base rate)
+      if (!fulfillmentOption.zeroShipping) {
+        if (clientShippingCents === 0) {
+          return {
+            success: false,
+            error:
+              "Checkout total mismatch: no shipping fee was submitted but shipping is required. Please refresh your cart and try again.",
+          };
+        }
+
+        const minAcceptableShipping = Math.floor(serverShippingCents * 0.5);
+        const maxAcceptableShipping = Math.ceil(serverShippingCents * 5);
+        if (
+          clientShippingCents < minAcceptableShipping ||
+          clientShippingCents > maxAcceptableShipping
+        ) {
+          return {
+            success: false,
+            error: `Checkout total mismatch: submitted shipping fee is outside the allowable range for this delivery. Please refresh your cart and select a shipping method.`,
+          };
+        }
       }
 
       const checkoutTotals = calculateCheckoutTotals(
