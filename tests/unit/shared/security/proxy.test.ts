@@ -551,4 +551,63 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
     expect(csp).toContain("https://clerk.dilstar.pp.ua");
     expect(csp).toContain("https://clerk.dilnova.pp.ua");
   });
+
+  it("attaches Content-Security-Policy-Report-Only in development to catch unsafe-eval violations", async () => {
+    const prevNodeEnv = process.env.NODE_ENV;
+    const prevVercelEnv = process.env.VERCEL_ENV;
+    const prevStrict = process.env.STRICT_CSP;
+    try {
+      process.env.NODE_ENV = "development";
+      delete process.env.VERCEL_ENV;
+      delete process.env.STRICT_CSP;
+
+      const request = new NextRequest("http://localhost:3000/", {
+        method: "GET",
+        headers: { host: "localhost:3000" },
+      });
+      const result = (await proxy(request, mockEvent)) as unknown as {
+        headers: Headers;
+      };
+
+      const enforcingCsp = result.headers.get("Content-Security-Policy") || "";
+      expect(enforcingCsp).toContain("'unsafe-eval'");
+
+      const reportOnlyCsp = result.headers.get("Content-Security-Policy-Report-Only") || "";
+      expect(reportOnlyCsp).toBeTruthy();
+      expect(reportOnlyCsp).not.toContain("'unsafe-eval'");
+      expect(reportOnlyCsp).toContain("report-uri /api/csp-report;");
+    } finally {
+      process.env.NODE_ENV = prevNodeEnv;
+      if (prevVercelEnv !== undefined) process.env.VERCEL_ENV = prevVercelEnv;
+      else delete process.env.VERCEL_ENV;
+      if (prevStrict !== undefined) process.env.STRICT_CSP = prevStrict;
+      else delete process.env.STRICT_CSP;
+    }
+  });
+
+  it("strictly excludes 'unsafe-eval' from enforcing CSP when STRICT_CSP=true", async () => {
+    const prevNodeEnv = process.env.NODE_ENV;
+    const prevStrict = process.env.STRICT_CSP;
+    try {
+      process.env.NODE_ENV = "development";
+      process.env.STRICT_CSP = "true";
+
+      const request = new NextRequest("http://localhost:3000/", {
+        method: "GET",
+        headers: { host: "localhost:3000" },
+      });
+      const result = (await proxy(request, mockEvent)) as unknown as {
+        headers: Headers;
+      };
+
+      const enforcingCsp = result.headers.get("Content-Security-Policy") || "";
+      expect(enforcingCsp).not.toContain("'unsafe-eval'");
+      // When strict, excludeEval is true so report-only header is not needed
+      expect(result.headers.get("Content-Security-Policy-Report-Only")).toBeNull();
+    } finally {
+      process.env.NODE_ENV = prevNodeEnv;
+      if (prevStrict !== undefined) process.env.STRICT_CSP = prevStrict;
+      else delete process.env.STRICT_CSP;
+    }
+  });
 });
