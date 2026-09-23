@@ -5,5 +5,6 @@
       "path": "/api/cron/fx-rates",
       "schedule": "0 0 * * *"
     }
-  ]
+  ],
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh"
 }
