@@ -156,9 +156,11 @@ export function DynamicOrganizationSwitcher({
 export function DynamicHeaderAuth({
   initialAuth,
   initialSessionContext,
+  redirectUrl,
 }: {
   initialAuth?: InitialAuthData;
   initialSessionContext?: SessionContextData;
+  redirectUrl?: string;
 }) {
   const clientAuth = useAuth();
 
@@ -201,7 +203,7 @@ export function DynamicHeaderAuth({
 
   return (
     <div className="shrink-0">
-      <HeaderAuthButtons />
+      <HeaderAuthButtons redirectUrl={redirectUrl} />
     </div>
   );
 }

@@ -5,30 +5,17 @@ import {
   parseBankTransferDetailsFromMetadata,
 } from "@/features/billing/bank-transfer";
 
-/** Clerk metadata keys for bank transfer details (stored in privateMetadata only). */
-export const BANK_METADATA_KEYS = [
-  "bankName",
-  "bankAccountName",
-  "bankAccountNumber",
-  "bankBranchCode",
-  "bankTransferInstructions",
-] as const;
+import {
+  BANK_METADATA_KEYS,
+  type BankMetadataKey,
+  stripBankFieldsFromPublic,
+} from "@/shared/media/sanitize-vendor-public-metadata";
 
-export type BankMetadataKey = (typeof BANK_METADATA_KEYS)[number];
+export { BANK_METADATA_KEYS, type BankMetadataKey, stripBankFieldsFromPublic };
 
 export interface ClerkOrgMetadataSource {
   publicMetadata?: unknown;
   privateMetadata?: unknown;
-}
-
-export function stripBankFieldsFromPublic(
-  metadata: Record<string, unknown>,
-): Record<string, unknown> {
-  const next = { ...metadata };
-  for (const key of BANK_METADATA_KEYS) {
-    delete next[key];
-  }
-  return next;
 }
 
 export function buildBankPrivateMetadataFromVendorData(
