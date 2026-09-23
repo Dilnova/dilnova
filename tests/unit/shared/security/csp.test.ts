@@ -30,8 +30,11 @@ describe("shared/security/csp", () => {
     });
 
     it("returns null when key is missing or invalid", () => {
+      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_dummy";
       expect(extractClerkDomain("")).toBeNull();
       expect(extractClerkDomain("invalid-key")).toBeNull();
+      delete process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+      expect(extractClerkDomain()).toBeNull();
     });
   });
 

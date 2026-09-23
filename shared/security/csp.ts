@@ -34,7 +34,8 @@ const DEFAULT_CLERK_DOMAINS = [
  * Extracts custom Clerk domain from the publishable key (if configured).
  */
 export function extractClerkDomain(publishableKey?: string): string | null {
-  const key = publishableKey || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const key =
+    publishableKey !== undefined ? publishableKey : process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   if (!key) return null;
   try {
     const payload = key.split("_")[2];
