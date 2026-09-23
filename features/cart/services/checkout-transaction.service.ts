@@ -12,6 +12,7 @@ import type { CheckoutOptionDefinition } from "@/features/organization/checkout-
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 import type { VerifiedCheckoutItem, DbTransaction } from "./checkout.types";
 import type { CartTaxBreakdown } from "@/features/billing/tax-engine";
+import { ActionError } from "@/shared/errors/action-error";
 
 export async function executeCheckoutTransaction(opts: {
   verifiedItems: VerifiedCheckoutItem[];
@@ -178,7 +179,7 @@ export async function executeCheckoutTransaction(opts: {
       .returning();
 
     if (!order) {
-      throw new Error("Failed to create order record.");
+      throw new ActionError("Failed to create order record.");
     }
 
     // Insert Order Items

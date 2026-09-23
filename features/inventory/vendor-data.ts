@@ -13,25 +13,26 @@ import type { VendorBillingRegisterData } from "@/features/billing/types";
 import type { VendorInventoryFullData } from "@/features/inventory/types";
 import { attachPaymentSlipPreviews } from "@/features/orders/payment-slip-preview";
 import { logger } from "@/shared/logging/logger";
+import { ActionError } from "@/shared/errors/action-error";
 
 export async function verifyVendorAccess(options?: { allowMember?: boolean }) {
   const { userId, orgId, orgRole } = await auth();
   if (!userId || !orgId) {
-    throw new Error("Not authorized: You must be signed in with an active organization.");
+    throw new ActionError("Not authorized: You must be signed in with an active organization.");
   }
 
   const allowMember = options?.allowMember === true;
   if (allowMember) {
     if (orgRole !== "org:admin" && orgRole !== "org:member") {
-      throw new Error("Not authorized: You do not have access to this organization.");
+      throw new ActionError("Not authorized: You do not have access to this organization.");
     }
   } else if (orgRole !== "org:admin") {
-    throw new Error("Not authorized: Only organization admins can perform this action.");
+    throw new ActionError("Not authorized: Only organization admins can perform this action.");
   }
 
   const premiumStatus = await getPremiumStatus(orgId);
   if (!premiumStatus.imsActive) {
-    throw new Error("Inventory Management System access is disabled or expired.");
+    throw new ActionError("Inventory Management System access is disabled or expired.");
   }
 
   return { userId, orgId, orgRole, premiumStatus };
@@ -60,7 +61,7 @@ export async function loadVendorInventoryData(
     });
 
     if (scope === "billing" && !premiumStatus.billingActive) {
-      throw new Error("POS Billing Register feature is not unlocked on your account tier.");
+      throw new ActionError("POS Billing Register feature is not unlocked on your account tier.");
     }
 
     const productsLimit = options?.productsLimit ?? 200;

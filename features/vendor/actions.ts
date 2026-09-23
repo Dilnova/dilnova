@@ -16,6 +16,7 @@ import {
 import { isAllowedCloudinaryDeliveryUrl } from "@/shared/media/cloudinary-url";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { requireVendorRole } from "@/shared/auth/vendor-guard";
+import { ActionError } from "@/shared/errors/action-error";
 
 interface VendorMetadataInput {
   description: string;
@@ -39,24 +40,28 @@ export async function updateVendorMetadata(organizationId: string, data: VendorM
     await rateLimit(30, 60 * 1000);
     const parsed = vendorMetadataSchema.safeParse({ organizationId, data });
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const { orgId, orgRole, userId } = await auth();
 
     if (!userId || !orgId || orgId !== parsed.data.organizationId) {
-      throw new Error("Not authorized: You do not belong to this organization.");
+      throw new ActionError("Not authorized: You do not belong to this organization.");
     }
     await requireVendorRole(userId);
 
     if (parsed.data.data.bannerUrl) {
       if (!isAllowedCloudinaryDeliveryUrl(parsed.data.data.bannerUrl, orgId)) {
-        throw new Error("Invalid banner image: The image must belong to your organization folder.");
+        throw new ActionError(
+          "Invalid banner image: The image must belong to your organization folder.",
+        );
       }
     }
 
     if (orgRole !== "org:admin" && orgRole !== "org:member") {
-      throw new Error("Not authorized: You do not have permission to configure profile settings.");
+      throw new ActionError(
+        "Not authorized: You do not have permission to configure profile settings.",
+      );
     }
 
     const client = await clerkClient();
@@ -139,10 +144,10 @@ export async function completeOrgOnboarding(organizationId: string) {
     const { orgId, orgRole, userId } = await auth();
 
     if (!userId || !orgId || orgId !== organizationId) {
-      throw new Error("Not authorized: You do not belong to this organization.");
+      throw new ActionError("Not authorized: You do not belong to this organization.");
     }
     if (orgRole !== "org:admin") {
-      throw new Error("Not authorized: Only org admins can complete onboarding.");
+      throw new ActionError("Not authorized: Only org admins can complete onboarding.");
     }
 
     const client = await clerkClient();

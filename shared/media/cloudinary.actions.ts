@@ -5,7 +5,8 @@ import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
 import { createCloudinaryUploadSignature } from "@/shared/media/cloudinary-server";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { runWithCorrelationId } from "@/shared/security/async-context";
-import { authenticatedAction, ActionError } from "@/lib/safe-action";
+import { authenticatedAction } from "@/lib/safe-action";
+import { ActionError } from "@/shared/errors/action-error";
 
 const cloudinaryUploadSignatureSchema = z.object({
   uploadKind: z.enum(["catalog", "vendor-profile", "platform", "chat"]),
@@ -28,7 +29,7 @@ function resolveUploadFolder(
   }
 
   if (!orgId) {
-    throw new Error("Organization context is required for vendor uploads.");
+    throw new ActionError("Organization context is required for vendor uploads.");
   }
 
   if (uploadKind === "vendor-profile") {

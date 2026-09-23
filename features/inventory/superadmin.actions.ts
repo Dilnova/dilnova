@@ -28,6 +28,7 @@ import { logAuditAction } from "@/shared/audit/logger";
 import { runWithCorrelationId } from "@/shared/security/async-context";
 import { validateStockAvailabilityId } from "@/features/inventory/availability.server";
 import { rateLimit } from "@/shared/security/rate-limit";
+import { ActionError } from "@/shared/errors/action-error";
 
 // ── SUPPLIER CRUD ─────────────────────────────────────────────
 
@@ -45,11 +46,11 @@ export async function createSupplierAction(data: {
 
     const parsed = createSupplierSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     if (!data.orgId) {
-      throw new Error("Organization ID is required.");
+      throw new ActionError("Organization ID is required.");
     }
 
     const [supplier] = await db
@@ -93,7 +94,7 @@ export async function updateSupplierAction(data: {
 
     const parsed = updateSupplierSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     await db
@@ -127,7 +128,7 @@ export async function deleteSupplierAction(id: string) {
 
     const parsed = deleteSupplierSchema.safeParse({ id });
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     await db.delete(schema.suppliers).where(eq(schema.suppliers.id, parsed.data.id));
@@ -158,7 +159,7 @@ export async function adjustInventoryAction(data: {
 
     const parsed = adjustInventorySchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const newQuantity = await db.transaction(async (tx) => {
@@ -169,14 +170,14 @@ export async function adjustInventoryAction(data: {
         .limit(1);
 
       if (!inv) {
-        throw new Error("Inventory record not found.");
+        throw new ActionError("Inventory record not found.");
       }
 
       const previousQuantity = inv.quantity;
       const nextQuantity = previousQuantity + parsed.data.quantityChange;
 
       if (nextQuantity < 0) {
-        throw new Error(
+        throw new ActionError(
           `Cannot reduce stock below 0. Current: ${previousQuantity}, Change: ${parsed.data.quantityChange}`,
         );
       }
@@ -184,7 +185,7 @@ export async function adjustInventoryAction(data: {
       const totalBranchAllocated = await sumBranchAllocatedQuantity(tx, inv.productId);
       const branchCheck = validateCentralQuantityCoversBranches(nextQuantity, totalBranchAllocated);
       if (!branchCheck.ok) {
-        throw new Error(branchCheck.error);
+        throw new ActionError(branchCheck.error);
       }
 
       await tx
@@ -237,7 +238,7 @@ export async function updateInventoryDetailsAction(data: {
 
     const parsed = updateInventoryDetailsSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const setClause: Partial<typeof schema.inventory.$inferInsert> = {
@@ -252,7 +253,7 @@ export async function updateInventoryDetailsAction(data: {
     if (parsed.data.stockAvailability !== undefined) {
       const availability = await validateStockAvailabilityId(parsed.data.stockAvailability);
       if (!availability) {
-        throw new Error("Invalid stock availability status.");
+        throw new ActionError("Invalid stock availability status.");
       }
       setClause.stockAvailability = availability.id;
     }
@@ -288,7 +289,7 @@ export async function createInventoryForProductAction(data: {
     const user = await checkSuperAdmin();
     await rateLimit(20, 60 * 1000, user.id, { failClosed: true });
 
-    if (!data.productId) throw new Error("Product ID is required.");
+    if (!data.productId) throw new ActionError("Product ID is required.");
 
     // Check if inventory already exists for this product
     const existing = await db
@@ -298,7 +299,7 @@ export async function createInventoryForProductAction(data: {
       .limit(1);
 
     if (existing.length > 0) {
-      throw new Error("Inventory record already exists for this product.");
+      throw new ActionError("Inventory record already exists for this product.");
     }
 
     const quantity = data.quantity ?? 0;
@@ -356,7 +357,7 @@ export async function updateSimulatedOrderStatusAction(
 
     const parsed = updateSimulatedOrderStatusSchema.safeParse({ orderId, status: newStatus });
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     // Fetch current order
@@ -367,7 +368,7 @@ export async function updateSimulatedOrderStatusAction(
       .limit(1);
 
     if (!order) {
-      throw new Error("Order not found.");
+      throw new ActionError("Order not found.");
     }
 
     const previousStatus = order.status;
@@ -427,7 +428,7 @@ export async function updateOrgImsLicenseAction(data: {
 
     const parsed = updateImsLicenseSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const { updateOrgImsLicense } = await import("@/features/inventory/premium-license");

@@ -13,6 +13,7 @@ import { logAuditAction } from "@/shared/audit/logger";
 import { runWithCorrelationId } from "@/shared/security/async-context";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { verifyVendorAccess } from "@/features/inventory/vendor-data";
+import { ActionError } from "@/shared/errors/action-error";
 
 export async function vendorCreateSupplierAction(data: {
   name: string;
@@ -27,7 +28,7 @@ export async function vendorCreateSupplierAction(data: {
 
     const parsed = createSupplierSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const [supplier] = await db
@@ -69,7 +70,7 @@ export async function vendorUpdateSupplierAction(data: {
 
     const parsed = updateSupplierSchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     // Verify ownership
@@ -80,7 +81,7 @@ export async function vendorUpdateSupplierAction(data: {
       .limit(1);
 
     if (!existing) {
-      throw new Error("Supplier not found or access denied.");
+      throw new ActionError("Supplier not found or access denied.");
     }
 
     await db
@@ -114,7 +115,7 @@ export async function vendorDeleteSupplierAction(id: string) {
 
     const parsed = deleteSupplierSchema.safeParse({ id });
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const result = await db
@@ -123,7 +124,7 @@ export async function vendorDeleteSupplierAction(id: string) {
       .returning();
 
     if (result.length === 0) {
-      throw new Error("Supplier not found or access denied.");
+      throw new ActionError("Supplier not found or access denied.");
     }
 
     await logAuditAction({
