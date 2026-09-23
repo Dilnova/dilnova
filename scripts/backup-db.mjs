@@ -2,6 +2,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
+import { parsePostgresUrl } from "./pg-env.mjs";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
@@ -45,11 +46,16 @@ async function runBackup() {
     process.exit(1);
   }
 
-  const command = `pg_dump "${dbUrl}" --clean --if-exists --no-owner --no-privileges | gzip > "${outputPath}"`;
+  // Use standard libpq environment variables so credentials are not exposed in process tables (argv / ps)
+  const command = `pg_dump --clean --if-exists --no-owner --no-privileges | gzip > "${outputPath}"`;
 
   try {
     const startTime = Date.now();
-    execSync(command, { shell: "/bin/bash" });
+    const pgEnv = {
+      ...process.env,
+      ...parsePostgresUrl(dbUrl),
+    };
+    execSync(command, { shell: "/bin/bash", env: pgEnv });
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     const stats = fs.statSync(outputPath);
 

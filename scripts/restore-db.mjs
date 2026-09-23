@@ -2,6 +2,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
+import { parsePostgresUrl } from "./pg-env.mjs";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
@@ -49,14 +50,17 @@ async function runRestore() {
   console.log(`Target URL:  ${targetUrl.replace(/:[^:@]+@/, ":****@")}`);
   console.log("---------------------------------------------------------------");
 
-  const restoreCmd = isGzip
-    ? `gunzip -c "${backupFile}" | psql "${targetUrl}"`
-    : `psql "${targetUrl}" < "${backupFile}"`;
+  // Use standard libpq environment variables so credentials are not exposed in process tables (argv / ps)
+  const restoreCmd = isGzip ? `gunzip -c "${backupFile}" | psql` : `psql < "${backupFile}"`;
 
   try {
     const startTime = Date.now();
     console.log("Executing database restoration...");
-    execSync(restoreCmd, { shell: "/bin/bash", stdio: "inherit" });
+    const pgEnv = {
+      ...process.env,
+      ...parsePostgresUrl(targetUrl),
+    };
+    execSync(restoreCmd, { shell: "/bin/bash", stdio: "inherit", env: pgEnv });
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
     console.log("\n✅ Database restoration completed successfully in " + duration + "s!");

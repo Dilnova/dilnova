@@ -45,8 +45,7 @@ jobs:
 
       - name: 1. Generate Compressed Database Dump
         env:
-          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/restore_test_db' }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/restore_test_db' }}
+          TARGET_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL || secrets.DATABASE_URL || 'postgresql://postgres:password@127.0.0.1:5432/restore_test_db' }}
         run: |
           set -o pipefail
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
@@ -56,8 +55,11 @@ jobs:
           echo "Using pg_dump version:"
           pg_dump --version
 
+          echo "Configuring secure libpq environment..."
+          eval "$(node scripts/pg-env.mjs)"
+
           echo "Starting production database dump..."
-          pg_dump "${MIGRATION_DATABASE_URL:-$DATABASE_URL}" --clean --if-exists --no-owner --no-privileges | gzip > "${BACKUP_FILE}"
+          pg_dump --clean --if-exists --no-owner --no-privileges | gzip > "${BACKUP_FILE}"
 
           # Generate SHA256 Checksum for data integrity validation
           sha256sum "${BACKUP_FILE}" > "${CHECKSUM_FILE}"
@@ -74,16 +76,21 @@ jobs:
           echo "SHA256: ${CHECKSUM_VAL}"
 
       - name: 2. Enterprise Automated Dry-Run Restore Verification
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: password
+          PGDATABASE: restore_test_db
         run: |
           set -o pipefail
           echo "Executing automated dry-run restoration test..."
-          RESTORE_TEST_URL="postgresql://postgres:password@127.0.0.1:5432/restore_test_db"
 
-          # Restore the compressed dump into the test PostgreSQL 17 container
-          gunzip -c "${BACKUP_FILE}" | psql "${RESTORE_TEST_URL}" > /dev/null
+          # Restore the compressed dump into the test PostgreSQL 17 container using libpq env variables
+          gunzip -c "${BACKUP_FILE}" | psql -v ON_ERROR_STOP=1 > /dev/null
 
           # Verify database schema integrity by querying public tables
-          TABLE_COUNT=$(psql "${RESTORE_TEST_URL}" -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';")
+          TABLE_COUNT=$(psql -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';")
           TABLE_COUNT=$(echo "${TABLE_COUNT}" | tr -d ' ')
 
           echo "Restoration Verification Succeeded!"
@@ -151,7 +158,7 @@ jobs:
 
           ENCRYPTED_FILE="${BACKUP_FILE}.enc"
           echo "Encrypting backup with AES-256-CBC..."
-          openssl enc -aes-256-cbc -salt -pbkdf2 -in "${BACKUP_FILE}" -out "${ENCRYPTED_FILE}" -pass "pass:${ENCRYPTION_KEY}"
+          openssl enc -aes-256-cbc -salt -pbkdf2 -in "${BACKUP_FILE}" -out "${ENCRYPTED_FILE}" -pass env:ENCRYPTION_KEY
 
           # Remove plaintext dump — only encrypted file should remain
           rm -f "${BACKUP_FILE}"
@@ -161,7 +168,7 @@ jobs:
           echo "Encrypted backup created: ${ENCRYPTED_FILE} (${ENCRYPTED_SIZE})"
           echo ""
           echo "To decrypt locally:"
-          echo "  openssl enc -d -aes-256-cbc -pbkdf2 -in ${ENCRYPTED_FILE} -out ${BACKUP_FILE} -pass 'pass:\$DB_BACKUP_ENCRYPTION_KEY'"
+          echo "  openssl enc -d -aes-256-cbc -pbkdf2 -in ${ENCRYPTED_FILE} -out ${BACKUP_FILE} -pass env:DB_BACKUP_ENCRYPTION_KEY"
 
       - name: 5. Upload Encrypted Backup & Checksum Artifacts to GitHub
         uses: actions/upload-artifact@v7
