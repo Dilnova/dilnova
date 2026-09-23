@@ -161,7 +161,8 @@ export function buildCsp(options: CspOptions = {}): string {
  * to third-party scripts or libraries that would fail in production.
  */
 export function buildReportOnlyCsp(options: CspOptions = {}): string {
-  const fallbackReportUri = options.reportUri || getSentryCspReportUri() || "/api/csp-report";
+  // In development/report-only mode, default to local /api/csp-report unless reportUri is explicitly specified
+  const fallbackReportUri = options.reportUri !== undefined ? options.reportUri : "/api/csp-report";
 
   return buildCsp({
     ...options,
