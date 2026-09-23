@@ -45,7 +45,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
       />
 
       <CustomerMetricsSummary
-        wishlistCount={dashboardData.wishlistItems.length}
+        wishlistCount={dashboardData.wishlistCount ?? dashboardData.wishlistItems.length}
         ordersCount={dashboardData.orders.length}
         totalSpent={dashboardData.totalSpent}
       />
@@ -59,7 +59,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
               : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
           }`}
         >
-          ❤️ Wishlist ({dashboardData.wishlistItems.length})
+          ❤️ Wishlist ({dashboardData.wishlistCount ?? dashboardData.wishlistItems.length})
         </Link>
         <Link
           href="?tab=orders"
