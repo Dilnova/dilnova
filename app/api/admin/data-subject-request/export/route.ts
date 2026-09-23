@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { logAuditAction } from "@/shared/audit/logger";
 import { clerkClient } from "@clerk/nextjs/server";
 import { logger } from "@/shared/logging/logger";
 import { getQStashClient } from "@/shared/security/qstash-client";
+import { apiSuccess, apiError } from "@/shared/api/response";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
     const targetUserId = req.nextUrl.searchParams.get("userId");
 
     if (!targetUserId) {
-      return NextResponse.json({ error: "Missing userId parameter" }, { status: 400 });
+      return apiError("Missing userId parameter", { status: 400 });
     }
 
     const client = await clerkClient();
@@ -21,10 +22,7 @@ export async function GET(req: NextRequest) {
     const adminEmail = clerkAdminUser.emailAddresses[0]?.emailAddress;
 
     if (!adminEmail) {
-      return NextResponse.json(
-        { error: "Superadmin account lacks an email address." },
-        { status: 400 },
-      );
+      return apiError("Superadmin account lacks an email address.", { status: 400 });
     }
 
     const appUrl =
@@ -52,18 +50,20 @@ export async function GET(req: NextRequest) {
       strict: true,
     });
 
-    return NextResponse.json(
+    return apiSuccess(
       {
-        success: true,
         message: "Export job queued successfully. You will receive an email when it is ready.",
       },
-      { status: 202 },
+      {
+        status: 202,
+        message: "Export job queued successfully. You will receive an email when it is ready.",
+      },
     );
   } catch (error) {
     logger.error("GDPR Export Queue Error", error);
     if (error instanceof Error && error.message.includes("Unauthorized")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", { status: 401 });
     }
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error", { status: 500 });
   }
 }

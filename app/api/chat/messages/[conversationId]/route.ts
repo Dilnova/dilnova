@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
 import { eq, and } from "drizzle-orm";
 import { listMessages } from "@/features/chat/queries";
 import { logger } from "@/shared/logging/logger";
+import { apiSuccess, apiError } from "@/shared/api/response";
 
 export const dynamic = "force-dynamic";
 
@@ -15,13 +16,13 @@ export async function GET(
   try {
     const { conversationId } = await params;
     if (!conversationId || !/^[0-9a-fA-F-]{36}$/.test(conversationId)) {
-      return NextResponse.json({ error: "Invalid conversation ID format" }, { status: 400 });
+      return apiError("Invalid conversation ID format", { status: 400 });
     }
 
     const { userId, orgId, orgRole } = await auth();
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", { status: 401 });
     }
 
     // Verify access to this conversation
@@ -32,7 +33,7 @@ export async function GET(
       .limit(1);
 
     if (convRows.length === 0) {
-      return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+      return apiError("Conversation not found", { status: 404 });
     }
 
     const conversation = convRows[0];
@@ -40,7 +41,7 @@ export async function GET(
     const isVendor = orgId && conversation.orgId === orgId;
 
     if (!isCustomer && !isVendor) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return apiError("Forbidden", { status: 403 });
     }
 
     // If accessing as vendor member (and not as the customer who owns the order), enforce branch scope
@@ -57,7 +58,7 @@ export async function GET(
         .limit(1);
 
       if (membership.length === 0) {
-        return NextResponse.json({ error: "Forbidden: Not in assigned branch" }, { status: 403 });
+        return apiError("Forbidden: Not in assigned branch", { status: 403 });
       }
     }
 
@@ -70,12 +71,12 @@ export async function GET(
 
     const messages = await listMessages(conversationId, { limit, before });
 
-    return NextResponse.json({
+    return apiSuccess({
       conversation,
       messages,
     });
   } catch (error) {
     logger.error("[GET /api/chat/messages] Error", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error", { status: 500 });
   }
 }

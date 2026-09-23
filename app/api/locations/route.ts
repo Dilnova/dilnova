@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Country as CscCountry, State as CscState, City as CscCity } from "country-state-city";
 import { logger } from "@/shared/logging/logger";
+import type { ParsedCountry, ParsedState } from "@/shared/types/locations";
 
 interface RestCountryItem {
   cca2?: string;
@@ -19,18 +20,6 @@ interface IsoCountryItem {
 interface StateItem {
   name?: string;
   state_code?: string;
-}
-
-interface ParsedCountry {
-  code: string;
-  name: string;
-  flag: string;
-  dialCode: string;
-}
-
-interface ParsedState {
-  name: string;
-  code?: string;
 }
 
 /**

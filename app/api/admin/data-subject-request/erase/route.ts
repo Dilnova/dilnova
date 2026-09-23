@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { checkSuperAdmin } from "@/shared/auth/superadmin-guard";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { logger } from "@/shared/logging/logger";
 import { getQStashClient } from "@/shared/security/qstash-client";
+import { apiSuccess, apiError } from "@/shared/api/response";
 
 export async function DELETE(req: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function DELETE(req: NextRequest) {
     const targetUserId = req.nextUrl.searchParams.get("userId");
 
     if (!targetUserId) {
-      return NextResponse.json({ error: "Missing userId parameter" }, { status: 400 });
+      return apiError("Missing userId parameter", { status: 400 });
     }
 
     const appUrl =
@@ -32,15 +33,15 @@ export async function DELETE(req: NextRequest) {
     logger.info(`Queued GDPR background erasure for ${targetUserId} by admin ${adminUser.id}`);
 
     // Return 202 Accepted to prevent UI from hanging and function from timing out
-    return NextResponse.json(
-      { success: true, message: "Erasure queued for background processing" },
-      { status: 202 },
+    return apiSuccess(
+      { message: "Erasure queued for background processing" },
+      { status: 202, message: "Erasure queued for background processing" },
     );
   } catch (error) {
     logger.error("GDPR Erasure Queueing Error", error);
     if (error instanceof Error && error.message.includes("Unauthorized")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", { status: 401 });
     }
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return apiError("Internal Server Error", { status: 500 });
   }
 }

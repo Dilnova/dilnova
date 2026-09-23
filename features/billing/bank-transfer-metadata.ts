@@ -60,10 +60,10 @@ export function buildPublicProfileMetadataFromVendorData(
   >,
 ): Record<string, string> {
   return {
-    description: data.description,
-    address: data.address,
-    phone: data.phone,
-    bannerUrl: data.bannerUrl,
+    description: data.description ?? "",
+    address: data.address ?? "",
+    phone: data.phone ?? "",
+    bannerUrl: data.bannerUrl ?? "",
     stockAllocationMode: data.stockAllocationMode ?? "central_intake",
   };
 }

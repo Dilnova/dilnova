@@ -3,7 +3,7 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { revalidateVendorConsole } from "@/features/vendor/revalidate";
-import { vendorMetadataSchema } from "@/features/vendor/schema";
+import { vendorMetadataSchema, type VendorMetadataInput } from "@/features/vendor/schema";
 import { logAuditAction } from "@/shared/audit/logger";
 import { logger } from "@/shared/logging/logger";
 import { runWithCorrelationId } from "@/shared/security/async-context";
@@ -17,19 +17,6 @@ import { isAllowedCloudinaryDeliveryUrl } from "@/shared/media/cloudinary-url";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { requireVendorRole } from "@/shared/auth/vendor-guard";
 import { ActionError } from "@/shared/errors/action-error";
-
-interface VendorMetadataInput {
-  description: string;
-  address: string;
-  phone: string;
-  bannerUrl: string;
-  stockAllocationMode?: "target_branch" | "central_intake";
-  bankName?: string;
-  bankAccountName?: string;
-  bankAccountNumber?: string;
-  bankBranchCode?: string;
-  bankTransferInstructions?: string;
-}
 
 /**
  * Secures and updates organization profile in Clerk.

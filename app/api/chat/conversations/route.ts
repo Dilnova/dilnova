@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { listOrgConversations, listCustomerConversations } from "@/features/chat/queries";
 import { logger } from "@/shared/logging/logger";
+import { apiSuccess, apiError } from "@/shared/api/response";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ export async function GET(request: NextRequest) {
   const { userId, orgId, orgRole } = await auth();
 
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
         offset,
       });
 
-      return NextResponse.json({
+      return apiSuccess({
         conversations: result.conversations,
         totalCount: result.totalCount,
       });
@@ -39,12 +40,12 @@ export async function GET(request: NextRequest) {
 
     // Customer mode
     const conversations = await listCustomerConversations(userId);
-    return NextResponse.json({
+    return apiSuccess({
       conversations,
       totalCount: conversations.length,
     });
   } catch (error) {
     logger.error("[GET /api/chat/conversations] Error", error);
-    return NextResponse.json({ error: "Failed to fetch conversations" }, { status: 500 });
+    return apiError("Failed to fetch conversations", { status: 500 });
   }
 }

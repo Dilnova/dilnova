@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import {
   setVendorOnlineStatus,
@@ -10,12 +9,12 @@ import {
   getSuperadminOrganizations,
   getCachedUserBelongsToOrg,
 } from "@/shared/auth/clerk-cache";
-import { withErrorHandler } from "@/shared/api/api-handler";
+import { withErrorHandler, apiSuccess, apiError } from "@/shared/api/api-handler";
 
 export const POST = withErrorHandler(async (req: Request) => {
   const { userId, orgRole } = await auth();
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiError("Unauthorized", { status: 401 });
   }
 
   // Verify if user is actually a vendor/admin
@@ -31,12 +30,12 @@ export const POST = withErrorHandler(async (req: Request) => {
   }
 
   if (!isVendor) {
-    return NextResponse.json({ success: true, notVendor: true });
+    return apiSuccess({ notVendor: true });
   }
 
   const success = await setVendorOnlineStatus(userId);
   if (!success) {
-    return NextResponse.json({ error: "Failed to update presence" }, { status: 500 });
+    return apiError("Failed to update presence", { status: 500 });
   }
 
   // Optionally handle acknowledgments if the client passed them
@@ -59,5 +58,5 @@ export const POST = withErrorHandler(async (req: Request) => {
   // Securely peek any pending notifications for this specific user
   const notifications = await peekVendorNotifications(userId);
 
-  return NextResponse.json({ success: true, notifications });
+  return apiSuccess({ notifications });
 });

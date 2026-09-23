@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { z } from "zod/v3";
 import { auth } from "@clerk/nextjs/server";
 import { computeMultiVendorRates } from "@/shared/shipping/rate-engine";
@@ -6,6 +5,7 @@ import { db } from "@/shared/db/client";
 import { branches, branchInventory } from "@/shared/db/schema";
 import { inArray } from "drizzle-orm";
 import { logger } from "@/shared/logging/logger";
+import { apiSuccess, apiError } from "@/shared/api/response";
 
 const shippingRatesSchema = z.object({
   cartItems: z.array(
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", { status: 401 });
     }
 
     const body = await req.json();
@@ -165,15 +165,15 @@ export async function POST(req: Request) {
       vendorBranchMap: groupBranchMap,
     });
 
-    return NextResponse.json(result);
+    return apiSuccess(result);
   } catch (err: unknown) {
     logger.error("[POST /api/shipping/rates] Error", err);
     if (err instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid input", details: err.issues.map((i) => i.message) },
-        { status: 400 },
-      );
+      return apiError("Invalid input", {
+        status: 400,
+        details: err.issues.map((i) => i.message),
+      });
     }
-    return NextResponse.json({ error: "Failed to calculate shipping rates" }, { status: 500 });
+    return apiError("Failed to calculate shipping rates", { status: 500 });
   }
 }
