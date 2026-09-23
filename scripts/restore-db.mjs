@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
@@ -51,8 +51,6 @@ async function runRestore() {
   console.log("---------------------------------------------------------------");
 
   // Use standard libpq environment variables so credentials are not exposed in process tables (argv / ps)
-  const restoreCmd = isGzip ? `gunzip -c "${backupFile}" | psql` : `psql < "${backupFile}"`;
-
   try {
     const startTime = Date.now();
     console.log("Executing database restoration...");
@@ -60,7 +58,40 @@ async function runRestore() {
       ...process.env,
       ...parsePostgresUrl(targetUrl),
     };
-    execSync(restoreCmd, { shell: "/bin/bash", stdio: "inherit", env: pgEnv });
+
+    if (isGzip) {
+      const gunzipResult = spawnSync("gunzip", ["-c", backupFile], {
+        env: pgEnv,
+        encoding: "utf8",
+        maxBuffer: 1024 * 1024 * 100,
+      });
+
+      if (gunzipResult.status !== 0) {
+        throw new Error(gunzipResult.stderr || "Failed to decompress backup file.");
+      }
+
+      const psqlResult = spawnSync("psql", [], {
+        env: pgEnv,
+        stdio: ["pipe", "inherit", "inherit"],
+        input: gunzipResult.stdout,
+      });
+
+      if (psqlResult.status !== 0) {
+        throw new Error("psql restore failed.");
+      }
+    } else {
+      const inputFd = fs.openSync(backupFile, "r");
+      const psqlResult = spawnSync("psql", [], {
+        env: pgEnv,
+        stdio: [inputFd, "inherit", "inherit"],
+      });
+      fs.closeSync(inputFd);
+
+      if (psqlResult.status !== 0) {
+        throw new Error("psql restore failed.");
+      }
+    }
+
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
     console.log("\n✅ Database restoration completed successfully in " + duration + "s!");
