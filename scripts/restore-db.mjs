@@ -28,11 +28,6 @@ async function runRestore() {
     process.exit(1);
   }
 
-  if (!fs.existsSync(backupFile)) {
-    console.error(`Error: Backup file "${backupFile}" does not exist.`);
-    process.exit(1);
-  }
-
   if (!targetUrl) {
     console.error(
       "Error: Target database connection string (RESTORE_DATABASE_URL / MIGRATION_DATABASE_URL) is missing.",
@@ -40,8 +35,29 @@ async function runRestore() {
     process.exit(1);
   }
 
+  // Atomically open file descriptor and inspect stats via fstatSync to eliminate
+  // Time-of-Check to Time-of-Use (TOCTOU) race conditions (CodeQL js/file-system-race)
+  let inputFd;
+  let stats;
+  try {
+    inputFd = fs.openSync(backupFile, "r");
+    stats = fs.fstatSync(inputFd);
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      console.error(`Error: Backup file "${backupFile}" does not exist.`);
+    } else {
+      console.error(`Error opening backup file "${backupFile}":`, err.message);
+    }
+    process.exit(1);
+  }
+
+  if (!stats.isFile()) {
+    console.error(`Error: "${backupFile}" is not a regular file.`);
+    fs.closeSync(inputFd);
+    process.exit(1);
+  }
+
   const isGzip = backupFile.endsWith(".gz");
-  const stats = fs.statSync(backupFile);
 
   console.log("═══════════════════════════════════════════════════════════════");
   console.log("🚨 ENTERPRISE DATABASE RESTORE PROCEDURE");
@@ -60,10 +76,12 @@ async function runRestore() {
     };
 
     if (isGzip) {
-      const gunzipResult = spawnSync("gunzip", ["-c", backupFile], {
+      // Pass the opened file descriptor as stdin to gunzip without reopening or referencing path
+      const gunzipResult = spawnSync("gunzip", ["-c"], {
         env: pgEnv,
+        stdio: [inputFd, "pipe", "inherit"],
         encoding: "utf8",
-        maxBuffer: 1024 * 1024 * 100,
+        maxBuffer: 1024 * 1024 * 500,
       });
 
       if (gunzipResult.status !== 0) {
@@ -80,12 +98,11 @@ async function runRestore() {
         throw new Error("psql restore failed.");
       }
     } else {
-      const inputFd = fs.openSync(backupFile, "r");
+      // Pass the opened file descriptor directly as stdin to psql
       const psqlResult = spawnSync("psql", [], {
         env: pgEnv,
         stdio: [inputFd, "inherit", "inherit"],
       });
-      fs.closeSync(inputFd);
 
       if (psqlResult.status !== 0) {
         throw new Error("psql restore failed.");
@@ -98,6 +115,14 @@ async function runRestore() {
   } catch (error) {
     console.error("\n❌ Database restoration failed:", error.message);
     process.exit(1);
+  } finally {
+    if (inputFd !== undefined) {
+      try {
+        fs.closeSync(inputFd);
+      } catch {
+        // Ignore if already closed
+      }
+    }
   }
 }
 
