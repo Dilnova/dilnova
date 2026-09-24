@@ -96,8 +96,7 @@ export default async function CustomerPage({ searchParams }: PageProps) {
 
       {activeTab === "orders" && (
         <CustomerOrdersTab
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          orders={dashboardData.orders as any}
+          orders={dashboardData.orders}
           itemsByOrderId={dashboardData.itemsByOrderId}
           pickupBranchNameById={dashboardData.pickupBranchNameById}
           checkoutOptionsCatalog={dashboardData.checkoutOptionsCatalog}
