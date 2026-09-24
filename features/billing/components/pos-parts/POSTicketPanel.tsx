@@ -130,6 +130,7 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
                   onClick={() => removeCartItem(item.product.productId)}
                   className="w-6 h-6 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-center text-xs font-bold cursor-pointer ml-0.5"
                   title="Remove item"
+                  aria-label={`Remove ${item.product.productName} from ticket`}
                 >
                   ✕
                 </button>
@@ -206,11 +207,16 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
         </div>
 
         <div className="space-y-1.5">
+          <label htmlFor="pos-customer-name" className="sr-only">
+            Customer Name (Optional)
+          </label>
           <input
+            id="pos-customer-name"
             type="text"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
             placeholder="Customer Name (Optional)"
+            aria-label="Customer Name (Optional)"
             className="w-full px-2.5 py-1 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-950 dark:border-zinc-800 focus:outline-none"
           />
 
@@ -235,15 +241,20 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
           {paymentMethod === "cash" && (
             <div className="p-1.5 rounded-xl bg-amber-50/70 border border-amber-200/80 dark:bg-amber-950/20 dark:border-amber-900/40 space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-amber-900 dark:text-amber-300 text-[10px]">
+                <label
+                  htmlFor="pos-cash-tendered"
+                  className="font-bold text-amber-900 dark:text-amber-300 text-[10px]"
+                >
                   Tendered:
-                </span>
+                </label>
                 <input
+                  id="pos-cash-tendered"
                   type="number"
                   step="0.01"
                   value={cashTendered}
                   onChange={(e) => setCashTendered(e.target.value)}
                   placeholder={`${currencySymbol}${totalAmount.toFixed(2)}`}
+                  aria-label="Cash tendered amount"
                   className="w-20 px-2 py-0.5 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-right font-mono font-bold bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none"
                 />
               </div>
@@ -292,10 +303,15 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
             </div>
           )}
 
+          <label htmlFor="pos-checkout-notes" className="sr-only">
+            Receipt checkout notes
+          </label>
           <textarea
+            id="pos-checkout-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Receipt checkout notes..."
+            aria-label="Receipt checkout notes"
             rows={1}
             className="w-full px-2.5 py-1 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-950 dark:border-zinc-800 resize-none focus:outline-none"
           />

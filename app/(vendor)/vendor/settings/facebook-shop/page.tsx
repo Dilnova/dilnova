@@ -1520,17 +1520,22 @@ export default function SocialSettingsHubPage() {
                 </div>
 
                 <div className="pt-2">
-                  <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                  <label
+                    htmlFor="fb-page-access-token"
+                    className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1"
+                  >
                     Paste Access Token (User or Page Token)
                   </label>
                   <div className="relative">
                     <input
+                      id="fb-page-access-token"
                       type={showPageToken ? "text" : "password"}
                       placeholder={
                         hasExistingPageToken
                           ? "••••••••••••••••••••••••••••••••"
                           : "Paste token starting with EAA..."
                       }
+                      aria-label="Paste Access Token (User or Page Token)"
                       value={facebookPageAccessToken}
                       onChange={(e) => setFacebookPageAccessToken(e.target.value)}
                       className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -1538,6 +1543,7 @@ export default function SocialSettingsHubPage() {
                     <button
                       type="button"
                       onClick={() => setShowPageToken(!showPageToken)}
+                      aria-label={showPageToken ? "Hide access token" : "Show access token"}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer"
                     >
                       {showPageToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -1627,12 +1633,17 @@ export default function SocialSettingsHubPage() {
                 )}
 
                 <div className="pt-2">
-                  <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                  <label
+                    htmlFor="fb-page-id"
+                    className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1"
+                  >
                     Facebook Page ID (Numeric)
                   </label>
                   <input
+                    id="fb-page-id"
                     type="text"
                     placeholder="e.g. 1366821166509556"
+                    aria-label="Facebook Page ID (Numeric)"
                     value={facebookPageId}
                     onChange={(e) => setFacebookPageId(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -2003,12 +2014,17 @@ export default function SocialSettingsHubPage() {
                 )}
 
                 <div className="pt-2">
-                  <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                  <label
+                    htmlFor="ig-account-id"
+                    className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1"
+                  >
                     Instagram Business Account ID (Numeric)
                   </label>
                   <input
+                    id="ig-account-id"
                     type="text"
                     placeholder="e.g. 17841406751842985"
+                    aria-label="Instagram Business Account ID (Numeric)"
                     value={instagramAccountId}
                     onChange={(e) => setInstagramAccountId(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-pink-500 focus:outline-none"
@@ -2131,17 +2147,22 @@ export default function SocialSettingsHubPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                  <label
+                    htmlFor="pinterest-access-token"
+                    className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1"
+                  >
                     Pinterest API v5 Access Token
                   </label>
                   <div className="relative">
                     <input
+                      id="pinterest-access-token"
                       type={showPinterestToken ? "text" : "password"}
                       placeholder={
                         hasExistingPinterestToken
                           ? "••••••••••••••••••••••••••••••••"
                           : "Paste your Developer App token here"
                       }
+                      aria-label="Pinterest API v5 Access Token"
                       value={pinterestAccessToken}
                       onChange={(e) => setPinterestAccessToken(e.target.value)}
                       className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-500 focus:outline-none"
@@ -2149,6 +2170,9 @@ export default function SocialSettingsHubPage() {
                     <button
                       type="button"
                       onClick={() => setShowPinterestToken(!showPinterestToken)}
+                      aria-label={
+                        showPinterestToken ? "Hide Pinterest token" : "Show Pinterest token"
+                      }
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer"
                     >
                       {showPinterestToken ? (
@@ -2256,24 +2280,34 @@ export default function SocialSettingsHubPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   <div>
-                    <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                    <label
+                      htmlFor="pinterest-board-id"
+                      className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1"
+                    >
                       Selected Board ID (Numeric)
                     </label>
                     <input
+                      id="pinterest-board-id"
                       type="text"
                       placeholder="Auto-filled or enter e.g. 1029384756102"
+                      aria-label="Selected Board ID (Numeric)"
                       value={pinterestBoardId}
                       onChange={(e) => setPinterestBoardId(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-500 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                    <label
+                      htmlFor="pinterest-board-name"
+                      className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1"
+                    >
                       Board Name (Display Label)
                     </label>
                     <input
+                      id="pinterest-board-name"
                       type="text"
                       placeholder="Auto-filled e.g. Store Catalog"
+                      aria-label="Board Name (Display Label)"
                       value={pinterestBoardName}
                       onChange={(e) => setPinterestBoardName(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-red-500 focus:outline-none"
@@ -2372,12 +2406,17 @@ export default function SocialSettingsHubPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                <label
+                  htmlFor="social-brand-name"
+                  className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1"
+                >
                   Store / Brand Display Name
                 </label>
                 <input
+                  id="social-brand-name"
                   type="text"
                   placeholder="e.g. Dilstar Hardware or My Store"
+                  aria-label="Store / Brand Display Name"
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-xs text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -2389,7 +2428,10 @@ export default function SocialSettingsHubPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block">
+                  <label
+                    htmlFor="custom-post-template"
+                    className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block"
+                  >
                     Custom Post Caption Template
                   </label>
                   <span className="text-[10px] text-zinc-400">
@@ -2398,8 +2440,10 @@ export default function SocialSettingsHubPage() {
                   </span>
                 </div>
                 <textarea
+                  id="custom-post-template"
                   rows={4}
                   placeholder={`✨ New Arrival: {title}!\n\n🏷️ Price: {price}\n🛒 Order online: {link}\n\n#{brand} #ShopOnline`}
+                  aria-label="Custom Post Caption Template"
                   value={customPostTemplate}
                   onChange={(e) => setCustomPostTemplate(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
@@ -2470,12 +2514,17 @@ export default function SocialSettingsHubPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                <label
+                  htmlFor="meta-catalog-id"
+                  className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1"
+                >
                   Meta Catalog ID (Numeric)
                 </label>
                 <input
+                  id="meta-catalog-id"
                   type="text"
                   placeholder="e.g. 2187911822144469"
+                  aria-label="Meta Catalog ID (Numeric)"
                   value={catalogId}
                   onChange={(e) => setCatalogId(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-purple-500 focus:outline-none"
@@ -2495,17 +2544,22 @@ export default function SocialSettingsHubPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                <label
+                  htmlFor="meta-system-user-token"
+                  className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1"
+                >
                   Meta System User Token
                 </label>
                 <div className="relative">
                   <input
+                    id="meta-system-user-token"
                     type={showCatalogToken ? "text" : "password"}
                     placeholder={
                       hasExistingCatalogToken
                         ? "••••••••••••••••••••••••••••••••"
                         : "Paste System User Token (EAA...)"
                     }
+                    aria-label="Meta System User Token"
                     value={accessToken}
                     onChange={(e) => setAccessToken(e.target.value)}
                     className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-purple-500 focus:outline-none"
@@ -2513,6 +2567,7 @@ export default function SocialSettingsHubPage() {
                   <button
                     type="button"
                     onClick={() => setShowCatalogToken(!showCatalogToken)}
+                    aria-label={showCatalogToken ? "Hide Meta token" : "Show Meta token"}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer"
                   >
                     {showCatalogToken ? (
@@ -2591,12 +2646,17 @@ export default function SocialSettingsHubPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1">
+                <label
+                  htmlFor="social-webhook-url"
+                  className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 block mb-1"
+                >
                   Webhook Endpoint URL (HTTPS)
                 </label>
                 <input
+                  id="social-webhook-url"
                   type="url"
                   placeholder="https://your-custom-domain.com/api/webhooks"
+                  aria-label="Webhook Endpoint URL (HTTPS)"
                   value={webhookUrl}
                   onChange={(e) => setWebhookUrl(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-xs font-mono text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
@@ -2766,11 +2826,16 @@ export default function SocialSettingsHubPage() {
                 )}
               </button>
 
-              <label className="flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400 cursor-pointer select-none pt-1">
+              <label
+                htmlFor="force-repost-pinterest"
+                className="flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400 cursor-pointer select-none pt-1"
+              >
                 <input
+                  id="force-repost-pinterest"
                   type="checkbox"
                   checked={forceRepostPinterest}
                   onChange={(e) => setForceRepostPinterest(e.target.checked)}
+                  aria-label="Force repost existing products to Pinterest"
                   className="rounded border-zinc-300 text-red-600"
                 />
                 Force repost existing products
@@ -2820,11 +2885,16 @@ export default function SocialSettingsHubPage() {
                 )}
               </button>
 
-              <label className="flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400 cursor-pointer select-none pt-1">
+              <label
+                htmlFor="force-repost-feed"
+                className="flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400 cursor-pointer select-none pt-1"
+              >
                 <input
+                  id="force-repost-feed"
                   type="checkbox"
                   checked={forceRepostFeed}
                   onChange={(e) => setForceRepostFeed(e.target.checked)}
+                  aria-label="Force repost existing products to Facebook Feed"
                   className="rounded border-zinc-300 text-blue-600"
                 />
                 Force repost existing products
@@ -2913,11 +2983,16 @@ export default function SocialSettingsHubPage() {
                 )}
               </button>
 
-              <label className="flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400 cursor-pointer select-none pt-1">
+              <label
+                htmlFor="force-repost-instagram"
+                className="flex items-center gap-1.5 text-[11px] text-zinc-600 dark:text-zinc-400 cursor-pointer select-none pt-1"
+              >
                 <input
+                  id="force-repost-instagram"
                   type="checkbox"
                   checked={forceRepostInstagram}
                   onChange={(e) => setForceRepostInstagram(e.target.checked)}
+                  aria-label="Force repost existing products to Instagram Grid"
                   className="rounded border-zinc-300 text-pink-600"
                 />
                 Force repost existing products
