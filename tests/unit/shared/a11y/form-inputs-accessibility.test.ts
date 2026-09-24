@@ -69,9 +69,17 @@ describe("Form Inputs Accessibility & Label Associations (§6 A11y)", () => {
     });
   });
 
-  describe("facebook-shop/page.tsx accessibility", () => {
-    const filePath = path.join(rootDir, "app/(vendor)/vendor/settings/facebook-shop/page.tsx");
-    const content = fs.readFileSync(filePath, "utf-8");
+  describe("facebook-shop/page.tsx and settings components accessibility", () => {
+    const pagePath = path.join(rootDir, "app/(vendor)/vendor/settings/facebook-shop/page.tsx");
+    const settingsDir = path.join(rootDir, "features/social-share/components/settings");
+    const content = [
+      fs.readFileSync(pagePath, "utf-8"),
+      ...(fs.existsSync(settingsDir)
+        ? fs
+            .readdirSync(settingsDir)
+            .map((file) => fs.readFileSync(path.join(settingsDir, file), "utf-8"))
+        : []),
+    ].join("\n");
 
     it("associates Facebook Page Access Token label and input", () => {
       expect(content).toContain('htmlFor="fb-page-access-token"');
