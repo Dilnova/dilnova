@@ -40,7 +40,7 @@ describe("AccessibleModal Focus Restoration & ARIA Dialog Semantics (§6 A11y / 
       expect(modalContent).toContain('aria-modal="true"');
       expect(modalContent).toContain("aria-labelledby={ariaLabelledBy}");
       expect(modalContent).toContain(
-        'aria-label={!ariaLabelledBy ? (ariaLabel || "Dialog") : undefined}',
+        'aria-label={!ariaLabelledBy ? ariaLabel || "Dialog" : undefined}',
       );
       expect(modalContent).toContain("aria-describedby={ariaDescribedBy}");
     });
@@ -117,7 +117,7 @@ describe("AccessibleModal Focus Restoration & ARIA Dialog Semantics (§6 A11y / 
       expect(invContent).toContain("ariaLabel?: string;");
       expect(invContent).toContain("aria-labelledby={ariaLabelledBy}");
       expect(invContent).toContain(
-        'aria-label={!ariaLabelledBy ? (ariaLabel || "Dialog") : undefined}',
+        'aria-label={!ariaLabelledBy ? ariaLabel || "Dialog" : undefined}',
       );
     });
   });
