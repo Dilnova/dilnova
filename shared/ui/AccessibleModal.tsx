@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect, useRef, ReactNode } from "react";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 
-interface AccessibleModalProps {
+export interface AccessibleModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
   className?: string; // For the inner container
   backdropClassName?: string;
+  /** ID of the element that labels the modal (e.g. heading ID) */
+  ariaLabelledBy?: string;
+  /** Accessible name for the dialog when no visible heading exists */
+  ariaLabel?: string;
+  /** ID of the element describing the dialog content */
+  ariaDescribedBy?: string;
+  /** Whether to restore focus to previous element on close (default: true) */
+  returnFocus?: boolean;
+  /** Specific element or ref to restore focus to instead of document.activeElement */
+  restoreFocusRef?: RefObject<HTMLElement | null>;
 }
 
 export function AccessibleModal({
@@ -16,9 +26,15 @@ export function AccessibleModal({
   children,
   className = "bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-md",
   backdropClassName = "flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm",
+  ariaLabelledBy,
+  ariaLabel,
+  ariaDescribedBy,
+  returnFocus = true,
+  restoreFocusRef,
 }: AccessibleModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -26,6 +42,11 @@ export function AccessibleModal({
 
   useEffect(() => {
     if (!isOpen) return;
+
+    // Capture the currently active element when opening to restore focus on close
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      previousFocusRef.current = document.activeElement;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -63,11 +84,31 @@ export function AccessibleModal({
       modalRef.current?.focus();
     }, 10);
 
+    const explicitRestoreTarget = restoreFocusRef?.current;
+
     return () => {
       clearTimeout(timer);
       document.removeEventListener("keydown", handleKeyDown);
+
+      // Restore focus to the element that was focused before the modal opened
+      if (returnFocus) {
+        const elementToRestore = explicitRestoreTarget ?? previousFocusRef.current;
+        if (elementToRestore && typeof elementToRestore.focus === "function") {
+          const doFocus = () => {
+            if (elementToRestore.isConnected !== false) {
+              elementToRestore.focus();
+            }
+          };
+
+          if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+            window.requestAnimationFrame(doFocus);
+          } else {
+            doFocus();
+          }
+        }
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, returnFocus, restoreFocusRef]);
 
   if (!isOpen) return null;
 
@@ -81,6 +122,9 @@ export function AccessibleModal({
         ref={modalRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={ariaLabelledBy}
+        aria-label={!ariaLabelledBy ? ariaLabel || "Dialog" : undefined}
+        aria-describedby={ariaDescribedBy}
         tabIndex={-1}
         className={`outline-none ${className}`}
         onClick={(e) => e.stopPropagation()}

@@ -211,10 +211,14 @@ export default function PricingTab({ pricingPlans }: PricingTabProps) {
         <AccessibleModal
           isOpen={true}
           onClose={() => setIsPricingModalOpen(false)}
+          ariaLabelledBy="pricing-plan-modal-title"
           backdropClassName="bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl max-h-[90vh] overflow-y-auto safe-area-bottom animate-[mobileMenuSlideDown_0.2s_ease-out]"
         >
-          <h3 className="text-base font-extrabold text-zinc-900 dark:text-zinc-50 mb-1">
+          <h3
+            id="pricing-plan-modal-title"
+            className="text-base font-extrabold text-zinc-900 dark:text-zinc-50 mb-1"
+          >
             {editingPricingPlan ? "Edit Pricing Plan" : "Create Pricing Plan"}
           </h3>
           <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-wider mb-5">
