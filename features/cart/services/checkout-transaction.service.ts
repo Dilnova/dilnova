@@ -13,6 +13,7 @@ import { DEFAULT_CURRENCY } from "@/shared/currency";
 import type { VerifiedCheckoutItem, DbTransaction } from "./checkout.types";
 import type { CartTaxBreakdown } from "@/features/billing/tax-engine";
 import { ActionError } from "@/shared/errors/action-error";
+import type { CheckoutTransactionResult } from "@/features/cart/checkout.helpers";
 
 export async function executeCheckoutTransaction(opts: {
   verifiedItems: VerifiedCheckoutItem[];
@@ -265,4 +266,63 @@ export async function executeCheckoutTransaction(opts: {
       serverSubtotalCents: opts.serverSubtotal,
     };
   });
+}
+
+export type ExecuteCheckoutWithRetryOptions = Parameters<typeof executeCheckoutTransaction>[0] & {
+  idempotencyKey?: string | null;
+  maxRetries?: number;
+};
+
+/**
+ * Orchestrates checkout database transaction execution with optional idempotency checking
+ * and an exponential backoff retry loop.
+ */
+export async function executeCheckoutWithRetry(
+  opts: ExecuteCheckoutWithRetryOptions,
+): Promise<CheckoutTransactionResult> {
+  const { idempotencyKey, maxRetries = 3, ...txOpts } = opts;
+
+  // 1. Idempotency verification
+  if (idempotencyKey) {
+    const { checkIdempotencyKey } = await import("@/shared/security/idempotency");
+    const isNewRequest = await checkIdempotencyKey(idempotencyKey);
+    if (!isNewRequest) {
+      return {
+        success: false,
+        error: "This order is already being processed. Please wait or refresh the page.",
+      };
+    }
+  }
+
+  // 2. Deterministic sort to prevent database deadlocks across parallel transactions
+  txOpts.verifiedItems.sort((a, b) => a.id.localeCompare(b.id));
+
+  let txResult: CheckoutTransactionResult | null = null;
+  let txError: unknown = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      txResult = (await executeCheckoutTransaction(txOpts)) as CheckoutTransactionResult;
+      break;
+    } catch (error) {
+      txError = error;
+      logger.warn(`Checkout DB transaction failed (attempt ${attempt}/${maxRetries})`, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      if (attempt === maxRetries) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, attempt * 200 + Math.random() * 100));
+    }
+  }
+
+  if (!txResult) {
+    logger.error("Checkout DB transaction failed permanently", { error: txError });
+    return {
+      success: false,
+      error: "A database error occurred while processing your order. Please try again.",
+    };
+  }
+
+  return txResult;
 }

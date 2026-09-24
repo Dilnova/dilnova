@@ -74,4 +74,5 @@ export const syncedCartSchema = z.array(syncedCartItemSchema).max(100);
 
 export type CartLineInput = z.infer<typeof cartLineSchema>;
 export type CheckoutItemInput = z.infer<typeof checkoutItemSchema>;
+export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export type SyncedCartItem = z.infer<typeof syncedCartItemSchema>;

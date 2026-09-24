@@ -1,49 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { validateCheckoutShippingFee as validateShippingFee } from "@/features/cart/services/checkout-shipping.service";
 
 describe("Checkout Shipping Fee Boundary & Fail-Closed Validation", () => {
-  function validateShippingFee(opts: {
-    zeroShipping: boolean;
-    serverShippingCents: number;
-    clientShippingCents: number;
-    calculationFailed?: boolean;
-  }): { valid: boolean; error?: string } {
-    if (opts.zeroShipping) {
-      return { valid: true };
-    }
-
-    if (opts.calculationFailed || opts.serverShippingCents <= 0) {
-      return {
-        valid: false,
-        error:
-          "Unable to calculate shipping rates for the delivery address. Please verify your address or select another fulfillment option.",
-      };
-    }
-
-    if (opts.clientShippingCents === 0) {
-      return {
-        valid: false,
-        error:
-          "Checkout total mismatch: no shipping fee was submitted but shipping is required. Please refresh your cart and try again.",
-      };
-    }
-
-    const minAcceptableShipping = Math.floor(opts.serverShippingCents * 0.5);
-    const maxAcceptableShipping = Math.ceil(opts.serverShippingCents * 5);
-
-    if (
-      opts.clientShippingCents < minAcceptableShipping ||
-      opts.clientShippingCents > maxAcceptableShipping
-    ) {
-      return {
-        valid: false,
-        error:
-          "Checkout total mismatch: submitted shipping fee is outside the allowable range for this delivery. Please refresh your cart and select a shipping method.",
-      };
-    }
-
-    return { valid: true };
-  }
-
   it("fails closed when rate calculation fails", () => {
     const result = validateShippingFee({
       zeroShipping: false,
