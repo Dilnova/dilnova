@@ -5,6 +5,8 @@ export const cartLineSchema = z.object({
   id: uuidField,
   name: z.string(),
   price: z.number(),
+  currency: z.string().optional(),
+  baseCurrency: z.string().optional(),
   imageUrl: z.string().nullable(),
   quantity: z.number().int().min(1, "Quantity must be at least 1"),
   vendorName: z.string(),
