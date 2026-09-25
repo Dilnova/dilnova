@@ -9,10 +9,40 @@ vi.mock("@/shared/db/client", () => ({
 import {
   calculateLineTax,
   ZERO_TAX_CLASS,
+  sanitizeRatePercent,
+  normalizeTaxClass,
   type ResolvedTaxClass,
 } from "@/features/billing/tax-engine";
 
 describe("Tax Engine (Billing)", () => {
+  describe("sanitizeRatePercent() and normalizeTaxClass()", () => {
+    it("safely normalizes null, undefined, and NaN ratePercent to 0", () => {
+      expect(sanitizeRatePercent(null)).toBe(0);
+      expect(sanitizeRatePercent(undefined)).toBe(0);
+      expect(sanitizeRatePercent(NaN)).toBe(0);
+      expect(sanitizeRatePercent(-5)).toBe(0);
+      expect(sanitizeRatePercent(Infinity)).toBe(0);
+      expect(sanitizeRatePercent(18)).toBe(18);
+      expect(sanitizeRatePercent(2.5)).toBe(2.5);
+    });
+
+    it("normalizes null/undefined tax classes to ZERO_TAX_CLASS fallback", () => {
+      expect(normalizeTaxClass(null)).toEqual(ZERO_TAX_CLASS);
+      expect(normalizeTaxClass(undefined)).toEqual(ZERO_TAX_CLASS);
+      expect(
+        normalizeTaxClass({
+          id: "custom-id",
+          ratePercent: null as unknown as number,
+        }),
+      ).toEqual({
+        id: "custom-id",
+        code: "ZERO",
+        name: "No Tax",
+        ratePercent: 0,
+      });
+    });
+  });
+
   describe("calculateLineTax()", () => {
     it("calculates 8% tax accurately", () => {
       const taxClass: ResolvedTaxClass = {
@@ -100,6 +130,34 @@ describe("Tax Engine (Billing)", () => {
       expect(result.taxAmountCents).toBe(250); // 10000 * 0.025 = 250 cents ($2.50)
       expect(result.taxRatePercent).toBe(2.5);
       expect(result.taxClassCode).toBe("SSCL");
+    });
+
+    it("never produces NaN on invalid/null/undefined or corrupted tax class inputs", () => {
+      // Corrupted tax class with null rate
+      const corruptedTaxClass = {
+        id: "corrupted",
+        code: "CORRUPTED",
+        name: "Corrupted Tax",
+        ratePercent: null as unknown as number,
+      };
+
+      const result1 = calculateLineTax(1000, 2, corruptedTaxClass);
+      expect(Number.isNaN(result1.taxAmountCents)).toBe(false);
+      expect(Number.isNaN(result1.lineSubtotalCents)).toBe(false);
+      expect(result1.taxAmountCents).toBe(0);
+      expect(result1.lineSubtotalCents).toBe(2000);
+
+      // Null tax class
+      const result2 = calculateLineTax(1000, 2, null);
+      expect(Number.isNaN(result2.taxAmountCents)).toBe(false);
+      expect(result2.taxAmountCents).toBe(0);
+
+      // NaN unit price or quantity
+      const result3 = calculateLineTax(NaN, NaN, ZERO_TAX_CLASS);
+      expect(Number.isNaN(result3.lineSubtotalCents)).toBe(false);
+      expect(Number.isNaN(result3.taxAmountCents)).toBe(false);
+      expect(result3.lineSubtotalCents).toBe(0);
+      expect(result3.taxAmountCents).toBe(0);
     });
   });
 });

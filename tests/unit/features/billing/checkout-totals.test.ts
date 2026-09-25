@@ -44,6 +44,22 @@ describe("Checkout Totals (Billing)", () => {
       expect(result.shippingAmount).toBe(0);
       expect(result.grandTotal).toBe(0);
     });
+
+    it("protects against NaN and null inputs, guaranteeing non-NaN financial results", () => {
+      const result1 = calculateCheckoutTotals(NaN, false, NaN, NaN);
+      expect(Number.isNaN(result1.subtotalAmount)).toBe(false);
+      expect(Number.isNaN(result1.taxAmount)).toBe(false);
+      expect(Number.isNaN(result1.shippingAmount)).toBe(false);
+      expect(Number.isNaN(result1.grandTotal)).toBe(false);
+      expect(result1.grandTotal).toBe(0);
+
+      const result2 = calculateCheckoutTotals(
+        null as unknown as number,
+        false,
+        undefined as unknown as number,
+      );
+      expect(result2.grandTotal).toBe(0);
+    });
   });
 
   describe("getOrderDisplayTotals()", () => {
@@ -73,6 +89,22 @@ describe("Checkout Totals (Billing)", () => {
       expect(result.shippingAmount).toBe(0);
       expect(result.grandTotal).toBe(1000);
     });
+
+    it("protects against NaN in order amounts", () => {
+      const order = {
+        totalAmount: NaN,
+        subtotalAmount: NaN,
+        taxAmount: NaN,
+        shippingAmount: NaN,
+      };
+
+      const result = getOrderDisplayTotals(order);
+      expect(Number.isNaN(result.subtotalAmount)).toBe(false);
+      expect(Number.isNaN(result.taxAmount)).toBe(false);
+      expect(Number.isNaN(result.shippingAmount)).toBe(false);
+      expect(Number.isNaN(result.grandTotal)).toBe(false);
+      expect(result.grandTotal).toBe(0);
+    });
   });
 
   describe("calculateItemTotalCents()", () => {
@@ -89,6 +121,12 @@ describe("Checkout Totals (Billing)", () => {
     it("handles zero and fallback when price is missing", () => {
       expect(calculateItemTotalCents({ qty: 2 })).toBe(0);
       expect(calculateItemTotalCents({ qty: 0, price: 10 })).toBe(0);
+    });
+
+    it("protects against NaN in quantity or price", () => {
+      expect(calculateItemTotalCents({ qty: NaN, priceCents: 1000 })).toBe(0);
+      expect(calculateItemTotalCents({ qty: 2, priceCents: NaN })).toBe(0);
+      expect(calculateItemTotalCents({ qty: NaN, price: NaN })).toBe(0);
     });
   });
 });
