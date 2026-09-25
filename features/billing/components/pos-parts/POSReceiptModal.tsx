@@ -4,14 +4,14 @@ import React from "react";
 import { usePOSContext } from "../POSBillingProvider";
 import { useCurrency } from "@/shared/currency/context/currency-context";
 import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
+import { calculateItemTotalCents } from "@/features/billing/checkout-totals";
 
 export default function POSReceiptModal() {
   const { selectedCurrency } = useCurrency();
   const { receiptToPrint, setReceiptToPrint, systemName } = usePOSContext();
 
   if (!receiptToPrint) return null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const receipt = receiptToPrint as unknown as Record<string, any>;
+  const receipt = receiptToPrint;
   const receiptCurrency = receipt.currency || selectedCurrency || DEFAULT_CURRENCY;
 
   return (
@@ -25,23 +25,17 @@ export default function POSReceiptModal() {
         </div>
 
         <div className="border-t border-b border-dashed border-zinc-300 py-3 text-xs space-y-2 font-mono">
-          {(receipt.items || []).map(
-            (
-              i: { name: string; qty: number; price: number; priceCents?: number },
-              index: number,
-            ) => {
-              const itemTotalCents =
-                i.priceCents != null ? i.priceCents * i.qty : Math.round(i.price * i.qty * 100);
-              return (
-                <div key={index} className="flex justify-between">
-                  <span>
-                    {i.name} x{i.qty}
-                  </span>
-                  <span>{formatMoney(itemTotalCents, receiptCurrency)}</span>
-                </div>
-              );
-            },
-          )}
+          {(receipt.items || []).map((i, index: number) => {
+            const itemTotalCents = calculateItemTotalCents(i);
+            return (
+              <div key={index} className="flex justify-between">
+                <span>
+                  {i.name} x{i.qty}
+                </span>
+                <span>{formatMoney(itemTotalCents, receiptCurrency)}</span>
+              </div>
+            );
+          })}
 
           {receipt.discountPercent > 0 && (
             <div className="flex justify-between text-emerald-700">
@@ -78,7 +72,7 @@ export default function POSReceiptModal() {
                 <span>Change Due:</span>
                 <span>
                   {formatMoney(
-                    receipt.changeDueCents ?? Math.round(receipt.changeDue * 100),
+                    receipt.changeDueCents ?? Math.round((receipt.changeDue ?? 0) * 100),
                     receiptCurrency,
                   )}
                 </span>

@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { calculateCheckoutTotals, getOrderDisplayTotals } from "@/features/billing/checkout-totals";
+import {
+  calculateCheckoutTotals,
+  getOrderDisplayTotals,
+  calculateItemTotalCents,
+} from "@/features/billing/checkout-totals";
 
 describe("Checkout Totals (Billing)", () => {
   describe("calculateCheckoutTotals()", () => {
@@ -68,6 +72,23 @@ describe("Checkout Totals (Billing)", () => {
       expect(result.taxAmount).toBe(0);
       expect(result.shippingAmount).toBe(0);
       expect(result.grandTotal).toBe(1000);
+    });
+  });
+
+  describe("calculateItemTotalCents()", () => {
+    it("uses priceCents when provided", () => {
+      expect(calculateItemTotalCents({ qty: 3, priceCents: 1500 })).toBe(4500);
+      expect(calculateItemTotalCents({ qty: 2, priceCents: 299, price: 9.99 })).toBe(598);
+    });
+
+    it("calculates from price when priceCents is null or undefined", () => {
+      expect(calculateItemTotalCents({ qty: 2, price: 10.5 })).toBe(2100);
+      expect(calculateItemTotalCents({ qty: 3, price: 5.99, priceCents: null })).toBe(1797);
+    });
+
+    it("handles zero and fallback when price is missing", () => {
+      expect(calculateItemTotalCents({ qty: 2 })).toBe(0);
+      expect(calculateItemTotalCents({ qty: 0, price: 10 })).toBe(0);
     });
   });
 });

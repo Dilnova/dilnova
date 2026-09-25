@@ -22,6 +22,23 @@ export function calculateCheckoutTotals(
   return { subtotalAmount, taxAmount, shippingAmount, grandTotal };
 }
 
+export interface ItemTotalInput {
+  qty: number;
+  price?: number | null;
+  priceCents?: number | null;
+}
+
+/**
+ * Calculates item line total in cents.
+ * Prioritizes priceCents if provided, otherwise calculates from fractional currency units.
+ */
+export function calculateItemTotalCents(item: ItemTotalInput): number {
+  if (item.priceCents != null) {
+    return Math.round(item.priceCents * item.qty);
+  }
+  return Math.round((item.price ?? 0) * item.qty * 100);
+}
+
 export interface OrderAmountFields {
   totalAmount: number;
   subtotalAmount?: number | null;
