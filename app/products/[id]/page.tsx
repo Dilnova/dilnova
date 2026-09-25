@@ -261,7 +261,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       <ProductViewTracker productId={id} />
       {/* Top Breadcrumb Nav */}
       <div className="max-w-6xl mx-auto px-6 pt-8 flex items-center justify-between">
-        <nav className="flex items-center gap-2 text-xs font-mono text-zinc-400">
+        <nav className="flex items-center gap-2 text-xs font-mono text-zinc-650 dark:text-zinc-400 font-medium">
           <Link href="/products" className="hover:text-purple-500 transition-colors">
             PRODUCTS
           </Link>
@@ -331,10 +331,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     <div className="flex items-center gap-1.5 text-xs text-amber-500 font-bold font-mono">
                       <span>★</span>
                       <span>{averageRating}</span>
-                      <span className="text-zinc-400 font-normal">({totalReviews})</span>
+                      <span className="text-zinc-650 dark:text-zinc-400 font-medium">
+                        ({totalReviews})
+                      </span>
                     </div>
                   ) : (
-                    <span className="text-[10px] text-zinc-400 font-mono">Unrated</span>
+                    <span className="text-[10px] text-zinc-650 dark:text-zinc-400 font-mono font-medium">
+                      Unrated
+                    </span>
                   )}
 
                   <div
@@ -442,7 +446,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               <hr className="border-zinc-200 dark:border-zinc-800" />
 
               <div className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-mono">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-650 dark:text-zinc-400 font-mono">
                   Description
                 </h3>
                 <p className="text-sm text-zinc-600 dark:text-zinc-350 leading-relaxed whitespace-pre-line">
@@ -458,7 +462,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
                     <div className="bg-white dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800">
-                      <span className="text-[10px] text-zinc-400 block font-mono">WEIGHT</span>
+                      <span className="text-[10px] text-zinc-650 dark:text-zinc-400 block font-mono font-semibold">
+                        WEIGHT
+                      </span>
                       <span className="font-bold text-zinc-800 dark:text-zinc-200 font-mono">
                         {product.weightGrams != null && product.weightGrams > 0
                           ? product.weightGrams >= 1000
@@ -470,7 +476,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
                     {product.lengthCm || product.widthCm || product.heightCm ? (
                       <div className="bg-white dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800">
-                        <span className="text-[10px] text-zinc-400 block font-mono">
+                        <span className="text-[10px] text-zinc-650 dark:text-zinc-400 block font-mono font-semibold">
                           DIMENSIONS (L×W×H)
                         </span>
                         <span className="font-bold text-zinc-800 dark:text-zinc-200 font-mono">
@@ -479,7 +485,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
                       </div>
                     ) : (
                       <div className="bg-white dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800">
-                        <span className="text-[10px] text-zinc-400 block font-mono">PACKAGE</span>
+                        <span className="text-[10px] text-zinc-650 dark:text-zinc-400 block font-mono font-semibold">
+                          PACKAGE
+                        </span>
                         <span className="font-semibold text-zinc-600 dark:text-zinc-400">
                           Standard Parcel
                         </span>
@@ -487,14 +495,18 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     )}
 
                     <div className="bg-white dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800">
-                      <span className="text-[10px] text-zinc-400 block font-mono">CARRIER</span>
+                      <span className="text-[10px] text-zinc-650 dark:text-zinc-400 block font-mono font-semibold">
+                        CARRIER
+                      </span>
                       <span className="font-bold text-zinc-800 dark:text-zinc-200">
                         Sri Lanka Post / EMS
                       </span>
                     </div>
 
                     <div className="bg-white dark:bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-200/60 dark:border-zinc-800">
-                      <span className="text-[10px] text-zinc-400 block font-mono">COVERAGE</span>
+                      <span className="text-[10px] text-zinc-650 dark:text-zinc-400 block font-mono font-semibold">
+                        COVERAGE
+                      </span>
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">
                         Inland & 200+ Global
                       </span>
@@ -521,7 +533,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   </div>
                 )}
                 <div className="flex-1 leading-tight">
-                  <span className="text-[10px] text-zinc-400 block font-mono">
+                  <span className="text-[10px] text-zinc-650 dark:text-zinc-400 block font-mono font-semibold">
                     AUTHORIZED VENDOR
                   </span>
                   {vendorSlug ? (

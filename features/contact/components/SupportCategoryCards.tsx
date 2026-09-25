@@ -123,7 +123,7 @@ export default function SupportCategoryCards({
                     </svg>
                   )}
                 </div>
-                <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">
+                <span className="text-xs font-semibold text-zinc-650 dark:text-zinc-350">
                   {cat.count} articles
                 </span>
               </div>

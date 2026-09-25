@@ -46,7 +46,7 @@ export function TabDataTableLayout<T>({
           <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">
             {title}
           </h2>
-          <p className="text-[10px] sm:text-[11px] text-zinc-400 font-mono mt-0.5 hidden sm:block">
+          <p className="text-[10px] sm:text-[11px] text-zinc-600 dark:text-zinc-400 font-mono mt-0.5 hidden sm:block">
             {subtitle}
           </p>
         </div>
@@ -76,7 +76,7 @@ export function TabDataTableLayout<T>({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 uppercase font-mono text-[10px] tracking-wider bg-zinc-50/50 dark:bg-zinc-900/30">
+              <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold uppercase font-mono text-[10px] tracking-wider bg-zinc-50/50 dark:bg-zinc-900/30">
                 {columns.map((col, idx) => (
                   <th key={idx} className={`py-3 px-4 ${col.className || ""}`}>
                     {col.header}
@@ -98,7 +98,7 @@ export function TabDataTableLayout<T>({
                 <tr>
                   <td
                     colSpan={columns.length}
-                    className="py-12 text-center text-zinc-400 font-mono"
+                    className="py-12 text-center text-zinc-600 dark:text-zinc-400 font-mono"
                   >
                     {emptyStateMessage}
                   </td>
@@ -115,7 +115,7 @@ export function TabDataTableLayout<T>({
           <React.Fragment key={idx}>{renderMobileCard(item)}</React.Fragment>
         ))}
         {data.length === 0 && (
-          <div className="py-12 text-center text-zinc-400 text-xs font-mono border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
+          <div className="py-12 text-center text-zinc-600 dark:text-zinc-400 text-xs font-mono border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
             {emptyStateMessage}
           </div>
         )}

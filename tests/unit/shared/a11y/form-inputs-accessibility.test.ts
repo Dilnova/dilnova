@@ -154,4 +154,57 @@ describe("Form Inputs Accessibility & Label Associations (§6 A11y)", () => {
       expect(content).toContain('aria-label="Force repost existing products to Instagram Grid"');
     });
   });
+
+  describe("Color Contrast WCAG AA compliance across key components", () => {
+    it("ensures TabDataTableLayout uses accessible high-contrast text for headers and subtitles", () => {
+      const filePath = path.join(rootDir, "shared/ui/TabDataTableLayout.tsx");
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      expect(content).toContain(
+        "text-zinc-600 dark:text-zinc-400 font-semibold uppercase font-mono",
+      );
+      expect(content).toContain("text-zinc-600 dark:text-zinc-400 font-mono mt-0.5");
+      expect(content).not.toContain(
+        'className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-400 uppercase',
+      );
+    });
+
+    it("ensures HeaderNav uses high-contrast text styles for navigation links", () => {
+      const filePath = path.join(rootDir, "shared/ui/HeaderNav.tsx");
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      expect(content).toContain(
+        "text-zinc-650 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-100",
+      );
+      expect(content).toContain(
+        "text-zinc-700 hover:text-zinc-950 dark:text-zinc-200 dark:hover:text-zinc-50",
+      );
+      expect(content).not.toContain(
+        '"text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"',
+      );
+    });
+
+    it("ensures shipping settings labels meet WCAG AA contrast and have label linkage", () => {
+      const filePath = path.join(rootDir, "app/(vendor)/vendor/settings/shipping/page.tsx");
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      expect(content).toContain("text-slate-700 dark:text-slate-300 uppercase block mb-1");
+      expect(content).not.toContain("text-[10px] font-medium text-slate-400 dark:text-slate-500");
+      expect(content).toContain("htmlFor={`shipping-${rule.zone}-base`}");
+      expect(content).toContain("id={`shipping-${rule.zone}-base`}");
+    });
+
+    it("ensures CatalogLayout product card badges use accessible contrast", () => {
+      const filePath = path.join(rootDir, "features/catalog/components/CatalogLayout.tsx");
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      expect(content).toContain(
+        "text-[9px] font-mono text-zinc-650 dark:text-zinc-400 font-semibold uppercase tracking-widest truncate",
+      );
+      expect(content).toContain("text-zinc-650 dark:text-zinc-400 font-medium block mb-0.5");
+      expect(content).toContain(
+        "text-xs font-mono text-zinc-650 dark:text-zinc-300 font-semibold px-2",
+      );
+    });
+  });
 });

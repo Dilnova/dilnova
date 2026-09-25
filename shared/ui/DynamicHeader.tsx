@@ -141,7 +141,7 @@ export function DynamicOrganizationSwitcher({
           organizationPreviewMainIdentifier:
             "truncate text-xs font-semibold text-zinc-800 dark:text-zinc-200 max-w-[70px] sm:max-w-[135px] md:max-w-[180px]",
           organizationPreviewSecondaryIdentifier:
-            "truncate text-[10px] text-zinc-500 dark:text-zinc-400 max-w-[70px] sm:max-w-[135px] md:max-w-[180px]",
+            "truncate text-[10px] text-zinc-650 dark:text-zinc-300 max-w-[70px] sm:max-w-[135px] md:max-w-[180px]",
           organizationSwitcherTriggerIcon: "shrink-0 ml-0.5 opacity-70",
           organizationSwitcherPopoverActionButton__createOrganization: canCreateOrg
             ? "flex"

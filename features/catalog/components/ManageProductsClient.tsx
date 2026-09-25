@@ -277,7 +277,7 @@ export default function ManageProductsClient({
 
       {/* Results count */}
       {(search || filter !== "all") && (
-        <p className="text-xs text-zinc-400 dark:text-zinc-500 font-mono px-1">
+        <p className="text-xs text-zinc-650 dark:text-zinc-400 font-mono px-1">
           Showing {filteredProducts.length} of {products.length} items
           {search && <> matching &quot;{search}&quot;</>}
         </p>
@@ -290,7 +290,7 @@ export default function ManageProductsClient({
           <p className="text-zinc-600 dark:text-zinc-300 text-sm font-semibold">
             {products.length === 0 ? "Your catalog is empty" : "No items match your search"}
           </p>
-          <p className="text-zinc-400 text-xs mt-1.5 max-w-xs mx-auto">
+          <p className="text-zinc-650 dark:text-zinc-400 text-xs mt-1.5 max-w-xs mx-auto">
             {products.length === 0
               ? "Start by adding your first product or service."
               : "Try adjusting your search or filter."}
