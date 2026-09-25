@@ -1,6 +1,7 @@
 import * as schema from "@/shared/db/schema";
 import { eq, and, gte, sql } from "drizzle-orm";
 import type { db } from "@/shared/db/client";
+import { ActionError } from "@/shared/errors/action-error";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -105,7 +106,7 @@ export async function applyStockReservation(
     });
 
   if (!centralRow) {
-    throw new Error("Insufficient central stock during checkout.");
+    throw new ActionError("Insufficient central stock during checkout.");
   }
 
   const newCentralQty = centralRow.quantity;
@@ -137,7 +138,7 @@ export async function applyStockReservation(
       .returning({ quantity: schema.branchInventory.quantity });
 
     if (!branchRow) {
-      throw new Error("Insufficient branch stock during checkout.");
+      throw new ActionError("Insufficient branch stock during checkout.");
     }
   }
 }

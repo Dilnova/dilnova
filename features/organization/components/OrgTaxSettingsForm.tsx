@@ -401,15 +401,21 @@ export default function OrgTaxSettingsForm({
         <AccessibleModal
           isOpen={true}
           onClose={() => setEditingCustomTax(null)}
+          ariaLabelledBy="edit-custom-tax-title"
           backdropClassName="bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl safe-area-bottom"
         >
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
+            <h2
+              id="edit-custom-tax-title"
+              className="text-lg font-black text-zinc-900 dark:text-zinc-50 tracking-tight"
+            >
               Edit Custom Tax Rate
             </h2>
             <button
+              type="button"
               onClick={() => setEditingCustomTax(null)}
+              aria-label="Close dialog"
               className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 transition-colors cursor-pointer"
             >
               ✕

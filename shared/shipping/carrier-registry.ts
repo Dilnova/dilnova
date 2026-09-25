@@ -4,6 +4,7 @@ import { BuiltInAdapter } from "./adapters/builtin/builtin.adapter";
 import { SLPostAdapter } from "./providers/slpost/slpost.adapter";
 import { EasyPostAdapter } from "./providers/easypost/easypost.adapter";
 import { ShippoAdapter } from "./providers/shippo/shippo.adapter";
+import { logger } from "@/shared/logging/logger";
 
 const slpostAdapter = new SLPostAdapter();
 
@@ -21,7 +22,7 @@ export function getCarrier(id = ACTIVE_CARRIER_ID): CarrierAdapter {
   const carrier = registry.get(id);
   if (carrier) return carrier;
 
-  console.warn(
+  logger.warn(
     `[carrier-registry] Requested carrier "${id}" not found in registry. Falling back to Sri Lanka Post ("slpost").`,
   );
   const defaultCarrier = registry.get("slpost") ?? registry.get("builtin");
@@ -29,7 +30,7 @@ export function getCarrier(id = ACTIVE_CARRIER_ID): CarrierAdapter {
 
   const lastResort = registry.get("flat_rate");
   if (lastResort) {
-    console.error(
+    logger.error(
       "[carrier-registry] CRITICAL: Neither 'slpost' nor 'builtin' carrier adapters were found. Falling back to legacy FlatRateAdapter.",
     );
     return lastResort;

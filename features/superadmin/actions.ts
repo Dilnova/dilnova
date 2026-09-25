@@ -15,6 +15,7 @@ import { createPricingPlanSchema, updatePricingPlanSchema } from "./schema";
 import { uuidField } from "@/shared/validation/primitives";
 import { logger } from "@/shared/logging/logger";
 import { hashPii } from "@/shared/security/encryption";
+import { ActionError } from "@/shared/errors/action-error";
 
 // ── PRICING PLANS CRUD ─────────────────────────────────────────
 
@@ -25,7 +26,7 @@ export async function createPricingPlanAction(planData: unknown) {
 
     const parsed = createPricingPlanSchema.safeParse(planData);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const { name, price, period, description, features, isPopular, buttonText, buttonLink } =
@@ -69,7 +70,7 @@ export async function updatePricingPlanAction(id: string, updates: unknown) {
 
     const parsed = updatePricingPlanSchema.safeParse({ id, updates });
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const setClause: Partial<typeof schema.pricingPlans.$inferInsert> = {
@@ -117,7 +118,7 @@ export async function deletePricingPlanAction(id: string) {
 
     const parsedId = uuidField.safeParse(id);
     if (!parsedId.success) {
-      throw new Error("Invalid ID format.");
+      throw new ActionError("Invalid ID format.");
     }
 
     await db.delete(schema.pricingPlans).where(eq(schema.pricingPlans.id, parsedId.data));
@@ -148,7 +149,7 @@ export async function updateContactStatusAction(
 
     const parsedId = uuidField.safeParse(id);
     if (!parsedId.success) {
-      throw new Error("Invalid ID format.");
+      throw new ActionError("Invalid ID format.");
     }
 
     // 1. Fetch the contact submission
@@ -159,7 +160,7 @@ export async function updateContactStatusAction(
       .limit(1);
 
     if (!submission) {
-      throw new Error("Contact request not found.");
+      throw new ActionError("Contact request not found.");
     }
 
     // 2. Update status in DB
@@ -227,7 +228,7 @@ export async function getCustomerDsarDataAction(email: string) {
 
     const normalizedEmailInput = email.trim().toLowerCase();
     if (!normalizedEmailInput) {
-      throw new Error("Email address is required.");
+      throw new ActionError("Email address is required.");
     }
 
     // 1. Fetch matching orders using the blind index (keyed-hash)
@@ -300,7 +301,7 @@ export async function anonymizeCustomerDataAction(email: string) {
 
     const normalizedEmailInput = email.trim().toLowerCase();
     if (!normalizedEmailInput) {
-      throw new Error("Email address is required.");
+      throw new ActionError("Email address is required.");
     }
 
     // 0. Fetch Clerk user and optionally delete them

@@ -43,6 +43,7 @@ const required = [
   "TURNSTILE_SECRET_KEY",
   "SENTRY_DSN",
   "NEXT_PUBLIC_SENTRY_DSN",
+  "CRON_SECRET",
 ];
 
 const recommended = [];

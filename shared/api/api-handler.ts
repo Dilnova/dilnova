@@ -1,5 +1,7 @@
-import { NextResponse } from "next/server";
 import { logger } from "@/shared/logging/logger";
+import { apiError } from "./response";
+
+export * from "./response";
 
 type RouteHandler = (req: Request, ...args: unknown[]) => Promise<Response> | Response;
 
@@ -14,7 +16,7 @@ export function withErrorHandler(handler: RouteHandler): RouteHandler {
     } catch (error: unknown) {
       const safeUrl = req.url.replace(/[\r\n]/g, "");
       logger.error("[API Error]", error, { method: req.method, url: safeUrl });
-      return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+      return apiError("Internal Server Error", { status: 500 });
     }
   };
 }

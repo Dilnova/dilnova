@@ -2,18 +2,10 @@
 
 import { MapPin, Building, Map, Hash, Globe, Navigation, Loader2, Phone } from "lucide-react";
 import React, { useState, useEffect } from "react";
+import type { ParsedCountry, ParsedState } from "@/shared/types/locations";
 
-export interface LiveCountry {
-  code: string;
-  name: string;
-  flag: string;
-  dialCode: string;
-}
-
-export interface LiveState {
-  name: string;
-  code?: string;
-}
+export type LiveCountry = ParsedCountry;
+export type LiveState = ParsedState;
 
 export interface DeliveryAddressFormFieldsProps {
   shippingAddress: string;

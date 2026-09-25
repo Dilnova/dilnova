@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { Country as CscCountry, State as CscState, City as CscCity } from "country-state-city";
+import { logger } from "@/shared/logging/logger";
+import type { ParsedCountry, ParsedState } from "@/shared/types/locations";
 
 interface RestCountryItem {
   cca2?: string;
@@ -18,18 +20,6 @@ interface IsoCountryItem {
 interface StateItem {
   name?: string;
   state_code?: string;
-}
-
-interface ParsedCountry {
-  code: string;
-  name: string;
-  flag: string;
-  dialCode: string;
-}
-
-interface ParsedState {
-  name: string;
-  code?: string;
 }
 
 /**
@@ -129,7 +119,7 @@ export async function GET(request: Request) {
         });
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] Reverse geocode failed", {
+      logger.error("[ServerLocationProxy] Reverse geocode failed", {
         lat: sanitizeLogValue(lat),
         lon: sanitizeLogValue(lon),
         error: err,
@@ -174,7 +164,7 @@ export async function GET(request: Request) {
         }
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] IP location failed", { error: err });
+      logger.error("[ServerLocationProxy] IP location failed", { error: err });
     }
 
     return NextResponse.json({ success: false, error: "IP location failed" }, { status: 500 });
@@ -204,7 +194,7 @@ export async function GET(request: Request) {
         }
       }
     } catch (err) {
-      console.warn("[ServerLocationProxy] CSC Countries lookup notice", { error: err });
+      logger.warn("[ServerLocationProxy] CSC Countries lookup notice", { error: err });
     }
 
     // Fallback 1: REST Countries API
@@ -238,7 +228,7 @@ export async function GET(request: Request) {
         }
       }
     } catch (err) {
-      console.warn("[ServerLocationProxy] Primary REST Countries fetch failed", { error: err });
+      logger.warn("[ServerLocationProxy] Primary REST Countries fetch failed", { error: err });
     }
 
     // Fallback 2: CountriesNow ISO API
@@ -266,7 +256,7 @@ export async function GET(request: Request) {
         }
       }
     } catch (err2) {
-      console.error("[ServerLocationProxy] Secondary countries fetch failed", { error: err2 });
+      logger.error("[ServerLocationProxy] Secondary countries fetch failed", { error: err2 });
     }
 
     return NextResponse.json({ success: false, data: [] });
@@ -373,7 +363,7 @@ export async function GET(request: Request) {
         }
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] Live states fetch failed", {
+      logger.error("[ServerLocationProxy] Live states fetch failed", {
         country: sanitizeLogValue(country),
         error: err,
       });
@@ -497,7 +487,7 @@ export async function GET(request: Request) {
           }
         }
       } catch (err) {
-        console.error("[ServerLocationProxy] Nominatim district/province cities fetch failed", err);
+        logger.error("[ServerLocationProxy] Nominatim district/province cities fetch failed", err);
       }
     }
 
@@ -527,7 +517,7 @@ export async function GET(request: Request) {
           }
         }
       } catch (err) {
-        console.error("[ServerLocationProxy] Live state cities fetch failed", {
+        logger.error("[ServerLocationProxy] Live state cities fetch failed", {
           state: sanitizeLogValue(state),
           country: sanitizeLogValue(country),
           error: err,
@@ -555,7 +545,7 @@ export async function GET(request: Request) {
         }
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] Live country cities fetch failed", {
+      logger.error("[ServerLocationProxy] Live country cities fetch failed", {
         country: sanitizeLogValue(country),
         error: err,
       });
@@ -591,7 +581,7 @@ export async function GET(request: Request) {
         }
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] Nominatim cities fetch failed", err);
+      logger.error("[ServerLocationProxy] Nominatim cities fetch failed", err);
     }
 
     return NextResponse.json({ success: false, data: [] });

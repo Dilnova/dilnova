@@ -1,5 +1,5 @@
 import { useState, useTransition, useMemo, useCallback } from "react";
-import type { VendorBillingRegisterData } from "@/features/billing/types";
+import type { VendorBillingRegisterData, POSReceiptData } from "@/features/billing/types";
 import { getVendorBillingRegisterData } from "@/features/billing/register.actions";
 import { processBillingCheckoutAction } from "@/features/billing/checkout.actions";
 import { resolveEffectiveStockAvailability } from "@/features/inventory/availability.shared";
@@ -32,14 +32,7 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "other">("cash");
   const [cashTendered, setCashTendered] = useState<string>("");
   const [discountPercent, setDiscountPercent] = useState<number>(0);
-  const [receiptToPrint, setReceiptToPrint] = useState<{
-    id: string;
-    branchName: string;
-    date: string;
-    items: { name: string; qty: number; price: number }[];
-    discountPercent: number;
-    [key: string]: unknown;
-  } | null>(null);
+  const [receiptToPrint, setReceiptToPrint] = useState<POSReceiptData | null>(null);
 
   // Branch Selector
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
@@ -249,10 +242,15 @@ export function usePOSBilling(initialData: VendorBillingRegisterData) {
           subtotal: subtotalAmount,
           discountPercent,
           discountAmount,
+          discountAmountCents: Math.round(discountAmount * 100),
           total: result.data.totalAmount / 100,
+          totalCents: result.data.totalAmount,
           paymentMethod,
           cashTendered: paymentMethod === "cash" ? cashTenderedVal : null,
+          cashTenderedCents:
+            paymentMethod === "cash" ? Math.round(cashTenderedVal * 100) : undefined,
           changeDue: paymentMethod === "cash" ? changeDue : null,
+          changeDueCents: paymentMethod === "cash" ? Math.round(changeDue * 100) : undefined,
           customerName,
           date: new Date().toISOString(),
         });

@@ -4,6 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { runWithCorrelationId } from "@/shared/security/async-context";
 import { logAuditAction } from "@/shared/audit/logger";
+import { ActionError } from "@/shared/errors/action-error";
 
 /**
  * Toggles the user's metadata role between 'customer' and 'vendor' to simulate different user accounts.
@@ -15,12 +16,12 @@ export async function toggleUserRoleAction(currentRole: string | undefined) {
   return runWithCorrelationId(async () => {
     // Double-guard at runtime
     if (process.env.NODE_ENV === "production") {
-      throw new Error("Forbidden: Role toggling is disabled in production environments.");
+      throw new ActionError("Forbidden: Role toggling is disabled in production environments.");
     }
 
     const { userId } = await auth();
     if (!userId) {
-      throw new Error("Not authorized: You must be logged in to toggle your role.");
+      throw new ActionError("Not authorized: You must be logged in to toggle your role.");
     }
 
     const nextRole = currentRole === "vendor" ? "customer" : "vendor";

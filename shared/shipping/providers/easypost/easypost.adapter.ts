@@ -7,6 +7,7 @@ import type {
   ShippingOrigin,
   ShippingRate,
 } from "../../carrier.types";
+import { logger } from "@/shared/logging/logger";
 
 /**
  * EasyPost multi-carrier adapter.
@@ -90,7 +91,7 @@ export class EasyPostAdapter implements CarrierAdapter {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        console.error("[EasyPostAdapter.getRates] API error:", res.status, err);
+        logger.error("[EasyPostAdapter.getRates] API error", err, { status: res.status });
         return [];
       }
 
@@ -135,7 +136,7 @@ export class EasyPostAdapter implements CarrierAdapter {
 
       return rates;
     } catch (err) {
-      console.error("[EasyPostAdapter.getRates] Network error:", err);
+      logger.error("[EasyPostAdapter.getRates] Network error", err);
       return [];
     }
   }
@@ -235,7 +236,7 @@ export class EasyPostAdapter implements CarrierAdapter {
     await fetch(`${this.baseUrl}/shipments/${shipmentExternalId}/refund`, {
       method: "POST",
       headers: { Authorization: this.authHeader },
-    }).catch((err) => console.error("[EasyPostAdapter.cancelShipment]", err));
+    }).catch((err) => logger.error("[EasyPostAdapter.cancelShipment]", err));
   }
 
   async getTrackingEvents(trackingNumber: string): Promise<ShipmentEvent[]> {
@@ -271,7 +272,7 @@ export class EasyPostAdapter implements CarrierAdapter {
         }),
       );
     } catch (err) {
-      console.error("[EasyPostAdapter.getTrackingEvents]", err);
+      logger.error("[EasyPostAdapter.getTrackingEvents]", err);
       return [];
     }
   }

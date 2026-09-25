@@ -41,7 +41,7 @@ export interface CartTaxBreakdown {
 
 export type DbOrTransaction = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-// ── Constants ─────────────────────────────────────────────────
+// ── Constants & Normalizers ───────────────────────────────────
 
 /** Used when no tax class can be resolved — safe: charges 0% rather than wrong rate */
 export const ZERO_TAX_CLASS: ResolvedTaxClass = {
@@ -50,6 +50,30 @@ export const ZERO_TAX_CLASS: ResolvedTaxClass = {
   name: "No Tax",
   ratePercent: 0,
 };
+
+/**
+ * Safely normalizes a rate percent value.
+ * Protects against null, undefined, NaN, Infinity, and negative values.
+ */
+export function sanitizeRatePercent(ratePercent: number | null | undefined): number {
+  if (ratePercent == null || Number.isNaN(ratePercent) || !Number.isFinite(ratePercent)) {
+    return 0;
+  }
+  return Math.max(0, ratePercent);
+}
+
+/**
+ * Safely parses and normalizes a ResolvedTaxClass object, guaranteeing safe non-NaN ratePercent.
+ */
+export function normalizeTaxClass(raw?: Partial<ResolvedTaxClass> | null): ResolvedTaxClass {
+  if (!raw) return ZERO_TAX_CLASS;
+  return {
+    id: raw.id || ZERO_TAX_CLASS.id,
+    code: raw.code || ZERO_TAX_CLASS.code,
+    name: raw.name || ZERO_TAX_CLASS.name,
+    ratePercent: sanitizeRatePercent(raw.ratePercent),
+  };
+}
 
 // ── Resolution ────────────────────────────────────────────────
 
@@ -86,7 +110,7 @@ export async function resolveTaxClassForProduct(
       .from(schema.taxClasses)
       .where(eq(schema.taxClasses.id, row.productTaxClassId))
       .limit(1);
-    if (tc) return tc;
+    if (tc) return normalizeTaxClass(tc);
   }
 
   // Level 2: Category Tax Override
@@ -101,7 +125,7 @@ export async function resolveTaxClassForProduct(
       .from(schema.taxClasses)
       .where(eq(schema.taxClasses.id, row.categoryTaxClassId))
       .limit(1);
-    if (tc) return tc;
+    if (tc) return normalizeTaxClass(tc);
   }
 
   // Level 3: Org Default Tax
@@ -124,7 +148,7 @@ export async function resolveTaxClassForProduct(
         .from(schema.taxClasses)
         .where(eq(schema.taxClasses.id, orgRow.defaultTaxClassId))
         .limit(1);
-      if (tc) return tc;
+      if (tc) return normalizeTaxClass(tc);
     }
   }
 
@@ -199,7 +223,7 @@ export async function batchResolveTaxClassesForProducts(
       .where(inArray(schema.taxClasses.id, [...taxClassIds]));
 
     for (const tc of taxClassRows) {
-      taxClassesMap.set(tc.id, tc);
+      taxClassesMap.set(tc.id, normalizeTaxClass(tc));
     }
   }
 
@@ -218,7 +242,7 @@ export async function batchResolveTaxClassesForProducts(
       }
     }
 
-    resultMap.set(row.productId, resolved || ZERO_TAX_CLASS);
+    resultMap.set(row.productId, normalizeTaxClass(resolved));
   }
 
   return resultMap;
@@ -229,16 +253,20 @@ export async function batchResolveTaxClassesForProducts(
 export function calculateLineTax(
   unitPriceCents: number,
   quantity: number,
-  taxClass: ResolvedTaxClass,
+  taxClass?: ResolvedTaxClass | null,
 ): LineTaxResult {
-  const lineSubtotalCents = Math.max(0, unitPriceCents * quantity);
-  const taxAmountCents = Math.round(lineSubtotalCents * (taxClass.ratePercent / 100));
+  const safeUnitPrice = Number.isFinite(unitPriceCents) ? Math.max(0, unitPriceCents) : 0;
+  const safeQuantity = Number.isFinite(quantity) ? Math.max(0, quantity) : 0;
+  const lineSubtotalCents = Math.round(safeUnitPrice * safeQuantity);
+
+  const resolved = normalizeTaxClass(taxClass);
+  const taxAmountCents = Math.round(lineSubtotalCents * (resolved.ratePercent / 100));
   return {
     lineSubtotalCents,
     taxAmountCents,
-    taxRatePercent: taxClass.ratePercent,
-    taxClassCode: taxClass.code,
-    taxClassName: taxClass.name,
+    taxRatePercent: resolved.ratePercent,
+    taxClassCode: resolved.code,
+    taxClassName: resolved.name,
   };
 }
 

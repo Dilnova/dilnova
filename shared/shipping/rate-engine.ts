@@ -1,5 +1,6 @@
 import type { Parcel, ShippingDestination, ShippingOrigin, ShippingRate } from "./carrier.types";
 import { getCarrier } from "./carrier-registry";
+import { logger } from "@/shared/logging/logger";
 
 export interface RateEngineItem {
   id: string;
@@ -101,7 +102,7 @@ export async function computeMultiVendorRates(opts: {
     const branch = opts.vendorBranchMap.get(vendorOrgId);
     const origin = parseBranchToOrigin(branch);
     if (origin.isFallback) {
-      console.warn(
+      logger.warn(
         `[rate-engine] Vendor org "${vendorOrgId}" branch address is missing city details. Defaulting origin to Colombo, Western for rate calculation.`,
       );
     }
@@ -119,7 +120,7 @@ export async function computeMultiVendorRates(opts: {
           const epRates = await ep.getRates(origin, opts.destination, [parcel]);
           rates = [...rates, ...epRates];
         } catch (err) {
-          console.warn("[rate-engine] Failed to fetch EasyPost rates:", err);
+          logger.warn("[rate-engine] Failed to fetch EasyPost rates", { error: err });
         }
       }
       if (process.env.SHIPPO_API_KEY) {
@@ -128,7 +129,7 @@ export async function computeMultiVendorRates(opts: {
           const shippoRates = await shippo.getRates(origin, opts.destination, [parcel]);
           rates = [...rates, ...shippoRates];
         } catch (err) {
-          console.warn("[rate-engine] Failed to fetch Shippo rates:", err);
+          logger.warn("[rate-engine] Failed to fetch Shippo rates", { error: err });
         }
       }
     }

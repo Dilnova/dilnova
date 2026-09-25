@@ -205,7 +205,7 @@ export default function CatalogLayout({
                             <div>
                               <div className="flex items-center justify-between gap-1.5 mb-2">
                                 {categoryName ? (
-                                  <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest truncate">
+                                  <span className="text-[9px] font-mono text-zinc-650 dark:text-zinc-400 font-semibold uppercase tracking-widest truncate">
                                     {categoryName}
                                   </span>
                                 ) : (
@@ -248,7 +248,7 @@ export default function CatalogLayout({
                                   baseCurrency={product.currency || DEFAULT_CURRENCY}
                                 />
                               </span>
-                              <div className="flex items-center gap-1 text-[9px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5">
+                              <div className="flex items-center gap-1 text-[9px] text-zinc-650 dark:text-zinc-400 font-mono mt-0.5">
                                 <svg
                                   className="w-3 h-3 opacity-60 shrink-0"
                                   fill="none"
@@ -303,7 +303,9 @@ export default function CatalogLayout({
                               </div>
                             )}
                             <div className="text-[10px] truncate flex-1 leading-none">
-                              <span className="text-zinc-400 block mb-0.5">Sold by</span>
+                              <span className="text-zinc-650 dark:text-zinc-400 font-medium block mb-0.5">
+                                Sold by
+                              </span>
                               {vendorSlug ? (
                                 <Link
                                   href={`/vendors/${vendorSlug}`}
@@ -398,7 +400,7 @@ export default function CatalogLayout({
                           <div>
                             <div className="flex items-center justify-between gap-2 mb-1.5">
                               {categoryName && (
-                                <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest truncate">
+                                <span className="text-[9px] font-mono text-zinc-650 dark:text-zinc-400 font-semibold uppercase tracking-widest truncate">
                                   {categoryName}
                                 </span>
                               )}
@@ -422,7 +424,7 @@ export default function CatalogLayout({
                               {product.description || "No description provided."}
                             </p>
 
-                            <div className="flex items-center gap-3 text-[11px] text-zinc-400 dark:text-zinc-500 font-mono flex-wrap">
+                            <div className="flex items-center gap-3 text-[11px] text-zinc-650 dark:text-zinc-400 font-mono flex-wrap">
                               {availabilityBadge && (
                                 <StockAvailabilityBadge
                                   label={availabilityBadge.label}
@@ -504,7 +506,7 @@ export default function CatalogLayout({
                       &larr; Previous Page
                     </Link>
                   )}
-                  <span className="text-xs font-mono text-zinc-400 px-2">
+                  <span className="text-xs font-mono text-zinc-650 dark:text-zinc-300 font-semibold px-2">
                     Page {catalogQuery.page} of {totalPages}
                   </span>
                   {catalogQuery.page < totalPages && (

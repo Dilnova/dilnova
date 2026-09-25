@@ -45,10 +45,10 @@ export async function verifyPinterestAccount(accessToken: string): Promise<{
         data?.message || data?.error?.message || `Pinterest API returned status ${res.status}`;
       if (msg.includes("consumer type is not supported")) {
         msg =
-          "Pinterest App Status: Trial Access Pending. Your Pinterest App (ID: 1607805) is currently in review by Pinterest. Pinterest blocks API calls until trial access is approved (usually 24–48 hours). Once approved, Auto-Detect will work immediately. You can also manually enter your Board ID below and save.";
+          "Pinterest App Status: Trial Access Pending. Your Pinterest App is currently in review by Pinterest. Pinterest blocks API calls until trial access is approved (usually 24–48 hours). Once approved, Auto-Detect will work immediately. You can also manually enter your Board ID below and save.";
       } else if (res.status === 401 || msg.toLowerCase().includes("authentication failed")) {
         msg =
-          "Pinterest Authentication Failed (HTTP 401). In your Pinterest App (https://developers.pinterest.com/apps/1607805/), under 'Select environment', make sure you choose 'Production limited' (do NOT select 'Sandbox'), then click 'Generate token' and paste the new token.";
+          "Pinterest Authentication Failed (HTTP 401). In your Pinterest Developer App (https://developers.pinterest.com/apps/), under 'Select environment', make sure you choose 'Production limited' (do NOT select 'Sandbox'), then click 'Generate token' and paste the new token.";
       }
       return { success: false, error: msg };
     }
@@ -97,10 +97,10 @@ export async function fetchPinterestBoards(accessToken: string): Promise<{
       let msg = data?.message || data?.error?.message || `Pinterest API error (${res.status})`;
       if (msg.includes("consumer type is not supported")) {
         msg =
-          "Pinterest App Status: Trial Access Pending. Your Pinterest App (ID: 1607805) is currently in review by Pinterest. Pinterest blocks API calls until trial access is approved (usually 24–48 hours). Once approved, Auto-Detect will work immediately. You can also manually enter your Board ID below and save.";
+          "Pinterest App Status: Trial Access Pending. Your Pinterest App is currently in review by Pinterest. Pinterest blocks API calls until trial access is approved (usually 24–48 hours). Once approved, Auto-Detect will work immediately. You can also manually enter your Board ID below and save.";
       } else if (res.status === 401 || msg.toLowerCase().includes("authentication failed")) {
         msg =
-          "Pinterest Authentication Failed (HTTP 401). In your Pinterest App (https://developers.pinterest.com/apps/1607805/), under 'Select environment', make sure you choose 'Production limited' (do NOT select 'Sandbox'), then click 'Generate token' and paste the new token.";
+          "Pinterest Authentication Failed (HTTP 401). In your Pinterest Developer App (https://developers.pinterest.com/apps/), under 'Select environment', make sure you choose 'Production limited' (do NOT select 'Sandbox'), then click 'Generate token' and paste the new token.";
       }
       return { success: false, boards: [], error: msg };
     }

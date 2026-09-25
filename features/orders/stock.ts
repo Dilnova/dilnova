@@ -10,6 +10,7 @@ import {
   incrementDefaultBranchStock,
   reduceBranchAllocationsForCentralSale,
 } from "@/features/inventory/ledger";
+import { ActionError } from "@/shared/errors/action-error";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -59,7 +60,7 @@ export async function depleteOnlineOrderItemStock(
   });
 
   if (!stockResult.ok) {
-    throw new Error(stockResult.error);
+    throw new ActionError(stockResult.error);
   }
 
   await applyOnlineOrderItemStock(tx, {

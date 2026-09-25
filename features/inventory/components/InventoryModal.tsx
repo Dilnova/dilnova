@@ -2,12 +2,15 @@
 
 import { useEffect, useRef, ReactNode } from "react";
 
-interface InventoryModalProps {
+export interface InventoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
   className?: string; // For the inner container
   backdropClassName?: string;
+  ariaLabelledBy?: string;
+  ariaLabel?: string;
+  ariaDescribedBy?: string;
 }
 
 export default function InventoryModal({
@@ -16,6 +19,9 @@ export default function InventoryModal({
   children,
   className = "bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-md",
   backdropClassName = "bg-black/40 backdrop-blur-sm",
+  ariaLabelledBy,
+  ariaLabel,
+  ariaDescribedBy,
 }: InventoryModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -94,6 +100,9 @@ export default function InventoryModal({
         ref={modalRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={ariaLabelledBy}
+        aria-label={!ariaLabelledBy ? ariaLabel || "Dialog" : undefined}
+        aria-describedby={ariaDescribedBy}
         tabIndex={-1}
         className={`outline-none ${className}`}
         onClick={(e) => e.stopPropagation()}

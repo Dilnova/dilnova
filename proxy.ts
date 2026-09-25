@@ -18,6 +18,12 @@ import {
   isValidUpstashRestUrl,
   isValidUpstashRestToken,
 } from "@/shared/security/upstash-health";
+import {
+  buildCsp,
+  buildReportOnlyCsp,
+  shouldExcludeEval,
+  isStrictCspRequested,
+} from "@/shared/security/csp";
 
 const edgeLimiterCache = new Map<string, Ratelimit>();
 
@@ -82,21 +88,6 @@ async function checkEdgeRateLimit(request: NextRequest): Promise<NextResponse | 
     logger.error("Edge rate limiter error", error);
   }
 
-  return null;
-}
-
-function getSentryCspReportUri(): string | null {
-  const dsn = process.env.SENTRY_DSN;
-  if (!dsn) return null;
-  try {
-    const url = new URL(dsn);
-    const publicKey = url.username;
-    const projectId = url.pathname.replace(/^\//, "");
-    const host = url.host;
-    if (publicKey && projectId && host) {
-      return `https://${host}/api/${projectId}/security/?sentry_key=${publicKey}`;
-    }
-  } catch {}
   return null;
 }
 
@@ -170,34 +161,26 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   }
 
   // Define CSP first to attach to both request and response
-  const clerkDomains = [
-    "https://img.clerk.com",
-    "https://*.clerk.com",
-    "https://*.clerk.accounts.dev",
-    "https://clerk.dilstar.pp.ua",
-    "https://clerk.dilnova.pp.ua",
-  ];
-  const clerkDomainsStr = clerkDomains.join(" ");
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  let supabaseHostCsp = "";
-  if (supabaseUrl) {
-    try {
-      supabaseHostCsp = ` https://${new URL(supabaseUrl).hostname}`;
-    } catch {}
-  }
-
   const isProd = process.env.NODE_ENV === "production";
-  const isVercelProdOrPreview =
-    process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview";
-  const excludeEval = isProd || isVercelProdOrPreview;
-  const sentryCspUrl = getSentryCspReportUri();
+  const isStrictCsp = isStrictCspRequested();
+  const excludeEval = shouldExcludeEval({ isProd, isStrict: isStrictCsp });
 
-  const reportingDirectives = sentryCspUrl ? ` report-uri ${sentryCspUrl};` : "";
-
-  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:${excludeEval ? "" : " 'unsafe-eval'"}; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.googleusercontent.com https://avatars.githubusercontent.com https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com https://*.ingest.de.sentry.io https://*.sentry.io; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:;${reportingDirectives}${isProd ? " upgrade-insecure-requests;" : ""}`;
+  const cspHeader = buildCsp({
+    nonce,
+    isProd,
+    excludeEval,
+  });
 
   requestHeaders.set("Content-Security-Policy", cspHeader);
+
+  // In non-production environments when unsafe-eval is enabled, attach a Report-Only header
+  // enforcing the exact production policy (excluding unsafe-eval). This immediately surfaces
+  // CSP violations in the browser console and logs them to /api/csp-report without breaking dev tools.
+  let reportOnlyCsp: string | null = null;
+  if (!excludeEval) {
+    reportOnlyCsp = buildReportOnlyCsp({ nonce });
+    requestHeaders.set("Content-Security-Policy-Report-Only", reportOnlyCsp);
+  }
 
   const response = rewrittenUrl
     ? NextResponse.rewrite(rewrittenUrl, {
@@ -214,6 +197,9 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   response.headers.set("x-request-id", requestId);
   response.headers.set("x-country", country);
   response.headers.set("Content-Security-Policy", cspHeader);
+  if (reportOnlyCsp) {
+    response.headers.set("Content-Security-Policy-Report-Only", reportOnlyCsp);
+  }
   return response;
 });
 

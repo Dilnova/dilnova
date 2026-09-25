@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, or } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
 import { logger } from "@/shared/logging/logger";
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { Redis } from "@upstash/redis";
 import { logAuditAction } from "@/shared/audit/logger";
 import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
+import { hashPii } from "@/shared/security/encryption";
 import { z } from "zod/v3";
 
 export const maxDuration = 300;
@@ -96,19 +97,26 @@ async function handler(req: NextRequest) {
     let paymentSlipUrls: string[] = [];
 
     await db.transaction(async (tx) => {
-      const orders = await tx
-        .select()
-        .from(schema.simulatedOrders)
-        .where(eq(schema.simulatedOrders.customerUserId, targetUserId));
+      const emailHash = email ? hashPii(email) : null;
+      const orderWhere = emailHash
+        ? or(
+            eq(schema.simulatedOrders.customerUserId, targetUserId),
+            eq(schema.simulatedOrders.customerEmailHash, emailHash),
+          )
+        : eq(schema.simulatedOrders.customerUserId, targetUserId);
+
+      const orders = await tx.select().from(schema.simulatedOrders).where(orderWhere);
       ordersAnonymized = orders.length;
       paymentSlipUrls = orders.map((o) => o.paymentSlipUrl).filter(Boolean) as string[];
 
       if (orders.length > 0) {
+        const orderIds = orders.map((o) => o.id);
         await tx
           .update(schema.simulatedOrders)
           .set({
             customerName: "GDPR REDACTED",
             customerEmail: "redacted@example.com",
+            customerEmailHash: null,
             customerUserId: null,
             shippingAddress: "REDACTED",
             shippingAddressLine2: "REDACTED",
@@ -121,15 +129,23 @@ async function handler(req: NextRequest) {
             paymentSlipUrl: null,
             updatedAt: new Date(),
           })
-          .where(eq(schema.simulatedOrders.customerUserId, targetUserId));
+          .where(inArray(schema.simulatedOrders.id, orderIds));
       }
 
       if (email) {
         const allSubmissions = await tx
-          .select({ id: schema.contactSubmissions.id, email: schema.contactSubmissions.email })
+          .select({
+            id: schema.contactSubmissions.id,
+            email: schema.contactSubmissions.email,
+            emailHash: schema.contactSubmissions.emailHash,
+          })
           .from(schema.contactSubmissions);
         const toDeleteIds = allSubmissions
-          .filter((sub) => sub.email && sub.email.trim().toLowerCase() === email)
+          .filter(
+            (sub) =>
+              (sub.email && sub.email.trim().toLowerCase() === email) ||
+              (emailHash && sub.emailHash === emailHash),
+          )
           .map((sub) => sub.id);
 
         if (toDeleteIds.length > 0) {

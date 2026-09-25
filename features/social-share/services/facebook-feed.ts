@@ -245,8 +245,8 @@ export async function fetchFacebookManagedPages({
       }
     } catch {}
 
-    // 4. Try known / hinted Page IDs (e.g. 1366821166509556 or pageIdHint)
-    const knownPageIds = [pageIdHint, "1366821166509556"].filter(Boolean) as string[];
+    // 4. Try hinted Page IDs from vendor settings
+    const knownPageIds = [pageIdHint].filter(Boolean) as string[];
     for (const pid of knownPageIds) {
       const cleanPid = pid.trim().replace(/[^0-9]/g, "");
       if (cleanPid && !pagesMap.has(cleanPid)) {

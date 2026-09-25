@@ -6,6 +6,7 @@ import { updateMemberRoleSchema } from "@/features/admin/schema";
 import { logAuditAction } from "@/shared/audit/logger";
 import { runWithCorrelationId } from "@/shared/security/async-context";
 import { rateLimit } from "@/shared/security/rate-limit";
+import { ActionError } from "@/shared/errors/action-error";
 
 /**
  * Updates a member's role inside the active Clerk organization.
@@ -22,14 +23,14 @@ export async function updateOrganizationMemberRole(
     // ── Schema Validation ──
     const parsed = updateMemberRoleSchema.safeParse({ organizationId, userId, newRole });
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const { orgId, orgRole, userId: callerId } = await auth();
 
     // Protect the action: caller must be an admin of this active organization
     if (orgId !== parsed.data.organizationId || orgRole !== "org:admin") {
-      throw new Error(
+      throw new ActionError(
         "Not authorized: Only administrators of this organization can change member roles.",
       );
     }
@@ -47,7 +48,9 @@ export async function updateOrganizationMemberRole(
       );
 
       if (targetIsAdmin && adminCount <= 1) {
-        throw new Error("Cannot demote the last organization admin. Promote another member first.");
+        throw new ActionError(
+          "Cannot demote the last organization admin. Promote another member first.",
+        );
       }
     }
 

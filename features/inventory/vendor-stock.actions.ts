@@ -17,6 +17,7 @@ import { logAuditAction } from "@/shared/audit/logger";
 import { runWithCorrelationId } from "@/shared/security/async-context";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { verifyVendorAccess } from "@/features/inventory/vendor-data";
+import { ActionError } from "@/shared/errors/action-error";
 
 export async function vendorAdjustInventoryAction(data: {
   inventoryId: string;
@@ -31,7 +32,7 @@ export async function vendorAdjustInventoryAction(data: {
 
     const parsed = adjustInventorySchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
 
     const newQuantity = await db.transaction(async (tx) => {
@@ -50,14 +51,14 @@ export async function vendorAdjustInventoryAction(data: {
         .limit(1);
 
       if (!inv) {
-        throw new Error("Inventory record not found or access denied.");
+        throw new ActionError("Inventory record not found or access denied.");
       }
 
       const previousQuantity = inv.quantity;
       const nextQuantity = previousQuantity + parsed.data.quantityChange;
 
       if (nextQuantity < 0) {
-        throw new Error(`Cannot reduce stock below 0. Current: ${previousQuantity}`);
+        throw new ActionError(`Cannot reduce stock below 0. Current: ${previousQuantity}`);
       }
 
       if (premiumStatus.multiBranchActive) {
@@ -89,7 +90,7 @@ export async function vendorAdjustInventoryAction(data: {
           totalBranchAllocated,
         );
         if (!branchCheck.ok) {
-          throw new Error(branchCheck.error);
+          throw new ActionError(branchCheck.error);
         }
       }
 
@@ -138,11 +139,11 @@ export async function vendorInitInventoryAction(data: {
 
     const parsed = initInventorySchema.safeParse(data);
     if (!parsed.success) {
-      throw new Error(parsed.error.issues[0]?.message || "Invalid input.");
+      throw new ActionError(parsed.error.issues[0]?.message || "Invalid input.");
     }
     const validData = parsed.data;
 
-    if (!validData.productId) throw new Error("Product ID is required.");
+    if (!validData.productId) throw new ActionError("Product ID is required.");
 
     // Verify product belongs to this vendor org
     const [prod] = await db
@@ -152,7 +153,7 @@ export async function vendorInitInventoryAction(data: {
       .limit(1);
 
     if (!prod) {
-      throw new Error("Product not found or access denied.");
+      throw new ActionError("Product not found or access denied.");
     }
 
     if (validData.supplierId) {
@@ -165,7 +166,7 @@ export async function vendorInitInventoryAction(data: {
         .limit(1);
 
       if (!supplier) {
-        throw new Error("Supplier not found or access denied.");
+        throw new ActionError("Supplier not found or access denied.");
       }
     }
 
@@ -177,7 +178,7 @@ export async function vendorInitInventoryAction(data: {
       .limit(1);
 
     if (existing.length > 0) {
-      throw new Error("Inventory record already exists.");
+      throw new ActionError("Inventory record already exists.");
     }
 
     const quantity = validData.quantity ?? 0;
@@ -185,7 +186,7 @@ export async function vendorInitInventoryAction(data: {
       validData.stockAvailability || "in_stock",
     );
     if (!availability) {
-      throw new Error("Invalid stock availability status.");
+      throw new ActionError("Invalid stock availability status.");
     }
 
     const [inv] = await db

@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/shared/db/client";
 import { shipments, simulatedOrders } from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
+import { getCachedIsSuperAdmin } from "@/shared/auth/clerk-cache";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { logger } from "@/shared/logging/logger";
 
 function escapeHtml(str: string): string {
   return str
@@ -13,46 +17,71 @@ function escapeHtml(str: string): string {
 }
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const trackingNumberRaw = searchParams.get("tracking");
+  try {
+    await rateLimit(30, 60 * 1000);
 
-  if (!trackingNumberRaw || !/^[a-zA-Z0-9_\-\.]{3,64}$/.test(trackingNumberRaw)) {
-    return NextResponse.json({ error: "Invalid or missing tracking number" }, { status: 400 });
-  }
+    const { userId, orgId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const trackingNumber = trackingNumberRaw;
+    const { searchParams } = new URL(req.url);
+    const trackingNumberRaw = searchParams.get("tracking");
 
-  // Fetch shipment and order details
-  const [shipment] = await db
-    .select()
-    .from(shipments)
-    .where(eq(shipments.trackingNumber, trackingNumber))
-    .limit(1);
+    if (!trackingNumberRaw || !/^[a-zA-Z0-9_\-\.]{3,64}$/.test(trackingNumberRaw)) {
+      return NextResponse.json({ error: "Invalid or missing tracking number" }, { status: 400 });
+    }
 
-  const order = shipment
-    ? (
-        await db
-          .select()
-          .from(simulatedOrders)
-          .where(eq(simulatedOrders.id, shipment.orderId))
-          .limit(1)
-      )[0]
-    : null;
+    const trackingNumber = trackingNumberRaw;
 
-  const recipientName = escapeHtml(order?.customerName ?? "Customer");
-  const recipientStreet = escapeHtml(order?.shippingAddress ?? "Delivery Address");
-  const recipientCity = escapeHtml(order?.shippingCity ?? "Colombo");
-  const recipientCountry = escapeHtml(order?.shippingCountry ?? "LK");
-  const carrierName = escapeHtml(shipment?.carrierName ?? "Dilnova Express");
-  const zone = escapeHtml(shipment?.shippingZone ?? "DOMESTIC");
-  const weightKg = escapeHtml(
-    shipment?.weightGrams ? (shipment.weightGrams / 1000).toFixed(2) : "0.50",
-  );
-  const safeTracking = escapeHtml(trackingNumber);
-  const jsonTracking = JSON.stringify(trackingNumber);
+    // Fetch shipment and order details
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.trackingNumber, trackingNumber))
+      .limit(1);
 
-  // Return thermal 4x6 printable HTML label format with auto-print
-  const htmlContent = `<!DOCTYPE html>
+    if (!shipment) {
+      return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
+    }
+
+    const [order] = await db
+      .select()
+      .from(simulatedOrders)
+      .where(eq(simulatedOrders.id, shipment.orderId))
+      .limit(1);
+
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // Verify authorization: caller must be an authorized vendor member of the shipping org,
+    // the customer who owns the order, or a platform superadmin.
+    const isVendor = Boolean(orgId && shipment.vendorOrgId === orgId);
+    const isCustomer = Boolean(order.customerUserId && order.customerUserId === userId);
+    const isSuperAdmin = await getCachedIsSuperAdmin(userId);
+
+    if (!isVendor && !isCustomer && !isSuperAdmin) {
+      return NextResponse.json(
+        { error: "Forbidden: You do not have permission to access this shipment label" },
+        { status: 403 },
+      );
+    }
+
+    const recipientName = escapeHtml(order?.customerName ?? "Customer");
+    const recipientStreet = escapeHtml(order?.shippingAddress ?? "Delivery Address");
+    const recipientCity = escapeHtml(order?.shippingCity ?? "Colombo");
+    const recipientCountry = escapeHtml(order?.shippingCountry ?? "LK");
+    const carrierName = escapeHtml(shipment?.carrierName ?? "Dilnova Express");
+    const zone = escapeHtml(shipment?.shippingZone ?? "DOMESTIC");
+    const weightKg = escapeHtml(
+      shipment?.weightGrams ? (shipment.weightGrams / 1000).toFixed(2) : "0.50",
+    );
+    const safeTracking = escapeHtml(trackingNumber);
+    const jsonTracking = JSON.stringify(trackingNumber);
+
+    // Return thermal 4x6 printable HTML label format with auto-print
+    const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -150,9 +179,13 @@ export async function GET(req: Request) {
 </body>
 </html>`;
 
-  return new Response(htmlContent, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-    },
-  });
+    return new Response(htmlContent, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+      },
+    });
+  } catch (error: unknown) {
+    logger.error("[GET /api/shipping/label-pdf] Error", error);
+    return NextResponse.json({ error: "Failed to generate label" }, { status: 500 });
+  }
 }

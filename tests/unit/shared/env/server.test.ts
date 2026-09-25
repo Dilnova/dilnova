@@ -64,6 +64,7 @@ describe("validateServerEnv", () => {
       TURNSTILE_SECRET_KEY: "secret",
       SENTRY_DSN: "https://public@sentry.example.com/1",
       QSTASH_TOKEN: "token",
+      CRON_SECRET: "secret",
     };
 
     // Valid cases
@@ -119,6 +120,7 @@ describe("validateServerEnv", () => {
       TURNSTILE_SECRET_KEY: "secret",
       SENTRY_DSN: "https://public@sentry.example.com/1",
       QSTASH_TOKEN: "token",
+      CRON_SECRET: "secret",
     };
 
     // Valid cases
@@ -153,5 +155,48 @@ describe("validateServerEnv", () => {
     parseInvalid("-0.1");
     parseInvalid("1.1");
     parseInvalid("abc");
+  });
+
+  it("requires CRON_SECRET to be non-empty", async () => {
+    const { productionServerEnvSchema } = await import("@/shared/env/server");
+
+    const baseEnv = {
+      DATABASE_URL: "postgres://...",
+      PII_ENCRYPTION_KEY: "key",
+      CLERK_SECRET_KEY: "key",
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "key",
+      NEXT_PUBLIC_APP_URL: "https://example.com",
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "cloud",
+      CLOUDINARY_API_KEY: "key",
+      CLOUDINARY_API_SECRET: "secret",
+      NEXT_PUBLIC_SUPABASE_URL: "https://supabase.com",
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "key",
+      SUPABASE_SERVICE_ROLE_KEY: "key",
+      UPSTASH_REDIS_REST_URL: "https://upstash.com",
+      UPSTASH_REDIS_REST_TOKEN: "token",
+      HEALTH_CHECK_SECRET: "secret",
+      SMTP_USER: "user",
+      SMTP_PASSWORD: "password",
+      EMAIL_FROM_ADDRESS: "sender@example.com",
+      EMAIL_FROM_NAME: "sender",
+      SUPERADMIN_USER_IDS: "123",
+      CLERK_WEBHOOK_SECRET: "secret",
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "sitekey",
+      TURNSTILE_SECRET_KEY: "secret",
+      SENTRY_DSN: "https://public@sentry.example.com/1",
+      QSTASH_TOKEN: "token",
+    };
+
+    const missingRes = productionServerEnvSchema.safeParse(baseEnv);
+    expect(missingRes.success).toBe(false);
+
+    const emptyRes = productionServerEnvSchema.safeParse({ ...baseEnv, CRON_SECRET: "   " });
+    expect(emptyRes.success).toBe(false);
+
+    const validRes = productionServerEnvSchema.safeParse({
+      ...baseEnv,
+      CRON_SECRET: "valid_secret",
+    });
+    expect(validRes.success).toBe(true);
   });
 });

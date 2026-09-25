@@ -3,7 +3,19 @@ import { uuidField } from "@/shared/validation/primitives";
 
 export const updateSystemSettingSchema = z.object({
   key: z.string().min(1, "Setting key cannot be empty.").max(100).trim(),
-  value: z.string().max(1000, "Setting value is too long.").trim(),
+  value: z.string().max(2000, "Setting value is too long.").trim(),
+});
+
+export const updateSystemSettingsBatchSchema = z.object({
+  settings: z
+    .array(
+      z.object({
+        key: z.string().min(1, "Setting key cannot be empty.").max(100).trim(),
+        value: z.string().max(2000, "Setting value is too long.").trim(),
+      }),
+    )
+    .min(1, "At least one setting is required.")
+    .max(50, "Cannot update more than 50 settings at once."),
 });
 
 const checkoutOptionDefinitionSchema = z
@@ -79,7 +91,16 @@ export const updatePricingPlanSchema = z.object({
   updates: createPricingPlanSchema.partial(),
 });
 
+export const checkFeedHealthSchema = z.object({
+  scope: z.enum(["dilstar", "all"]),
+});
+
+export const verifyHeadMetadataSchema = z.object({}).optional();
+
 export type UpdateSystemSettingInput = z.infer<typeof updateSystemSettingSchema>;
+export type UpdateSystemSettingsBatchInput = z.infer<typeof updateSystemSettingsBatchSchema>;
 export type UpdateCheckoutOptionsCatalogInput = z.infer<typeof updateCheckoutOptionsCatalogSchema>;
 export type CreatePricingPlanInput = z.infer<typeof createPricingPlanSchema>;
 export type UpdatePricingPlanInput = z.infer<typeof updatePricingPlanSchema>;
+export type CheckFeedHealthInput = z.infer<typeof checkFeedHealthSchema>;
+export type VerifyHeadMetadataInput = z.infer<typeof verifyHeadMetadataSchema>;

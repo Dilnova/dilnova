@@ -41,6 +41,7 @@ const webServerEnv: Record<string, string> = {
   SENTRY_DSN: process.env.SENTRY_DSN ?? "https://public@sentry.example.com/1",
   NEXT_PUBLIC_SENTRY_DSN:
     process.env.NEXT_PUBLIC_SENTRY_DSN ?? "https://public@sentry.example.com/1",
+  CRON_SECRET: process.env.CRON_SECRET ?? "placeholder_cron_secret",
 };
 
 export default defineConfig({

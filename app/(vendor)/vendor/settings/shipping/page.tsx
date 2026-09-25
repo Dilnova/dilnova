@@ -172,10 +172,14 @@ export default function VendorShippingSettingsPage() {
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">{meta?.desc}</p>
                   </div>
                   <div>
-                    <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase block mb-1">
+                    <label
+                      htmlFor={`shipping-${rule.zone}-base`}
+                      className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 uppercase block mb-1"
+                    >
                       Base Rate (LKR)
                     </label>
                     <input
+                      id={`shipping-${rule.zone}-base`}
                       type="number"
                       value={rule.baseAmountCents / 100}
                       onChange={(e) =>
@@ -189,10 +193,14 @@ export default function VendorShippingSettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase block mb-1">
+                    <label
+                      htmlFor={`shipping-${rule.zone}-perkg`}
+                      className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 uppercase block mb-1"
+                    >
                       Extra per KG (LKR)
                     </label>
                     <input
+                      id={`shipping-${rule.zone}-perkg`}
                       type="number"
                       value={rule.perKgCents / 100}
                       onChange={(e) =>
@@ -206,10 +214,14 @@ export default function VendorShippingSettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase block mb-1">
+                    <label
+                      htmlFor={`shipping-${rule.zone}-days`}
+                      className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 uppercase block mb-1"
+                    >
                       Est. Days
                     </label>
                     <input
+                      id={`shipping-${rule.zone}-days`}
                       type="number"
                       value={rule.estimatedDays}
                       onChange={(e) =>
@@ -254,10 +266,14 @@ export default function VendorShippingSettingsPage() {
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">{meta?.desc}</p>
                   </div>
                   <div>
-                    <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase block mb-1">
+                    <label
+                      htmlFor={`shipping-${rule.zone}-base`}
+                      className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 uppercase block mb-1"
+                    >
                       Base Rate (LKR)
                     </label>
                     <input
+                      id={`shipping-${rule.zone}-base`}
                       type="number"
                       value={rule.baseAmountCents / 100}
                       onChange={(e) =>
@@ -271,10 +287,14 @@ export default function VendorShippingSettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase block mb-1">
+                    <label
+                      htmlFor={`shipping-${rule.zone}-perkg`}
+                      className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 uppercase block mb-1"
+                    >
                       Extra per KG (LKR)
                     </label>
                     <input
+                      id={`shipping-${rule.zone}-perkg`}
                       type="number"
                       value={rule.perKgCents / 100}
                       onChange={(e) =>
@@ -288,10 +308,14 @@ export default function VendorShippingSettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase block mb-1">
+                    <label
+                      htmlFor={`shipping-${rule.zone}-days`}
+                      className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 uppercase block mb-1"
+                    >
                       Est. Days
                     </label>
                     <input
+                      id={`shipping-${rule.zone}-days`}
                       type="number"
                       value={rule.estimatedDays}
                       onChange={(e) =>

@@ -1,7 +1,7 @@
 import {
   createCloudinaryUploadSignatureAction,
   type CloudinaryUploadKind,
-} from "@/features/media/cloudinary.actions";
+} from "./cloudinary.actions";
 import * as Sentry from "@sentry/nextjs";
 
 interface UploadProgressEvent {

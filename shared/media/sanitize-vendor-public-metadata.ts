@@ -1,4 +1,23 @@
-import { stripBankFieldsFromPublic } from "@/features/billing/bank-transfer-metadata";
+/** Clerk metadata keys for bank transfer details (stored in privateMetadata only). */
+export const BANK_METADATA_KEYS = [
+  "bankName",
+  "bankAccountName",
+  "bankAccountNumber",
+  "bankBranchCode",
+  "bankTransferInstructions",
+] as const;
+
+export type BankMetadataKey = (typeof BANK_METADATA_KEYS)[number];
+
+export function stripBankFieldsFromPublic(
+  metadata: Record<string, unknown>,
+): Record<string, unknown> {
+  const next = { ...metadata };
+  for (const key of BANK_METADATA_KEYS) {
+    delete next[key];
+  }
+  return next;
+}
 
 const STOREFRONT_PUBLIC_KEYS = [
   "description",

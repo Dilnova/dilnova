@@ -36,11 +36,12 @@ const client =
     connection: {
       statement_timeout: 10000, // 10 seconds timeout for hanging queries
     },
-    // Force SSL in production to prevent abrupt "Connection closed" drops, except for local CI
+    // Force SSL for non-local connections regardless of NODE_ENV to prevent
+    // cleartext credentials/data transmission and abrupt connection drops.
     ssl:
-      process.env.NODE_ENV === "production" &&
       !connectionString.includes("127.0.0.1") &&
-      !connectionString.includes("localhost")
+      !connectionString.includes("localhost") &&
+      process.env.DATABASE_SSL !== "false"
         ? "require"
         : false,
   });
@@ -82,7 +83,15 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
           const finish = (error?: unknown) => {
             const duration = performance.now() - start;
             if (duration > 500) {
-              logger.warn(`[Slow Query ${duration.toFixed(2)}ms]`, { query, params });
+              const paramCount = Array.isArray(params)
+                ? params.length
+                : params !== undefined && params !== null
+                  ? 1
+                  : 0;
+              logger.warn(`[Slow Query ${duration.toFixed(2)}ms]`, {
+                query,
+                paramCount,
+              });
               if (span) {
                 span.setAttribute("slow", true);
               }
