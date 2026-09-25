@@ -76,12 +76,15 @@ export default function SupportHubClient({ systemName, children }: SupportHubCli
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search topics, questions, order tracking, payouts, billing..."
+              aria-label="Search support topics, questions, and guides"
               className="w-full h-14 pl-12 pr-10 text-sm md:text-base rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 transition-all duration-200"
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs font-semibold p-1"
+                aria-label="Clear search input"
+                className="absolute right-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-xs font-semibold p-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded"
               >
                 Clear
               </button>
@@ -93,6 +96,7 @@ export default function SupportHubClient({ systemName, children }: SupportHubCli
         <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
           <span className="text-zinc-400 dark:text-zinc-500">Popular:</span>
           <button
+            type="button"
             onClick={() => {
               setSearchQuery("track");
               setSelectedCategory("orders");
@@ -102,6 +106,7 @@ export default function SupportHubClient({ systemName, children }: SupportHubCli
             Track Shipment
           </button>
           <button
+            type="button"
             onClick={() => {
               setSearchQuery("refund");
               setSelectedCategory("billing");
@@ -111,6 +116,7 @@ export default function SupportHubClient({ systemName, children }: SupportHubCli
             Refund Policy
           </button>
           <button
+            type="button"
             onClick={() => {
               setSearchQuery("register");
               setSelectedCategory("vendor");
@@ -120,6 +126,7 @@ export default function SupportHubClient({ systemName, children }: SupportHubCli
             Vendor Onboarding
           </button>
           <button
+            type="button"
             onClick={scrollToTicketForm}
             className="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 font-semibold hover:bg-indigo-100 transition-colors"
           >
@@ -136,6 +143,7 @@ export default function SupportHubClient({ systemName, children }: SupportHubCli
           </h2>
           {selectedCategory && (
             <button
+              type="button"
               onClick={() => setSelectedCategory(null)}
               className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
             >
@@ -168,8 +176,10 @@ export default function SupportHubClient({ systemName, children }: SupportHubCli
               <span className="px-3 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-semibold flex items-center gap-1.5">
                 Category: {selectedCategory}
                 <button
+                  type="button"
                   onClick={() => setSelectedCategory(null)}
-                  className="hover:text-indigo-900 dark:hover:text-white"
+                  aria-label="Clear selected category filter"
+                  className="hover:text-indigo-900 dark:hover:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 rounded"
                 >
                   ✕
                 </button>
@@ -179,8 +189,10 @@ export default function SupportHubClient({ systemName, children }: SupportHubCli
               <span className="px-3 py-1 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-semibold flex items-center gap-1.5">
                 Filter: &quot;{searchQuery}&quot;
                 <button
+                  type="button"
                   onClick={() => setSearchQuery("")}
-                  className="hover:text-purple-900 dark:hover:text-white"
+                  aria-label="Clear search filter"
+                  className="hover:text-purple-900 dark:hover:text-white focus:outline-none focus:ring-1 focus:ring-purple-500 rounded"
                 >
                   ✕
                 </button>

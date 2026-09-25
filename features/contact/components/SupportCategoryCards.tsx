@@ -56,8 +56,10 @@ export default function SupportCategoryCards({
 
         return (
           <button
+            type="button"
             key={cat.id}
             onClick={() => onSelectCategory(isSelected ? null : cat.id)}
+            aria-pressed={isSelected}
             className={`text-left p-6 rounded-2xl border transition-all duration-200 group relative overflow-hidden flex flex-col justify-between ${
               isSelected
                 ? "bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-500 dark:border-indigo-400 ring-2 ring-indigo-500/20 shadow-md"

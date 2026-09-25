@@ -207,4 +207,84 @@ describe("Form Inputs Accessibility & Label Associations (§6 A11y)", () => {
       );
     });
   });
+
+  describe("CategorySelector and FAQ Accordion Accessibility (§6 A11y Finding #8)", () => {
+    it("ensures CategorySelector trigger and clear buttons are semantic and accessible", () => {
+      const filePath = path.join(rootDir, "shared/ui/CategorySelector.tsx");
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      expect(content).toContain('type="button"');
+      expect(content).toContain('aria-haspopup="listbox"');
+      expect(content).toContain("aria-expanded={isOpen}");
+      expect(content).toContain('aria-controls="category-selector-listbox"');
+      expect(content).toContain('aria-label="Clear selected category"');
+      expect(content).toContain('role="listbox"');
+      expect(content).toContain('aria-label="Category options"');
+      expect(content).toContain('role="option"');
+      expect(content).toContain("aria-selected={isSelected}");
+      expect(content).not.toContain(
+        '<span\n              onClick={(e) => {\n                e.stopPropagation();\n                handleSelect("");\n              }}',
+      );
+    });
+
+    it("ensures CategorySelector implements keyboard arrow navigation and Escape handler", () => {
+      const filePath = path.join(rootDir, "shared/ui/CategorySelector.tsx");
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      expect(content).toContain('case "ArrowDown":');
+      expect(content).toContain('case "ArrowUp":');
+      expect(content).toContain('case "Home":');
+      expect(content).toContain('case "End":');
+      expect(content).toContain('case "Escape":');
+      expect(content).toContain('case "Enter":');
+      expect(content).toContain("triggerButtonRef.current?.focus()");
+    });
+
+    it("ensures ProductBasicDetailsForm associates label with CategorySelector via htmlFor and id", () => {
+      const filePath = path.join(
+        rootDir,
+        "features/catalog/components/add-product/ProductBasicDetailsForm.tsx",
+      );
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      expect(content).toContain('htmlFor="product-category-selector"');
+      expect(content).toContain('id="product-category-selector"');
+    });
+
+    it("ensures SupportFAQAccordion implements the WAI-ARIA accordion pattern with headings and regions", () => {
+      const filePath = path.join(rootDir, "features/contact/components/SupportFAQAccordion.tsx");
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      expect(content).toContain('<h3 className="text-base font-semibold m-0">');
+      expect(content).toContain("id={`faq-btn-${faq.id}`}");
+      expect(content).toContain("aria-expanded={isOpen}");
+      expect(content).toContain("aria-controls={`faq-panel-${faq.id}`}");
+      expect(content).toContain("id={`faq-panel-${faq.id}`}");
+      expect(content).toContain('role="region"');
+      expect(content).toContain("aria-labelledby={`faq-btn-${faq.id}`}");
+      expect(content).toContain("handleAccordionKeyDown");
+      expect(content).toContain('e.key === "ArrowDown"');
+      expect(content).toContain('e.key === "ArrowUp"');
+      expect(content).toContain('e.key === "Home"');
+      expect(content).toContain('e.key === "End"');
+    });
+
+    it("ensures SupportHubClient search and filter dismiss buttons have accessible labels", () => {
+      const filePath = path.join(rootDir, "app/support/SupportHubClient.tsx");
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      expect(content).toContain('aria-label="Search support topics, questions, and guides"');
+      expect(content).toContain('aria-label="Clear search input"');
+      expect(content).toContain('aria-label="Clear selected category filter"');
+      expect(content).toContain('aria-label="Clear search filter"');
+    });
+
+    it("ensures SupportCategoryCards buttons have type=button and aria-pressed attributes", () => {
+      const filePath = path.join(rootDir, "features/contact/components/SupportCategoryCards.tsx");
+      const content = fs.readFileSync(filePath, "utf-8");
+
+      expect(content).toContain('type="button"');
+      expect(content).toContain("aria-pressed={isSelected}");
+    });
+  });
 });
