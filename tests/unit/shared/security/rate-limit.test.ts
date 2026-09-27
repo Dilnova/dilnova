@@ -124,17 +124,17 @@ describe("rateLimit Utility", () => {
     expect(mockLimit).toHaveBeenCalledTimes(3); // Attempted Upstash 3 times, then fell back to local
   });
 
-  it("should bypass requests (fail-open) in production when Upstash is not configured", async () => {
+  it("should throw (fail-closed) in production by default when Upstash is not configured", async () => {
     process.env.NODE_ENV = "production";
 
     vi.mocked(headers).mockResolvedValue({
       get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.7" : null),
     } as unknown as Headers);
 
-    await expect(rateLimit(5, 5000)).resolves.not.toThrow();
+    await expect(rateLimit(5, 5000)).rejects.toThrow("Rate limiting is temporarily unavailable");
   });
 
-  it("should bypass requests (fail-open) in production when Upstash query throws", async () => {
+  it("should throw (fail-closed) in production by default when Upstash query throws", async () => {
     process.env.NODE_ENV = "production";
     process.env.UPSTASH_REDIS_REST_URL = "https://mock.upstash.io";
     process.env.UPSTASH_REDIS_REST_TOKEN = "mock-token";
@@ -144,10 +144,10 @@ describe("rateLimit Utility", () => {
       get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.8" : null),
     } as unknown as Headers);
 
-    await expect(rateLimit(5, 5000)).resolves.not.toThrow();
+    await expect(rateLimit(5, 5000)).rejects.toThrow("Rate limiting is temporarily unavailable");
   });
 
-  it("should throw (fail-closed) in production when failClosed option is true and Upstash is not configured", async () => {
+  it("should throw (fail-closed) in production when failClosed option is explicitly true and Upstash is not configured", async () => {
     process.env.NODE_ENV = "production";
 
     vi.mocked(headers).mockResolvedValue({
@@ -159,7 +159,7 @@ describe("rateLimit Utility", () => {
     );
   });
 
-  it("should throw (fail-closed) in production when failClosed option is true and Upstash query throws", async () => {
+  it("should throw (fail-closed) in production when failClosed option is explicitly true and Upstash query throws", async () => {
     process.env.NODE_ENV = "production";
     process.env.UPSTASH_REDIS_REST_URL = "https://mock.upstash.io";
     process.env.UPSTASH_REDIS_REST_TOKEN = "mock-token";
@@ -172,5 +172,28 @@ describe("rateLimit Utility", () => {
     await expect(rateLimit(5, 5000, undefined, { failClosed: true })).rejects.toThrow(
       "Rate limiting is temporarily unavailable",
     );
+  });
+
+  it("should bypass requests (fail-open) in production when failClosed option is explicitly false and Upstash is not configured", async () => {
+    process.env.NODE_ENV = "production";
+
+    vi.mocked(headers).mockResolvedValue({
+      get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.11" : null),
+    } as unknown as Headers);
+
+    await expect(rateLimit(5, 5000, undefined, { failClosed: false })).resolves.not.toThrow();
+  });
+
+  it("should bypass requests (fail-open) in production when failClosed option is explicitly false and Upstash query throws", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.UPSTASH_REDIS_REST_URL = "https://mock.upstash.io";
+    process.env.UPSTASH_REDIS_REST_TOKEN = "mock-token";
+    mockLimit.mockRejectedValue(new Error("Connection timed out"));
+
+    vi.mocked(headers).mockResolvedValue({
+      get: (name: string) => (name === "x-forwarded-for" ? "192.168.1.12" : null),
+    } as unknown as Headers);
+
+    await expect(rateLimit(5, 5000, undefined, { failClosed: false })).resolves.not.toThrow();
   });
 });
