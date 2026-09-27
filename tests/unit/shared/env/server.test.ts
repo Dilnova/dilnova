@@ -64,6 +64,8 @@ describe("validateServerEnv", () => {
       TURNSTILE_SECRET_KEY: "secret",
       SENTRY_DSN: "https://public@sentry.example.com/1",
       QSTASH_TOKEN: "token",
+      QSTASH_CURRENT_SIGNING_KEY: "sig_current_key",
+      QSTASH_NEXT_SIGNING_KEY: "sig_next_key",
       CRON_SECRET: "secret",
     };
 
@@ -120,6 +122,8 @@ describe("validateServerEnv", () => {
       TURNSTILE_SECRET_KEY: "secret",
       SENTRY_DSN: "https://public@sentry.example.com/1",
       QSTASH_TOKEN: "token",
+      QSTASH_CURRENT_SIGNING_KEY: "sig_current_key",
+      QSTASH_NEXT_SIGNING_KEY: "sig_next_key",
       CRON_SECRET: "secret",
     };
 
@@ -185,6 +189,8 @@ describe("validateServerEnv", () => {
       TURNSTILE_SECRET_KEY: "secret",
       SENTRY_DSN: "https://public@sentry.example.com/1",
       QSTASH_TOKEN: "token",
+      QSTASH_CURRENT_SIGNING_KEY: "sig_current_key",
+      QSTASH_NEXT_SIGNING_KEY: "sig_next_key",
     };
 
     const missingRes = productionServerEnvSchema.safeParse(baseEnv);
@@ -198,5 +204,65 @@ describe("validateServerEnv", () => {
       CRON_SECRET: "valid_secret",
     });
     expect(validRes.success).toBe(true);
+  });
+
+  it("requires QSTASH_CURRENT_SIGNING_KEY and QSTASH_NEXT_SIGNING_KEY in production", async () => {
+    const { productionServerEnvSchema } = await import("@/shared/env/server");
+
+    const baseEnv = {
+      DATABASE_URL: "postgres://...",
+      PII_ENCRYPTION_KEY: "key",
+      CLERK_SECRET_KEY: "key",
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "key",
+      NEXT_PUBLIC_APP_URL: "https://example.com",
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "cloud",
+      CLOUDINARY_API_KEY: "key",
+      CLOUDINARY_API_SECRET: "secret",
+      NEXT_PUBLIC_SUPABASE_URL: "https://supabase.com",
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "key",
+      SUPABASE_SERVICE_ROLE_KEY: "key",
+      UPSTASH_REDIS_REST_URL: "https://upstash.com",
+      UPSTASH_REDIS_REST_TOKEN: "token",
+      HEALTH_CHECK_SECRET: "secret",
+      SMTP_USER: "user",
+      SMTP_PASSWORD: "password",
+      EMAIL_FROM_ADDRESS: "sender@example.com",
+      EMAIL_FROM_NAME: "sender",
+      SUPERADMIN_USER_IDS: "123",
+      CLERK_WEBHOOK_SECRET: "secret",
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "sitekey",
+      TURNSTILE_SECRET_KEY: "secret",
+      SENTRY_DSN: "https://public@sentry.example.com/1",
+      QSTASH_TOKEN: "token",
+      CRON_SECRET: "secret",
+    };
+
+    // Missing both keys
+    expect(productionServerEnvSchema.safeParse(baseEnv).success).toBe(false);
+
+    // Missing next key
+    expect(
+      productionServerEnvSchema.safeParse({
+        ...baseEnv,
+        QSTASH_CURRENT_SIGNING_KEY: "current_key",
+      }).success,
+    ).toBe(false);
+
+    // Missing current key
+    expect(
+      productionServerEnvSchema.safeParse({
+        ...baseEnv,
+        QSTASH_NEXT_SIGNING_KEY: "next_key",
+      }).success,
+    ).toBe(false);
+
+    // Both present
+    expect(
+      productionServerEnvSchema.safeParse({
+        ...baseEnv,
+        QSTASH_CURRENT_SIGNING_KEY: "current_key",
+        QSTASH_NEXT_SIGNING_KEY: "next_key",
+      }).success,
+    ).toBe(true);
   });
 });

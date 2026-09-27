@@ -44,9 +44,20 @@ const required = [
   "SENTRY_DSN",
   "NEXT_PUBLIC_SENTRY_DSN",
   "CRON_SECRET",
+  "QSTASH_TOKEN",
+  "QSTASH_CURRENT_SIGNING_KEY",
+  "QSTASH_NEXT_SIGNING_KEY",
 ];
 
-const recommended = [];
+const recommended = [
+  "MIGRATION_DATABASE_URL",
+  "SMTP_HOST",
+  "SMTP_PORT",
+  "DATABASE_POOL_SIZE",
+  "PINTEREST_DOMAIN_VERIFY",
+  "FACEBOOK_DOMAIN_VERIFY",
+  "GOOGLE_SITE_VERIFY",
+];
 
 let failed = 0;
 

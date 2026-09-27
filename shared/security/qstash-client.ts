@@ -12,6 +12,18 @@ export function getQStashToken(): string {
   return token;
 }
 
+export function getQStashSigningKeys(): { currentSigningKey?: string; nextSigningKey?: string } {
+  return {
+    currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY?.trim() || undefined,
+    nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY?.trim() || undefined,
+  };
+}
+
+export function hasQStashSigningKeys(): boolean {
+  const { currentSigningKey, nextSigningKey } = getQStashSigningKeys();
+  return Boolean(currentSigningKey && nextSigningKey);
+}
+
 export function getQStashClient(): QStashClient {
   if (!qstashClientInstance) {
     const token = getQStashToken();

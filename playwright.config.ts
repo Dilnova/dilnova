@@ -38,6 +38,9 @@ const webServerEnv: Record<string, string> = {
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA",
   TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY ?? "1x00000000000000000000AA",
   QSTASH_TOKEN: process.env.QSTASH_TOKEN ?? "dummy_qstash_token",
+  QSTASH_CURRENT_SIGNING_KEY:
+    process.env.QSTASH_CURRENT_SIGNING_KEY ?? "dummy_qstash_current_signing_key",
+  QSTASH_NEXT_SIGNING_KEY: process.env.QSTASH_NEXT_SIGNING_KEY ?? "dummy_qstash_next_signing_key",
   SENTRY_DSN: process.env.SENTRY_DSN ?? "https://public@sentry.example.com/1",
   NEXT_PUBLIC_SENTRY_DSN:
     process.env.NEXT_PUBLIC_SENTRY_DSN ?? "https://public@sentry.example.com/1",

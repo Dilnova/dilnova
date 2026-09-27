@@ -158,6 +158,8 @@ jobs:
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
           TURNSTILE_SECRET_KEY: "1x00000000000000000000AA"
           QSTASH_TOKEN: "dummy_qstash_token"
+          QSTASH_CURRENT_SIGNING_KEY: "sig_dummy_current_key"
+          QSTASH_NEXT_SIGNING_KEY: "sig_dummy_next_key"
           CRON_SECRET: "placeholder_cron_secret"
           ANALYZE: "true"
 
