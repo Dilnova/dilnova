@@ -103,14 +103,36 @@ export function isStrictCspRequested(): boolean {
 
 /**
  * Determines whether 'unsafe-eval' should be excluded from CSP.
+ *
+ * Fail-closed policy:
+ * - 'unsafe-eval' is strictly excluded in production, preview, staging, test, and CI environments.
+ * - 'unsafe-eval' is only permitted when NODE_ENV is explicitly 'development' (and strict mode is not active).
  */
 export function shouldExcludeEval(options?: { isProd?: boolean; isStrict?: boolean }): boolean {
-  const isProd = options?.isProd ?? process.env.NODE_ENV === "production";
+  // 1. Explicit strict flag always excludes eval
+  if (options?.isStrict ?? isStrictCspRequested()) {
+    return true;
+  }
+
+  // 2. Vercel production or preview always excludes eval
   const isVercelProdOrPreview =
     process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview";
-  const isStrict = options?.isStrict ?? isStrictCspRequested();
+  if (isVercelProdOrPreview) {
+    return true;
+  }
 
-  return isProd || isVercelProdOrPreview || isStrict;
+  // 3. Explicit production option always excludes eval
+  if (options?.isProd === true) {
+    return true;
+  }
+
+  // 4. Fail-closed: only permit 'unsafe-eval' when explicitly in development
+  const isDev =
+    options?.isProd === false
+      ? process.env.NODE_ENV !== "production"
+      : process.env.NODE_ENV === "development";
+
+  return !isDev;
 }
 
 /**

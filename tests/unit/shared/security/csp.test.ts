@@ -126,6 +126,38 @@ describe("shared/security/csp", () => {
       delete process.env.CSP_STRICT;
       expect(shouldExcludeEval({ isProd: false, isStrict: false })).toBe(false);
     });
+
+    it("fails closed and returns true when NODE_ENV is test", () => {
+      process.env.NODE_ENV = "test";
+      delete process.env.VERCEL_ENV;
+      delete process.env.STRICT_CSP;
+      delete process.env.CSP_STRICT;
+      expect(shouldExcludeEval()).toBe(true);
+    });
+
+    it("fails closed and returns true when NODE_ENV is unset", () => {
+      delete process.env.NODE_ENV;
+      delete process.env.VERCEL_ENV;
+      delete process.env.STRICT_CSP;
+      delete process.env.CSP_STRICT;
+      expect(shouldExcludeEval()).toBe(true);
+    });
+
+    it("fails closed and returns true when NODE_ENV is staging", () => {
+      process.env.NODE_ENV = "staging";
+      delete process.env.VERCEL_ENV;
+      delete process.env.STRICT_CSP;
+      delete process.env.CSP_STRICT;
+      expect(shouldExcludeEval()).toBe(true);
+    });
+
+    it("prevents unsafe-eval even if isProd is false when NODE_ENV is production", () => {
+      process.env.NODE_ENV = "production";
+      delete process.env.VERCEL_ENV;
+      delete process.env.STRICT_CSP;
+      delete process.env.CSP_STRICT;
+      expect(shouldExcludeEval({ isProd: false })).toBe(true);
+    });
   });
 
   describe("buildCsp", () => {
@@ -162,6 +194,29 @@ describe("shared/security/csp", () => {
       });
 
       expect(csp).not.toContain("'unsafe-eval'");
+      expect(csp).toContain("upgrade-insecure-requests;");
+    });
+
+    it("strictly excludes 'unsafe-eval' in production dynamic CSP (with nonce)", () => {
+      const csp = buildCsp({
+        isProd: true,
+        nonce: "prod-nonce-456",
+      });
+
+      expect(csp).not.toContain("'unsafe-eval'");
+      expect(csp).toContain("'nonce-prod-nonce-456'");
+      expect(csp).toContain("'strict-dynamic'");
+      expect(csp).toContain("upgrade-insecure-requests;");
+    });
+
+    it("strictly excludes 'unsafe-eval' in production static fallback CSP (without nonce)", () => {
+      const csp = buildCsp({
+        isProd: true,
+      });
+
+      expect(csp).not.toContain("'unsafe-eval'");
+      expect(csp).not.toContain("'strict-dynamic'");
+      expect(csp).toContain("script-src 'self'");
       expect(csp).toContain("upgrade-insecure-requests;");
     });
 
