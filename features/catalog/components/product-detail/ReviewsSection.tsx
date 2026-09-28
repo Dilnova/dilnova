@@ -186,7 +186,7 @@ export default function ReviewsSection({
                     {review.userImageUrl ? (
                       <Image
                         src={review.userImageUrl}
-                        alt={review.userName}
+                        alt={review.userName || "Reviewer avatar"}
                         width={28}
                         height={28}
                         className="rounded-full object-cover border border-zinc-200 dark:border-zinc-800"

@@ -293,7 +293,7 @@ export default async function RootLayout({
                           <div className="relative h-8 w-20 sm:h-9 sm:w-32 max-w-full rounded-lg bg-white px-2 py-1 shadow-sm ring-1 ring-zinc-200/80 dark:ring-zinc-700/60 shrink-0">
                             <Image
                               src={logoUrl}
-                              alt={`${systemName} Logo`}
+                              alt={`${systemName || "Store"} Logo`}
                               fill
                               className="object-contain object-center"
                               sizes="(max-width: 640px) 80px, 128px"

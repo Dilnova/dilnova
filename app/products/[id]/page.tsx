@@ -522,7 +522,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 {vendorLogo ? (
                   <Image
                     src={vendorLogo}
-                    alt={vendorName}
+                    alt={vendorName ? `${vendorName} logo` : "Vendor logo"}
                     width={40}
                     height={40}
                     className="rounded-xl object-cover border border-zinc-200 dark:border-zinc-800 bg-white"

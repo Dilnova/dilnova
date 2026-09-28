@@ -120,7 +120,7 @@ export default async function AdminPage() {
               {metadata.bannerUrl ? (
                 <Image
                   src={metadata.bannerUrl}
-                  alt={`${org.name} banner / logo`}
+                  alt={`${org.name || "Organization"} banner / logo`}
                   fill
                   className="object-cover"
                   sizes="64px"
@@ -128,7 +128,7 @@ export default async function AdminPage() {
               ) : org.imageUrl ? (
                 <Image
                   src={org.imageUrl}
-                  alt={`${org.name} logo`}
+                  alt={`${org.name || "Organization"} logo`}
                   fill
                   className="object-cover"
                   sizes="64px"
@@ -325,7 +325,7 @@ export default async function AdminPage() {
                         {avatarUrl ? (
                           <Image
                             src={avatarUrl}
-                            alt={fullName}
+                            alt={fullName || "Team member"}
                             width={40}
                             height={40}
                             className="w-10 h-10 rounded-full border border-zinc-200/40 object-cover flex-shrink-0"
@@ -394,7 +394,7 @@ export default async function AdminPage() {
                           {avatarUrl ? (
                             <Image
                               src={avatarUrl}
-                              alt={fullName}
+                              alt={fullName || "Team member"}
                               width={32}
                               height={32}
                               className="w-8 h-8 rounded-full border border-zinc-200/40 object-cover flex-shrink-0"

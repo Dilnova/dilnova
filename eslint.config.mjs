@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-unused-vars": "warn",
       "react-hooks/exhaustive-deps": "warn",
       "@next/next/no-img-element": "off",
+      "jsx-a11y/alt-text": "error",
     },
   },
   {

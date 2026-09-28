@@ -209,7 +209,13 @@ export default function ProductsTab({
       <div className="flex items-start gap-3">
         <div className="w-14 h-14 rounded-lg bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 overflow-hidden relative">
           {p.imageUrl ? (
-            <Image src={p.imageUrl} alt={p.name} fill className="object-cover" sizes="56px" />
+            <Image
+              src={p.imageUrl}
+              alt={p.name || "Product image"}
+              fill
+              className="object-cover"
+              sizes="56px"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-xl opacity-30">
               📷

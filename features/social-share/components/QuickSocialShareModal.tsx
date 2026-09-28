@@ -132,7 +132,7 @@ export function QuickSocialShareModal({
               {product.imageUrl ? (
                 <Image
                   src={product.imageUrl}
-                  alt={product.name}
+                  alt={product.name || "Product image"}
                   fill
                   className="object-cover"
                   sizes="56px"

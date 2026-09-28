@@ -93,7 +93,7 @@ export default function CustomerWishlistTab({
                     ) : (
                       <Image
                         src={product.imageUrl}
-                        alt={product.name}
+                        alt={product.name || "Wishlist product"}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                         sizes="112px"

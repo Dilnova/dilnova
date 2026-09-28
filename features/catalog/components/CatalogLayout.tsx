@@ -165,7 +165,7 @@ export default function CatalogLayout({
                               ) : (
                                 <Image
                                   src={product.imageUrl}
-                                  alt={product.name}
+                                  alt={product.name || "Product image"}
                                   fill
                                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -292,7 +292,7 @@ export default function CatalogLayout({
                             {vendorLogo ? (
                               <Image
                                 src={vendorLogo}
-                                alt={vendorName}
+                                alt={vendorName ? `${vendorName} logo` : "Vendor logo"}
                                 width={20}
                                 height={20}
                                 className="rounded-md object-cover border border-zinc-100 dark:border-zinc-800 shrink-0"
@@ -362,7 +362,7 @@ export default function CatalogLayout({
                             ) : (
                               <Image
                                 src={product.imageUrl}
-                                alt={product.name}
+                                alt={product.name || "Product image"}
                                 fill
                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                                 sizes="(max-width: 640px) 100vw, 224px"
@@ -441,7 +441,7 @@ export default function CatalogLayout({
                               {vendorLogo ? (
                                 <Image
                                   src={vendorLogo}
-                                  alt={vendorName}
+                                  alt={vendorName ? `${vendorName} logo` : "Vendor logo"}
                                   width={22}
                                   height={22}
                                   className="rounded-md object-cover border border-zinc-100 dark:border-zinc-800 shrink-0"

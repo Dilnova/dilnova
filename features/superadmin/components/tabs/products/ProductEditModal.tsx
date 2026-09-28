@@ -406,7 +406,7 @@ export function ProductEditModal({
                 ) : (
                   <Image
                     src={m.url}
-                    alt="Media"
+                    alt={`Product media ${idx + 1}${idx === 0 ? " (primary)" : ""}`}
                     fill
                     className="object-cover"
                     sizes="(max-width: 640px) 50vw, 25vw"

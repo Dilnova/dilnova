@@ -160,7 +160,7 @@ export default async function VendorPage({ searchParams }: PageProps) {
             {org.imageUrl ? (
               <Image
                 src={org.imageUrl}
-                alt={`${org.name} logo`}
+                alt={`${org.name || "Vendor"} logo`}
                 fill
                 className="object-cover"
                 sizes="64px"

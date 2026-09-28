@@ -47,7 +47,7 @@ export default function DilstarNurseryStorefront({ org, products }: StorefrontPr
             <div className="relative w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-emerald-500/30 bg-emerald-900 shadow-2xl shadow-emerald-500/10 flex-shrink-0">
               <Image
                 src={org.imageUrl}
-                alt={org.name}
+                alt={`${org.name || "Vendor"} logo`}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 112px, 128px"
@@ -163,7 +163,7 @@ export default function DilstarNurseryStorefront({ org, products }: StorefrontPr
                           ) : (
                             <Image
                               src={product.imageUrl}
-                              alt={product.name}
+                              alt={product.name || "Product image"}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-700"
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -261,7 +261,7 @@ export default function DilstarNurseryStorefront({ org, products }: StorefrontPr
                         ) : (
                           <Image
                             src={service.imageUrl}
-                            alt={service.name}
+                            alt={service.name || "Service image"}
                             fill
                             className="object-cover"
                             sizes="80px"
@@ -331,7 +331,7 @@ export default function DilstarNurseryStorefront({ org, products }: StorefrontPr
           <div className="flex items-center gap-3">
             <Image
               src={org.imageUrl}
-              alt={org.name}
+              alt={`${org.name || "Vendor"} logo`}
               width={32}
               height={32}
               className="rounded-full"
