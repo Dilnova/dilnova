@@ -15,6 +15,7 @@ import {
   isDomesticCountry,
 } from "./slpost-rates";
 import { logger } from "@/shared/logging/logger";
+import crypto from "node:crypto";
 
 export class SLPostAdapter implements CarrierAdapter {
   id = "slpost";
@@ -128,7 +129,7 @@ export class SLPostAdapter implements CarrierAdapter {
     void rateId;
 
     const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const randomHex = crypto.randomBytes(4).toString("hex").toUpperCase();
     const trackingNumber = `SLP-${todayStr}-${randomHex}`;
 
     return {
