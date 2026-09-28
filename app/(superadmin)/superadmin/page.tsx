@@ -1,9 +1,11 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { getSystemSetting } from "@/shared/platform/settings";
 import { getCheckoutOptionsCatalog } from "@/features/organization/checkout-options";
 import { getStockAvailabilityCatalog } from "@/features/inventory/availability.server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { getSuperadminOrganizations } from "@/shared/auth/clerk-cache";
+import { getCurrentSuperAdminUser } from "@/shared/auth/superadmin-guard";
 import {
   getCategoriesOrderedByCreatedAtDesc,
   getContactSubmissionsOrderedByCreatedAtDesc,
@@ -255,9 +257,14 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
   );
 }
 
-export default function SuperAdminDashboardPage(props: {
+export default async function SuperAdminDashboardPage(props: {
   searchParams: Promise<{ tab?: string }>;
 }) {
+  const user = await getCurrentSuperAdminUser();
+  if (!user) {
+    redirect("/unauthorized");
+  }
+
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
       <div className="mb-4">

@@ -1,4 +1,5 @@
 import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import VendorProfileForm from "@/features/vendor/components/VendorProfileForm";
 import OrgCheckoutOptionsForm from "@/features/organization/components/OrgCheckoutOptionsForm";
@@ -22,8 +23,12 @@ import { getOrgOnboardingStatus, OrgOnboardingController } from "@/features/orga
 import { logger } from "@/shared/logging/logger";
 
 export default async function AdminPage() {
-  const { orgId } = await auth();
+  const { userId, orgId } = await auth();
   const user = await currentUser();
+
+  if (!userId) {
+    redirect("/sign-in?redirect_url=/admin");
+  }
 
   if (!orgId) {
     throw new Error("No active organization detected.");

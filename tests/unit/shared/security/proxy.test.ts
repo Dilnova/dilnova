@@ -1,32 +1,32 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
 
+let mockUserId: string | null = "user_test_mock";
+
 // Mock clerkMiddleware
 vi.mock("@clerk/nextjs/server", () => ({
   clerkMiddleware: vi.fn((handler) => {
     return (req: unknown, event: unknown) => {
       const mockAuth = Object.assign(
-        vi.fn().mockResolvedValue({
-          userId: "user_test_mock",
-          redirectToSignIn: vi
-            .fn()
-            .mockReturnValue(
-              new Response(null, { status: 307, headers: { Location: "/sign-in" } }),
+        vi.fn().mockImplementation(async () => {
+          return {
+            userId: mockUserId,
+            redirectToSignIn: vi.fn().mockImplementation(
+              ({ returnBackUrl }: { returnBackUrl?: string } = {}) =>
+                new Response(null, {
+                  status: 307,
+                  headers: {
+                    Location: `/sign-in?redirect_url=${encodeURIComponent(returnBackUrl || "")}`,
+                  },
+                }),
             ),
+          };
         }),
         {
           protect: vi.fn(),
         },
       );
       return handler(mockAuth, req, event);
-    };
-  }),
-  createRouteMatcher: vi.fn((routes: string[]) => {
-    return (req: { nextUrl?: { pathname?: string } }) => {
-      return routes.some((r) => {
-        const pattern = new RegExp("^" + r.replace(/\(\.\*\)/g, ".*"));
-        return pattern.test(req?.nextUrl?.pathname || "");
-      });
     };
   }),
 }));
@@ -83,6 +83,7 @@ type MockResponse = { status: number; body: string };
 
 describe("Proxy Middleware CSRF Protection", () => {
   beforeEach(() => {
+    mockUserId = "user_test_mock";
     vi.clearAllMocks();
   });
 
@@ -609,5 +610,61 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
       if (prevStrict !== undefined) process.env.STRICT_CSP = prevStrict;
       else delete process.env.STRICT_CSP;
     }
+  });
+});
+
+describe("Proxy Protected Routes Early Redirect", () => {
+  beforeEach(() => {
+    mockUserId = "user_test_mock";
+    vi.clearAllMocks();
+  });
+
+  it("redirects unauthenticated users on protected paths (/admin, /vendor, /superadmin, /customer)", async () => {
+    mockUserId = null;
+    const protectedPaths = [
+      "/admin",
+      "/admin/members",
+      "/vendor",
+      "/vendor/billing",
+      "/superadmin",
+      "/superadmin/pricing",
+      "/customer",
+      "/customer/returns",
+    ];
+
+    for (const path of protectedPaths) {
+      const request = new NextRequest(`http://localhost:3000${path}`, { method: "GET" });
+      const result = await proxy(request, mockEvent);
+      expect(result).toBeInstanceOf(Response);
+      expect((result as Response).status).toBe(307);
+      expect((result as Response).headers.get("Location")).toContain("/sign-in");
+    }
+  });
+
+  it("does not redirect unauthenticated users on public routes or public vendor directory", async () => {
+    mockUserId = null;
+    const publicPaths = [
+      "/",
+      "/vendors",
+      "/vendors/dilstar-hardware",
+      "/products",
+      "/products/item-1",
+      "/brand/dilstar",
+      "/terms",
+      "/privacy",
+    ];
+
+    for (const path of publicPaths) {
+      const request = new NextRequest(`http://localhost:3000${path}`, { method: "GET" });
+      const result = await proxy(request, mockEvent);
+      expect(result).not.toBeInstanceOf(Response);
+    }
+  });
+
+  it("allows authenticated users to access protected paths without redirect", async () => {
+    mockUserId = "user_test_mock";
+    const request = new NextRequest("http://localhost:3000/admin", { method: "GET" });
+    const result = await proxy(request, mockEvent);
+    expect(result).not.toBeInstanceOf(Response);
   });
 });

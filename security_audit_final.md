@@ -321,16 +321,17 @@ A complete, enterprise-grade pre-production security audit was conducted across 
 ### 3.3 Route Protection
 
 - **Status:** ✅ Confirmed Secure
-- **Code Evidence:** `proxy.ts#L3-L8` & `proxy.ts#L134-L139`:
+- **Code Evidence:** `proxy.ts#L3-L9` & `proxy.ts#L125-L131`:
   ```typescript
-  const isProtectedRoute = createRouteMatcher([
-    "/admin(.*)",
-    "/vendor(.*)",
-    "/superadmin(.*)",
-    "/customer(.*)",
-  ]);
+  const PROTECTED_PREFIXES = ["/admin", "/vendor", "/superadmin", "/customer"] as const;
 
-  if (isProtectedRoute(req)) {
+  function isProtectedPath(pathname: string): boolean {
+    return PROTECTED_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    );
+  }
+
+  if (isProtectedPath(req.nextUrl.pathname)) {
     const authState = await auth();
     if (!authState.userId) {
       return authState.redirectToSignIn({ returnBackUrl: req.url });

@@ -1,11 +1,12 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-const isProtectedRoute = createRouteMatcher([
-  "/admin(.*)",
-  "/vendor(.*)",
-  "/superadmin(.*)",
-  "/customer(.*)",
-]);
+const PROTECTED_PREFIXES = ["/admin", "/vendor", "/superadmin", "/customer"] as const;
+
+function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
@@ -122,7 +123,7 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 }
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
+  if (isProtectedPath(req.nextUrl.pathname)) {
     const authState = await auth();
     if (!authState.userId) {
       return authState.redirectToSignIn({ returnBackUrl: req.url });
