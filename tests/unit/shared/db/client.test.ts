@@ -117,6 +117,40 @@ describe("shared/db/client security configuration", () => {
         expect(stringified).not.toContain("customer@private-email.com");
         expect(stringified).not.toContain("+1-555-019-2834");
         expect(stringified).not.toContain("742 Evergreen Terrace");
+        expect(logPayload).toHaveProperty("queryHash");
+        expect(typeof logPayload.queryHash).toBe("string");
+      }
+    });
+
+    it("truncates long queries in production and includes queryHash to prevent schema exposure", async () => {
+      vi.stubEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/dilnova");
+      vi.stubEnv("NODE_ENV", "production");
+
+      unsafeMock.mockImplementation(() => {
+        return new Promise((resolve) => {
+          setTimeout(() => resolve([]), 550);
+        });
+      });
+
+      await import("@/shared/db/client");
+
+      const client = capturedDrizzleClient.current;
+      expect(client).toBeDefined();
+
+      if (client?.unsafe) {
+        const longQuery =
+          "SELECT id, title, description, price, org_id, status, metadata, created_at, updated_at FROM products WHERE org_id = $1 AND (status = 'active' OR status = 'pending') AND (category_id = $2 OR category_id IS NULL) ORDER BY created_at DESC LIMIT 50 OFFSET 100";
+
+        await client.unsafe(longQuery, ["org_123", "cat_456"]);
+
+        expect(warnSpy).toHaveBeenCalled();
+        const callArgs = warnSpy.mock.calls[0];
+        const logPayload = callArgs[1] as { query: string; queryHash: string; paramCount: number };
+
+        expect(logPayload.query).toContain("... [truncated]");
+        expect(logPayload.query.length).toBeLessThan(longQuery.length);
+        expect(logPayload.queryHash).toMatch(/^[a-f0-9]{12}$/);
+        expect(logPayload.paramCount).toBe(2);
       }
     });
   });

@@ -49,7 +49,7 @@ const client =
 globalForDb.postgresClient = client;
 
 import { logger } from "@/shared/logging/logger";
-
+import crypto from "node:crypto";
 import * as Sentry from "@sentry/nextjs";
 
 function withSlowQueryLogger(client: PostgresClient): PostgresClient {
@@ -70,7 +70,10 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
                 span = Sentry.startInactiveSpan({
                   name: "DB Query",
                   op: "db.query",
-                  attributes: { "db.statement": query },
+                  attributes: {
+                    "db.statement":
+                      query.length > 200 ? `${query.slice(0, 200)}... [truncated]` : query,
+                  },
                 });
               }
             } catch {
@@ -88,12 +91,29 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
                 : params !== undefined && params !== null
                   ? 1
                   : 0;
+
+              const normalized = query.replace(/\s+/g, " ").trim();
+              const queryHash = crypto
+                .createHash("sha256")
+                .update(normalized)
+                .digest("hex")
+                .slice(0, 12);
+
+              const isProd = process.env.NODE_ENV === "production";
+              const maxLen = isProd ? 160 : 300;
+              const sanitizedQuery =
+                normalized.length > maxLen
+                  ? `${normalized.slice(0, maxLen)}... [truncated]`
+                  : normalized;
+
               logger.warn(`[Slow Query ${duration.toFixed(2)}ms]`, {
-                query,
+                query: sanitizedQuery,
+                queryHash,
                 paramCount,
               });
               if (span) {
                 span.setAttribute("slow", true);
+                span.setAttribute("db.query_hash", queryHash);
               }
             }
             if (span) {
