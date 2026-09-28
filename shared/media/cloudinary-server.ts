@@ -1,6 +1,7 @@
 import "server-only";
 
 import { logger } from "@/shared/logging/logger";
+import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
 import {
   signCloudinaryUploadParams,
   type CloudinaryResourceType,
@@ -91,11 +92,12 @@ export async function deleteCloudinaryAsset(
   formData.append("signature", signature);
 
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/destroy`,
       {
         method: "POST",
         body: formData,
+        timeoutMs: HTTP_TIMEOUT.DEFAULT,
       },
     );
     if (!res.ok) {

@@ -8,6 +8,7 @@ import type {
   ShippingRate,
 } from "../../carrier.types";
 import { logger } from "@/shared/logging/logger";
+import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
 
 /**
  * Shippo multi-carrier adapter.
@@ -119,13 +120,14 @@ export class ShippoAdapter implements CarrierAdapter {
     }
 
     try {
-      const res = await fetch(`${this.baseUrl}/shipments/`, {
+      const res = await fetchWithTimeout(`${this.baseUrl}/shipments/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: this.authHeader,
         },
         body: JSON.stringify(payload),
+        timeoutMs: HTTP_TIMEOUT.DEFAULT,
       });
 
       if (!res.ok) {
@@ -198,13 +200,14 @@ export class ShippoAdapter implements CarrierAdapter {
       async: false,
     };
 
-    const res = await fetch(`${this.baseUrl}/transactions/`, {
+    const res = await fetchWithTimeout(`${this.baseUrl}/transactions/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: this.authHeader,
       },
       body: JSON.stringify(payload),
+      timeoutMs: HTTP_TIMEOUT.EXTENDED,
     });
 
     if (!res.ok) {
@@ -232,13 +235,14 @@ export class ShippoAdapter implements CarrierAdapter {
 
   async cancelShipment(shipmentExternalId: string): Promise<void> {
     if (!this.apiKey) return;
-    await fetch(`${this.baseUrl}/refunds/`, {
+    await fetchWithTimeout(`${this.baseUrl}/refunds/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: this.authHeader,
       },
       body: JSON.stringify({ transaction: shipmentExternalId }),
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
     }).catch((err) => logger.error("[ShippoAdapter.cancelShipment]", err));
   }
 
@@ -246,10 +250,11 @@ export class ShippoAdapter implements CarrierAdapter {
     if (!this.apiKey) return [];
 
     try {
-      const res = await fetch(
+      const res = await fetchWithTimeout(
         `${this.baseUrl}/tracks/shippo/${encodeURIComponent(trackingNumber)}`,
         {
           headers: { Authorization: this.authHeader },
+          timeoutMs: HTTP_TIMEOUT.DEFAULT,
         },
       );
 

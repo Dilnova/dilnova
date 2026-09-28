@@ -1,4 +1,5 @@
 import { PinterestPinParams } from "../types";
+import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
 
 const PINTEREST_API_BASE = "https://api.pinterest.com/v5";
 
@@ -31,12 +32,13 @@ export async function verifyPinterestAccount(accessToken: string): Promise<{
       return { success: false, error: "Missing Pinterest access token." };
     }
 
-    const res = await fetch(`${PINTEREST_API_BASE}/user_account`, {
+    const res = await fetchWithTimeout(`${PINTEREST_API_BASE}/user_account`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${cleanToken}`,
         Accept: "application/json",
       },
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
     });
 
     const data = await res.json();
@@ -84,12 +86,13 @@ export async function fetchPinterestBoards(accessToken: string): Promise<{
       return { success: false, boards: [], error: "Missing Pinterest access token." };
     }
 
-    const res = await fetch(`${PINTEREST_API_BASE}/boards?page_size=50`, {
+    const res = await fetchWithTimeout(`${PINTEREST_API_BASE}/boards?page_size=50`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${cleanToken}`,
         Accept: "application/json",
       },
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
     });
 
     const data = await res.json();
@@ -215,7 +218,7 @@ export async function createPinterestProductPin({
       alt_text: title.slice(0, 500),
     };
 
-    const res = await fetch(`${PINTEREST_API_BASE}/pins`, {
+    const res = await fetchWithTimeout(`${PINTEREST_API_BASE}/pins`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${cleanToken}`,
@@ -223,6 +226,7 @@ export async function createPinterestProductPin({
         Accept: "application/json",
       },
       body: JSON.stringify(payload),
+      timeoutMs: HTTP_TIMEOUT.EXTENDED,
     });
 
     const data = await res.json();
@@ -259,12 +263,13 @@ export async function deletePinterestPin(
       return { success: false, error: "Missing Pin ID or access token." };
     }
 
-    const res = await fetch(`${PINTEREST_API_BASE}/pins/${cleanPinId}`, {
+    const res = await fetchWithTimeout(`${PINTEREST_API_BASE}/pins/${cleanPinId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${cleanToken}`,
         Accept: "application/json",
       },
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
     });
 
     if (!res.ok && res.status !== 404) {

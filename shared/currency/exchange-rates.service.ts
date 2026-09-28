@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { DEFAULT_CURRENCY } from "./config";
 import { logger } from "@/shared/logging/logger";
+import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
 
 /**
  * Fallback static rate matrix relative to USD (1 USD = X Target Currency)
@@ -168,7 +169,8 @@ export async function seedDefaultExchangeRates(): Promise<void> {
  */
 export async function syncLiveExchangeRates(): Promise<{ success: boolean; updatedCount: number }> {
   try {
-    const response = await fetch("https://open.er-api.com/v6/latest/USD", {
+    const response = await fetchWithTimeout("https://open.er-api.com/v6/latest/USD", {
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
       next: { revalidate: 3600 },
     });
 
