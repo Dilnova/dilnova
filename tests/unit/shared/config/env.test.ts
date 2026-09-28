@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getServerConfig, env, validateServerEnv } from "@/shared/config/env";
+import { logger } from "@/shared/logging/logger";
 
 describe("shared/config/env", () => {
   const originalEnv = { ...process.env };
@@ -148,6 +149,34 @@ describe("shared/config/env", () => {
       expect(() => validateServerEnv()).toThrow(
         "Preview deployments must not use the production DATABASE_URL",
       );
+    });
+
+    it("emits a security warning when production validation is bypassed for CI/E2E tests", () => {
+      process.env.NODE_ENV = "production";
+      process.env.CLERK_SECRET_KEY = "sk_test_ci_dummy";
+      delete process.env.VERCEL;
+      delete process.env.NEXT_PHASE;
+      delete process.env.DATABASE_URL; // Intentionally missing
+
+      const warnSpy = vi.spyOn(logger, "warn").mockImplementation(() => {});
+
+      expect(() => validateServerEnv()).not.toThrow();
+      expect(warnSpy).toHaveBeenCalled();
+      const firstCallMsg = warnSpy.mock.calls[0]?.[0];
+      expect(firstCallMsg).toContain("[SECURITY WARNING]");
+      expect(firstCallMsg).toContain("Production environment validation was BYPASSED");
+
+      warnSpy.mockRestore();
+    });
+
+    it("does NOT bypass validation if running on Vercel even with CI dummy key", () => {
+      process.env.NODE_ENV = "production";
+      process.env.CLERK_SECRET_KEY = "sk_test_ci_dummy";
+      process.env.VERCEL = "1";
+      delete process.env.NEXT_PHASE;
+      delete process.env.DATABASE_URL;
+
+      expect(() => validateServerEnv()).toThrow("Server environment validation failed");
     });
   });
 });

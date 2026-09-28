@@ -290,6 +290,14 @@ export function validateServerEnv(): void {
     process.env.NODE_ENV === "production" &&
     process.env.VERCEL !== "1"
   ) {
+    logger.warn(
+      "[SECURITY WARNING] Production environment validation was BYPASSED because CLERK_SECRET_KEY='sk_test_ci_dummy' and VERCEL!='1'. This bypass should ONLY occur in CI/E2E automated testing pipelines. If this is a live deployment, critical environment variables are NOT being validated!",
+      {
+        nodeEnv: process.env.NODE_ENV,
+        vercel: process.env.VERCEL,
+        isCi: Boolean(process.env.CI || process.env.GITHUB_ACTIONS),
+      },
+    );
     return;
   }
 
