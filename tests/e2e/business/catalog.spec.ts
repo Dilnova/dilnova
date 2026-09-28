@@ -1,14 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { authStateExists } from "../helpers/env";
 
-test.beforeEach(() => {
-  // We can test catalog browsing either logged in or logged out.
-  // Using customer auth to ensure they have the right view.
-  test.skip(
-    !authStateExists("customer"),
-    "Run auth.setup with E2E_CUSTOMER_EMAIL to enable this suite.",
-  );
-});
+// Catalog browsing is a public customer-facing flow that runs in all environments.
 
 test.describe("Catalog Browsing and Searching", () => {
   test("can load the products page and view items", async ({ page }) => {

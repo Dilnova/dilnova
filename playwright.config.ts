@@ -86,6 +86,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "business-catalog",
+      testMatch: /business\/catalog\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "unauthenticated",
       testMatch: /rbac\/unauthenticated\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
