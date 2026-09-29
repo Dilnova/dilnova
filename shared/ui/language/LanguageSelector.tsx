@@ -9,6 +9,7 @@ import {
   setGoogTransCookie,
   applyLanguage,
 } from "./languageUtils";
+import { logClientWarning } from "@/shared/errors/client-error";
 
 interface LanguageSelectorProps {
   align?: "left" | "right";
@@ -68,7 +69,7 @@ export default function LanguageSelector({ align = "right" }: LanguageSelectorPr
         try {
           window.googleTranslateElementInit?.();
         } catch (e) {
-          console.warn("Google Translate re-init deferred:", { error: e });
+          logClientWarning("Google Translate re-init deferred:", e);
         }
       }
     }

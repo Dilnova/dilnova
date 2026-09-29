@@ -3,6 +3,7 @@
 import { MapPin, Building, Map, Hash, Globe, Navigation, Loader2, Phone } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import type { ParsedCountry, ParsedState } from "@/shared/types/locations";
+import { logClientError, logClientWarning } from "@/shared/errors/client-error";
 
 export type LiveCountry = ParsedCountry;
 export type LiveState = ParsedState;
@@ -103,7 +104,7 @@ export default function DeliveryAddressFormFields({
         return;
       }
     } catch (err) {
-      console.warn("IP location fallback failed", err);
+      logClientWarning("IP location fallback failed", err);
     }
     setLocationStatus("Location permission denied. Please select address below.");
     setTimeout(() => setLocationStatus(null), 4000);
@@ -133,7 +134,7 @@ export default function DeliveryAddressFormFields({
             await handleIpFallback();
           }
         } catch (error) {
-          console.error("GPS Reverse Geocode Error", error);
+          logClientError("GPS Reverse Geocode Error", error);
           await handleIpFallback();
         } finally {
           setIsLocating(false);
@@ -167,7 +168,7 @@ export default function DeliveryAddressFormFields({
       .then((res) => {
         if (isMounted && res?.data) setCountries(res.data);
       })
-      .catch((err) => console.warn("Countries fetch notice", err));
+      .catch((err) => logClientWarning("Countries fetch notice", err));
 
     return () => {
       isMounted = false;

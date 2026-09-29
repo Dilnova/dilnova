@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import * as Sentry from "@sentry/nextjs";
+import { logClientError } from "@/shared/errors/client-error";
 
 export function GlobalError({
   error,
@@ -12,8 +13,8 @@ export function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to your structured logger / error reporting service
-    console.error("[ErrorBoundary] React error boundary caught exception", error);
+    // Log sanitized error metadata in production (full error only in development)
+    logClientError("[ErrorBoundary] React error boundary caught exception", error, error?.digest);
     Sentry.captureException(error);
   }, [error]);
 

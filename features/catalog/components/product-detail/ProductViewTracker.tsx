@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { incrementProductViewsAction } from "@/features/catalog/product-detail.actions";
+import { logClientWarning } from "@/shared/errors/client-error";
 
 interface ProductViewTrackerProps {
   productId: string;
@@ -21,7 +22,7 @@ export default function ProductViewTracker({ productId }: ProductViewTrackerProp
 
     incrementProductViewsAction(productId).catch((err) => {
       // Silently catch error to prevent degrading the user experience
-      console.warn("[View Tracker] Failed to trigger views increment:", err);
+      logClientWarning("[View Tracker] Failed to trigger views increment:", err);
     });
   }, [productId]);
 

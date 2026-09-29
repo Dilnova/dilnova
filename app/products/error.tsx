@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import * as Sentry from "@sentry/nextjs";
+import { logClientError } from "@/shared/errors/client-error";
 
 export default function ProductsCatalogError({
   error,
@@ -12,7 +13,7 @@ export default function ProductsCatalogError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[ProductsCatalogError] Unhandled error loading catalog:", error);
+    logClientError("[ProductsCatalogError] Unhandled error loading catalog:", error, error?.digest);
     Sentry.captureException(error);
   }, [error]);
 

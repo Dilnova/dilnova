@@ -153,3 +153,61 @@ export function extractActionErrorMessage(result: unknown): string {
 
   return "An unexpected error occurred. Please try again.";
 }
+
+/**
+ * Safely logs client-side errors without leaking stack traces, database internals,
+ * or raw error details to browser developer tools in production environments.
+ *
+ * - In development (NODE_ENV === "development"):
+ *   Logs full error object and stack trace to console for local DX and debugging.
+ * - In production / non-development:
+ *   Logs only safe, sanitized metadata (e.g. Next.js digest or sanitized reference ID)
+ *   to prevent client-side information disclosure.
+ */
+export function logClientError(prefix: string, error?: unknown, digest?: string): void {
+  if (process.env.NODE_ENV === "development") {
+    if (error !== undefined) {
+      console.error(prefix, error);
+    } else {
+      console.error(prefix);
+    }
+    return;
+  }
+
+  const effectiveDigest =
+    digest ||
+    (error &&
+    typeof error === "object" &&
+    "digest" in error &&
+    typeof (error as { digest?: unknown }).digest === "string"
+      ? (error as { digest: string }).digest
+      : undefined);
+
+  console.error(prefix, {
+    digest: effectiveDigest,
+    message: `An unexpected error occurred. Ref: ${effectiveDigest || "unknown"}`,
+  });
+}
+
+/**
+ * Safely logs client-side warnings without exposing raw exception payloads
+ * to browser developer tools in production environments.
+ *
+ * - In development (NODE_ENV === "development"):
+ *   Logs prefix and raw error/payload.
+ * - In production / non-development:
+ *   Logs only the sanitized prefix/message without leaking error objects or stack traces.
+ */
+export function logClientWarning(prefix: string, error?: unknown): void {
+  if (process.env.NODE_ENV === "development") {
+    if (error !== undefined) {
+      console.warn(prefix, error);
+    } else {
+      console.warn(prefix);
+    }
+    return;
+  }
+
+  // In production, log only the sanitized warning message
+  console.warn(prefix);
+}

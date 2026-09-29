@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import * as Sentry from "@sentry/nextjs";
+import { logClientError } from "@/shared/errors/client-error";
 
 export default function VendorStorefrontError({
   error,
@@ -12,7 +13,11 @@ export default function VendorStorefrontError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[VendorStorefrontError] Unhandled error loading vendor storefront:", error);
+    logClientError(
+      "[VendorStorefrontError] Unhandled error loading vendor storefront:",
+      error,
+      error?.digest,
+    );
     Sentry.captureException(error);
   }, [error]);
 

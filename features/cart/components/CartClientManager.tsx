@@ -27,7 +27,7 @@ import {
   toggleProductInSelection,
 } from "@/features/cart/vendor-checkout";
 import { toast } from "sonner";
-import { extractActionErrorMessage } from "@/shared/errors/client-error";
+import { extractActionErrorMessage, logClientWarning } from "@/shared/errors/client-error";
 import { useCurrency } from "@/shared/currency/context/currency-context";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 
@@ -592,7 +592,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
           );
         }
       } catch {
-        console.warn("[CartClientManager] Failed to fetch dynamic shipping rates");
+        logClientWarning("[CartClientManager] Failed to fetch dynamic shipping rates");
       } finally {
         if (isMounted) {
           setIsFetchingRates(false);
@@ -662,7 +662,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
           })),
           pickupBranchId: effectivePickupBranchId,
         }).catch((err) => {
-          console.warn("[CartClientManager] Handled stock validation call error:", err);
+          logClientWarning("[CartClientManager] Handled stock validation call error:", err);
           return null;
         });
 
@@ -681,7 +681,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
           });
         }
       } catch (err) {
-        console.warn("[CartClientManager] Stock validation error:", err);
+        logClientWarning("[CartClientManager] Stock validation error:", err);
       }
     };
 
