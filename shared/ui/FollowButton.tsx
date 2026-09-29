@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { SignInButton } from "@clerk/nextjs";
+import { getSafeRedirectUrl } from "@/shared/security/redirect";
 
 interface FollowButtonProps {
   orgName: string;
@@ -10,7 +11,9 @@ interface FollowButtonProps {
 
 export default function FollowButton({ orgName, redirectUrl }: FollowButtonProps) {
   const pathname = usePathname();
-  const effectiveRedirectUrl = redirectUrl ?? (pathname && pathname !== "/" ? pathname : undefined);
+  const effectiveRedirectUrl = getSafeRedirectUrl(
+    redirectUrl ?? (pathname && pathname !== "/" ? pathname : "/"),
+  );
 
   return (
     <SignInButton mode="modal" forceRedirectUrl={effectiveRedirectUrl}>

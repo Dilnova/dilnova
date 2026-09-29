@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { getSafeRedirectUrl } from "@/shared/security/redirect";
 
 interface SignInPromptProps {
   message: string;
@@ -11,7 +12,9 @@ interface SignInPromptProps {
 
 export default function SignInPrompt({ message, className = "", redirectUrl }: SignInPromptProps) {
   const pathname = usePathname();
-  const effectiveRedirectUrl = redirectUrl ?? (pathname && pathname !== "/" ? pathname : undefined);
+  const effectiveRedirectUrl = getSafeRedirectUrl(
+    redirectUrl ?? (pathname && pathname !== "/" ? pathname : "/"),
+  );
 
   return (
     <div className={`border-t border-zinc-100 dark:border-zinc-900 pt-4 space-y-3 ${className}`}>

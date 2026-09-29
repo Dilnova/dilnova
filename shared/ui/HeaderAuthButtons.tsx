@@ -3,6 +3,7 @@
 import React from "react";
 import { usePathname } from "next/navigation";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { getSafeRedirectUrl } from "@/shared/security/redirect";
 
 const SignInTriggerButton = React.forwardRef<
   HTMLButtonElement,
@@ -38,7 +39,9 @@ interface HeaderAuthButtonsProps {
 
 export default function HeaderAuthButtons({ redirectUrl }: HeaderAuthButtonsProps = {}) {
   const pathname = usePathname();
-  const effectiveRedirectUrl = redirectUrl ?? (pathname && pathname !== "/" ? pathname : undefined);
+  const effectiveRedirectUrl = getSafeRedirectUrl(
+    redirectUrl ?? (pathname && pathname !== "/" ? pathname : "/"),
+  );
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 text-xs font-semibold">
