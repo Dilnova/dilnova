@@ -11,8 +11,37 @@ const cachedV0Keys = new Map<string, Buffer>();
 const cachedHashKeys = new Map<string, Buffer>();
 let hasLoggedDecryptionError = false;
 
+// Deterministic fallback encryption key used strictly in development and test
+// environments when PII_ENCRYPTION_KEY is not configured in process.env.
+// This guarantees AES-256-GCM encryption is always executed and data shapes
+// match production exactly, preventing cleartext leakage into staging or test databases.
+const DEV_FALLBACK_KEY = "dev_pii_encryption_key_dilnova_32b!";
+let hasLoggedDevKeyWarning = false;
+
 function isProduction(): boolean {
   return env.app.isProduction;
+}
+
+function getEffectiveKey(): string {
+  const configuredKey = env.security.piiEncryptionKey?.trim();
+  if (configuredKey) {
+    return configuredKey;
+  }
+
+  if (isProduction()) {
+    throw new Error(
+      "PII_ENCRYPTION_KEY is not configured. Cannot store sensitive data without encryption in production.",
+    );
+  }
+
+  if (!hasLoggedDevKeyWarning && !env.app.isTest) {
+    logger.warn(
+      "[SECURITY NOTICE] PII_ENCRYPTION_KEY is not configured. Using deterministic fallback key for non-production environment.",
+    );
+    hasLoggedDevKeyWarning = true;
+  }
+
+  return DEV_FALLBACK_KEY;
 }
 
 function getV2Key(key: string): Buffer {
@@ -60,22 +89,14 @@ function getHashKey(key: string): Buffer {
  * Encrypts a cleartext string using AES-256-GCM.
  *
  * In production, throws if PII_ENCRYPTION_KEY is not configured or if
- * encryption fails — PII must never be silently stored in cleartext.
- * In development/test, falls back to returning cleartext when the key is absent
- * so local workflows are not disrupted.
+ * encryption fails — PII must never be stored in cleartext.
+ * In development/test without an explicit key, a deterministic fallback key is used
+ * so AES-256-GCM encryption is always enforced and data shapes match production.
  */
 export function encryptString(text: string): string {
   if (!text) return text;
 
-  const key = env.security.piiEncryptionKey?.trim();
-  if (!key) {
-    if (isProduction()) {
-      throw new Error(
-        "PII_ENCRYPTION_KEY is not configured. Cannot store sensitive data without encryption in production.",
-      );
-    }
-    return text;
-  }
+  const key = getEffectiveKey();
 
   try {
     const hashedKey = getV2Key(key);
@@ -91,8 +112,8 @@ export function encryptString(text: string): string {
     if (isProduction()) {
       throw new Error("Encryption failed. Refusing to store PII in cleartext.");
     }
-    logger.error("Encryption failed, returning cleartext:", error);
-    return text;
+    logger.error("Encryption failed:", error);
+    throw error;
   }
 }
 
@@ -103,17 +124,7 @@ export function encryptString(text: string): string {
 export function hashPii(text: string | null | undefined): string | null {
   if (!text) return null;
 
-  const key = env.security.piiEncryptionKey?.trim();
-  if (!key) {
-    if (isProduction()) {
-      throw new Error(
-        "PII_ENCRYPTION_KEY is not configured. Cannot hash sensitive data in production.",
-      );
-    }
-    // Fallback for dev without key: just sha256 without a secret key
-    return crypto.createHash("sha256").update(text.trim().toLowerCase()).digest("hex");
-  }
-
+  const key = getEffectiveKey();
   const hashKey = getHashKey(key);
 
   return crypto.createHmac("sha256", hashKey).update(text.trim().toLowerCase()).digest("hex");
@@ -140,22 +151,13 @@ function performAes256GcmDecryption(
  * Supports v2, v1, and legacy unversioned decryptions using key fallback.
  *
  * In production, throws if appropriate key is not configured.
- * In development/test, falls back to returning the input string when keys are absent.
+ * In development/test without an explicit key, the deterministic fallback key is used.
  */
 export function decryptString(encryptedText: string): string {
   if (!encryptedText) return encryptedText;
 
-  const key = env.security.piiEncryptionKey?.trim();
+  const key = getEffectiveKey();
   const fallbackKeyV1 = env.security.piiEncryptionKeyV1?.trim();
-
-  if (!key) {
-    if (isProduction()) {
-      throw new Error(
-        "PII_ENCRYPTION_KEY is not configured. Cannot decrypt sensitive data in production.",
-      );
-    }
-    return encryptedText;
-  }
 
   const isV2 = encryptedText.startsWith("v2:");
   const isV1 = encryptedText.startsWith("v1:");
