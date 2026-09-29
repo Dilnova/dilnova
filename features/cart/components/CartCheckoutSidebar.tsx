@@ -2,34 +2,24 @@
 
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { Spinner } from "@/shared/ui/loading";
-import DeliveryAddressFormFields from "@/features/customer/components/DeliveryAddressFormFields";
 import Link from "next/link";
 import { useState } from "react";
+import { CartOrderSummaryTotals } from "./checkout-sidebar/CartOrderSummaryTotals";
+import { CartFulfillmentPaymentSection } from "./checkout-sidebar/CartFulfillmentPaymentSection";
+import { CartSendToInboxCard } from "./checkout-sidebar/CartSendToInboxCard";
+import type {
+  SidebarFulfillmentOption,
+  SidebarPaymentOption,
+  CartTaxLineByClass,
+  ShippingRateItem,
+} from "./checkout-sidebar/types";
 
-export interface SidebarFulfillmentOption {
-  id: string;
-  label: string;
-  description?: string;
-  zeroShipping: boolean;
-  requiresBranch: boolean;
-}
-
-export interface SidebarPaymentOption {
-  id: string;
-  label: string;
-  description?: string;
-  requiresDelivery: boolean;
-  requiresPickup?: boolean;
-  pendingPayment?: boolean;
-}
-
-export interface CartTaxLineByClass {
-  code: string;
-  name: string;
-  ratePercent: number;
-  taxAmountCents: number;
-  subtotalCents: number;
-}
+export type {
+  SidebarFulfillmentOption,
+  SidebarPaymentOption,
+  CartTaxLineByClass,
+  ShippingRateItem,
+};
 
 interface CartCheckoutSidebarProps {
   priceSyncNotice: string | null;
@@ -87,22 +77,7 @@ interface CartCheckoutSidebarProps {
   clearCart: () => void;
   handleSendInbox: (e: React.FormEvent) => void;
   emailStatus: string;
-  availableShippingRates?: Array<{
-    rateId: string;
-    carrierId: string;
-    carrierName: string;
-    serviceCode: string;
-    serviceName: string;
-    estimatedDays: number;
-    amountCents: number;
-    branchBreakdown?: Array<{
-      branchId: string | null;
-      branchName: string;
-      originCity: string;
-      amountCents: number;
-      estimatedDays: number;
-    }>;
-  }>;
+  availableShippingRates?: ShippingRateItem[];
   selectedRateId?: string;
   onSelectShippingRate?: (rateId: string) => void;
   addressConfirmed?: boolean;
@@ -164,139 +139,32 @@ export function CartCheckoutSidebar({
   isFetchingRates = false,
 }: CartCheckoutSidebarProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const displaySubtotal = checkoutSubtotal;
 
   return (
     <>
       <div className="bg-white border border-zinc-200/80 rounded-2xl p-6 dark:bg-zinc-950 dark:border-zinc-900 shadow-sm space-y-6">
-        <h2 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
-          Order Summary
-        </h2>
-
-        {priceSyncNotice && (
-          <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-            {priceSyncNotice}
-          </p>
-        )}
-
-        <div className="space-y-3 text-xs font-mono">
-          {isSignedIn &&
-            checkoutItemCount > 0 &&
-            checkoutItemCount < cartCount &&
-            vendorCount <= 1 && (
-              <p className="text-[10px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
-                Checkout totals for {checkoutItemCount} {checkoutItemCount === 1 ? "item" : "items"}{" "}
-                selected. Unticked items stay in your cart.
-              </p>
-            )}
-          {vendorCount > 1 && selectedVendorSummary && (
-            <p className="text-[10px] text-purple-700 dark:text-purple-300 bg-purple-500/10 border border-purple-500/20 rounded-lg px-3 py-2">
-              Checkout totals for {selectedVendorSummary.vendorName} ({checkoutItemCount}{" "}
-              {checkoutItemCount === 1 ? "item" : "items"}). Other vendors stay in your cart.
-            </p>
-          )}
-
-          <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
-            <span>Subtotal</span>
-            <span className="font-bold text-zinc-900 dark:text-zinc-200">
-              {formatPrice(displaySubtotal)}
-            </span>
-          </div>
-
-          {optionsLoading ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-zinc-400 dark:text-zinc-600 animate-pulse">
-                <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-28"></div>
-                <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-16"></div>
-              </div>
-              <div className="flex items-center justify-between text-zinc-400 dark:text-zinc-600 animate-pulse">
-                <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-20"></div>
-                <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-16"></div>
-              </div>
-            </div>
-          ) : (
-            <>
-              {taxLinesByClass && taxLinesByClass.length > 1 ? (
-                <div className="space-y-1.5 py-1 border-y border-zinc-100 dark:border-zinc-900/60">
-                  <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">
-                    Tax Breakdown
-                  </span>
-                  {taxLinesByClass.map((tl) => (
-                    <div
-                      key={tl.code}
-                      className="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400 pl-2 gap-2"
-                    >
-                      <span
-                        className="truncate min-w-0 flex-1"
-                        title={
-                          tl.name.includes(`(${tl.ratePercent}%)`)
-                            ? tl.name
-                            : `${tl.name} (${tl.ratePercent}%)`
-                        }
-                      >
-                        •{" "}
-                        {tl.name.includes(`(${tl.ratePercent}%)`)
-                          ? tl.name
-                          : `${tl.name} (${tl.ratePercent}%)`}
-                      </span>
-                      <span className="font-bold text-zinc-800 dark:text-zinc-300 shrink-0">
-                        {formatPrice(tl.taxAmountCents)}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between pt-1 text-zinc-700 dark:text-zinc-300 font-bold border-t border-dashed border-zinc-200 dark:border-zinc-800">
-                    <span>Total Estimated Tax</span>
-                    <span>{formatPrice(estimatedTax)}</span>
-                  </div>
-                </div>
-              ) : requiresVendorSelection ? (
-                <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] italic gap-2">
-                  <span className="truncate min-w-0 flex-1" title={taxLabel}>
-                    {taxLabel}
-                  </span>
-                  <span className="font-mono text-zinc-400 shrink-0">Select a vendor</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400 gap-2">
-                  <span className="truncate min-w-0 flex-1" title={taxLabel}>
-                    {taxLabel}
-                  </span>
-                  <span className="font-bold text-zinc-900 dark:text-zinc-200 shrink-0">
-                    {formatPrice(estimatedTax)}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
-                <span>Shipping</span>
-                <span className="font-bold text-zinc-900 dark:text-zinc-200">
-                  {requiresDeliveryAddress &&
-                  (!addressConfirmed || !shippingCountry.trim() || !shippingCity.trim()) ? (
-                    <span className="font-medium text-amber-600 dark:text-amber-400 text-[11px] font-sans">
-                      Enter delivery address
-                    </span>
-                  ) : shippingFee === 0 ? (
-                    "FREE"
-                  ) : (
-                    formatPrice(shippingFee)
-                  )}
-                </span>
-              </div>
-
-              <div className="border-t border-zinc-100 dark:border-zinc-900 pt-4 flex items-center justify-between text-zinc-900 dark:text-zinc-100 font-sans font-bold">
-                <span>Total</span>
-                <span className="text-lg font-black font-mono">
-                  {formatPrice(
-                    requiresDeliveryAddress &&
-                      (!addressConfirmed || !shippingAddress.trim() || !shippingCity.trim())
-                      ? displaySubtotal + estimatedTax
-                      : grandTotal,
-                  )}
-                </span>
-              </div>
-            </>
-          )}
-        </div>
+        <CartOrderSummaryTotals
+          priceSyncNotice={priceSyncNotice}
+          taxLabel={taxLabel}
+          taxLinesByClass={taxLinesByClass}
+          isSignedIn={isSignedIn}
+          checkoutItemCount={checkoutItemCount}
+          cartCount={cartCount}
+          vendorCount={vendorCount}
+          selectedVendorSummary={selectedVendorSummary}
+          checkoutSubtotal={checkoutSubtotal}
+          estimatedTax={estimatedTax}
+          shippingFee={shippingFee}
+          grandTotal={grandTotal}
+          formatPrice={formatPrice}
+          optionsLoading={optionsLoading}
+          requiresVendorSelection={requiresVendorSelection}
+          requiresDeliveryAddress={requiresDeliveryAddress}
+          addressConfirmed={addressConfirmed}
+          shippingCountry={shippingCountry}
+          shippingCity={shippingCity}
+          shippingAddress={shippingAddress}
+        />
 
         {/* Sign-in required or signed-in checkout details */}
         {!isSignedIn ? (
@@ -346,374 +214,40 @@ export function CartCheckoutSidebar({
 
         {/* Fulfillment & Payment Options — signed-in only */}
         {isSignedIn && cartItems.length > 0 && (
-          <div className="space-y-4 border-t border-zinc-100 dark:border-zinc-900 pt-4">
-            <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
-              Delivery & Payment
-            </h3>
-
-            {optionsLoading ? (
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Loading checkout options...
-              </p>
-            ) : (
-              <>
-                {requiresVendorSelection && (
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Select a vendor on the left and tick products to load delivery and payment
-                    options.
-                  </p>
-                )}
-                {isSignedIn &&
-                  selectedCheckoutProductIds.length === 0 &&
-                  !requiresVendorSelection && (
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                      Tick at least one product on the left to checkout.
-                    </p>
-                  )}
-
-                {checkoutOptions.fulfillment.length > 0 ? (
-                  <fieldset className="space-y-2">
-                    <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">
-                      Fulfillment
-                    </legend>
-                    {checkoutOptions.fulfillment.map((option: SidebarFulfillmentOption) => (
-                      <label
-                        key={option.id}
-                        className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
-                          fulfillmentMethod === option.id
-                            ? "border-purple-500/50 bg-purple-500/5"
-                            : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="fulfillment"
-                          value={option.id}
-                          checked={fulfillmentMethod === option.id}
-                          onChange={() => handleFulfillmentChange(option.id)}
-                          className="mt-0.5"
-                        />
-                        <span className="min-w-0">
-                          <span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                            {option.label}
-                          </span>
-                          {option.description && (
-                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                              {option.description}
-                            </span>
-                          )}
-                        </span>
-                      </label>
-                    ))}
-                  </fieldset>
-                ) : (
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    {vendorCount > 1
-                      ? requiresVendorSelection
-                        ? "Select a vendor on the left to see available fulfillment methods."
-                        : "No fulfillment methods are enabled for the selected vendor. Contact the store or try another vendor."
-                      : "No fulfillment methods are enabled for this vendor. Contact the store or try again later."}
-                  </p>
-                )}
-
-                {selectedFulfillment?.requiresBranch && (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
-                      Pickup Branch
-                    </p>
-                    {pickupBranches.length > 0 ? (
-                      <select
-                        value={pickupBranchId}
-                        onChange={(e) => setPickupBranchId(e.target.value)}
-                        className="w-full h-10 px-3.5 text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-purple-600/50"
-                      >
-                        {pickupBranches.length !== 1 && <option value="">Select a branch</option>}
-                        {pickupBranches.map((branch) => (
-                          <option key={branch.id} value={branch.id}>
-                            {branch.name}
-                            {branch.address ? ` — ${branch.address}` : ""}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        Store pickup is enabled but no branches are configured for this vendor.
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {requiresDeliveryAddress && (
-                  <>
-                    <DeliveryAddressFormFields
-                      shippingAddress={shippingAddress}
-                      shippingAddressLine2={shippingAddressLine2}
-                      shippingCity={shippingCity}
-                      shippingState={shippingState}
-                      shippingPostalCode={shippingPostalCode}
-                      shippingCountry={shippingCountry}
-                      shippingPhone={shippingPhone}
-                      shippingPhone2={shippingPhone2}
-                      onChange={handleAddressChange}
-                    />
-
-                    {isFetchingRates ? (
-                      <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/15 dark:bg-purple-950/20 dark:border-purple-800/30 text-xs text-purple-900 dark:text-purple-300 flex items-center gap-2.5 mt-2 animate-pulse">
-                        <Spinner size="sm" />
-                        <span>
-                          Calculating live shipping rates for{" "}
-                          <strong>{shippingCity || "destination"}</strong>...
-                        </span>
-                      </div>
-                    ) : availableShippingRates.length > 0 ? (
-                      (() => {
-                        // Group rates by carrierId for display
-                        const CARRIER_META: Record<
-                          string,
-                          {
-                            label: string;
-                            badge: string;
-                            color: string;
-                            darkColor: string;
-                            icon: string;
-                          }
-                        > = {
-                          slpost: {
-                            label: "Sri Lanka Post",
-                            badge: "Official",
-                            color: "text-emerald-700 bg-emerald-50 border-emerald-200",
-                            darkColor:
-                              "dark:text-emerald-400 dark:bg-emerald-950/30 dark:border-emerald-800/40",
-                            icon: "🇱🇰",
-                          },
-                          shippo: {
-                            label: "Shippo (Multi-Carrier)",
-                            badge: "Live API",
-                            color: "text-blue-700 bg-blue-50 border-blue-200",
-                            darkColor:
-                              "dark:text-blue-400 dark:bg-blue-950/30 dark:border-blue-800/40",
-                            icon: "📦",
-                          },
-                          easypost: {
-                            label: "EasyPost (Multi-Carrier)",
-                            badge: "Live API",
-                            color: "text-indigo-700 bg-indigo-50 border-indigo-200",
-                            darkColor:
-                              "dark:text-indigo-400 dark:bg-indigo-950/30 dark:border-indigo-800/40",
-                            icon: "🚀",
-                          },
-                          builtin: {
-                            label: "Platform Carrier",
-                            badge: "Built-in",
-                            color: "text-zinc-700 bg-zinc-50 border-zinc-200",
-                            darkColor:
-                              "dark:text-zinc-400 dark:bg-zinc-900/30 dark:border-zinc-800",
-                            icon: "🏪",
-                          },
-                        };
-                        const grouped = new Map<string, typeof availableShippingRates>();
-                        for (const rate of availableShippingRates) {
-                          const cid =
-                            rate.carrierId ||
-                            (rate.rateId.startsWith("easypost_")
-                              ? "easypost"
-                              : rate.rateId.startsWith("shippo_")
-                                ? "shippo"
-                                : "slpost");
-                          const g = grouped.get(cid) ?? [];
-                          g.push(rate);
-                          grouped.set(cid, g);
-                        }
-                        const ORDER = ["slpost", "shippo", "easypost", "builtin"];
-                        const sortedGroups = [...grouped.entries()].sort(
-                          ([a], [b]) => (ORDER.indexOf(a) ?? 99) - (ORDER.indexOf(b) ?? 99),
-                        );
-                        return (
-                          <fieldset className="space-y-3 pt-2">
-                            <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1 flex items-center justify-between">
-                              <span>Shipping Carrier &amp; Service</span>
-                              <span className="text-[9px] text-purple-600 dark:text-purple-400 font-bold">
-                                LIVE RATES
-                              </span>
-                            </legend>
-                            {sortedGroups.map(([carrierId, rates]) => {
-                              const meta = CARRIER_META[carrierId] ?? {
-                                label: carrierId,
-                                badge: "Carrier",
-                                color: "text-zinc-700 bg-zinc-50 border-zinc-200",
-                                darkColor:
-                                  "dark:text-zinc-400 dark:bg-zinc-900/30 dark:border-zinc-800",
-                                icon: "🚚",
-                              };
-                              return (
-                                <div key={carrierId} className="space-y-1.5">
-                                  {/* Integration header */}
-                                  <div
-                                    className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-mono font-bold ${meta.color} ${meta.darkColor}`}
-                                  >
-                                    <span>{meta.icon}</span>
-                                    <span className="flex-1">{meta.label}</span>
-                                    <span className="text-[9px] font-bold opacity-70">
-                                      {meta.badge}
-                                    </span>
-                                  </div>
-                                  {/* Rates under this carrier */}
-                                  {rates.map((rate) => (
-                                    <label
-                                      key={rate.rateId}
-                                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ml-1 ${
-                                        selectedRateId === rate.rateId
-                                          ? "border-purple-500/50 bg-purple-500/5"
-                                          : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30"
-                                      }`}
-                                    >
-                                      <input
-                                        type="radio"
-                                        name="shippingRate"
-                                        value={rate.rateId}
-                                        checked={selectedRateId === rate.rateId}
-                                        onChange={() => onSelectShippingRate?.(rate.rateId)}
-                                        className="mt-0.5 accent-purple-600"
-                                      />
-                                      <span className="min-w-0 flex-1">
-                                        <span className="flex items-center justify-between gap-2">
-                                          <span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200 leading-tight">
-                                            {rate.serviceName}
-                                          </span>
-                                          <span className="text-xs font-mono font-extrabold text-purple-700 dark:text-purple-300 shrink-0">
-                                            {formatPrice(rate.amountCents)}
-                                          </span>
-                                        </span>
-                                        <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                          Est. {rate.estimatedDays}{" "}
-                                          {rate.estimatedDays === 1 ? "day" : "days"} · via{" "}
-                                          {rate.carrierName}
-                                        </span>
-                                        {rate.branchBreakdown &&
-                                          rate.branchBreakdown.length > 1 && (
-                                            <div className="mt-2 pt-2 border-t border-purple-200/50 dark:border-purple-800/40 space-y-1">
-                                              <div className="flex items-center gap-1 text-[10px] font-bold text-purple-800 dark:text-purple-300">
-                                                <span>🏬</span>
-                                                <span>
-                                                  Ships from {rate.branchBreakdown.length}{" "}
-                                                  locations:
-                                                </span>
-                                              </div>
-                                              <div className="space-y-0.5 pl-2.5">
-                                                {rate.branchBreakdown.map((b, bIdx) => (
-                                                  <div
-                                                    key={bIdx}
-                                                    className="flex items-center justify-between text-[10px] font-mono text-zinc-600 dark:text-zinc-400"
-                                                  >
-                                                    <span>
-                                                      • {b.branchName} ({b.originCity})
-                                                    </span>
-                                                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                                                      {formatPrice(b.amountCents)}
-                                                    </span>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          )}
-                                      </span>
-                                    </label>
-                                  ))}
-                                </div>
-                              );
-                            })}
-                          </fieldset>
-                        );
-                      })()
-                    ) : shippingCity.trim() && shippingCountry.trim() ? (
-                      <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 dark:bg-amber-950/30 dark:border-amber-800/40 text-xs text-amber-900 dark:text-amber-300 flex items-center gap-2 mt-2">
-                        <span className="text-base">⚠️</span>
-                        <span>
-                          No shipping methods available for{" "}
-                          <strong>
-                            {shippingCity}, {shippingCountry}
-                          </strong>
-                          . Please verify city name or address details.
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="p-3.5 rounded-xl bg-purple-500/5 border border-purple-500/15 dark:bg-purple-950/20 dark:border-purple-800/30 text-xs text-purple-900 dark:text-purple-300 flex items-center gap-2 mt-2">
-                        <span className="text-base">📍</span>
-                        <span>
-                          Enter <strong>City</strong> and select <strong>Country</strong> above to
-                          fetch live shipping rates &amp; carrier options.
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {compatiblePayments.length > 0 ? (
-                  <fieldset className="space-y-2">
-                    <legend className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">
-                      Payment
-                    </legend>
-                    {compatiblePayments.map((option: SidebarPaymentOption) => (
-                      <label
-                        key={option.id}
-                        className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
-                          paymentMethod === option.id
-                            ? "border-purple-500/50 bg-purple-500/5"
-                            : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="payment"
-                          value={option.id}
-                          checked={paymentMethod === option.id}
-                          onChange={() => setPaymentMethod(option.id)}
-                          className="mt-0.5"
-                        />
-                        <span className="min-w-0">
-                          <span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                            {option.label}
-                          </span>
-                          {option.description && (
-                            <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                              {option.description}
-                            </span>
-                          )}
-                        </span>
-                      </label>
-                    ))}
-                  </fieldset>
-                ) : (
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    {checkoutOptions.payment.length > 0 && selectedFulfillment?.requiresBranch
-                      ? "No payment methods are available for store pickup with the current selection. Choose home delivery or another fulfillment option."
-                      : vendorCount > 1
-                        ? requiresVendorSelection
-                          ? "Select a vendor on the left to see available payment methods."
-                          : "No payment methods are enabled for the selected vendor."
-                        : "No payment methods are enabled for this vendor. Contact the store or try again later."}
-                  </p>
-                )}
-
-                {bankTransferSelected && (
-                  <div className="space-y-2">
-                    {bankTransferMissingDetails ? (
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        Bank transfer cannot be completed until{" "}
-                        {selectedVendorSummary?.vendorName || "this vendor"} configures bank account
-                        details.
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        Bank account details and your payment reference will be shown after you
-                        place the order (confirmation screen, email, and invoice).
-                      </p>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+          <CartFulfillmentPaymentSection
+            optionsLoading={optionsLoading}
+            requiresVendorSelection={requiresVendorSelection}
+            selectedCheckoutProductIds={selectedCheckoutProductIds}
+            vendorCount={vendorCount}
+            checkoutOptions={checkoutOptions}
+            fulfillmentMethod={fulfillmentMethod}
+            handleFulfillmentChange={handleFulfillmentChange}
+            selectedFulfillment={selectedFulfillment}
+            pickupBranches={pickupBranches}
+            pickupBranchId={pickupBranchId}
+            setPickupBranchId={setPickupBranchId}
+            requiresDeliveryAddress={requiresDeliveryAddress}
+            shippingAddress={shippingAddress}
+            shippingAddressLine2={shippingAddressLine2}
+            shippingCity={shippingCity}
+            shippingState={shippingState}
+            shippingPostalCode={shippingPostalCode}
+            shippingCountry={shippingCountry}
+            shippingPhone={shippingPhone}
+            shippingPhone2={shippingPhone2}
+            handleAddressChange={handleAddressChange}
+            isFetchingRates={isFetchingRates}
+            availableShippingRates={availableShippingRates}
+            selectedRateId={selectedRateId}
+            onSelectShippingRate={onSelectShippingRate}
+            formatPrice={formatPrice}
+            compatiblePayments={compatiblePayments}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+            bankTransferSelected={bankTransferSelected}
+            bankTransferMissingDetails={bankTransferMissingDetails}
+            selectedVendorSummary={selectedVendorSummary}
+          />
         )}
 
         <div className="pt-2 space-y-3">
@@ -808,53 +342,14 @@ export function CartCheckoutSidebar({
         </div>
       </div>
 
-      {/* Send to Inbox Box */}
-      <div className="bg-white border border-zinc-200/80 rounded-2xl p-6 dark:bg-zinc-950 dark:border-zinc-900 shadow-sm space-y-4">
-        <h2 className="text-xs font-bold font-mono uppercase tracking-wider text-zinc-400">
-          Send Cart to Inbox
-        </h2>
-
-        {!isSignedIn ? (
-          <div className="space-y-3">
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Sign in to email a summary of your cart items to your account address.
-            </p>
-            <SignInButton mode="modal" forceRedirectUrl={authRedirectUrl ?? "/cart"}>
-              <button
-                type="button"
-                className="w-full text-center py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer"
-              >
-                Sign In to Email Summary
-              </button>
-            </SignInButton>
-          </div>
-        ) : (
-          <form onSubmit={handleSendInbox} className="space-y-3">
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Email the list of these {cartCount} items to your registered address.
-            </p>
-
-            <div className="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-900 truncate">
-              📧 {user?.primaryEmailAddress?.emailAddress}
-            </div>
-
-            <button
-              type="submit"
-              disabled={emailStatus === "sending"}
-              className="w-full text-center py-2.5 bg-purple-700 hover:bg-purple-800 disabled:bg-purple-900/60 disabled:cursor-not-allowed text-white text-xs font-bold font-mono uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
-            >
-              {emailStatus === "sending" ? (
-                <>
-                  <Spinner size="sm" />
-                  <span>Sending...</span>
-                </>
-              ) : (
-                <span>Email Summary</span>
-              )}
-            </button>
-          </form>
-        )}
-      </div>
+      <CartSendToInboxCard
+        isSignedIn={isSignedIn}
+        authRedirectUrl={authRedirectUrl}
+        handleSendInbox={handleSendInbox}
+        emailStatus={emailStatus}
+        cartCount={cartCount}
+        userEmail={user?.primaryEmailAddress?.emailAddress}
+      />
     </>
   );
 }
