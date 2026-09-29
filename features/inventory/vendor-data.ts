@@ -423,8 +423,11 @@ export async function loadVendorInventoryData(
     let orgMembers: { userId: string; name: string; email: string }[] = [];
     try {
       orgMembers = await getCachedOrgMembers(orgId);
-    } catch {
-      // Graceful degradation
+    } catch (err) {
+      logger.warn(
+        "[VendorData] Failed fetching cached org members for branch mapping, degrading gracefully",
+        { error: err, orgId },
+      );
     }
 
     const checkoutOptionsCatalog = await getCheckoutOptionsCatalog();

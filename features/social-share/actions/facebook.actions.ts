@@ -176,7 +176,12 @@ export const triggerBatchFacebookFeedPostAction = vendorAction
               pageTokenToUse = pageTokenData.access_token;
             }
           }
-        } catch {}
+        } catch (err) {
+          logger.warn(
+            "[FacebookActions] Failed to resolve page access token, falling back to base token",
+            { error: err, orgId, pageId: integration.facebookPageId },
+          );
+        }
 
         try {
           const liveRes = await fetch(

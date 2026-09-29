@@ -1,5 +1,6 @@
 import { PinterestPinParams } from "../types";
 import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
+import { logger } from "@/shared/logging/logger";
 
 const PINTEREST_API_BASE = "https://api.pinterest.com/v5";
 
@@ -201,8 +202,11 @@ export async function createPinterestProductPin({
             resolvedBoardId = matched.id;
           }
         }
-      } catch {
-        // Fallback to user-provided string
+      } catch (err) {
+        logger.warn(
+          "[PinterestService] Failed resolving board by name, falling back to raw board identifier",
+          { error: err, boardId: cleanBoardId },
+        );
       }
     }
 

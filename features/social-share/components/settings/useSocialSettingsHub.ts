@@ -29,6 +29,7 @@ import type {
   BatchSyncResult,
   TestResult,
 } from "./types";
+import { logClientWarning } from "@/shared/errors/client-error";
 
 export function useSocialSettingsHub() {
   const [isPending, startTransition] = useTransition();
@@ -159,8 +160,8 @@ export function useSocialSettingsHub() {
           setPinterestAccessToken("••••••••••••••••••••••••••••••••");
         }
       }
-    } catch {
-      // Gracefully handle load error
+    } catch (err) {
+      logClientWarning("[useSocialSettingsHub] Failed to load integration settings:", err);
     } finally {
       setIsLoading(false);
     }
@@ -173,8 +174,8 @@ export function useSocialSettingsHub() {
       if (res?.data?.logs) {
         setLogs(res.data.logs as SyncLogItem[]);
       }
-    } catch {
-      // Ignore
+    } catch (err) {
+      logClientWarning("[useSocialSettingsHub] Failed to load sync logs:", err);
     } finally {
       setLogsLoading(false);
     }

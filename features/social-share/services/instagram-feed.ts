@@ -103,7 +103,12 @@ export async function postProductToInstagramFeed({
             };
           }
         }
-      } catch {}
+      } catch (err) {
+        logger.warn(
+          "[InstagramFeed] Transient error checking container status, will continue polling",
+          { error: err, creationId },
+        );
+      }
     }
 
     // Step 3: Publish the Media Container
@@ -235,7 +240,12 @@ export async function fetchLinkedInstagramAccount({
             },
           };
         }
-      } catch {}
+      } catch (err) {
+        logger.warn("[InstagramFeed] Failed resolving linked IG account via Facebook Page", {
+          error: err,
+          pageId: cleanPageId,
+        });
+      }
     }
 
     // 2. If direct IG Account ID is hinted or known
@@ -260,7 +270,12 @@ export async function fetchLinkedInstagramAccount({
               },
             };
           }
-        } catch {}
+        } catch (err) {
+          logger.warn("[InstagramFeed] Failed querying direct candidate IG ID", {
+            error: err,
+            igAccountId: cleanId,
+          });
+        }
       }
     }
 
@@ -287,7 +302,12 @@ export async function fetchLinkedInstagramAccount({
               },
             };
           }
-        } catch {}
+        } catch (err) {
+          logger.warn("[InstagramFeed] Failed querying Business Portfolio Instagram accounts", {
+            error: err,
+            businessManagerId: cleanBiz,
+          });
+        }
       }
     }
 
@@ -315,7 +335,11 @@ export async function fetchLinkedInstagramAccount({
           }
         }
       }
-    } catch {}
+    } catch (err) {
+      logger.warn("[InstagramFeed] Failed querying /me/businesses for Instagram accounts", {
+        error: err,
+      });
+    }
 
     return {
       success: false,

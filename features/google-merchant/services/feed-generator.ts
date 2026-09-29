@@ -223,8 +223,8 @@ export async function generateGoogleMerchantFeed({
         integrationBrandMap.set(int.orgId, int.brandName.trim());
       }
     }
-  } catch {
-    // Ignore
+  } catch (err) {
+    logger.warn("[GoogleMerchantFeed] Failed fetching catalog brand integrations", { error: err });
   }
 
   // Filter products by scope
@@ -249,8 +249,11 @@ export async function generateGoogleMerchantFeed({
     try {
       const orgCurrency = await getOrgCurrencySettings(orgId);
       defaultCurrency = orgCurrency.baseCurrency || "LKR";
-    } catch {
-      // Fallback to LKR
+    } catch (err) {
+      logger.warn("[GoogleMerchantFeed] Failed fetching org currency settings, defaulting to LKR", {
+        error: err,
+        orgId,
+      });
     }
   }
 
@@ -258,7 +261,11 @@ export async function generateGoogleMerchantFeed({
   let ratesMap: Record<string, number> = {};
   try {
     ratesMap = await getExchangeRatesMap();
-  } catch {
+  } catch (err) {
+    logger.warn(
+      "[GoogleMerchantFeed] Failed fetching live exchange rates, falling back to defaults",
+      { error: err },
+    );
     ratesMap = DEFAULT_USD_RATES;
   }
 
@@ -271,8 +278,10 @@ export async function generateGoogleMerchantFeed({
     for (const c of allCategories) {
       categoryMap.set(c.id, c.name);
     }
-  } catch {
-    // Ignore
+  } catch (err) {
+    logger.warn("[GoogleMerchantFeed] Failed fetching categories for taxonomy mapping", {
+      error: err,
+    });
   }
 
   // Fetch live inventory quantities
@@ -335,8 +344,11 @@ export async function generateGoogleMerchantFeed({
           );
           return parsed.toString();
         }
-      } catch {
-        // Return original if URL parsing fails
+      } catch (err) {
+        logger.warn(
+          "[GoogleMerchantFeed] URL parsing failed for image optimization, using original URL",
+          { error: err, url },
+        );
       }
       return url;
     };

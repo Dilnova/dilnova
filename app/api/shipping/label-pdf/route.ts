@@ -174,7 +174,9 @@ export async function GET(req: Request) {
         height: 50,
         displayValue: false
       });
-    } catch(e){}
+    } catch (e) {
+      console.warn("[ShippingLabelPDF] Barcode generation failed for tracking code:", e);
+    }
   </script>
 </body>
 </html>`;

@@ -122,8 +122,11 @@ async function handler(req: NextRequest) {
             sql`lower(trim(${schema.contactSubmissions.email})) = ${email.trim().toLowerCase()}`,
           );
       }
-    } catch {
-      // User might be deleted from clerk already or error
+    } catch (err) {
+      logger.warn(
+        "[QStashDataExport] Failed to retrieve user details from Clerk, proceeding with partial export",
+        { error: err, targetUserId },
+      );
     }
 
     // 3-6. Fetch Carts, Branch Members, Audit Logs, Reviews, Questions, Wishlists concurrently

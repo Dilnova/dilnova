@@ -123,8 +123,11 @@ export async function postProductToFacebookPageFeed({
             data = await response.json();
           }
         }
-      } catch {
-        // Ignore and fallback to reporting initial error
+      } catch (err) {
+        logger.warn(
+          "[FacebookFeed] Failed page-scoped token retry for photo post, reporting initial response",
+          { error: err, pageId },
+        );
       }
     }
 
@@ -196,7 +199,9 @@ export async function fetchFacebookManagedPages({
           }
         }
       }
-    } catch {}
+    } catch (err) {
+      logger.warn("[FacebookFeed] Failed fetching pages via /me/accounts", { error: err });
+    }
 
     // 2. Try /me/assigned_pages (Business System User tokens)
     try {
@@ -218,7 +223,9 @@ export async function fetchFacebookManagedPages({
           }
         }
       }
-    } catch {}
+    } catch (err) {
+      logger.warn("[FacebookFeed] Failed fetching pages via /me/assigned_pages", { error: err });
+    }
 
     // 3. Try /me/businesses (Business Portfolios & Owned Pages)
     try {
@@ -243,7 +250,9 @@ export async function fetchFacebookManagedPages({
           }
         }
       }
-    } catch {}
+    } catch (err) {
+      logger.warn("[FacebookFeed] Failed fetching businesses via /me/businesses", { error: err });
+    }
 
     // 4. Try hinted Page IDs from vendor settings
     const knownPageIds = [pageIdHint].filter(Boolean) as string[];
@@ -265,7 +274,12 @@ export async function fetchFacebookManagedPages({
               accessToken: data.access_token,
             });
           }
-        } catch {}
+        } catch (err) {
+          logger.warn("[FacebookFeed] Failed fetching hinted Page ID details", {
+            error: err,
+            pageId: cleanPid,
+          });
+        }
       }
     }
 
