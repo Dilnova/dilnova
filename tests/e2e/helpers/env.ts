@@ -52,8 +52,19 @@ export function authStateExists(
     return false;
   }
   try {
-    const data = JSON.parse(fs.readFileSync(filePath, "utf8")) as { cookies?: unknown[] };
-    return Array.isArray(data.cookies) && data.cookies.length > 0;
+    const data = JSON.parse(fs.readFileSync(filePath, "utf8")) as {
+      cookies?: Array<{ name: string }>;
+    };
+    if (!Array.isArray(data.cookies) || data.cookies.length === 0) {
+      return false;
+    }
+    return data.cookies.some(
+      (c) =>
+        typeof c === "object" &&
+        c !== null &&
+        typeof c.name === "string" &&
+        (c.name === "__session" || c.name.startsWith("__clerk") || c.name.startsWith("__client")),
+    );
   } catch {
     return false;
   }
