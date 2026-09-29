@@ -14,6 +14,8 @@ import {
   triggerBatchInstagramFeedPostAction,
   discoverFacebookPagesAction,
   discoverInstagramAccountAction,
+  checkSocialTokensHealthAction,
+  refreshSocialTokensAction,
 } from "@/features/social-share/actions";
 import {
   testFacebookShopConnectionAction,
@@ -28,7 +30,9 @@ import type {
   DiscoveredInstagramAccount,
   BatchSyncResult,
   TestResult,
+  SocialTokensHealthReport,
 } from "./types";
+
 import { logClientWarning } from "@/shared/errors/client-error";
 
 export function useSocialSettingsHub() {
@@ -109,6 +113,12 @@ export function useSocialSettingsHub() {
   const [discoveredInstagramAccount, setDiscoveredInstagramAccount] =
     useState<DiscoveredInstagramAccount | null>(null);
 
+  // Token Health & Inspection
+  const [tokenHealthReport, setTokenHealthReport] = useState<SocialTokensHealthReport | null>(null);
+  const [isCheckingTokenHealth, setIsCheckingTokenHealth] = useState(false);
+  const [isRefreshingTokens, setIsRefreshingTokens] = useState(false);
+  const [tokenRefreshResult, setTokenRefreshResult] = useState<string | null>(null);
+
   // Logs & Help
   const [logs, setLogs] = useState<SyncLogItem[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -117,6 +127,7 @@ export function useSocialSettingsHub() {
   useEffect(() => {
     loadSettings();
     loadLogs();
+    loadTokenHealth();
   }, []);
 
   async function loadSettings() {
@@ -180,6 +191,56 @@ export function useSocialSettingsHub() {
       setLogsLoading(false);
     }
   }
+
+  async function loadTokenHealth() {
+    setIsCheckingTokenHealth(true);
+    try {
+      const res = await checkSocialTokensHealthAction({});
+      if (res?.data?.report) {
+        setTokenHealthReport(res.data.report);
+      }
+    } catch (err) {
+      logClientWarning("[useSocialSettingsHub] Failed to check token health:", err);
+    } finally {
+      setIsCheckingTokenHealth(false);
+    }
+  }
+
+  const handleCheckTokenHealth = () => {
+    startTransition(async () => {
+      await loadTokenHealth();
+    });
+  };
+
+  const handleRefreshToken = () => {
+    setIsRefreshingTokens(true);
+    setTokenRefreshResult(null);
+    startTransition(async () => {
+      try {
+        const res = await refreshSocialTokensAction({});
+        if (res?.data?.success && res.data.report) {
+          setTokenHealthReport(res.data.report);
+          const count = res.data.refreshedChannels?.length || 0;
+          if (count > 0) {
+            setTokenRefreshResult(
+              `Successfully renewed ${count} token(s): ${res.data.refreshedChannels.join(", ")}`,
+            );
+            setSaveSuccess(`Renewed ${count} social token(s) successfully!`);
+          } else {
+            setTokenRefreshResult("Tokens inspected. All configured tokens are healthy.");
+            setSaveSuccess("Tokens inspected. No renewal needed.");
+          }
+          await loadSettings();
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to refresh social tokens.";
+        setTokenRefreshResult(msg);
+        setSaveError(msg);
+      } finally {
+        setIsRefreshingTokens(false);
+      }
+    });
+  };
 
   const handleDiscoverPages = () => {
     const tokenToUse = facebookPageAccessToken.trim() || accessToken.trim();
@@ -802,6 +863,13 @@ export function useSocialSettingsHub() {
     handleBatchFacebookFeedPublish,
     handleBatchInstagramFeedPublish,
     handleBatchPinterestPublish,
+    // Token Health & Inspection
+    tokenHealthReport,
+    isCheckingTokenHealth,
+    isRefreshingTokens,
+    tokenRefreshResult,
+    handleCheckTokenHealth,
+    handleRefreshToken,
   };
 }
 

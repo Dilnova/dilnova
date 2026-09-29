@@ -40,7 +40,13 @@ export async function postProductToFacebookPageFeed({
   storeUrl = process.env.NEXT_PUBLIC_APP_URL || "https://dilnova.com",
   brandName = "Dilnova Store",
   customTemplate,
-}: FacebookFeedPostParams): Promise<{ success: boolean; postId?: string; error?: string }> {
+  userToken,
+}: FacebookFeedPostParams): Promise<{
+  success: boolean;
+  postId?: string;
+  error?: string;
+  refreshedToken?: string;
+}> {
   try {
     const cleanPageId = pageId.trim().replace(/[^0-9]/g, "");
     const cleanToken = pageAccessToken.trim();
@@ -95,21 +101,29 @@ export async function postProductToFacebookPageFeed({
     });
 
     let data = await response.json();
+    let refreshedToken: string | undefined;
 
-    // Self-healing: If User/System Token caused #200 publish_actions, try resolving Page Access Token & retry
-    if (
+    // Self-healing: If User/System Token caused #200 publish_actions or token expired #190, try resolving fresh Page Token & retry
+    const isAuthOrPermError =
       data.error &&
-      (data.error.code === 200 || data.error.message?.includes("publish_actions"))
-    ) {
+      (data.error.code === 200 ||
+        data.error.code === 190 ||
+        data.error.message?.includes("publish_actions") ||
+        data.error.message?.includes("access token") ||
+        data.error.message?.includes("Session has expired"));
+
+    if (isAuthOrPermError) {
+      const resolverToken = userToken?.trim() || cleanToken;
       try {
         const pageRes = await fetch(
           `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${cleanPageId}?fields=access_token&access_token=${encodeURIComponent(
-            cleanToken,
+            resolverToken,
           )}`,
         );
         if (pageRes.ok) {
           const pageData = await pageRes.json();
-          if (pageData.access_token) {
+          if (pageData.access_token && pageData.access_token !== cleanToken) {
+            refreshedToken = pageData.access_token;
             response = await fetch(photoUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -142,6 +156,7 @@ export async function postProductToFacebookPageFeed({
     return {
       success: true,
       postId: data.post_id || data.id,
+      refreshedToken,
     };
   } catch (error) {
     logger.error("Unexpected error in postProductToFacebookPageFeed", { pageId, error });

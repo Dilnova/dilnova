@@ -218,7 +218,9 @@ describe("features/social-share/dispatcher", () => {
       currency: "LKR",
       brandName: "Artisan Woodworks",
       customTemplate: null,
+      userToken: "meta_access_token",
     });
+
     expect(results.facebookFeed).toEqual({ success: true, postId: "fb_post_1" });
 
     // Check Instagram Feed

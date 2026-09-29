@@ -57,6 +57,11 @@ export default function SocialSettingsHubPage() {
         autoSyncMetaCatalog={hub.autoSyncMetaCatalog}
         webhookUrl={hub.webhookUrl}
         autoTriggerWebhook={hub.autoTriggerWebhook}
+        tokenHealthReport={hub.tokenHealthReport}
+        isCheckingTokenHealth={hub.isCheckingTokenHealth}
+        isRefreshingTokens={hub.isRefreshingTokens}
+        onCheckTokenHealth={hub.handleCheckTokenHealth}
+        onRefreshToken={hub.handleRefreshToken}
       />
 
       {/* Feedback Alerts */}

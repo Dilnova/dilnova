@@ -6,3 +6,4 @@ export * from "./services/facebook-feed";
 export * from "./services/instagram-feed";
 export * from "./services/whatsapp-share";
 export * from "./services/webhook-dispatcher";
+export * from "./services/token-health";

@@ -66,10 +66,11 @@ export function isTokenExpiredError(
   errorCode?: number,
   errorSubcode?: number,
 ): boolean {
-  if (errorCode === 190) {
+  if (errorCode === 190 || errorSubcode === 463 || errorSubcode === 467) {
     // 463: Session expired, 467: Access token expired
     return true;
   }
+
   if (!errorMsg) return false;
   const msg = errorMsg.toLowerCase();
   return (
@@ -708,7 +709,7 @@ export async function refreshAndPersistSocialTokens({
   };
 
   let currentUserToken = integration.accessToken || "";
-  let currentPageId = integration.facebookPageId || "";
+  const currentPageId = integration.facebookPageId || "";
 
   // 1. If Meta user token is expiring and app credentials are provided, exchange for fresh long-lived token
   if (currentUserToken && (process.env.META_APP_ID || process.env.FACEBOOK_APP_ID)) {

@@ -52,3 +52,9 @@ export interface TestResult {
   valid: boolean;
   message: string;
 }
+
+export type {
+  TokenHealthStatus,
+  ChannelTokenHealth,
+  SocialTokensHealthReport,
+} from "@/features/social-share/types";

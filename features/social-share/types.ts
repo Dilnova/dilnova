@@ -19,6 +19,7 @@ export interface FacebookFeedPostParams {
   storeUrl?: string;
   brandName?: string | null;
   customTemplate?: string | null;
+  userToken?: string | null;
 }
 
 export interface InstagramFeedPostParams {
@@ -28,6 +29,7 @@ export interface InstagramFeedPostParams {
   currency?: string;
   storeUrl?: string;
   brandName?: string | null;
+  userToken?: string | null;
 }
 
 export interface PinterestPinParams {
@@ -57,9 +59,15 @@ export interface SocialShareLinks {
 }
 
 export interface MultiChannelPublishResult {
-  facebookFeed?: { success: boolean; postId?: string; error?: string };
-  instagramFeed?: { success: boolean; mediaId?: string; error?: string };
+  facebookFeed?: { success: boolean; postId?: string; error?: string; refreshedToken?: string };
+  instagramFeed?: { success: boolean; mediaId?: string; error?: string; refreshedToken?: string };
   metaCatalog?: { success: boolean; error?: string };
   pinterestPin?: { success: boolean; pinId?: string; error?: string };
   webhook?: { success: boolean; status?: number; error?: string };
 }
+
+export type {
+  TokenHealthStatus,
+  ChannelTokenHealth,
+  SocialTokensHealthReport,
+} from "./services/token-health";
