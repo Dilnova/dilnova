@@ -1,51 +1,186 @@
 import { Redis } from "@upstash/redis";
 import { readUpstashEnv } from "@/shared/security/upstash-health";
 import { logger } from "@/shared/logging/logger";
+import crypto from "crypto";
 
-const memoryIdempotencyTracker = new Set<string>();
-const MAX_MEMORY_TRACKER_SIZE = 10_000;
+export interface IdempotencyRecord {
+  status: "processing" | "completed";
+  data?: unknown;
+  createdAt: number;
+}
+
+interface MemoryEntry {
+  record: IdempotencyRecord;
+  expiresAt: number;
+}
+
+const memoryStore = new Map<string, MemoryEntry>();
+const MAX_MEMORY_STORE_SIZE = 10_000;
+
+function cleanupExpiredMemoryEntries(): void {
+  const now = Date.now();
+  for (const [k, v] of memoryStore.entries()) {
+    if (v.expiresAt <= now) {
+      memoryStore.delete(k);
+    }
+  }
+}
 
 /**
- * Checks and registers an idempotency key.
- * @param key The idempotency key to check.
- * @param ttlSeconds How long the key should be kept (default 1 hour).
- * @returns true if the key is new (first request), false if it's a duplicate.
+ * Attempts to acquire an execution lock for an idempotency key.
+ *
+ * If the key has not been seen:
+ * - Sets status to "processing" with a short lock TTL (default 60s).
+ * - Returns { isAcquired: true }.
+ *
+ * If the key is already present:
+ * - If status is "completed": Returns { isAcquired: false, existingRecord }.
+ * - If status is "processing": Returns { isAcquired: false, existingRecord }.
  */
-export async function checkIdempotencyKey(
+export async function acquireIdempotencyLock(
   key: string,
-  ttlSeconds: number = 60 * 60,
-): Promise<boolean> {
+  lockTtlSeconds = 60,
+): Promise<{ isAcquired: boolean; existingRecord?: IdempotencyRecord | null }> {
   const { url, token } = readUpstashEnv();
 
   if (url && token) {
     try {
       const redis = new Redis({ url, token });
-      const result = await redis.set(`idempotency:${key}`, "1", {
+      const redisKey = `idempotency:${key}`;
+
+      // Check if existing record exists
+      const existingRaw = await redis.get<string | IdempotencyRecord>(redisKey);
+      if (existingRaw) {
+        const record: IdempotencyRecord =
+          typeof existingRaw === "string" ? JSON.parse(existingRaw) : existingRaw;
+        return { isAcquired: false, existingRecord: record };
+      }
+
+      // Try to acquire processing lock via SET NX
+      const newRecord: IdempotencyRecord = {
+        status: "processing",
+        createdAt: Date.now(),
+      };
+
+      const result = await redis.set(redisKey, JSON.stringify(newRecord), {
         nx: true,
-        ex: ttlSeconds,
+        ex: lockTtlSeconds,
       });
-      return result === "OK";
+
+      if (result === "OK") {
+        return { isAcquired: true };
+      }
+
+      // Race condition: another concurrent thread acquired it in the meantime
+      const latestRaw = await redis.get<string | IdempotencyRecord>(redisKey);
+      const latestRecord: IdempotencyRecord | null = latestRaw
+        ? typeof latestRaw === "string"
+          ? JSON.parse(latestRaw)
+          : latestRaw
+        : null;
+
+      return { isAcquired: false, existingRecord: latestRecord };
     } catch (error) {
-      logger.error("Upstash Redis failed for idempotency check, falling back to memory", {
+      logger.error("[idempotency] Upstash Redis lock check failed, falling back to memory", {
         error: error instanceof Error ? error.message : String(error),
         key,
       });
     }
   }
 
-  // Fallback to in-memory set (development/test or Upstash failure)
-  if (memoryIdempotencyTracker.size > MAX_MEMORY_TRACKER_SIZE) {
-    memoryIdempotencyTracker.clear();
+  // In-memory fallback
+  cleanupExpiredMemoryEntries();
+  if (memoryStore.size >= MAX_MEMORY_STORE_SIZE) {
+    memoryStore.clear();
   }
 
-  if (memoryIdempotencyTracker.has(key)) {
-    return false; // Duplicate
+  const existing = memoryStore.get(key);
+  if (existing) {
+    if (Date.now() < existing.expiresAt) {
+      return { isAcquired: false, existingRecord: existing.record };
+    }
+    memoryStore.delete(key);
   }
 
-  memoryIdempotencyTracker.add(key);
-  setTimeout(() => {
-    memoryIdempotencyTracker.delete(key);
-  }, ttlSeconds * 1000);
+  const record: IdempotencyRecord = {
+    status: "processing",
+    createdAt: Date.now(),
+  };
+  memoryStore.set(key, { record, expiresAt: Date.now() + lockTtlSeconds * 1000 });
+  return { isAcquired: true };
+}
 
-  return true; // First time
+/**
+ * Stores the successful result of an idempotent operation so duplicate requests
+ * return the identical outcome without duplicate transactions or double stock deduction.
+ */
+export async function completeIdempotency(
+  key: string,
+  resultData: unknown,
+  ttlSeconds = 86400, // 24 hours
+): Promise<void> {
+  const { url, token } = readUpstashEnv();
+  const record: IdempotencyRecord = {
+    status: "completed",
+    data: resultData,
+    createdAt: Date.now(),
+  };
+
+  if (url && token) {
+    try {
+      const redis = new Redis({ url, token });
+      await redis.set(`idempotency:${key}`, JSON.stringify(record), {
+        ex: ttlSeconds,
+      });
+      return;
+    } catch (error) {
+      logger.error("[idempotency] Failed to save completion to Upstash Redis", {
+        error: error instanceof Error ? error.message : String(error),
+        key,
+      });
+    }
+  }
+
+  memoryStore.set(key, { record, expiresAt: Date.now() + ttlSeconds * 1000 });
+}
+
+/**
+ * Releases an in-progress idempotency lock if an operation fails before completion,
+ * allowing subsequent attempts to retry.
+ */
+export async function releaseIdempotencyLock(key: string): Promise<void> {
+  const { url, token } = readUpstashEnv();
+
+  if (url && token) {
+    try {
+      const redis = new Redis({ url, token });
+      await redis.del(`idempotency:${key}`);
+    } catch (error) {
+      logger.error("[idempotency] Failed to release lock in Upstash Redis", {
+        error: error instanceof Error ? error.message : String(error),
+        key,
+      });
+    }
+  }
+
+  memoryStore.delete(key);
+}
+
+/**
+ * Generates a deterministic SHA-256 fingerprint for a request when no explicit idempotency key is provided.
+ */
+export function generateRequestFingerprint(userId: string, payload: unknown): string {
+  const str = `${userId}:${JSON.stringify(payload)}`;
+  return crypto.createHash("sha256").update(str).digest("hex");
+}
+
+/**
+ * Legacy wrapper for basic boolean duplicate check.
+ */
+export async function checkIdempotencyKey(
+  key: string,
+  ttlSeconds: number = 60 * 60,
+): Promise<boolean> {
+  const { isAcquired } = await acquireIdempotencyLock(key, ttlSeconds);
+  return isAcquired;
 }

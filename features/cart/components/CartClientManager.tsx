@@ -70,6 +70,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     emailStatus,
     setEmailStatus,
     idempotencyKey,
+    resetIdempotencyKey,
     confirmedOrderEmail,
     setConfirmedOrderEmail,
     confirmedOrderId,
@@ -261,8 +262,11 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     return format(cents, currency || DEFAULT_CURRENCY);
   };
 
+  const isSubmittingRef = useRef(false);
+
   const handleCheckout = async (optionsLoadingArg: boolean) => {
     if (!isSignedIn) return;
+    if (isSubmittingRef.current || checkoutStatus !== "idle") return;
     if (checkoutItemCount === 0) {
       toast.error("No items selected for checkout.");
       return;
@@ -270,6 +274,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     if (optionsLoadingArg) {
       return;
     }
+    isSubmittingRef.current = true;
     const customerName = user?.fullName || user?.firstName || "Customer";
     const customerEmail = user?.primaryEmailAddress?.emailAddress || "";
 
@@ -361,6 +366,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         });
 
         if (result?.data?.success) {
+          isSubmittingRef.current = false;
+          resetIdempotencyKey();
           if (currentRetryTimer) clearInterval(currentRetryTimer);
           const checkedOutIds = checkoutCartItems.map((item) => item.id);
           const remainingItems = cartItems.filter((item) => !checkedOutIds.includes(item.id));
@@ -416,12 +423,14 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
               }
             }, 1000);
           } else {
+            isSubmittingRef.current = false;
             if (currentRetryTimer) clearInterval(currentRetryTimer);
             setCheckoutStatus("idle");
             toast.error(errorMessage);
           }
         }
       } catch (err) {
+        isSubmittingRef.current = false;
         if (currentRetryTimer) clearInterval(currentRetryTimer);
         setCheckoutStatus("idle");
         toast.error(
@@ -434,6 +443,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   };
 
   const handleSuccessClose = () => {
+    isSubmittingRef.current = false;
+    resetIdempotencyKey();
     clearCheckoutSuccessSnapshot();
     setCheckoutStatus("idle");
     setRemainingCartCount(0);
