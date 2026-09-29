@@ -88,6 +88,22 @@ for (const key of recommended) {
 
 console.log("\nClerk metadata migrations are now automated in CI.");
 
+const dbUrl = process.env.DATABASE_URL;
+if (dbUrl) {
+  try {
+    const parsed = new URL(dbUrl);
+    const user = decodeURIComponent(parsed.username);
+    if (user === "postgres" || user.startsWith("postgres.")) {
+      console.log("ℹ Database privilege note: DATABASE_URL connects as 'postgres' superuser.");
+      console.log(
+        "  For production runtime isolation, provision 'dilnova_app' via 'pnpm run db:setup-role' or scripts/create-least-privilege-role.sql.\n",
+      );
+    }
+  } catch {
+    // ignore
+  }
+}
+
 if (failed > 0) {
   console.error(`\n${failed} check(s) failed.`);
   process.exit(1);
