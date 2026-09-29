@@ -43,6 +43,12 @@ export function resetMemoryStoreForTesting(): void {
  * or null if credentials are unconfigured, invalid, or placeholder dummy values.
  */
 function getUpstashRedisClient(): Redis | null {
+  // In automated test environments, never connect to live external Redis databases unless explicitly opted in
+  const isTest = process.env.NODE_ENV === "test" || Boolean(process.env.VITEST);
+  if (isTest && !process.env.TEST_ENABLE_UPSTASH) {
+    return null;
+  }
+
   const { url, token } = readUpstashEnv();
 
   if (!url || !token || !isValidUpstashRestUrl(url) || !isValidUpstashRestToken(token)) {

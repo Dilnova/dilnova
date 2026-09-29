@@ -55,14 +55,14 @@ vi.mock("@/features/cart/services/checkout-transaction.service", () => ({
 }));
 
 describe("Checkout Double-Submit & Idempotency Enforcement", () => {
-  const mockCtx = { userId: "user_customer_123" };
+  const mockCtx = { userId: "user_customer_idempotency_suite" };
 
   const createInput = (key?: string) => ({
     customerName: "Jane Doe",
     customerEmail: "jane@example.com",
     items: [
       {
-        id: "prod-1",
+        id: "prod-idem-1",
         name: "Test Widget",
         price: 2500,
         quantity: 2,
@@ -93,7 +93,7 @@ describe("Checkout Double-Submit & Idempotency Enforcement", () => {
     resetMemoryStoreForTesting();
 
     vi.mocked(currentUser).mockResolvedValue({
-      id: "user_customer_123",
+      id: "user_customer_idempotency_suite",
       fullName: "Jane Doe",
       emailAddresses: [{ emailAddress: "jane@example.com" }],
     } as unknown as ReturnType<typeof currentUser> extends Promise<infer U> ? U : never);
@@ -102,7 +102,7 @@ describe("Checkout Double-Submit & Idempotency Enforcement", () => {
       success: true,
       verifiedItems: [
         {
-          id: "prod-1",
+          id: "prod-idem-1",
           name: "Test Widget",
           price: 2500,
           quantity: 2,
@@ -113,7 +113,7 @@ describe("Checkout Double-Submit & Idempotency Enforcement", () => {
       ],
       serverSubtotal: 5000,
       vendorOrgIds: ["org-1"],
-      uniqueItemIds: ["prod-1"],
+      uniqueItemIds: ["prod-idem-1"],
       availabilityCatalog: new Map(),
     });
 

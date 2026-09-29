@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   acquireIdempotencyLock,
   completeIdempotency,
@@ -100,10 +100,15 @@ describe("Idempotency Engine (shared/security/idempotency.ts)", () => {
 
   describe("Upstash Redis Integration", () => {
     beforeEach(() => {
+      process.env.TEST_ENABLE_UPSTASH = "true";
       vi.spyOn(upstashHealth, "readUpstashEnv").mockReturnValue({
         url: "https://my-app.upstash.io",
         token: "real-token-12345",
       });
+    });
+
+    afterEach(() => {
+      delete process.env.TEST_ENABLE_UPSTASH;
     });
 
     it("acquires lock via Redis SET NX EX when key does not exist", async () => {
