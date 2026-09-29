@@ -6,40 +6,40 @@ import * as schema from "@/shared/db/schema";
 import { syncedCartSchema, type SyncedCartItem } from "@/features/cart/schema";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { logger } from "@/shared/logging/logger";
-import { authenticatedAction } from "@/lib/safe-action";
+import { authenticatedAction, ActionError } from "@/lib/safe-action";
 import { z } from "zod/v3";
 
 export const loadCustomerCartAction = authenticatedAction
   .schema(z.object({}))
-  .action(
-    async ({ ctx }): Promise<{ success: boolean; items?: SyncedCartItem[]; error?: string }> => {
-      try {
-        await rateLimit(120, 60 * 1000, ctx.userId, { failClosed: true });
+  .action(async ({ ctx }): Promise<{ success: true; items: SyncedCartItem[] }> => {
+    try {
+      await rateLimit(120, 60 * 1000, ctx.userId, { failClosed: true });
 
-        const [row] = await db
-          .select()
-          .from(schema.customerCarts)
-          .where(eq(schema.customerCarts.userId, ctx.userId))
-          .limit(1);
+      const [row] = await db
+        .select()
+        .from(schema.customerCarts)
+        .where(eq(schema.customerCarts.userId, ctx.userId))
+        .limit(1);
 
-        if (!row) {
-          return { success: true, items: [] };
-        }
-
-        const parsed = syncedCartSchema.safeParse(JSON.parse(row.itemsJson || "[]"));
-        if (!parsed.success) {
-          return { success: true, items: [] };
-        }
-
-        return { success: true, items: parsed.data };
-      } catch (error) {
-        logger.error("Failed to load customer cart", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        return { success: false, error: "Failed to load saved cart." };
+      if (!row) {
+        return { success: true, items: [] };
       }
-    },
-  );
+
+      const parsed = syncedCartSchema.safeParse(JSON.parse(row.itemsJson || "[]"));
+      if (!parsed.success) {
+        return { success: true, items: [] };
+      }
+
+      return { success: true, items: parsed.data };
+    } catch (error) {
+      if (error instanceof ActionError) throw error;
+      if (error instanceof Error && error.message.includes("Rate limit")) throw error;
+      logger.error("Failed to load customer cart", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new ActionError("Failed to load saved cart.");
+    }
+  });
 
 export const saveCustomerCartAction = authenticatedAction
   .schema(
@@ -47,7 +47,7 @@ export const saveCustomerCartAction = authenticatedAction
       items: syncedCartSchema,
     }),
   )
-  .action(async ({ parsedInput, ctx }): Promise<{ success: boolean; error?: string }> => {
+  .action(async ({ parsedInput, ctx }): Promise<{ success: true }> => {
     try {
       await rateLimit(120, 60 * 1000, ctx.userId, { failClosed: true });
 
@@ -68,9 +68,11 @@ export const saveCustomerCartAction = authenticatedAction
 
       return { success: true };
     } catch (error) {
+      if (error instanceof ActionError) throw error;
+      if (error instanceof Error && error.message.includes("Rate limit")) throw error;
       logger.error("Failed to save customer cart", {
         error: error instanceof Error ? error.message : String(error),
       });
-      return { success: false, error: "Failed to save cart." };
+      throw new ActionError("Failed to save cart.");
     }
   });

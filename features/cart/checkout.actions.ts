@@ -8,7 +8,7 @@ import { logger } from "@/shared/logging/logger";
 import { checkoutSchema, sendCartEmailSchema } from "@/features/cart/schema";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 import { z } from "zod/v3";
-import { authenticatedAction } from "@/lib/safe-action";
+import { authenticatedAction, ActionError } from "@/lib/safe-action";
 
 // Services
 import { getCustomerDeliveryDetailsService } from "./services/customer-delivery.service";
@@ -46,51 +46,44 @@ export const sendCartSummaryEmailAction = authenticatedAction
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
-    try {
-      const parsedCartInput = sendCartEmailSchema.safeParse({
-        emailAddress: parsedInput.emailAddress,
-        cartItems: parsedInput.cartItems,
-        cartTotal: parsedInput.cartTotal,
-        currency: parsedInput.currency,
-      });
-      if (!parsedCartInput.success) {
-        return {
-          success: false,
-          error: parsedCartInput.error.issues[0]?.message || "Invalid input data.",
-        };
-      }
-
-      const { cartItems: validatedItems } = parsedCartInput.data;
-
-      const user = await currentUser();
-      if (!user) {
-        return {
-          success: false,
-          error: "Authentication session is invalid. Please sign in again.",
-        };
-      }
-
-      const validatedEmail = getNormalizedClerkUserEmail(user);
-      if (!validatedEmail) {
-        return {
-          success: false,
-          error: "Your account does not have an email address. Please update your profile first.",
-        };
-      }
-
-      await rateLimit(3, 60 * 1000, ctx.userId, { failClosed: true });
-
-      return await sendCartSummaryEmailService(
-        validatedItems,
-        validatedEmail,
-        parsedInput.zeroShipping,
-        parsedInput.currency || DEFAULT_CURRENCY,
-      );
-    } catch (error: unknown) {
-      const apiError = handleApiError(error, "Failed to send cart summary email");
-      logger.error(apiError.message, { error });
-      return { success: false, error: apiError.message };
+    const parsedCartInput = sendCartEmailSchema.safeParse({
+      emailAddress: parsedInput.emailAddress,
+      cartItems: parsedInput.cartItems,
+      cartTotal: parsedInput.cartTotal,
+      currency: parsedInput.currency,
+    });
+    if (!parsedCartInput.success) {
+      throw new ActionError(parsedCartInput.error.issues[0]?.message || "Invalid input data.");
     }
+
+    const { cartItems: validatedItems } = parsedCartInput.data;
+
+    const user = await currentUser();
+    if (!user) {
+      throw new ActionError("Authentication session is invalid. Please sign in again.");
+    }
+
+    const validatedEmail = getNormalizedClerkUserEmail(user);
+    if (!validatedEmail) {
+      throw new ActionError(
+        "Your account does not have an email address. Please update your profile first.",
+      );
+    }
+
+    await rateLimit(3, 60 * 1000, ctx.userId, { failClosed: true });
+
+    const result = await sendCartSummaryEmailService(
+      validatedItems,
+      validatedEmail,
+      parsedInput.zeroShipping,
+      parsedInput.currency || DEFAULT_CURRENCY,
+    );
+
+    if (!result.success) {
+      throw new ActionError(result.error || "Failed to send cart summary email.");
+    }
+
+    return result;
   });
 
 export const syncCartPricesAction = authenticatedAction
@@ -110,9 +103,11 @@ export const syncCartPricesAction = authenticatedAction
 
       return await syncCartPricesService(uniqueIds);
     } catch (error: unknown) {
+      if (error instanceof ActionError) throw error;
+      if (error instanceof Error && error.message.includes("Rate limit")) throw error;
       const apiError = handleApiError(error, "Failed to sync cart prices");
       logger.error(apiError.message, { error });
-      return { success: false as const, error: "Failed to refresh cart prices." };
+      throw new ActionError("Failed to refresh cart prices.");
     }
   });
 
@@ -136,9 +131,10 @@ export const getCartCheckoutOptionsAction = authenticatedAction
         parsedInput.checkoutVendorOrgId,
       );
     } catch (error: unknown) {
+      if (error instanceof ActionError) throw error;
       const apiError = handleApiError(error, "Failed to load checkout options");
       logger.error(apiError.message, { error });
-      return { success: false as const, error: "Failed to load checkout options." };
+      throw new ActionError("Failed to load checkout options.");
     }
   });
 
@@ -149,10 +145,9 @@ export const simulatedCheckoutAction = authenticatedAction
     }),
   )
   .action(async ({ parsedInput, ctx }) => {
-    try {
-      return await executeSimulatedCheckout(parsedInput, ctx);
-    } catch (error: unknown) {
-      const apiError = handleApiError(error, "Checkout failed");
-      return { success: false, error: apiError.message };
+    const result = await executeSimulatedCheckout(parsedInput, ctx);
+    if (!result.success) {
+      throw new ActionError(result.error);
     }
+    return result;
   });

@@ -245,7 +245,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         toast.success(`Cart list successfully sent to ${targetEmail}!`);
       } else {
         setEmailStatus("idle");
-        toast.error(res?.data?.error || "Failed to send email.");
+        const errorMessage = extractActionErrorMessage(res);
+        toast.error(errorMessage || "Failed to send email.");
       }
     } catch (err: unknown) {
       setEmailStatus("idle");

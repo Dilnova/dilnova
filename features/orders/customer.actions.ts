@@ -26,7 +26,7 @@ import {
 } from "@/shared/storage/payment-slip";
 import { PAYMENT_SLIP_MAX_BYTES, PAYMENT_SLIP_ALLOWED_MIME_TYPES } from "@/shared/storage/config";
 import { uuidField } from "@/shared/validation/primitives";
-import { authenticatedAction } from "@/lib/safe-action";
+import { authenticatedAction, ActionError } from "@/lib/safe-action";
 import { z } from "zod/v3";
 
 // ── Internal helper ───────────────────────────────────────────────────────────
@@ -35,26 +35,21 @@ import { z } from "zod/v3";
 async function validateCustomerAndOrder(
   orderId: string,
   userId: string,
-): Promise<
-  | { success: false; error: string }
-  | {
-      success: true;
-      userId: string;
-      order: typeof schema.simulatedOrders.$inferSelect;
-      sessionEmail: string;
-    }
-> {
+): Promise<{
+  userId: string;
+  order: typeof schema.simulatedOrders.$inferSelect;
+  sessionEmail: string;
+}> {
   const user = await currentUser();
   if (!user) {
-    return { success: false, error: "Authentication session is invalid. Please sign in again." };
+    throw new ActionError("Authentication session is invalid. Please sign in again.");
   }
 
   const sessionEmail = getNormalizedClerkUserEmail(user);
   if (!sessionEmail) {
-    return {
-      success: false,
-      error: "Your account does not have an email address. Please update your profile first.",
-    };
+    throw new ActionError(
+      "Your account does not have an email address. Please update your profile first.",
+    );
   }
 
   const [order] = await db
@@ -64,21 +59,18 @@ async function validateCustomerAndOrder(
     .limit(1);
 
   if (!order) {
-    return { success: false, error: "Order not found." };
+    throw new ActionError("Order not found.");
   }
 
   if (!customerOwnsOrder(order, userId)) {
-    return { success: false, error: "You are not authorized to update this order." };
+    throw new ActionError("You are not authorized to update this order.");
   }
 
   if (!canUploadPaymentSlip(order)) {
-    return {
-      success: false,
-      error: "This order is not accepting a payment slip upload.",
-    };
+    throw new ActionError("This order is not accepting a payment slip upload.");
   }
 
-  return { success: true, userId, order, sessionEmail };
+  return { userId, order, sessionEmail };
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────
@@ -103,45 +95,32 @@ export const createPaymentSlipUploadPresignedUrlAction = authenticatedAction
       await rateLimit(10, 60 * 1000);
 
       if (!isSupabaseStorageConfigured()) {
-        return {
-          success: false as const,
-          error: "Payment slip storage is not configured. Contact support.",
-        };
+        throw new ActionError("Payment slip storage is not configured. Contact support.");
       }
 
       const orderIdParsed = uploadPaymentSlipFormSchema.safeParse({
         orderId: parsedInput.orderId,
       });
       if (!orderIdParsed.success) {
-        return {
-          success: false as const,
-          error: orderIdParsed.error.issues[0]?.message || "Invalid order ID.",
-        };
+        throw new ActionError(orderIdParsed.error.issues[0]?.message || "Invalid order ID.");
       }
 
       if (parsedInput.fileSize === 0) {
-        return { success: false as const, error: "The selected file is empty." };
+        throw new ActionError("The selected file is empty.");
       }
 
       if (parsedInput.fileSize > PAYMENT_SLIP_MAX_BYTES) {
-        return { success: false as const, error: "Image must be 8 MB or smaller." };
+        throw new ActionError("Image must be 8 MB or smaller.");
       }
 
       const contentType =
         resolvePaymentSlipExtension(parsedInput.fileType) ??
         resolvePaymentSlipExtensionFromFilename(parsedInput.fileName);
       if (!contentType) {
-        return {
-          success: false as const,
-          error: "Please upload an image file (JPG, PNG, WebP, or GIF).",
-        };
+        throw new ActionError("Please upload an image file (JPG, PNG, WebP, or GIF).");
       }
 
-      const validation = await validateCustomerAndOrder(orderIdParsed.data.orderId, ctx.userId);
-      if (!validation.success) {
-        return { success: false as const, error: validation.error };
-      }
-      const { order } = validation;
+      const { order } = await validateCustomerAndOrder(orderIdParsed.data.orderId, ctx.userId);
 
       try {
         const { signedUrl, storagePath } = await createPaymentSlipSignedUploadUrl({
@@ -156,10 +135,7 @@ export const createPaymentSlipUploadPresignedUrlAction = authenticatedAction
         };
       } catch (error) {
         logger.error("Failed to generate pre-signed upload URL", { orderId: order.id, error });
-        return {
-          success: false as const,
-          error: "Failed to initialize payment slip upload. Please try again.",
-        };
+        throw new ActionError("Failed to initialize payment slip upload. Please try again.");
       }
     });
   });
@@ -176,57 +152,41 @@ export const submitPaymentSlipPathAction = authenticatedAction
       await rateLimit(10, 60 * 1000);
 
       if (!isSupabaseStorageConfigured()) {
-        return {
-          success: false as const,
-          error: "Payment slip storage is not configured. Contact support.",
-        };
+        throw new ActionError("Payment slip storage is not configured. Contact support.");
       }
 
       const orderIdParsed = uploadPaymentSlipFormSchema.safeParse({
         orderId: parsedInput.orderId,
       });
       if (!orderIdParsed.success) {
-        return {
-          success: false as const,
-          error: orderIdParsed.error.issues[0]?.message || "Invalid order ID.",
-        };
+        throw new ActionError(orderIdParsed.error.issues[0]?.message || "Invalid order ID.");
       }
 
       if (!parsedInput.storagePath.startsWith(`orders/${orderIdParsed.data.orderId}/`)) {
-        return {
-          success: false as const,
-          error: "Invalid storage path.",
-        };
+        throw new ActionError("Invalid storage path.");
       }
 
       if (!isPaymentSlipStoragePath(parsedInput.storagePath)) {
-        return {
-          success: false as const,
-          error: "Invalid storage path format.",
-        };
+        throw new ActionError("Invalid storage path format.");
       }
 
-      const validation = await validateCustomerAndOrder(orderIdParsed.data.orderId, ctx.userId);
-      if (!validation.success) {
-        return { success: false as const, error: validation.error };
-      }
-      const { userId, order } = validation;
+      const { userId, order } = await validateCustomerAndOrder(
+        orderIdParsed.data.orderId,
+        ctx.userId,
+      );
 
       const exists = await verifyPaymentSlipFileExists(parsedInput.storagePath);
       if (!exists) {
-        return {
-          success: false as const,
-          error:
-            "Uploaded payment slip could not be verified in storage. Please try uploading again.",
-        };
+        throw new ActionError(
+          "Uploaded payment slip could not be verified in storage. Please try uploading again.",
+        );
       }
 
       const hasValidMagicBytes = await verifyPaymentSlipMagicBytes(parsedInput.storagePath);
       if (!hasValidMagicBytes) {
-        return {
-          success: false as const,
-          error: "Uploaded file appears to be corrupted or is not a valid image format.",
-        };
+        throw new ActionError(
+          "Uploaded file appears to be corrupted or is not a valid image format.",
+        );
       }
 
       await db
