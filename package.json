@@ -25,7 +25,7 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "audit": "pnpm audit --audit-level=low",
+    "audit": "pnpm audit --audit-level=moderate",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "analyze:bundle": "node scripts/analyze-bundle-size.mjs",
