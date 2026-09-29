@@ -5,6 +5,8 @@
  * and Next.js static fallback headers (next.config.ts).
  */
 
+import { env } from "@/shared/config/env";
+
 export interface CspOptions {
   /** Cryptographic nonce for request-time script execution with 'strict-dynamic' */
   nonce?: string;
@@ -34,8 +36,7 @@ const DEFAULT_CLERK_DOMAINS = [
  * Extracts custom Clerk domain from the publishable key (if configured).
  */
 export function extractClerkDomain(publishableKey?: string): string | null {
-  const key =
-    publishableKey !== undefined ? publishableKey : process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const key = publishableKey !== undefined ? publishableKey : env.auth.clerkPublishableKey;
   if (!key) return null;
   try {
     const payload = key.split("_")[2];
@@ -64,8 +65,7 @@ export function getClerkCspDomains(customDomain?: string | null): string[] {
  * Extracts and formats the Supabase host for CSP directives.
  */
 export function getSupabaseHostCsp(supabaseUrlInput?: string | null): string {
-  const urlStr =
-    supabaseUrlInput !== undefined ? supabaseUrlInput : process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const urlStr = supabaseUrlInput !== undefined ? supabaseUrlInput : env.storage.supabaseUrl;
   if (!urlStr) return "";
   try {
     return ` https://${new URL(urlStr).hostname}`;
@@ -78,7 +78,7 @@ export function getSupabaseHostCsp(supabaseUrlInput?: string | null): string {
  * Extracts Sentry CSP report endpoint from SENTRY_DSN if available.
  */
 export function getSentryCspReportUri(dsnInput?: string | null): string | null {
-  const dsn = dsnInput !== undefined ? dsnInput : process.env.SENTRY_DSN;
+  const dsn = dsnInput !== undefined ? dsnInput : env.sentry.dsn;
   if (!dsn) return null;
   try {
     const url = new URL(dsn);
@@ -98,7 +98,7 @@ export function getSentryCspReportUri(dsnInput?: string | null): string | null {
  * Checks whether strict CSP enforcement is requested via environment flags.
  */
 export function isStrictCspRequested(): boolean {
-  return process.env.STRICT_CSP === "true" || process.env.CSP_STRICT === "true";
+  return env.security.isStrictCsp;
 }
 
 /**
@@ -116,7 +116,7 @@ export function shouldExcludeEval(options?: { isProd?: boolean; isStrict?: boole
 
   // 2. Vercel production or preview always excludes eval
   const isVercelProdOrPreview =
-    process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview";
+    env.app.vercelEnv === "production" || env.app.vercelEnv === "preview";
   if (isVercelProdOrPreview) {
     return true;
   }
@@ -127,10 +127,7 @@ export function shouldExcludeEval(options?: { isProd?: boolean; isStrict?: boole
   }
 
   // 4. Fail-closed: only permit 'unsafe-eval' when explicitly in development
-  const isDev =
-    options?.isProd === false
-      ? process.env.NODE_ENV !== "production"
-      : process.env.NODE_ENV === "development";
+  const isDev = options?.isProd === false ? !env.app.isProduction : env.app.isDevelopment;
 
   return !isDev;
 }
@@ -139,7 +136,7 @@ export function shouldExcludeEval(options?: { isProd?: boolean; isStrict?: boole
  * Builds the canonical Content-Security-Policy header string.
  */
 export function buildCsp(options: CspOptions = {}): string {
-  const isProd = options.isProd ?? process.env.NODE_ENV === "production";
+  const isProd = options.isProd ?? env.app.isProduction;
   const excludeEval = options.excludeEval ?? shouldExcludeEval({ isProd });
   const clerkDomainsStr = getClerkCspDomains(options.clerkDomain).join(" ");
   const supabaseHostCsp = getSupabaseHostCsp(options.supabaseUrl);

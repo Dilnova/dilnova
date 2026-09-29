@@ -3,6 +3,7 @@ import "server-only";
 import { clerkClient, createClerkClient } from "@clerk/nextjs/server";
 import { logger } from "@/shared/logging/logger";
 import { unstable_cache, revalidateTag } from "next/cache";
+import { env } from "@/shared/config/env";
 
 /** Default maximum active listings allowed for a free-tier organization. */
 export const DEFAULT_MAX_LISTING_COUNT = 10;
@@ -57,7 +58,7 @@ export interface PremiumStatus {
  */
 const fetchRawStatus = unstable_cache(
   async (orgId: string) => {
-    const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+    const client = createClerkClient({ secretKey: env.auth.clerkSecretKey });
     const org = await client.organizations.getOrganization({ organizationId: orgId });
     const meta = (org.publicMetadata || {}) as Record<string, unknown>;
 

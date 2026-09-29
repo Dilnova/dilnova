@@ -7,6 +7,7 @@ import {
   isValidUpstashRestUrl,
   isValidUpstashRestToken,
 } from "@/shared/security/upstash-health";
+import { env } from "@/shared/config/env";
 
 // In-memory fallback map for development/testing when Upstash env vars are not configured
 const memoryTracker = new Map<string, number[]>();
@@ -21,14 +22,14 @@ const PRODUCTION_RATE_LIMIT_UNAVAILABLE_ERROR =
   "Rate limiting is temporarily unavailable. Please try again later.";
 
 function isProductionEnvironment(): boolean {
-  return process.env.NODE_ENV === "production";
+  return env.app.isProduction;
 }
 
 function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
   const { url, token } = readUpstashEnv();
 
   if (!url || !token || !isValidUpstashRestUrl(url) || !isValidUpstashRestToken(token)) {
-    if (process.env.NODE_ENV === "production" && !hasLoggedUpstashWarning) {
+    if (env.app.isProduction && !hasLoggedUpstashWarning) {
       hasLoggedUpstashWarning = true;
       logger.error(
         "Upstash Redis credentials are not configured in production. Rate limiting will fail closed by default.",

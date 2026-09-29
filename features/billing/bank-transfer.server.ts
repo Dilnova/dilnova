@@ -9,12 +9,13 @@ import {
 } from "./bank-transfer";
 import { parseBankDetailsFromClerkOrg } from "./bank-transfer-metadata";
 import { logger } from "@/shared/logging/logger";
+import { env } from "@/shared/config/env";
 
 export async function getBankTransferDetailsForOrg(
   orgId: string,
 ): Promise<{ vendorName: string; bankDetails: BankTransferDetails | null }> {
   try {
-    const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+    const client = createClerkClient({ secretKey: env.auth.clerkSecretKey });
     const org = await client.organizations.getOrganization({ organizationId: orgId });
     return {
       vendorName: org.name,

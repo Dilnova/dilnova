@@ -6,6 +6,7 @@ import {
   signCloudinaryUploadParams,
   type CloudinaryResourceType,
 } from "@/shared/media/cloudinary-signing";
+import { env } from "@/shared/config/env";
 
 export type { CloudinaryResourceType };
 
@@ -23,11 +24,9 @@ function readCloudinaryServerEnv(): {
   apiKey: string;
   apiSecret: string;
 } {
-  const cloudName =
-    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() ||
-    process.env.CLOUDINARY_CLOUD_NAME?.trim();
-  const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
-  const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+  const cloudName = env.media.cloudinaryCloudName?.trim();
+  const apiKey = env.media.cloudinaryApiKey?.trim();
+  const apiSecret = env.media.cloudinaryApiSecret?.trim();
 
   if (!cloudName || !apiKey || !apiSecret) {
     throw new Error(

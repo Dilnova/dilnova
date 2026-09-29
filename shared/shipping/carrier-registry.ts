@@ -5,6 +5,7 @@ import { SLPostAdapter } from "./providers/slpost/slpost.adapter";
 import { EasyPostAdapter } from "./providers/easypost/easypost.adapter";
 import { ShippoAdapter } from "./providers/shippo/shippo.adapter";
 import { logger } from "@/shared/logging/logger";
+import { env } from "@/shared/config/env";
 
 const slpostAdapter = new SLPostAdapter();
 
@@ -16,7 +17,7 @@ const registry = new Map<string, CarrierAdapter>([
   ["flat_rate", new FlatRateAdapter()],
 ]);
 
-export const ACTIVE_CARRIER_ID = process.env.SHIPPING_DEFAULT_CARRIER ?? "slpost";
+export const ACTIVE_CARRIER_ID = env.shipping.defaultCarrier;
 
 export function getCarrier(id = ACTIVE_CARRIER_ID): CarrierAdapter {
   const carrier = registry.get(id);

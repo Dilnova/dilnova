@@ -1,5 +1,6 @@
 import { logger } from "@/shared/logging/logger";
 import crypto from "node:crypto";
+import { env } from "@/shared/config/env";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
@@ -11,7 +12,7 @@ const cachedHashKeys = new Map<string, Buffer>();
 let hasLoggedDecryptionError = false;
 
 function isProduction(): boolean {
-  return process.env.NODE_ENV === "production";
+  return env.app.isProduction;
 }
 
 function getV2Key(key: string): Buffer {
@@ -66,7 +67,7 @@ function getHashKey(key: string): Buffer {
 export function encryptString(text: string): string {
   if (!text) return text;
 
-  const key = process.env.PII_ENCRYPTION_KEY?.trim();
+  const key = env.security.piiEncryptionKey?.trim();
   if (!key) {
     if (isProduction()) {
       throw new Error(
@@ -102,7 +103,7 @@ export function encryptString(text: string): string {
 export function hashPii(text: string | null | undefined): string | null {
   if (!text) return null;
 
-  const key = process.env.PII_ENCRYPTION_KEY?.trim();
+  const key = env.security.piiEncryptionKey?.trim();
   if (!key) {
     if (isProduction()) {
       throw new Error(
@@ -144,8 +145,8 @@ function performAes256GcmDecryption(
 export function decryptString(encryptedText: string): string {
   if (!encryptedText) return encryptedText;
 
-  const key = process.env.PII_ENCRYPTION_KEY?.trim();
-  const fallbackKeyV1 = process.env.PII_ENCRYPTION_KEY_V1?.trim();
+  const key = env.security.piiEncryptionKey?.trim();
+  const fallbackKeyV1 = env.security.piiEncryptionKeyV1?.trim();
 
   if (!key) {
     if (isProduction()) {

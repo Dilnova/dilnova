@@ -9,6 +9,7 @@ import type {
 } from "../../carrier.types";
 import { logger } from "@/shared/logging/logger";
 import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
+import { env } from "@/shared/config/env";
 
 /**
  * EasyPost multi-carrier adapter.
@@ -32,7 +33,7 @@ export class EasyPostAdapter implements CarrierAdapter {
   private readonly rateToShipmentCache = new Map<string, string>();
 
   private get apiKey(): string {
-    const raw = (process.env.EASYPOST_API_KEY ?? "").trim();
+    const raw = (env.shipping.easypostApiKey ?? "").trim();
     return raw.replace(/^Bearer\s+/i, "");
   }
 
@@ -103,13 +104,9 @@ export class EasyPostAdapter implements CarrierAdapter {
       try {
         const { getExchangeRatesMap } = await import("@/shared/currency/exchange-rates.service");
         const fxMap = await getExchangeRatesMap();
-        lkrRate =
-          fxMap["USD_LKR"] ||
-          (process.env.USD_TO_LKR_RATE ? parseFloat(process.env.USD_TO_LKR_RATE) : 307.69);
+        lkrRate = fxMap["USD_LKR"] || env.shipping.usdToLkrRate;
       } catch {
-        lkrRate = process.env.USD_TO_LKR_RATE
-          ? parseFloat(process.env.USD_TO_LKR_RATE) || 307.69
-          : 307.69;
+        lkrRate = env.shipping.usdToLkrRate;
       }
 
       if (data.id && Array.isArray(data.rates)) {

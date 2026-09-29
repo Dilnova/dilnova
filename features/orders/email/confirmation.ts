@@ -16,6 +16,7 @@ import { sendRawSmtpEmail } from "@/shared/email/smtp-client";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 import { getSystemSetting } from "@/shared/platform/settings";
 import { logger } from "@/shared/logging/logger";
+import { env } from "@/shared/config/env";
 
 export interface OrderConfirmationEmailContext {
   customerName: string;
@@ -73,14 +74,14 @@ export async function sendOrderConfirmationEmailForOrder(
     );
 
     const orderTotals = getOrderDisplayTotals(order);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+    const appUrl = env.app.url || DEFAULT_APP_URL;
 
-    const smtpHost = process.env.SMTP_HOST || "smtp-relay.brevo.com";
-    const smtpPort = parseInt(process.env.SMTP_PORT || "587", 10);
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPassword = process.env.SMTP_PASSWORD;
-    const emailFromAddress = process.env.EMAIL_FROM_ADDRESS || "info@dilstar.pp.ua";
-    const emailFromName = process.env.EMAIL_FROM_NAME || `${systemName} Hub`;
+    const smtpHost = env.email.smtpHost;
+    const smtpPort = env.email.smtpPort;
+    const smtpUser = env.email.smtpUser;
+    const smtpPassword = env.email.smtpPassword;
+    const emailFromAddress = env.email.fromAddress;
+    const emailFromName = env.email.fromName || `${systemName} Hub`;
 
     if (!smtpUser || !smtpPassword) {
       logger.warn("Order confirmation email skipped: SMTP credentials are not configured", {

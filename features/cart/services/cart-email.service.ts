@@ -8,6 +8,7 @@ import { escapeHtml, sendRawSmtpEmail } from "@/shared/email/smtp-client";
 import { logger } from "@/shared/logging/logger";
 import { formatMoney, DEFAULT_CURRENCY } from "@/shared/currency";
 import type { CartLineInput } from "@/features/cart/schema";
+import { env } from "@/shared/config/env";
 
 export async function sendCartSummaryEmailService(
   validatedItems: CartLineInput[],
@@ -18,12 +19,12 @@ export async function sendCartSummaryEmailService(
   const systemName = await getSystemSetting("system_name", "Dilnova");
   const systemNameHub = `${systemName} Commerce Hub`;
 
-  const smtpHost = process.env.SMTP_HOST || "smtp-relay.brevo.com";
-  const smtpPort = parseInt(process.env.SMTP_PORT || "587", 10);
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPassword = process.env.SMTP_PASSWORD;
-  const emailFromAddress = process.env.EMAIL_FROM_ADDRESS || "info@dilstar.pp.ua";
-  const emailFromName = process.env.EMAIL_FROM_NAME || `${systemName} Hub`;
+  const smtpHost = env.email.smtpHost;
+  const smtpPort = env.email.smtpPort;
+  const smtpUser = env.email.smtpUser;
+  const smtpPassword = env.email.smtpPassword;
+  const emailFromAddress = env.email.fromAddress;
+  const emailFromName = env.email.fromName || `${systemName} Hub`;
 
   if (!smtpUser || !smtpPassword) {
     logger.error("SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing");
@@ -148,7 +149,7 @@ export async function sendCartSummaryEmailService(
 
             <!-- Footer Buttons -->
             <div style="text-align: center; margin-top: 32px;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL}/cart" style="display: inline-block; background-color: #6b21a8; color: #ffffff; font-size: 12px; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(107, 33, 168, 0.2);">
+              <a href="${env.app.url || DEFAULT_APP_URL}/cart" style="display: inline-block; background-color: #6b21a8; color: #ffffff; font-size: 12px; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(107, 33, 168, 0.2);">
                 View Cart & Checkout
               </a>
             </div>

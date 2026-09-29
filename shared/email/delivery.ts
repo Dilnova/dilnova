@@ -3,6 +3,7 @@ import "server-only";
 import { getSystemSetting } from "@/shared/platform/settings";
 import { sendRawSmtpEmail } from "@/shared/email/smtp-client";
 import { logger } from "@/shared/logging/logger";
+import { env } from "@/shared/config/env";
 
 export interface EmailSenderConfig {
   smtpHost: string;
@@ -16,20 +17,20 @@ export interface EmailSenderConfig {
 
 export async function getEmailSenderConfig(): Promise<EmailSenderConfig | null> {
   const systemName = await getSystemSetting("system_name", "Dilnova");
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPassword = process.env.SMTP_PASSWORD;
+  const smtpUser = env.email.smtpUser;
+  const smtpPassword = env.email.smtpPassword;
 
   if (!smtpUser || !smtpPassword) {
     return null;
   }
 
   return {
-    smtpHost: process.env.SMTP_HOST || "smtp-relay.brevo.com",
-    smtpPort: parseInt(process.env.SMTP_PORT || "587", 10),
+    smtpHost: env.email.smtpHost,
+    smtpPort: env.email.smtpPort,
     smtpUser,
     smtpPassword,
-    emailFromAddress: process.env.EMAIL_FROM_ADDRESS || "info@dilstar.pp.ua",
-    emailFromName: process.env.EMAIL_FROM_NAME || `${systemName} Hub`,
+    emailFromAddress: env.email.fromAddress,
+    emailFromName: env.email.fromName || `${systemName} Hub`,
     systemName,
   };
 }

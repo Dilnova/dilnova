@@ -22,20 +22,43 @@ describe("shared/config/env", () => {
       process.env.SMTP_PORT = "2525";
       process.env.SUPERADMIN_USER_IDS = "user_1, user_2 ,user_3";
       process.env.SENTRY_TRACES_SAMPLE_RATE = "0.25";
+      process.env.SHIPPING_DEFAULT_CARRIER = "easypost";
+      process.env.SHIPPING_ORIGIN_COUNTRY = "US";
+      process.env.SHIPPO_API_KEY = "shippo_test_123";
+      process.env.EASYPOST_API_KEY = "EZTK_123";
+      process.env.USD_TO_LKR_RATE = "320.5";
+      process.env.PII_ENCRYPTION_KEY_V1 = "old_encryption_key";
+      process.env.STRICT_CSP = "true";
+      process.env.DATABASE_SSL = "false";
+      process.env.VERCEL = "1";
+      process.env.NEXT_PUBLIC_APP_NAME = "Custom Hub";
 
       const config = getServerConfig();
 
       expect(config.app.url).toBe("https://app.dilnova.com");
+      expect(config.app.name).toBe("Custom Hub");
       expect(config.app.isProduction).toBe(true);
       expect(config.app.isDevelopment).toBe(false);
       expect(config.app.isTest).toBe(false);
+      expect(config.app.isVercel).toBe(true);
 
       expect(config.database.url).toBe("postgresql://user:pass@localhost:5432/db");
       expect(config.database.poolSize).toBe(15);
+      expect(config.database.ssl).toBe(false);
+      expect(config.database.isServerless).toBe(true);
 
       expect(config.email.smtpPort).toBe(2525);
       expect(config.auth.superadminUserIds).toEqual(["user_1", "user_2", "user_3"]);
       expect(config.sentry.tracesSampleRate).toBe(0.25);
+
+      expect(config.shipping.defaultCarrier).toBe("easypost");
+      expect(config.shipping.originCountry).toBe("US");
+      expect(config.shipping.shippoApiKey).toBe("shippo_test_123");
+      expect(config.shipping.easypostApiKey).toBe("EZTK_123");
+      expect(config.shipping.usdToLkrRate).toBe(320.5);
+
+      expect(config.security.piiEncryptionKeyV1).toBe("old_encryption_key");
+      expect(config.security.isStrictCsp).toBe(true);
     });
 
     it("provides safe defaults in non-production when optional fields are omitted", () => {
@@ -45,16 +68,36 @@ describe("shared/config/env", () => {
       delete process.env.SMTP_PORT;
       delete process.env.SMTP_HOST;
       delete process.env.SUPERADMIN_USER_IDS;
+      delete process.env.SHIPPING_DEFAULT_CARRIER;
+      delete process.env.SHIPPING_ORIGIN_COUNTRY;
+      delete process.env.SHIPPO_API_KEY;
+      delete process.env.EASYPOST_API_KEY;
+      delete process.env.USD_TO_LKR_RATE;
+      delete process.env.PII_ENCRYPTION_KEY_V1;
+      delete process.env.STRICT_CSP;
+      delete process.env.DATABASE_SSL;
+      delete process.env.VERCEL;
 
       const config = getServerConfig();
 
       expect(config.app.url).toBe("http://localhost:3000");
+      expect(config.app.name).toBe("Dilnova");
       expect(config.app.isDevelopment).toBe(true);
       expect(config.app.isProduction).toBe(false);
+      expect(config.app.isVercel).toBe(false);
       expect(config.database.poolSize).toBeUndefined();
+      expect(config.database.ssl).toBe(true);
+      expect(config.database.isServerless).toBe(false);
       expect(config.email.smtpPort).toBe(587);
       expect(config.email.smtpHost).toBe("smtp-relay.brevo.com");
       expect(config.auth.superadminUserIds).toEqual([]);
+      expect(config.shipping.defaultCarrier).toBe("slpost");
+      expect(config.shipping.originCountry).toBe("LK");
+      expect(config.shipping.shippoApiKey).toBeUndefined();
+      expect(config.shipping.easypostApiKey).toBeUndefined();
+      expect(config.shipping.usdToLkrRate).toBe(307.69);
+      expect(config.security.piiEncryptionKeyV1).toBeUndefined();
+      expect(config.security.isStrictCsp).toBe(false);
     });
   });
 

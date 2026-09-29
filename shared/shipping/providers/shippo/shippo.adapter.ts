@@ -9,6 +9,7 @@ import type {
 } from "../../carrier.types";
 import { logger } from "@/shared/logging/logger";
 import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
+import { env } from "@/shared/config/env";
 
 /**
  * Shippo multi-carrier adapter.
@@ -27,7 +28,7 @@ export class ShippoAdapter implements CarrierAdapter {
   private readonly baseUrl = "https://api.goshippo.com";
 
   private get apiKey(): string {
-    const raw = (process.env.SHIPPO_API_KEY ?? "").trim();
+    const raw = (env.shipping.shippoApiKey ?? "").trim();
     return raw.replace(/^(?:ShippoToken|Bearer)\s+/i, "");
   }
 
@@ -150,13 +151,9 @@ export class ShippoAdapter implements CarrierAdapter {
       try {
         const { getExchangeRatesMap } = await import("@/shared/currency/exchange-rates.service");
         const fxMap = await getExchangeRatesMap();
-        lkrRate =
-          fxMap["USD_LKR"] ||
-          (process.env.USD_TO_LKR_RATE ? parseFloat(process.env.USD_TO_LKR_RATE) : 307.69);
+        lkrRate = fxMap["USD_LKR"] || env.shipping.usdToLkrRate;
       } catch {
-        lkrRate = process.env.USD_TO_LKR_RATE
-          ? parseFloat(process.env.USD_TO_LKR_RATE) || 307.69
-          : 307.69;
+        lkrRate = env.shipping.usdToLkrRate;
       }
 
       for (const rate of rawRates) {

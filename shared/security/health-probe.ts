@@ -1,10 +1,11 @@
 import type { UpstashRateLimitProbe } from "@/shared/security/upstash-health";
+import { env } from "@/shared/config/env";
 
 export function isAuthorizedHealthDetailRequest(request: Request): boolean {
-  const secret = process.env.HEALTH_CHECK_SECRET?.trim();
+  const secret = env.security.healthCheckSecret?.trim();
   if (!secret) {
     // Allow detailed probes in non-production if no secret is set
-    if (process.env.NODE_ENV !== "production") {
+    if (!env.app.isProduction) {
       return true;
     }
     return false;

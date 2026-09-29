@@ -10,6 +10,7 @@ import { logAuditAction } from "@/shared/audit/logger";
 import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
 import { hashPii } from "@/shared/security/encryption";
 import { z } from "zod/v3";
+import { env } from "@/shared/config/env";
 
 export const maxDuration = 300;
 
@@ -19,8 +20,8 @@ const erasePayloadSchema = z.object({
 });
 
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+  url: env.upstash.redisUrl || "",
+  token: env.upstash.redisToken || "",
 });
 
 async function handler(req: NextRequest) {

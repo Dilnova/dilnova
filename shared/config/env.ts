@@ -92,6 +92,32 @@ export const productionServerEnvSchema = z.object({
   PINTEREST_DOMAIN_VERIFY: z.string().trim().optional(),
   FACEBOOK_DOMAIN_VERIFY: z.string().trim().optional(),
   GOOGLE_SITE_VERIFY: z.string().trim().optional(),
+
+  // Shipping Providers & Defaults (optional)
+  SHIPPING_DEFAULT_CARRIER: z.string().trim().optional(),
+  SHIPPING_ORIGIN_COUNTRY: z.string().trim().length(2).optional(),
+  SHIPPO_API_KEY: z.string().trim().optional(),
+  EASYPOST_API_KEY: z.string().trim().optional(),
+  USD_TO_LKR_RATE: z
+    .string()
+    .trim()
+    .optional()
+    .refine((val) => val === undefined || (!isNaN(parseFloat(val)) && parseFloat(val) > 0), {
+      message: "USD_TO_LKR_RATE must be a positive number",
+    }),
+
+  // Security & Flags
+  PII_ENCRYPTION_KEY_V1: z.string().trim().optional(),
+  STRICT_CSP: z.string().trim().optional(),
+  CSP_STRICT: z.string().trim().optional(),
+
+  // Database
+  DATABASE_SSL: z.string().trim().optional(),
+
+  // Platform
+  PREVIEW_CLERK_WEBHOOK_SECRET: z.string().trim().optional(),
+  VERCEL_AUTOMATION_BYPASS_SECRET: z.string().trim().optional(),
+  NEXT_PUBLIC_APP_NAME: z.string().trim().optional(),
 });
 
 export type ProductionServerEnv = z.infer<typeof productionServerEnvSchema>;
@@ -103,20 +129,28 @@ export type ProductionServerEnv = z.infer<typeof productionServerEnvSchema>;
 export interface ServerConfig {
   app: {
     url: string;
+    name: string;
     nodeEnv: string;
     isProduction: boolean;
     isDevelopment: boolean;
     isTest: boolean;
+    isVercel: boolean;
+    vercelEnv?: string;
+    vercelUrl?: string;
+    automationBypassSecret?: string;
   };
   database: {
     url: string;
     poolSize?: number;
     migrationUrl?: string;
+    ssl: boolean;
+    isServerless: boolean;
   };
   auth: {
     clerkSecretKey: string;
     clerkPublishableKey: string;
     clerkWebhookSecret: string;
+    previewClerkWebhookSecret?: string;
     superadminUserIds: string[];
   };
   storage: {
@@ -146,10 +180,19 @@ export interface ServerConfig {
   };
   security: {
     piiEncryptionKey: string;
+    piiEncryptionKeyV1?: string;
     healthCheckSecret: string;
     cronSecret: string;
     turnstileSiteKey: string;
     turnstileSecretKey: string;
+    isStrictCsp: boolean;
+  };
+  shipping: {
+    defaultCarrier: string;
+    originCountry: string;
+    shippoApiKey?: string;
+    easypostApiKey?: string;
+    usdToLkrRate: number;
   };
   sentry: {
     dsn?: string;
@@ -169,10 +212,11 @@ export interface ServerConfig {
  * runtime crashes during development, test suites, or static generation.
  */
 export function getServerConfig(): ServerConfig {
-  const nodeEnv = process.env.NODE_ENV || "development";
-  const isProduction = nodeEnv === "production";
-  const isDevelopment = nodeEnv === "development";
-  const isTest = nodeEnv === "test";
+  const rawNodeEnv = process.env.NODE_ENV;
+  const isProduction = rawNodeEnv === "production";
+  const isDevelopment = rawNodeEnv === "development";
+  const isTest = rawNodeEnv === "test";
+  const nodeEnv = rawNodeEnv || "development";
 
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
@@ -192,23 +236,37 @@ export function getServerConfig(): ServerConfig {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  const rawUsdRate = process.env.USD_TO_LKR_RATE?.trim();
+  const parsedUsdRate = rawUsdRate ? parseFloat(rawUsdRate) : NaN;
+  const usdToLkrRate = !isNaN(parsedUsdRate) && parsedUsdRate > 0 ? parsedUsdRate : 307.69;
+
   return {
     app: {
       url: appUrl,
+      name: process.env.NEXT_PUBLIC_APP_NAME?.trim() || "Dilnova",
       nodeEnv,
       isProduction,
       isDevelopment,
       isTest,
+      isVercel: Boolean(process.env.VERCEL),
+      vercelEnv: process.env.VERCEL_ENV?.trim() || undefined,
+      vercelUrl: process.env.VERCEL_URL?.trim() || undefined,
+      automationBypassSecret: process.env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim() || undefined,
     },
     database: {
       url: process.env.DATABASE_URL || "",
       poolSize,
       migrationUrl: process.env.MIGRATION_DATABASE_URL || undefined,
+      ssl: process.env.DATABASE_SSL !== "false",
+      isServerless: Boolean(
+        process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY,
+      ),
     },
     auth: {
       clerkSecretKey: process.env.CLERK_SECRET_KEY || "",
       clerkPublishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "",
       clerkWebhookSecret: process.env.CLERK_WEBHOOK_SECRET || "",
+      previewClerkWebhookSecret: process.env.PREVIEW_CLERK_WEBHOOK_SECRET?.trim() || undefined,
       superadminUserIds: superadminIds,
     },
     storage: {
@@ -238,10 +296,19 @@ export function getServerConfig(): ServerConfig {
     },
     security: {
       piiEncryptionKey: process.env.PII_ENCRYPTION_KEY || "",
+      piiEncryptionKeyV1: process.env.PII_ENCRYPTION_KEY_V1?.trim() || undefined,
       healthCheckSecret: process.env.HEALTH_CHECK_SECRET || "",
       cronSecret: process.env.CRON_SECRET || "",
       turnstileSiteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "",
       turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY || "",
+      isStrictCsp: process.env.STRICT_CSP === "true" || process.env.CSP_STRICT === "true",
+    },
+    shipping: {
+      defaultCarrier: process.env.SHIPPING_DEFAULT_CARRIER?.trim() || "slpost",
+      originCountry: process.env.SHIPPING_ORIGIN_COUNTRY?.trim() || "LK",
+      shippoApiKey: process.env.SHIPPO_API_KEY?.trim() || undefined,
+      easypostApiKey: process.env.EASYPOST_API_KEY?.trim() || undefined,
+      usdToLkrRate,
     },
     sentry: {
       dsn: process.env.SENTRY_DSN || undefined,

@@ -1,13 +1,12 @@
 import "server-only";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { env } from "@/shared/config/env";
 
 let adminClient: SupabaseClient | null = null;
 
 export function isSupabaseStorageConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
-  );
+  return Boolean(env.storage.supabaseUrl?.trim() && env.storage.supabaseServiceRoleKey?.trim());
 }
 
 export function createSupabaseAdminClient(): SupabaseClient {
@@ -15,8 +14,8 @@ export function createSupabaseAdminClient(): SupabaseClient {
     return adminClient;
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const url = env.storage.supabaseUrl?.trim();
+  const serviceRoleKey = env.storage.supabaseServiceRoleKey?.trim();
 
   if (!url || !serviceRoleKey) {
     throw new Error(

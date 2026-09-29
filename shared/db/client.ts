@@ -1,24 +1,18 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "@/shared/db/schema";
+import { env } from "@/shared/config/env";
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = env.database.url;
 
 if (!connectionString) {
   throw new Error("DATABASE_URL environment variable is missing in .env.local");
 }
 
 // Disable prefetch because Supabase/Neon connection poolers do not support it in transaction mode
-const isServerless = !!(
-  process.env.VERCEL ||
-  process.env.AWS_LAMBDA_FUNCTION_NAME ||
-  process.env.NETLIFY
-);
-const defaultPoolSize = isServerless ? 10 : 10;
+const defaultPoolSize = env.database.isServerless ? 10 : 10;
 
-const poolSize = process.env.DATABASE_POOL_SIZE
-  ? parseInt(process.env.DATABASE_POOL_SIZE, 10)
-  : defaultPoolSize;
+const poolSize = env.database.poolSize ?? defaultPoolSize;
 
 type PostgresClient = ReturnType<typeof postgres>;
 
@@ -41,7 +35,7 @@ const client =
     ssl:
       !connectionString.includes("127.0.0.1") &&
       !connectionString.includes("localhost") &&
-      process.env.DATABASE_SSL !== "false"
+      env.database.ssl
         ? "require"
         : false,
   });
@@ -61,10 +55,7 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
           const start = performance.now();
 
           let span: ReturnType<NonNullable<typeof Sentry.startInactiveSpan>> | undefined;
-          if (
-            process.env.NODE_ENV === "production" &&
-            (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)
-          ) {
+          if (env.app.isProduction && (env.sentry.dsn || env.sentry.publicDsn)) {
             try {
               if (Sentry.startInactiveSpan) {
                 span = Sentry.startInactiveSpan({
@@ -99,7 +90,7 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
                 .digest("hex")
                 .slice(0, 12);
 
-              const isProd = process.env.NODE_ENV === "production";
+              const isProd = env.app.isProduction;
               const maxLen = isProd ? 160 : 300;
               const sanitizedQuery =
                 normalized.length > maxLen
@@ -172,17 +163,16 @@ function withSlowQueryLogger(client: PostgresClient): PostgresClient {
 
 export const db = drizzle(withSlowQueryLogger(client), {
   schema,
-  logger:
-    process.env.NODE_ENV === "development"
-      ? {
-          logQuery(query: string, params: unknown[]) {
-            logger.info(`[DB Query]`, {
-              query,
-              params: params.map((p) =>
-                typeof p === "string" && p.includes("@") ? "[REDACTED_EMAIL]" : p,
-              ),
-            });
-          },
-        }
-      : undefined,
+  logger: env.app.isDevelopment
+    ? {
+        logQuery(query: string, params: unknown[]) {
+          logger.info(`[DB Query]`, {
+            query,
+            params: params.map((p) =>
+              typeof p === "string" && p.includes("@") ? "[REDACTED_EMAIL]" : p,
+            ),
+          });
+        },
+      }
+    : undefined,
 });
