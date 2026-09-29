@@ -20,7 +20,31 @@ interface RoleConfig {
   expectedOrgRole?: "org:admin" | "org:member";
 }
 
-const EMPTY_STORAGE = { cookies: [] as unknown[], origins: [] as unknown[] };
+const EMPTY_STORAGE = {
+  cookies: [
+    {
+      name: "lang_preference",
+      value: "en",
+      domain: "127.0.0.1",
+      path: "/",
+      expires: -1,
+      httpOnly: false,
+      secure: false,
+      sameSite: "Lax",
+    },
+    {
+      name: "dilnova_cookie_consent",
+      value: "accepted",
+      domain: "127.0.0.1",
+      path: "/",
+      expires: -1,
+      httpOnly: false,
+      secure: false,
+      sameSite: "Lax",
+    },
+  ],
+  origins: [] as unknown[],
+};
 
 const ROLES: RoleConfig[] = [
   {

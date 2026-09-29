@@ -6,6 +6,7 @@ import {
   detectBrowserLanguage,
   applyLanguage,
   hasLanguageChoice,
+  initDefaultLanguageIfNeeded,
 } from "./languageUtils";
 
 interface LanguageSplashProps {
@@ -19,6 +20,16 @@ export default function LanguageSplash({ systemName = "Dilnova" }: LanguageSplas
   const [detectedLang, setDetectedLang] = useState("en");
 
   useEffect(() => {
+    // Automated test runners (Playwright, Cypress, Selenium) and headless crawlers have navigator.webdriver = true.
+    // Suppress the full-screen blocking splash in automated / E2E test environments.
+    if (
+      (typeof navigator !== "undefined" && navigator.webdriver) ||
+      process.env.NEXT_PUBLIC_IS_E2E === "true"
+    ) {
+      initDefaultLanguageIfNeeded();
+      return;
+    }
+
     if (hasLanguageChoice()) return;
 
     const detected = detectBrowserLanguage();

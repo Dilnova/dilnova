@@ -3,6 +3,22 @@ import { test, expect } from "@playwright/test";
 // Catalog browsing is a public customer-facing flow that runs in all environments.
 
 test.describe("Catalog Browsing and Searching", () => {
+  test.beforeEach(async ({ context, baseURL }) => {
+    if (baseURL) {
+      await context.addCookies([
+        {
+          name: "lang_preference",
+          value: "en",
+          url: baseURL,
+        },
+        {
+          name: "dilnova_cookie_consent",
+          value: "accepted",
+          url: baseURL,
+        },
+      ]);
+    }
+  });
   test("can load the products page and view items", async ({ page }) => {
     // 1. Navigate to products
     await page.goto("/products");
