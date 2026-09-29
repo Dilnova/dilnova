@@ -1,5 +1,9 @@
 import { Redis } from "@upstash/redis";
-import { readUpstashEnv } from "@/shared/security/upstash-health";
+import {
+  readUpstashEnv,
+  isValidUpstashRestUrl,
+  isValidUpstashRestToken,
+} from "@/shared/security/upstash-health";
 import { logger } from "@/shared/logging/logger";
 import crypto from "crypto";
 
@@ -16,6 +20,7 @@ interface MemoryEntry {
 
 const memoryStore = new Map<string, MemoryEntry>();
 const MAX_MEMORY_STORE_SIZE = 10_000;
+const UPSTASH_OPERATION_TIMEOUT_MS = 2_000;
 
 function cleanupExpiredMemoryEntries(): void {
   const now = Date.now();
@@ -23,6 +28,52 @@ function cleanupExpiredMemoryEntries(): void {
     if (v.expiresAt <= now) {
       memoryStore.delete(k);
     }
+  }
+}
+
+/**
+ * Resets the in-memory idempotency store. Intended for use in unit tests.
+ */
+export function resetMemoryStoreForTesting(): void {
+  memoryStore.clear();
+}
+
+/**
+ * Returns an authenticated Upstash Redis client if valid credentials are configured,
+ * or null if credentials are unconfigured, invalid, or placeholder dummy values.
+ */
+function getUpstashRedisClient(): Redis | null {
+  const { url, token } = readUpstashEnv();
+
+  if (!url || !token || !isValidUpstashRestUrl(url) || !isValidUpstashRestToken(token)) {
+    return null;
+  }
+
+  try {
+    return new Redis({ url, token });
+  } catch (error) {
+    logger.error("[idempotency] Failed to initialize Upstash Redis client", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+/**
+ * Executes a promise with an upper timeout boundary to prevent network stalls.
+ */
+async function withTimeout<T>(promise: Promise<T>, ms = UPSTASH_OPERATION_TIMEOUT_MS): Promise<T> {
+  let timeoutId: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error(`Upstash idempotency operation timed out after ${ms}ms`)),
+      ms,
+    );
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
@@ -41,15 +92,14 @@ export async function acquireIdempotencyLock(
   key: string,
   lockTtlSeconds = 60,
 ): Promise<{ isAcquired: boolean; existingRecord?: IdempotencyRecord | null }> {
-  const { url, token } = readUpstashEnv();
+  const redis = getUpstashRedisClient();
 
-  if (url && token) {
+  if (redis) {
     try {
-      const redis = new Redis({ url, token });
       const redisKey = `idempotency:${key}`;
 
       // Check if existing record exists
-      const existingRaw = await redis.get<string | IdempotencyRecord>(redisKey);
+      const existingRaw = await withTimeout(redis.get<string | IdempotencyRecord>(redisKey));
       if (existingRaw) {
         const record: IdempotencyRecord =
           typeof existingRaw === "string" ? JSON.parse(existingRaw) : existingRaw;
@@ -62,17 +112,19 @@ export async function acquireIdempotencyLock(
         createdAt: Date.now(),
       };
 
-      const result = await redis.set(redisKey, JSON.stringify(newRecord), {
-        nx: true,
-        ex: lockTtlSeconds,
-      });
+      const result = await withTimeout(
+        redis.set(redisKey, JSON.stringify(newRecord), {
+          nx: true,
+          ex: lockTtlSeconds,
+        }),
+      );
 
       if (result === "OK") {
         return { isAcquired: true };
       }
 
       // Race condition: another concurrent thread acquired it in the meantime
-      const latestRaw = await redis.get<string | IdempotencyRecord>(redisKey);
+      const latestRaw = await withTimeout(redis.get<string | IdempotencyRecord>(redisKey));
       const latestRecord: IdempotencyRecord | null = latestRaw
         ? typeof latestRaw === "string"
           ? JSON.parse(latestRaw)
@@ -119,19 +171,20 @@ export async function completeIdempotency(
   resultData: unknown,
   ttlSeconds = 86400, // 24 hours
 ): Promise<void> {
-  const { url, token } = readUpstashEnv();
+  const redis = getUpstashRedisClient();
   const record: IdempotencyRecord = {
     status: "completed",
     data: resultData,
     createdAt: Date.now(),
   };
 
-  if (url && token) {
+  if (redis) {
     try {
-      const redis = new Redis({ url, token });
-      await redis.set(`idempotency:${key}`, JSON.stringify(record), {
-        ex: ttlSeconds,
-      });
+      await withTimeout(
+        redis.set(`idempotency:${key}`, JSON.stringify(record), {
+          ex: ttlSeconds,
+        }),
+      );
       return;
     } catch (error) {
       logger.error("[idempotency] Failed to save completion to Upstash Redis", {
@@ -149,12 +202,11 @@ export async function completeIdempotency(
  * allowing subsequent attempts to retry.
  */
 export async function releaseIdempotencyLock(key: string): Promise<void> {
-  const { url, token } = readUpstashEnv();
+  const redis = getUpstashRedisClient();
 
-  if (url && token) {
+  if (redis) {
     try {
-      const redis = new Redis({ url, token });
-      await redis.del(`idempotency:${key}`);
+      await withTimeout(redis.del(`idempotency:${key}`));
     } catch (error) {
       logger.error("[idempotency] Failed to release lock in Upstash Redis", {
         error: error instanceof Error ? error.message : String(error),

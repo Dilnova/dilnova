@@ -101,8 +101,8 @@ describe("Idempotency Engine (shared/security/idempotency.ts)", () => {
   describe("Upstash Redis Integration", () => {
     beforeEach(() => {
       vi.spyOn(upstashHealth, "readUpstashEnv").mockReturnValue({
-        url: "https://redis.upstash.com",
-        token: "fake-token",
+        url: "https://my-app.upstash.io",
+        token: "real-token-12345",
       });
     });
 
@@ -167,6 +167,19 @@ describe("Idempotency Engine (shared/security/idempotency.ts)", () => {
 
       // Memory fallback handles it and acquires lock
       expect(result.isAcquired).toBe(true);
+    });
+
+    it("falls back to in-memory store without calling Redis when credentials are placeholder or dummy values", async () => {
+      vi.spyOn(upstashHealth, "readUpstashEnv").mockReturnValue({
+        url: "https://placeholder.upstash.io",
+        token: "placeholder",
+      });
+
+      const result = await acquireIdempotencyLock("placeholder-test-key", 60);
+
+      expect(result.isAcquired).toBe(true);
+      expect(mockGet).not.toHaveBeenCalled();
+      expect(mockSet).not.toHaveBeenCalled();
     });
   });
 });

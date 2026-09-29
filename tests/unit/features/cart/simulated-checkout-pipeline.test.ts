@@ -6,6 +6,7 @@ import { fetchBranchesForOrgs } from "@/features/cart/services/checkout-options.
 import { resolveCheckoutOptionsForOrgs } from "@/features/organization/checkout-options";
 import { calculateAndValidateCheckoutShipping } from "@/features/cart/services/checkout-shipping.service";
 import { executeCheckoutWithRetry } from "@/features/cart/services/checkout-transaction.service";
+import { resetMemoryStoreForTesting } from "@/shared/security/idempotency";
 
 vi.mock("@clerk/nextjs/server", () => ({
   currentUser: vi.fn(),
@@ -88,6 +89,7 @@ describe("Simulated Checkout Pipeline (Critical Revenue Path)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    resetMemoryStoreForTesting();
 
     vi.mocked(currentUser).mockResolvedValue({
       id: "user_customer_123",
