@@ -449,8 +449,13 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     .join("|");
 
   useEffect(() => {
-    // Automatically fetch live carrier rates whenever destination City and Country are populated.
-    if (!requiresDeliveryAddress || !shippingCountry.trim() || !shippingCity.trim()) {
+    // Automatically fetch live carrier rates whenever destination City and Country are populated and user is signed in.
+    if (
+      !requiresDeliveryAddress ||
+      !shippingCountry.trim() ||
+      !shippingCity.trim() ||
+      !isSignedIn
+    ) {
       setDynamicShippingCents((prev) => (prev !== null ? null : prev));
       setAvailableShippingRates((prev) => (prev.length > 0 ? [] : prev));
       setSelectedRateId((prev) => (prev !== "" ? "" : prev));
@@ -575,8 +580,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
             prev !== data.totalShippingCents ? data.totalShippingCents : prev,
           );
         }
-      } catch (err) {
-        console.warn("[CartClientManager] Failed to fetch dynamic shipping rates:", err);
+      } catch {
+        console.warn("[CartClientManager] Failed to fetch dynamic shipping rates");
       } finally {
         if (isMounted) {
           setIsFetchingRates(false);
@@ -592,6 +597,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     requiresDeliveryAddress,
+    isSignedIn,
     shippingCity,
     shippingState,
     shippingPostalCode,
