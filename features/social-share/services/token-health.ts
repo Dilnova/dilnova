@@ -5,40 +5,9 @@ import * as schema from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
 import { META_GRAPH_API_VERSION } from "./facebook-feed";
 import { verifyPinterestAccount } from "./pinterest";
+import type { TokenHealthStatus, ChannelTokenHealth, SocialTokensHealthReport } from "../types";
 
-export type TokenHealthStatus =
-  | "HEALTHY"
-  | "EXPIRING_SOON" // <= 7 days until expiration
-  | "EXPIRED"
-  | "INVALID"
-  | "UNCONFIGURED";
-
-export interface ChannelTokenHealth {
-  channel: "facebook_page" | "meta_catalog" | "instagram" | "pinterest";
-  status: TokenHealthStatus;
-  isConfigured: boolean;
-  isValid: boolean;
-  isPermanent: boolean;
-  expiresAt: string | null; // ISO string or null
-  expiresInDays: number | null; // null if permanent/unconfigured
-  scopes: string[];
-  accountName?: string;
-  accountId?: string;
-  errorMessage?: string;
-  canRefresh: boolean;
-  lastCheckedAt: string;
-}
-
-export interface SocialTokensHealthReport {
-  overallStatus: "HEALTHY" | "WARNING" | "CRITICAL" | "UNCONFIGURED";
-  checkedAt: string;
-  facebookPage: ChannelTokenHealth;
-  metaCatalog: ChannelTokenHealth;
-  instagram: ChannelTokenHealth;
-  pinterest: ChannelTokenHealth;
-  actionsNeeded: string[];
-  canAutoRefresh: boolean;
-}
+export type { TokenHealthStatus, ChannelTokenHealth, SocialTokensHealthReport };
 
 export interface MetaTokenDebugData {
   app_id?: string;

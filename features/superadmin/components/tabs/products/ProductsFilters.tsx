@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { Category } from "../ProductsTab";
+import type { Category } from "./types";
 
 interface ProductsFiltersProps {
   productSearch: string;

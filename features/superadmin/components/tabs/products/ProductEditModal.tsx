@@ -8,7 +8,7 @@ import * as Sentry from "@sentry/nextjs";
 import { updateProductAction } from "@/features/catalog/superadmin.actions";
 import { AccessibleModal } from "@/shared/ui/AccessibleModal";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
-import type { Product, Category } from "../ProductsTab";
+import type { Product, Category } from "./types";
 
 interface ProductEditModalProps {
   product: Product;

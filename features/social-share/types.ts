@@ -66,8 +66,36 @@ export interface MultiChannelPublishResult {
   webhook?: { success: boolean; status?: number; error?: string };
 }
 
-export type {
-  TokenHealthStatus,
-  ChannelTokenHealth,
-  SocialTokensHealthReport,
-} from "./services/token-health";
+export type TokenHealthStatus =
+  | "HEALTHY"
+  | "EXPIRING_SOON" // <= 7 days until expiration
+  | "EXPIRED"
+  | "INVALID"
+  | "UNCONFIGURED";
+
+export interface ChannelTokenHealth {
+  channel: "facebook_page" | "meta_catalog" | "instagram" | "pinterest";
+  status: TokenHealthStatus;
+  isConfigured: boolean;
+  isValid: boolean;
+  isPermanent: boolean;
+  expiresAt: string | null; // ISO string or null
+  expiresInDays: number | null; // null if permanent/unconfigured
+  scopes: string[];
+  accountName?: string;
+  accountId?: string;
+  errorMessage?: string;
+  canRefresh: boolean;
+  lastCheckedAt: string;
+}
+
+export interface SocialTokensHealthReport {
+  overallStatus: "HEALTHY" | "WARNING" | "CRITICAL" | "UNCONFIGURED";
+  checkedAt: string;
+  facebookPage: ChannelTokenHealth;
+  metaCatalog: ChannelTokenHealth;
+  instagram: ChannelTokenHealth;
+  pinterest: ChannelTokenHealth;
+  actionsNeeded: string[];
+  canAutoRefresh: boolean;
+}

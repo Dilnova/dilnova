@@ -11,33 +11,8 @@ import { ProductEditModal } from "./products/ProductEditModal";
 import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 
-export interface Product {
-  id: string;
-  name: string;
-  type: string;
-  price: number;
-  currency?: string | null;
-  description: string | null;
-  imageUrl: string | null;
-  orgId: string;
-  categoryId: string | null;
-  views: number;
-  categoryName: string | null;
-  createdAt: Date;
-  media?: { url: string; type: "image" | "video" }[] | null;
-  weightGrams?: number | null;
-  lengthCm?: number | null;
-  widthCm?: number | null;
-  heightCm?: number | null;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  parentId: string | null;
-  createdAt: Date;
-}
+import type { Product, Category } from "./products/types";
+export type { Product, Category };
 
 interface Organization {
   id: string;
