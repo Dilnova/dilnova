@@ -137,7 +137,7 @@ export function HeroSection() {
             {/* Node 1: Hardware */}
             <Link
               href="/vendors/dilstar-hardware"
-              className="group flex flex-col items-center focus:outline-none transition-transform hover:-translate-y-1"
+              className="group flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-lg p-1 transition-transform hover:-translate-y-1"
             >
               <div
                 style={{
@@ -157,7 +157,7 @@ export function HeroSection() {
             {/* Node 2: Nursery */}
             <Link
               href="/vendors/dilstar-nursery"
-              className="group flex flex-col items-center focus:outline-none transition-transform hover:-translate-y-1"
+              className="group flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-lg p-1 transition-transform hover:-translate-y-1"
             >
               <div
                 style={{
@@ -177,7 +177,7 @@ export function HeroSection() {
             {/* Node 3: Tech Shop */}
             <Link
               href="/vendors/dilstar-tech"
-              className="group flex flex-col items-center focus:outline-none transition-transform hover:-translate-y-1"
+              className="group flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-lg p-1 transition-transform hover:-translate-y-1"
             >
               <div
                 style={{
@@ -197,7 +197,7 @@ export function HeroSection() {
             {/* Node 4: Services */}
             <Link
               href="/vendors/dilstar-services"
-              className="group flex flex-col items-center focus:outline-none transition-transform hover:-translate-y-1"
+              className="group flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-lg p-1 transition-transform hover:-translate-y-1"
             >
               <div
                 style={{
@@ -278,7 +278,7 @@ export function HeroSection() {
         >
           <a
             href="#takeover"
-            className="group flex flex-col items-center gap-2 text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors focus:outline-none"
+            className="group flex flex-col items-center gap-2 text-xs font-mono text-zinc-500 hover:text-zinc-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-lg p-1"
             aria-label="Scroll to shop showcase"
           >
             <span className="uppercase tracking-widest text-[10px]">Scroll to Explore</span>

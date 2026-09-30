@@ -757,7 +757,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                         : getSampleMessage(prev.category, systemName),
                     }))
                   }
-                  className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline cursor-pointer focus:outline-none"
+                  className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 rounded px-1"
                 >
                   + Load Sample Template
                 </button>

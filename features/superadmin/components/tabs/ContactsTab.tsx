@@ -100,10 +100,11 @@ export default function ContactsTab({ contactSubmissions }: ContactsTabProps) {
       cell: (c) => (
         <select
           value={c.status}
+          aria-label={`Status for ${c.name}`}
           onChange={(e) =>
             handleUpdateContactStatus(c.id, e.target.value as "pending" | "connected" | "no_longer")
           }
-          className={`text-[11px] font-bold px-2 py-1.5 rounded-lg border focus:outline-none cursor-pointer ${
+          className={`text-[11px] font-bold px-2 py-1.5 rounded-lg border focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 cursor-pointer ${
             c.status === "connected"
               ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50"
               : c.status === "no_longer"
@@ -140,10 +141,11 @@ export default function ContactsTab({ contactSubmissions }: ContactsTabProps) {
       <div className="pt-3">
         <select
           value={c.status}
+          aria-label={`Status for ${c.name}`}
           onChange={(e) =>
             handleUpdateContactStatus(c.id, e.target.value as "pending" | "connected" | "no_longer")
           }
-          className={`w-full text-xs font-bold px-2 py-2 rounded-lg border focus:outline-none ${
+          className={`w-full text-xs font-bold px-2 py-2 rounded-lg border focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 ${
             c.status === "connected"
               ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50"
               : c.status === "no_longer"
@@ -178,12 +180,13 @@ export default function ContactsTab({ contactSubmissions }: ContactsTabProps) {
           <div className="flex gap-2">
             <select
               value={contactStatusFilter}
+              aria-label="Filter by status"
               onChange={(e) =>
                 setContactStatusFilter(
                   e.target.value as "all" | "pending" | "connected" | "no_longer",
                 )
               }
-              className="px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 focus:outline-none"
+              className="px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 cursor-pointer"
             >
               <option value="all">All Statuses</option>
               <option value="pending">Connect requests (Pending)</option>
@@ -192,12 +195,13 @@ export default function ContactsTab({ contactSubmissions }: ContactsTabProps) {
             </select>
             <select
               value={contactCategoryFilter}
+              aria-label="Filter by category"
               onChange={(e) =>
                 setContactCategoryFilter(
                   e.target.value as "all" | "collaboration" | "registration" | "info",
                 )
               }
-              className="px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 focus:outline-none"
+              className="px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 cursor-pointer"
             >
               <option value="all">All Categories</option>
               <option value="collaboration">Collaboration</option>

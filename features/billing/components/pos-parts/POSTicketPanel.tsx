@@ -217,7 +217,7 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
             onChange={(e) => setCustomerName(e.target.value)}
             placeholder="Customer Name (Optional)"
             aria-label="Customer Name (Optional)"
-            className="w-full px-2.5 py-1 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-950 dark:border-zinc-800 focus:outline-none"
+            className="w-full px-2.5 py-1 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-950 dark:border-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
           />
 
           <div className="grid grid-cols-3 gap-1">
@@ -255,7 +255,7 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
                   onChange={(e) => setCashTendered(e.target.value)}
                   placeholder={`${currencySymbol}${totalAmount.toFixed(2)}`}
                   aria-label="Cash tendered amount"
-                  className="w-20 px-2 py-0.5 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-right font-mono font-bold bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                  className="w-20 px-2 py-0.5 border border-amber-300 dark:border-amber-700 rounded-lg text-xs text-right font-mono font-bold bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                 />
               </div>
 
@@ -313,7 +313,7 @@ export default function POSTicketPanel({ isMobileSheet = false }: TicketPanelPro
             placeholder="Receipt checkout notes..."
             aria-label="Receipt checkout notes"
             rows={1}
-            className="w-full px-2.5 py-1 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-950 dark:border-zinc-800 resize-none focus:outline-none"
+            className="w-full px-2.5 py-1 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-950 dark:border-zinc-800 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
           />
         </div>
 

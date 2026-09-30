@@ -94,7 +94,7 @@ export function LocationsSection() {
                 {/* [PLACEHOLDER: replace with real storefront photo in DILSTAR_MEDIA.locations] */}
                 <Link
                   href={shop.storefrontHref}
-                  className="group relative h-40 w-full overflow-hidden bg-zinc-950 rounded-lg border border-zinc-800 block focus:outline-none"
+                  className="group relative h-40 w-full overflow-hidden bg-zinc-950 rounded-lg border border-zinc-800 block focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
                 >
                   <Image
                     src={shop.thumb.src}
@@ -112,7 +112,10 @@ export function LocationsSection() {
                   <span className="text-[11px] font-mono tracking-wider text-teal-400 uppercase block">
                     {shop.tag}
                   </span>
-                  <Link href={shop.storefrontHref} className="group/title block focus:outline-none">
+                  <Link
+                    href={shop.storefrontHref}
+                    className="group/title block focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-lg"
+                  >
                     <h3 className="text-xl font-bold text-white tracking-tight mt-1 group-hover/title:text-teal-300 transition-colors">
                       {shop.name}
                     </h3>

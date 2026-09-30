@@ -199,7 +199,10 @@ export function ShopTakeoverSection() {
               <span className="text-xs font-mono tracking-widest text-zinc-400 uppercase">
                 {scene.number} &mdash; {scene.name}
               </span>
-              <Link href={scene.storefrontHref} className="group/title block focus:outline-none">
+              <Link
+                href={scene.storefrontHref}
+                className="group/title block focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-lg"
+              >
                 <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight group-hover/title:text-teal-300 transition-colors">
                   {scene.name}
                 </h2>
@@ -288,7 +291,10 @@ export function ShopTakeoverSection() {
               <span>{SCENES[0].departmentTitle}</span>
             </div>
 
-            <Link href={SCENES[0].storefrontHref} className="group/title block focus:outline-none">
+            <Link
+              href={SCENES[0].storefrontHref}
+              className="group/title block focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-lg"
+            >
               <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05] group-hover/title:text-slate-300 transition-colors">
                 {SCENES[0].name}
               </h2>
@@ -378,7 +384,10 @@ export function ShopTakeoverSection() {
               <span>{SCENES[1].departmentTitle}</span>
             </div>
 
-            <Link href={SCENES[1].storefrontHref} className="group/title block focus:outline-none">
+            <Link
+              href={SCENES[1].storefrontHref}
+              className="group/title block focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-lg"
+            >
               <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05] group-hover/title:text-emerald-300 transition-colors">
                 {SCENES[1].name}
               </h2>
@@ -494,7 +503,10 @@ export function ShopTakeoverSection() {
               <span>{SCENES[2].departmentTitle}</span>
             </div>
 
-            <Link href={SCENES[2].storefrontHref} className="group/title block focus:outline-none">
+            <Link
+              href={SCENES[2].storefrontHref}
+              className="group/title block focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-lg"
+            >
               <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05] group-hover/title:text-cyan-300 transition-colors">
                 {SCENES[2].name}
               </h2>
@@ -596,7 +608,10 @@ export function ShopTakeoverSection() {
               <span>{SCENES[3].departmentTitle}</span>
             </div>
 
-            <Link href={SCENES[3].storefrontHref} className="group/title block focus:outline-none">
+            <Link
+              href={SCENES[3].storefrontHref}
+              className="group/title block focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 rounded-lg"
+            >
               <h2 className="text-5xl sm:text-7xl lg:text-8xl font-black text-white tracking-tight leading-[1.05] group-hover/title:text-amber-300 transition-colors">
                 {SCENES[3].name}
               </h2>

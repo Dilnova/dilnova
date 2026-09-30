@@ -227,71 +227,96 @@ export default function PricingTab({ pricingPlans }: PricingTabProps) {
 
           <form onSubmit={handleSavePricingPlan} className="space-y-4">
             <div>
-              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1">
+              <label
+                htmlFor="planName"
+                className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1"
+              >
                 Plan Name
               </label>
               <input
+                id="planName"
                 type="text"
                 required
+                aria-label="Plan Name"
                 value={planName}
                 onChange={(e) => setPlanName(e.target.value)}
                 placeholder="e.g. Starter"
-                className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none"
+                className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1">
+                <label
+                  htmlFor="planPrice"
+                  className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1"
+                >
                   Price (e.g. $49 or Custom)
                 </label>
                 <input
+                  id="planPrice"
                   type="text"
                   required
+                  aria-label="Price"
                   value={planPrice}
                   onChange={(e) => setPlanPrice(e.target.value)}
                   placeholder="e.g. $49"
-                  className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none"
+                  className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1">
+                <label
+                  htmlFor="planPeriod"
+                  className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1"
+                >
                   Period (optional)
                 </label>
                 <input
+                  id="planPeriod"
                   type="text"
+                  aria-label="Period"
                   value={planPeriod}
                   onChange={(e) => setPlanPeriod(e.target.value)}
                   placeholder="e.g. /month"
-                  className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none font-mono"
+                  className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 font-mono"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1">
+              <label
+                htmlFor="planDesc"
+                className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1"
+              >
                 Description
               </label>
               <textarea
+                id="planDesc"
                 rows={2}
+                aria-label="Description"
                 value={planDesc}
                 onChange={(e) => setPlanDesc(e.target.value)}
                 placeholder="Short marketing description..."
-                className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none resize-none"
+                className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 resize-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1">
+              <label
+                htmlFor="planFeatures"
+                className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1"
+              >
                 Features (One per line)
               </label>
               <textarea
+                id="planFeatures"
                 rows={4}
                 required
+                aria-label="Features"
                 value={planFeatures}
                 onChange={(e) => setPlanFeatures(e.target.value)}
                 placeholder="1 Storefront Tenant&#10;Unlimited products&#10;Sales Analytics"
-                className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none font-mono"
+                className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 font-mono"
               />
             </div>
 
@@ -301,7 +326,7 @@ export default function PricingTab({ pricingPlans }: PricingTabProps) {
                 id="planIsPopular"
                 checked={planIsPopular}
                 onChange={(e) => setPlanIsPopular(e.target.checked)}
-                className="w-4 h-4 text-purple-600 border-zinc-300 rounded focus:ring-purple-500"
+                className="w-4 h-4 text-purple-600 border-zinc-300 rounded focus:ring-purple-500 focus-visible:ring-2 focus-visible:ring-purple-500"
               />
               <label
                 htmlFor="planIsPopular"
@@ -313,27 +338,37 @@ export default function PricingTab({ pricingPlans }: PricingTabProps) {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1">
+                <label
+                  htmlFor="planButtonText"
+                  className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1"
+                >
                   CTA Button Text
                 </label>
                 <input
+                  id="planButtonText"
                   type="text"
                   required
+                  aria-label="CTA Button Text"
                   value={planButtonText}
                   onChange={(e) => setPlanButtonText(e.target.value)}
-                  className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none"
+                  className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1">
+                <label
+                  htmlFor="planButtonLink"
+                  className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 block mb-1"
+                >
                   CTA Button Link
                 </label>
                 <input
+                  id="planButtonLink"
                   type="text"
                   required
+                  aria-label="CTA Button Link"
                   value={planButtonLink}
                   onChange={(e) => setPlanButtonLink(e.target.value)}
-                  className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none"
+                  className="w-full px-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
                 />
               </div>
             </div>

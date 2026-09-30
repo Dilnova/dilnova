@@ -91,8 +91,9 @@ export function ProductsFilters({
       <div className="flex items-center gap-2">
         <select
           value={productTypeFilter}
+          aria-label="Filter by product type"
           onChange={(e) => setProductTypeFilter(e.target.value as "all" | "product" | "service")}
-          className="px-3 py-2.5 sm:py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 focus:outline-none appearance-none flex-1 sm:flex-none"
+          className="px-3 py-2.5 sm:py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 appearance-none flex-1 sm:flex-none cursor-pointer"
         >
           <option value="all">All Types</option>
           <option value="product">Products</option>
@@ -100,8 +101,9 @@ export function ProductsFilters({
         </select>
         <select
           value={productCategoryFilter}
+          aria-label="Filter by category"
           onChange={(e) => setProductCategoryFilter(e.target.value)}
-          className="px-3 py-2.5 sm:py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 focus:outline-none appearance-none flex-1 sm:flex-none"
+          className="px-3 py-2.5 sm:py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 appearance-none flex-1 sm:flex-none cursor-pointer"
         >
           {renderCategoryOptions(true)}
         </select>

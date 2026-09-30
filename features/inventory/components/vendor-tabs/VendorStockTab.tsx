@@ -140,7 +140,8 @@ export default function VendorStockTab({
           value={stockSearch}
           onChange={(e) => setStockSearch(e.target.value)}
           placeholder="Search SKU or name..."
-          className="w-full px-4 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 focus:outline-none"
+          aria-label="Search SKU or name"
+          className="w-full px-4 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
         />
         <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
           {(["all", "low", "out"] as const).map((f) => (
