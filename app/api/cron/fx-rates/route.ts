@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/shared/api/response";
 import { syncLiveExchangeRates } from "@/shared/currency/exchange-rates.service";
 import { logger } from "@/shared/logging/logger";
 import { env } from "@/shared/config/env";
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     if (env.app.isProduction || cronSecret) {
       if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
         logger.warn("Unauthorized request to cron FX exchange rate sync endpoint");
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return apiError("Unauthorized", { status: 401 });
       }
     }
 
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
     logger.info("FX exchange rates background sync completed", { result });
 
-    return NextResponse.json({
+    return apiSuccess({
       success: result.success,
       updatedCount: result.updatedCount,
       timestamp: new Date().toISOString(),
@@ -30,9 +30,6 @@ export async function GET(request: Request) {
       error: error instanceof Error ? error.message : String(error),
     });
 
-    return NextResponse.json(
-      { error: "Internal Server Error during FX rate sync" },
-      { status: 500 },
-    );
+    return apiError("Internal Server Error during FX rate sync", { status: 500 });
   }
 }

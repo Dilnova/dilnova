@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess, apiError } from "@/shared/api/response";
 import { checkAllVendorsSocialTokenHealth } from "@/features/social-share/services/token-health";
 import { logger } from "@/shared/logging/logger";
 import { env } from "@/shared/config/env";
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     if (env.app.isProduction || cronSecret) {
       if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
         logger.warn("[CronSocialTokenHealth] Unauthorized request to social token health endpoint");
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return apiError("Unauthorized", { status: 401 });
       }
     }
 
@@ -26,8 +26,7 @@ export async function GET(request: Request) {
       summary,
     });
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       summary,
       timestamp: new Date().toISOString(),
     });
@@ -36,9 +35,6 @@ export async function GET(request: Request) {
       error: error instanceof Error ? error.message : String(error),
     });
 
-    return NextResponse.json(
-      { error: "Internal Server Error during social token health check" },
-      { status: 500 },
-    );
+    return apiError("Internal Server Error during social token health check", { status: 500 });
   }
 }

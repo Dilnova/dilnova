@@ -36,7 +36,7 @@ describe("GET /api/cron/social-token-health", () => {
 
       expect(response.status).toBe(401);
       const json = await response.json();
-      expect(json).toEqual({ error: "Unauthorized" });
+      expect(json).toEqual({ success: false, error: "Unauthorized" });
       expect(checkAllVendorsSocialTokenHealth).not.toHaveBeenCalled();
     });
 
@@ -53,7 +53,7 @@ describe("GET /api/cron/social-token-health", () => {
 
       expect(response.status).toBe(401);
       const json = await response.json();
-      expect(json).toEqual({ error: "Unauthorized" });
+      expect(json).toEqual({ success: false, error: "Unauthorized" });
       expect(checkAllVendorsSocialTokenHealth).not.toHaveBeenCalled();
     });
 

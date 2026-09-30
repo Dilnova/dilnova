@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/shared/db/client";
 import { shipments, simulatedOrders } from "@/shared/db/schema";
@@ -6,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getCachedIsSuperAdmin } from "@/shared/auth/clerk-cache";
 import { rateLimit } from "@/shared/security/rate-limit";
 import { logger } from "@/shared/logging/logger";
+import { apiError } from "@/shared/api/response";
 
 function escapeHtml(str: string): string {
   return str
@@ -22,14 +22,14 @@ export async function GET(req: Request) {
 
     const { userId, orgId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
     const trackingNumberRaw = searchParams.get("tracking");
 
     if (!trackingNumberRaw || !/^[a-zA-Z0-9_\-\.]{3,64}$/.test(trackingNumberRaw)) {
-      return NextResponse.json({ error: "Invalid or missing tracking number" }, { status: 400 });
+      return apiError("Invalid or missing tracking number", { status: 400 });
     }
 
     const trackingNumber = trackingNumberRaw;
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
       .limit(1);
 
     if (!shipment) {
-      return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
+      return apiError("Shipment not found", { status: 404 });
     }
 
     const [order] = await db
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
       .limit(1);
 
     if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return apiError("Order not found", { status: 404 });
     }
 
     // Verify authorization: caller must be an authorized vendor member of the shipping org,
@@ -62,10 +62,9 @@ export async function GET(req: Request) {
     const isSuperAdmin = await getCachedIsSuperAdmin(userId);
 
     if (!isVendor && !isCustomer && !isSuperAdmin) {
-      return NextResponse.json(
-        { error: "Forbidden: You do not have permission to access this shipment label" },
-        { status: 403 },
-      );
+      return apiError("Forbidden: You do not have permission to access this shipment label", {
+        status: 403,
+      });
     }
 
     const recipientName = escapeHtml(order?.customerName ?? "Customer");
@@ -188,6 +187,6 @@ export async function GET(req: Request) {
     });
   } catch (error: unknown) {
     logger.error("[GET /api/shipping/label-pdf] Error", error);
-    return NextResponse.json({ error: "Failed to generate label" }, { status: 500 });
+    return apiError("Failed to generate label", { status: 500 });
   }
 }
