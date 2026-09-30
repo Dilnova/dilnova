@@ -2,8 +2,8 @@ import { test, expect } from "@playwright/test";
 import { authStateExists } from "../helpers/env";
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
-import { eq, and } from "drizzle-orm";
-import { loadSecurityFixtureContext } from "../helpers/security-fixtures";
+import { eq } from "drizzle-orm";
+import { loadSecurityFixtureContext, ensureVendorPosState } from "../helpers/security-fixtures";
 
 test.beforeEach(() => {
   test.skip(
@@ -16,48 +16,16 @@ let testBranchId: string | null = null;
 let testProductId: string | null = null;
 
 test.beforeAll(async () => {
-  if (process.env.DATABASE_URL) {
-    try {
-      const context = await loadSecurityFixtureContext();
-      const orgId = context?.vendorOrgId;
-      if (orgId) {
-        // Ensure branch exists
-        const existingBranch = await db.query.branches.findFirst({
-          where: eq(schema.branches.orgId, orgId),
-        });
-        if (!existingBranch) {
-          const [branch] = await db
-            .insert(schema.branches)
-            .values({
-              name: "E2E POS Test Branch",
-              orgId,
-              address: "123 Test Street",
-            })
-            .returning({ id: schema.branches.id });
-          testBranchId = branch.id;
-        }
-
-        // Ensure active product exists
-        const existingProduct = await db.query.products.findFirst({
-          where: and(eq(schema.products.orgId, orgId), eq(schema.products.status, "active")),
-        });
-        if (!existingProduct) {
-          const [product] = await db
-            .insert(schema.products)
-            .values({
-              name: "E2E POS Register Product",
-              price: 1500,
-              orgId,
-              status: "active",
-              type: "product",
-            })
-            .returning({ id: schema.products.id });
-          testProductId = product.id;
-        }
-      }
-    } catch {
-      // Best-effort fixture seeding for local DB
+  try {
+    const context = await loadSecurityFixtureContext();
+    const orgId = context?.vendorOrgId;
+    if (orgId) {
+      const state = await ensureVendorPosState(orgId);
+      testBranchId = state?.branchId ?? null;
+      testProductId = state?.productId ?? null;
     }
+  } catch {
+    // Best-effort fixture seeding
   }
 });
 
@@ -65,6 +33,7 @@ test.afterAll(async () => {
   if (process.env.DATABASE_URL) {
     try {
       if (testProductId) {
+        await db.delete(schema.inventory).where(eq(schema.inventory.productId, testProductId));
         await db.delete(schema.products).where(eq(schema.products.id, testProductId));
       }
       if (testBranchId) {
@@ -81,32 +50,32 @@ test.describe("POS Billing Flow", () => {
     // 1. Navigate to billing
     await page.goto("/vendor/billing");
 
-    // Check if branch selection is needed or access is blocked
-    const accessBlocked = await page.getByText(/access/i).isVisible();
-    if (accessBlocked) {
-      test.skip(true, "Vendor user does not have access or no branches exist.");
-      return;
-    }
-
-    // 2. Wait for POS to load (looking for typical POS UI elements)
+    // 2. Wait for POS register to load
     await expect(page.locator("body")).not.toBeEmpty();
+
+    // Verify access is granted (no RestrictedAccess block)
+    const accessBlocked = await page
+      .getByText(/You don't have access to this feature|Upgrade to IMS Pro|Restricted Access/i)
+      .isVisible();
+    expect(
+      accessBlocked,
+      "Vendor should have active POS billing access, not a RestrictedAccess block",
+    ).toBe(false);
 
     // 3. Select a product from grid (click first button that looks like a product card)
     const productCard = page
       .locator("button")
       .filter({ hasText: /Rs|LKR|\$/i })
       .first();
-    const hasProducts = await productCard.isVisible();
-    if (!hasProducts) {
-      test.skip(true, "No products available in POS grid to test.");
-      return;
-    }
+    await expect(productCard, "POS product grid should contain at least one item").toBeVisible({
+      timeout: 15000,
+    });
 
     await productCard.click();
 
     // 4. Verify added to ticket
-    const chargeBtn = page.getByRole("button", { name: /Charge/i }).first();
-    await expect(chargeBtn).toBeVisible();
+    const chargeBtn = page.getByRole("button", { name: /Charge|Complete Checkout/i }).first();
+    await expect(chargeBtn).toBeVisible({ timeout: 10000 });
 
     // 5. Checkout
     await chargeBtn.click();
@@ -115,7 +84,7 @@ test.describe("POS Billing Flow", () => {
     const receiptModal = page
       .getByRole("dialog")
       .or(page.locator(".modal"))
-      .or(page.getByText(/Receipt/i));
-    await expect(receiptModal.first()).toBeVisible();
+      .or(page.getByText(/Receipt|Transaction Successful|Order/i));
+    await expect(receiptModal.first()).toBeVisible({ timeout: 10000 });
   });
 });

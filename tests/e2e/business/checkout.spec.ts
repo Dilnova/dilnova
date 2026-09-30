@@ -3,7 +3,7 @@ import { authStateExists } from "../helpers/env";
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
 import { eq } from "drizzle-orm";
-import { loadSecurityFixtureContext } from "../helpers/security-fixtures";
+import { loadSecurityFixtureContext, seedPurchasableProduct } from "../helpers/security-fixtures";
 
 test.beforeEach(() => {
   test.skip(
@@ -18,28 +18,11 @@ test.beforeAll(async () => {
   if (process.env.DATABASE_URL) {
     try {
       const context = await loadSecurityFixtureContext();
-      const orgId = context?.vendorOrgId || "e2e-dummy-org";
-
-      const [product] = await db
-        .insert(schema.products)
-        .values({
-          name: "E2E Test Checkout Product",
-          price: 1999,
-          orgId,
-          description: "Dummy product for E2E checkout testing",
-          status: "active",
-          type: "product",
-        })
-        .returning({ id: schema.products.id });
-
-      testProductId = product.id;
-
-      // Seed inventory so the product is marked In Stock and allows purchase
-      await db.insert(schema.inventory).values({
-        productId: testProductId,
-        quantity: 50,
-        stockAvailability: "in_stock",
-      });
+      const orgId = context?.vendorOrgId;
+      const seededId = await seedPurchasableProduct(orgId ?? undefined);
+      if (seededId) {
+        testProductId = seededId;
+      }
     } catch {
       // Best-effort fixture seeding for local DB
     }
@@ -79,11 +62,7 @@ test.describe("Customer Checkout Flow", () => {
     // Click "Add to Cart"
     const addToCartBtn = page.getByRole("button", { name: /add to cart/i }).first();
     await expect(addToCartBtn).toBeVisible({ timeout: 10000 });
-
-    if (await addToCartBtn.isDisabled()) {
-      test.skip(true, "Item is out of stock in current environment.");
-      return;
-    }
+    await expect(addToCartBtn).toBeEnabled({ timeout: 10000 });
 
     await addToCartBtn.click();
 
