@@ -13,13 +13,37 @@ export function calculateCheckoutTotals(
   taxAmountCents = 0,
   shippingOverrideCents?: number | null,
 ): CheckoutTotals {
-  const subtotalAmount = Math.max(0, subtotalCents);
-  const taxAmount = Math.max(0, taxAmountCents);
-  const shippingAmount =
-    zeroShipping || subtotalAmount === 0 ? 0 : Math.max(0, shippingOverrideCents ?? 0);
-  const grandTotal = subtotalAmount + taxAmount + shippingAmount;
+  const safeSubtotal = Number.isFinite(subtotalCents) ? Math.max(0, Math.round(subtotalCents)) : 0;
+  const safeTax = Number.isFinite(taxAmountCents) ? Math.max(0, Math.round(taxAmountCents)) : 0;
+  const safeShippingOverride =
+    shippingOverrideCents != null && Number.isFinite(shippingOverrideCents)
+      ? Math.max(0, Math.round(shippingOverrideCents))
+      : 0;
 
-  return { subtotalAmount, taxAmount, shippingAmount, grandTotal };
+  const shippingAmount = zeroShipping || safeSubtotal === 0 ? 0 : safeShippingOverride;
+  const grandTotal = safeSubtotal + safeTax + shippingAmount;
+
+  return { subtotalAmount: safeSubtotal, taxAmount: safeTax, shippingAmount, grandTotal };
+}
+
+export interface ItemTotalInput {
+  qty: number;
+  price?: number | null;
+  priceCents?: number | null;
+}
+
+/**
+ * Calculates item line total in cents.
+ * Prioritizes priceCents if provided, otherwise calculates from fractional currency units.
+ * Guaranteed to return a non-negative integer, protecting against NaN, null, or undefined.
+ */
+export function calculateItemTotalCents(item: ItemTotalInput): number {
+  const safeQty = Number.isFinite(item.qty) ? Math.max(0, item.qty) : 0;
+  if (item.priceCents != null && Number.isFinite(item.priceCents)) {
+    return Math.round(Math.max(0, item.priceCents) * safeQty);
+  }
+  const safePrice = item.price != null && Number.isFinite(item.price) ? Math.max(0, item.price) : 0;
+  return Math.round(safePrice * safeQty * 100);
 }
 
 export interface OrderAmountFields {
@@ -31,25 +55,38 @@ export interface OrderAmountFields {
 
 /** Resolve display amounts for legacy orders (subtotal-only) and new breakdown rows. */
 export function getOrderDisplayTotals(order: OrderAmountFields): CheckoutTotals {
+  const safeGrandTotal = Number.isFinite(order.totalAmount) ? Math.max(0, order.totalAmount) : 0;
   const hasBreakdown =
-    order.subtotalAmount != null && order.taxAmount != null && order.shippingAmount != null;
+    order.subtotalAmount != null &&
+    Number.isFinite(order.subtotalAmount) &&
+    order.taxAmount != null &&
+    Number.isFinite(order.taxAmount) &&
+    order.shippingAmount != null &&
+    Number.isFinite(order.shippingAmount);
 
   if (hasBreakdown) {
     return {
-      subtotalAmount: order.subtotalAmount!,
-      taxAmount: order.taxAmount!,
-      shippingAmount: order.shippingAmount!,
-      grandTotal: order.totalAmount,
+      subtotalAmount: Math.max(0, order.subtotalAmount!),
+      taxAmount: Math.max(0, order.taxAmount!),
+      shippingAmount: Math.max(0, order.shippingAmount!),
+      grandTotal: safeGrandTotal,
     };
   }
 
-  const subtotalAmount = order.subtotalAmount ?? order.totalAmount;
-  const taxAmount = order.taxAmount ?? 0;
-  const shippingAmount = order.shippingAmount ?? 0;
+  const subtotalAmount =
+    order.subtotalAmount != null && Number.isFinite(order.subtotalAmount)
+      ? Math.max(0, order.subtotalAmount)
+      : safeGrandTotal;
+  const taxAmount =
+    order.taxAmount != null && Number.isFinite(order.taxAmount) ? Math.max(0, order.taxAmount) : 0;
+  const shippingAmount =
+    order.shippingAmount != null && Number.isFinite(order.shippingAmount)
+      ? Math.max(0, order.shippingAmount)
+      : 0;
   return {
     subtotalAmount,
     taxAmount,
     shippingAmount,
-    grandTotal: order.totalAmount,
+    grandTotal: safeGrandTotal,
   };
 }

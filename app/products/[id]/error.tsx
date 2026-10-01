@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import * as Sentry from "@sentry/nextjs";
+import { logClientError } from "@/shared/errors/client-error";
 
 export default function ProductDetailError({
   error,
@@ -12,7 +13,7 @@ export default function ProductDetailError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[ProductDetailError] Unhandled error loading product:", error);
+    logClientError("[ProductDetailError] Unhandled error loading product:", error, error?.digest);
     Sentry.captureException(error);
   }, [error]);
 

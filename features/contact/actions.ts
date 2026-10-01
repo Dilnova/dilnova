@@ -126,7 +126,7 @@ export async function submitContactFormAction(prevState: unknown, formData: Form
 
     if (!smtpUser || !smtpPassword) {
       logger.error("SMTP credentials (SMTP_USER/SMTP_PASSWORD) are missing");
-      throw new Error("SMTP configuration is incomplete on the server.");
+      throw new ActionError("SMTP configuration is incomplete on the server.");
     }
 
     const categoryLabels: Record<string, string> = {

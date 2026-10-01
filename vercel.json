@@ -4,6 +4,11 @@
     {
       "path": "/api/cron/fx-rates",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/social-token-health",
+      "schedule": "0 2 * * *"
     }
-  ]
+  ],
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh"
 }

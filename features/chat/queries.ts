@@ -87,8 +87,8 @@ export async function listOrgConversations(
     offset?: number;
   },
 ): Promise<{ conversations: ConversationDetail[]; totalCount: number }> {
-  const limit = options.limit || 50;
-  const offset = options.offset || 0;
+  const limit = Math.min(Math.max(1, options.limit || 50), 100);
+  const offset = Math.max(0, options.offset || 0);
 
   // Determine permitted branch IDs for org:member
   let permittedBranchIds: string[] | null = null;
@@ -252,7 +252,8 @@ export async function listCustomerConversations(
     )
     .leftJoin(schema.branches, eq(schema.orderConversations.branchId, schema.branches.id))
     .where(eq(schema.orderConversations.customerUserId, customerUserId))
-    .orderBy(desc(schema.orderConversations.lastMessageAt));
+    .orderBy(desc(schema.orderConversations.lastMessageAt))
+    .limit(100);
 
   const convIds = rows.map((r) => r.conversation.id);
   const latestMessageByConvId = new Map<
@@ -318,7 +319,7 @@ export async function listMessages(
   conversationId: string,
   options?: { limit?: number; before?: Date },
 ): Promise<ChatMessageItem[]> {
-  const limit = options?.limit || 50;
+  const limit = Math.min(Math.max(1, options?.limit || 50), 100);
 
   const conditions = [eq(schema.orderChatMessages.conversationId, conversationId)];
   if (options?.before) {

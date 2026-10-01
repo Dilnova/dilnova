@@ -3,12 +3,14 @@
 import { SignUp } from "@clerk/nextjs";
 import { useState } from "react";
 import Link from "next/link";
+import { getSafeRedirectUrl } from "@/shared/security/redirect";
 
 export default function AgeGatedSignUp({ redirectUrl }: { redirectUrl?: string }) {
   const [agreed, setAgreed] = useState(false);
+  const safeRedirectUrl = getSafeRedirectUrl(redirectUrl);
 
   if (agreed) {
-    return <SignUp forceRedirectUrl={redirectUrl ?? "/"} />;
+    return <SignUp forceRedirectUrl={safeRedirectUrl} />;
   }
 
   return (

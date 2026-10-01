@@ -70,7 +70,7 @@ export default function HeaderNav({ links, mobileExtra }: HeaderNavProps) {
             href={link.href}
             className={`text-xs font-semibold transition-colors ${
               link.colorClass ||
-              "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+              "text-zinc-650 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-100"
             }`}
           >
             {link.label}
@@ -131,7 +131,7 @@ export default function HeaderNav({ links, mobileExtra }: HeaderNavProps) {
                 onClick={() => setIsOpen(false)}
                 className={`block truncate text-sm font-semibold transition-colors py-3 px-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900/60 ${
                   link.colorClass ||
-                  "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                  "text-zinc-700 hover:text-zinc-950 dark:text-zinc-200 dark:hover:text-zinc-50"
                 }`}
               >
                 {link.label}

@@ -1,5 +1,6 @@
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
+import { env } from "@/shared/config/env";
 
 export type UpstashRateLimitProbe = {
   configured: boolean;
@@ -26,8 +27,8 @@ function stripEnvQuotes(value: string | undefined): string | undefined {
 }
 
 export function readUpstashEnv(): { url?: string; token?: string } {
-  const url = stripEnvQuotes(process.env.UPSTASH_REDIS_REST_URL);
-  const token = stripEnvQuotes(process.env.UPSTASH_REDIS_REST_TOKEN);
+  const url = stripEnvQuotes(env.upstash.redisUrl);
+  const token = stripEnvQuotes(env.upstash.redisToken);
   return { url, token };
 }
 

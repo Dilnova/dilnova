@@ -42,7 +42,7 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
             <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-2xl overflow-hidden border border-teal-500/30 bg-slate-900 shadow-2xl shadow-teal-500/5 flex-shrink-0">
               <Image
                 src={org.imageUrl}
-                alt={org.name}
+                alt={`${org.name || "Vendor"} logo`}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 112px, 144px"
@@ -163,7 +163,7 @@ export default function DilstarServicesStorefront({ org, products }: StorefrontP
                           ) : (
                             <Image
                               src={product.imageUrl}
-                              alt={product.name}
+                              alt={product.name || "Product image"}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-500"
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

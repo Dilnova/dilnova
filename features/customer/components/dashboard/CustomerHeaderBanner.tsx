@@ -22,7 +22,7 @@ export default function CustomerHeaderBanner({
         {userAvatar ? (
           <Image
             src={userAvatar}
-            alt={fullName}
+            alt={fullName || "User avatar"}
             width={80}
             height={80}
             className="w-20 h-20 rounded-full border border-purple-500/20 shadow-md object-cover flex-shrink-0"

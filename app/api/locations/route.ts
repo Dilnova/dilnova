@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { Country as CscCountry, State as CscState, City as CscCity } from "country-state-city";
+import { logger } from "@/shared/logging/logger";
+import { rateLimit } from "@/shared/security/rate-limit";
+import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
+import { z } from "zod/v3";
+import type { ParsedCountry, ParsedState } from "@/shared/types/locations";
 
 interface RestCountryItem {
   cca2?: string;
@@ -20,22 +25,49 @@ interface StateItem {
   state_code?: string;
 }
 
-interface ParsedCountry {
-  code: string;
-  name: string;
-  flag: string;
-  dialCode: string;
-}
+const locationQuerySchema = z.object({
+  type: z
+    .enum(["countries", "states", "districts", "cities", "reverse-geocode", "ip-location"])
+    .optional()
+    .default("countries"),
+  country: z.string().trim().min(1).max(100).optional(),
+  state: z.string().trim().min(1).max(100).optional(),
+  province: z.string().trim().min(1).max(100).optional(),
+  district: z.string().trim().min(1).max(100).optional(),
+  lat: z
+    .string()
+    .trim()
+    .regex(/^-?\d{1,3}(\.\d+)?$/, "Invalid latitude format")
+    .optional(),
+  lon: z
+    .string()
+    .trim()
+    .regex(/^-?\d{1,3}(\.\d+)?$/, "Invalid longitude format")
+    .optional(),
+});
 
-interface ParsedState {
-  name: string;
-  code?: string;
+/**
+ * Returns a standardized JSON response with secure Cache-Control headers.
+ * Static/semi-static data (countries, states, districts, cities) is cached at CDN edge (24h) and browser (1h).
+ * Dynamic/sensitive GPS and IP geocoding responses are strictly non-cacheable.
+ */
+function locationJsonResponse<T>(data: T, isCacheable = true, status = 200) {
+  const headers = new Headers();
+  if (isCacheable) {
+    headers.set(
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=3600",
+    );
+  } else {
+    headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate");
+  }
+  return NextResponse.json(data, { status, headers });
 }
 
 /**
  * Helper to sanitize user-provided values before logging to prevent format string injection and log injection.
  */
-function sanitizeLogValue(val: string | null): string {
+function sanitizeLogValue(val: string | null | undefined): string {
   if (!val) return "";
   return val.replace(/[\r\n\t]/g, " ").slice(0, 100);
 }
@@ -54,22 +86,70 @@ function stripSuffixCaseInsensitive(str: string, suffix: string): string {
 }
 
 /**
- * 100% Pure Dynamic Server API Route Handler using `country-state-city` with external API fallbacks.
+ * Dynamic Server API Route Handler for Countries, States, Districts, Cities, and Reverse Geocoding.
  *
- * Handles Countries, States, Districts, Cities, and Reverse Geocoding via Server Proxy.
- * Eliminates client-side CORS and User-Agent blocking errors. Zero hardcoded static location records.
+ * Security Protections:
+ * - Rate Limiting: 60 req/min for catalog lookups, 15 req/min for upstream geocoding calls (GPS / IP)
+ * - Input Validation: Strict Zod schema validation for all parameters
+ * - Edge Caching: 24h CDN caching for catalog datasets to prevent unnecessary compute and origin hits
+ * - Timeout Enforcement: fetchWithTimeout on all third-party outbound HTTP requests
+ * - Sanitized Error Responses: Generic error messages prevent leaking internal details
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const type = searchParams.get("type");
-  const country = searchParams.get("country");
-  const state = searchParams.get("state");
-  const province = searchParams.get("province");
-  const district = searchParams.get("district");
-  const lat = searchParams.get("lat");
-  const lon = searchParams.get("lon");
 
-  // 1. Reverse Geocoding (GPS Lat/Lon to Address)
+  // 1. Input Validation via Zod Schema
+  const parseResult = locationQuerySchema.safeParse({
+    type: searchParams.get("type") ?? undefined,
+    country: searchParams.get("country") ?? undefined,
+    state: searchParams.get("state") ?? undefined,
+    province: searchParams.get("province") ?? undefined,
+    district: searchParams.get("district") ?? undefined,
+    lat: searchParams.get("lat") ?? undefined,
+    lon: searchParams.get("lon") ?? undefined,
+  });
+
+  if (!parseResult.success) {
+    return locationJsonResponse(
+      { success: false, error: "Invalid location request parameters" },
+      false,
+      400,
+    );
+  }
+
+  const { type, country, state, province, district, lat, lon } = parseResult.data;
+
+  // 2. Multi-tier IP-based Rate Limiting
+  const ip =
+    request.headers.get("cf-connecting-ip")?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "127.0.0.1";
+
+  const isHeavyOperation = type === "reverse-geocode" || type === "ip-location";
+  const limit = isHeavyOperation ? 15 : 60;
+  const rateLimitKey = `locations:${isHeavyOperation ? "geo" : "catalog"}:${ip}`;
+
+  try {
+    await rateLimit(limit, 60 * 1000, rateLimitKey);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Rate limit")) {
+      logger.warn("[ServerLocationProxy] Rate limit exceeded", { ip: sanitizeLogValue(ip), type });
+      return NextResponse.json(
+        { success: false, error: "Too many location requests. Please try again shortly." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+            "Cache-Control": "no-store",
+          },
+        },
+      );
+    }
+    logger.error("[ServerLocationProxy] Rate limit service check error", error);
+  }
+
+  // 3. Reverse Geocoding (GPS Lat/Lon to Address)
   if (type === "reverse-geocode" && lat && lon) {
     const latNum = parseFloat(lat);
     const lonNum = parseFloat(lon);
@@ -81,18 +161,18 @@ export async function GET(request: Request) {
       lonNum < -180 ||
       lonNum > 180
     ) {
-      return NextResponse.json({ success: false, error: "Invalid coordinates" }, { status: 400 });
+      return locationJsonResponse({ success: false, error: "Invalid coordinates" }, false, 400);
     }
 
     try {
-      const res = await fetch(
+      const res = await fetchWithTimeout(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(String(latNum))}&lon=${encodeURIComponent(String(lonNum))}&zoom=18&addressdetails=1`,
         {
           headers: {
             "Accept-Language": "en",
             "User-Agent": "DilnovaCommerceHub/1.0 (Enterprise Ecommerce Platform)",
           },
-          next: { revalidate: 3600 },
+          timeoutMs: HTTP_TIMEOUT.FAST,
         },
       );
 
@@ -117,32 +197,32 @@ export async function GET(request: Request) {
 
         const streetAddress = [houseNo, road].filter(Boolean).join(", ");
 
-        return NextResponse.json({
-          success: true,
-          data: {
-            country: detectedCountry,
-            state: detectedState,
-            city: detectedCity,
-            streetAddress,
-            postcode,
+        return locationJsonResponse(
+          {
+            success: true,
+            data: {
+              country: detectedCountry,
+              state: detectedState,
+              city: detectedCity,
+              streetAddress,
+              postcode,
+            },
           },
-        });
+          false,
+        );
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] Reverse geocode failed", {
+      logger.error("[ServerLocationProxy] Reverse geocode failed", {
         lat: sanitizeLogValue(lat),
         lon: sanitizeLogValue(lon),
         error: err,
       });
     }
 
-    return NextResponse.json(
-      { success: false, error: "Reverse geocoding failed" },
-      { status: 500 },
-    );
+    return locationJsonResponse({ success: false, error: "Reverse geocoding failed" }, false, 500);
   }
 
-  // 2. IP-based Fallback Geocoding (if browser GPS permission is denied)
+  // 4. IP-based Fallback Geocoding (if browser GPS permission is denied)
   if (type === "ip-location") {
     try {
       const rawIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "";
@@ -154,33 +234,37 @@ export async function GET(request: Request) {
         ? `https://ipapi.co/${encodeURIComponent(safeIp)}/json/`
         : `https://ipapi.co/json/`;
 
-      const res = await fetch(url, {
+      const res = await fetchWithTimeout(url, {
         headers: { "User-Agent": "DilnovaCommerceHub/1.0" },
-        next: { revalidate: 3600 },
+        timeoutMs: HTTP_TIMEOUT.FAST,
       });
+
       if (res.ok) {
         const data = (await res.json()) as Record<string, string>;
         if (data && !data.error) {
-          return NextResponse.json({
-            success: true,
-            data: {
-              country: data.country_name || data.country || "",
-              state: data.region || "",
-              city: data.city || "",
-              postcode: data.postal || data.zip || "",
-              streetAddress: "",
+          return locationJsonResponse(
+            {
+              success: true,
+              data: {
+                country: data.country_name || data.country || "",
+                state: data.region || "",
+                city: data.city || "",
+                postcode: data.postal || data.zip || "",
+                streetAddress: "",
+              },
             },
-          });
+            false,
+          );
         }
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] IP location failed", { error: err });
+      logger.error("[ServerLocationProxy] IP location failed", { error: err });
     }
 
-    return NextResponse.json({ success: false, error: "IP location failed" }, { status: 500 });
+    return locationJsonResponse({ success: false, error: "IP location failed" }, false, 500);
   }
 
-  // 3. Fetch 250+ Countries (Primary: country-state-city dataset)
+  // 5. Fetch 250+ Countries (Primary: country-state-city dataset)
   if (type === "countries" || !type) {
     try {
       const cscCountries = CscCountry.getAllCountries();
@@ -200,19 +284,22 @@ export async function GET(request: Request) {
           .sort((a, b) => a.name.localeCompare(b.name));
 
         if (parsed.length > 0) {
-          return NextResponse.json({ success: true, data: parsed });
+          return locationJsonResponse({ success: true, data: parsed }, true);
         }
       }
     } catch (err) {
-      console.warn("[ServerLocationProxy] CSC Countries lookup notice", { error: err });
+      logger.warn("[ServerLocationProxy] CSC Countries lookup notice", { error: err });
     }
 
     // Fallback 1: REST Countries API
     try {
-      const res = await fetch("https://restcountries.com/v3.1/all?fields=name,cca2,idd,flag", {
-        headers: { Accept: "application/json" },
-        next: { revalidate: 86400 },
-      });
+      const res = await fetchWithTimeout(
+        "https://restcountries.com/v3.1/all?fields=name,cca2,idd,flag",
+        {
+          headers: { Accept: "application/json" },
+          timeoutMs: HTTP_TIMEOUT.DEFAULT,
+        },
+      );
 
       if (res.ok) {
         const data = (await res.json()) as RestCountryItem[];
@@ -233,18 +320,18 @@ export async function GET(request: Request) {
             .sort((a, b) => a.name.localeCompare(b.name));
 
           if (parsed.length > 0) {
-            return NextResponse.json({ success: true, data: parsed });
+            return locationJsonResponse({ success: true, data: parsed }, true);
           }
         }
       }
     } catch (err) {
-      console.warn("[ServerLocationProxy] Primary REST Countries fetch failed", { error: err });
+      logger.warn("[ServerLocationProxy] Primary REST Countries fetch failed", { error: err });
     }
 
     // Fallback 2: CountriesNow ISO API
     try {
-      const res2 = await fetch("https://countriesnow.space/api/v0.1/countries/iso", {
-        next: { revalidate: 86400 },
+      const res2 = await fetchWithTimeout("https://countriesnow.space/api/v0.1/countries/iso", {
+        timeoutMs: HTTP_TIMEOUT.DEFAULT,
       });
       if (res2.ok) {
         const data2 = (await res2.json()) as { data?: IsoCountryItem[] };
@@ -262,17 +349,17 @@ export async function GET(request: Request) {
             .filter((c) => Boolean(c.name && c.code))
             .sort((a, b) => a.name.localeCompare(b.name));
 
-          return NextResponse.json({ success: true, data: parsed2 });
+          return locationJsonResponse({ success: true, data: parsed2 }, true);
         }
       }
     } catch (err2) {
-      console.error("[ServerLocationProxy] Secondary countries fetch failed", { error: err2 });
+      logger.error("[ServerLocationProxy] Secondary countries fetch failed", { error: err2 });
     }
 
-    return NextResponse.json({ success: false, data: [] });
+    return locationJsonResponse({ success: false, data: [] }, true);
   }
 
-  // 4a. Fetch Districts / Sub-regions dynamically (Only for 3-tier countries)
+  // 6. Fetch Districts / Sub-regions dynamically (Only for 3-tier countries)
   if (type === "districts" && country) {
     const cleanCountryStr = country.trim();
     const cleanProvinceKey = stripSuffixCaseInsensitive(
@@ -311,15 +398,15 @@ export async function GET(request: Request) {
             .filter((s) => Boolean(s.name))
             .sort((a, b) => a.name.localeCompare(b.name));
 
-          return NextResponse.json({ success: true, data: parsed });
+          return locationJsonResponse({ success: true, data: parsed }, true);
         }
       }
     }
 
-    return NextResponse.json({ success: true, data: [] });
+    return locationJsonResponse({ success: true, data: [] }, true);
   }
 
-  // 4b. Fetch States / Provinces for a Country dynamically
+  // 7. Fetch States / Provinces for a Country dynamically
   if (type === "states" && country) {
     const cleanCountryStr = country.trim();
 
@@ -346,16 +433,16 @@ export async function GET(request: Request) {
 
     if (states.length > 0) {
       states.sort((a, b) => a.name.localeCompare(b.name));
-      return NextResponse.json({ success: true, data: states });
+      return locationJsonResponse({ success: true, data: states }, true);
     }
 
     // Fallback: countriesnow.space States API
     try {
-      const res = await fetch("https://countriesnow.space/api/v0.1/countries/states", {
+      const res = await fetchWithTimeout("https://countriesnow.space/api/v0.1/countries/states", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ country: cleanCountryStr }),
-        next: { revalidate: 86400 },
+        timeoutMs: HTTP_TIMEOUT.DEFAULT,
       });
 
       if (res.ok) {
@@ -369,20 +456,20 @@ export async function GET(request: Request) {
             .filter((s) => Boolean(s.name))
             .sort((a, b) => a.name.localeCompare(b.name));
 
-          return NextResponse.json({ success: true, data: fetchedStates });
+          return locationJsonResponse({ success: true, data: fetchedStates }, true);
         }
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] Live states fetch failed", {
+      logger.error("[ServerLocationProxy] Live states fetch failed", {
         country: sanitizeLogValue(country),
         error: err,
       });
     }
 
-    return NextResponse.json({ success: true, data: [] });
+    return locationJsonResponse({ success: true, data: [] }, true);
   }
 
-  // 5. Fetch Cities for a Country & District/State dynamically
+  // 8. Fetch Cities for a Country & District/State dynamically
   if (type === "cities" && country) {
     const cleanCountryStr = country.trim();
     const rawSubRegionStr = (district || state || province || "").trim();
@@ -426,34 +513,34 @@ export async function GET(request: Request) {
     if (rawSubRegionStr) {
       try {
         const [suburbsRes, townsRes, citiesRes] = await Promise.all([
-          fetch(
+          fetchWithTimeout(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`suburbs in ${cleanSubRegionStr}, ${cleanCountryStr}`)}&format=json&limit=100`,
             {
               headers: {
                 "Accept-Language": "en",
                 "User-Agent": "DilnovaCommerceHub/1.0 (Enterprise Ecommerce Platform)",
               },
-              next: { revalidate: 86400 },
+              timeoutMs: HTTP_TIMEOUT.DEFAULT,
             },
           ),
-          fetch(
+          fetchWithTimeout(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`towns in ${cleanSubRegionStr}, ${cleanCountryStr}`)}&format=json&limit=100`,
             {
               headers: {
                 "Accept-Language": "en",
                 "User-Agent": "DilnovaCommerceHub/1.0 (Enterprise Ecommerce Platform)",
               },
-              next: { revalidate: 86400 },
+              timeoutMs: HTTP_TIMEOUT.DEFAULT,
             },
           ),
-          fetch(
+          fetchWithTimeout(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(`cities in ${cleanSubRegionStr}, ${cleanCountryStr}`)}&format=json&limit=100`,
             {
               headers: {
                 "Accept-Language": "en",
                 "User-Agent": "DilnovaCommerceHub/1.0 (Enterprise Ecommerce Platform)",
               },
-              next: { revalidate: 86400 },
+              timeoutMs: HTTP_TIMEOUT.DEFAULT,
             },
           ),
         ]);
@@ -493,28 +580,31 @@ export async function GET(request: Request) {
           );
 
           if (merged.length > 0) {
-            return NextResponse.json({ success: true, data: merged });
+            return locationJsonResponse({ success: true, data: merged }, true);
           }
         }
       } catch (err) {
-        console.error("[ServerLocationProxy] Nominatim district/province cities fetch failed", err);
+        logger.error("[ServerLocationProxy] Nominatim district/province cities fetch failed", err);
       }
     }
 
     if (cscCities.length > 0) {
       const sortedCities = Array.from(new Set(cscCities)).sort((a, b) => a.localeCompare(b));
-      return NextResponse.json({ success: true, data: sortedCities });
+      return locationJsonResponse({ success: true, data: sortedCities }, true);
     }
 
     // countriesnow.space State Cities API
     if (rawSubRegionStr) {
       try {
-        const res = await fetch("https://countriesnow.space/api/v0.1/countries/state/cities", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ country: cleanCountryStr, state: cleanSubRegionStr }),
-          next: { revalidate: 86400 },
-        });
+        const res = await fetchWithTimeout(
+          "https://countriesnow.space/api/v0.1/countries/state/cities",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ country: cleanCountryStr, state: cleanSubRegionStr }),
+            timeoutMs: HTTP_TIMEOUT.DEFAULT,
+          },
+        );
 
         if (res.ok) {
           const data = (await res.json()) as { data?: string[] };
@@ -523,11 +613,11 @@ export async function GET(request: Request) {
               .filter((c): c is string => typeof c === "string" && c.trim().length > 0)
               .sort((a, b) => a.localeCompare(b));
 
-            return NextResponse.json({ success: true, data: cities });
+            return locationJsonResponse({ success: true, data: cities }, true);
           }
         }
       } catch (err) {
-        console.error("[ServerLocationProxy] Live state cities fetch failed", {
+        logger.error("[ServerLocationProxy] Live state cities fetch failed", {
           state: sanitizeLogValue(state),
           country: sanitizeLogValue(country),
           error: err,
@@ -537,11 +627,11 @@ export async function GET(request: Request) {
 
     // Fallback to Country-level Live Cities API if state cities returned empty
     try {
-      const res = await fetch("https://countriesnow.space/api/v0.1/countries/cities", {
+      const res = await fetchWithTimeout("https://countriesnow.space/api/v0.1/countries/cities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ country: cleanCountryStr }),
-        next: { revalidate: 86400 },
+        timeoutMs: HTTP_TIMEOUT.DEFAULT,
       });
 
       if (res.ok) {
@@ -551,11 +641,11 @@ export async function GET(request: Request) {
             .filter((c): c is string => typeof c === "string" && c.trim().length > 0)
             .sort((a, b) => a.localeCompare(b));
 
-          return NextResponse.json({ success: true, data: cities });
+          return locationJsonResponse({ success: true, data: cities }, true);
         }
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] Live country cities fetch failed", {
+      logger.error("[ServerLocationProxy] Live country cities fetch failed", {
         country: sanitizeLogValue(country),
         error: err,
       });
@@ -563,14 +653,14 @@ export async function GET(request: Request) {
 
     // Fallback: OpenStreetMap Nominatim Live Settlement Cities API
     try {
-      const nomRes = await fetch(
+      const nomRes = await fetchWithTimeout(
         `https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(cleanCountryStr)}&featuretype=settlement&format=json&limit=100`,
         {
           headers: {
             "Accept-Language": "en",
             "User-Agent": "DilnovaCommerceHub/1.0 (Enterprise Ecommerce Platform)",
           },
-          next: { revalidate: 86400 },
+          timeoutMs: HTTP_TIMEOUT.DEFAULT,
         },
       );
 
@@ -586,18 +676,18 @@ export async function GET(request: Request) {
           ).sort((a, b) => a.localeCompare(b));
 
           if (nomCities.length > 0) {
-            return NextResponse.json({ success: true, data: nomCities });
+            return locationJsonResponse({ success: true, data: nomCities }, true);
           }
         }
       }
     } catch (err) {
-      console.error("[ServerLocationProxy] Nominatim cities fetch failed", err);
+      logger.error("[ServerLocationProxy] Nominatim cities fetch failed", err);
     }
 
-    return NextResponse.json({ success: false, data: [] });
+    return locationJsonResponse({ success: false, data: [] }, true);
   }
 
-  return NextResponse.json({ success: false, error: "Invalid location request" }, { status: 400 });
+  return locationJsonResponse({ success: false, error: "Invalid location request" }, false, 400);
 }
 
 function getEmojiFlag(countryCode: string): string {

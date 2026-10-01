@@ -2,6 +2,7 @@
 
 import { z } from "zod/v3";
 import { actionClient } from "@/lib/safe-action";
+import { ActionError } from "@/shared/errors/action-error";
 import { db } from "@/shared/db/client";
 import { productWaitlists, products } from "@/shared/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -30,7 +31,7 @@ export const subscribeProductWaitlistAction = actionClient
       .limit(1);
 
     if (!existingProduct) {
-      throw new Error("Target product not found.");
+      throw new ActionError("Target product not found.");
     }
 
     const emailClean = email.toLowerCase().trim();

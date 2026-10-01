@@ -337,7 +337,7 @@ export default function VendorProfileForm({
                   d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
               </svg>
-              <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400">
+              <span className="text-[11px] font-semibold text-purple-700 dark:text-purple-400">
                 {isBannerUploading ? "Uploading..." : "Add Image"}
               </span>
             </button>
@@ -349,6 +349,7 @@ export default function VendorProfileForm({
           ref={bannerFileInputRef}
           onChange={handleBannerUpload}
           accept="image/*"
+          aria-label="Upload storefront banner image"
           className="hidden"
         />
         <input
@@ -357,6 +358,7 @@ export default function VendorProfileForm({
           onChange={handleBannerUpload}
           accept="image/*"
           capture="environment"
+          aria-label="Take storefront banner photo"
           className="hidden"
         />
 
@@ -369,16 +371,20 @@ export default function VendorProfileForm({
           </div>
         )}
 
-        <p className="text-[10px] text-zinc-400 font-mono">
+        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
           Upload a wide photo for your store header. PNG, JPG, or WEBP (max 10MB).
         </p>
       </div>
 
       <div className="space-y-2">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+        <label
+          htmlFor="vendor-description"
+          className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono"
+        >
           Store Description
         </label>
         <textarea
+          id="vendor-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
@@ -410,7 +416,7 @@ export default function VendorProfileForm({
             <h4 className="text-sm font-bold text-zinc-805 dark:text-zinc-150">
               Bank Transfer Details
             </h4>
-            <p className="text-[11px] text-zinc-400 mt-0.5">
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
               Shown to customers after checkout when they pay by bank transfer. Stored in private
               organization metadata — not visible to cashiers or other org members.
             </p>
@@ -418,10 +424,14 @@ export default function VendorProfileForm({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+              <label
+                htmlFor="vendor-bank-name"
+                className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono"
+              >
                 Bank Name
               </label>
               <input
+                id="vendor-bank-name"
                 type="text"
                 value={bankName}
                 onChange={(e) => setBankName(e.target.value)}
@@ -431,10 +441,14 @@ export default function VendorProfileForm({
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+              <label
+                htmlFor="vendor-bank-account-name"
+                className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono"
+              >
                 Account Name
               </label>
               <input
+                id="vendor-bank-account-name"
                 type="text"
                 value={bankAccountName}
                 onChange={(e) => setBankAccountName(e.target.value)}
@@ -444,10 +458,14 @@ export default function VendorProfileForm({
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+              <label
+                htmlFor="vendor-bank-account-number"
+                className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono"
+              >
                 Account Number
               </label>
               <input
+                id="vendor-bank-account-number"
                 type="text"
                 value={bankAccountNumber}
                 onChange={(e) => setBankAccountNumber(e.target.value)}
@@ -457,10 +475,14 @@ export default function VendorProfileForm({
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+              <label
+                htmlFor="vendor-bank-branch-code"
+                className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono"
+              >
                 Branch / Sort Code (optional)
               </label>
               <input
+                id="vendor-bank-branch-code"
                 type="text"
                 value={bankBranchCode}
                 onChange={(e) => setBankBranchCode(e.target.value)}
@@ -471,10 +493,14 @@ export default function VendorProfileForm({
           </div>
 
           <div className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono">
+            <label
+              htmlFor="vendor-bank-instructions"
+              className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 font-mono"
+            >
               Additional Instructions (optional)
             </label>
             <textarea
+              id="vendor-bank-instructions"
               value={bankTransferInstructions}
               onChange={(e) => setBankTransferInstructions(e.target.value)}
               rows={3}
@@ -492,7 +518,7 @@ export default function VendorProfileForm({
             <h4 className="text-sm font-bold text-zinc-805 dark:text-zinc-150">
               Stock Allocation Configuration
             </h4>
-            <p className="text-[11px] text-zinc-400 mt-0.5">
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
               Choose how your organization allocates initial stock when listing new products.
             </p>
           </div>

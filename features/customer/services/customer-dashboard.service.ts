@@ -9,6 +9,7 @@ import {
   getOrderItemsForOrders,
   getPickupBranchNameByIdMap,
   getUserWishlist,
+  getUserWishlistCount,
   getWishlistProducts,
 } from "@/features/customer/queries";
 import { getCheckoutOptionsCatalog } from "@/features/organization/checkout-options";
@@ -20,6 +21,7 @@ export async function getCustomerDashboardData(userId: string) {
   const client = await clerkClient();
   const [
     userWishlist,
+    wishlistCount,
     organizations,
     rawOrders,
     checkoutOptionsCatalog,
@@ -28,6 +30,7 @@ export async function getCustomerDashboardData(userId: string) {
     deliveryDetails,
   ] = await Promise.all([
     getUserWishlist(userId),
+    getUserWishlistCount(userId),
     getCachedOrganizations(client).catch(() => []),
     getCustomerOrders(userId),
     getCheckoutOptionsCatalog(),
@@ -73,6 +76,7 @@ export async function getCustomerDashboardData(userId: string) {
 
   return {
     wishlistItems,
+    wishlistCount,
     organizations,
     orders,
     checkoutOptionsCatalog,

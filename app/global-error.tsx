@@ -2,6 +2,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { logClientError } from "@/shared/errors/client-error";
 
 /**
  * Global Error Boundary — catches errors in the root layout itself.
@@ -16,6 +17,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
+    logClientError("[GlobalError] Unhandled root layout exception:", error, error?.digest);
     Sentry.captureException(error);
   }, [error]);
 

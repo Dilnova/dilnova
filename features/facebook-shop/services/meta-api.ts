@@ -1,4 +1,5 @@
 import { logger } from "@/shared/logging/logger";
+import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
 import {
   MetaProductItem,
   MetaBatchPayload,
@@ -150,9 +151,10 @@ export async function testCatalogConnection({
       cleanCatalogId,
     )}?fields=id,name,vertical&access_token=${encodeURIComponent(cleanAccessToken)}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
     });
 
     const data = await response.json();
@@ -205,13 +207,14 @@ export async function sendMetaItemsBatch({
       cleanCatalogId,
     )}/items_batch`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${cleanAccessToken}`,
       },
       body: JSON.stringify(payload),
+      timeoutMs: HTTP_TIMEOUT.EXTENDED,
     });
 
     const data = await response.json();
@@ -265,9 +268,10 @@ export async function checkBatchStatus({
       accessToken,
     )}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
     });
 
     const data = await response.json();

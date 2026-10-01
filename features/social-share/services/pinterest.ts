@@ -1,4 +1,6 @@
 import { PinterestPinParams } from "../types";
+import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
+import { logger } from "@/shared/logging/logger";
 
 const PINTEREST_API_BASE = "https://api.pinterest.com/v5";
 
@@ -31,12 +33,13 @@ export async function verifyPinterestAccount(accessToken: string): Promise<{
       return { success: false, error: "Missing Pinterest access token." };
     }
 
-    const res = await fetch(`${PINTEREST_API_BASE}/user_account`, {
+    const res = await fetchWithTimeout(`${PINTEREST_API_BASE}/user_account`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${cleanToken}`,
         Accept: "application/json",
       },
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
     });
 
     const data = await res.json();
@@ -45,10 +48,10 @@ export async function verifyPinterestAccount(accessToken: string): Promise<{
         data?.message || data?.error?.message || `Pinterest API returned status ${res.status}`;
       if (msg.includes("consumer type is not supported")) {
         msg =
-          "Pinterest App Status: Trial Access Pending. Your Pinterest App (ID: 1607805) is currently in review by Pinterest. Pinterest blocks API calls until trial access is approved (usually 24–48 hours). Once approved, Auto-Detect will work immediately. You can also manually enter your Board ID below and save.";
+          "Pinterest App Status: Trial Access Pending. Your Pinterest App is currently in review by Pinterest. Pinterest blocks API calls until trial access is approved (usually 24–48 hours). Once approved, Auto-Detect will work immediately. You can also manually enter your Board ID below and save.";
       } else if (res.status === 401 || msg.toLowerCase().includes("authentication failed")) {
         msg =
-          "Pinterest Authentication Failed (HTTP 401). In your Pinterest App (https://developers.pinterest.com/apps/1607805/), under 'Select environment', make sure you choose 'Production limited' (do NOT select 'Sandbox'), then click 'Generate token' and paste the new token.";
+          "Pinterest Authentication Failed (HTTP 401). In your Pinterest Developer App (https://developers.pinterest.com/apps/), under 'Select environment', make sure you choose 'Production limited' (do NOT select 'Sandbox'), then click 'Generate token' and paste the new token.";
       }
       return { success: false, error: msg };
     }
@@ -84,12 +87,13 @@ export async function fetchPinterestBoards(accessToken: string): Promise<{
       return { success: false, boards: [], error: "Missing Pinterest access token." };
     }
 
-    const res = await fetch(`${PINTEREST_API_BASE}/boards?page_size=50`, {
+    const res = await fetchWithTimeout(`${PINTEREST_API_BASE}/boards?page_size=50`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${cleanToken}`,
         Accept: "application/json",
       },
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
     });
 
     const data = await res.json();
@@ -97,10 +101,10 @@ export async function fetchPinterestBoards(accessToken: string): Promise<{
       let msg = data?.message || data?.error?.message || `Pinterest API error (${res.status})`;
       if (msg.includes("consumer type is not supported")) {
         msg =
-          "Pinterest App Status: Trial Access Pending. Your Pinterest App (ID: 1607805) is currently in review by Pinterest. Pinterest blocks API calls until trial access is approved (usually 24–48 hours). Once approved, Auto-Detect will work immediately. You can also manually enter your Board ID below and save.";
+          "Pinterest App Status: Trial Access Pending. Your Pinterest App is currently in review by Pinterest. Pinterest blocks API calls until trial access is approved (usually 24–48 hours). Once approved, Auto-Detect will work immediately. You can also manually enter your Board ID below and save.";
       } else if (res.status === 401 || msg.toLowerCase().includes("authentication failed")) {
         msg =
-          "Pinterest Authentication Failed (HTTP 401). In your Pinterest App (https://developers.pinterest.com/apps/1607805/), under 'Select environment', make sure you choose 'Production limited' (do NOT select 'Sandbox'), then click 'Generate token' and paste the new token.";
+          "Pinterest Authentication Failed (HTTP 401). In your Pinterest Developer App (https://developers.pinterest.com/apps/), under 'Select environment', make sure you choose 'Production limited' (do NOT select 'Sandbox'), then click 'Generate token' and paste the new token.";
       }
       return { success: false, boards: [], error: msg };
     }
@@ -198,8 +202,11 @@ export async function createPinterestProductPin({
             resolvedBoardId = matched.id;
           }
         }
-      } catch {
-        // Fallback to user-provided string
+      } catch (err) {
+        logger.warn(
+          "[PinterestService] Failed resolving board by name, falling back to raw board identifier",
+          { error: err, boardId: cleanBoardId },
+        );
       }
     }
 
@@ -215,7 +222,7 @@ export async function createPinterestProductPin({
       alt_text: title.slice(0, 500),
     };
 
-    const res = await fetch(`${PINTEREST_API_BASE}/pins`, {
+    const res = await fetchWithTimeout(`${PINTEREST_API_BASE}/pins`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${cleanToken}`,
@@ -223,6 +230,7 @@ export async function createPinterestProductPin({
         Accept: "application/json",
       },
       body: JSON.stringify(payload),
+      timeoutMs: HTTP_TIMEOUT.EXTENDED,
     });
 
     const data = await res.json();
@@ -259,12 +267,13 @@ export async function deletePinterestPin(
       return { success: false, error: "Missing Pin ID or access token." };
     }
 
-    const res = await fetch(`${PINTEREST_API_BASE}/pins/${cleanPinId}`, {
+    const res = await fetchWithTimeout(`${PINTEREST_API_BASE}/pins/${cleanPinId}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${cleanToken}`,
         Accept: "application/json",
       },
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
     });
 
     if (!res.ok && res.status !== 404) {

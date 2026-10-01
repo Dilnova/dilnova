@@ -27,7 +27,7 @@ import {
   toggleProductInSelection,
 } from "@/features/cart/vendor-checkout";
 import { toast } from "sonner";
-import { extractActionErrorMessage } from "@/shared/errors/client-error";
+import { extractActionErrorMessage, logClientWarning } from "@/shared/errors/client-error";
 import { useCurrency } from "@/shared/currency/context/currency-context";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 
@@ -70,6 +70,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     emailStatus,
     setEmailStatus,
     idempotencyKey,
+    resetIdempotencyKey,
     confirmedOrderEmail,
     setConfirmedOrderEmail,
     confirmedOrderId,
@@ -245,7 +246,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         toast.success(`Cart list successfully sent to ${targetEmail}!`);
       } else {
         setEmailStatus("idle");
-        toast.error(res?.data?.error || "Failed to send email.");
+        const errorMessage = extractActionErrorMessage(res);
+        toast.error(errorMessage || "Failed to send email.");
       }
     } catch (err: unknown) {
       setEmailStatus("idle");
@@ -260,8 +262,11 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     return format(cents, currency || DEFAULT_CURRENCY);
   };
 
+  const isSubmittingRef = useRef(false);
+
   const handleCheckout = async (optionsLoadingArg: boolean) => {
     if (!isSignedIn) return;
+    if (isSubmittingRef.current || checkoutStatus !== "idle") return;
     if (checkoutItemCount === 0) {
       toast.error("No items selected for checkout.");
       return;
@@ -269,6 +274,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     if (optionsLoadingArg) {
       return;
     }
+    isSubmittingRef.current = true;
     const customerName = user?.fullName || user?.firstName || "Customer";
     const customerEmail = user?.primaryEmailAddress?.emailAddress || "";
 
@@ -360,6 +366,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
         });
 
         if (result?.data?.success) {
+          isSubmittingRef.current = false;
+          resetIdempotencyKey();
           if (currentRetryTimer) clearInterval(currentRetryTimer);
           const checkedOutIds = checkoutCartItems.map((item) => item.id);
           const remainingItems = cartItems.filter((item) => !checkedOutIds.includes(item.id));
@@ -415,12 +423,14 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
               }
             }, 1000);
           } else {
+            isSubmittingRef.current = false;
             if (currentRetryTimer) clearInterval(currentRetryTimer);
             setCheckoutStatus("idle");
             toast.error(errorMessage);
           }
         }
       } catch (err) {
+        isSubmittingRef.current = false;
         if (currentRetryTimer) clearInterval(currentRetryTimer);
         setCheckoutStatus("idle");
         toast.error(
@@ -433,6 +443,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
   };
 
   const handleSuccessClose = () => {
+    isSubmittingRef.current = false;
+    resetIdempotencyKey();
     clearCheckoutSuccessSnapshot();
     setCheckoutStatus("idle");
     setRemainingCartCount(0);
@@ -448,8 +460,13 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     .join("|");
 
   useEffect(() => {
-    // Automatically fetch live carrier rates whenever destination City and Country are populated.
-    if (!requiresDeliveryAddress || !shippingCountry.trim() || !shippingCity.trim()) {
+    // Automatically fetch live carrier rates whenever destination City and Country are populated and user is signed in.
+    if (
+      !requiresDeliveryAddress ||
+      !shippingCountry.trim() ||
+      !shippingCity.trim() ||
+      !isSignedIn
+    ) {
       setDynamicShippingCents((prev) => (prev !== null ? null : prev));
       setAvailableShippingRates((prev) => (prev.length > 0 ? [] : prev));
       setSelectedRateId((prev) => (prev !== "" ? "" : prev));
@@ -574,8 +591,8 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
             prev !== data.totalShippingCents ? data.totalShippingCents : prev,
           );
         }
-      } catch (err) {
-        console.warn("[CartClientManager] Failed to fetch dynamic shipping rates:", err);
+      } catch {
+        logClientWarning("[CartClientManager] Failed to fetch dynamic shipping rates");
       } finally {
         if (isMounted) {
           setIsFetchingRates(false);
@@ -591,6 +608,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     requiresDeliveryAddress,
+    isSignedIn,
     shippingCity,
     shippingState,
     shippingPostalCode,
@@ -644,7 +662,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
           })),
           pickupBranchId: effectivePickupBranchId,
         }).catch((err) => {
-          console.warn("[CartClientManager] Handled stock validation call error:", err);
+          logClientWarning("[CartClientManager] Handled stock validation call error:", err);
           return null;
         });
 
@@ -663,7 +681,7 @@ export function CartClientManager({ emptyState }: CartClientManagerProps) {
           });
         }
       } catch (err) {
-        console.warn("[CartClientManager] Stock validation error:", err);
+        logClientWarning("[CartClientManager] Stock validation error:", err);
       }
     };
 

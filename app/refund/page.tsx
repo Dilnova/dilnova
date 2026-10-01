@@ -1,18 +1,16 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getSystemSetting } from "@/shared/platform/settings";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const systemName = await getSystemSetting("system_name", "Dilnova");
-  return {
-    title: `Refund & Return Policy | ${systemName}`,
-    description: `Refund and Return Policy for the ${systemName} Multi-Vendor Commerce Marketplace. Learn about our return windows, vendor-specific policies, and dispute resolution.`,
-  };
-}
+export const metadata: Metadata = {
+  title: "Refund & Return Policy | Dilstar & Dilnova",
+  description:
+    "Official Refund and Return Policy for Dilstar and Dilnova in Sri Lanka. Learn about our 7-day return window, in-store returns, and refund processing terms.",
+};
+
 export const revalidate = 86400;
 
-export default async function RefundPolicy() {
-  const systemName = await getSystemSetting("system_name", "Dilnova");
+export default function RefundPolicy() {
+  const brandName = "Dilstar";
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-sans py-12 px-4 sm:px-6 lg:px-8">
@@ -31,135 +29,146 @@ export default async function RefundPolicy() {
                 d="M10 19l-7-7m0 0l7-7m-7 7h18"
               />
             </svg>
-            Back to Marketplace
+            Back to Store
           </Link>
         </div>
 
         {/* Title */}
         <header className="mb-10 pb-6 border-b border-zinc-200 dark:border-zinc-800">
           <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-4xl mb-3">
-            Refund & Return Policy
+            Refund &amp; Return Policy
           </h1>
           <p className="text-xs text-zinc-450 dark:text-zinc-500 font-mono">
-            Last Updated: June 19, 2026
+            Last Updated: September 4, 2026 • Region: Sri Lanka
           </p>
         </header>
 
         {/* Content */}
         <div className="space-y-8 text-sm leading-relaxed text-zinc-650 dark:text-zinc-400">
+          {/* Section 1 */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              1. Multi-Vendor Marketplace Structure
+              1. Overview &amp; Applicable Region
             </h2>
             <p>
-              <strong>{systemName}</strong> (&quot;Company&quot;, &quot;we&quot;, &quot;us&quot;, or
-              &quot;our&quot;) operates as a multi-vendor marketplace. This means that while you
-              check out through our unified portal, your items are sold and fulfilled by independent
-              merchants (vendors).
-            </p>
-            <p>
-              Each vendor may have their own specific return and refund guidelines. However, we
-              mandate a baseline minimum standard that all vendors must follow to ensure customer
-              protection.
+              This Refund &amp; Return Policy applies to all purchases made through{" "}
+              <strong>{brandName}</strong> (accessible via <code>https://dilstar.pp.ua</code> and{" "}
+              <code>https://dilnova.pp.ua</code>) and our physical store locations in{" "}
+              <strong>Sri Lanka</strong>.
             </p>
           </section>
 
+          {/* Section 2: Window & Condition */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              2. Standard 14-Day Return Window
+              2. 7-Day Return Window &amp; Eligibility
             </h2>
             <p>
-              Unless explicitly stated otherwise on the product page, customers have the right to
-              request a return or refund within <strong>14 days</strong> of receiving their order.
-              To be eligible for a return, the item must be:
+              We accept returns for <strong>defective products only</strong> (such as items damaged
+              in transit or manufacturing faults) within <strong>7 days</strong> of receiving your
+              order or completing your in-store purchase. Non-defective items are non-returnable.
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>Unused and in the same condition that you received it.</li>
-              <li>In its original packaging, with all tags and accessories included.</li>
-              <li>Accompanied by a receipt or proof of purchase.</li>
+              <li>
+                <strong>Product Condition:</strong> Items must be in <strong>new</strong> or{" "}
+                <strong>slightly used</strong> condition, accompanied by all original packaging,
+                accessories, and manuals.
+              </li>
+              <li>
+                <strong>Proof of Purchase:</strong> A valid receipt or digital order confirmation
+                from {brandName} is required.
+              </li>
+              <li>
+                <strong>Defective Products:</strong> If an item arrives damaged or has a
+                manufacturing defect, please notify us within 7 days of delivery to qualify for an
+                immediate return inspection or exchange.
+              </li>
             </ul>
           </section>
 
+          {/* Section 3: Return Method & Fees */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              3. Non-Returnable Items
+              3. Return Method &amp; Restocking Fees
             </h2>
-            <p>
-              Certain types of goods cannot be returned, regardless of the 14-day window. These
-              include, but are not limited to:
-            </p>
             <ul className="list-disc pl-5 space-y-1.5">
-              <li>Perishable goods (e.g., food, flowers, plants).</li>
-              <li>Customized, bespoke, or personalized products.</li>
-              <li>Digital downloads and software licenses once accessed or downloaded.</li>
-              <li>Intimate or sanitary goods, hazardous materials, or flammable liquids/gases.</li>
+              <li>
+                <strong>Return Method:</strong> Returns must be brought <strong>in-store</strong> to
+                our physical retail location:{" "}
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                  Dilstar, Ambalantota, Southern Province, Sri Lanka
+                </span>
+                .
+              </li>
+              <li>
+                <strong>Restocking Fees:</strong> There is{" "}
+                <strong>no restocking fee (No cost / 0 LKR)</strong> for returning items.
+              </li>
             </ul>
           </section>
 
+          {/* Section 4: Exchanges */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              4. How to Request a Refund
+              4. Exchanges Policy
             </h2>
-            <p>To initiate a return or refund, please follow these steps:</p>
-            <ol className="list-decimal pl-5 space-y-1.5">
-              <li>
-                Contact the specific vendor directly through your Order History dashboard or the
-                contact information provided on the vendor&apos;s storefront.
-              </li>
-              <li>Provide your order number and the reason for the return request.</li>
-              <li>
-                Wait for the vendor to approve the request and provide return shipping instructions.
-              </li>
-            </ol>
             <p>
-              Please note that unless the item arrived damaged or defective, the customer is
-              generally responsible for paying return shipping costs.
+              <strong>Product exchanges are not accepted.</strong> If you need a different model,
+              size, or item, please return your original eligible product in-store for a refund and
+              place a separate purchase for the new item.
             </p>
           </section>
 
+          {/* Section 5: Processing Times */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              5. Dispute Resolution
+              5. Refund Processing Time
             </h2>
             <p>
-              If a vendor fails to adhere to our baseline return policy or you are unable to reach a
-              satisfactory resolution with the merchant directly, <strong>{systemName}</strong>{" "}
-              offers a dispute mediation service.
+              Once your returned item is received and inspected at our Ambalantota store, your
+              refund will be approved or rejected based on condition verification.
             </p>
             <p>
-              You can escalate an issue to our support team within 30 days of the original purchase.
-              We will review the communication between you and the vendor and may issue a refund on
-              the vendor&apos;s behalf if we determine the vendor violated our marketplace
-              standards.
+              Approved refunds will be processed back to your original payment method or via bank
+              transfer within <strong>up to 30 days</strong>.
             </p>
           </section>
 
+          {/* Section 6: Non-Returnable Goods */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              6. Processing Times
+              6. Non-Returnable Goods
             </h2>
             <p>
-              Once your return is received and inspected by the vendor, we will notify you of the
-              approval or rejection of your refund. If approved, the refund will be processed back
-              to your original method of payment (or via bank transfer for manual payments). Please
-              allow up to 5-10 business days for the funds to reflect in your account.
+              Due to health, agricultural, or safety regulations, certain items cannot be returned
+              under the 7-day policy:
             </p>
+            <ul className="list-disc pl-5 space-y-1.5">
+              <li>Perishable flora or nursery saplings that have been replanted or altered.</li>
+              <li>Customized, bespoke, or custom-cut hardware materials.</li>
+              <li>Digital goods or software activation keys once revealed or redeemed.</li>
+              <li>Hazardous liquids, opened adhesives, or chemical agents.</li>
+            </ul>
           </section>
 
+          {/* Section 7: Contact */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              7. Contact Information
+              7. Customer Support
             </h2>
             <p>
-              For any questions regarding our general Refund &amp; Return Policy, or to escalate a
-              dispute with a vendor, please contact us at{" "}
+              For inquiries regarding returns or directions to our physical store, please contact:
+            </p>
+            <p>
+              <strong>Email:</strong>{" "}
               <a
                 href="mailto:info@dilstar.pp.ua"
                 className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
               >
                 info@dilstar.pp.ua
               </a>
-              .
+              <br />
+              <strong>Store Location:</strong> Dilstar, Ambalantota, Sri Lanka
             </p>
           </section>
         </div>

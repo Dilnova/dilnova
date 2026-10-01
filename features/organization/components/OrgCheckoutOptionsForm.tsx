@@ -193,7 +193,7 @@ function OptionToggle({
           </p>
         )}
         {option.isBuiltIn && (
-          <span className="inline-block mt-1 text-[9px] font-mono uppercase tracking-wider text-zinc-400">
+          <span className="inline-block mt-1 text-[9px] font-mono uppercase tracking-wider text-zinc-650 dark:text-zinc-400 font-semibold">
             Built-in
           </span>
         )}

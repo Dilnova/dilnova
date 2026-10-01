@@ -7,6 +7,7 @@ import {
   isValidUpstashRestUrl,
   isValidUpstashRestToken,
 } from "@/shared/security/upstash-health";
+import { env } from "@/shared/config/env";
 
 // In-memory fallback map for development/testing when Upstash env vars are not configured
 const memoryTracker = new Map<string, number[]>();
@@ -21,17 +22,17 @@ const PRODUCTION_RATE_LIMIT_UNAVAILABLE_ERROR =
   "Rate limiting is temporarily unavailable. Please try again later.";
 
 function isProductionEnvironment(): boolean {
-  return process.env.NODE_ENV === "production";
+  return env.app.isProduction;
 }
 
 function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
   const { url, token } = readUpstashEnv();
 
   if (!url || !token || !isValidUpstashRestUrl(url) || !isValidUpstashRestToken(token)) {
-    if (process.env.NODE_ENV === "production" && !hasLoggedUpstashWarning) {
+    if (env.app.isProduction && !hasLoggedUpstashWarning) {
       hasLoggedUpstashWarning = true;
       logger.error(
-        "Upstash Redis credentials are not configured in production. Rate limiting will be bypassed (fail-open).",
+        "Upstash Redis credentials are not configured in production. Rate limiting will fail closed by default.",
         {
           urlPresent: Boolean(url),
           tokenPresent: Boolean(token),
@@ -70,8 +71,10 @@ function getRatelimitClient(limit: number, windowMs: number): Ratelimit | null {
 
 export interface RateLimitOptions {
   /**
-   * If true, throws an error in production when Upstash Redis rate-limiting fails or is unconfigured,
-   * preventing abusive requests when rate limiting infra is degraded (fail-closed).
+   * Controls whether rate limiting fails closed (throws an error) or fails open (allows request)
+   * in production when Upstash Redis is unconfigured or unavailable.
+   *
+   * @default true in production (fail-closed to prevent abuse), false in development/test.
    */
   failClosed?: boolean;
 }
@@ -92,6 +95,10 @@ export async function rateLimit(
   identifier?: string,
   options?: RateLimitOptions,
 ): Promise<void> {
+  const isProd = isProductionEnvironment();
+  // Fail-closed by default in production; callers can explicitly opt out with failClosed: false
+  const shouldFailClosed = options?.failClosed ?? isProd;
+
   const reqHeaders = await headers();
   // Get IP address prioritizing cf-connecting-ip and x-real-ip (injected securely by Cloudflare/Vercel at edge)
   // to prevent client header spoofing via custom X-Forwarded-For inputs.
@@ -121,25 +128,25 @@ export async function rateLimit(
       logger.error("Upstash rate limiting failed", error, {
         limit,
         windowMs,
-        failClosed: options?.failClosed,
+        failClosed: shouldFailClosed,
       });
-      if (isProductionEnvironment()) {
-        if (options?.failClosed) {
+      if (isProd) {
+        if (shouldFailClosed) {
           throw new Error(PRODUCTION_RATE_LIMIT_UNAVAILABLE_ERROR);
         }
-        return; // Fail-open strategy: bypass rate limit for non-critical paths
+        return; // Explicit fail-open bypass only when failClosed: false is specified
       }
     }
   }
 
-  if (isProductionEnvironment()) {
+  if (isProd) {
     logger.warn("Rate limiter client unavailable in production", {
-      failClosed: options?.failClosed,
+      failClosed: shouldFailClosed,
     });
-    if (options?.failClosed) {
+    if (shouldFailClosed) {
       throw new Error(PRODUCTION_RATE_LIMIT_UNAVAILABLE_ERROR);
     }
-    return; // Fail-open strategy: bypass rate limit for non-critical paths
+    return; // Explicit fail-open bypass only when failClosed: false is specified
   }
 
   // Development/test fallback to in-memory sliding window rate limiting

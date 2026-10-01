@@ -2,7 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { getCachedUserRole, getCachedIsSuperAdmin } from "@/shared/auth/clerk-cache";
-import { getPremiumStatus } from "@/features/inventory/premium-license";
+import { getPremiumStatus } from "@/shared/platform/premium-license";
 
 export async function getClientSessionContextAction() {
   const { orgId, orgRole, userId } = await auth();

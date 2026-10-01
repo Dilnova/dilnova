@@ -7,6 +7,9 @@ import type {
   ShippingOrigin,
   ShippingRate,
 } from "../../carrier.types";
+import { logger } from "@/shared/logging/logger";
+import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
+import { env } from "@/shared/config/env";
 
 /**
  * Shippo multi-carrier adapter.
@@ -25,7 +28,7 @@ export class ShippoAdapter implements CarrierAdapter {
   private readonly baseUrl = "https://api.goshippo.com";
 
   private get apiKey(): string {
-    const raw = (process.env.SHIPPO_API_KEY ?? "").trim();
+    const raw = (env.shipping.shippoApiKey ?? "").trim();
     return raw.replace(/^(?:ShippoToken|Bearer)\s+/i, "");
   }
 
@@ -118,28 +121,29 @@ export class ShippoAdapter implements CarrierAdapter {
     }
 
     try {
-      const res = await fetch(`${this.baseUrl}/shipments/`, {
+      const res = await fetchWithTimeout(`${this.baseUrl}/shipments/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: this.authHeader,
         },
         body: JSON.stringify(payload),
+        timeoutMs: HTTP_TIMEOUT.DEFAULT,
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        console.error("[ShippoAdapter.getRates] API error:", res.status, err);
+        logger.error("[ShippoAdapter.getRates] API error", err, { status: res.status });
         return [];
       }
 
       const data = await res.json();
       const rawRates = data.rates ?? [];
-      console.log(
+      logger.info(
         `[ShippoAdapter] Returned ${rawRates.length} rates for ${fromCountry} -> ${toCountry}`,
       );
       if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
-        console.log(`[ShippoAdapter] Carrier messages:`, JSON.stringify(data.messages));
+        logger.info("[ShippoAdapter] Carrier messages", { messages: data.messages });
       }
 
       const rates: ShippingRate[] = [];
@@ -147,29 +151,22 @@ export class ShippoAdapter implements CarrierAdapter {
       try {
         const { getExchangeRatesMap } = await import("@/shared/currency/exchange-rates.service");
         const fxMap = await getExchangeRatesMap();
-        lkrRate =
-          fxMap["USD_LKR"] ||
-          (process.env.USD_TO_LKR_RATE ? parseFloat(process.env.USD_TO_LKR_RATE) : 307.69);
+        lkrRate = fxMap["USD_LKR"] || env.shipping.usdToLkrRate;
       } catch {
-        lkrRate = process.env.USD_TO_LKR_RATE
-          ? parseFloat(process.env.USD_TO_LKR_RATE) || 307.69
-          : 307.69;
+        lkrRate = env.shipping.usdToLkrRate;
       }
 
-      for (const rate of data.rates ?? []) {
+      for (const rate of rawRates) {
         const amountUsd = parseFloat(rate.amount ?? "0");
         const amountCents = Math.round(amountUsd * lkrRate * 100);
-
-        const providerName = rate.provider ?? "Shippo";
-        const serviceName = rate.servicelevel?.name ?? "Standard";
 
         rates.push({
           rateId: `shippo_${rate.object_id}`,
           carrierId: "shippo",
-          carrierName: providerName,
+          carrierName: rate.provider ?? "Shippo",
           serviceCode: rate.servicelevel?.token ?? "STANDARD",
-          serviceName: `${providerName} ${serviceName} (via Shippo)`,
-          estimatedDays: rate.estimated_days ?? 5,
+          serviceName: `${rate.provider ?? "Shippo"} ${rate.servicelevel?.name ?? "Standard"} (via Shippo)`,
+          estimatedDays: rate.estimated_days ?? 7,
           amountCents,
           currency: "LKR",
         });
@@ -177,7 +174,7 @@ export class ShippoAdapter implements CarrierAdapter {
 
       return rates;
     } catch (err) {
-      console.error("[ShippoAdapter.getRates] Network error:", err);
+      logger.error("[ShippoAdapter.getRates] Network error", err);
       return [];
     }
   }
@@ -200,13 +197,14 @@ export class ShippoAdapter implements CarrierAdapter {
       async: false,
     };
 
-    const res = await fetch(`${this.baseUrl}/transactions/`, {
+    const res = await fetchWithTimeout(`${this.baseUrl}/transactions/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: this.authHeader,
       },
       body: JSON.stringify(payload),
+      timeoutMs: HTTP_TIMEOUT.EXTENDED,
     });
 
     if (!res.ok) {
@@ -234,24 +232,26 @@ export class ShippoAdapter implements CarrierAdapter {
 
   async cancelShipment(shipmentExternalId: string): Promise<void> {
     if (!this.apiKey) return;
-    await fetch(`${this.baseUrl}/refunds/`, {
+    await fetchWithTimeout(`${this.baseUrl}/refunds/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: this.authHeader,
       },
       body: JSON.stringify({ transaction: shipmentExternalId }),
-    }).catch((err) => console.error("[ShippoAdapter.cancelShipment]", err));
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
+    }).catch((err) => logger.error("[ShippoAdapter.cancelShipment]", err));
   }
 
   async getTrackingEvents(trackingNumber: string): Promise<ShipmentEvent[]> {
     if (!this.apiKey) return [];
 
     try {
-      const res = await fetch(
+      const res = await fetchWithTimeout(
         `${this.baseUrl}/tracks/shippo/${encodeURIComponent(trackingNumber)}`,
         {
           headers: { Authorization: this.authHeader },
+          timeoutMs: HTTP_TIMEOUT.DEFAULT,
         },
       );
 
@@ -274,7 +274,7 @@ export class ShippoAdapter implements CarrierAdapter {
         }),
       );
     } catch (err) {
-      console.error("[ShippoAdapter.getTrackingEvents]", err);
+      logger.error("[ShippoAdapter.getTrackingEvents]", err);
       return [];
     }
   }

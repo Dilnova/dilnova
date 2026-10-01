@@ -6,6 +6,7 @@ import { authStatePath, getRoleTestEmail, hasClerkApiKeys } from "./helpers/env"
 import { loadE2EEnv } from "./helpers/load-env";
 import { PROTECTED_ROUTES, UNAUTHORIZED_PATH } from "./helpers/routes";
 import { getOrgRoleForEmail, getPrimaryOrgIdForEmail } from "./helpers/clerk-auth";
+import { ensureVendorPosState } from "./helpers/security-fixtures";
 
 setup.describe.configure({ mode: "serial" });
 setup.setTimeout(120_000);
@@ -105,6 +106,10 @@ setup("prepare authenticated storage states", async ({ browser }) => {
           throw new Error(
             `E2E user for ${role.key} (${email}) has role ${orgRole ?? "none"}, expected ${role.expectedOrgRole}.`,
           );
+        }
+
+        if (role.key === "vendor-admin") {
+          await ensureVendorPosState(orgId);
         }
 
         await activateOrganization(page, orgId);

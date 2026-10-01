@@ -1,19 +1,19 @@
 "use client";
 
-import SuperadminFormCard from "../ui/SuperadminFormCard";
-import { useState, useTransition, useRef } from "react";
-import Image from "next/image";
-import { toast } from "sonner";
-import { uploadToCloudinary } from "@/shared/media/cloudinary-upload";
-import * as Sentry from "@sentry/nextjs";
-import { updateSystemSettingAction } from "@/features/superadmin/settings.actions";
 import CheckoutOptionsSettings from "../CheckoutOptionsSettings";
 import { PendingOverlay } from "@/shared/ui/PendingOverlay";
-import SafeProgressBar from "@/shared/ui/SafeProgressBar";
 import StockAvailabilitySettings from "@/features/inventory/components/StockAvailabilitySettings";
 import TaxClassesManager, { type TaxClassItem } from "./TaxClassesManager";
 import type { CheckoutOptionDefinition } from "@/features/organization/checkout-options.shared";
 import type { StockAvailabilityDefinition } from "@/features/inventory/availability.shared";
+import {
+  GeneralSettingsSection,
+  BrandingSettingsSection,
+  StorefrontLayoutsSection,
+  GoogleMerchantSection,
+  SeoVerificationSection,
+  useSystemSettingsForm,
+} from "./settings";
 
 interface SettingsTabProps {
   systemName: string;
@@ -31,6 +31,11 @@ interface SettingsTabProps {
   pinterestDomainVerify: string;
   googleSiteVerify: string;
   facebookDomainVerify: string;
+  facebookDomainVerifyDilstar?: string;
+  facebookDomainVerifyDilnova?: string;
+  // Google Merchant Center IDs
+  googleMerchantIdDilstar: string;
+  googleMerchantIdDilnova: string;
 }
 
 export default function SettingsTab({
@@ -48,161 +53,32 @@ export default function SettingsTab({
   pinterestDomainVerify,
   googleSiteVerify,
   facebookDomainVerify,
+  facebookDomainVerifyDilstar = "",
+  facebookDomainVerifyDilnova = "",
+  googleMerchantIdDilstar,
+  googleMerchantIdDilnova,
 }: SettingsTabProps) {
-  const [isPending, startTransition] = useTransition();
-
-  const [systemNameInput, setSystemNameInput] = useState(systemName);
-  const [mediaLimitInput, setMediaLimitInput] = useState(mediaLimit);
-  const [hardwareCustomEnabledInput, setHardwareCustomEnabledInput] =
-    useState(hardwareCustomEnabled);
-  const [nurseryCustomEnabledInput, setNurseryCustomEnabledInput] = useState(nurseryCustomEnabled);
-  const [techCustomEnabledInput, setTechCustomEnabledInput] = useState(techCustomEnabled);
-  const [servicesCustomEnabledInput, setServicesCustomEnabledInput] =
-    useState(servicesCustomEnabled);
-
-  // SEO & Verification token state
-  const [pinterestVerifyInput, setPinterestVerifyInput] = useState(pinterestDomainVerify);
-  const [googleVerifyInput, setGoogleVerifyInput] = useState(googleSiteVerify);
-  const [facebookVerifyInput, setFacebookVerifyInput] = useState(facebookDomainVerify);
-
-  // Logo Upload State
-  const [logoInput, setLogoInput] = useState(logoUrl || "");
-  const [isLogoUploading, setIsLogoUploading] = useState(false);
-  const [logoUploadProgress, setLogoUploadProgress] = useState<number | null>(null);
-  const logoFileInputRef = useRef<HTMLInputElement>(null);
-
-  // Favicon Upload State
-  const [faviconInput, setFaviconInput] = useState(faviconUrl || "");
-  const [isFaviconUploading, setIsFaviconUploading] = useState(false);
-  const [faviconUploadProgress, setFaviconUploadProgress] = useState<number | null>(null);
-  const faviconFileInputRef = useRef<HTMLInputElement>(null);
-
-  const triggerNotification = (success: boolean, text: string) => {
-    if (success) toast.success(text);
-    else toast.error(text);
-  };
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      triggerNotification(false, "Logo file size exceeds 5MB limit.");
-      return;
-    }
-
-    setIsLogoUploading(true);
-    setLogoUploadProgress(0);
-
-    try {
-      const result = await uploadToCloudinary(file, {
-        uploadKind: "platform",
-        onProgress: (progress) => {
-          setLogoUploadProgress(progress.percent);
-        },
-      });
-
-      if (result.success && result.publicUrl) {
-        setLogoInput(result.publicUrl);
-        triggerNotification(true, "Logo uploaded successfully.");
-      } else {
-        triggerNotification(false, result.error || "Logo upload failed.");
-      }
-    } catch (err) {
-      Sentry.captureException(err);
-      triggerNotification(false, "An error occurred during logo upload.");
-    } finally {
-      setIsLogoUploading(false);
-      setLogoUploadProgress(null);
-      if (logoFileInputRef.current) logoFileInputRef.current.value = "";
-    }
-  };
-
-  const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      triggerNotification(false, "Favicon file size exceeds 2MB limit.");
-      return;
-    }
-
-    setIsFaviconUploading(true);
-    setFaviconUploadProgress(0);
-
-    try {
-      const result = await uploadToCloudinary(file, {
-        uploadKind: "platform",
-        onProgress: (progress) => {
-          setFaviconUploadProgress(progress.percent);
-        },
-      });
-
-      if (result.success && result.publicUrl) {
-        setFaviconInput(result.publicUrl);
-        triggerNotification(true, "Favicon uploaded successfully.");
-      } else {
-        triggerNotification(false, result.error || "Favicon upload failed.");
-      }
-    } catch (err) {
-      Sentry.captureException(err);
-      triggerNotification(false, "An error occurred during favicon upload.");
-    } finally {
-      setIsFaviconUploading(false);
-      setFaviconUploadProgress(null);
-      if (faviconFileInputRef.current) faviconFileInputRef.current.value = "";
-    }
-  };
-
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    startTransition(async () => {
-      try {
-        const results = await Promise.all([
-          updateSystemSettingAction({ key: "system_name", value: systemNameInput }),
-          updateSystemSettingAction({
-            key: "max_media_per_product",
-            value: mediaLimitInput.toString(),
-          }),
-          updateSystemSettingAction({ key: "logo_url", value: logoInput }),
-          updateSystemSettingAction({ key: "favicon_url", value: faviconInput }),
-          updateSystemSettingAction({
-            key: "custom_hardware_storefront_enabled",
-            value: hardwareCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_nursery_storefront_enabled",
-            value: nurseryCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_tech_storefront_enabled",
-            value: techCustomEnabledInput ? "true" : "false",
-          }),
-          updateSystemSettingAction({
-            key: "custom_services_storefront_enabled",
-            value: servicesCustomEnabledInput ? "true" : "false",
-          }),
-          // SEO & Domain Verification tokens
-          updateSystemSettingAction({
-            key: "pinterest_domain_verify",
-            value: pinterestVerifyInput,
-          }),
-          updateSystemSettingAction({ key: "google_site_verify", value: googleVerifyInput }),
-          updateSystemSettingAction({ key: "facebook_domain_verify", value: facebookVerifyInput }),
-        ]);
-        const firstError = results.find((r) => r?.serverError);
-        if (firstError?.serverError) throw new Error(firstError.serverError);
-        triggerNotification(true, "System settings updated successfully.");
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Failed to update system settings.";
-        triggerNotification(false, msg);
-      }
-    });
-  };
+  const form = useSystemSettingsForm({
+    systemName,
+    mediaLimit,
+    logoUrl,
+    faviconUrl,
+    hardwareCustomEnabled,
+    nurseryCustomEnabled,
+    techCustomEnabled,
+    servicesCustomEnabled,
+    pinterestDomainVerify,
+    googleSiteVerify,
+    facebookDomainVerify,
+    facebookDomainVerifyDilstar,
+    facebookDomainVerifyDilnova,
+    googleMerchantIdDilstar,
+    googleMerchantIdDilnova,
+  });
 
   return (
     <div className="max-w-2xl space-y-4">
-      <PendingOverlay isPending={isPending} />
+      <PendingOverlay isPending={form.isPending} />
 
       <div>
         <h2 className="text-sm sm:text-base font-extrabold text-zinc-900 dark:text-zinc-50">
@@ -213,364 +89,68 @@ export default function SettingsTab({
         </p>
       </div>
 
-      <form onSubmit={handleSaveSettings} className="space-y-4">
-        {/* Application Name */}
-        <SuperadminFormCard title="Application Name" icon="🏷️" className="space-y-3">
-          <input
-            type="text"
-            required
-            maxLength={100}
-            value={systemNameInput}
-            onChange={(e) => setSystemNameInput(e.target.value)}
-            className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-sans focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all"
-            placeholder="e.g. Dilnova Hub"
-          />
-          <p className="text-[10px] text-zinc-400">
-            The global display name of the application, used in header titles, layouts, metadata,
-            and automated emails.
-          </p>
-        </SuperadminFormCard>
+      <form onSubmit={form.handleSaveSettings} className="space-y-4">
+        <GeneralSettingsSection
+          systemNameInput={form.systemNameInput}
+          setSystemNameInput={form.setSystemNameInput}
+          mediaLimitInput={form.mediaLimitInput}
+          setMediaLimitInput={form.setMediaLimitInput}
+        />
 
-        {/* Media Limit */}
-        <SuperadminFormCard title="Media Upload Limit" icon="📊" className="space-y-3">
-          <input
-            type="number"
-            min="1"
-            max="20"
-            inputMode="numeric"
-            required
-            value={mediaLimitInput}
-            onChange={(e) => setMediaLimitInput(parseInt(e.target.value, 10) || 1)}
-            className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all"
-          />
-          <p className="text-[10px] text-zinc-400">Max images/videos per product listing (1–20).</p>
-        </SuperadminFormCard>
+        <BrandingSettingsSection
+          logoInput={form.logoInput}
+          setLogoInput={form.setLogoInput}
+          faviconInput={form.faviconInput}
+          setFaviconInput={form.setFaviconInput}
+          onUploadingChange={form.setIsMediaUploading}
+        />
 
-        {/* Logo */}
-        <SuperadminFormCard title="System Logo" icon="🖼️" className="space-y-3">
-          {logoInput ? (
-            <div className="flex items-center gap-3 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
-              <div className="relative w-16 h-12 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 flex-shrink-0">
-                <Image src={logoInput} alt="" fill className="object-contain" sizes="64px" />
-              </div>
-              <button
-                type="button"
-                onClick={() => setLogoInput("")}
-                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => logoFileInputRef.current?.click()}
-              disabled={isLogoUploading}
-              className="w-full py-5 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-all active:scale-[0.98] disabled:opacity-50"
-            >
-              <svg
-                className="w-7 h-7 text-zinc-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
-                {isLogoUploading ? "Uploading..." : "Upload Logo"}
-              </span>
-              <span className="text-[9px] text-zinc-400 font-mono">PNG, JPG, WEBP (Max 5MB)</span>
-            </button>
-          )}
-          <input
-            type="file"
-            ref={logoFileInputRef}
-            onChange={handleLogoUpload}
-            accept="image/*"
-            className="hidden"
-          />
-          {isLogoUploading && logoUploadProgress !== null && (
-            <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <SafeProgressBar
-                className="h-full bg-purple-600 rounded-full transition-all"
-                percent={logoUploadProgress}
-              />
-            </div>
-          )}
-        </SuperadminFormCard>
+        <StorefrontLayoutsSection
+          hardwareCustomEnabledInput={form.hardwareCustomEnabledInput}
+          setHardwareCustomEnabledInput={form.setHardwareCustomEnabledInput}
+          nurseryCustomEnabledInput={form.nurseryCustomEnabledInput}
+          setNurseryCustomEnabledInput={form.setNurseryCustomEnabledInput}
+          techCustomEnabledInput={form.techCustomEnabledInput}
+          setTechCustomEnabledInput={form.setTechCustomEnabledInput}
+          servicesCustomEnabledInput={form.servicesCustomEnabledInput}
+          setServicesCustomEnabledInput={form.setServicesCustomEnabledInput}
+        />
 
-        {/* Favicon */}
-        <SuperadminFormCard title="Favicon Icon" icon="⭐" className="space-y-3">
-          {faviconInput ? (
-            <div className="flex items-center gap-3 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50/50 dark:bg-zinc-900/10">
-              <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 flex-shrink-0">
-                <Image src={faviconInput} alt="" fill className="object-contain" sizes="40px" />
-              </div>
-              <button
-                type="button"
-                onClick={() => setFaviconInput("")}
-                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => faviconFileInputRef.current?.click()}
-              disabled={isFaviconUploading}
-              className="w-full py-5 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-all active:scale-[0.98] disabled:opacity-50"
-            >
-              <span className="text-2xl">⭐</span>
-              <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
-                {isFaviconUploading ? "Uploading..." : "Upload Favicon"}
-              </span>
-              <span className="text-[9px] text-zinc-400 font-mono">ICO, PNG (Max 2MB)</span>
-            </button>
-          )}
-          <input
-            type="file"
-            ref={faviconFileInputRef}
-            onChange={handleFaviconUpload}
-            accept="image/*"
-            className="hidden"
-          />
-          {isFaviconUploading && faviconUploadProgress !== null && (
-            <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-              <SafeProgressBar
-                className="h-full bg-purple-600 rounded-full transition-all"
-                percent={faviconUploadProgress}
-              />
-            </div>
-          )}
-        </SuperadminFormCard>
+        <GoogleMerchantSection
+          googleMerchantIdDilstarInput={form.googleMerchantIdDilstarInput}
+          setGoogleMerchantIdDilstarInput={form.setGoogleMerchantIdDilstarInput}
+          googleMerchantIdDilnovaInput={form.googleMerchantIdDilnovaInput}
+          setGoogleMerchantIdDilnovaInput={form.setGoogleMerchantIdDilnovaInput}
+          dilstarHealth={form.dilstarHealth}
+          dilnovaHealth={form.dilnovaHealth}
+          onCheckFeedHealth={form.handleCheckFeedHealth}
+          copiedFeed={form.copiedFeed}
+          onCopyFeed={form.copyToClipboard}
+        />
 
-        {/* Custom Storefront Toggles */}
-        <SuperadminFormCard title="Custom Storefront Layouts" icon="🎨" className="space-y-4">
-          <div className="flex items-center justify-between py-1">
-            <div className="space-y-0.5">
-              <label
-                htmlFor="toggle-hardware"
-                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
-              >
-                Dilstar Hardware Storefront
-              </label>
-              <p className="text-[10px] text-zinc-400">
-                Toggle custom dashboard storefront layout for Dilstar Hardware
-              </p>
-            </div>
-            <button
-              id="toggle-hardware"
-              type="button"
-              onClick={() => setHardwareCustomEnabledInput(!hardwareCustomEnabledInput)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
-                hardwareCustomEnabledInput ? "bg-purple-600" : "bg-zinc-200 dark:bg-zinc-800"
-              }`}
-              aria-pressed={hardwareCustomEnabledInput}
-            >
-              <span
-                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  hardwareCustomEnabledInput ? "translate-x-4" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between py-1 border-t border-zinc-100 dark:border-zinc-900 pt-3">
-            <div className="space-y-0.5">
-              <label
-                htmlFor="toggle-nursery"
-                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
-              >
-                Dilstar Nursery Storefront
-              </label>
-              <p className="text-[10px] text-zinc-400">
-                Toggle custom dashboard storefront layout for Dilstar Nursery
-              </p>
-            </div>
-            <button
-              id="toggle-nursery"
-              type="button"
-              onClick={() => setNurseryCustomEnabledInput(!nurseryCustomEnabledInput)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
-                nurseryCustomEnabledInput ? "bg-purple-600" : "bg-zinc-200 dark:bg-zinc-800"
-              }`}
-              aria-pressed={nurseryCustomEnabledInput}
-            >
-              <span
-                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  nurseryCustomEnabledInput ? "translate-x-4" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between py-1 border-t border-zinc-100 dark:border-zinc-900 pt-3">
-            <div className="space-y-0.5">
-              <label
-                htmlFor="toggle-tech"
-                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
-              >
-                Dilstar Tech Shop Storefront
-              </label>
-              <p className="text-[10px] text-zinc-400">
-                Toggle custom dashboard storefront layout for Dilstar Tech Shop
-              </p>
-            </div>
-            <button
-              id="toggle-tech"
-              type="button"
-              onClick={() => setTechCustomEnabledInput(!techCustomEnabledInput)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
-                techCustomEnabledInput ? "bg-purple-600" : "bg-zinc-200 dark:bg-zinc-800"
-              }`}
-              aria-pressed={techCustomEnabledInput}
-            >
-              <span
-                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  techCustomEnabledInput ? "translate-x-4" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between py-1 border-t border-zinc-100 dark:border-zinc-900 pt-3">
-            <div className="space-y-0.5">
-              <label
-                htmlFor="toggle-services"
-                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
-              >
-                Dilstar Services Storefront
-              </label>
-              <p className="text-[10px] text-zinc-400">
-                Toggle custom dashboard storefront layout for Dilstar Services
-              </p>
-            </div>
-            <button
-              id="toggle-services"
-              type="button"
-              onClick={() => setServicesCustomEnabledInput(!servicesCustomEnabledInput)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${
-                servicesCustomEnabledInput ? "bg-purple-600" : "bg-zinc-200 dark:bg-zinc-800"
-              }`}
-              aria-pressed={servicesCustomEnabledInput}
-            >
-              <span
-                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  servicesCustomEnabledInput ? "translate-x-4" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-        </SuperadminFormCard>
-
-        {/* SEO & Domain Verification */}
-        <SuperadminFormCard title="SEO & Domain Verification" icon="🔍" className="space-y-4">
-          <p className="text-[10px] text-zinc-400 leading-relaxed">
-            Public domain-ownership tokens injected into{" "}
-            <code className="font-mono text-purple-600 dark:text-purple-400">&lt;meta&gt;</code>{" "}
-            tags in the site&apos;s{" "}
-            <code className="font-mono text-purple-600 dark:text-purple-400">&lt;head&gt;</code>.
-            Changes here take effect on the next page request — no redeploy needed.
-          </p>
-
-          {/* Pinterest */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-              <span>🎯</span> Pinterest Domain Verify
-            </label>
-            <input
-              type="text"
-              maxLength={64}
-              value={pinterestVerifyInput}
-              onChange={(e) => setPinterestVerifyInput(e.target.value)}
-              className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all placeholder:text-zinc-400"
-              placeholder="e.g. a1b2c3d4e5f60718293a4b5c6d7e8f9a"
-            />
-            <p className="text-[10px] text-zinc-400">
-              From:{" "}
-              <a
-                href="https://www.pinterest.com/business/hub/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple-500 hover:underline"
-              >
-                Pinterest Business Hub
-              </a>{" "}
-              → Claim Website → HTML tag method → copy only the{" "}
-              <code className="font-mono">content=&quot;…&quot;</code> value.
-            </p>
-          </div>
-
-          {/* Google */}
-          <div className="space-y-1.5 border-t border-zinc-100 dark:border-zinc-900 pt-4">
-            <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-              <span>🔎</span> Google Site Verify
-            </label>
-            <input
-              type="text"
-              maxLength={64}
-              value={googleVerifyInput}
-              onChange={(e) => setGoogleVerifyInput(e.target.value)}
-              className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all placeholder:text-zinc-400"
-              placeholder="e.g. abc123XYZ..."
-            />
-            <p className="text-[10px] text-zinc-400">
-              From:{" "}
-              <a
-                href="https://search.google.com/search-console"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple-500 hover:underline"
-              >
-                Google Search Console
-              </a>{" "}
-              → Add property → HTML tag method → copy only the{" "}
-              <code className="font-mono">content=&quot;…&quot;</code> value.
-            </p>
-          </div>
-
-          {/* Facebook */}
-          <div className="space-y-1.5 border-t border-zinc-100 dark:border-zinc-900 pt-4">
-            <label className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
-              <span>📘</span> Facebook Domain Verify
-            </label>
-            <input
-              type="text"
-              maxLength={64}
-              value={facebookVerifyInput}
-              onChange={(e) => setFacebookVerifyInput(e.target.value)}
-              className="w-full px-4 py-3 sm:py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all placeholder:text-zinc-400"
-              placeholder="e.g. abcdefgh12345678"
-            />
-            <p className="text-[10px] text-zinc-400">
-              From:{" "}
-              <a
-                href="https://business.facebook.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-purple-500 hover:underline"
-              >
-                Meta Business Suite
-              </a>{" "}
-              → Brand Safety → Domains → Add domain → copy only the{" "}
-              <code className="font-mono">content=&quot;…&quot;</code> value.
-            </p>
-          </div>
-        </SuperadminFormCard>
+        <SeoVerificationSection
+          pinterestVerifyInput={form.pinterestVerifyInput}
+          setPinterestVerifyInput={form.setPinterestVerifyInput}
+          pinterestDomainVerify={pinterestDomainVerify}
+          googleVerifyInput={form.googleVerifyInput}
+          setGoogleVerifyInput={form.setGoogleVerifyInput}
+          googleSiteVerify={googleSiteVerify}
+          facebookVerifyDilstarInput={form.facebookVerifyDilstarInput}
+          setFacebookVerifyDilstarInput={form.setFacebookVerifyDilstarInput}
+          facebookDomainVerifyDilstar={facebookDomainVerifyDilstar || facebookDomainVerify}
+          facebookVerifyDilnovaInput={form.facebookVerifyDilnovaInput}
+          setFacebookVerifyDilnovaInput={form.setFacebookVerifyDilnovaInput}
+          facebookDomainVerifyDilnova={facebookDomainVerifyDilnova}
+          onCopyText={form.copyToClipboard}
+        />
 
         {/* Save button */}
         <button
           type="submit"
-          disabled={isPending || isLogoUploading || isFaviconUploading}
+          disabled={form.isPending || form.isMediaUploading}
           className="w-full py-3.5 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white text-sm font-bold rounded-xl transition-all cursor-pointer shadow-md shadow-purple-900/15 disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-2"
         >
-          {isPending ? (
+          {form.isPending ? (
             <>
               <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
               Saving...

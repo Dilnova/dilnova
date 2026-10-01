@@ -55,7 +55,7 @@ export default function BaseStorefront({
           {metadata.bannerUrl ? (
             <Image
               src={metadata.bannerUrl}
-              alt={`${org.name} banner`}
+              alt={`${org.name || "Store"} banner`}
               fill
               className="object-cover"
               sizes="100vw"
@@ -89,7 +89,7 @@ export default function BaseStorefront({
                 <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden border-4 border-white dark:border-zinc-950 bg-white shadow-md flex-shrink-0">
                   <Image
                     src={org.imageUrl}
-                    alt={`${org.name} logo`}
+                    alt={`${org.name || "Store"} logo`}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 96px, 112px"
@@ -201,7 +201,7 @@ export default function BaseStorefront({
                         ) : (
                           <Image
                             src={product.imageUrl}
-                            alt={product.name}
+                            alt={product.name || "Product image"}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"

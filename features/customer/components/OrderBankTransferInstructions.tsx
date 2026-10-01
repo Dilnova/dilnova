@@ -8,10 +8,21 @@ import { getOrderDisplayTotals } from "@/features/billing/checkout-totals";
 import BankTransferInstructions from "@/features/billing/components/BankTransferInstructions";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 
-type OrderRecord = typeof schema.simulatedOrders.$inferSelect;
+export type BankTransferOrderInput = Pick<
+  typeof schema.simulatedOrders.$inferSelect,
+  | "id"
+  | "paymentMethod"
+  | "status"
+  | "totalAmount"
+  | "subtotalAmount"
+  | "taxAmount"
+  | "shippingAmount"
+  | "presentmentCurrency"
+  | "vendorBaseCurrency"
+>;
 
 interface OrderBankTransferInstructionsProps {
-  order: OrderRecord;
+  order: BankTransferOrderInput;
   items: {
     vendorOrgId: string;
     unitPrice: number;

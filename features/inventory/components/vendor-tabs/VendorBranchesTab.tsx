@@ -473,7 +473,7 @@ export default function VendorBranchesTab({
                 value={assignMemberId}
                 onChange={(e) => setAssignMemberId(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none"
+                className="w-full px-3 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 cursor-pointer"
               >
                 <option value="">-- Select Org Member --</option>
                 {data.orgMembers.map((m: OrgMemberItem) => (

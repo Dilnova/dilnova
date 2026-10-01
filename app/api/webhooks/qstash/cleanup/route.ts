@@ -4,12 +4,13 @@ import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { Redis } from "@upstash/redis";
 import { createSupabaseAdminClient } from "@/shared/storage/admin-client";
 import { GDPR_EXPORTS_BUCKET } from "@/shared/storage/config";
+import { env } from "@/shared/config/env";
 
 export const maxDuration = 60;
 
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+  url: env.upstash.redisUrl || "",
+  token: env.upstash.redisToken || "",
 });
 
 async function handler(req: NextRequest) {

@@ -14,6 +14,8 @@ import {
   calculateEMSParcelFee,
   isDomesticCountry,
 } from "./slpost-rates";
+import { logger } from "@/shared/logging/logger";
+import crypto from "node:crypto";
 
 export class SLPostAdapter implements CarrierAdapter {
   id = "slpost";
@@ -127,7 +129,7 @@ export class SLPostAdapter implements CarrierAdapter {
     void rateId;
 
     const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const randomHex = crypto.randomBytes(4).toString("hex").toUpperCase();
     const trackingNumber = `SLP-${todayStr}-${randomHex}`;
 
     return {
@@ -147,7 +149,7 @@ export class SLPostAdapter implements CarrierAdapter {
         .set({ status: "cancelled", updatedAt: new Date() })
         .where(eq(shipments.shipmentExternalId, shipmentExternalId));
     } catch (err) {
-      console.error("[SLPostAdapter.cancelShipment] Error:", err);
+      logger.error("[SLPostAdapter.cancelShipment] Error", err);
     }
   }
 
@@ -164,7 +166,7 @@ export class SLPostAdapter implements CarrierAdapter {
         return shipment.events;
       }
     } catch (err) {
-      console.error("[SLPostAdapter.getTrackingEvents] Error:", err);
+      logger.error("[SLPostAdapter.getTrackingEvents] Error", err);
     }
 
     return [

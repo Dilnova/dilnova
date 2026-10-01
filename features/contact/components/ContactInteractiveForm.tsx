@@ -8,6 +8,7 @@ import { useUser } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { useAutoRetryAction } from "@/shared/hooks/use-auto-retry-action";
+import { logClientWarning } from "@/shared/errors/client-error";
 
 export type CategoryType =
   "orders" | "billing" | "vendor" | "technical" | "collaboration" | "registration" | "info";
@@ -186,8 +187,8 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
       if (widgetId !== null && typeof window !== "undefined" && window.turnstile) {
         try {
           window.turnstile.remove(widgetId);
-        } catch {
-          // Ignore cleanup errors
+        } catch (err) {
+          logClientWarning("[ContactForm] Turnstile widget cleanup warning:", err);
         }
       }
     };
@@ -756,7 +757,7 @@ export default function ContactInteractiveForm({ systemName }: ContactInteractiv
                         : getSampleMessage(prev.category, systemName),
                     }))
                   }
-                  className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline cursor-pointer focus:outline-none"
+                  className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 rounded px-1"
                 >
                   + Load Sample Template
                 </button>

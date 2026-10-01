@@ -1,9 +1,11 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { getSystemSetting } from "@/shared/platform/settings";
 import { getCheckoutOptionsCatalog } from "@/features/organization/checkout-options";
 import { getStockAvailabilityCatalog } from "@/features/inventory/availability.server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { getSuperadminOrganizations } from "@/shared/auth/clerk-cache";
+import { getCurrentSuperAdminUser } from "@/shared/auth/superadmin-guard";
 import {
   getCategoriesOrderedByCreatedAtDesc,
   getContactSubmissionsOrderedByCreatedAtDesc,
@@ -16,6 +18,7 @@ import {
   getVendorOrgIntegrityReport,
 } from "@/features/superadmin/queries";
 import { getAllTaxClasses } from "@/features/catalog/queries";
+import { logger } from "@/shared/logging/logger";
 
 import SuperAdminNavigation from "@/features/superadmin/components/SuperAdminNavigation";
 import OverviewTab from "@/features/superadmin/components/tabs/OverviewTab";
@@ -27,6 +30,7 @@ import SettingsTab from "@/features/superadmin/components/tabs/SettingsTab";
 import ComplianceTab from "@/features/superadmin/components/tabs/ComplianceTab";
 import InventoryTab from "@/features/inventory/components/InventoryTab";
 import VendorOrgIssuesTab from "@/features/vendor-org/components/VendorOrgIssuesTab";
+import { buildVendorOrgIntegrityReport } from "@/features/vendor-org";
 import LicensesTab from "@/features/superadmin/components/LicensesTab";
 
 export const maxDuration = 60; // Allow up to 60s for this heavy page (Vercel serverless)
@@ -39,10 +43,24 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
   const params = await searchParams;
   const activeTab = params.tab || "overview";
 
-  // We need vendor org integrity for badges & org issues
+  // We need vendor org integrity for badges & org issues (safely guarded against transient rate-limits)
   const client = await clerkClient();
   const organizations = await getSuperadminOrganizations(client);
-  const vendorOrgIntegrity = await getVendorOrgIntegrityReport(organizations);
+  let vendorOrgIntegrity = buildVendorOrgIntegrityReport(
+    new Set(organizations.map((org) => org.id)),
+    {
+      products: [],
+      orderItems: [],
+      suppliers: [],
+      branches: [],
+      billingReceipts: [],
+    },
+  );
+  try {
+    vendorOrgIntegrity = await getVendorOrgIntegrityReport(organizations);
+  } catch (err) {
+    logger.warn("Failed to fetch vendor org integrity report, using fallback", { error: err });
+  }
   const vendorIssuesCount = vendorOrgIntegrity.totals.orphanOrgIds || 0;
 
   // We need contacts for badges
@@ -164,6 +182,10 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
         pinterestDomainVerify,
         googleSiteVerify,
         facebookDomainVerify,
+        facebookDomainVerifyDilstar,
+        facebookDomainVerifyDilnova,
+        googleMerchantIdDilstar,
+        googleMerchantIdDilnova,
       ] = await Promise.all([
         getSystemSetting("max_media_limit", "5"),
         getSystemSetting("system_logo", ""),
@@ -180,6 +202,11 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
         getSystemSetting("pinterest_domain_verify", process.env.PINTEREST_DOMAIN_VERIFY ?? ""),
         getSystemSetting("google_site_verify", process.env.GOOGLE_SITE_VERIFY ?? ""),
         getSystemSetting("facebook_domain_verify", process.env.FACEBOOK_DOMAIN_VERIFY ?? ""),
+        getSystemSetting("facebook_domain_verify_dilstar", ""),
+        getSystemSetting("facebook_domain_verify_dilnova", ""),
+        // Google Merchant Center IDs
+        getSystemSetting("google_merchant_id_dilstar", "5848179436"),
+        getSystemSetting("google_merchant_id_dilnova", "5848718366"),
       ]);
 
       content = (
@@ -198,6 +225,10 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
           pinterestDomainVerify={pinterestDomainVerify}
           googleSiteVerify={googleSiteVerify}
           facebookDomainVerify={facebookDomainVerify}
+          facebookDomainVerifyDilstar={facebookDomainVerifyDilstar}
+          facebookDomainVerifyDilnova={facebookDomainVerifyDilnova}
+          googleMerchantIdDilstar={googleMerchantIdDilstar}
+          googleMerchantIdDilnova={googleMerchantIdDilnova}
         />
       );
       break;
@@ -226,9 +257,14 @@ async function DashboardData({ searchParams }: { searchParams: Promise<{ tab?: s
   );
 }
 
-export default function SuperAdminDashboardPage(props: {
+export default async function SuperAdminDashboardPage(props: {
   searchParams: Promise<{ tab?: string }>;
 }) {
+  const user = await getCurrentSuperAdminUser();
+  if (!user) {
+    redirect("/unauthorized");
+  }
+
   return (
     <main className="px-3 py-4 sm:px-6 md:px-10 lg:px-12 sm:py-8 max-w-[1400px] mx-auto font-sans w-full">
       <div className="mb-4">

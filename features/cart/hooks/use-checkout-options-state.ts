@@ -6,6 +6,7 @@ import {
 } from "@/features/cart/checkout.actions";
 import { syncSelectedProductIds } from "@/features/cart/vendor-checkout";
 import { BANK_TRANSFER_PAYMENT_ID } from "@/features/billing/bank-transfer";
+import { extractActionErrorMessage } from "@/shared/errors/client-error";
 import type { CartItem } from "@/features/cart/types";
 
 export function useCheckoutOptionsState(
@@ -185,13 +186,8 @@ export function useCheckoutOptionsState(
       checkoutVendorOrgId: selectedCheckoutVendorOrgId || null,
     });
     if (!result?.data?.success) {
-      const errorMessage =
-        result?.data && "error" in result.data
-          ? result.data.error
-          : result?.serverError || "Failed to load checkout options.";
-      throw new Error(
-        typeof errorMessage === "string" ? errorMessage : "Failed to load checkout options.",
-      );
+      const errorMessage = extractActionErrorMessage(result);
+      throw new Error(errorMessage || "Failed to load checkout options.");
     }
     return result.data;
   };

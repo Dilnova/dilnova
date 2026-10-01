@@ -1,15 +1,6 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-
-const isProtectedRoute = createRouteMatcher([
-  "/admin(.*)",
-  "/vendor(.*)",
-  "/superadmin(.*)",
-  "/customer(.*)",
-]);
-
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import type { NextFetchEvent } from "next/server";
+import type { NextRequest, NextFetchEvent } from "next/server";
 import { logger } from "@/shared/logging/logger";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
@@ -18,6 +9,99 @@ import {
   isValidUpstashRestUrl,
   isValidUpstashRestToken,
 } from "@/shared/security/upstash-health";
+import {
+  buildCsp,
+  buildReportOnlyCsp,
+  shouldExcludeEval,
+  isStrictCspRequested,
+} from "@/shared/security/csp";
+
+/**
+ * Exact static paths that are publicly accessible without authentication.
+ */
+export const PUBLIC_EXACT_ROUTES = [
+  "/",
+  "/favicon.ico",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/manifest.webmanifest",
+  "/site.webmanifest",
+] as const;
+
+/**
+ * Path prefixes that are publicly accessible without authentication.
+ * Any route NOT matching PUBLIC_EXACT_ROUTES or PUBLIC_ROUTE_PREFIXES is denied by default.
+ */
+export const PUBLIC_ROUTE_PREFIXES = [
+  // Storefront catalog & customer public pages
+  "/products",
+  "/vendors",
+  "/brand",
+  "/cart",
+  "/contact",
+  "/support",
+
+  // Dilstar brand alias routes (multi-domain routing before rewrite)
+  "/hardware",
+  "/tech",
+  "/nursery",
+  "/services",
+
+  // Authentication & Error routes
+  "/sign-in",
+  "/sign-up",
+  "/unauthorized",
+
+  // Statutory Legal & Regulatory Compliance pages & aliases
+  "/privacy",
+  "/privacy-policy",
+  "/terms",
+  "/terms-of-service",
+  "/terms-and-conditions",
+  "/tos",
+  "/cookie",
+  "/cookies",
+  "/cookie-policy",
+  "/refund",
+  "/refund-policy",
+  "/return-policy",
+  "/returns",
+
+  // Standards metadata & discovery
+  "/.well-known",
+  "/sitemap",
+
+  // Public API endpoints & webhooks (route-level token/signature validation)
+  "/api/health",
+  "/api/csp-report",
+  "/api/feeds/google-merchant",
+  "/api/locations",
+  "/api/shipping/rates",
+  "/api/webhooks/clerk",
+  "/api/webhooks/qstash",
+  "/api/cron",
+] as const;
+
+/**
+ * Determine whether a given pathname is explicitly public.
+ */
+export function isPublicRoute(pathname: string): boolean {
+  const normalized =
+    pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  if (PUBLIC_EXACT_ROUTES.includes(normalized as (typeof PUBLIC_EXACT_ROUTES)[number])) {
+    return true;
+  }
+  return PUBLIC_ROUTE_PREFIXES.some(
+    (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`),
+  );
+}
+
+/**
+ * Deny-by-default route enforcement: Any path that is not explicitly public is protected.
+ */
+export function isProtectedPath(pathname: string): boolean {
+  return !isPublicRoute(pathname);
+}
 
 const edgeLimiterCache = new Map<string, Ratelimit>();
 
@@ -85,21 +169,6 @@ async function checkEdgeRateLimit(request: NextRequest): Promise<NextResponse | 
   return null;
 }
 
-function getSentryCspReportUri(): string | null {
-  const dsn = process.env.SENTRY_DSN;
-  if (!dsn) return null;
-  try {
-    const url = new URL(dsn);
-    const publicKey = url.username;
-    const projectId = url.pathname.replace(/^\//, "");
-    const host = url.host;
-    if (publicKey && projectId && host) {
-      return `https://${host}/api/${projectId}/security/?sentry_key=${publicKey}`;
-    }
-  } catch {}
-  return null;
-}
-
 function applySecurityHeaders(response: NextResponse): NextResponse {
   if (!response.headers) {
     (response as unknown as { headers: Headers }).headers = new Headers();
@@ -131,9 +200,17 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 }
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
+  if (isProtectedPath(req.nextUrl.pathname)) {
     const authState = await auth();
     if (!authState.userId) {
+      if (req.nextUrl.pathname.startsWith("/api/")) {
+        return applySecurityHeaders(
+          new NextResponse(JSON.stringify({ error: "Unauthorized: Authentication required." }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      }
       return authState.redirectToSignIn({ returnBackUrl: req.url });
     }
   }
@@ -170,34 +247,26 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   }
 
   // Define CSP first to attach to both request and response
-  const clerkDomains = [
-    "https://img.clerk.com",
-    "https://*.clerk.com",
-    "https://*.clerk.accounts.dev",
-    "https://clerk.dilstar.pp.ua",
-    "https://clerk.dilnova.pp.ua",
-  ];
-  const clerkDomainsStr = clerkDomains.join(" ");
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  let supabaseHostCsp = "";
-  if (supabaseUrl) {
-    try {
-      supabaseHostCsp = ` https://${new URL(supabaseUrl).hostname}`;
-    } catch {}
-  }
-
   const isProd = process.env.NODE_ENV === "production";
-  const isVercelProdOrPreview =
-    process.env.VERCEL_ENV === "production" || process.env.VERCEL_ENV === "preview";
-  const excludeEval = isProd || isVercelProdOrPreview;
-  const sentryCspUrl = getSentryCspReportUri();
+  const isStrictCsp = isStrictCspRequested();
+  const excludeEval = shouldExcludeEval({ isProd, isStrict: isStrictCsp });
 
-  const reportingDirectives = sentryCspUrl ? ` report-uri ${sentryCspUrl};` : "";
-
-  const cspHeader = `default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${clerkDomainsStr} https://challenges.cloudflare.com https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://va.vercel-scripts.com blob:${excludeEval ? "" : " 'unsafe-eval'"}; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com ${clerkDomainsStr} https://*.googleusercontent.com https://avatars.githubusercontent.com https://*.backblazeb2.com${supabaseHostCsp} https://translate.google.com https://*.googleapis.com https://*.gstatic.com https://*.google.com; connect-src 'self' ${clerkDomainsStr} https://api.clerk.com https://api.cloudinary.com${supabaseHostCsp} https://*.googleapis.com https://translate.google.com https://va.vercel-scripts.com https://clerk-telemetry.com https://*.ingest.de.sentry.io https://*.sentry.io; media-src 'self' blob: data: https://res.cloudinary.com; frame-src 'self' ${clerkDomainsStr} https://challenges.cloudflare.com; worker-src 'self' blob:;${reportingDirectives}${isProd ? " upgrade-insecure-requests;" : ""}`;
+  const cspHeader = buildCsp({
+    nonce,
+    isProd,
+    excludeEval,
+  });
 
   requestHeaders.set("Content-Security-Policy", cspHeader);
+
+  // In non-production environments when unsafe-eval is enabled, attach a Report-Only header
+  // enforcing the exact production policy (excluding unsafe-eval). This immediately surfaces
+  // CSP violations in the browser console and logs them to /api/csp-report without breaking dev tools.
+  let reportOnlyCsp: string | null = null;
+  if (!excludeEval) {
+    reportOnlyCsp = buildReportOnlyCsp({ nonce });
+    requestHeaders.set("Content-Security-Policy-Report-Only", reportOnlyCsp);
+  }
 
   const response = rewrittenUrl
     ? NextResponse.rewrite(rewrittenUrl, {
@@ -214,16 +283,13 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   response.headers.set("x-request-id", requestId);
   response.headers.set("x-country", country);
   response.headers.set("Content-Security-Policy", cspHeader);
+  if (reportOnlyCsp) {
+    response.headers.set("Content-Security-Policy-Report-Only", reportOnlyCsp);
+  }
   return response;
 });
 
 export default async function proxy(request: NextRequest, event: NextFetchEvent) {
-  // 0. Health check endpoint early bypass (prevents Auth middleware 302 redirects and bot checks)
-  const pathname = request.nextUrl.pathname;
-  if (pathname === "/api/health" || pathname.startsWith("/api/health/")) {
-    return NextResponse.next();
-  }
-
   // 1. WAF Edge Security Protections
   const userAgent = request.headers.get("user-agent") || "";
   const BLOCKED_USER_AGENTS = [

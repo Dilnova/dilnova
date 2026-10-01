@@ -1,48 +1,116 @@
-import { NextResponse } from "next/server";
 import { z } from "zod/v3";
 import { auth } from "@clerk/nextjs/server";
 import { computeMultiVendorRates } from "@/shared/shipping/rate-engine";
 import { db } from "@/shared/db/client";
 import { branches, branchInventory } from "@/shared/db/schema";
 import { inArray } from "drizzle-orm";
+import { logger } from "@/shared/logging/logger";
+import { apiSuccess, apiError } from "@/shared/api/response";
+import { rateLimit } from "@/shared/security/rate-limit";
 
 const shippingRatesSchema = z.object({
-  cartItems: z.array(
-    z.object({
-      id: z.string(),
-      quantity: z.number().int().positive(),
-      vendorOrgId: z.string().optional(),
-      branchId: z.string().optional(),
-      weightGrams: z.number().optional(),
-      lengthCm: z.number().optional(),
-      widthCm: z.number().optional(),
-      heightCm: z.number().optional(),
-    }),
-  ),
+  cartItems: z
+    .array(
+      z.object({
+        id: z.string().trim().min(1, "Item ID is required").max(128),
+        quantity: z
+          .number()
+          .int()
+          .positive("Quantity must be positive")
+          .max(9999, "Quantity exceeds allowable calculation limit"),
+        vendorOrgId: z.string().trim().max(128).optional(),
+        branchId: z.string().trim().max(128).optional(),
+        weightGrams: z.number().nonnegative().max(1_000_000).optional(),
+        lengthCm: z.number().nonnegative().max(500).optional(),
+        widthCm: z.number().nonnegative().max(500).optional(),
+        heightCm: z.number().nonnegative().max(500).optional(),
+      }),
+    )
+    .min(1, "At least one cart item is required")
+    .max(50, "Cart item count exceeds maximum calculation limit"),
   destinationAddress: z.object({
-    name: z.string().optional().default("Customer"),
-    street: z.string(),
-    city: z.string(),
-    state: z.string().optional().default(""),
-    postalCode: z.string().optional().default(""),
-    country: z.string().optional().default("LK"),
-    phone: z.string().optional(),
+    name: z.string().trim().max(100).optional().default("Customer"),
+    street: z.string().trim().min(1, "Street address is required").max(200),
+    city: z.string().trim().min(1, "City is required").max(100),
+    state: z.string().trim().max(100).optional().default(""),
+    postalCode: z.string().trim().max(20).optional().default(""),
+    country: z.string().trim().min(2).max(3).toUpperCase().optional().default("LK"),
+    phone: z.string().trim().max(30).optional(),
   }),
 });
 
+/**
+ * Reject unpermitted HTTP methods (GET, PUT, DELETE, etc.) with explicit 405 Method Not Allowed.
+ */
+export async function GET() {
+  return apiError("Method Not Allowed. Use POST with cart details and destination address.", {
+    status: 405,
+    headers: { Allow: "POST" },
+  });
+}
+
+/**
+ * Calculates live multi-vendor carrier shipping rates.
+ *
+ * Security Protections:
+ * - Authentication: Requires signed-in Clerk user session (prevents unauthenticated rate enumeration and API cost abuse)
+ * - Rate Limiting: 20 calls/min per authenticated user ID (fail-closed in production against carrier API quota abuse)
+ * - IP Rate Limiting: 30 calls/min per client IP (defense-in-depth against credential stuffing / session cycling)
+ * - Input Validation: Strict Zod schema preventing oversized payloads or excessive database batch lookups
+ * - Non-cacheable: Private delivery quotes with addresses are strictly non-cacheable
+ */
 export async function POST(req: Request) {
   try {
+    // 1. Mandatory Authentication Check
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError(
+        "Unauthorized: Authentication is required to calculate live shipping rates.",
+        {
+          status: 401,
+        },
+      );
     }
 
+    // 2. Multi-tier Rate Limiting
+    const ip =
+      req.headers.get("cf-connecting-ip")?.trim() ||
+      req.headers.get("x-real-ip")?.trim() ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "127.0.0.1";
+
+    try {
+      // User-level rate limit: 20 req/min
+      await rateLimit(20, 60 * 1000, `shipping-rates:user:${userId}`, { failClosed: true });
+      // IP-level defense-in-depth rate limit: 30 req/min
+      await rateLimit(30, 60 * 1000, `shipping-rates:ip:${ip}`, { failClosed: true });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Rate limit")) {
+        logger.warn("[POST /api/shipping/rates] Rate limit exceeded", { userId, ip });
+        return Response.json(
+          {
+            success: false,
+            error: "Too many shipping rate requests. Please try again in a few moments.",
+          },
+          {
+            status: 429,
+            headers: {
+              "Retry-After": "60",
+              "Cache-Control": "no-store",
+            },
+          },
+        );
+      }
+      throw error;
+    }
+
+    // 3. Strict Input Schema Validation
     const body = await req.json();
     const parsed = shippingRatesSchema.parse(body);
 
     const productIds = parsed.cartItems.map((item) => item.id).filter(Boolean);
 
-    // 1. Fetch branch assignments for products from branch_inventory table
+    // 4. Fetch branch assignments for products from branch_inventory table
     const productBranchMap = new Map<string, string>();
     if (productIds.length > 0) {
       const invRows = await db
@@ -60,7 +128,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. Resolve default branch for each vendor org as fallback
+    // 5. Resolve default branch for each vendor org as fallback
     const vendorOrgIds: string[] = [];
     for (const item of parsed.cartItems) {
       const orgId = item.vendorOrgId ?? "default_vendor";
@@ -123,7 +191,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. Group items by (vendorOrgId + branchId)
+    // 6. Group items by (vendorOrgId + branchId)
     const itemsByVendorGroup = new Map<
       string,
       Array<{ id: string; quantity: number; weightGrams?: number }>
@@ -164,12 +232,17 @@ export async function POST(req: Request) {
       vendorBranchMap: groupBranchMap,
     });
 
-    return NextResponse.json(result);
+    const response = apiSuccess(result);
+    response.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate");
+    return response;
   } catch (err: unknown) {
-    console.error("[POST /api/shipping/rates] Error:", err);
+    logger.error("[POST /api/shipping/rates] Error", err);
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: err.errors }, { status: 400 });
+      return apiError("Invalid input parameters", {
+        status: 400,
+        details: err.issues.map((i) => i.message),
+      });
     }
-    return NextResponse.json({ error: "Failed to calculate shipping rates" }, { status: 500 });
+    return apiError("Failed to calculate shipping rates", { status: 500 });
   }
 }

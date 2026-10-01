@@ -194,7 +194,7 @@ export function CartVendorGroups({
                             ) : (
                               <Image
                                 src={item.imageUrl}
-                                alt={item.name}
+                                alt={item.name || "Cart item"}
                                 fill
                                 className="object-cover"
                                 sizes="80px"

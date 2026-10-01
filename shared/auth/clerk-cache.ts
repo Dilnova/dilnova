@@ -7,6 +7,11 @@ import {
   sanitizeVendorPublicMetadata,
   type StorefrontPublicMetadata,
 } from "@/shared/media/sanitize-vendor-public-metadata";
+import { env } from "@/shared/config/env";
+
+function getClerkApiClient() {
+  return createClerkClient({ secretKey: env.auth.clerkSecretKey });
+}
 
 export interface CachedOrg {
   id: string;
@@ -105,7 +110,7 @@ const getCachedOrganizationsInternal = unstable_cache(
   async (): Promise<CachedOrg[]> => {
     logger.info("Clerk organization cache miss, fetching from API");
     try {
-      const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      const client = getClerkApiClient();
       return await fetchAllClerkOrganizations(client);
     } catch (err) {
       logger.error("Failed to fetch organizations from Clerk API in unstable_cache", err);
@@ -123,7 +128,7 @@ const getCachedSuperadminOrganizationsInternal = unstable_cache(
   async (): Promise<CachedSuperadminOrg[]> => {
     logger.info("Clerk superadmin organization cache miss, fetching from API");
     try {
-      const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      const client = getClerkApiClient();
       return await fetchAllSuperadminOrganizations(client);
     } catch (err) {
       logger.error(
@@ -164,7 +169,7 @@ export const getCachedOrganizationById = cache((orgId: string) =>
     async (): Promise<CachedOrg | null> => {
       try {
         logger.info(`Fetching organization ${orgId} from Clerk API in unstable_cache`);
-        const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const client = getClerkApiClient();
         const org = await client.organizations.getOrganization({ organizationId: orgId });
         if (!org) return null;
         return {
@@ -197,7 +202,7 @@ export const getCachedOrganizationBySlug = cache((slug: string) =>
     async (): Promise<CachedOrg | null> => {
       try {
         logger.info(`Fetching organization slug ${slug} from Clerk API in unstable_cache`);
-        const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const client = getClerkApiClient();
         const org = await client.organizations.getOrganization({ slug });
         if (!org) return null;
         return {
@@ -253,7 +258,7 @@ export const getCachedUserRole = cache((userId: string) =>
     async (): Promise<string | undefined> => {
       try {
         logger.info(`Fetching role for user ${userId} from Clerk API`);
-        const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const client = getClerkApiClient();
         const user = await client.users.getUser(userId);
         return user.publicMetadata?.role as string | undefined;
       } catch (err) {
@@ -273,7 +278,7 @@ export const getCachedIsSuperAdmin = cache((userId: string) =>
   unstable_cache(
     async (): Promise<boolean> => {
       try {
-        const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const client = getClerkApiClient();
         const user = await client.users.getUser(userId);
         return isSuperAdminUser(user);
       } catch (err) {
@@ -294,7 +299,7 @@ export const getCachedOrgMembers = cache((orgId: string) =>
     async (): Promise<{ userId: string; name: string; email: string }[]> => {
       try {
         logger.info("Fetching organization memberships from Clerk API", { orgId });
-        const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const client = getClerkApiClient();
         const memberships = await client.organizations.getOrganizationMembershipList({
           organizationId: orgId,
           limit: 100, // Max page size
@@ -347,7 +352,7 @@ export const getCachedUserBelongsToOrg = cache((userId: string) =>
   unstable_cache(
     async (): Promise<boolean> => {
       try {
-        const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const client = getClerkApiClient();
         const memberships = await client.users.getOrganizationMembershipList({ userId, limit: 1 });
         return memberships.data.length > 0;
       } catch (err) {

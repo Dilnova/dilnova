@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getSystemSetting } from "@/shared/platform/settings";
+import { DEFAULT_SUPPORT_EMAIL } from "@/shared/platform/brand";
 
 export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemSetting("system_name", "Dilnova");
   return {
     title: `Privacy Policy | ${systemName}`,
-    description: `Privacy policy for the ${systemName} Multi-Vendor Commerce Marketplace. Learn about our encryption standard, data retention policies, and GDPR rights.`,
+    description: `Enterprise privacy policy for the ${systemName} Multi-Vendor Commerce Marketplace. Learn about our AES-256-GCM encryption, data retention, subprocessor governance, and GDPR/CCPA rights.`,
   };
 }
 export const revalidate = 86400;
@@ -17,11 +18,11 @@ export default async function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 font-sans py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        {/* Back Link */}
-        <div className="mb-8">
+        {/* Navigation Links */}
+        <div className="mb-8 flex items-center gap-4 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            className="inline-flex items-center gap-1.5 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -33,6 +34,27 @@ export default async function PrivacyPolicy() {
             </svg>
             Back to Marketplace
           </Link>
+          <span className="text-zinc-300 dark:text-zinc-700">|</span>
+          <Link
+            href="/terms"
+            className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >
+            Terms of Service
+          </Link>
+          <span className="text-zinc-300 dark:text-zinc-700">|</span>
+          <Link
+            href="/cookie"
+            className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >
+            Cookie Policy
+          </Link>
+          <span className="text-zinc-300 dark:text-zinc-700">|</span>
+          <Link
+            href="/privacy/subprocessors"
+            className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >
+            Subprocessors
+          </Link>
         </div>
 
         {/* Title */}
@@ -41,177 +63,317 @@ export default async function PrivacyPolicy() {
             Privacy Policy
           </h1>
           <p className="text-xs text-zinc-450 dark:text-zinc-500 font-mono">
-            Last Updated: June 19, 2026
+            Last Updated: October 1, 2026 • Effective Date: October 1, 2026
           </p>
         </header>
 
         {/* Content */}
         <div className="space-y-8 text-sm leading-relaxed text-zinc-650 dark:text-zinc-400">
+          {/* Section 1 */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              1. Overview & Scope
+              1. Overview &amp; Data Controller
             </h2>
             <p>
               Welcome to <strong>{systemName}</strong> (&quot;Company&quot;, &quot;we&quot;,
-              &quot;us&quot;, or &quot;our&quot;). We value your privacy and trust. This policy
-              governs how we collect, process, secure, and store your personally identifiable
-              information (PII) across all tenant storefronts, core portals, and services offered
-              under the {systemName} hub.
+              &quot;us&quot;, or &quot;our&quot;). We operate a multi-tenant commerce hub enabling
+              independent vendor merchants to serve customers globally and locally.
+            </p>
+            <p>
+              This Privacy Policy explains how we collect, use, disclose, and safeguard your
+              personal data when you visit our website, place orders across merchant storefronts, or
+              interact with our platform. For the purposes of the General Data Protection Regulation
+              (GDPR) and applicable data protection laws, <strong>{systemName}</strong> operates as
+              the Data Controller for platform-level account and transaction data, and as a Data
+              Processor on behalf of individual merchant organizations for tenant-specific catalog
+              interactions.
             </p>
           </section>
 
+          {/* Section 2 */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
               2. Data We Collect
             </h2>
-            <p>
-              We process data necessary to facilitate authentication, checkout processing, and
-              customer inquiries:
-            </p>
+            <p>We collect and process the following categories of personal information:</p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <strong>Account Credentials:</strong> Handled securely by our authentication partner
-                (Clerk), including your name, email address, profile avatar, and system-assigned
-                unique identifiers.
+                <strong>Identity &amp; Profile Data:</strong> Full name, email address, avatar, and
+                authentication credentials managed securely via our identity provider (Clerk).
               </li>
               <li>
-                <strong>Order Details:</strong> Customer name, shipping address, contact phone,
-                transaction history, and uploaded financial documents (such as bank transfer payment
-                slips).
+                <strong>Contact &amp; Delivery Information:</strong> Physical shipping address,
+                billing address, postal code, city, country, and telephone contact numbers.
               </li>
               <li>
-                <strong>Inquiries & Contact Submissions:</strong> Form contents, feedback details,
-                name, and email address submitted via support forms.
+                <strong>Transactional &amp; Order Data:</strong> Item purchase history, order
+                identifiers, subtotal allocations, delivery tracking details, and manual bank
+                transfer deposit slips.
               </li>
               <li>
-                <strong>Technical Information:</strong> IP addresses and user agents logged
-                dynamically for audit trails and cybersecurity incident response.
+                <strong>Customer Support &amp; Inquiries:</strong> Communications submitted via our{" "}
+                <Link
+                  href="/contact"
+                  className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+                >
+                  Contact Support Form
+                </Link>
+                , feedback messages, and support chat transcripts.
+              </li>
+              <li>
+                <strong>Technical &amp; Telemetry Data:</strong> IP addresses, browser user agent,
+                operating system, and security audit logs captured automatically for cyber defense
+                and rate limiting.
               </li>
             </ul>
           </section>
 
+          {/* Section 3 */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              3. Data Security & Encryption
+              3. Legal Bases for Processing (GDPR Article 6)
             </h2>
-            <p>
-              To protect customer identity from leakage or breaches, we implement randomized
-              encryption protocols:
-            </p>
-            <p>
-              Sensitive customer properties (such as emails, phone numbers, and physical shipping
-              addresses) are encrypted in our persistent database layers using standard{" "}
-              <strong>AES-256-GCM</strong> cryptography. Only authenticated workflows and audit
-              managers hold clearance to decrypt these data points.
-            </p>
+            <p>We process your personal data under the following recognized legal bases:</p>
+            <ul className="list-disc pl-5 space-y-1.5">
+              <li>
+                <strong>Contractual Necessity (Art. 6(1)(b)):</strong> To create user accounts,
+                process shopping cart checkouts, verify payment slips, deliver orders, and provide
+                order status notifications.
+              </li>
+              <li>
+                <strong>Legal &amp; Regulatory Obligations (Art. 6(1)(c)):</strong> To maintain tax,
+                accounting, and financial records, enforce consumer protection standards, and
+                respond to lawful government requests.
+              </li>
+              <li>
+                <strong>Legitimate Interests (Art. 6(1)(f)):</strong> To safeguard platform
+                infrastructure against DDoS and fraudulent transactions, enforce edge rate limits,
+                monitor application performance, and prevent multi-tenant data bleed.
+              </li>
+              <li>
+                <strong>Consent (Art. 6(1)(a)):</strong> For optional performance analytics cookies
+                and marketing communications, which can be modified or withdrawn at any time.
+              </li>
+            </ul>
           </section>
 
-          <section id="cookies" className="space-y-3">
+          {/* Section 4 */}
+          <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              4. Cookies and Tracking Consent
+              4. Data Security &amp; Cryptographic Standards
             </h2>
             <p>
-              We use strictly necessary and performance cookies to provide and optimize our service.
-              For detailed information on how we manage cookies, what data they process, and how to
-              change your tracking preferences, please read our dedicated{" "}
+              We implement defense-in-depth security architectures to protect customer data from
+              unauthorized access, alteration, or disclosure:
+            </p>
+            <ul className="list-disc pl-5 space-y-1.5">
+              <li>
+                <strong>Field-Level Encryption:</strong> Sensitive personally identifiable
+                information (such as customer email, phone numbers, and physical addresses) is
+                encrypted at rest using industry-standard <strong>AES-256-GCM</strong> cryptography
+                with authenticated tags.
+              </li>
+              <li>
+                <strong>Transport Security:</strong> All web and API traffic is strictly enforced
+                over <strong>TLS 1.3 / HTTPS</strong> with HSTS (Strict-Transport-Security) headers.
+              </li>
+              <li>
+                <strong>Payment Isolation:</strong> We do not store raw credit card numbers or
+                security PINs. Manual bank slips are stored in private cloud buckets accessible only
+                through ephemeral signed URLs.
+              </li>
+              <li>
+                <strong>Multi-Tenant Isolation:</strong> Database queries are programmatically
+                isolated by tenant organization IDs at the ORM layer, preventing cross-organization
+                information leaks.
+              </li>
+            </ul>
+          </section>
+
+          {/* Section 5 */}
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+              5. Cookies &amp; Tracking Consent
+            </h2>
+            <p>
+              We prioritize transparency regarding tracking technologies. For full details on our
+              strictly necessary session cookies and opt-in performance cookies, please review our
+              dedicated{" "}
               <Link
                 href="/cookie"
                 className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
               >
                 Cookie Policy
               </Link>
-              .
+              . You may adjust or revoke non-essential cookie permissions at any time.
             </p>
           </section>
 
+          {/* Section 6 */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              5. GDPR & CCPA Data Subject Rights
+              6. GDPR &amp; CCPA Data Subject Rights
             </h2>
             <p>
-              If you reside in the European Economic Area (EEA) or California, you are entitled to
-              specific rights under the GDPR/CCPA regulations:
+              Depending on your jurisdiction (including the European Economic Area, United Kingdom,
+              and California), you are entitled to the following statutory rights:
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <strong>Right to Access (Portability):</strong> You may request a complete export of
-                all data stored relative to your identity.
+                <strong>Right to Access &amp; Portability:</strong> You may request a complete,
+                machine-readable export of all personal data held about you.
               </li>
               <li>
-                <strong>Right to be Forgotten (Erasure/Anonymization):</strong> You may request that
-                we delete or permanently redact all PII associated with your account, orders, and
-                inquiries.
+                <strong>Right to Rectification:</strong> You may correct inaccurate or incomplete
+                personal information in your profile settings.
+              </li>
+              <li>
+                <strong>Right to Erasure (&quot;Right to be Forgotten&quot;):</strong> You may
+                request permanent deletion or anonymization of your PII from our databases and logs.
+              </li>
+              <li>
+                <strong>Right to Restrict or Object to Processing:</strong> You may request that we
+                pause or cease processing your data under certain conditions.
+              </li>
+              <li>
+                <strong>Right to Non-Discrimination:</strong> We will never discriminate against you
+                for exercising any of your privacy rights.
               </li>
             </ul>
             <p>
-              To execute these rights, you can submit a request directly through our support
-              channels:
+              To exercise any of these rights, please submit an inquiry through our{" "}
+              <Link
+                href="/contact"
+                className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+              >
+                Support Portal
+              </Link>{" "}
+              or email our Data Protection Officer directly at{" "}
+              <a
+                href={`mailto:${DEFAULT_SUPPORT_EMAIL}`}
+                className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+              >
+                {DEFAULT_SUPPORT_EMAIL}
+              </a>
+              . We will acknowledge and process verified requests within 30 days.
+            </p>
+          </section>
+
+          {/* Section 7 */}
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+              7. Data Retention &amp; Deletion Schedules
+            </h2>
+            <p>
+              We retain personal data only for as long as necessary to fulfill the purposes outlined
+              in this policy:
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                Submit a request using our{" "}
-                <Link
-                  href="/contact"
-                  className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
-                >
-                  Contact Support Form
-                </Link>{" "}
-                and select the <strong>General Inquiry</strong> category.
+                <strong>Active Accounts:</strong> Retained for the duration of the account lifecycle
+                until deletion is requested.
               </li>
               <li>
-                Or email our data protection administrators directly at{" "}
-                <a
-                  href="mailto:info@dilstar.pp.ua"
-                  className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
-                >
-                  info@dilstar.pp.ua
-                </a>
-                .
+                <strong>Financial &amp; Order Records:</strong> Retained for a minimum of five (5)
+                to seven (7) years to satisfy statutory tax, auditing, and corporate regulatory
+                mandates.
+              </li>
+              <li>
+                <strong>Security Audit Logs:</strong> Stored securely in tamper-evident logs for a
+                standard period of 90 days before automated rotation and purging.
               </li>
             </ul>
-            <p>
-              Upon verification of your identity, we will process your request (typically within 30
-              days). Fulfilling an erasure request permanently redacts your shipping address, phone
-              number, name, and email from database logs, severing Clerk identity links.
-            </p>
           </section>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">6. Data Retention</h2>
-            <p>
-              We retain account data and orders for as long as your account remains active or as
-              needed to comply with financial audits. Audit logs are kept for a minimum of 90 days
-              to meet operational compliance and forensic auditing requirements.
-            </p>
-          </section>
-
+          {/* Section 8 */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              7. Third-Party Subprocessors
+              8. Subprocessors &amp; Cross-Border Transfers
             </h2>
             <p>
-              We rely on enterprise-grade vendors to host our infrastructure securely. All core
-              service providers are vetted for strict compliance frameworks, including SOC 2 Type 2.
-              You can review our{" "}
+              To maintain global availability and enterprise reliability, {systemName} partners with
+              vetted cloud infrastructure providers (including Clerk for identity, Supabase for
+              encrypted database storage, Vercel for hosting, and Cloudinary for media assets).
+            </p>
+            <p>
+              All subprocessors are bound by strict Data Processing Agreements (DPAs) incorporating
+              European Commission Standard Contractual Clauses (SCCs). You can view the
+              comprehensive list of providers, compliance certifications (SOC 2 Type 2), and data
+              residency regions in our{" "}
               <Link
                 href="/privacy/subprocessors"
                 className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
               >
                 Subprocessor Inventory
-              </Link>{" "}
-              to see the complete list of vendors, their DPA status, and data residency information.
+              </Link>
+              .
             </p>
           </section>
 
+          {/* Section 9 */}
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
-              8. Updates to This Policy
+              9. Protection of Children&apos;s Privacy
             </h2>
             <p>
-              We reserve the right to modify this privacy policy at any time. Changes will be posted
-              to this page with an updated timestamp. We encourage you to review this policy
-              periodically.
+              Our Service is not directed to children under the age of 16 (or under 13 under the US
+              Children&apos;s Online Privacy Protection Act [COPPA]). We do not knowingly collect or
+              solicit personal information from minors. If we learn that we have inadvertently
+              collected PII from a child without verified parental consent, we will promptly delete
+              that data.
             </p>
+          </section>
+
+          {/* Section 10 */}
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+              10. Automated Decision-Making &amp; Profiling Disclosures
+            </h2>
+            <p>
+              We do not use automated algorithms or profiling to make decisions that produce legal
+              effects or significantly affect our users. Automated tools are strictly utilized for
+              cybersecurity defense (e.g. edge rate limiters blocking abusive denial-of-service
+              traffic).
+            </p>
+          </section>
+
+          {/* Section 11 */}
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+              11. Right to Lodge a Regulatory Complaint
+            </h2>
+            <p>
+              If you believe our processing of your personal information infringes applicable data
+              protection legislation, you have the right to lodge a formal complaint with your local
+              supervisory authority (such as an EU Data Protection Authority or the relevant privacy
+              commissioner in your jurisdiction).
+            </p>
+          </section>
+
+          {/* Section 12 */}
+          <section className="space-y-3">
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+              12. Contact Information &amp; Data Protection Officer
+            </h2>
+            <p>
+              For inquiries regarding this Privacy Policy, your personal data, or to reach our
+              privacy team, please contact:
+            </p>
+            <div className="p-4 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-1 text-xs">
+              <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                {systemName} Data Privacy Office
+              </p>
+              <p>Corporate Address: Colombo, Southern &amp; Western Province, Sri Lanka</p>
+              <p>
+                Email:{" "}
+                <a
+                  href={`mailto:${DEFAULT_SUPPORT_EMAIL}`}
+                  className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
+                >
+                  {DEFAULT_SUPPORT_EMAIL}
+                </a>
+              </p>
+            </div>
           </section>
         </div>
       </div>

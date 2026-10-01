@@ -3,10 +3,11 @@ import * as schema from "@/shared/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { createClerkClient } from "@clerk/nextjs/server";
 import { unstable_cache } from "next/cache";
+import { env } from "@/shared/config/env";
 
 export const getCachedOrganization = unstable_cache(
   async (orgId: string) => {
-    const client = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+    const client = createClerkClient({ secretKey: env.auth.clerkSecretKey });
     const org = await client.organizations.getOrganization({ organizationId: orgId });
     return {
       id: org.id,

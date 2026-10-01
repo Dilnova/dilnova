@@ -1,5 +1,7 @@
+import { env } from "@/shared/config/env";
+
 export function getCloudinaryCloudName(): string | null {
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim();
+  const cloudName = env.media.cloudinaryCloudName?.trim();
   return cloudName || null;
 }
 

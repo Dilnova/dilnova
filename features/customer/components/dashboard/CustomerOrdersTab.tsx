@@ -9,18 +9,16 @@ import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 import NewChatButton from "@/features/chat/components/NewChatButton";
 
-import type { InferSelectModel } from "drizzle-orm";
-import type * as schema from "@/shared/db/schema";
+import type { CheckoutOptionDefinition } from "@/features/organization/checkout-options.shared";
+import type { CustomerOrderWithSlip, CustomerOrderItemRow } from "@/features/customer/types";
 
-type OrderRow = InferSelectModel<typeof schema.simulatedOrders>;
-type OrderItemRow = InferSelectModel<typeof schema.simulatedOrderItems>;
+type OrderItemRow = CustomerOrderItemRow;
 
 interface CustomerOrdersTabProps {
-  orders: OrderRow[];
-  itemsByOrderId: Record<string, OrderItemRow[]>;
+  orders: CustomerOrderWithSlip[];
+  itemsByOrderId: Record<string, CustomerOrderItemRow[]>;
   pickupBranchNameById: Map<string, string>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  checkoutOptionsCatalog: any;
+  checkoutOptionsCatalog: CheckoutOptionDefinition[];
 }
 
 export default function CustomerOrdersTab({
@@ -240,8 +238,7 @@ export default function CustomerOrdersTab({
                             paymentMethod: order.paymentMethod,
                             status: order.status,
                             paymentSlipUrl: order.paymentSlipUrl,
-                            paymentSlipPreviewUrl: (order as Record<string, unknown>)
-                              .paymentSlipPreviewUrl as string | undefined,
+                            paymentSlipPreviewUrl: order.paymentSlipPreviewUrl,
                             customerEmail: order.customerEmail,
                           }}
                         />

@@ -1,7 +1,8 @@
-import { execSync } from "child_process";
+import { spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
+import { parsePostgresUrl } from "./pg-env.mjs";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
@@ -27,11 +28,6 @@ async function runRestore() {
     process.exit(1);
   }
 
-  if (!fs.existsSync(backupFile)) {
-    console.error(`Error: Backup file "${backupFile}" does not exist.`);
-    process.exit(1);
-  }
-
   if (!targetUrl) {
     console.error(
       "Error: Target database connection string (RESTORE_DATABASE_URL / MIGRATION_DATABASE_URL) is missing.",
@@ -39,8 +35,29 @@ async function runRestore() {
     process.exit(1);
   }
 
+  // Atomically open file descriptor and inspect stats via fstatSync to eliminate
+  // Time-of-Check to Time-of-Use (TOCTOU) race conditions (CodeQL js/file-system-race)
+  let inputFd;
+  let stats;
+  try {
+    inputFd = fs.openSync(backupFile, "r");
+    stats = fs.fstatSync(inputFd);
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      console.error(`Error: Backup file "${backupFile}" does not exist.`);
+    } else {
+      console.error(`Error opening backup file "${backupFile}":`, err.message);
+    }
+    process.exit(1);
+  }
+
+  if (!stats.isFile()) {
+    console.error(`Error: "${backupFile}" is not a regular file.`);
+    fs.closeSync(inputFd);
+    process.exit(1);
+  }
+
   const isGzip = backupFile.endsWith(".gz");
-  const stats = fs.statSync(backupFile);
 
   console.log("═══════════════════════════════════════════════════════════════");
   console.log("🚨 ENTERPRISE DATABASE RESTORE PROCEDURE");
@@ -49,20 +66,63 @@ async function runRestore() {
   console.log(`Target URL:  ${targetUrl.replace(/:[^:@]+@/, ":****@")}`);
   console.log("---------------------------------------------------------------");
 
-  const restoreCmd = isGzip
-    ? `gunzip -c "${backupFile}" | psql "${targetUrl}"`
-    : `psql "${targetUrl}" < "${backupFile}"`;
-
+  // Use standard libpq environment variables so credentials are not exposed in process tables (argv / ps)
   try {
     const startTime = Date.now();
     console.log("Executing database restoration...");
-    execSync(restoreCmd, { shell: "/bin/bash", stdio: "inherit" });
+    const pgEnv = {
+      ...process.env,
+      ...parsePostgresUrl(targetUrl),
+    };
+
+    if (isGzip) {
+      // Pass the opened file descriptor as stdin to gunzip without reopening or referencing path
+      const gunzipResult = spawnSync("gunzip", ["-c"], {
+        env: pgEnv,
+        stdio: [inputFd, "pipe", "inherit"],
+        encoding: "utf8",
+        maxBuffer: 1024 * 1024 * 500,
+      });
+
+      if (gunzipResult.status !== 0) {
+        throw new Error(gunzipResult.stderr || "Failed to decompress backup file.");
+      }
+
+      const psqlResult = spawnSync("psql", [], {
+        env: pgEnv,
+        stdio: ["pipe", "inherit", "inherit"],
+        input: gunzipResult.stdout,
+      });
+
+      if (psqlResult.status !== 0) {
+        throw new Error("psql restore failed.");
+      }
+    } else {
+      // Pass the opened file descriptor directly as stdin to psql
+      const psqlResult = spawnSync("psql", [], {
+        env: pgEnv,
+        stdio: [inputFd, "inherit", "inherit"],
+      });
+
+      if (psqlResult.status !== 0) {
+        throw new Error("psql restore failed.");
+      }
+    }
+
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
     console.log("\n✅ Database restoration completed successfully in " + duration + "s!");
   } catch (error) {
     console.error("\n❌ Database restoration failed:", error.message);
     process.exit(1);
+  } finally {
+    if (inputFd !== undefined) {
+      try {
+        fs.closeSync(inputFd);
+      } catch {
+        // Ignore if already closed
+      }
+    }
   }
 }
 

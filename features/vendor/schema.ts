@@ -30,4 +30,4 @@ export const vendorMetadataSchema = z.object({
   }),
 });
 
-export type VendorMetadataInput = z.infer<typeof vendorMetadataSchema>["data"];
+export type VendorMetadataInput = z.input<typeof vendorMetadataSchema>["data"];

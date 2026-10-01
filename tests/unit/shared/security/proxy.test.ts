@@ -1,32 +1,32 @@
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
 
+let mockUserId: string | null = "user_test_mock";
+
 // Mock clerkMiddleware
 vi.mock("@clerk/nextjs/server", () => ({
   clerkMiddleware: vi.fn((handler) => {
     return (req: unknown, event: unknown) => {
       const mockAuth = Object.assign(
-        vi.fn().mockResolvedValue({
-          userId: "user_test_mock",
-          redirectToSignIn: vi
-            .fn()
-            .mockReturnValue(
-              new Response(null, { status: 307, headers: { Location: "/sign-in" } }),
+        vi.fn().mockImplementation(async () => {
+          return {
+            userId: mockUserId,
+            redirectToSignIn: vi.fn().mockImplementation(
+              ({ returnBackUrl }: { returnBackUrl?: string } = {}) =>
+                new Response(null, {
+                  status: 307,
+                  headers: {
+                    Location: `/sign-in?redirect_url=${encodeURIComponent(returnBackUrl || "")}`,
+                  },
+                }),
             ),
+          };
         }),
         {
           protect: vi.fn(),
         },
       );
       return handler(mockAuth, req, event);
-    };
-  }),
-  createRouteMatcher: vi.fn((routes: string[]) => {
-    return (req: { nextUrl?: { pathname?: string } }) => {
-      return routes.some((r) => {
-        const pattern = new RegExp("^" + r.replace(/\(\.\*\)/g, ".*"));
-        return pattern.test(req?.nextUrl?.pathname || "");
-      });
     };
   }),
 }));
@@ -75,7 +75,12 @@ vi.mock("@upstash/ratelimit", () => {
   };
 });
 
-import proxy from "@/proxy";
+import proxy, {
+  isPublicRoute,
+  isProtectedPath,
+  PUBLIC_EXACT_ROUTES,
+  PUBLIC_ROUTE_PREFIXES,
+} from "@/proxy";
 
 const mockEvent = {} as unknown as import("next/server").NextFetchEvent;
 
@@ -83,6 +88,7 @@ type MockResponse = { status: number; body: string };
 
 describe("Proxy Middleware CSRF Protection", () => {
   beforeEach(() => {
+    mockUserId = "user_test_mock";
     vi.clearAllMocks();
   });
 
@@ -550,5 +556,366 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
     const csp = result.headers.get("Content-Security-Policy") || "";
     expect(csp).toContain("https://clerk.dilstar.pp.ua");
     expect(csp).toContain("https://clerk.dilnova.pp.ua");
+  });
+
+  it("attaches Content-Security-Policy-Report-Only in development to catch unsafe-eval violations", async () => {
+    const prevNodeEnv = process.env.NODE_ENV;
+    const prevVercelEnv = process.env.VERCEL_ENV;
+    const prevStrict = process.env.STRICT_CSP;
+    try {
+      process.env.NODE_ENV = "development";
+      delete process.env.VERCEL_ENV;
+      delete process.env.STRICT_CSP;
+
+      const request = new NextRequest("http://localhost:3000/", {
+        method: "GET",
+        headers: { host: "localhost:3000" },
+      });
+      const result = (await proxy(request, mockEvent)) as unknown as {
+        headers: Headers;
+      };
+
+      const enforcingCsp = result.headers.get("Content-Security-Policy") || "";
+      expect(enforcingCsp).toContain("'unsafe-eval'");
+
+      const reportOnlyCsp = result.headers.get("Content-Security-Policy-Report-Only") || "";
+      expect(reportOnlyCsp).toBeTruthy();
+      expect(reportOnlyCsp).not.toContain("'unsafe-eval'");
+      expect(reportOnlyCsp).toContain("report-uri /api/csp-report;");
+    } finally {
+      process.env.NODE_ENV = prevNodeEnv;
+      if (prevVercelEnv !== undefined) process.env.VERCEL_ENV = prevVercelEnv;
+      else delete process.env.VERCEL_ENV;
+      if (prevStrict !== undefined) process.env.STRICT_CSP = prevStrict;
+      else delete process.env.STRICT_CSP;
+    }
+  });
+
+  it("strictly excludes 'unsafe-eval' from enforcing CSP when STRICT_CSP=true", async () => {
+    const prevNodeEnv = process.env.NODE_ENV;
+    const prevStrict = process.env.STRICT_CSP;
+    try {
+      process.env.NODE_ENV = "development";
+      process.env.STRICT_CSP = "true";
+
+      const request = new NextRequest("http://localhost:3000/", {
+        method: "GET",
+        headers: { host: "localhost:3000" },
+      });
+      const result = (await proxy(request, mockEvent)) as unknown as {
+        headers: Headers;
+      };
+
+      const enforcingCsp = result.headers.get("Content-Security-Policy") || "";
+      expect(enforcingCsp).not.toContain("'unsafe-eval'");
+      // When strict, excludeEval is true so report-only header is not needed
+      expect(result.headers.get("Content-Security-Policy-Report-Only")).toBeNull();
+    } finally {
+      process.env.NODE_ENV = prevNodeEnv;
+      if (prevStrict !== undefined) process.env.STRICT_CSP = prevStrict;
+      else delete process.env.STRICT_CSP;
+    }
+  });
+});
+
+describe("Proxy Protected Routes Early Redirect", () => {
+  beforeEach(() => {
+    mockUserId = "user_test_mock";
+    vi.clearAllMocks();
+  });
+
+  it("redirects unauthenticated users on protected paths (/admin, /vendor, /superadmin, /customer)", async () => {
+    mockUserId = null;
+    const protectedPaths = [
+      "/admin",
+      "/admin/members",
+      "/vendor",
+      "/vendor/billing",
+      "/superadmin",
+      "/superadmin/pricing",
+      "/customer",
+      "/customer/returns",
+    ];
+
+    for (const path of protectedPaths) {
+      const request = new NextRequest(`http://localhost:3000${path}`, { method: "GET" });
+      const result = await proxy(request, mockEvent);
+      expect(result).toBeInstanceOf(Response);
+      expect((result as Response).status).toBe(307);
+      expect((result as Response).headers.get("Location")).toContain("/sign-in");
+    }
+  });
+
+  it("does not redirect unauthenticated users on public routes or public vendor directory", async () => {
+    mockUserId = null;
+    const publicPaths = [
+      "/",
+      "/vendors",
+      "/vendors/dilstar-hardware",
+      "/products",
+      "/products/item-1",
+      "/brand/dilstar",
+      "/terms",
+      "/privacy",
+    ];
+
+    for (const path of publicPaths) {
+      const request = new NextRequest(`http://localhost:3000${path}`, { method: "GET" });
+      const result = await proxy(request, mockEvent);
+      expect(result).not.toBeInstanceOf(Response);
+    }
+  });
+
+  it("allows authenticated users to access protected paths without redirect", async () => {
+    mockUserId = "user_test_mock";
+    const request = new NextRequest("http://localhost:3000/admin", { method: "GET" });
+    const result = await proxy(request, mockEvent);
+    expect(result).not.toBeInstanceOf(Response);
+  });
+});
+
+describe("Proxy Deny-by-Default Route Authorization (Finding 2.1 & Finding 2.2)", () => {
+  describe("Route Classification Helpers (isPublicRoute & isProtectedPath)", () => {
+    it("identifies exact public routes", () => {
+      for (const route of PUBLIC_EXACT_ROUTES) {
+        expect(isPublicRoute(route)).toBe(true);
+        expect(isProtectedPath(route)).toBe(false);
+      }
+    });
+
+    it("identifies all public route prefixes in PUBLIC_ROUTE_PREFIXES", () => {
+      for (const prefix of PUBLIC_ROUTE_PREFIXES) {
+        expect(isPublicRoute(prefix)).toBe(true);
+        expect(isProtectedPath(prefix)).toBe(false);
+      }
+    });
+
+    it("identifies public route prefixes including storefront, dilstar aliases, and legal routes", () => {
+      const publicPaths = [
+        "/products",
+        "/products/category/hardware",
+        "/vendors",
+        "/vendors/dilstar-tech",
+        "/brand",
+        "/brand/dilstar",
+        "/cart",
+        "/contact",
+        "/support",
+        "/hardware",
+        "/tech",
+        "/nursery",
+        "/services",
+        "/sign-in",
+        "/sign-in/factor-one",
+        "/sign-up",
+        "/unauthorized",
+        "/privacy",
+        "/privacy/subprocessors",
+        "/privacy-policy",
+        "/terms",
+        "/terms-of-service",
+        "/terms-and-conditions",
+        "/tos",
+        "/cookie",
+        "/cookies",
+        "/cookie-policy",
+        "/refund",
+        "/refund-policy",
+        "/return-policy",
+        "/returns",
+        "/.well-known/security.txt",
+        "/sitemap",
+        "/sitemap/0.xml",
+        "/api/health",
+        "/api/csp-report",
+        "/api/feeds/google-merchant",
+        "/api/locations",
+        "/api/shipping/rates",
+        "/api/webhooks/clerk",
+        "/api/webhooks/qstash/cleanup",
+        "/api/cron/fx-rates",
+      ];
+
+      for (const path of publicPaths) {
+        expect(isPublicRoute(path)).toBe(true);
+        expect(isProtectedPath(path)).toBe(false);
+      }
+    });
+
+    it("handles trailing slashes on public routes", () => {
+      expect(isPublicRoute("/products/")).toBe(true);
+      expect(isPublicRoute("/vendors/")).toBe(true);
+      expect(isPublicRoute("/terms/")).toBe(true);
+      expect(isProtectedPath("/products/")).toBe(false);
+    });
+
+    it("strictly distinguishes public /vendors directory from protected /vendor console", () => {
+      expect(isPublicRoute("/vendors")).toBe(true);
+      expect(isPublicRoute("/vendors/acme-store")).toBe(true);
+      expect(isPublicRoute("/vendor")).toBe(false);
+      expect(isPublicRoute("/vendor/billing")).toBe(false);
+      expect(isPublicRoute("/vendor/products/add")).toBe(false);
+
+      expect(isProtectedPath("/vendor")).toBe(true);
+      expect(isProtectedPath("/vendor/billing")).toBe(true);
+      expect(isProtectedPath("/vendor/products/add")).toBe(true);
+    });
+
+    it("enforces deny-by-default on newly invented or unlisted paths", () => {
+      const unlistedPaths = [
+        "/billing",
+        "/billing/invoices",
+        "/settings",
+        "/settings/profile",
+        "/account",
+        "/dashboard",
+        "/reports",
+        "/internal",
+        "/admin",
+        "/superadmin",
+        "/customer",
+        "/api/vendor/presence",
+        "/api/chat/conversations",
+        "/api/chat/stream/123",
+        "/api/shipping/labels",
+        "/api/shipping/label-pdf",
+        "/api/admin/data-subject-request/erase",
+        "/api/internal/test",
+      ];
+
+      for (const path of unlistedPaths) {
+        expect(isPublicRoute(path)).toBe(false);
+        expect(isProtectedPath(path)).toBe(true);
+      }
+    });
+  });
+
+  describe("Deny-by-Default Proxy Middleware Enforcement", () => {
+    beforeEach(() => {
+      mockUserId = null;
+      vi.clearAllMocks();
+    });
+
+    it("redirects unauthenticated users on new/unlisted page routes to /sign-in", async () => {
+      const newUnlistedPages = [
+        "/billing",
+        "/dashboard",
+        "/settings",
+        "/account",
+        "/reports/sales",
+        "/inventory/audit",
+      ];
+
+      for (const path of newUnlistedPages) {
+        const request = new NextRequest(`http://localhost:3000${path}`, { method: "GET" });
+        const result = await proxy(request, mockEvent);
+        expect(result).toBeInstanceOf(Response);
+        expect((result as Response).status).toBe(307);
+        expect((result as Response).headers.get("Location")).toContain("/sign-in");
+        expect((result as Response).headers.get("Location")).toContain(
+          encodeURIComponent(`http://localhost:3000${path}`),
+        );
+      }
+    });
+
+    it("returns 401 Unauthorized JSON with security headers for unauthenticated requests to protected API routes", async () => {
+      const protectedApiRoutes = [
+        "/api/chat/conversations",
+        "/api/chat/messages/conv_123",
+        "/api/chat/stream/conv_123",
+        "/api/vendor/presence",
+        "/api/shipping/labels",
+        "/api/shipping/label-pdf",
+        "/api/admin/data-subject-request/erase",
+        "/api/admin/data-subject-request/export",
+        "/api/new-secret-feature",
+      ];
+
+      for (const path of protectedApiRoutes) {
+        const request = new NextRequest(`http://localhost:3000${path}`, { method: "GET" });
+        const result = (await proxy(request, mockEvent)) as unknown as {
+          status: number;
+          body: string;
+          headers: Headers;
+        };
+
+        expect(result).toBeInstanceOf(NextResponse);
+        expect(result.status).toBe(401);
+        expect(result.headers.get("Content-Type")).toBe("application/json");
+        expect(result.headers.get("X-Frame-Options")).toBe("DENY");
+        expect(result.headers.get("X-Content-Type-Options")).toBe("nosniff");
+        const bodyJson = JSON.parse(result.body);
+        expect(bodyJson.error).toContain("Unauthorized: Authentication required.");
+      }
+    });
+
+    it("allows authenticated requests to protected API routes without returning 401", async () => {
+      mockUserId = "user_test_mock";
+      const protectedApiRoutes = [
+        "/api/chat/conversations",
+        "/api/vendor/presence",
+        "/api/shipping/labels",
+      ];
+
+      for (const path of protectedApiRoutes) {
+        const request = new NextRequest(`http://localhost:3000${path}`, { method: "GET" });
+        const result = await proxy(request, mockEvent);
+        expect(result).not.toBeInstanceOf(NextResponse);
+        expect(result).not.toBeInstanceOf(Response);
+      }
+    });
+
+    it("allows unauthenticated access to public API routes without 401 or redirect", async () => {
+      const publicApiRoutes = [
+        "/api/health",
+        "/api/locations",
+        "/api/shipping/rates",
+        "/api/feeds/google-merchant",
+      ];
+
+      for (const path of publicApiRoutes) {
+        const request = new NextRequest(`http://localhost:3000${path}`, { method: "GET" });
+        const result = await proxy(request, mockEvent);
+        expect(result).not.toBeInstanceOf(NextResponse);
+        expect(result).not.toBeInstanceOf(Response);
+      }
+    });
+  });
+
+  describe("Health Check Security & WAF Integration (Finding 2.2)", () => {
+    it("inspects /api/health through WAF and blocks malicious SQL injection payloads", async () => {
+      const maliciousRequest = new NextRequest(
+        "http://localhost:3000/api/health?test=%27%20UNION%20SELECT%20null%20--",
+        { method: "GET" },
+      );
+      const result = (await proxy(maliciousRequest, mockEvent)) as unknown as MockResponse;
+      expect(result).toBeInstanceOf(NextResponse);
+      expect(result.status).toBe(403);
+      expect(result.body).toContain("WAF SQLi Protection");
+    });
+
+    it("inspects /api/health through WAF and blocks malicious bot User-Agents", async () => {
+      const botRequest = new NextRequest("http://localhost:3000/api/health", {
+        method: "GET",
+        headers: { "user-agent": "python-requests/2.28.1" },
+      });
+      const result = (await proxy(botRequest, mockEvent)) as unknown as MockResponse;
+      expect(result).toBeInstanceOf(NextResponse);
+      expect(result.status).toBe(403);
+      expect(result.body).toContain("WAF Bot Protection");
+    });
+
+    it("allows clean unauthenticated requests to /api/health with security headers applied", async () => {
+      mockUserId = null;
+      const cleanRequest = new NextRequest("http://localhost:3000/api/health", {
+        method: "GET",
+      });
+      const result = (await proxy(cleanRequest, mockEvent)) as unknown as {
+        headers: Headers;
+      };
+      expect(result).not.toBeInstanceOf(NextResponse);
+      expect(result.headers.get("x-request-id")).toBeDefined();
+      expect(result.headers.get("Content-Security-Policy")).toBeDefined();
+    });
   });
 });

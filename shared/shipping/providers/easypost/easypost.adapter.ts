@@ -7,6 +7,9 @@ import type {
   ShippingOrigin,
   ShippingRate,
 } from "../../carrier.types";
+import { logger } from "@/shared/logging/logger";
+import { fetchWithTimeout, HTTP_TIMEOUT } from "@/shared/security/http-client";
+import { env } from "@/shared/config/env";
 
 /**
  * EasyPost multi-carrier adapter.
@@ -30,7 +33,7 @@ export class EasyPostAdapter implements CarrierAdapter {
   private readonly rateToShipmentCache = new Map<string, string>();
 
   private get apiKey(): string {
-    const raw = (process.env.EASYPOST_API_KEY ?? "").trim();
+    const raw = (env.shipping.easypostApiKey ?? "").trim();
     return raw.replace(/^Bearer\s+/i, "");
   }
 
@@ -79,18 +82,19 @@ export class EasyPostAdapter implements CarrierAdapter {
     };
 
     try {
-      const res = await fetch(`${this.baseUrl}/shipments`, {
+      const res = await fetchWithTimeout(`${this.baseUrl}/shipments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: this.authHeader,
         },
         body: JSON.stringify(payload),
+        timeoutMs: HTTP_TIMEOUT.DEFAULT,
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        console.error("[EasyPostAdapter.getRates] API error:", res.status, err);
+        logger.error("[EasyPostAdapter.getRates] API error", err, { status: res.status });
         return [];
       }
 
@@ -100,13 +104,9 @@ export class EasyPostAdapter implements CarrierAdapter {
       try {
         const { getExchangeRatesMap } = await import("@/shared/currency/exchange-rates.service");
         const fxMap = await getExchangeRatesMap();
-        lkrRate =
-          fxMap["USD_LKR"] ||
-          (process.env.USD_TO_LKR_RATE ? parseFloat(process.env.USD_TO_LKR_RATE) : 307.69);
+        lkrRate = fxMap["USD_LKR"] || env.shipping.usdToLkrRate;
       } catch {
-        lkrRate = process.env.USD_TO_LKR_RATE
-          ? parseFloat(process.env.USD_TO_LKR_RATE) || 307.69
-          : 307.69;
+        lkrRate = env.shipping.usdToLkrRate;
       }
 
       if (data.id && Array.isArray(data.rates)) {
@@ -135,7 +135,7 @@ export class EasyPostAdapter implements CarrierAdapter {
 
       return rates;
     } catch (err) {
-      console.error("[EasyPostAdapter.getRates] Network error:", err);
+      logger.error("[EasyPostAdapter.getRates] Network error", err);
       return [];
     }
   }
@@ -160,7 +160,7 @@ export class EasyPostAdapter implements CarrierAdapter {
       // Create shipment first if cache missed
       const parcel = parcels[0];
       const weightOz = Math.max(1, Math.round((parcel.weightGrams / 28.3495) * 10) / 10);
-      const shipmentRes = await fetch(`${this.baseUrl}/shipments`, {
+      const shipmentRes = await fetchWithTimeout(`${this.baseUrl}/shipments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -188,6 +188,7 @@ export class EasyPostAdapter implements CarrierAdapter {
             parcel: { weight: weightOz },
           },
         }),
+        timeoutMs: HTTP_TIMEOUT.DEFAULT,
       });
 
       if (!shipmentRes.ok) {
@@ -199,13 +200,14 @@ export class EasyPostAdapter implements CarrierAdapter {
     }
 
     // Buy the label directly
-    const buyRes = await fetch(`${this.baseUrl}/shipments/${shipmentId}/buy`, {
+    const buyRes = await fetchWithTimeout(`${this.baseUrl}/shipments/${shipmentId}/buy`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: this.authHeader,
       },
       body: JSON.stringify({ rate: { id: epRateId } }),
+      timeoutMs: HTTP_TIMEOUT.EXTENDED,
     });
 
     if (!buyRes.ok) {
@@ -232,20 +234,22 @@ export class EasyPostAdapter implements CarrierAdapter {
   async cancelShipment(shipmentExternalId: string): Promise<void> {
     if (!this.apiKey) return;
     // EasyPost refunds via the refund endpoint
-    await fetch(`${this.baseUrl}/shipments/${shipmentExternalId}/refund`, {
+    await fetchWithTimeout(`${this.baseUrl}/shipments/${shipmentExternalId}/refund`, {
       method: "POST",
       headers: { Authorization: this.authHeader },
-    }).catch((err) => console.error("[EasyPostAdapter.cancelShipment]", err));
+      timeoutMs: HTTP_TIMEOUT.DEFAULT,
+    }).catch((err) => logger.error("[EasyPostAdapter.cancelShipment]", err));
   }
 
   async getTrackingEvents(trackingNumber: string): Promise<ShipmentEvent[]> {
     if (!this.apiKey) return [];
 
     try {
-      const res = await fetch(
+      const res = await fetchWithTimeout(
         `${this.baseUrl}/trackers?tracking_code=${encodeURIComponent(trackingNumber)}`,
         {
           headers: { Authorization: this.authHeader },
+          timeoutMs: HTTP_TIMEOUT.DEFAULT,
         },
       );
       if (!res.ok) return [];
@@ -271,7 +275,7 @@ export class EasyPostAdapter implements CarrierAdapter {
         }),
       );
     } catch (err) {
-      console.error("[EasyPostAdapter.getTrackingEvents]", err);
+      logger.error("[EasyPostAdapter.getTrackingEvents]", err);
       return [];
     }
   }

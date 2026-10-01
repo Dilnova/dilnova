@@ -79,7 +79,7 @@ export default function VendorCarousel({
                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 relative">
                   <Image
                     src={vendor.imageUrl}
-                    alt={`${vendor.name} logo`}
+                    alt={`${vendor.name || "Vendor"} logo`}
                     fill
                     sizes="48px"
                     className="object-cover"

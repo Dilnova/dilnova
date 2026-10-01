@@ -1,4 +1,5 @@
 import CustomerDeliverySettingsForm from "@/features/customer/components/CustomerDeliverySettingsForm";
+import type { CustomerDeliveryDetails } from "@/features/customer/types";
 
 interface CustomerSettingsTabProps {
   user: {
@@ -9,8 +10,7 @@ interface CustomerSettingsTabProps {
   orgRole: string | null | undefined;
   userRole: string | null | undefined;
   isSuperAdmin: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  deliveryDetails: any;
+  deliveryDetails: CustomerDeliveryDetails | null;
 }
 
 export default function CustomerSettingsTab({

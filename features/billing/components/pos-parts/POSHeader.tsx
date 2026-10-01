@@ -33,11 +33,12 @@ export default function POSHeader() {
         {data.premiumStatus?.multiBranchActive ? (
           <select
             value={selectedBranchId}
+            aria-label="Select active register branch"
             onChange={(e) => {
               setSelectedBranchId(e.target.value);
               setCart([]);
             }}
-            className="px-2.5 py-1 border border-zinc-200 rounded-lg text-xs bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 font-bold focus:outline-none"
+            className="px-2.5 py-1 border border-zinc-200 rounded-lg text-xs bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
           >
             {data.branches.map((b) => (
               <option key={b.id} value={b.id}>

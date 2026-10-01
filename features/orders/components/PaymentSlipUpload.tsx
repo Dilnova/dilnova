@@ -8,6 +8,7 @@ import {
 } from "@/features/orders/customer.actions";
 import { PAYMENT_SLIP_ALLOWED_MIME_TYPES, type PaymentSlipMimeType } from "@/shared/storage/config";
 import { toast } from "sonner";
+import { extractActionErrorMessage } from "@/shared/errors/client-error";
 
 interface PaymentSlipUploadProps {
   orderId: string;
@@ -59,8 +60,9 @@ export default function PaymentSlipUpload({
           fileType: file.type as PaymentSlipMimeType,
         });
 
-        if (!presignResult?.data?.success) {
-          toast.error(presignResult?.serverError || "Failed to initialize upload.");
+        if (!presignResult?.data?.signedUrl) {
+          const errorMessage = extractActionErrorMessage(presignResult);
+          toast.error(errorMessage || "Failed to initialize upload.");
           return;
         }
 
@@ -87,13 +89,12 @@ export default function PaymentSlipUpload({
           storagePath,
         });
 
-        if (submitResult?.data?.success) {
-          if (submitResult.data.previewUrl) {
-            setSlipPreviewUrl(submitResult.data.previewUrl);
-          }
+        if (submitResult?.data?.previewUrl) {
+          setSlipPreviewUrl(submitResult.data.previewUrl);
           toast.success("Payment slip submitted. The vendor will review your transfer shortly.");
         } else {
-          toast.error(submitResult?.serverError || "Failed to save payment slip.");
+          const errorMessage = extractActionErrorMessage(submitResult);
+          toast.error(errorMessage || "Failed to save payment slip.");
         }
       } catch (error) {
         toast.error(

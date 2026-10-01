@@ -48,7 +48,7 @@ export default function ProductMediaForm() {
               ) : (
                 <Image
                   src={item.url}
-                  alt="Gallery item preview"
+                  alt={`Uploaded product media preview ${index + 1}${index === 0 ? " (primary)" : ""}`}
                   fill
                   className="object-cover"
                   sizes="(max-width: 640px) 96px, 112px"

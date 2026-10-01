@@ -16,6 +16,7 @@ import {
 import { generateSocialShareUrls } from "../services/whatsapp-share";
 import { manualPublishProductAction } from "../actions";
 import { toast } from "sonner";
+import { AccessibleModal } from "@/shared/ui/AccessibleModal";
 
 export interface ShareModalProduct {
   id: string;
@@ -100,8 +101,14 @@ export function QuickSocialShareModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden">
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel="Share & Blast Product"
+      className="relative w-full max-w-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden p-0"
+      backdropClassName="flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+    >
+      <div>
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/40">
           <div className="flex items-center gap-2.5">
@@ -119,7 +126,8 @@ export function QuickSocialShareModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+            aria-label="Close dialog"
+            className="p-1.5 rounded-full text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
@@ -132,7 +140,7 @@ export function QuickSocialShareModal({
               {product.imageUrl ? (
                 <Image
                   src={product.imageUrl}
-                  alt={product.name}
+                  alt={product.name || "Product image"}
                   fill
                   className="object-cover"
                   sizes="56px"
@@ -153,7 +161,8 @@ export function QuickSocialShareModal({
             </div>
             <button
               onClick={handleCopyLink}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 transition-colors shrink-0"
+              aria-label="Copy checkout link"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-[11px] font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 cursor-pointer"
             >
               {copiedLink ? (
                 <Check className="h-3.5 w-3.5 text-emerald-500" />
@@ -176,7 +185,7 @@ export function QuickSocialShareModal({
                 href={links.whatsappUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2.5 p-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 border border-emerald-200/70 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 transition-all group shadow-sm"
+                className="flex items-center gap-2.5 p-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 border border-emerald-200/70 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 transition-all group shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               >
                 <div className="p-2 rounded-xl bg-emerald-500 text-white shrink-0 group-hover:scale-105 transition-transform">
                   <MessageCircle className="h-4 w-4" />
@@ -197,7 +206,7 @@ export function QuickSocialShareModal({
                 target="_blank"
                 rel="noreferrer"
                 onClick={handleFacebookShareClick}
-                className="flex items-center gap-2.5 p-3 rounded-2xl bg-blue-50 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-950/70 border border-blue-200/70 dark:border-blue-800/60 text-blue-800 dark:text-blue-300 transition-all group shadow-sm"
+                className="flex items-center gap-2.5 p-3 rounded-2xl bg-blue-50 hover:bg-blue-100/80 dark:bg-blue-950/40 dark:hover:bg-blue-950/70 border border-blue-200/70 dark:border-blue-800/60 text-blue-800 dark:text-blue-300 transition-all group shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <div className="p-2 rounded-xl bg-blue-600 text-white shrink-0 group-hover:scale-105 transition-transform">
                   <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
@@ -219,7 +228,7 @@ export function QuickSocialShareModal({
                 href={links.telegramShareUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2.5 p-3 rounded-2xl bg-sky-50 hover:bg-sky-100/80 dark:bg-sky-950/40 dark:hover:bg-sky-950/70 border border-sky-200/70 dark:border-sky-800/60 text-sky-800 dark:text-sky-300 transition-all group shadow-sm"
+                className="flex items-center gap-2.5 p-3 rounded-2xl bg-sky-50 hover:bg-sky-100/80 dark:bg-sky-950/40 dark:hover:bg-sky-950/70 border border-sky-200/70 dark:border-sky-800/60 text-sky-800 dark:text-sky-300 transition-all group shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
               >
                 <div className="p-2 rounded-xl bg-sky-500 text-white shrink-0 group-hover:scale-105 transition-transform">
                   <Send className="h-4 w-4" />
@@ -238,7 +247,7 @@ export function QuickSocialShareModal({
               <button
                 type="button"
                 onClick={handleCopyCaption}
-                className="flex items-center gap-2.5 p-3 rounded-2xl bg-pink-50 hover:bg-pink-100/80 dark:bg-pink-950/40 dark:hover:bg-pink-950/70 border border-pink-200/70 dark:border-pink-800/60 text-pink-800 dark:text-pink-300 transition-all group shadow-sm text-left cursor-pointer"
+                className="flex items-center gap-2.5 p-3 rounded-2xl bg-pink-50 hover:bg-pink-100/80 dark:bg-pink-950/40 dark:hover:bg-pink-950/70 border border-pink-200/70 dark:border-pink-800/60 text-pink-800 dark:text-pink-300 transition-all group shadow-sm text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500"
               >
                 <div className="p-2 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white shrink-0 group-hover:scale-105 transition-transform">
                   <Copy className="h-4 w-4" />
@@ -260,7 +269,7 @@ export function QuickSocialShareModal({
             <button
               onClick={handleDirectPagePublish}
               disabled={isPublishing || !product.imageUrl}
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 transition-colors shadow-sm disabled:opacity-50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
             >
               {isPublishing ? (
                 <>
@@ -280,6 +289,6 @@ export function QuickSocialShareModal({
           </div>
         </div>
       </div>
-    </div>
+    </AccessibleModal>
   );
 }

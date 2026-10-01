@@ -84,7 +84,7 @@ export default async function VendorsDirectoryPage() {
                       {metadata.bannerUrl ? (
                         <Image
                           src={metadata.bannerUrl}
-                          alt={`${vendor.name} banner`}
+                          alt={`${vendor.name || "Vendor"} banner`}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -101,7 +101,7 @@ export default async function VendorsDirectoryPage() {
                         <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-white dark:border-zinc-950 bg-white shadow-sm">
                           <Image
                             src={vendor.imageUrl}
-                            alt={vendor.name}
+                            alt={`${vendor.name || "Vendor"} logo`}
                             fill
                             className="object-cover"
                             sizes="64px"

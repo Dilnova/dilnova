@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { z } from "zod/v3";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/shared/db/client";
@@ -6,6 +5,8 @@ import { simulatedOrders, simulatedOrderItems, shipments, branches } from "@/sha
 import { eq } from "drizzle-orm";
 import { getCarrier } from "@/shared/shipping/carrier-registry";
 import { parseBranchToOrigin } from "@/shared/shipping/rate-engine";
+import { logger } from "@/shared/logging/logger";
+import { apiSuccess, apiError } from "@/shared/api/response";
 
 const createLabelSchema = z.object({
   orderId: z.string().uuid(),
@@ -15,10 +16,7 @@ export async function POST(req: Request) {
   try {
     const { userId, orgId } = await auth();
     if (!userId || !orgId) {
-      return NextResponse.json(
-        { error: "Unauthorized — vendor organization required" },
-        { status: 401 },
-      );
+      return apiError("Unauthorized — vendor organization required", { status: 401 });
     }
 
     const body = await req.json();
@@ -32,7 +30,7 @@ export async function POST(req: Request) {
       .limit(1);
 
     if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return apiError("Order not found", { status: 404 });
     }
 
     // Fetch order items and verify vendor authorization
@@ -43,10 +41,9 @@ export async function POST(req: Request) {
 
     const vendorItems = orderItems.filter((item) => item.vendorOrgId === orgId);
     if (vendorItems.length === 0) {
-      return NextResponse.json(
-        { error: "Forbidden — this order does not contain items from your organization" },
-        { status: 403 },
-      );
+      return apiError("Forbidden — this order does not contain items from your organization", {
+        status: 403,
+      });
     }
 
     // Calculate total weight
@@ -110,18 +107,20 @@ export async function POST(req: Request) {
       })
       .where(eq(simulatedOrders.id, orderId));
 
-    return NextResponse.json({
-      success: true,
+    return apiSuccess({
       trackingNumber: shipmentResult.trackingNumber,
       trackingUrl: shipmentResult.trackingUrl,
       labelUrl: shipmentResult.labelUrl,
       estimatedDeliveryDate: shipmentResult.estimatedDeliveryDate,
     });
   } catch (err: unknown) {
-    console.error("[POST /api/shipping/labels] Error:", err);
+    logger.error("[POST /api/shipping/labels] Error", err);
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: err.errors }, { status: 400 });
+      return apiError("Invalid input", {
+        status: 400,
+        details: err.issues.map((i) => i.message),
+      });
     }
-    return NextResponse.json({ error: "Failed to generate shipment label" }, { status: 500 });
+    return apiError("Failed to generate shipment label", { status: 500 });
   }
 }

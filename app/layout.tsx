@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import React from "react";
 import { ClerkProvider } from "@clerk/nextjs";
 import Link from "next/link";
 import ConsentTracking from "@/shared/ui/ConsentTracking";
 import CookieConsent from "@/shared/ui/CookieConsent";
+import CookiePreferencesButton from "@/shared/ui/CookiePreferencesButton";
 import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 import { runWithCorrelationId } from "@/shared/security/async-context";
 import SmartHeader from "@/components/layout/SmartHeader";
@@ -88,14 +89,19 @@ export async function generateMetadata(): Promise<Metadata> {
         "b2b platform",
       ];
 
-  const pinterestVerify = await getSystemSetting(
-    "pinterest_domain_verify",
-    process.env.PINTEREST_DOMAIN_VERIFY ?? "",
-  );
-  const metaDomainVerify = await getSystemSetting(
+  const pinterestVerify =
+    process.env.PINTEREST_DOMAIN_VERIFY || (await getSystemSetting("pinterest_domain_verify", ""));
+  const fbDilstar = await getSystemSetting("facebook_domain_verify_dilstar", "");
+  const fbDilnova = await getSystemSetting("facebook_domain_verify_dilnova", "");
+  const legacyFb = await getSystemSetting(
     "facebook_domain_verify",
     process.env.FACEBOOK_DOMAIN_VERIFY || "",
   );
+  // Match the token to the requested domain, with fallback to legacy or any configured token
+  const primaryFbToken = isDilstar ? fbDilstar || legacyFb : fbDilnova || legacyFb;
+  const allFbTokens = Array.from(new Set([primaryFbToken, fbDilstar, fbDilnova].filter(Boolean)));
+  const metaDomainVerify = allFbTokens.length > 1 ? allFbTokens : allFbTokens[0] || "";
+
   const googleSiteVerify = await getSystemSetting(
     "google_site_verify",
     process.env.GOOGLE_SITE_VERIFY || "",
@@ -193,6 +199,10 @@ export default async function RootLayout({
     const initialRatesMap = await getExchangeRatesMap();
 
     const headersList = await headers();
+    const cookieStore = await cookies();
+    const consentCookie = cookieStore.get("dilnova_cookie_consent")?.value ?? null;
+    const initialConsent = consentCookie === "accepted";
+
     // Enterprise-grade dynamic Beta Lock check
     const isBetaLocked = (await getSystemSetting("enable_beta_lock", "false")) === "true";
     const isCI =
@@ -288,7 +298,7 @@ export default async function RootLayout({
                           <div className="relative h-8 w-20 sm:h-9 sm:w-32 max-w-full rounded-lg bg-white px-2 py-1 shadow-sm ring-1 ring-zinc-200/80 dark:ring-zinc-700/60 shrink-0">
                             <Image
                               src={logoUrl}
-                              alt={`${systemName} Logo`}
+                              alt={`${systemName || "Store"} Logo`}
                               fill
                               className="object-contain object-center"
                               sizes="(max-width: 640px) 80px, 128px"
@@ -362,6 +372,7 @@ export default async function RootLayout({
                             >
                               Cookie Policy
                             </Link>
+                            <CookiePreferencesButton />
                             <Link
                               href="/terms"
                               className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
@@ -408,8 +419,8 @@ export default async function RootLayout({
                 theme="system"
               />
             </ConfirmProvider>
-            <ConsentTracking />
-            <CookieConsent />
+            <ConsentTracking initialConsent={initialConsent} />
+            <CookieConsent initialConsent={consentCookie} />
           </ClerkProvider>
         </body>
       </html>

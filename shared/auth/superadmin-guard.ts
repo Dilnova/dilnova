@@ -1,6 +1,7 @@
 import { auth, clerkClient, type User } from "@clerk/nextjs/server";
 import { isSuperAdminUser } from "@/shared/auth/superadmin.server";
 import { logger } from "@/shared/logging/logger";
+import { ActionError } from "@/shared/errors/action-error";
 
 /**
  * Validates that the current user is authenticated and holds platform superadmin access.
@@ -9,14 +10,14 @@ import { logger } from "@/shared/logging/logger";
 export async function checkSuperAdmin(): Promise<User> {
   const { userId } = await auth();
   if (!userId) {
-    throw new Error("Unauthorized: You must be logged in.");
+    throw new ActionError("Unauthorized: You must be logged in.");
   }
 
   const client = await clerkClient();
   const user = await client.users.getUser(userId);
 
   if (!isSuperAdminUser(user)) {
-    throw new Error("Unauthorized: Only global administrators can perform this action.");
+    throw new ActionError("Unauthorized: Only global administrators can perform this action.");
   }
 
   return user;

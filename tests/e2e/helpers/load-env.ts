@@ -9,6 +9,7 @@ export function loadE2EEnv(): void {
     return;
   }
   dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+  dotenv.config({ path: path.resolve(process.cwd(), ".env") });
   process.env.CLERK_PUBLISHABLE_KEY ??= process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   loaded = true;
 }

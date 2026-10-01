@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   clearCheckoutSuccessSnapshot,
   loadCheckoutSuccessSnapshot,
@@ -10,7 +10,12 @@ export function useCheckoutState() {
     "idle",
   );
   const [emailStatus, setEmailStatus] = useState<"idle" | "sending" | "success">("idle");
-  const [idempotencyKey, setIdempotencyKey] = useState<string>("");
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(() => {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return "";
+  });
 
   const [confirmedOrderEmail, setConfirmedOrderEmail] = useState("");
   const [confirmedOrderId, setConfirmedOrderId] = useState("");
@@ -18,9 +23,21 @@ export function useCheckoutState() {
     useState<BankTransferCheckoutInstructions | null>(null);
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(false);
 
-  useEffect(() => {
-    setIdempotencyKey(crypto.randomUUID());
+  const resetIdempotencyKey = useCallback(() => {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      setIdempotencyKey(crypto.randomUUID());
+    }
   }, []);
+
+  useEffect(() => {
+    if (
+      !idempotencyKey &&
+      typeof crypto !== "undefined" &&
+      typeof crypto.randomUUID === "function"
+    ) {
+      setIdempotencyKey(crypto.randomUUID());
+    }
+  }, [idempotencyKey]);
 
   useEffect(() => {
     const saved = loadCheckoutSuccessSnapshot();
@@ -41,6 +58,7 @@ export function useCheckoutState() {
     emailStatus,
     setEmailStatus,
     idempotencyKey,
+    resetIdempotencyKey,
     confirmedOrderEmail,
     setConfirmedOrderEmail,
     confirmedOrderId,

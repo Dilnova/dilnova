@@ -42,7 +42,7 @@ export default function DilstarTechStorefront({ org, products }: StorefrontProps
             <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-2xl overflow-hidden border border-cyan-500/50 bg-zinc-900 shadow-2xl shadow-cyan-500/10 flex-shrink-0">
               <Image
                 src={org.imageUrl}
-                alt={org.name}
+                alt={`${org.name || "Vendor"} logo`}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 112px, 144px"
@@ -170,7 +170,7 @@ export default function DilstarTechStorefront({ org, products }: StorefrontProps
                           ) : (
                             <Image
                               src={product.imageUrl}
-                              alt={product.name}
+                              alt={product.name || "Product image"}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform duration-500"
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

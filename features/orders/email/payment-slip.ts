@@ -19,6 +19,7 @@ import { logger } from "@/shared/logging/logger";
 import { isCodPayment } from "@/features/orders/payment.rules";
 import { escapeHtml } from "@/shared/email/smtp-client";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
+import { env } from "@/shared/config/env";
 
 export async function sendPaymentSlipUploadedNotifications(
   orderId: string,
@@ -46,7 +47,7 @@ export async function sendPaymentSlipUploadedNotifications(
     .where(eq(schema.simulatedOrderItems.orderId, orderId));
 
   const vendorOrgIds = [...new Set(items.map((item) => item.vendorOrgId))];
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+  const appUrl = env.app.url || DEFAULT_APP_URL;
   const vendorConsoleUrl = `${appUrl}/vendor?tab=inventory`;
   const grandTotal = getOrderDisplayTotals(order).grandTotal;
 
@@ -137,7 +138,7 @@ export async function sendPaymentVerifiedCustomerEmail(
     checkoutOptionsCatalog,
   );
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+  const appUrl = env.app.url || DEFAULT_APP_URL;
   const invoiceUrl = `${appUrl}/customer/invoice/${order.id}`;
   const grandTotal = getOrderDisplayTotals(order).grandTotal;
   const orderRef = order.id.slice(0, 8).toUpperCase();
@@ -186,7 +187,7 @@ export async function sendOrderCancelledCustomerEmail(
     return { success: false, error: "SMTP not configured" };
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+  const appUrl = env.app.url || DEFAULT_APP_URL;
   const invoiceUrl = `${appUrl}/customer/invoice/${order.id}`;
   const grandTotal = getOrderDisplayTotals(order).grandTotal;
   const orderRef = order.id.slice(0, 8).toUpperCase();
@@ -226,7 +227,7 @@ export async function sendPaymentSlipRejectedCustomerEmail(
     return { success: false, error: "SMTP not configured" };
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+  const appUrl = env.app.url || DEFAULT_APP_URL;
   const invoiceUrl = `${appUrl}/customer/invoice/${order.id}`;
   const grandTotal = getOrderDisplayTotals(order).grandTotal;
   const orderRef = order.id.slice(0, 8).toUpperCase();

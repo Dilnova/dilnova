@@ -128,7 +128,7 @@ export default function QASection({ productId, questions, productOrgId }: QASect
                     {q.userImageUrl ? (
                       <Image
                         src={q.userImageUrl}
-                        alt={q.userName}
+                        alt={q.userName || "User avatar"}
                         width={24}
                         height={24}
                         className="rounded-full object-cover border border-zinc-200 dark:border-zinc-800"

@@ -198,15 +198,21 @@ export default function TaxClassesManager({ taxClasses }: TaxClassesManagerProps
         <AccessibleModal
           isOpen={true}
           onClose={() => setIsCreateModalOpen(false)}
+          ariaLabelledBy="add-tax-class-modal-title"
           backdropClassName="bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl safe-area-bottom"
         >
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
+            <h2
+              id="add-tax-class-modal-title"
+              className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight"
+            >
               Add Custom Tax Class
             </h2>
             <button
+              type="button"
               onClick={() => setIsCreateModalOpen(false)}
+              aria-label="Close dialog"
               className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 transition-colors cursor-pointer"
             >
               ✕
@@ -279,15 +285,21 @@ export default function TaxClassesManager({ taxClasses }: TaxClassesManagerProps
         <AccessibleModal
           isOpen={true}
           onClose={() => setEditingTaxClass(null)}
+          ariaLabelledBy="edit-tax-class-modal-title"
           backdropClassName="bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md shadow-2xl safe-area-bottom"
         >
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
+            <h2
+              id="edit-tax-class-modal-title"
+              className="text-xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight"
+            >
               Edit Tax Class
             </h2>
             <button
+              type="button"
               onClick={() => setEditingTaxClass(null)}
+              aria-label="Close dialog"
               className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-500 transition-colors cursor-pointer"
             >
               ✕

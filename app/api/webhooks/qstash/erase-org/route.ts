@@ -7,6 +7,7 @@ import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { Redis } from "@upstash/redis";
 import { logAuditAction } from "@/shared/audit/logger";
 import { z } from "zod/v3";
+import { env } from "@/shared/config/env";
 
 export const maxDuration = 300;
 
@@ -16,8 +17,8 @@ const eraseOrgPayloadSchema = z.object({
 });
 
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+  url: env.upstash.redisUrl || "",
+  token: env.upstash.redisToken || "",
 });
 
 async function handler(req: NextRequest) {

@@ -18,12 +18,14 @@ describe("Encryption Utilities", () => {
     process.env = originalEnv;
   });
 
-  it("should return cleartext in dev/test if PII_ENCRYPTION_KEY is not defined", () => {
+  it("should use deterministic fallback key and encrypt/decrypt successfully in dev/test when PII_ENCRYPTION_KEY is not defined", () => {
     delete process.env.PII_ENCRYPTION_KEY;
     process.env.NODE_ENV = "test";
     const rawText = "test-customer-name";
     const encrypted = encryptString(rawText);
-    expect(encrypted).toBe(rawText);
+    // Must never return cleartext
+    expect(encrypted).not.toBe(rawText);
+    expect(encrypted.startsWith("v2:")).toBe(true);
 
     const decrypted = decryptString(encrypted);
     expect(decrypted).toBe(rawText);

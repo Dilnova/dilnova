@@ -113,7 +113,7 @@ export default function LicensesTab({ organizations }: LicensesTabProps) {
                           {org.imageUrl && (
                             <Image
                               src={org.imageUrl}
-                              alt={org.name}
+                              alt={`${org.name || "Organization"} logo`}
                               width={24}
                               height={24}
                               className="w-6 h-6 rounded-full"

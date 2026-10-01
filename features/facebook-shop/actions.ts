@@ -1,7 +1,7 @@
 "use server";
 
 import * as schema from "@/shared/db/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { orgAdminAction, vendorAction, ActionError } from "@/lib/safe-action";
 import { logAuditAction } from "@/shared/audit/logger";
@@ -179,13 +179,18 @@ export const triggerBatchFacebookShopSyncAction = orgAdminAction
         };
       }
 
-      // 3. Fetch inventory for all products
-      const inventoryList = await db
-        .select({
-          productId: schema.inventory.productId,
-          quantity: schema.inventory.quantity,
-        })
-        .from(schema.inventory);
+      // 3. Fetch inventory for all active products of this organization
+      const productIds = activeProducts.map((p) => p.id);
+      const inventoryList =
+        productIds.length > 0
+          ? await db
+              .select({
+                productId: schema.inventory.productId,
+                quantity: schema.inventory.quantity,
+              })
+              .from(schema.inventory)
+              .where(inArray(schema.inventory.productId, productIds))
+          : [];
 
       const inventoryMap = new Map<string, number>();
       for (const inv of inventoryList) {

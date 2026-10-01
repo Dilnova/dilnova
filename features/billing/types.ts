@@ -33,3 +33,30 @@ export type VendorBillingRegisterData = {
   premiumStatus: PremiumStatus;
   billingReceiptCount: number;
 };
+
+export interface POSReceiptItem {
+  name: string;
+  qty: number;
+  price: number;
+  priceCents?: number;
+}
+
+export interface POSReceiptData {
+  id: string;
+  branchName: string;
+  currency?: string | null;
+  items: POSReceiptItem[];
+  subtotal: number;
+  discountPercent: number;
+  discountAmount: number;
+  discountAmountCents?: number;
+  total: number;
+  totalCents?: number;
+  paymentMethod: "cash" | "card" | "other";
+  cashTendered: number | null;
+  cashTenderedCents?: number;
+  changeDue: number | null;
+  changeDueCents?: number;
+  customerName: string;
+  date: string;
+}

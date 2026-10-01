@@ -13,6 +13,7 @@ import {
 } from "@/features/facebook-shop/services/meta-api";
 import { MultiChannelPublishResult, SocialProductPayload } from "./types";
 import { MetaBatchPayload } from "@/features/facebook-shop/types";
+import { isTokenExpiredError } from "./services/token-health";
 
 interface DispatchParams {
   orgId: string;
@@ -155,9 +156,33 @@ export async function dispatchProductSocialPublishing({
               currency,
               brandName,
               customTemplate: integration.customPostTemplate,
+              userToken: integration.accessToken,
             });
 
             results.facebookFeed = fbResult;
+
+            if (fbResult.refreshedToken) {
+              await db
+                .update(schema.metaCatalogIntegrations)
+                .set({
+                  facebookPageAccessToken: fbResult.refreshedToken,
+                  updatedAt: new Date(),
+                })
+                .where(eq(schema.metaCatalogIntegrations.id, integration.id));
+              logger.info("Persisted auto-refreshed Facebook Page token to integration", { orgId });
+            }
+
+            if (!fbResult.success && isTokenExpiredError(fbResult.error)) {
+              await db
+                .update(schema.metaCatalogIntegrations)
+                .set({
+                  syncStatus: "token_expired",
+                  lastErrorMessage:
+                    "Facebook Page token expired during auto-posting. Please refresh token.",
+                  updatedAt: new Date(),
+                })
+                .where(eq(schema.metaCatalogIntegrations.id, integration.id));
+            }
 
             await db.insert(schema.metaCatalogSyncLogs).values({
               orgId,
@@ -213,6 +238,18 @@ export async function dispatchProductSocialPublishing({
           });
 
           results.instagramFeed = igResult;
+
+          if (!igResult.success && isTokenExpiredError(igResult.error)) {
+            await db
+              .update(schema.metaCatalogIntegrations)
+              .set({
+                syncStatus: "token_expired",
+                lastErrorMessage:
+                  "Instagram feed token expired during auto-posting. Please refresh token.",
+                updatedAt: new Date(),
+              })
+              .where(eq(schema.metaCatalogIntegrations.id, integration.id));
+          }
 
           await db.insert(schema.metaCatalogSyncLogs).values({
             orgId,
@@ -347,6 +384,18 @@ export async function dispatchProductSocialPublishing({
           });
 
           results.pinterestPin = pinRes;
+
+          if (!pinRes.success && isTokenExpiredError(pinRes.error)) {
+            await db
+              .update(schema.metaCatalogIntegrations)
+              .set({
+                syncStatus: "token_expired",
+                lastErrorMessage:
+                  "Pinterest access token expired during pin posting. Please generate a new token in developer portal.",
+                updatedAt: new Date(),
+              })
+              .where(eq(schema.metaCatalogIntegrations.id, integration.id));
+          }
 
           await db.insert(schema.metaCatalogSyncLogs).values({
             orgId,

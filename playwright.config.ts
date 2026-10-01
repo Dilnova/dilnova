@@ -11,6 +11,7 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://127.0.0.1:${PORT}`;
 const webServerEnv: Record<string, string> = {
   PORT,
   CI: process.env.CI || "true",
+  NEXT_PUBLIC_IS_E2E: "true",
   DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://ci:ci@localhost:5432/ci",
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
     process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_placeholder",
@@ -38,9 +39,13 @@ const webServerEnv: Record<string, string> = {
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA",
   TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY ?? "1x00000000000000000000AA",
   QSTASH_TOKEN: process.env.QSTASH_TOKEN ?? "dummy_qstash_token",
+  QSTASH_CURRENT_SIGNING_KEY:
+    process.env.QSTASH_CURRENT_SIGNING_KEY ?? "dummy_qstash_current_signing_key",
+  QSTASH_NEXT_SIGNING_KEY: process.env.QSTASH_NEXT_SIGNING_KEY ?? "dummy_qstash_next_signing_key",
   SENTRY_DSN: process.env.SENTRY_DSN ?? "https://public@sentry.example.com/1",
   NEXT_PUBLIC_SENTRY_DSN:
     process.env.NEXT_PUBLIC_SENTRY_DSN ?? "https://public@sentry.example.com/1",
+  CRON_SECRET: process.env.CRON_SECRET ?? "placeholder_cron_secret",
 };
 
 export default defineConfig({
@@ -79,6 +84,11 @@ export default defineConfig({
     {
       name: "public",
       testMatch: /rbac\/public-routes\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "business-catalog",
+      testMatch: /business\/catalog\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
     {

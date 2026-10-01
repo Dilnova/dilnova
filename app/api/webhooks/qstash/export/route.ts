@@ -14,6 +14,7 @@ import { getQStashClient } from "@/shared/security/qstash-client";
 import { logAuditAction } from "@/shared/audit/logger";
 
 import { z } from "zod/v3";
+import { env } from "@/shared/config/env";
 
 export const maxDuration = 300;
 
@@ -24,8 +25,8 @@ const exportPayloadSchema = z.object({
 });
 
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || "",
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+  url: env.upstash.redisUrl || "",
+  token: env.upstash.redisToken || "",
 });
 
 async function handler(req: NextRequest) {
@@ -121,8 +122,11 @@ async function handler(req: NextRequest) {
             sql`lower(trim(${schema.contactSubmissions.email})) = ${email.trim().toLowerCase()}`,
           );
       }
-    } catch {
-      // User might be deleted from clerk already or error
+    } catch (err) {
+      logger.warn(
+        "[QStashDataExport] Failed to retrieve user details from Clerk, proceeding with partial export",
+        { error: err, targetUserId },
+      );
     }
 
     // 3-6. Fetch Carts, Branch Members, Audit Logs, Reviews, Questions, Wishlists concurrently
@@ -227,9 +231,9 @@ async function handler(req: NextRequest) {
     }
 
     const appUrl =
-      process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      env.app.vercelEnv === "preview" && env.app.vercelUrl
+        ? `https://${env.app.vercelUrl}`
+        : env.app.url || "http://localhost:3000";
 
     // Publish cleanup job (delayed 24h)
     await getQStashClient().publishJSON({
@@ -255,7 +259,7 @@ async function handler(req: NextRequest) {
       </div>
     `;
 
-    const systemName = process.env.NEXT_PUBLIC_APP_NAME || "Platform";
+    const systemName = env.app.name || "Platform";
     const emailResult = await sendSystemHtmlEmail(
       adminEmail,
       `[${systemName}] GDPR Export Ready: ${targetUserId}`,

@@ -45,15 +45,26 @@ export default function ProductImageZoom({ imageUrl, alt }: ProductImageZoomProp
       className="relative w-full aspect-square bg-zinc-100 dark:bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-inner cursor-zoom-in group select-none"
     >
       {/* 1. Blurred Backdrop (Fills container, provides matching ambient background color) */}
-      <div className="absolute inset-0 w-full h-full scale-110 blur-2xl opacity-40 dark:opacity-20 pointer-events-none select-none">
-        <Image src={imageUrl} alt="" fill className="object-cover" sizes="100px" priority />
+      <div
+        className="absolute inset-0 w-full h-full scale-110 blur-2xl opacity-40 dark:opacity-20 pointer-events-none select-none"
+        aria-hidden="true"
+      >
+        <Image
+          src={imageUrl}
+          alt=""
+          fill
+          className="object-cover"
+          sizes="100px"
+          priority
+          aria-hidden="true"
+        />
       </div>
 
       {/* 2. Sharp Uncropped Zoomable Foreground Image */}
       <div className="w-full h-full transition-transform duration-100 ease-out" style={zoomStyle}>
         <Image
           src={imageUrl}
-          alt={alt}
+          alt={alt || "Product image"}
           fill
           className="object-contain p-4 transition-all duration-300"
           sizes="(max-width: 1024px) 100vw, 40vw"

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import * as Sentry from "@sentry/nextjs";
+import { logClientError } from "@/shared/errors/client-error";
 
 export default function VendorsDirectoryError({
   error,
@@ -12,7 +13,11 @@ export default function VendorsDirectoryError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[VendorsDirectoryError] Unhandled error loading directory:", error);
+    logClientError(
+      "[VendorsDirectoryError] Unhandled error loading directory:",
+      error,
+      error?.digest,
+    );
     Sentry.captureException(error);
   }, [error]);
 

@@ -11,33 +11,8 @@ import { ProductEditModal } from "./products/ProductEditModal";
 import ProductPriceDisplay from "@/shared/ui/currency/ProductPriceDisplay";
 import { DEFAULT_CURRENCY } from "@/shared/currency";
 
-export interface Product {
-  id: string;
-  name: string;
-  type: string;
-  price: number;
-  currency?: string | null;
-  description: string | null;
-  imageUrl: string | null;
-  orgId: string;
-  categoryId: string | null;
-  views: number;
-  categoryName: string | null;
-  createdAt: Date;
-  media?: { url: string; type: "image" | "video" }[] | null;
-  weightGrams?: number | null;
-  lengthCm?: number | null;
-  widthCm?: number | null;
-  heightCm?: number | null;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  parentId: string | null;
-  createdAt: Date;
-}
+import type { Product, Category } from "./products/types";
+export type { Product, Category };
 
 interface Organization {
   id: string;
@@ -209,7 +184,13 @@ export default function ProductsTab({
       <div className="flex items-start gap-3">
         <div className="w-14 h-14 rounded-lg bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 overflow-hidden relative">
           {p.imageUrl ? (
-            <Image src={p.imageUrl} alt={p.name} fill className="object-cover" sizes="56px" />
+            <Image
+              src={p.imageUrl}
+              alt={p.name || "Product image"}
+              fill
+              className="object-cover"
+              sizes="56px"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-xl opacity-30">
               📷

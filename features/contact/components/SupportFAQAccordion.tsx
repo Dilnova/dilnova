@@ -169,6 +169,26 @@ export default function SupportFAQAccordion({
     setFeedback((prev) => ({ ...prev, [faqId]: val }));
   };
 
+  const handleAccordionKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (filteredFaqs.length <= 1) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const nextIndex = (index + 1) % filteredFaqs.length;
+      document.getElementById(`faq-btn-${filteredFaqs[nextIndex].id}`)?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prevIndex = (index - 1 + filteredFaqs.length) % filteredFaqs.length;
+      document.getElementById(`faq-btn-${filteredFaqs[prevIndex].id}`)?.focus();
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      document.getElementById(`faq-btn-${filteredFaqs[0].id}`)?.focus();
+    } else if (e.key === "End") {
+      e.preventDefault();
+      document.getElementById(`faq-btn-${filteredFaqs[filteredFaqs.length - 1].id}`)?.focus();
+    }
+  };
+
   return (
     <div className="space-y-4">
       {filteredFaqs.length === 0 ? (
@@ -178,6 +198,7 @@ export default function SupportFAQAccordion({
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -195,7 +216,7 @@ export default function SupportFAQAccordion({
           </p>
         </div>
       ) : (
-        filteredFaqs.map((faq) => {
+        filteredFaqs.map((faq, index) => {
           const isOpen = expandedId === faq.id;
 
           return (
@@ -207,91 +228,114 @@ export default function SupportFAQAccordion({
                   : "bg-white dark:bg-zinc-900/60 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
               }`}
             >
-              <button
-                onClick={() => setExpandedId(isOpen ? null : faq.id)}
-                className="w-full text-left p-6 flex items-center justify-between gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-2xl"
-                aria-expanded={isOpen}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0" />
-                  <span className="font-semibold text-base text-zinc-900 dark:text-zinc-100">
-                    {faq.question}
-                  </span>
-                </div>
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-200 flex-shrink-0 ${
-                    isOpen
-                      ? "rotate-180 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400"
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
-                  }`}
+              <h3 className="text-base font-semibold m-0">
+                <button
+                  type="button"
+                  id={`faq-btn-${faq.id}`}
+                  onClick={() => setExpandedId(isOpen ? null : faq.id)}
+                  onKeyDown={(e) => handleAccordionKeyDown(e, index)}
+                  className="w-full text-left p-6 flex items-center justify-between gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-2xl cursor-pointer"
+                  aria-expanded={isOpen}
+                  aria-controls={`faq-panel-${faq.id}`}
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
+                  <span className="flex items-center gap-3">
+                    <span
+                      className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"
+                      aria-hidden="true"
                     />
-                  </svg>
-                </div>
-              </button>
+                    <span className="font-semibold text-base text-zinc-900 dark:text-zinc-100">
+                      {faq.question}
+                    </span>
+                  </span>
+                  <span
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-200 flex-shrink-0 ${
+                      isOpen
+                        ? "rotate-180 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400"
+                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </span>
+                </button>
+              </h3>
 
-              {isOpen && (
-                <div className="px-6 pb-6 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed space-y-4">
-                  <p>{faq.answer}</p>
+              <div
+                id={`faq-panel-${faq.id}`}
+                role="region"
+                aria-labelledby={`faq-btn-${faq.id}`}
+                hidden={!isOpen}
+                className={
+                  isOpen
+                    ? "px-6 pb-6 pt-2 border-t border-zinc-100 dark:border-zinc-800/80 text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed space-y-4"
+                    : "hidden"
+                }
+              >
+                <p>{faq.answer}</p>
 
-                  <div className="flex flex-wrap items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800/50 text-xs text-zinc-400 dark:text-zinc-500 gap-2">
-                    <div className="flex items-center gap-2">
-                      <span>Tags:</span>
-                      {faq.tags.map((t) => (
-                        <span
-                          key={t}
-                          className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium"
+                <div className="flex flex-wrap items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800/50 text-xs text-zinc-400 dark:text-zinc-500 gap-2">
+                  <div className="flex items-center gap-2">
+                    <span>Tags:</span>
+                    {faq.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-medium"
+                      >
+                        #{t}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span>Was this helpful?</span>
+                    {feedback[faq.id] ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          aria-hidden="true"
                         >
-                          #{t}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <span>Was this helpful?</span>
-                      {feedback[faq.id] ? (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                          Thank you!
-                        </span>
-                      ) : (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleFeedback(faq.id, "yes")}
-                            className="px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-colors"
-                          >
-                            👍 Yes
-                          </button>
-                          <button
-                            onClick={() => handleFeedback(faq.id, "no")}
-                            className="px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-colors"
-                          >
-                            👎 No
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        Thank you!
+                      </span>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleFeedback(faq.id, "yes")}
+                          aria-label={`Mark answer for "${faq.question}" as helpful`}
+                          className="px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          👍 Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFeedback(faq.id, "no")}
+                          aria-label={`Mark answer for "${faq.question}" as not helpful`}
+                          className="px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          👎 No
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           );
         })

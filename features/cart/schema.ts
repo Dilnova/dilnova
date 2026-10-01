@@ -5,6 +5,8 @@ export const cartLineSchema = z.object({
   id: uuidField,
   name: z.string(),
   price: z.number(),
+  currency: z.string().optional(),
+  baseCurrency: z.string().optional(),
   imageUrl: z.string().nullable(),
   quantity: z.number().int().min(1, "Quantity must be at least 1"),
   vendorName: z.string(),
@@ -74,4 +76,5 @@ export const syncedCartSchema = z.array(syncedCartItemSchema).max(100);
 
 export type CartLineInput = z.infer<typeof cartLineSchema>;
 export type CheckoutItemInput = z.infer<typeof checkoutItemSchema>;
+export type CheckoutInput = z.infer<typeof checkoutSchema>;
 export type SyncedCartItem = z.infer<typeof syncedCartItemSchema>;

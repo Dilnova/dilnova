@@ -1,5 +1,7 @@
 import type { Parcel, ShippingDestination, ShippingOrigin, ShippingRate } from "./carrier.types";
 import { getCarrier } from "./carrier-registry";
+import { logger } from "@/shared/logging/logger";
+import { env } from "@/shared/config/env";
 
 export interface RateEngineItem {
   id: string;
@@ -36,7 +38,7 @@ export function parseBranchToOrigin(
       city: "Colombo",
       state: "Western",
       postalCode: "00100",
-      country: process.env.SHIPPING_ORIGIN_COUNTRY ?? "LK",
+      country: env.shipping.originCountry,
       phone: branch?.phone ?? undefined,
       isFallback: true,
     };
@@ -52,7 +54,7 @@ export function parseBranchToOrigin(
     city: hasCity ? parts[1] : "Colombo",
     state: hasState ? parts[2] : "Western",
     postalCode: parts[3] || "00100",
-    country: parts[4] || (process.env.SHIPPING_ORIGIN_COUNTRY ?? "LK"),
+    country: parts[4] || env.shipping.originCountry,
     phone: branch.phone ?? undefined,
     isFallback: !hasCity,
   };
@@ -94,6 +96,7 @@ export async function computeMultiVendorRates(opts: {
     { id: string; name: string; address: string | null; phone: string | null }
   >;
   carrierId?: string;
+  selectedRateId?: string | null;
 }): Promise<{ quotes: VendorShippingQuote[]; totalShippingCents: number }> {
   const quotes: VendorShippingQuote[] = [];
 
@@ -101,7 +104,7 @@ export async function computeMultiVendorRates(opts: {
     const branch = opts.vendorBranchMap.get(vendorOrgId);
     const origin = parseBranchToOrigin(branch);
     if (origin.isFallback) {
-      console.warn(
+      logger.warn(
         `[rate-engine] Vendor org "${vendorOrgId}" branch address is missing city details. Defaulting origin to Colombo, Western for rate calculation.`,
       );
     }
@@ -113,22 +116,22 @@ export async function computeMultiVendorRates(opts: {
     // If API keys for EasyPost or Shippo exist and no specific carrier override was requested,
     // query them alongside SL Post to offer multi-carrier rates
     if (!opts.carrierId) {
-      if (process.env.EASYPOST_API_KEY) {
+      if (env.shipping.easypostApiKey) {
         try {
           const ep = getCarrier("easypost");
           const epRates = await ep.getRates(origin, opts.destination, [parcel]);
           rates = [...rates, ...epRates];
         } catch (err) {
-          console.warn("[rate-engine] Failed to fetch EasyPost rates:", err);
+          logger.warn("[rate-engine] Failed to fetch EasyPost rates", { error: err });
         }
       }
-      if (process.env.SHIPPO_API_KEY) {
+      if (env.shipping.shippoApiKey) {
         try {
           const shippo = getCarrier("shippo");
           const shippoRates = await shippo.getRates(origin, opts.destination, [parcel]);
           rates = [...rates, ...shippoRates];
         } catch (err) {
-          console.warn("[rate-engine] Failed to fetch Shippo rates:", err);
+          logger.warn("[rate-engine] Failed to fetch Shippo rates", { error: err });
         }
       }
     }
@@ -137,7 +140,10 @@ export async function computeMultiVendorRates(opts: {
       throw new Error(`No shipping rates available for vendor ${vendorOrgId}`);
     }
 
-    const selectedRate = rates[0];
+    const matchedRate = opts.selectedRateId
+      ? rates.find((r) => r.rateId === opts.selectedRateId)
+      : undefined;
+    const selectedRate = matchedRate || rates[0];
 
     quotes.push({
       vendorOrgId,

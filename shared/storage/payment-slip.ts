@@ -12,12 +12,15 @@ import {
 } from "@/shared/storage/admin-client";
 import {
   buildPaymentSlipStoragePath,
+  isAllowedImageMagicBytes,
   isLegacyPaymentSlipUrl,
   isPaymentSlipStoragePath,
 } from "@/shared/storage/payment-slip.shared";
 
 export {
   buildPaymentSlipStoragePath,
+  detectImageMimeTypeFromMagicBytes,
+  isAllowedImageMagicBytes,
   isLegacyPaymentSlipUrl,
   isPaymentSlipStoragePath,
   resolvePaymentSlipExtension,
@@ -29,6 +32,10 @@ export async function uploadPaymentSlipToStorage(input: {
   bytes: Buffer;
   contentType: PaymentSlipMimeType;
 }): Promise<string> {
+  if (!isAllowedImageMagicBytes(input.bytes, input.contentType)) {
+    throw new Error("Invalid image binary format: magic bytes do not match expected image type.");
+  }
+
   const extension = PAYMENT_SLIP_MIME_TO_EXT[input.contentType];
   const storagePath = buildPaymentSlipStoragePath(input.orderId, extension);
   const supabase = createSupabaseAdminClient();
@@ -130,7 +137,41 @@ export async function verifyPaymentSlipFileExists(storagePath: string): Promise<
   return data.some((file) => file.name === fileName);
 }
 
+export async function deletePaymentSlipFromStorage(storagePath: string): Promise<boolean> {
+  if (!isPaymentSlipStoragePath(storagePath)) {
+    return false;
+  }
+
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { error } = await supabase.storage.from(PAYMENT_SLIPS_BUCKET).remove([storagePath]);
+
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 export async function verifyPaymentSlipMagicBytes(storagePath: string): Promise<boolean> {
+  if (!isPaymentSlipStoragePath(storagePath)) {
+    return false;
+  }
+
+  // 1. Attempt direct download via admin client (resilient against network/signed URL restrictions)
+  try {
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase.storage.from(PAYMENT_SLIPS_BUCKET).download(storagePath);
+
+    if (!error && data) {
+      const sliceBlob = data.slice(0, 32);
+      const arrayBuffer = await sliceBlob.arrayBuffer();
+      return isAllowedImageMagicBytes(new Uint8Array(arrayBuffer));
+    }
+  } catch {
+    // Direct download might fail in tests or mock environments; fall through to signed URL approach
+  }
+
+  // 2. Fall back to fetching via signed URL with Range header
   const signedUrl = await createPaymentSlipSignedUrl(storagePath);
   if (!signedUrl) return false;
 
@@ -147,44 +188,7 @@ export async function verifyPaymentSlipMagicBytes(storagePath: string): Promise<
     if (!response.ok) return false;
 
     const buffer = await response.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-
-    // PNG: 89 50 4E 47 0D 0A 1A 0A
-    const isPng =
-      bytes[0] === 0x89 &&
-      bytes[1] === 0x50 &&
-      bytes[2] === 0x4e &&
-      bytes[3] === 0x47 &&
-      bytes[4] === 0x0d &&
-      bytes[5] === 0x0a &&
-      bytes[6] === 0x1a &&
-      bytes[7] === 0x0a;
-
-    // JPEG: FF D8 FF
-    const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-
-    // GIF: GIF87a or GIF89a
-    const isGif =
-      bytes[0] === 0x47 &&
-      bytes[1] === 0x49 &&
-      bytes[2] === 0x46 &&
-      bytes[3] === 0x38 &&
-      (bytes[4] === 0x37 || bytes[4] === 0x39) &&
-      bytes[5] === 0x61;
-
-    // WebP: RIFF ... WEBP
-    const isWebP =
-      bytes.length >= 12 &&
-      bytes[0] === 0x52 &&
-      bytes[1] === 0x49 &&
-      bytes[2] === 0x46 &&
-      bytes[3] === 0x46 &&
-      bytes[8] === 0x57 &&
-      bytes[9] === 0x45 &&
-      bytes[10] === 0x42 &&
-      bytes[11] === 0x50;
-
-    return isPng || isJpeg || isGif || isWebP;
+    return isAllowedImageMagicBytes(new Uint8Array(buffer));
   } catch {
     return false;
   }

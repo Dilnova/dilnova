@@ -146,10 +146,14 @@ export default function ProductBasicDetailsForm() {
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+          <label
+            htmlFor="product-category-selector"
+            className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400"
+          >
             Category
           </label>
           <CategorySelector
+            id="product-category-selector"
             categories={categories}
             selectedId={categoryId}
             onChange={setCategoryId}

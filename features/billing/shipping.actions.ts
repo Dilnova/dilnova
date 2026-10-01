@@ -5,6 +5,7 @@ import { db } from "@/shared/db/client";
 import { orgShippingRules } from "@/shared/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { ActionError } from "@/shared/errors/action-error";
 
 export interface ShippingRuleInput {
   zone: string;
@@ -25,7 +26,7 @@ export async function getVendorShippingRules() {
 export async function saveVendorShippingRules(rules: ShippingRuleInput[]) {
   const { userId, orgId } = await auth();
   if (!userId || !orgId) {
-    throw new Error("Unauthorized — vendor organization required");
+    throw new ActionError("Unauthorized — vendor organization required");
   }
 
   for (const rule of rules) {

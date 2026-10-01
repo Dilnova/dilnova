@@ -1,7 +1,7 @@
 import { db } from "@/shared/db/client";
 import * as schema from "@/shared/db/schema";
 import { buildCustomerOrderAccessWhere } from "@/features/orders/customer-ownership";
-import { eq, inArray, desc, and } from "drizzle-orm";
+import { eq, inArray, desc, and, sql } from "drizzle-orm";
 import { logger } from "@/shared/logging/logger";
 
 export async function getOrderById(id: string) {
@@ -66,8 +66,51 @@ export async function getPickupBranchName(branchId: string) {
   return rows[0]?.name ?? null;
 }
 
-export async function getUserWishlist(userId: string) {
-  return db.select().from(schema.wishlists).where(eq(schema.wishlists.userId, userId));
+/**
+ * Fetches the user's wishlist items with bounded pagination and descending date ordering.
+ * Enforces a bounded limit (default 100, max 200) to protect against memory exhaustion.
+ */
+export async function getUserWishlist(userId: string | null, limit = 100, offset = 0) {
+  if (!userId) {
+    return [];
+  }
+
+  const safeLimit = Math.max(1, Math.min(limit, 200));
+  const safeOffset = Math.max(0, offset);
+
+  try {
+    return await db
+      .select()
+      .from(schema.wishlists)
+      .where(eq(schema.wishlists.userId, userId))
+      .orderBy(desc(schema.wishlists.createdAt))
+      .limit(safeLimit)
+      .offset(safeOffset);
+  } catch (error) {
+    logger.error("Failed to fetch user wishlist", error, { userId });
+    return [];
+  }
+}
+
+/**
+ * Returns the total count of wishlist items for a user.
+ */
+export async function getUserWishlistCount(userId: string | null): Promise<number> {
+  if (!userId) {
+    return 0;
+  }
+
+  try {
+    const [countResult] = await db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(schema.wishlists)
+      .where(eq(schema.wishlists.userId, userId));
+
+    return countResult?.count ?? 0;
+  } catch (error) {
+    logger.error("Failed to count user wishlist", error, { userId });
+    return 0;
+  }
 }
 
 export async function getCustomerOrders(userId: string | null, limit = 50, offset = 0) {
@@ -136,14 +179,22 @@ export async function getWishlistProducts(productIds: string[]) {
     return [];
   }
 
-  return db
-    .select({
-      product: schema.products,
-      category: schema.categories,
-    })
-    .from(schema.products)
-    .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
-    .where(and(inArray(schema.products.id, productIds), eq(schema.products.status, "active")));
+  const safeProductIds = productIds.slice(0, 200);
+
+  try {
+    return await db
+      .select({
+        product: schema.products,
+        category: schema.categories,
+      })
+      .from(schema.products)
+      .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
+      .where(and(inArray(schema.products.id, safeProductIds), eq(schema.products.status, "active")))
+      .limit(safeProductIds.length);
+  } catch (error) {
+    logger.error("Failed to fetch wishlist products", error);
+    return [];
+  }
 }
 
 export async function getOrderItemsForOrders(orderIds: string[]) {

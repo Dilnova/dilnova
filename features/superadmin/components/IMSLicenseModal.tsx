@@ -47,11 +47,15 @@ export default function IMSLicenseModal({
     <AccessibleModal
       isOpen={true}
       onClose={onClose}
+      ariaLabelledBy="ims-license-modal-title"
       backdropClassName="bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
       className="bg-white dark:bg-zinc-950 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-md"
     >
       <div className="p-5 border-b border-zinc-100 dark:border-zinc-800">
-        <h3 className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
+        <h3
+          id="ims-license-modal-title"
+          className="text-sm font-extrabold text-zinc-900 dark:text-zinc-50"
+        >
           Manage IMS License: {managingOrg.name}
         </h3>
         <p className="text-[10px] text-zinc-450 mt-1 font-mono">Org ID: {managingOrg.id}</p>
