@@ -1,4 +1,15 @@
-import { pgTable, text, timestamp, integer, uuid, index, real, unique } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  integer,
+  uuid,
+  index,
+  real,
+  unique,
+  check,
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { products } from "./catalog";
 import { encryptedText } from "./custom-types";
 
@@ -39,6 +50,9 @@ export const inventory = pgTable(
     index("idx_inventory_product_id").on(t.productId),
     index("idx_inventory_supplier_id").on(t.supplierId),
     index("idx_inventory_sku").on(t.sku),
+    check("inventory_quantity_non_negative", sql`${t.quantity} >= 0`),
+    check("inventory_preordered_quantity_non_negative", sql`${t.preorderedQuantity} >= 0`),
+    check("inventory_incoming_quantity_non_negative", sql`${t.incomingQuantity} >= 0`),
   ],
 );
 
@@ -77,5 +91,9 @@ export const inventoryBalances = pgTable(
     lowStockThreshold: real("low_stock_threshold").default(1.0).notNull(),
     binLocation: text("bin_location"),
   },
-  (t) => [unique("unique_location_item").on(t.locationId, t.productId)],
+  (t) => [
+    unique("unique_location_item").on(t.locationId, t.productId),
+    check("inventory_balances_quantity_on_hand_non_negative", sql`${t.quantityOnHand} >= 0`),
+    check("inventory_balances_allocated_quantity_non_negative", sql`${t.allocatedQuantity} >= 0`),
+  ],
 );

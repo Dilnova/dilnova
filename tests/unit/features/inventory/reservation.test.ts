@@ -134,4 +134,36 @@ describe("Inventory Reservation", () => {
       });
     });
   });
+
+  describe("Database-level Negative Stock CHECK Constraints (Cat 14, Finding 14.3)", () => {
+    it("enforces non-negative quantity check constraints on schema.inventory", async () => {
+      const { getTableConfig } = await import("drizzle-orm/pg-core");
+      const schema = await import("@/shared/db/schema");
+      const config = getTableConfig(schema.inventory);
+      const checkNames = config.checks.map((c) => c.name);
+
+      expect(checkNames).toContain("inventory_quantity_non_negative");
+      expect(checkNames).toContain("inventory_preordered_quantity_non_negative");
+      expect(checkNames).toContain("inventory_incoming_quantity_non_negative");
+    });
+
+    it("enforces non-negative quantity check constraint on schema.branchInventory", async () => {
+      const { getTableConfig } = await import("drizzle-orm/pg-core");
+      const schema = await import("@/shared/db/schema");
+      const config = getTableConfig(schema.branchInventory);
+      const checkNames = config.checks.map((c) => c.name);
+
+      expect(checkNames).toContain("branch_inventory_quantity_non_negative");
+    });
+
+    it("enforces non-negative balances check constraints on schema.inventoryBalances", async () => {
+      const { getTableConfig } = await import("drizzle-orm/pg-core");
+      const schema = await import("@/shared/db/schema");
+      const config = getTableConfig(schema.inventoryBalances);
+      const checkNames = config.checks.map((c) => c.name);
+
+      expect(checkNames).toContain("inventory_balances_quantity_on_hand_non_negative");
+      expect(checkNames).toContain("inventory_balances_allocated_quantity_non_negative");
+    });
+  });
 });

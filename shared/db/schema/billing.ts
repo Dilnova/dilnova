@@ -9,6 +9,7 @@ import {
   boolean,
   unique,
   real,
+  check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { products } from "./catalog";
@@ -55,6 +56,7 @@ export const branchInventory = pgTable(
     unique("branch_inventory_branch_product_unique").on(t.branchId, t.productId),
     index("idx_branch_inventory_branch_id").on(t.branchId),
     index("idx_branch_inventory_product_id").on(t.productId),
+    check("branch_inventory_quantity_non_negative", sql`${t.quantity} >= 0`),
   ],
 );
 

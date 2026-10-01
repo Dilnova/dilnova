@@ -204,6 +204,13 @@
       "when": 1788250210259,
       "tag": "0028_concerned_magdalene",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1790841356544,
+      "tag": "0029_right_gamora",
+      "breakpoints": true
     }
   ]
 }
