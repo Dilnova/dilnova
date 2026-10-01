@@ -88,6 +88,7 @@ export async function calculateMultiVendorShippingRates(opts: {
     postalCode?: string | null;
     country?: string | null;
   };
+  selectedRateId?: string | null;
 }): Promise<ShippingRateCalculationResult> {
   try {
     const { computeMultiVendorRates } = await import("@/shared/shipping/rate-engine");
@@ -121,6 +122,7 @@ export async function calculateMultiVendorShippingRates(opts: {
         country: opts.destination.country || "LK",
       },
       vendorBranchMap,
+      selectedRateId: opts.selectedRateId,
     });
 
     return {
@@ -152,6 +154,7 @@ export async function calculateAndValidateCheckoutShipping(opts: {
   clientGrandTotal: number;
   serverSubtotal: number;
   totalTaxCents: number;
+  selectedRateId?: string | null;
 }): Promise<
   | { success: true; serverShippingCents: number; clientShippingCents: number }
   | { success: false; error: string }
@@ -171,6 +174,7 @@ export async function calculateAndValidateCheckoutShipping(opts: {
         postalCode: opts.destination.postalCode,
         country: opts.destination.country,
       },
+      selectedRateId: opts.selectedRateId,
     });
     serverShippingCents = calcResult.serverShippingCents;
     shippingCalculationError = calcResult.shippingCalculationError;

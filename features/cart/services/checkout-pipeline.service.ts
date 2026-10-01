@@ -250,6 +250,7 @@ export async function executeSimulatedCheckout(
       clientGrandTotal,
       serverSubtotal,
       totalTaxCents: taxBreakdown.totalTaxCents,
+      selectedRateId: input.selectedRateId,
     });
 
     if (!shippingResult.success) {
@@ -257,16 +258,18 @@ export async function executeSimulatedCheckout(
       return { success: false, error: shippingResult.error };
     }
 
-    const { clientShippingCents } = shippingResult;
+    const { serverShippingCents } = shippingResult;
 
-    // 11. Totals verification
+    // 11. Totals verification: Server-calculated total is authoritative
+    // Subtotal from catalog DB, tax from DB rules, shipping from rate engine.
     const checkoutTotals = calculateCheckoutTotals(
       serverSubtotal,
       fulfillmentOption.zeroShipping === true,
       taxBreakdown.totalTaxCents,
-      fulfillmentOption.zeroShipping ? null : clientShippingCents || null,
+      fulfillmentOption.zeroShipping ? 0 : serverShippingCents,
     );
 
+    // Anti-tampering check: verify client-submitted grand total matches authoritative server total
     if (clientGrandTotal !== checkoutTotals.grandTotal) {
       await releaseIdempotencyLock(effectiveIdempotencyKey);
       return {

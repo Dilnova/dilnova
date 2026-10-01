@@ -221,6 +221,113 @@ describe("Simulated Checkout Pipeline (Critical Revenue Path)", () => {
     }
   });
 
+  it("fails when client attempts to discount or manipulate shipping in grand total for delivery orders", async () => {
+    vi.mocked(resolveCheckoutOptionsForOrgs).mockResolvedValueOnce({
+      fulfillment: [
+        {
+          id: "standard_delivery",
+          label: "Standard Delivery",
+          requiresBranch: false,
+          zeroShipping: false,
+        },
+      ],
+      payment: [
+        {
+          id: "cod",
+          label: "Cash on Delivery",
+          requiresPickup: false,
+          requiresDelivery: true,
+        },
+      ],
+    });
+
+    vi.mocked(calculateAndValidateCheckoutShipping).mockResolvedValueOnce({
+      success: true,
+      serverShippingCents: 500,
+      clientShippingCents: 250,
+      destinationTier: "standard",
+    });
+
+    // Subtotal 5000 + Shipping 500 = Expected 5500. Attacker submits 5250.
+    const deliveryInput = {
+      ...baseInput,
+      fulfillmentMethod: "standard_delivery",
+      paymentMethod: "cod",
+      pickupBranchId: null,
+      shippingAddress: "123 Main Street",
+      shippingCity: "Colombo",
+      shippingState: "Western",
+      shippingPostalCode: "00100",
+      shippingCountry: "LK",
+      shippingPhone: "+94771234567",
+      totalAmount: 5250,
+    };
+
+    const result = await executeSimulatedCheckout(deliveryInput, mockCtx);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe(
+        "Checkout total mismatch. Expected 5500, received 5250. Please refresh your cart and try again.",
+      );
+    }
+  });
+
+  it("succeeds with authoritative server-calculated shipping and grand total when client total matches", async () => {
+    vi.mocked(resolveCheckoutOptionsForOrgs).mockResolvedValueOnce({
+      fulfillment: [
+        {
+          id: "standard_delivery",
+          label: "Standard Delivery",
+          requiresBranch: false,
+          zeroShipping: false,
+        },
+      ],
+      payment: [
+        {
+          id: "cod",
+          label: "Cash on Delivery",
+          requiresPickup: false,
+          requiresDelivery: true,
+        },
+      ],
+    });
+
+    vi.mocked(calculateAndValidateCheckoutShipping).mockResolvedValueOnce({
+      success: true,
+      serverShippingCents: 500,
+      clientShippingCents: 500,
+      destinationTier: "standard",
+    });
+
+    // Subtotal 5000 + Shipping 500 = Expected 5500
+    const deliveryInput = {
+      ...baseInput,
+      fulfillmentMethod: "standard_delivery",
+      paymentMethod: "cod",
+      pickupBranchId: null,
+      shippingAddress: "123 Main Street",
+      shippingCity: "Colombo",
+      shippingState: "Western",
+      shippingPostalCode: "00100",
+      shippingCountry: "LK",
+      shippingPhone: "+94771234567",
+      totalAmount: 5500,
+      selectedRateId: "slpost_domestic_parcel",
+    };
+
+    const result = await executeSimulatedCheckout(deliveryInput, mockCtx);
+    expect(result.success).toBe(true);
+    expect(executeCheckoutWithRetry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        checkoutTotals: expect.objectContaining({
+          subtotalAmount: 5000,
+          shippingAmount: 500,
+          grandTotal: 5500,
+        }),
+      }),
+    );
+  });
+
   it("completes checkout successfully and returns orderId", async () => {
     const result = await executeSimulatedCheckout(baseInput, mockCtx);
 

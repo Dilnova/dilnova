@@ -96,6 +96,7 @@ export async function computeMultiVendorRates(opts: {
     { id: string; name: string; address: string | null; phone: string | null }
   >;
   carrierId?: string;
+  selectedRateId?: string | null;
 }): Promise<{ quotes: VendorShippingQuote[]; totalShippingCents: number }> {
   const quotes: VendorShippingQuote[] = [];
 
@@ -139,7 +140,10 @@ export async function computeMultiVendorRates(opts: {
       throw new Error(`No shipping rates available for vendor ${vendorOrgId}`);
     }
 
-    const selectedRate = rates[0];
+    const matchedRate = opts.selectedRateId
+      ? rates.find((r) => r.rateId === opts.selectedRateId)
+      : undefined;
+    const selectedRate = matchedRate || rates[0];
 
     quotes.push({
       vendorOrgId,
