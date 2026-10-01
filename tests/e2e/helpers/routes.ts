@@ -1,5 +1,16 @@
 /** Public storefront routes — no auth required. */
-export const PUBLIC_ROUTES = ["/", "/products", "/cart", "/contact"] as const;
+export const PUBLIC_ROUTES = [
+  "/",
+  "/products",
+  "/cart",
+  "/contact",
+  "/privacy",
+  "/terms",
+  "/cookie",
+  "/refund",
+  "/privacy-policy",
+  "/terms-of-service",
+] as const;
 
 /** Routes guarded by Clerk middleware + layout role checks. */
 export const PROTECTED_ROUTES = {

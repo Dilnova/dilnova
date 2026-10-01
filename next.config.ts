@@ -97,18 +97,57 @@ const nextConfig: NextConfig = {
   },
 
   async redirects() {
+    const legalRedirects = [
+      {
+        source: "/terms-and-conditions",
+        destination: "/terms",
+        permanent: true,
+      },
+      {
+        source: "/tos",
+        destination: "/terms",
+        permanent: true,
+      },
+      {
+        source: "/cookie-policy",
+        destination: "/cookie",
+        permanent: true,
+      },
+      {
+        source: "/cookies",
+        destination: "/cookie",
+        permanent: true,
+      },
+      {
+        source: "/refund-policy",
+        destination: "/refund",
+        permanent: true,
+      },
+      {
+        source: "/return-policy",
+        destination: "/refund",
+        permanent: true,
+      },
+      {
+        source: "/returns",
+        destination: "/refund",
+        permanent: true,
+      },
+    ];
+
     let canonicalHost: string | null = null;
     try {
       canonicalHost = new URL(DEFAULT_APP_URL).hostname;
     } catch {
-      return [];
+      return legalRedirects;
     }
 
     if (!canonicalHost.startsWith("www.") || canonicalHost.includes("localhost")) {
-      return [];
+      return legalRedirects;
     }
 
     return [
+      ...legalRedirects,
       {
         source: "/((?!google.*\\.html).*)",
         has: [{ type: "host" as const, value: "dilnova.pp.ua" }],
