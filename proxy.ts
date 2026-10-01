@@ -1,16 +1,6 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
-
-const PROTECTED_PREFIXES = ["/admin", "/vendor", "/superadmin", "/customer"] as const;
-
-function isProtectedPath(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-}
-
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import type { NextFetchEvent } from "next/server";
+import type { NextRequest, NextFetchEvent } from "next/server";
 import { logger } from "@/shared/logging/logger";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
@@ -25,6 +15,93 @@ import {
   shouldExcludeEval,
   isStrictCspRequested,
 } from "@/shared/security/csp";
+
+/**
+ * Exact static paths that are publicly accessible without authentication.
+ */
+export const PUBLIC_EXACT_ROUTES = [
+  "/",
+  "/favicon.ico",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/manifest.webmanifest",
+  "/site.webmanifest",
+] as const;
+
+/**
+ * Path prefixes that are publicly accessible without authentication.
+ * Any route NOT matching PUBLIC_EXACT_ROUTES or PUBLIC_ROUTE_PREFIXES is denied by default.
+ */
+export const PUBLIC_ROUTE_PREFIXES = [
+  // Storefront catalog & customer public pages
+  "/products",
+  "/vendors",
+  "/brand",
+  "/cart",
+  "/contact",
+  "/support",
+
+  // Dilstar brand alias routes (multi-domain routing before rewrite)
+  "/hardware",
+  "/tech",
+  "/nursery",
+  "/services",
+
+  // Authentication & Error routes
+  "/sign-in",
+  "/sign-up",
+  "/unauthorized",
+
+  // Statutory Legal & Regulatory Compliance pages & aliases
+  "/privacy",
+  "/privacy-policy",
+  "/terms",
+  "/terms-of-service",
+  "/terms-and-conditions",
+  "/tos",
+  "/cookie",
+  "/cookies",
+  "/cookie-policy",
+  "/refund",
+  "/refund-policy",
+  "/return-policy",
+  "/returns",
+
+  // Standards metadata & discovery
+  "/.well-known",
+  "/sitemap",
+
+  // Public API endpoints & webhooks (route-level token/signature validation)
+  "/api/health",
+  "/api/csp-report",
+  "/api/feeds/google-merchant",
+  "/api/locations",
+  "/api/shipping/rates",
+  "/api/webhooks/clerk",
+  "/api/webhooks/qstash",
+  "/api/cron",
+] as const;
+
+/**
+ * Determine whether a given pathname is explicitly public.
+ */
+export function isPublicRoute(pathname: string): boolean {
+  const normalized =
+    pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  if (PUBLIC_EXACT_ROUTES.includes(normalized as (typeof PUBLIC_EXACT_ROUTES)[number])) {
+    return true;
+  }
+  return PUBLIC_ROUTE_PREFIXES.some(
+    (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`),
+  );
+}
+
+/**
+ * Deny-by-default route enforcement: Any path that is not explicitly public is protected.
+ */
+export function isProtectedPath(pathname: string): boolean {
+  return !isPublicRoute(pathname);
+}
 
 const edgeLimiterCache = new Map<string, Ratelimit>();
 
@@ -126,6 +203,14 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   if (isProtectedPath(req.nextUrl.pathname)) {
     const authState = await auth();
     if (!authState.userId) {
+      if (req.nextUrl.pathname.startsWith("/api/")) {
+        return applySecurityHeaders(
+          new NextResponse(JSON.stringify({ error: "Unauthorized: Authentication required." }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      }
       return authState.redirectToSignIn({ returnBackUrl: req.url });
     }
   }
@@ -205,12 +290,6 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 });
 
 export default async function proxy(request: NextRequest, event: NextFetchEvent) {
-  // 0. Health check endpoint early bypass (prevents Auth middleware 302 redirects and bot checks)
-  const pathname = request.nextUrl.pathname;
-  if (pathname === "/api/health" || pathname.startsWith("/api/health/")) {
-    return NextResponse.next();
-  }
-
   // 1. WAF Edge Security Protections
   const userAgent = request.headers.get("user-agent") || "";
   const BLOCKED_USER_AGENTS = [
