@@ -22,6 +22,7 @@ import {
   createPaymentSlipSignedUploadUrl,
   verifyPaymentSlipFileExists,
   verifyPaymentSlipMagicBytes,
+  deletePaymentSlipFromStorage,
   isPaymentSlipStoragePath,
 } from "@/shared/storage/payment-slip";
 import { PAYMENT_SLIP_MAX_BYTES, PAYMENT_SLIP_ALLOWED_MIME_TYPES } from "@/shared/storage/config";
@@ -184,6 +185,19 @@ export const submitPaymentSlipPathAction = authenticatedAction
 
       const hasValidMagicBytes = await verifyPaymentSlipMagicBytes(parsedInput.storagePath);
       if (!hasValidMagicBytes) {
+        try {
+          await deletePaymentSlipFromStorage(parsedInput.storagePath);
+        } catch (cleanupError) {
+          logger.warn("Failed to delete corrupted payment slip from storage", {
+            storagePath: parsedInput.storagePath,
+            error: cleanupError,
+          });
+        }
+        logger.warn("Security: Rejected payment slip upload due to invalid magic bytes", {
+          orderId: order.id,
+          userId,
+          storagePath: parsedInput.storagePath,
+        });
         throw new ActionError(
           "Uploaded file appears to be corrupted or is not a valid image format.",
         );
