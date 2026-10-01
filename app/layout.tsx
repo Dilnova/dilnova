@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import React from "react";
 import { ClerkProvider } from "@clerk/nextjs";
 import Link from "next/link";
 import ConsentTracking from "@/shared/ui/ConsentTracking";
 import CookieConsent from "@/shared/ui/CookieConsent";
+import CookiePreferencesButton from "@/shared/ui/CookiePreferencesButton";
 import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 import { runWithCorrelationId } from "@/shared/security/async-context";
 import SmartHeader from "@/components/layout/SmartHeader";
@@ -198,6 +199,10 @@ export default async function RootLayout({
     const initialRatesMap = await getExchangeRatesMap();
 
     const headersList = await headers();
+    const cookieStore = await cookies();
+    const consentCookie = cookieStore.get("dilnova_cookie_consent")?.value ?? null;
+    const initialConsent = consentCookie === "accepted";
+
     // Enterprise-grade dynamic Beta Lock check
     const isBetaLocked = (await getSystemSetting("enable_beta_lock", "false")) === "true";
     const isCI =
@@ -367,6 +372,7 @@ export default async function RootLayout({
                             >
                               Cookie Policy
                             </Link>
+                            <CookiePreferencesButton />
                             <Link
                               href="/terms"
                               className="hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
@@ -413,8 +419,8 @@ export default async function RootLayout({
                 theme="system"
               />
             </ConfirmProvider>
-            <ConsentTracking />
-            <CookieConsent />
+            <ConsentTracking initialConsent={initialConsent} />
+            <CookieConsent initialConsent={consentCookie} />
           </ClerkProvider>
         </body>
       </html>

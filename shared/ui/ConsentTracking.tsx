@@ -3,27 +3,31 @@
 import { useState, useEffect } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import {
+  COOKIE_CONSENT_EVENT,
+  getClientCookieConsent,
+  hasAnalyticsConsent,
+} from "@/shared/cookies/consent";
 
 export default function ConsentTracking({ initialConsent }: { initialConsent?: boolean }) {
   const [consent, setConsent] = useState<boolean>(!!initialConsent);
 
   useEffect(() => {
-    const checkConsent = () => {
-      const match = document.cookie.match(new RegExp("(^| )dilnova_cookie_consent=([^;]+)"));
-      setConsent(match ? match[2] === "accepted" : false);
+    const updateConsent = () => {
+      const current = getClientCookieConsent();
+      setConsent(hasAnalyticsConsent(current));
     };
 
-    // Check initial consent state on mount
-    checkConsent();
+    // Synchronize on client mount in case cookie state changed since SSR
+    updateConsent();
 
-    // Listen for consent preference changes
-    window.addEventListener("cookie-consent-changed", checkConsent);
+    window.addEventListener(COOKIE_CONSENT_EVENT, updateConsent);
     return () => {
-      window.removeEventListener("cookie-consent-changed", checkConsent);
+      window.removeEventListener(COOKIE_CONSENT_EVENT, updateConsent);
     };
   }, []);
 
-  if (consent !== true) {
+  if (!consent) {
     return null;
   }
 

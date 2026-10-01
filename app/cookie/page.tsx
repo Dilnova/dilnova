@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getSystemSetting } from "@/shared/platform/settings";
+import CookiePreferencesButton from "@/shared/ui/CookiePreferencesButton";
 
 export async function generateMetadata(): Promise<Metadata> {
   const systemName = await getSystemSetting("system_name", "Dilnova");
@@ -100,10 +101,13 @@ export default async function CookiePolicy() {
               3. Managing Your Preferences
             </h2>
             <p>
-              You can review or change your cookie preferences at any time by clearing your browser
-              cookies for this site, which will prompt our Cookie Consent banner to reappear on your
-              next visit.
+              You can review or change your cookie preferences at any time. Click the button below
+              to adjust your settings, or use the &quot;Cookie Settings&quot; link in the website
+              footer.
             </p>
+            <div className="pt-2">
+              <CookiePreferencesButton variant="button" />
+            </div>
           </section>
         </div>
       </div>
