@@ -139,11 +139,7 @@ export const getCartCheckoutOptionsAction = authenticatedAction
   });
 
 export const simulatedCheckoutAction = authenticatedAction
-  .schema(
-    checkoutSchema.extend({
-      idempotencyKey: z.string().uuid().optional().nullable(),
-    }),
-  )
+  .schema(checkoutSchema)
   .action(async ({ parsedInput, ctx }) => {
     const result = await executeSimulatedCheckout(parsedInput, ctx);
     if (!result.success) {

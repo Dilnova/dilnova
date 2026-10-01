@@ -77,6 +77,7 @@ describe("Cart safe actions error handling (§5 API Readiness)", () => {
         totalAmount: 1500,
         fulfillmentMethod: "store_pickup",
         paymentMethod: "bank_transfer",
+        idempotencyKey: "a0000000-0000-4000-8000-000000000001",
       });
 
       expect(result.data).toBeUndefined();
@@ -108,6 +109,7 @@ describe("Cart safe actions error handling (§5 API Readiness)", () => {
         totalAmount: 1500,
         fulfillmentMethod: "store_pickup",
         paymentMethod: "bank_transfer",
+        idempotencyKey: "a0000000-0000-4000-8000-000000000001",
       });
 
       expect(result.serverError).toBeUndefined();
@@ -115,6 +117,53 @@ describe("Cart safe actions error handling (§5 API Readiness)", () => {
       if (result.data && "orderId" in result.data) {
         expect(result.data.orderId).toBe("ord_12345");
       }
+    });
+
+    it("rejects checkout when idempotencyKey is missing or invalid (Finding 14.2)", async () => {
+      // Missing idempotencyKey
+      const missingKeyResult = await simulatedCheckoutAction({
+        customerName: "Jane Doe",
+        customerEmail: "jane@example.com",
+        items: [
+          {
+            id: "a0000000-0000-0000-0000-000000000001",
+            quantity: 1,
+            price: 1500,
+            vendorName: "Vendor A",
+            name: "Item 1",
+            type: "product",
+          },
+        ],
+        totalAmount: 1500,
+        fulfillmentMethod: "store_pickup",
+        paymentMethod: "bank_transfer",
+      } as never);
+
+      expect(missingKeyResult.data).toBeUndefined();
+      expect(missingKeyResult.validationErrors?.idempotencyKey).toBeDefined();
+
+      // Invalid non-UUID idempotencyKey
+      const invalidKeyResult = await simulatedCheckoutAction({
+        customerName: "Jane Doe",
+        customerEmail: "jane@example.com",
+        items: [
+          {
+            id: "a0000000-0000-0000-0000-000000000001",
+            quantity: 1,
+            price: 1500,
+            vendorName: "Vendor A",
+            name: "Item 1",
+            type: "product",
+          },
+        ],
+        totalAmount: 1500,
+        fulfillmentMethod: "store_pickup",
+        paymentMethod: "bank_transfer",
+        idempotencyKey: "not-a-valid-uuid",
+      });
+
+      expect(invalidKeyResult.data).toBeUndefined();
+      expect(invalidKeyResult.validationErrors?.idempotencyKey).toBeDefined();
     });
   });
 
