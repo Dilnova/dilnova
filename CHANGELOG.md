@@ -1,3 +1,9 @@
+## [1.11.1](https://github.com/Dilnova/dilnova/compare/v1.11.0...v1.11.1) (2026-10-02)
+
+### Bug Fixes
+
+- **env:** remove VERCEL environment variable for accurate testing ([b87c33e](https://github.com/Dilnova/dilnova/commit/b87c33e37e3fbe19e3763f0904fda0985509b897))
+
 # [1.11.0](https://github.com/Dilnova/dilnova/compare/v1.10.0...v1.11.0) (2026-10-02)
 
 ### Features
