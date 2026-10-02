@@ -278,7 +278,7 @@ export default async function RootLayout({
               }).replace(/</g, "\\u003c"),
             }}
           />
-          <ClerkProvider>
+          <ClerkProvider dynamic>
             <ConfirmProvider>
               <CurrencyProvider initialRatesMap={initialRatesMap}>
                 <CartProvider>
