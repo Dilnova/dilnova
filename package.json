@@ -43,6 +43,7 @@
     "db:restore": "node scripts/restore-db.mjs",
     "db:setup-role": "node scripts/setup-db-role.mjs",
     "pre-launch": "node scripts/pre-launch-check.mjs",
+    "seed:demo": "tsx scripts/seed-dilnova-demo.ts",
     "prepare": "node scripts/setup-git-hooks.mjs"
   },
   "dependencies": {
