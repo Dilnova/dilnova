@@ -158,6 +158,7 @@ describe("shared/config/env", () => {
       process.env.NODE_ENV = "production";
       process.env.VERCEL_ENV = "preview";
       delete process.env.NEXT_PHASE;
+      delete process.env.VERCEL;
 
       // Fully populated valid base env
       process.env.DATABASE_URL =
