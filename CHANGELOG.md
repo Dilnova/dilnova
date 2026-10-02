@@ -1,3 +1,9 @@
+## [1.11.2](https://github.com/Dilnova/dilnova/compare/v1.11.1...v1.11.2) (2026-10-02)
+
+### Bug Fixes
+
+- **env:** reset process.env in tests to prevent leakage of Vercel build variables ([2cba4de](https://github.com/Dilnova/dilnova/commit/2cba4dec0baa2cf281eed47e18df3da033900be1))
+
 ## [1.11.1](https://github.com/Dilnova/dilnova/compare/v1.11.0...v1.11.1) (2026-10-02)
 
 ### Bug Fixes
