@@ -155,40 +155,40 @@ describe("shared/config/env", () => {
     });
 
     it("throws when preview deployment attempts to use production database", () => {
-      process.env.NODE_ENV = "production";
-      process.env.VERCEL_ENV = "preview";
-      delete process.env.NEXT_PHASE;
-      delete process.env.VERCEL;
-
-      // Fully populated valid base env
-      process.env.DATABASE_URL =
-        "postgresql://postgres:pass@db.jnsfgoafayvlukjkqzjm.supabase.co:5432/postgres";
-      process.env.PII_ENCRYPTION_KEY = "test_pii_encryption_key_value_32_chars";
-      process.env.CLERK_SECRET_KEY = "sk_live_valid_key";
-      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_valid_key";
-      process.env.NEXT_PUBLIC_APP_URL = "https://preview.dilnova.com";
-      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "cloud";
-      process.env.CLOUDINARY_API_KEY = "key";
-      process.env.CLOUDINARY_API_SECRET = "secret";
-      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://preview.supabase.co";
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_key";
-      process.env.SUPABASE_SERVICE_ROLE_KEY = "sb_secret";
-      process.env.UPSTASH_REDIS_REST_URL = "https://redis.upstash.io";
-      process.env.UPSTASH_REDIS_REST_TOKEN = "token";
-      process.env.QSTASH_TOKEN = "qstash_token";
-      process.env.QSTASH_CURRENT_SIGNING_KEY = "sig_current";
-      process.env.QSTASH_NEXT_SIGNING_KEY = "sig_next";
-      process.env.HEALTH_CHECK_SECRET = "health_secret";
-      process.env.CRON_SECRET = "cron_secret";
-      process.env.SUPERADMIN_USER_IDS = "user_1";
-      process.env.CLERK_WEBHOOK_SECRET = "whsec_key";
-      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "turnstile_site";
-      process.env.TURNSTILE_SECRET_KEY = "turnstile_secret";
-      process.env.SMTP_USER = "smtp_user";
-      process.env.SMTP_PASSWORD = "smtp_pass";
-      process.env.EMAIL_FROM_ADDRESS = "support@dilnova.com";
-      process.env.EMAIL_FROM_NAME = "Dilnova";
-      process.env.SENTRY_DSN = "https://public@sentry.example.com/1";
+      // Start from a completely clean env to prevent Vercel build vars
+      // (e.g. DATABASE_POOL_SIZE, SMTP_PORT) from leaking into schema validation.
+      process.env = {
+        NODE_ENV: "production",
+        VERCEL_ENV: "preview",
+        DATABASE_URL:
+          "postgresql://postgres:pass@db.jnsfgoafayvlukjkqzjm.supabase.co:5432/postgres",
+        PII_ENCRYPTION_KEY: "test_pii_encryption_key_value_32_chars",
+        CLERK_SECRET_KEY: "sk_live_valid_key",
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_live_valid_key",
+        NEXT_PUBLIC_APP_URL: "https://preview.dilnova.com",
+        NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: "cloud",
+        CLOUDINARY_API_KEY: "key",
+        CLOUDINARY_API_SECRET: "secret",
+        NEXT_PUBLIC_SUPABASE_URL: "https://preview.supabase.co",
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_key",
+        SUPABASE_SERVICE_ROLE_KEY: "sb_secret",
+        UPSTASH_REDIS_REST_URL: "https://redis.upstash.io",
+        UPSTASH_REDIS_REST_TOKEN: "token",
+        QSTASH_TOKEN: "qstash_token",
+        QSTASH_CURRENT_SIGNING_KEY: "sig_current",
+        QSTASH_NEXT_SIGNING_KEY: "sig_next",
+        HEALTH_CHECK_SECRET: "health_secret",
+        CRON_SECRET: "cron_secret",
+        SUPERADMIN_USER_IDS: "user_1",
+        CLERK_WEBHOOK_SECRET: "whsec_key",
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: "turnstile_site",
+        TURNSTILE_SECRET_KEY: "turnstile_secret",
+        SMTP_USER: "smtp_user",
+        SMTP_PASSWORD: "smtp_pass",
+        EMAIL_FROM_ADDRESS: "support@dilnova.com",
+        EMAIL_FROM_NAME: "Dilnova",
+        SENTRY_DSN: "https://public@sentry.example.com/1",
+      } as unknown as NodeJS.ProcessEnv;
 
       expect(() => validateServerEnv()).toThrow(
         "Preview deployments must not use the production DATABASE_URL",
