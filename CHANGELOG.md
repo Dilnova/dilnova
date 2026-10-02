@@ -1,3 +1,9 @@
+# [1.12.0](https://github.com/Dilnova/dilnova/compare/v1.11.2...v1.12.0) (2026-10-02)
+
+### Features
+
+- **deploy:** streamline Vercel deployment process and add demo seeding script ([99dac1a](https://github.com/Dilnova/dilnova/commit/99dac1aa801fca0941e7e90d708a318e076f0139))
+
 ## [1.11.2](https://github.com/Dilnova/dilnova/compare/v1.11.1...v1.11.2) (2026-10-02)
 
 ### Bug Fixes
