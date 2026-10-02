@@ -1,3 +1,9 @@
+# [1.11.0](https://github.com/Dilnova/dilnova/compare/v1.10.0...v1.11.0) (2026-10-02)
+
+### Features
+
+- **auth:** enable dynamic prop for ClerkProvider in RootLayout ([1ac02a5](https://github.com/Dilnova/dilnova/commit/1ac02a505ad413c4c60ee642e91bdcf18b70cba9))
+
 # [1.10.0](https://github.com/Dilnova/dilnova/compare/v1.9.0...v1.10.0) (2026-10-01)
 
 ### Bug Fixes
