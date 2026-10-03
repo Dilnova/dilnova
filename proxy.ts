@@ -243,7 +243,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
 
   if (isDilstarDomain) {
     const targetPath = brandRouteMap[normalizedPath] || req.nextUrl.pathname;
-    const targetBase = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+    const targetBase = DEFAULT_APP_URL;
     const targetUrl = new URL(targetPath, targetBase);
     targetUrl.search = req.nextUrl.search;
     return NextResponse.redirect(targetUrl, 307);
@@ -440,7 +440,7 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
 
     const normalizedPath = request.nextUrl.pathname.replace(/\/$/, "") || "/";
     const targetPath = brandRouteMap[normalizedPath] || request.nextUrl.pathname;
-    const targetBase = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+    const targetBase = DEFAULT_APP_URL;
     const targetUrl = new URL(targetPath, targetBase);
     targetUrl.search = request.nextUrl.search;
 
