@@ -15,6 +15,7 @@ import {
   shouldExcludeEval,
   isStrictCspRequested,
 } from "@/shared/security/csp";
+import { DEFAULT_APP_URL } from "@/shared/platform/brand";
 
 /**
  * Exact static paths that are publicly accessible without authentication.
@@ -226,7 +227,7 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     req.headers.get("cf-ipcountry")?.trim() || req.headers.get("x-country")?.trim() || "XX";
   requestHeaders.set("x-country", country);
 
-  // Host detection for multi-domain routing
+  // Host detection for multi-domain routing: redirect dilstar.pp.ua to primary dilnova.pp.ua domain
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
   const isDilstarDomain = host.includes("dilstar.pp.ua");
 
@@ -239,11 +240,13 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
   };
 
   const normalizedPath = req.nextUrl.pathname.replace(/\/$/, "") || "/";
-  let rewrittenUrl: URL | null = null;
 
-  if (isDilstarDomain && brandRouteMap[normalizedPath]) {
-    rewrittenUrl = req.nextUrl.clone();
-    rewrittenUrl.pathname = brandRouteMap[normalizedPath];
+  if (isDilstarDomain) {
+    const targetPath = brandRouteMap[normalizedPath] || req.nextUrl.pathname;
+    const targetBase = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+    const targetUrl = new URL(targetPath, targetBase);
+    targetUrl.search = req.nextUrl.search;
+    return NextResponse.redirect(targetUrl, 307);
   }
 
   // Define CSP first to attach to both request and response
@@ -268,17 +271,11 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     requestHeaders.set("Content-Security-Policy-Report-Only", reportOnlyCsp);
   }
 
-  const response = rewrittenUrl
-    ? NextResponse.rewrite(rewrittenUrl, {
-        request: {
-          headers: requestHeaders,
-        },
-      })
-    : NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   response.headers.set("x-request-id", requestId);
   response.headers.set("x-country", country);
@@ -426,6 +423,29 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
   const edgeRateLimitResponse = await checkEdgeRateLimit(request);
   if (edgeRateLimitResponse) {
     return edgeRateLimitResponse;
+  }
+
+  // 1.6. Multi-Domain Edge Redirect: dilstar.pp.ua -> dilnova.pp.ua (Option 1)
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+  const isDilstarDomain = host.includes("dilstar.pp.ua");
+
+  if (isDilstarDomain) {
+    const brandRouteMap: Record<string, string> = {
+      "/": "/brand/dilstar",
+      "/hardware": "/vendors/dilstar-hardware",
+      "/tech": "/vendors/dilstar-tech",
+      "/nursery": "/vendors/dilstar-nursery",
+      "/services": "/vendors/dilstar-services",
+    };
+
+    const normalizedPath = request.nextUrl.pathname.replace(/\/$/, "") || "/";
+    const targetPath = brandRouteMap[normalizedPath] || request.nextUrl.pathname;
+    const targetBase = process.env.NEXT_PUBLIC_APP_URL || DEFAULT_APP_URL;
+    const targetUrl = new URL(targetPath, targetBase);
+    targetUrl.search = request.nextUrl.search;
+
+    const redirectResponse = NextResponse.redirect(targetUrl, 307);
+    return applySecurityHeaders(redirectResponse);
   }
 
   // 2. CSRF protection:
