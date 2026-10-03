@@ -49,6 +49,13 @@ vi.mock("next/server", async (importOriginal) => {
     static rewrite(destination: URL | string, init?: { request?: { headers?: Headers } }) {
       return { headers: init?.request?.headers || new Headers(), rewrittenUrl: destination };
     }
+    static redirect(destination: URL | string, status = 307) {
+      const headers = new Headers();
+      const location = typeof destination === "string" ? destination : destination.toString();
+      headers.set("Location", location);
+      const res = new MockNextResponse("", { status, headers });
+      return Object.assign(res, { redirectUrl: location });
+    }
   }
   return {
     ...original,
@@ -172,9 +179,9 @@ describe("Proxy Middleware CSRF Protection", () => {
       method: "POST",
       headers: {
         "next-action": "action-id",
-        origin: "https://dilstar.pp.ua",
+        origin: "https://dilnova.pp.ua",
         host: "internal-load-balancer",
-        "x-forwarded-host": "dilstar.pp.ua",
+        "x-forwarded-host": "dilnova.pp.ua",
       },
     });
     const result = await proxy(request, mockEvent);
@@ -453,8 +460,8 @@ describe("Proxy Middleware Edge Rate Limiting Protection", () => {
   });
 });
 
-describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
-  it("rewrites root / to /brand/dilstar when host is dilstar.pp.ua", async () => {
+describe("Proxy Multi-Domain Edge Redirect (dilstar.pp.ua -> dilnova.pp.ua)", () => {
+  it("redirects root / to https://www.dilnova.pp.ua/brand/dilstar when host is dilstar.pp.ua", async () => {
     const request = new NextRequest("https://dilstar.pp.ua/", {
       method: "GET",
       headers: {
@@ -462,14 +469,15 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
       },
     });
     const result = (await proxy(request, mockEvent)) as unknown as {
-      rewrittenUrl?: URL;
+      status: number;
       headers: Headers;
+      redirectUrl?: string;
     };
-    expect(result.rewrittenUrl).toBeDefined();
-    expect(result.rewrittenUrl?.pathname).toBe("/brand/dilstar");
+    expect(result.status).toBe(307);
+    expect(result.headers.get("Location")).toBe("https://www.dilnova.pp.ua/brand/dilstar");
   });
 
-  it("rewrites /hardware to /vendors/dilstar-hardware when host is dilstar.pp.ua", async () => {
+  it("redirects /hardware to https://www.dilnova.pp.ua/vendors/dilstar-hardware when host is dilstar.pp.ua", async () => {
     const request = new NextRequest("https://dilstar.pp.ua/hardware", {
       method: "GET",
       headers: {
@@ -477,14 +485,16 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
       },
     });
     const result = (await proxy(request, mockEvent)) as unknown as {
-      rewrittenUrl?: URL;
+      status: number;
       headers: Headers;
     };
-    expect(result.rewrittenUrl).toBeDefined();
-    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-hardware");
+    expect(result.status).toBe(307);
+    expect(result.headers.get("Location")).toBe(
+      "https://www.dilnova.pp.ua/vendors/dilstar-hardware",
+    );
   });
 
-  it("rewrites /tech to /vendors/dilstar-tech when host is dilstar.pp.ua", async () => {
+  it("redirects /tech to https://www.dilnova.pp.ua/vendors/dilstar-tech when host is dilstar.pp.ua", async () => {
     const request = new NextRequest("https://dilstar.pp.ua/tech", {
       method: "GET",
       headers: {
@@ -492,14 +502,14 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
       },
     });
     const result = (await proxy(request, mockEvent)) as unknown as {
-      rewrittenUrl?: URL;
+      status: number;
       headers: Headers;
     };
-    expect(result.rewrittenUrl).toBeDefined();
-    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-tech");
+    expect(result.status).toBe(307);
+    expect(result.headers.get("Location")).toBe("https://www.dilnova.pp.ua/vendors/dilstar-tech");
   });
 
-  it("rewrites /nursery to /vendors/dilstar-nursery when host is dilstar.pp.ua", async () => {
+  it("redirects /nursery to https://www.dilnova.pp.ua/vendors/dilstar-nursery when host is dilstar.pp.ua", async () => {
     const request = new NextRequest("https://dilstar.pp.ua/nursery", {
       method: "GET",
       headers: {
@@ -507,14 +517,16 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
       },
     });
     const result = (await proxy(request, mockEvent)) as unknown as {
-      rewrittenUrl?: URL;
+      status: number;
       headers: Headers;
     };
-    expect(result.rewrittenUrl).toBeDefined();
-    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-nursery");
+    expect(result.status).toBe(307);
+    expect(result.headers.get("Location")).toBe(
+      "https://www.dilnova.pp.ua/vendors/dilstar-nursery",
+    );
   });
 
-  it("rewrites /services to /vendors/dilstar-services when host is dilstar.pp.ua", async () => {
+  it("redirects /services to https://www.dilnova.pp.ua/vendors/dilstar-services when host is dilstar.pp.ua", async () => {
     const request = new NextRequest("https://dilstar.pp.ua/services", {
       method: "GET",
       headers: {
@@ -522,14 +534,16 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
       },
     });
     const result = (await proxy(request, mockEvent)) as unknown as {
-      rewrittenUrl?: URL;
+      status: number;
       headers: Headers;
     };
-    expect(result.rewrittenUrl).toBeDefined();
-    expect(result.rewrittenUrl?.pathname).toBe("/vendors/dilstar-services");
+    expect(result.status).toBe(307);
+    expect(result.headers.get("Location")).toBe(
+      "https://www.dilnova.pp.ua/vendors/dilstar-services",
+    );
   });
 
-  it("does not rewrite when host is dilnova.pp.ua", async () => {
+  it("does not redirect when host is dilnova.pp.ua", async () => {
     const request = new NextRequest("https://dilnova.pp.ua/", {
       method: "GET",
       headers: {
@@ -537,10 +551,10 @@ describe("Proxy Multi-Domain Routing & Brand Rewrites", () => {
       },
     });
     const result = (await proxy(request, mockEvent)) as unknown as {
-      rewrittenUrl?: URL;
-      headers: Headers;
+      status?: number;
+      headers?: Headers;
     };
-    expect(result.rewrittenUrl).toBeUndefined();
+    expect(result.status ?? 200).not.toBe(307);
   });
 
   it("includes both dilstar and dilnova Clerk domains in CSP header", async () => {
